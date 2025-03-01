@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Roberto Salazar - VR Projects</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link
+  href="https://fonts.googleapis.com/css2?family=Manrope:wght@500&display=swap"
+  rel="stylesheet"
+/>
+  <!--
+    You can move this CSS into a separate "styles.css" file if you prefer.
+    Just remember to remove the <style> tag and link the file:
+    <link rel="stylesheet" href="styles.css">
+  -->
+  <style>
+
+    /* RESET */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: "Manrope", sans-serif;
+  font-weight:1500; /* use medium weight */
+      /* Enable snap scrolling */
+      scroll-snap-type: y mandatory;
+      overflow-y: scroll;
+    }
+
+    /* Make all iframes (videos) responsive by default */
+    iframe {
+      display: block;               /* behave like a block element */
+      width: 100%;                  /* occupy full container width */
+      max-width: 100%;             /* never overflow container */
+      aspect-ratio: 16 / 9;        /* maintain 16:9 ratio */
+      height: auto;                /* height scales with width */
+      border: none;                /* remove default border */
+    }
+
+    /* Each section uses min-height to avoid mobile issues with 100vh */
+    .section {
+      position: relative;
+      width: 100%;
+      min-height: 100vh;        /* Changed from height:100vh */
+      scroll-snap-align: start;
+      scroll-snap-stop: always; /* ensure strict snapping if desired */
+      background-size: cover;
+      background-position: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    /* INTRO SECTION */
+    @keyframes waving-flag {
+      0% { background-position: 50% 50%; }
+      25% { background-position: 52% 48%; }
+      50% { background-position: 50% 52%; }
+      75% { background-position: 48% 50%; }
+      100% { background-position: 50% 50%; }
+    }
+
+    #intro {
+      position: relative;
+      /* Removed any fixed height to rely on .section min-height */
+      background: url('logos2.png') no-repeat center center;
+      background-size: cover;
+      color: #FFF;
+      animation: waving-flag 3s infinite ease-in-out;
+    }
+
+    #intro::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.5); /* Adjust the opacity (0.5 for 50% darkness) */
+    }
+
+    /* Ensure content stays above the overlay */
+    .intro-content {
+      position: relative;
+      z-index: 1;
+    }
+
+    #intro h1 {
+      font-size: 3rem;
+      margin-bottom: 20px;
+    }
+
+    #intro p {
+      font-size: 1.2rem;
+      max-width: 600px;
+      margin: 0 auto 30px auto;
+      line-height: 1.5;
+    }
+
+    #intro button {
+      font-size: 1.2rem;
+      background-color: #FF6A00;
+      color: #FFF;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    /* FILMMAKING SECTION */
+    #filmmaking {
+      background: url('greyBack.jpg') no-repeat center center;
+      background-size: cover;
+      color: #333;
+    }
+
+    #filmmaking h2 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+    }
+
+    #filmmaking p {
+      max-width: 800px;
+      margin: 0 auto 30px auto;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    /* Video container for two videos side by side on desktop */
+    .video-container {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      width: 80%;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    /* Removed explicit iframe heights; universal rule handles it now */
+
+    /* NURSING SECTION */
+    #nursing {
+      background: url('greyBack2.jpeg') no-repeat center center;
+      background-size: cover;
+      color: #333;
+    }
+
+    #nursing h2 {
+      font-size: 2rem;
+      margin-bottom: 20px;
+    }
+
+    #nursing p {
+      max-width: 800px;
+      margin: 0 auto 30px auto;
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+
+    /* Removed explicit widths/heights from iframes; universal rule covers it */
+
+    /* ACUITY SECTION */
+    #acuity {
+      background: url('greyBack3.jpeg') no-repeat center center;
+      background-size: cover;
+      color: #333;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    /* Wrap each text/video pair in a container for easier layout */
+    .text-video-container {
+      width: 80%;
+      max-width: 1000px;
+      margin-bottom: 40px;
+      text-align: center;
+    }
+
+    .text-video-container h2 {
+      font-size: 1.8rem;
+      margin-bottom: 16px;
+    }
+
+    .text-video-container p {
+      font-size: 1rem;
+      line-height: 1.5;
+      max-width: 800px;
+      margin: 0 auto 20px auto;
+    }
+
+    /* INFO SECTION */
+    #info {
+      background: url('greyBack4.jpeg') no-repeat center center;
+      background-size: cover;
+      text-align: left;
+      color: #333;
+      align-items: flex-start; /* push content towards the top if desired */
+    }
+
+    .profile-container {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 80%;
+      max-width: 1200px;
+      margin: 0 auto;
+      margin-bottom: 40px;
+    }
+
+    .profile-container img {
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
+
+    .profile-text {
+      flex: 1;
+      margin-left: 40px;
+    }
+
+    .profile-text h2 {
+      font-size: 2rem;
+      margin-bottom: 16px;
+    }
+
+    .profile-text p {
+      font-size: 1rem;
+      line-height: 1.5;
+      max-width: 600px;
+    }
+
+    /* CONTACT INFO (3 columns) */
+    .contact-info {
+      display: flex;
+      justify-content: center;
+      width: 80%;
+      max-width: 1200px;
+      margin: 0 auto;
+      border-top: 2px solid #888;
+      padding-top: 20px;
+      gap: 40px;
+    }
+
+    .contact-info > div {
+      flex: 1;
+      text-align: center;
+    }
+
+    .contact-info h3 {
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+    }
+
+    .contact-info a {
+      color: #FF6A00;
+      text-decoration: none;
+    }
+
+    .contact-info a:hover {
+      text-decoration: underline;
+    }
+
+    /* MEDIA QUERIES FOR RESPONSIVENESS */
+    @media (max-width: 900px) {
+      .video-container {
+        flex-direction: column;
+        width: 90%;
+      }
+    }
+
+    @media (max-width: 768px) {
+      /* Stack profile container */
+      .profile-container {
+        flex-direction: column;
+        text-align: center;
+      }
+      .profile-text {
+        margin-left: 0;
+        margin-top: 20px;
+      }
+
+      .contact-info {
+        flex-direction: column;
+        gap: 20px;
+      }
+    }
+
+    /* 4th Section Container (acuity) */
+    #acuity {
+      /* Use your desired background here */
+      background: url('greyBack3.jpeg') no-repeat center center;
+      background-size: cover;
+      scroll-snap-align: start;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start; /* keep content toward the top */
+      padding: 40px 20px;
+      text-align: left; /* left-aligned within columns */
+    }
+
+    /* Outer wrapper to hold both sub-sections */
+    .acuity-container {
+      width: 80%;
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column; /* stacked sub-sections */
+      gap: 40px; /* spacing between sub-sections */
+    }
+
+    /* Each sub-section uses a horizontal row layout for large screens */
+    .acuity-subsection {
+      display: flex;
+      flex-direction: row;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px; /* horizontal space between columns */
+    }
+
+    /* Left or right columns */
+    .video-area,
+    .text-area {
+      flex: 1;
+    }
+
+    /* Overridden by universal iframe rule,
+       but max-width helps limit iframes on huge monitors */
+    .video-area iframe {
+      max-width: 600px;
+    }
+
+    .text-area h2 {
+      font-size: 2rem;
+      margin-bottom: 16px;
+    }
+
+    .text-area p {
+      font-size: 1rem;
+      line-height: 1.5;
+      margin-bottom: 12px;
+    }
+
+    .small-reference {
+      font-size: 0.9rem;
+      font-style: italic;
+      color: #555;
+    }
+
+    /* MEDIA QUERIES FOR SMALLER SCREENS */
+    @media (max-width: 900px) {
+      .acuity-subsection {
+        flex-direction: column; /* stack video over text on narrower screens */
+      }
+    }
+
+    /* -- SECTION 2: Filmmaking -- */
+    #filmmaking {
+      background-color: #eee;   /* if you prefer a solid color or an image */
+      scroll-snap-align: start; /* maintain snap layout */
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 40px 20px;
+    }
+
+    .filmmaking-wrapper {
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* Top row: heading on left, paragraph on right */
+    .filmmaking-text-row {
+      display: flex;
+      flex-direction: row;
+      gap: 40px;
+      margin-bottom: 40px;
+    }
+
+    .filmmaking-left-col {
+      flex: 1;
+    }
+
+    .filmmaking-left-col h2 {
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    .filmmaking-right-col {
+      flex: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    .filmmaking-right-col p {
+      font-size: 1.1rem;
+      line-height: 1.5;
+    }
+
+    /* Video row: two iframes side by side */
+    .filmmaking-video-row {
+      display: flex;
+      flex-direction: row;
+      gap: 20px;
+    }
+
+    /* Overridden by universal iframe rule,
+       but we keep min-width:0 so they can shrink properly in flex */
+    .filmmaking-video-row iframe {
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 900px) {
+      .filmmaking-text-row {
+        flex-direction: column;
+      }
+      .filmmaking-left-col h2 {
+        font-size: 2rem;
+      }
+      .filmmaking-right-col {
+        margin-top: 20px;
+      }
+      .filmmaking-video-row {
+        flex-direction: column;
+      }
+    }
+
+    /* --- SECTION ONE STYLES (#intro) --- */
+    #intro {
+      scroll-snap-align: start;
+      width: 100%;
+      /* Removed height:100vh; replaced by .section's min-height:100vh; */
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      color: #FFF;
+    }
+
+    /* Title at the top (left or center) */
+    .site-header {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+    }
+
+    .site-header h1 {
+      font-size: 1.2rem;
+      margin: 0;
+    }
+
+    /* The big hero text content in the middle */
+    .intro-content {
+      text-align: center;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .intro-content h2 {
+      font-size: 3rem;
+      margin-bottom: 20px;
+      line-height: 1.2;
+    }
+
+    .intro-content p {
+      font-size: 1.2rem;
+      line-height: 1.6;
+      margin-bottom: 30px;
+    }
+
+    .intro-content button {
+      font-size: 1.2rem;
+      background-color: #FF6A00;
+      color: #FFF;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .intro-content button:hover {
+      background-color: #e65c00;
+    }
+
+    /* Responsive Adjustments for #intro */
+    @media (max-width: 768px) {
+      .site-header {
+        left: 10px;
+        top: 10px;
+      }
+      .intro-content h2 {
+        font-size: 2.2rem;
+      }
+      .intro-content p {
+        font-size: 1rem;
+      }
+      .intro-content button {
+        font-size: 1rem;
+        padding: 12px 24px;
+      }
+    }
+
+    /* --- SECTION 3: Nursing Simulator (#nursing) --- */
+    #nursing {
+      background-color: #f2f2f2;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px 20px;
+      text-align: center;
+    }
+
+    .nursing-content {
+      max-width: 900px;
+      margin-bottom: 40px;
+      text-align: left;
+    }
+
+    .nursing-content h2 {
+      font-size: 2.5rem;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .nursing-content p {
+      font-size: 1.1rem;
+      line-height: 1.6;
+      color: #555;
+    }
+
+    .nursing-video {
+      width: 80%;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* Rely on universal iframe style for responsiveness */
+
+    @media (max-width: 768px) {
+      #nursing {
+        padding: 30px 15px;
+      }
+      .nursing-content h2 {
+        font-size: 2rem;
+      }
+      .nursing-content p {
+        font-size: 1rem;
+      }
+    }
+
+    /* --- LAST SECTION: Info/About/Contact (#info) --- */
+    #info {
+      background-color: #f9f9f9;
+      scroll-snap-align: start;
+      padding: 40px 20px;
+    }
+
+    /* Top row: photo on left, name + quote on right */
+    .profile-row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      gap: 40px;
+      max-width: 1200px;
+      margin: 0 auto 40px auto;
+    }
+
+    .profile-row img {
+      width: 200px;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 50%;
+    }
+
+    .profile-text-col {
+      flex: 1;
+    }
+
+    .profile-text-col h3 {
+      margin-bottom: 10px;
+      font-weight: 400;
+      color: #333;
+      font-size: 1.2rem;
+    }
+
+    .profile-text-col blockquote {
+      margin: 0;
+      font-size: 1.5rem;
+      line-height: 1.4;
+      color: #111;
+      font-weight: 300;
+    }
+
+    /* Horizontal divider line */
+    .info-divider {
+      width: 100%;
+      border-top: 2px solid #ccc;
+      max-width: 1200px;
+      margin: 0 auto 40px auto;
+    }
+
+    /* Bottom row: 3 columns */
+    .info-bottom-row {
+      display: flex;
+      flex-direction: row;
+      justify-content: space-between;
+      max-width: 1200px;
+      margin: 0 auto;
+      gap: 40px;
+    }
+
+    .info-col {
+      flex: 1;
+      text-align: center;
+    }
+
+    .info-col h3 {
+      font-size: 1.2rem;
+      margin-bottom: 8px;
+      color: #333;
+    }
+
+    .info-col a {
+      color: #ff6a00;
+      text-decoration: none;
+    }
+
+    .info-col a:hover {
+      text-decoration: underline;
+    }
+
+    /* RESPONSIVE ADJUSTMENTS for #info */
+    @media (max-width: 900px) {
+      .profile-row {
+        flex-direction: column;
+        text-align: center;
+      }
+      .profile-text-col blockquote {
+        font-size: 1.2rem;
+      }
+      .info-bottom-row {
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+      }
+      .info-col {
+        text-align: center;
+      }
+    }
+
+  </style>
+
+</head>
+<body>
+
+  <!-- SECTION ONE: INTRO -->
+  <section id="intro" class="section">
+    <!-- Top name/brand text -->
+    <header class="site-header">
+      <h1>Roberto Salazar Magical Realism</h1>
+    </header>
+
+    <!-- Main hero content -->
+    <div class="intro-content">
+      <h2>Bridging Virtual Worlds<br>and Human Interaction</h2>
+      <p>
+        Welcome to my portfolio. I am a Ph.D. student specializing in XR, AR,
+        and VR technologies, passionate about creating immersive and realistic
+        virtual experiences. My work focuses on bridging the gap between
+        technology and human interaction through innovative projects in
+        virtual environments, photogrammetry, and 3D modeling.
+        Explore my journey, skills, and accomplishments, and see how I can
+        contribute to your team's success.
+      </p>
+      <button  onclick="window.open('https://onedrive.live.com/?id=7219CC51454B85E2%21s9f32a1b48dfa443fb987783a970e364b&cid=7219cc51454b85e2&ithint=file%2Cpdf&redeem=aHR0cHM6Ly8xZHJ2Lm1zL2IvYy83MjE5Y2M1MTQ1NGI4NWUyL0ViU2hNcF82alQ5RXVZZDRPcGNPTmtzQklyQ2QyR1hwWGM2dGdxVlV2bmY5OWc%5FZT1hYzZ2OFI', '_blank')">SEE RESUME</button>
+    </div>
+  </section>
+
+
+  <!-- SECTION TWO: FILMMAKING MEETS VR LOCATION SCOUTING -->
+  <section id="filmmaking" class="section">
+    <div class="filmmaking-wrapper">
+      <!-- Top row: heading on left, paragraph on right -->
+      <div class="filmmaking-text-row">
+        <div class="filmmaking-left-col">
+          <h2>Filmmaking meets VR Location Scouting.</h2>
+        </div>
+        <div class="filmmaking-right-col">
+          <p>
+            Currently, I am dedicated to a project focused on simulating the
+            Scouting process for the film industry in downtown Lafayette. I am
+            developing a VR experience that enables filmmakers to virtually explore
+            and scout locations. This project aims to streamline the scouting process,
+            offering a cost-effective and efficient alternative to physically visiting
+            potential filming sites, <strong>Published in <a href="https://ieeexplore.ieee.org/document/10765194" target="_blank" class="resume-button">ISMAR 2024</a></strong>
+          </p>
+        </div>
+      </div>
+
+      <!-- Second row: two iframes side by side -->
+      <div class="filmmaking-video-row">
+        <!-- Replace VIDEO_ID1 and VIDEO_ID2 with your real YouTube video IDs -->
+        <iframe
+          src="https://www.youtube.com/embed/d7nied4Vk7c?si=E9CTHviDFtyE5juD"
+          title="Filmmaking in VR - Video 1"
+          frameborder="0"
+          allowfullscreen>
+        </iframe>
+
+        <iframe
+          src="https://www.youtube.com/embed/KL6PpwdZF9k?si=AWXkDIw_zMtjMQ2a"
+          title="Filmmaking in VR - Video 2"
+          frameborder="0"
+          allowfullscreen>
+        </iframe>
+      </div>
+    </div>
+  </section>
+
+
+  <!-- SECTION THREE: VR NURSING VISIT SIMULATOR -->
+  <section id="nursing" class="section">
+    <div class="nursing-content">
+      <h2>VR Nursing Visit Simulator.</h2>
+      <p>
+        One standout project that I have worked on is the creation of a community visit simulator.
+        This VR-based application aims to provide training for future nurses by simulating their
+        visits to patients’ homes. By immersing trainees in realistic virtual environments,
+        this simulator helps them identify potential hazards and improve their skills in a
+        controlled and safe setting.
+      </p>
+    </div>
+
+    <div class="nursing-video">
+      <!-- Replace VIDEO_ID3 with your actual YouTube video ID -->
+      <iframe
+        src="https://www.youtube.com/embed/VSWXPPuq1OI?si=U2UlLnLsLyr8XpPT"
+        title="VR Nursing Visit Simulator"
+        frameborder="0"
+        allowfullscreen>
+      </iframe>
+    </div>
+  </section>
+
+  <!-- 4. VR VISUAL ACUITY TEST SECTION -->
+  <section id="acuity" class="section">
+    <div class="acuity-container">
+      <!-- VR Visual Acuity Test: video LEFT, text RIGHT -->
+      <div class="acuity-subsection" id="vr-visual-acuity">
+        <div class="video-area">
+          <!-- Replace VIDEO_ID4 with your actual YouTube video ID -->
+          <iframe
+            src="https://www.youtube.com/embed/wWl4NByiJ2w?si=RkkMhDPkQ7JaOiT4"
+            title="VR Visual Acuity Test"
+            frameborder="0"
+            allowfullscreen>
+          </iframe>
+        </div>
+        <div class="text-area">
+          <h2>VR Visual Acuity Test</h2>
+          <p>Research study on visual acuity tests in VR, exploring the use of Snellen charts within virtual environments. This work compared VR-based tests with traditional methods. The study highlights VR's potential as an accessible tool for preliminary eye vision testing, <strong>Published in <a href="https://ieeexplore.ieee.org/document/10536276" target="_blank" class="resume-button">IEEEVR 2024</a></strong></p>
+
+        </div>
+      </div>
+
+      <!-- EyeVR Evolves to AR: text LEFT, video RIGHT -->
+      <div class="acuity-subsection" id="eyevr-evolves">
+        <div class="text-area">
+          <h2>EyeVR Evolves to AR.</h2>
+          <p>Building on our VR-based visual acuity tests, I am now exploring Mixed Reality (MR) and Augmented Reality (AR) with the Quest Pro's spatial capabilities for improved accuracy. This project integrates eye-tracking to study gaze patterns in low vision and examines VR headset optical limitations for accurate vision testing. The work is ongoing and unpublished.</p>
+        </div>
+        <div class="video-area">
+          <!-- Replace VIDEO_ID5 with your actual YouTube video ID -->
+          <iframe
+            src="https://www.youtube.com/embed/zCvOxs99Xfg?si=2odxUk_dupc3M2Iq"
+            title="EyeVR Evolves to AR"
+            frameborder="0"
+            allowfullscreen>
+          </iframe>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- LAST SECTION: INFORMATION -->
+  <section id="info" class="section">
+
+    <!-- Top Row: Profile Picture + Big Quote/Text -->
+    <div class="profile-row">
+      <img src="prefile.jpeg" alt="Roberto Salazar" />
+      <div class="profile-text-col">
+        <!-- Name above the quote, smaller than quote text -->
+        <h3>Roberto Salazar</h3>
+        <blockquote>
+          “I am passionate about creating realistic and immersive virtual worlds,
+          exploring the boundaries of XR, AR, and VR. By leveraging technologies
+          like Point Cloud, photogrammetry, 3D modeling, and Unity, I strive to
+          bridge the gap between virtual environments and human interaction,
+          building innovative connections between the digital and real worlds”
+        </blockquote>
+      </div>
+    </div>
+
+    <!-- Horizontal Divider / Separator -->
+    <div class="info-divider"></div>
+
+    <!-- Bottom Row: 3 columns for contact info -->
+    <div class="info-bottom-row">
+      <!-- Column 1 -->
+      <div class="info-col">
+        <h3>Roberto Salazar Magical Realism</h3>
+        <p>LinkedIn: <a href="https://linkedin.com/in/sroberto27" target="_blank">linkedin.com/in/sroberto27</a></p>
+        <p>GitHub: <a href="https://github.com/sroberto27" target="_blank">github.com/sroberto27</a></p>
+      </div>
+
+      <!-- Column 2 -->
+      <div class="info-col">
+        <h3>Location</h3>
+        <p>301 E Lewis St, Room 363<br>Lafayette, LA 70503</p>
+      </div>
+
+      <!-- Column 3 -->
+      <div class="info-col">
+        <h3>Contact</h3>
+        <p><a href="mailto:c00416436@louisiana.edu">EMAIL ME</a></p>
+      </div>
+    </div>
+  </section>
+
+
+</body>
+</html>
