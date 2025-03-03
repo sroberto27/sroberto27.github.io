@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Roberto Salazar - VR Projects</title>
+  <!-- SEO & Meta Tags -->
+<meta name="description" content="Roberto Salazar's portfolio showcasing XR, VR, and AR projects. Research in filmmaking, visual acuity tests, and virtual nursing simulators.">
+<meta property="og:title" content="Roberto Salazar - XR & VR Projects">
+<meta property="og:description" content="Explore my journey in XR, VR, and AR technologies. Filmmaking, visual acuity tests, and nursing simulations in immersive environments.">
+<meta property="og:image" content="preview.jpg"> <!-- Replace with an actual image link -->
+<meta property="og:url" content="https://sroberto27.github.io">
   <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link
@@ -666,17 +672,182 @@
         text-align: center;
       }
     }
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
 
+    html, body {
+      scroll-behavior: smooth;
+      font-family: "Manrope", sans-serif;
+      color: #222;
+    }
+    /* General navbar styles */
+    .navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      z-index: 1000;
+    }
+
+    /* Navbar links (desktop) */
+    .nav-links {
+      display: flex;
+      gap: 15px;
+    }
+
+    .nav-links a {
+      color: white;
+      text-decoration: none;
+      padding: 8px 15px;
+      transition: 0.3s;
+    }
+
+    .nav-links a:hover {
+      background: #ff6a00;
+      border-radius: 5px;
+    }
+
+    /* HAMBURGER MENU - Hidden on Desktop */
+    .menu-icon,
+    #menu-toggle {
+      display: none;
+    }
+
+    /* MOBILE NAVIGATION */
+    @media (max-width: 768px) {
+      .menu-icon {
+        display: block;
+        font-size: 30px;
+        cursor: pointer;
+        color: white;
+        user-select: none;
+      }
+
+      /* Create a sliding effect */
+      .nav-links {
+        position: absolute;
+        top: 60px;
+        left: 0;
+        width: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        flex-direction: column;
+        text-align: center;
+        padding: 0;
+        max-height: 0; /* Start collapsed */
+        overflow: hidden;
+        transition: max-height 0.5s ease-in-out;
+      }
+
+      .nav-links a {
+        display: block;
+        padding: 15px;
+      }
+
+      /* Show the menu when the checkbox is checked */
+      #menu-toggle:checked ~ .nav-links {
+        max-height: 300px;
+        padding: 20px 0;
+      }
+    }
+
+    /* Sections */
+    .section {
+      min-height: 100vh;
+      padding: 60px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      background-size: cover;
+    }
+
+    /* Back to Top Button */
+    .back-to-top {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: #ff6a00;
+      color: white;
+      padding: 10px 15px;
+      border-radius: 50%;
+      font-size: 20px;
+      cursor: pointer;
+      display: none;
+      transition: 0.3s;
+    }
+
+    .back-to-top:hover {
+      background: #e65c00;
+    }
+
+    /* Interactive Elements */
+    button {
+      background: #ff6a00;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #e65c00;
+    }
+
+    /* Lazy Loading for Videos */
+    iframe {
+      width: 100%;
+      aspect-ratio: 16/9;
+      border: none;
+      loading: lazy;
+    }
   </style>
 
 </head>
 <body>
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div>Roberto Salazar Magical Realism</div>
+
+    <!-- Hidden Checkbox for Mobile Toggle -->
+    <input type="checkbox" id="menu-toggle">
+    <label for="menu-toggle" class="menu-icon">☰</label>
+
+    <!-- Navigation Links -->
+    <div class="nav-links">
+      <a href="#intro">Home</a>
+      <a href="#filmmaking">Filmmaking</a>
+      <a href="#nursing">Nursing</a>
+      <a href="#acuity">Acuity</a>
+      <a href="#info">Contact</a>
+    </div>
+  </nav>
+  <script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const menuToggle = document.getElementById("menu-toggle");
+    const navLinks = document.querySelectorAll(".nav-links a");
+
+    navLinks.forEach(link => {
+      link.addEventListener("click", () => {
+        menuToggle.checked = false; // Uncheck the checkbox to close menu
+      });
+    });
+  });
+  </script>
 
   <!-- SECTION ONE: INTRO -->
   <section id="intro" class="section">
     <!-- Top name/brand text -->
     <header class="site-header">
-      <h4>Roberto Salazar Magical Realism</h4>
     </header>
 
     <!-- Main hero content -->
@@ -691,13 +862,13 @@
         Explore my journey, skills, and accomplishments, and see how I can
         contribute to your team's success.
       </p>
-      <button  onclick="window.open('https://onedrive.live.com/?id=7219CC51454B85E2%21s9f32a1b48dfa443fb987783a970e364b&cid=7219cc51454b85e2&ithint=file%2Cpdf&redeem=aHR0cHM6Ly8xZHJ2Lm1zL2IvYy83MjE5Y2M1MTQ1NGI4NWUyL0ViU2hNcF82alQ5RXVZZDRPcGNPTmtzQklyQ2QyR1hwWGM2dGdxVlV2bmY5OWc%5FZT1hYzZ2OFI', '_blank')">SEE RESUME</button>
+      <button  onclick="window.open('https://onedrive.live.com/?id=7219CC51454B85E2%21s9f32a1b48dfa443fb987783a970e364b&cid=7219cc51454b85e2&ithint=file%2Cpdf&redeem=aHR0cHM6Ly8xZHJ2Lm1zL2IvYy83MjE5Y2M1MTQ1NGI4NWUyL0ViU2hNcF82alQ5RXVZZDRPcGNPTmtzQklyQ2QyR1hwWGM2dGdxVlV2bmY5OWc%5FZT1hYzZ2OFI', '_blank')">SEE MY RESUME</button>
     </div>
   </section>
 
 
   <!-- SECTION TWO: FILMMAKING MEETS VR LOCATION SCOUTING -->
-  <section id="filmmaking" class="section">
+   <section id="filmmaking" class="section" >
     <div class="filmmaking-wrapper">
       <!-- Top row: heading on left, paragraph on right -->
       <div class="filmmaking-text-row">
@@ -738,7 +909,7 @@
 
 
   <!-- SECTION THREE: VR NURSING VISIT SIMULATOR -->
-  <section id="nursing" class="section">
+  <section id="nursing" class="section" >
     <div class="nursing-content">
       <h2>VR Nursing Visit Simulator.</h2>
       <p>
@@ -762,7 +933,7 @@
   </section>
 
   <!-- 4. VR VISUAL ACUITY TEST SECTION -->
-  <section id="acuity" class="section">
+  <section id="acuity" class="section" >
     <div class="acuity-container">
       <!-- VR Visual Acuity Test: video LEFT, text RIGHT -->
       <div class="acuity-subsection" id="vr-visual-acuity">
@@ -845,7 +1016,22 @@
       </div>
     </div>
   </section>
+  <!-- Back to Top Button -->
+<div class="back-to-top" onclick="scrollToTop()">▲</div>
+
+<script>
+  // Show/hide back to top button
+  window.addEventListener('scroll', function() {
+    document.querySelector('.back-to-top').style.display = (window.scrollY > 300) ? 'block' : 'none';
+  });
+
+  // Smooth scroll to top
+  function scrollToTop() {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+</script>
 
 
 </body>
+<!-- Cloudflare Web Analytics --><script defer src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "78b7e3c98cf64d3a946b8a71a0d44e80"}'></script><!-- End Cloudflare Web Analytics -->
 </html>
