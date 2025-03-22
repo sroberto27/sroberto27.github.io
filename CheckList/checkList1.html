@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Location Scouting Checklist - Page 1</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --ul-red: #AD1D28;
+            --ul-red-hover: #8A151F;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: #f4f6f8;
+            color: #333;
+        }
+
+        header {
+            background-color: var(--ul-red);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            text-align: center;
+        }
+
+        .header-left, .header-right, .header-center {
+            display: flex;
+            align-items: center;
+        }
+
+        .header-left {
+            gap: 15px;
+        }
+
+        .header-center {
+            flex-grow: 1; /* This makes it grow and stay in the middle */
+            justify-content: center;
+        }
+
+            .header-center h1 {
+                font-size: 24px;
+                margin: 0;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+        .header-right {
+            gap: 10px;
+        }
+
+        .header-logo {
+            height: 50px;
+        }
+
+        .led-logo {
+            height: 40px;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+            }
+
+            .header-left, .header-right {
+                justify-content: center;
+                margin-bottom: 10px;
+            }
+
+            .header-logo {
+                height: 40px;
+            }
+
+            .led-logo {
+                height: 30px;
+            }
+
+            .header-center h1 {
+                font-size: 18px;
+            }
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+            .section h2 {
+                font-size: 22px;
+                margin-bottom: 20px;
+                border-bottom: 3px solid #007bff;
+                padding-bottom: 10px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                color: #007bff;
+            }
+
+        .field {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            transition: border-color 0.3s;
+        }
+
+            input[type="text"]:focus,
+            input[type="number"]:focus,
+            select:focus,
+            textarea:focus {
+                border-color: #007bff;
+                outline: none;
+            }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 12px;
+        }
+
+        input[type="checkbox"] {
+            transform: scale(2.5);
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .two-columns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .column {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .counter {
+            display: flex;
+            align-items: center;
+        }
+
+            .counter button {
+                background: #007bff;
+                color: white;
+                border: none;
+                font-size: 16px;
+                padding: 8px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background 0.3s;
+            }
+
+                .counter button:hover {
+                    background: #0056b3;
+                }
+
+        button.action-btn {
+            background: #28a745;
+            color: white;
+            font-size: 16px;
+            padding: 12px 24px;
+            margin: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+            button.action-btn:hover {
+                background: #1e7e34;
+            }
+
+        button.clear-btn {
+            background: #dc3545;
+        }
+
+            button.clear-btn:hover {
+                background: #c82333;
+            }
+
+        @media (max-width: 768px) {
+            .two-columns {
+                flex-direction: column;
+            }
+        }
+        /* Colors */
+        :root {
+            --ul-red: #AD1D28;
+            --ul-red-hover: #8A151F;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--ul-red);
+        }
+
+        /* Section titles and icons */
+        .section h2 {
+            border-bottom: 3px solid var(--ul-red);
+            color: var(--ul-red);
+        }
+
+        /* Buttons */
+        .counter button {
+            background: var(--ul-red);
+        }
+
+            .counter button:hover {
+                background: var(--ul-red-hover);
+            }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="header-left">
+            <img src="ULL.png" alt="ULL Logo" class="header-logo">
+            <img src="HCILab.jpg" alt="HCI Lab Logo" class="header-logo">
+        </div>
+
+        <div class="header-center">
+            <h1>
+                <i class="fas fa-map-marked-alt"></i>
+                Location Scouting Checklist - Page 1
+            </h1>
+        </div>
+
+        <div class="header-right">
+            <img src="LEDlogo.png" alt="LED Logo" class="led-logo">
+        </div>
+    </header>
+
+
+    <div class="container">
+
+        <!-- General Info -->
+        <div class="section">
+            <h2><i class="fas fa-info-circle"></i> 1. General Information</h2>
+            <div class="two-columns">
+                <div class="column">
+                    <div class="field">
+                        <label for="room-name">Room Name/ID:</label><input type="text" id="room-name">
+                    </div>
+                    <div class="field">
+                        <label for="location-address">Location Address:</label><input type="text"
+                                                                                      id="location-address">
+                    </div>
+                </div>
+                <div class="column">
+                    <div class="field">
+                        <label for="date-of-scouting">Date of Scouting:</label><input type="text"
+                                                                                      id="date-of-scouting">
+                    </div>
+                    <div class="field">
+                        <label for="scouted-by">Scouted by:</label><input type="text" id="scouted-by">
+                    </div>
+                </div>
+            </div>
+
+            <div class="field checkbox-group">
+                <input type="checkbox" id="room-layout-sketch">
+                <label for="room-layout-sketch">Room Layout Sketch Attached</label>
+            </div>
+
+            <div class="field">
+                <label style="font-size: 20px;">Photographic Documentation:</label>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="wide-angle">
+                    <label for="wide-angle">Wide-angle Photos</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="close-up">
+                    <label for="close-up">Close-up Photos</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="video">
+                    <label for="video">Video Walkthrough</label>
+                </div>
+            </div>
+        </div>
+
+        <!-- Exterior Details -->
+        <div class="section">
+            <h2><i class="fas fa-door-open"></i> 2. Exterior Details</h2>
+            <div class="field">
+                <label for="door-count">Entry/Exit Door Count and Size:</label>
+                <div class="counter">
+                    <button onclick="decrease('door-count')">-</button>
+                    <input type="number" id="door-count" value="0">
+                    <button onclick="increase('door-count')">+</button>
+                </div>
+            </div>
+            <div class="field">
+                <label for="equipment-accessibility">Equipment Accessibility:</label>
+                <select id="equipment-accessibility">
+                    <option>Good</option>
+                    <option>Fair</option>
+                    <option>Poor</option>
+                </select>
+            </div>
+            <div class="field checkbox-group">
+                <input type="checkbox" id="staging-area">
+                <label for="staging-area">Staging Area Availability</label>
+            </div>
+            <div class="field">
+                <label for="parking-capacity">Parking Capacity:</label><input type="text"
+                                                                              id="parking-capacity">
+            </div>
+            <div class="field">
+                <label for="distance-to-location">Distance to Filming Location:</label><input type="text"
+                                                                                              id="distance-to-location">
+            </div>
+        </div>
+
+        <!-- Lighting Assessment -->
+        <div class="section">
+            <h2><i class="fas fa-lightbulb"></i> 3. Lighting Assessment</h2>
+            <div class="two-columns">
+                <div class="column">
+                    <div class="field">
+                        <label for="window-count">Number of Windows:</label>
+                        <div class="counter">
+                            <button onclick="decrease('window-count')">-</button>
+                            <input type="number" id="window-count" value="0">
+                            <button onclick="increase('window-count')">+</button>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="window-direction">Window Direction:</label>
+                        <select id="window-direction">
+                            <option>North</option>
+                            <option>South</option>
+                            <option>East</option>
+                            <option>West</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="column">
+                    <div class="field">
+                        <label for="natural-light-type">Type of Natural Light:</label>
+                        <select id="natural-light-type">
+                            <option>Direct</option>
+                            <option>Indirect</option>
+                            <option>Both</option>
+                            <option>None</option>
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="fixture-count">Number of Fixtures:</label>
+                        <div class="counter">
+                            <button onclick="decrease('fixture-count')">-</button>
+                            <input type="number" id="fixture-count" value="0">
+                            <button onclick="increase('fixture-count')">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label>Fixture Type:</label>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="overhead">
+                    <label for="overhead">Overhead</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="sconce">
+                    <label for="sconce">Sconce</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="lamp">
+                    <label for="lamp">Lamp</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="LED">
+                    <label for="LED">LED</label>
+                </div>
+            </div>
+
+            <div class="field">
+                <label>Fixture Position:</label>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="ceiling">
+                    <label for="ceiling">Ceiling</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="wall">
+                    <label for="wall">Wall</label>
+                </div>
+                <div class="checkbox-group">
+                    <input type="checkbox" id="table">
+                    <label for="table">Table</label>
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="color-temperature">Color Temperature:</label>
+                <select id="color-temperature">
+                    <option>Warm</option>
+                    <option>Neutral</option>
+                    <option>Cool</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="control-options">Control Options:</label>
+                <select id="control-options">
+                    <option>Blinds</option>
+                    <option>Curtains</option>
+                    <option>Dimmer</option>
+                    <option>Mixed</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Acoustic Evaluation -->
+        <div class="section">
+            <h2><i class="fas fa-volume-up"></i> 4. Acoustic Evaluation</h2>
+            <div class="field checkbox-group">
+                <input type="checkbox" id="ambient-noise">
+                <label for="ambient-noise">Ambient Noise Present</label>
+            </div>
+            <div class="field">
+                <label for="noise-source">Noise Source Details:</label><input type="text"
+                                                                              id="noise-source">
+            </div>
+            <div class="field">
+                <label for="room-acoustics">Room Acoustics:</label>
+                <select id="room-acoustics">
+                    <option>None</option>
+                    <option>Slight</option>
+                    <option>Moderate</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div style="text-align: center;">
+            <button class="action-btn" onclick="saveData(); window.location.href='checkList2.html';">Next</button>
+            <button class="action-btn clear-btn" onclick="clearFormData()">Clear Data</button>
+        </div>
+
+    </div>
+
+    <script>
+        function increase(id) {
+            var input = document.getElementById(id);
+            input.value = parseInt(input.value) + 1;
+        }
+
+        function decrease(id) {
+            var input = document.getElementById(id);
+            input.value = Math.max(0, parseInt(input.value) - 1);
+        }
+
+        function saveData() {
+            var textInputs = document.querySelectorAll('input[type="text"], textarea');
+            textInputs.forEach(input => localStorage.setItem(input.id, input.value));
+
+            var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => localStorage.setItem(checkbox.id, checkbox.checked));
+
+            var selects = document.querySelectorAll('select');
+            selects.forEach(select => localStorage.setItem(select.id, select.selectedIndex));
+        }
+
+        function loadData() {
+            var textInputs = document.querySelectorAll('input[type="text"], textarea');
+            textInputs.forEach(input => input.value = localStorage.getItem(input.id) || '');
+
+            var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => checkbox.checked = localStorage.getItem(checkbox.id) === 'true');
+
+            var selects = document.querySelectorAll('select');
+            selects.forEach(select => {
+                var selectedIndex = parseInt(localStorage.getItem(select.id), 10);
+                if (selectedIndex >= 0 && select.options[selectedIndex]) {
+                    select.selectedIndex = selectedIndex;
+                }
+            });
+        }
+
+        function clearFormData() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        window.onload = loadData;
+    </script>
+
+</body>
+
+</html>

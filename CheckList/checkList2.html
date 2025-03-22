@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Location Scouting Checklist - Page 1</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        :root {
+            --ul-red: #AD1D28;
+            --ul-red-hover: #8A151F;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            background-color: #f4f6f8;
+            color: #333;
+        }
+
+        header {
+            background-color: var(--ul-red);
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            text-align: center;
+        }
+
+        .header-left, .header-right, .header-center {
+            display: flex;
+            align-items: center;
+        }
+
+        .header-left {
+            gap: 15px;
+        }
+
+        .header-center {
+            flex-grow: 1; /* This makes it grow and stay in the middle */
+            justify-content: center;
+        }
+
+            .header-center h1 {
+                font-size: 24px;
+                margin: 0;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+            }
+
+        .header-right {
+            gap: 10px;
+        }
+
+        .header-logo {
+            height: 50px;
+        }
+
+        .led-logo {
+            height: 40px;
+        }
+
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+            }
+
+            .header-left, .header-right {
+                justify-content: center;
+                margin-bottom: 10px;
+            }
+
+            .header-logo {
+                height: 40px;
+            }
+
+            .led-logo {
+                height: 30px;
+            }
+
+            .header-center h1 {
+                font-size: 18px;
+            }
+        }
+
+
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+            .section h2 {
+                font-size: 22px;
+                margin-bottom: 20px;
+                border-bottom: 3px solid #007bff;
+                padding-bottom: 10px;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                color: #007bff;
+            }
+
+        .field {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            transition: border-color 0.3s;
+        }
+
+            input[type="text"]:focus,
+            input[type="number"]:focus,
+            select:focus,
+            textarea:focus {
+                border-color: #007bff;
+                outline: none;
+            }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 12px;
+        }
+
+        input[type="checkbox"] {
+            transform: scale(2.5);
+            cursor: pointer;
+            margin: 0;
+        }
+
+        .two-columns {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .column {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .counter {
+            display: flex;
+            align-items: center;
+        }
+
+            .counter button {
+                background: #007bff;
+                color: white;
+                border: none;
+                font-size: 16px;
+                padding: 8px 12px;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background 0.3s;
+            }
+
+                .counter button:hover {
+                    background: #0056b3;
+                }
+
+        button.action-btn {
+            background: #28a745;
+            color: white;
+            font-size: 16px;
+            padding: 12px 24px;
+            margin: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+            button.action-btn:hover {
+                background: #1e7e34;
+            }
+
+        button.clear-btn {
+            background: #dc3545;
+        }
+
+            button.clear-btn:hover {
+                background: #c82333;
+            }
+
+        @media (max-width: 768px) {
+            .two-columns {
+                flex-direction: column;
+            }
+        }
+        /* Colors */
+        :root {
+            --ul-red: #AD1D28;
+            --ul-red-hover: #8A151F;
+        }
+
+        /* Header */
+        header {
+            background-color: var(--ul-red);
+        }
+
+        /* Section titles and icons */
+        .section h2 {
+            border-bottom: 3px solid var(--ul-red);
+            color: var(--ul-red);
+        }
+
+        /* Buttons */
+        .counter button {
+            background: var(--ul-red);
+        }
+
+            .counter button:hover {
+                background: var(--ul-red-hover);
+            }
+    </style>
+</head>
+
+<body>
+
+    <header>
+        <div class="header-left">
+            <img src="ULL.png" alt="ULL Logo" class="header-logo">
+            <img src="HCILab.jpg" alt="HCI Lab Logo" class="header-logo">
+        </div>
+
+        <div class="header-center">
+            <h1>
+                <i class="fas fa-map-marked-alt"></i>
+                Location Scouting Checklist - Page 2
+            </h1>
+        </div>
+
+        <div class="header-right">
+            <img src="LEDlogo.png" alt="LED Logo" class="led-logo">
+        </div>
+    </header>
+
+
+    <div class="container">
+
+        <!-- Power and Network Infrastructure -->
+        <div class="section">
+            <h2><i class="fas fa-plug"></i> 5. Power and Network Infrastructure</h2>
+            <div class="two-columns">
+                <div class="column">
+                    <div class="field">
+                        <label for="power-outlets">Number of Power Outlets:</label>
+                        <div class="counter">
+                            <button onclick="decrease('power-outlets')">-</button>
+                            <input type="number" id="power-outlets" value="0">
+                            <button onclick="increase('power-outlets')">+</button>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label for="outlet-locations">Outlet Locations:</label>
+                        <select id="outlet-locations">
+                            <option>Wall</option>
+                            <option>Floor</option>
+                            <option>Ceiling</option>
+                            <option>Tables</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="column">
+                    <div class="field">
+                        <label for="network-connectivity">Network Connectivity:</label>
+                        <select id="network-connectivity">
+                            <option>Wi-Fi</option>
+                            <option>Ethernet</option>
+                        </select>
+                    </div>
+                    <div class="field checkbox-group">
+                        <input type="checkbox" id="circuit-capacity">
+                        <label for="circuit-capacity">Circuit Capacity Available</label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label for="connectivity-details">Connectivity Details:</label>
+                <textarea id="connectivity-details"></textarea>
+            </div>
+        </div>
+
+        <!-- Aesthetic and Design Features -->
+        <div class="section">
+            <h2><i class="fas fa-paint-roller"></i> 6. Aesthetic and Design Features</h2>
+            <div class="two-columns">
+                <div class="column">
+                    <div class="field">
+                        <label for="wall-colors">Wall Colors and Finishes:</label>
+                        <input type="text" id="wall-colors">
+                    </div>
+                    <div class="field">
+                        <label for="flooring-type">Flooring Type:</label>
+                        <input type="text" id="flooring-type">
+                    </div>
+                </div>
+
+                <div class="column">
+                    <div class="field">
+                        <label for="architectural-details">Architectural Details:</label>
+                        <textarea id="architectural-details"></textarea>
+                    </div>
+                    <div class="field">
+                        <label for="flooring-condition">Condition of Flooring:</label>
+                        <select id="flooring-condition">
+                            <option>Excellent</option>
+                            <option>Good</option>
+                            <option>Fair</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field checkbox-group">
+                <input type="checkbox" id="furniture-present">
+                <label for="furniture-present">Furniture Present</label>
+            </div>
+            <div class="field checkbox-group">
+                <input type="checkbox" id="ease-of-moving-furniture">
+                <label for="ease-of-moving-furniture">Ease of Moving Furniture</label>
+            </div>
+        </div>
+
+        <!-- Compliance and Permissions -->
+        <div class="section">
+            <h2><i class="fas fa-file-signature"></i> 7. Compliance and Permissions</h2>
+            <div class="field checkbox-group">
+                <input type="checkbox" id="zoning-regulations">
+                <label for="zoning-regulations">Zoning Regulations Confirmed</label>
+            </div>
+            <div class="field checkbox-group">
+                <input type="checkbox" id="ownership-confirmed">
+                <label for="ownership-confirmed">Ownership Confirmed</label>
+            </div>
+            <div class="field">
+                <label for="owner-contact-name">Owner/Contact Name:</label>
+                <input type="text" id="owner-contact-name">
+            </div>
+            <div class="field">
+                <label for="contact-information">Contact Information:</label>
+                <input type="text" id="contact-information">
+            </div>
+            <div class="field checkbox-group">
+                <input type="checkbox" id="permission-to-film">
+                <label for="permission-to-film">Permission to Film Secured</label>
+            </div>
+        </div>
+
+        <!-- Final Documentation -->
+        <div class="section">
+            <h2><i class="fas fa-clipboard-check"></i> 8. Final Documentation</h2>
+            <div class="field checkbox-group">
+                <input type="checkbox" id="detailed-report">
+                <label for="detailed-report">Detailed Report Compiled and Attached</label>
+            </div>
+            <div class="field checkbox-group">
+                <input type="checkbox" id="database-entry">
+                <label for="database-entry">Entered into Location Database</label>
+            </div>
+            <div class="field">
+                <label for="tags-categories">Tags/Categories Assigned:</label>
+                <input type="text" id="tags-categories">
+            </div>
+            <div class="field">
+                <label for="additional-notes">Additional Notes:</label>
+                <textarea id="additional-notes"></textarea>
+            </div>
+        </div>
+
+        <!-- Buttons -->
+        <div style="text-align: center;">
+            <button class="action-btn" onclick="saveData(); window.location.href='checkList1.html';">Previous</button>
+            <button class="action-btn clear-btn" onclick="clearFormData()">Clear Data</button>
+        </div>
+
+    </div>
+
+    <script>
+        function increase(id) {
+            var input = document.getElementById(id);
+            input.value = parseInt(input.value) + 1;
+        }
+
+        function decrease(id) {
+            var input = document.getElementById(id);
+            input.value = Math.max(0, parseInt(input.value) - 1);
+        }
+
+        function saveData() {
+            var textInputs = document.querySelectorAll('input[type="text"], textarea');
+            textInputs.forEach(input => localStorage.setItem(input.id, input.value));
+
+            var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => localStorage.setItem(checkbox.id, checkbox.checked));
+
+            var selects = document.querySelectorAll('select');
+            selects.forEach(select => localStorage.setItem(select.id, select.selectedIndex));
+        }
+
+        function loadData() {
+            var textInputs = document.querySelectorAll('input[type="text"], textarea');
+            textInputs.forEach(input => input.value = localStorage.getItem(input.id) || '');
+
+            var checkboxes = document.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => checkbox.checked = localStorage.getItem(checkbox.id) === 'true');
+
+            var selects = document.querySelectorAll('select');
+            selects.forEach(select => {
+                var selectedIndex = parseInt(localStorage.getItem(select.id), 10);
+                if (selectedIndex >= 0 && select.options[selectedIndex]) {
+                    select.selectedIndex = selectedIndex;
+                }
+            });
+        }
+
+        function clearFormData() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        window.onload = loadData;
+    </script>
+
+</body>
+
+</html>
