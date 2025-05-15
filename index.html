@@ -837,240 +837,462 @@
         margin: 20px auto; /* Center horizontally with auto margins */
         padding: 12px 24px; /* Keep button padding consistent */
     }
+#extra-projects {
+  background: url('greyBack2.jpeg') no-repeat center center;
+  background-size: cover;
+  color: #333;
+  padding: 60px 20px;
+  text-align: center;
+  height: 100vh; /* Full viewport height */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+}
+
+#extra-projects h2 {
+  font-size: 2rem;
+  margin-bottom: 10px;
+}
+
+.extra-intro {
+  font-size: 1rem;
+  max-width: 800px;
+  margin-bottom: 20px;
+  line-height: 1.5;
+}
+
+.vertical-scroll-area {
+  overflow-y: auto;
+  max-height: 70vh; /* Confine scrolling to this area */
+  width: 100%;
+  max-width: 800px;
+  padding-right: 10px;
+}
+
+.project-card {
+  background: white;
+  border-radius: 10px;
+  padding: 16px;
+  margin-bottom: 20px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  text-align: left;
+}
+
+.project-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+.project-card h3 {
+  font-size: 1.2rem;
+  margin-bottom: 6px;
+}
+
+.project-card p {
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #444;
+}
+
+/* Optional: Scrollbar styling */
+.vertical-scroll-area::-webkit-scrollbar {
+  width: 8px;
+}
+.vertical-scroll-area::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 4px;
+}
+.vertical-scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+.video-wrapper {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin-bottom: 10px;
+}
+
+.video-wrapper iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 8px;
+}
+
+
+      .linkedin-bubble {
+          position: fixed;
+          bottom: 100px;
+          left: 20px;
+          background-color: #ffffff;
+          color: #333;
+          border-radius: 12px;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+          display: flex;
+          align-items: flex-start;
+          padding: 12px 14px;
+          gap: 10px;
+          z-index: 1001;
+          cursor: pointer;
+          opacity: 0.7;
+          transition: opacity 0.3s ease, transform 0.3s ease;
+          width: 280px;
+      }
+
+          .linkedin-bubble:hover {
+              opacity: 1;
+              transform: scale(1.05);
+          }
+
+          .linkedin-bubble img {
+              width: 48px;
+              height: 48px;
+              margin-top: 4px;
+          }
+
+
+      .linkedin-snippet p {
+          margin: 0;
+          font-size: 0.9rem;
+          line-height: 1.4;
+      }
+
+      /* Hide LinkedIn bubble on small screens */
+      @media (max-width: 768px) {
+          .linkedin-bubble {
+              display: none;
+          }
+      }
+
+      .close-bubble {
+          position: absolute;
+          top: 4px;
+          right: 8px;
+          font-size: 16px;
+          color: #666;
+          cursor: pointer;
+      }
+
+
   </style>
 
 </head>
 <body>
-  <!-- Navbar -->
-  <nav class="navbar">
-    <div>Roberto Salazar Magical Realism</div>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div>Roberto Salazar Magical Realism</div>
 
-    <!-- Hidden Checkbox for Mobile Toggle -->
-    <input type="checkbox" id="menu-toggle">
-    <label for="menu-toggle" class="menu-icon">☰</label>
+        <!-- Hidden Checkbox for Mobile Toggle -->
+        <input type="checkbox" id="menu-toggle">
+        <label for="menu-toggle" class="menu-icon">☰</label>
 
-    <!-- Navigation Links -->
-    <div class="nav-links">
-      <a href="#intro">Home</a>
-      <a href="#filmmaking">Filmmaking</a>
-      <a href="#nursing">Nursing</a>
-      <a href="#acuity">Acuity</a>
-      <a href="#info">Contact</a>
-    </div>
-  </nav>
-  <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    const menuToggle = document.getElementById("menu-toggle");
-    const navLinks = document.querySelectorAll(".nav-links a");
-
-    navLinks.forEach(link => {
-      link.addEventListener("click", () => {
-        menuToggle.checked = false; // Uncheck the checkbox to close menu
-      });
-    });
-  });
-  </script>
-
-  <!-- SECTION ONE: INTRO -->
-  <section id="intro" class="section">
-    <!-- Top name/brand text -->
-    <header class="site-header">
-    </header>
-
-    <!-- Main hero content -->
-    <div class="intro-content">
-      <h2>Bridging Virtual Worlds<br>and Human Interaction</h2>
-      <p>
-        Welcome to my portfolio. I am a Ph.D. student specializing in XR, AR,
-        and VR technologies, passionate about creating immersive and realistic
-        virtual experiences. My work focuses on bridging the gap between
-        technology and human interaction through innovative projects in
-        virtual environments, photogrammetry, and 3D modeling.
-        Explore my journey, skills, and accomplishments, and see how I can
-        contribute to your team's success.
-      </p>
-      <button  onclick="window.open('https://onedrive.live.com/?id=7219CC51454B85E2%21s9f32a1b48dfa443fb987783a970e364b&cid=7219cc51454b85e2&ithint=file%2Cpdf&redeem=aHR0cHM6Ly8xZHJ2Lm1zL2IvYy83MjE5Y2M1MTQ1NGI4NWUyL0ViU2hNcF82alQ5RXVZZDRPcGNPTmtzQklyQ2QyR1hwWGM2dGdxVlV2bmY5OWc%5FZT1hYzZ2OFI', '_blank')">SEE MY RESUME</button>
-    </div>
-  </section>
-
-
-  <!-- SECTION TWO: FILMMAKING MEETS VR LOCATION SCOUTING -->
-   <section id="filmmaking" class="section" >
-       <div class="filmmaking-wrapper">
-           <!-- Top row: heading on left, paragraph on right -->
-           <div class="filmmaking-text-row">
-               <div class="filmmaking-left-col">
-                   <h2>Filmmaking meets VR Location Scouting.</h2>
-               </div>
-               <div class="filmmaking-right-col">
-                   <p>
-                       Currently, I am dedicated to a project focused on simulating the
-                       Scouting process for the film industry in downtown Lafayette. I am
-                       developing a VR experience that enables filmmakers to virtually explore
-                       and scout locations. This project aims to streamline the scouting process,
-                       offering a cost-effective and efficient alternative to physically visiting
-                       potential filming sites.
-                       <br><br>
-                       <strong>
-                           Published in
-                           <a style="color:#ff6a00" href="https://ieeexplore.ieee.org/document/10765194" target="_blank" class="resume-button">ISMAR 2024</a>
-                       </strong>
-                       <br><br>
-                       You can also explore our
-                       <strong>
-                           <a style="color:#ff6a00" href="https://sroberto27.github.io/CheckList/checkList1.html" target="_blank" class="resume-button">
-                               Location Scouting Checklist
-                           </a>
-                       </strong>
-                       to experience a practical tool we developed for filmmakers.
-                   </p>
-               </div>
-           </div>
-
-
-           <!-- Second row: two iframes side by side -->
-           <div class="filmmaking-video-row">
-               <!-- Replace VIDEO_ID1 and VIDEO_ID2 with your real YouTube video IDs -->
-               <iframe src="https://www.youtube.com/embed/d7nied4Vk7c?si=E9CTHviDFtyE5juD"
-                       title="Filmmaking in VR - Video 1"
-                       frameborder="0"
-                       allowfullscreen>
-               </iframe>
-
-               <iframe src="https://www.youtube.com/embed/KL6PpwdZF9k?si=AWXkDIw_zMtjMQ2a"
-                       title="Filmmaking in VR - Video 2"
-                       frameborder="0"
-                       allowfullscreen>
-               </iframe>
-           </div>
-       </div>
-  </section>
-
-
-  <!-- SECTION THREE: VR NURSING VISIT SIMULATOR -->
-  <section id="nursing" class="section" >
-    <div class="nursing-content">
-      <h2>VR Nursing Visit Simulator.</h2>
-      <p>
-        One standout project that I have worked on is the creation of a community visit simulator.
-        This VR-based application aims to provide training for future nurses by simulating their
-        visits to patients’ homes. By immersing trainees in realistic virtual environments,
-        this simulator helps them identify potential hazards and improve their skills in a
-        controlled and safe setting.
-      </p>
-    </div>
-
-    <div class="nursing-video">
-      <!-- Replace VIDEO_ID3 with your actual YouTube video ID -->
-      <iframe
-        src="https://www.youtube.com/embed/VSWXPPuq1OI?si=U2UlLnLsLyr8XpPT"
-        title="VR Nursing Visit Simulator"
-        frameborder="0"
-        allowfullscreen>
-      </iframe>
-    </div>
-  </section>
-
-  <!-- 4. VR VISUAL ACUITY TEST SECTION -->
-  <section id="acuity" class="section" >
-    <div class="acuity-container">
-      <!-- VR Visual Acuity Test: video LEFT, text RIGHT -->
-      <div class="acuity-subsection" id="vr-visual-acuity">
-        <div class="video-area">
-          <!-- Replace VIDEO_ID4 with your actual YouTube video ID -->
-          <iframe
-            src="https://www.youtube.com/embed/wWl4NByiJ2w?si=RkkMhDPkQ7JaOiT4"
-            title="VR Visual Acuity Test"
-            frameborder="0"
-            allowfullscreen>
-          </iframe>
+        <!-- Navigation Links -->
+        <div class="nav-links">
+            <a href="#intro">Home</a>
+            <a href="#filmmaking">Filmmaking</a>
+            <a href="#nursing">Nursing</a>
+            <a href="#acuity">Acuity</a>
+            <a href="#extra-projects">Other Projects</a>
+            <a href="#info">Contact</a>
         </div>
-        <div class="text-area">
-          <h2>VR Visual Acuity Test</h2>
-          <p> This is a Research study on visual acuity tests in VR, exploring the use of Snellen charts within virtual environments. This work compared VR-based tests with traditional methods. The study highlights VR's potential as an accessible tool for preliminary eye vision testing, <strong>Published in <a style="color:#ff6a00" href="https://ieeexplore.ieee.org/document/10536276" target="_blank" class="resume-button">IEEEVR 2024</a></strong></p>
+
+    </nav>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const menuToggle = document.getElementById("menu-toggle");
+            const navLinks = document.querySelectorAll(".nav-links a");
+
+            navLinks.forEach(link => {
+                link.addEventListener("click", () => {
+                    menuToggle.checked = false; // Uncheck the checkbox to close menu
+                });
+            });
+        });
+    </script>
+
+    <!-- SECTION ONE: INTRO -->
+    <section id="intro" class="section">
+        <!-- Top name/brand text -->
+        <header class="site-header">
+        </header>
+
+        <!-- Main hero content -->
+        <div class="intro-content">
+            <h2>Bridging Virtual Worlds<br>and Human Interaction</h2>
+            <p>
+                Welcome to my portfolio. I am a Ph.D. student specializing in XR, AR,
+                and VR technologies, passionate about creating immersive and realistic
+                virtual experiences. My work focuses on bridging the gap between
+                technology and human interaction through innovative projects in
+                virtual environments, photogrammetry, and 3D modeling.
+                Explore my journey, skills, and accomplishments, and see how I can
+                contribute to your team's success.
+            </p>
+            <button onclick="window.open('https://onedrive.live.com/?id=7219CC51454B85E2%21s9f32a1b48dfa443fb987783a970e364b&cid=7219cc51454b85e2&ithint=file%2Cpdf&redeem=aHR0cHM6Ly8xZHJ2Lm1zL2IvYy83MjE5Y2M1MTQ1NGI4NWUyL0ViU2hNcF82alQ5RXVZZDRPcGNPTmtzQklyQ2QyR1hwWGM2dGdxVlV2bmY5OWc%5FZT1hYzZ2OFI', '_blank')">SEE MY RESUME</button>
+        </div>
+    </section>
+
+
+    <!-- SECTION TWO: FILMMAKING MEETS VR LOCATION SCOUTING -->
+    <section id="filmmaking" class="section">
+        <div class="filmmaking-wrapper">
+            <!-- Top row: heading on left, paragraph on right -->
+            <div class="filmmaking-text-row">
+                <div class="filmmaking-left-col">
+                    <h2>Filmmaking meets VR Location Scouting.</h2>
+                </div>
+                <div class="filmmaking-right-col">
+                    <p>
+                        Currently, I am dedicated to a project focused on simulating the
+                        Scouting process for the film industry in downtown Lafayette. I am
+                        developing a VR experience that enables filmmakers to virtually explore
+                        and scout locations. This project aims to streamline the scouting process,
+                        offering a cost-effective and efficient alternative to physically visiting
+                        potential filming sites.
+                        <br><br>
+                        <strong>
+                            Published in
+                            <a style="color:#ff6a00" href="https://ieeexplore.ieee.org/document/10765194" target="_blank" class="resume-button">ISMAR 2024</a>
+                        </strong>
+                        <br><br>
+                        You can also explore our
+                        <strong>
+                            <a style="color:#ff6a00" href="https://sroberto27.github.io/CheckList/checkList1.html" target="_blank" class="resume-button">
+                                Location Scouting Checklist
+                            </a>
+                        </strong>
+                        to experience a practical tool we developed for filmmakers.
+                    </p>
+                </div>
+            </div>
+
+
+            <!-- Second row: two iframes side by side -->
+            <div class="filmmaking-video-row">
+                <!-- Replace VIDEO_ID1 and VIDEO_ID2 with your real YouTube video IDs -->
+                <iframe src="https://www.youtube.com/embed/d7nied4Vk7c?si=E9CTHviDFtyE5juD"
+                        title="Filmmaking in VR - Video 1"
+                        frameborder="0"
+                        allowfullscreen>
+                </iframe>
+
+                <iframe src="https://www.youtube.com/embed/KL6PpwdZF9k?si=AWXkDIw_zMtjMQ2a"
+                        title="Filmmaking in VR - Video 2"
+                        frameborder="0"
+                        allowfullscreen>
+                </iframe>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- SECTION THREE: VR NURSING VISIT SIMULATOR -->
+    <section id="nursing" class="section">
+        <div class="nursing-content">
+            <h2>VR Nursing Visit Simulator.</h2>
+            <p>
+                One standout project that I have worked on is the creation of a community visit simulator.
+                This VR-based application aims to provide training for future nurses by simulating their
+                visits to patients’ homes. By immersing trainees in realistic virtual environments,
+                this simulator helps them identify potential hazards and improve their skills in a
+                controlled and safe setting.
+            </p>
+        </div>
+
+        <div class="nursing-video">
+            <!-- Replace VIDEO_ID3 with your actual YouTube video ID -->
+            <iframe src="https://www.youtube.com/embed/VSWXPPuq1OI?si=U2UlLnLsLyr8XpPT"
+                    title="VR Nursing Visit Simulator"
+                    frameborder="0"
+                    allowfullscreen>
+            </iframe>
+        </div>
+    </section>
+
+    <!-- 4. VR VISUAL ACUITY TEST SECTION -->
+    <section id="acuity" class="section">
+        <div class="acuity-container">
+            <!-- VR Visual Acuity Test: video LEFT, text RIGHT -->
+            <div class="acuity-subsection" id="vr-visual-acuity">
+                <div class="video-area">
+                    <!-- Replace VIDEO_ID4 with your actual YouTube video ID -->
+                    <iframe src="https://www.youtube.com/embed/wWl4NByiJ2w?si=RkkMhDPkQ7JaOiT4"
+                            title="VR Visual Acuity Test"
+                            frameborder="0"
+                            allowfullscreen>
+                    </iframe>
+                </div>
+                <div class="text-area">
+                    <h2>VR Visual Acuity Test</h2>
+                    <p> This is a Research study on visual acuity tests in VR, exploring the use of Snellen charts within virtual environments. This work compared VR-based tests with traditional methods. The study highlights VR's potential as an accessible tool for preliminary eye vision testing, <strong>Published in <a style="color:#ff6a00" href="https://ieeexplore.ieee.org/document/10536276" target="_blank" class="resume-button">IEEEVR 2024</a></strong></p>
+
+                </div>
+            </div>
+
+            <!-- EyeVR Evolves to AR: text LEFT, video RIGHT -->
+            <div class="acuity-subsection" id="eyevr-evolves">
+                <div class="text-area">
+                    <h2>EyeVR Evolves to AR.</h2>
+                    <p>Building on our VR-based visual acuity tests, I am now exploring Mixed Reality (MR) and Augmented Reality (AR) with the Quest Pro's spatial capabilities for improved accuracy. This project integrates eye-tracking to study gaze patterns in low vision and examines VR headset optical limitations for accurate vision testing. The work is ongoing and unpublished.</p>
+                </div>
+                <div class="video-area">
+                    <!-- Replace VIDEO_ID5 with your actual YouTube video ID -->
+                    <iframe src="https://www.youtube.com/embed/zCvOxs99Xfg?si=2odxUk_dupc3M2Iq"
+                            title="EyeVR Evolves to AR"
+                            frameborder="0"
+                            allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!--  SECTION: Other Pojects -->
+    <section id="extra-projects" class="section">
+        <h2>Other Projects</h2>
+        <p class="extra-intro">
+            A collection of smaller or ongoing XR/VR projects that demonstrate technical experiments, creative tools, or collaborative efforts outside of my main research.
+        </p>
+
+        <div class="vertical-scroll-area">
+            <div class="project-card">
+                <img src="master.png" alt="SFG-VR: Distributed VR Renderer">
+                <h3>SFG-VR: Distributed VR Renderer</h3>
+                <p>
+                    A distributed VR rendering system that offloads visual computation to two networked PCs.
+                    The Meta Quest (master) sends headset transforms to slave PCs, which render separate halves
+                    of the view. Their outputs are stitched in real time and displayed in VR.
+                    <br><br>
+                    This is an extension of the <a href="https://www.usenix.org/conference/atc24/presentation/zhang-li-gaming" target="_blank" style="color:#ff6a00;">SFG architecture</a>
+                    from ATC’24. It features Unity + WebRTC networking, stereo occlusion rendering, and live UI-based IP config.
+                    <br><br>
+                    <a href="https://github.com/sroberto27/SFG-VR" target="_blank" style="color:#ff6a00;">View on GitHub →</a>
+                </p>
+            </div>
+            <div class="project-card">
+                <img src="Magazine.png" alt="La Louisiane Magazine Feature">
+                <h3>VR Nursing Simulator Featured in La Louisiane Magazine</h3>
+                <p>
+                    Our interdisciplinary research on the VR Nursing Visit Simulator was spotlighted in the Spring 2024 issue of <strong>La Louisiane</strong>, UL Lafayette’s official magazine.
+                    <br><br>
+                    The article, titled <em>"Virtual Reality Puts Health Care’s Future in Focus"</em>, covers how students and faculty from Nursing, Psychology, and Computer Science collaborated to simulate home visits and improve nursing education through VR.
+                    <br><br>
+                    Roberto Salazar helped adapt the system using Unity and Meta Quest to allow immersive, interactive home safety evaluations.
+                    <br><br>
+                    <a href="https://online.fliphtml5.com/gziml/cqsk/#p=8" target="_blank" style="color:#ff6a00;">📖 Read the article in La Louisiane →</a>
+                </p>
+            </div>
+
+            <div class="project-card">
+                <div class="video-wrapper">
+                    <img src="AR.png" alt="AR Reading Motivation with HoloLens 2">
+                </div>
+                <h3>AR Motivation for Reading (HoloLens + GPT)</h3>
+                <p>
+                    This HoloLens 2 prototype uses AR to boost motivation during difficult readings. A mounted external webcam enhances document capture, and OCR is applied in real time to detect and extract text from the user’s view.
+                    <br><br>
+                    The recognized text is corrected and passed to GPT-4 to generate voice-based explanations, motivational insights, or fun facts. It adapts dynamically based on the user's educational level—from elementary to PhD.
+                    <br><br>
+                    Future versions aim to reduce cognitive load by integrating non-intrusive motivational feedback like memes, gifs, or visual highlights that enrich the reading experience without distraction.
+                </p>
+            </div>
+
+            <div class="project-card">
+                <div class="video-wrapper">
+                    <iframe src="https://www.youtube.com/embed/7O-imz7lbeA"
+                            title="3D Scan of LITE Center - DJI Mini 2 + RealityCapture"
+                            allowfullscreen
+                            loading="lazy"></iframe>
+                </div>
+                <h3>3D Scan of the LITE Center</h3>
+                <p>
+                    A detailed photogrammetry model of the LITE building in Lafayette, LA, created using a DJI Mini 2 drone and RealityCapture.
+                    This project explores drone-based 3D scanning for digital preservation and integration into virtual environments.
+                    <br><br>
+                    <strong>Tools:</strong> DJI Mini 2, RealityCapture<br>
+                    <strong>Location:</strong> Louisiana Immersive Technologies Enterprise (LITE), Lafayette, LA<br><br>
+                    <em>#Photogrammetry #RealityCapture #DroneMapping</em>
+                </p>
+            </div>
+
+
+            <!-- Add more cards as needed -->
+        </div>
+    </section>
+
+
+
+    <!-- LAST SECTION: INFORMATION -->
+    <section id="info" class="section">
+
+        <!-- Top Row: Profile Picture + Big Quote/Text -->
+        <div class="profile-row">
+            <img src="prefile.jpeg" alt="Roberto Salazar" />
+            <div class="profile-text-col">
+                <!-- Name above the quote, smaller than quote text -->
+                <h3>Roberto Salazar</h3>
+                <blockquote>
+                    “I am passionate about creating realistic and immersive virtual worlds,
+                    exploring the boundaries of XR, AR, and VR. By leveraging technologies
+                    like Point Cloud, photogrammetry, 3D modeling, and Unity, I strive to
+                    bridge the gap between virtual environments and human interaction,
+                    building innovative connections between the digital and real worlds”
+                </blockquote>
+                <button onclick="window.open('https://onedrive.live.com/?id=7219CC51454B85E2%21s9f32a1b48dfa443fb987783a970e364b&cid=7219cc51454b85e2&ithint=file%2Cpdf&redeem=aHR0cHM6Ly8xZHJ2Lm1zL2IvYy83MjE5Y2M1MTQ1NGI4NWUyL0ViU2hNcF82alQ5RXVZZDRPcGNPTmtzQklyQ2QyR1hwWGM2dGdxVlV2bmY5OWc%5FZT1hYzZ2OFI', '_blank')">SEE MY RESUME</button>
+            </div>
 
         </div>
-      </div>
 
-      <!-- EyeVR Evolves to AR: text LEFT, video RIGHT -->
-      <div class="acuity-subsection" id="eyevr-evolves">
-        <div class="text-area">
-          <h2>EyeVR Evolves to AR.</h2>
-          <p>Building on our VR-based visual acuity tests, I am now exploring Mixed Reality (MR) and Augmented Reality (AR) with the Quest Pro's spatial capabilities for improved accuracy. This project integrates eye-tracking to study gaze patterns in low vision and examines VR headset optical limitations for accurate vision testing. The work is ongoing and unpublished.</p>
+        <!-- Horizontal Divider / Separator -->
+        <div class="info-divider"></div>
+
+        <!-- Bottom Row: 3 columns for contact info -->
+        <div class="info-bottom-row">
+            <!-- Column 1 -->
+            <div class="info-col">
+                <h3>Roberto Salazar Magical Realism</h3>
+                <p>LinkedIn: <a href="https://linkedin.com/in/sroberto27" target="_blank">linkedin.com/in/sroberto27</a></p>
+                <p>GitHub: <a href="https://github.com/sroberto27" target="_blank">github.com/sroberto27</a></p>
+            </div>
+
+            <!-- Column 2 -->
+            <div class="info-col">
+                <h3>Location</h3>
+                <p>301 E Lewis St, Room 363<br>Lafayette, LA 70503</p>
+            </div>
+
+            <!-- Column 3 -->
+            <div class="info-col">
+                <h3>Contact</h3>
+                <p><a href="mailto:c00416436@louisiana.edu">EMAIL ME</a></p>
+            </div>
         </div>
-        <div class="video-area">
-          <!-- Replace VIDEO_ID5 with your actual YouTube video ID -->
-          <iframe
-            src="https://www.youtube.com/embed/zCvOxs99Xfg?si=2odxUk_dupc3M2Iq"
-            title="EyeVR Evolves to AR"
-            frameborder="0"
-            allowfullscreen>
-          </iframe>
+    </section>
+    <!-- Back to Top Button -->
+    <div class="back-to-top" onclick="scrollToTop()">▲</div>
+
+    <script>
+        // Show/hide back to top button
+        window.addEventListener('scroll', function () {
+            document.querySelector('.back-to-top').style.display = (window.scrollY > 300) ? 'block' : 'none';
+        });
+
+        // Smooth scroll to top
+        function scrollToTop() {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    </script>
+
+    <div class="linkedin-bubble" id="linkedinBubble" onclick="window.open('https://www.linkedin.com/posts/sroberto27_gsaw2025-gradresearch-ulgradlife-activity-7317558506654416897-vKXr?utm_source=share&utm_medium=member_desktop&rcm=ACoAAEk7Km4BpeQsWsHUiU0m97E7Q-RxBeg7MtU', '_blank')">
+        <span class="close-bubble" onclick="event.stopPropagation(); document.getElementById('linkedinBubble').style.display='none'">×</span>
+        <img src="linkedin-logo.png" alt="LinkedIn XR Logo" />
+        <div class="linkedin-snippet">
+            <p><strong>🎉 New Post:</strong><br>“Hollywood Meets Bayou—VR Location Scouting” selected winner in GSAW 2025!</p>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- LAST SECTION: INFORMATION -->
-  <section id="info" class="section">
-
-    <!-- Top Row: Profile Picture + Big Quote/Text -->
-    <div class="profile-row">
-      <img src="prefile.jpeg" alt="Roberto Salazar" />
-      <div class="profile-text-col">
-        <!-- Name above the quote, smaller than quote text -->
-        <h3>Roberto Salazar</h3>
-        <blockquote>
-          “I am passionate about creating realistic and immersive virtual worlds,
-          exploring the boundaries of XR, AR, and VR. By leveraging technologies
-          like Point Cloud, photogrammetry, 3D modeling, and Unity, I strive to
-          bridge the gap between virtual environments and human interaction,
-          building innovative connections between the digital and real worlds”
-        </blockquote>
-        <button  onclick="window.open('https://onedrive.live.com/?id=7219CC51454B85E2%21s9f32a1b48dfa443fb987783a970e364b&cid=7219cc51454b85e2&ithint=file%2Cpdf&redeem=aHR0cHM6Ly8xZHJ2Lm1zL2IvYy83MjE5Y2M1MTQ1NGI4NWUyL0ViU2hNcF82alQ5RXVZZDRPcGNPTmtzQklyQ2QyR1hwWGM2dGdxVlV2bmY5OWc%5FZT1hYzZ2OFI', '_blank')">SEE MY RESUME</button>
-      </div>
-
     </div>
 
-    <!-- Horizontal Divider / Separator -->
-    <div class="info-divider"></div>
-
-    <!-- Bottom Row: 3 columns for contact info -->
-    <div class="info-bottom-row">
-      <!-- Column 1 -->
-      <div class="info-col">
-        <h3>Roberto Salazar Magical Realism</h3>
-        <p>LinkedIn: <a href="https://linkedin.com/in/sroberto27" target="_blank">linkedin.com/in/sroberto27</a></p>
-        <p>GitHub: <a href="https://github.com/sroberto27" target="_blank">github.com/sroberto27</a></p>
-      </div>
-
-      <!-- Column 2 -->
-      <div class="info-col">
-        <h3>Location</h3>
-        <p>301 E Lewis St, Room 363<br>Lafayette, LA 70503</p>
-      </div>
-
-      <!-- Column 3 -->
-      <div class="info-col">
-        <h3>Contact</h3>
-        <p><a href="mailto:c00416436@louisiana.edu">EMAIL ME</a></p>
-      </div>
-    </div>
-  </section>
-  <!-- Back to Top Button -->
-<div class="back-to-top" onclick="scrollToTop()">▲</div>
-
-<script>
-  // Show/hide back to top button
-  window.addEventListener('scroll', function() {
-    document.querySelector('.back-to-top').style.display = (window.scrollY > 300) ? 'block' : 'none';
-  });
-
-  // Smooth scroll to top
-  function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  }
-</script>
 
 
 </body>
