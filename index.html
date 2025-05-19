@@ -126,11 +126,11 @@
     }
 
     /* FILMMAKING SECTION */
-    #filmmaking {
-      background: url('greyBack.jpg') no-repeat center center;
-      background-size: cover;
-      color: #333;
-    }
+      #filmmaking {
+          background: url('VRLocationScouting.png') no-repeat center center;
+          background-size: cover;
+          color: #333;
+      }
 
     #filmmaking h2 {
       font-size: 2rem;
@@ -338,6 +338,12 @@
     }
 
     /* Left or right columns */
+      .video-area {
+          display: flex;
+          width: 100%;
+          max-width: 800px;
+          margin: 0 auto;
+      }
     .video-area,
     .text-area {
       flex: 1;
@@ -390,32 +396,50 @@
     }
 
     /* Top row: heading on left, paragraph on right */
-    .filmmaking-text-row {
-      display: flex;
-      flex-direction: row;
-      gap: 40px;
-      margin-bottom: 40px;
-    }
+      .filmmaking-text-row {
+          
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 40px 20px;
+          text-align: center;
+      }
 
-    .filmmaking-left-col {
-      flex: 1;
-    }
+      .filmmaking-overlay {
+          background-color: rgba(255, 255, 255, 0.75);
+          padding: 30px 24px;
+          border-radius: 16px;
+          box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+          max-width: 800px;
+          width: 100%;
+      }
 
-    .filmmaking-left-col h2 {
-      font-size: 2.5rem;
-      margin-bottom: 10px;
-    }
+          .filmmaking-overlay h2 {
+              font-size: 2.2rem;
+              margin-bottom: 20px;
+              color: #111;
+          }
 
-    .filmmaking-right-col {
-      flex: 1;
-      display: flex;
-      align-items: center;
-    }
+          .filmmaking-overlay p {
+              font-size: 1.1rem;
+              line-height: 1.6;
+              color: #333;
+          }
 
-    .filmmaking-right-col p {
-      font-size: 1.1rem;
-      line-height: 1.5;
-    }
+      @media (max-width: 768px) {
+          .filmmaking-overlay {
+              padding: 20px 16px;
+          }
+
+              .filmmaking-overlay h2 {
+                  font-size: 1.8rem;
+              }
+
+              .filmmaking-overlay p {
+                  font-size: 1rem;
+              }
+      }
+
 
     /* Video row: two iframes side by side */
     .filmmaking-video-row {
@@ -553,11 +577,13 @@
       color: #555;
     }
 
-    .nursing-video {
-      width: 80%;
-      max-width: 800px;
-      margin: 0 auto;
-    }
+      .nursing-video {
+          display: flex;
+          flex-direction: row;
+          width: 100%;
+          max-width: 800px;
+          margin: 0 auto;
+      }
 
     /* Rely on universal iframe style for responsiveness */
 
@@ -1039,28 +1065,21 @@
     <!-- SECTION TWO: FILMMAKING MEETS VR LOCATION SCOUTING -->
     <section id="filmmaking" class="section">
         <div class="filmmaking-wrapper">
-            <!-- Top row: heading on left, paragraph on right -->
+            <!-- text row -->
             <div class="filmmaking-text-row">
-                <div class="filmmaking-left-col">
-                    <h2>Filmmaking meets VR Location Scouting.</h2>
-                </div>
-                <div class="filmmaking-right-col">
+                <div class="filmmaking-overlay">
+                    <h2>Filmmaking meets VR: Location Scouting.</h2>
                     <p>
-                        Currently, I am dedicated to a project focused on simulating the
-                        Scouting process for the film industry in downtown Lafayette. I am
-                        developing a VR experience that enables filmmakers to virtually explore
-                        and scout locations. This project aims to streamline the scouting process,
-                        offering a cost-effective and efficient alternative to physically visiting
-                        potential filming sites.
+                        Currently, I am dedicated to a project focused on simulating the scouting process for the film industry in downtown Lafayette. I am developing a VR experience that enables filmmakers to virtually explore and scout locations. This project aims to streamline the scouting process, offering a cost-effective and efficient alternative to physically visiting potential filming sites.
                         <br><br>
                         <strong>
                             Published in
-                            <a style="color:#ff6a00" href="https://ieeexplore.ieee.org/document/10765194" target="_blank" class="resume-button">ISMAR 2024</a>
+                            <a style="color:#ff6a00" href="https://ieeexplore.ieee.org/document/10765194" target="_blank">ISMAR 2024</a>
                         </strong>
                         <br><br>
                         You can also explore our
                         <strong>
-                            <a style="color:#ff6a00" href="https://sroberto27.github.io/CheckList/checkList1.html" target="_blank" class="resume-button">
+                            <a style="color:#ff6a00" href="https://sroberto27.github.io/CheckList/checkList1.html" target="_blank">
                                 Location Scouting Checklist
                             </a>
                         </strong>
@@ -1068,6 +1087,8 @@
                     </p>
                 </div>
             </div>
+
+
 
 
             <!-- Second row: two iframes side by side -->
