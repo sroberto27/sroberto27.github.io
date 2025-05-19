@@ -780,9 +780,10 @@
 
       /* Show the menu when the checkbox is checked */
       #menu-toggle:checked ~ .nav-links {
-        max-height: 300px;
-        padding: 20px 0;
+          max-height: 1000px;
+          padding: 20px 0;
       }
+
     }
 
     /* Sections */
@@ -1012,10 +1013,10 @@
         <div>Roberto Salazar Magical Realism</div>
 
         <!-- Hidden Checkbox for Mobile Toggle -->
-        <input type="checkbox" id="menu-toggle">
+        <input type="checkbox" id="menu-toggle" />
         <label for="menu-toggle" class="menu-icon">☰</label>
 
-        <!-- Navigation Links -->
+        <!-- Move nav-links AFTER toggle input for sibling selector to work -->
         <div class="nav-links">
             <a href="#intro">Home</a>
             <a href="#filmmaking">Filmmaking</a>
@@ -1024,7 +1025,6 @@
             <a href="#extra-projects">Other Projects</a>
             <a href="#info">Contact</a>
         </div>
-
     </nav>
     <script>
         document.addEventListener("DOMContentLoaded", function () {
