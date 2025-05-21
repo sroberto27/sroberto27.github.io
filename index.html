@@ -157,11 +157,11 @@
     /* Removed explicit iframe heights; universal rule handles it now */
 
     /* NURSING SECTION */
-    #nursing {
-      background: url('greyBack2.jpeg') no-repeat center center;
-      background-size: cover;
-      color: #333;
-    }
+      #nursing {
+          background: url('nurse.jpg') no-repeat center center;
+          background-size: cover;
+          color: #333;
+      }
 
     #nursing h2 {
       font-size: 2rem;
@@ -306,17 +306,17 @@
     }
 
     /* 4th Section Container (acuity) */
-    #acuity {
-      /* Use your desired background here */
-      background: url('greyBack3.jpeg') no-repeat center center;
-      background-size: cover;
-      scroll-snap-align: start;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start; /* keep content toward the top */
-      padding: 40px 20px;
-      text-align: left; /* left-aligned within columns */
-    }
+      #acuity {
+          /* Use your desired background here */
+          background: url('acuity.jpeg') no-repeat center center;
+          background-size: cover;
+          scroll-snap-align: start;
+          display: flex;
+          justify-content: center;
+          align-items: flex-start; /* keep content toward the top */
+          padding: 40px 20px;
+          text-align: left; /* left-aligned within columns */
+      }
 
     /* Outer wrapper to hold both sub-sections */
     .acuity-container {
@@ -338,6 +338,14 @@
     }
 
     /* Left or right columns */
+      .text-area {
+          background-color: rgba(255, 255, 255, 0.75);
+          padding: 10px 7.2px;
+          border-radius: 16px;
+          box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+          max-width: 1000px;
+          width: 100%;
+      }
       .video-area {
           display: flex;
           width: 100%;
@@ -559,6 +567,15 @@
       text-align: center;
     }
 
+
+      .nursing-content {
+          background-color: rgba(255, 255, 255, 0.75);
+          padding: 30px 24px;
+          border-radius: 16px;
+          box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+          max-width: 800px;
+          width: 100%;
+      }
     .nursing-content {
       max-width: 900px;
       margin-bottom: 40px;
@@ -622,7 +639,14 @@
       object-fit: cover;
       border-radius: 50%;
     }
-
+      .profile-text-col {
+          background-color: rgba(255, 255, 255, 0.75);
+          padding: 10px 7.2px;
+          border-radius: 16px;
+          box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+          max-width: 1000px;
+          width: 100%;
+      }
     .profile-text-col {
       flex: 1;
     }
