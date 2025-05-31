@@ -1026,6 +1026,149 @@
           color: #666;
           cursor: pointer;
       }
+      .accordion-container {
+          text-align: left;
+          margin-top: 20px;
+      }
+
+      .accordion-card {
+          margin-bottom: 12px;
+          border-radius: 8px;
+          overflow: hidden;
+          border: 1px solid #ddd;
+          box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+          background: white;
+      }
+
+      .accordion-btn {
+          background-color: #fff;
+          color: #222;
+          padding: 16px 20px;
+          width: 100%;
+          border: none;
+          text-align: left;
+          font-size: 1.05rem;
+          font-weight: 600;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          cursor: pointer;
+          transition: all 0.3s ease;
+          border-bottom: 1px solid #eee;
+      }
+
+      .accordion-card {
+          margin-bottom: 16px;
+          border-radius: 12px;
+          overflow: hidden;
+          border: 1px solid #eee;
+          background: white;
+          box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+          transition: transform 0.3s ease;
+      }
+
+          .accordion-card:hover {
+              transform: translateY(-2px);
+          }
+
+      .accordion-content {
+          padding: 16px 20px;
+          display: none;
+          background-color: #fcfcfc;
+          font-size: 0.95rem;
+          color: #444;
+          line-height: 1.6;
+          animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+          from {
+              opacity: 0;
+              transform: translateY(-5px);
+          }
+
+          to {
+              opacity: 1;
+              transform: translateY(0);
+          }
+      }
+
+      .two-column-wrapper {
+          display: flex;
+          gap: 40px;
+          width: 100%;
+          max-width: 1400px;
+          margin: auto;
+          flex-wrap: wrap;
+          align-items: flex-start;
+      }
+
+      .column {
+          flex: 1;
+          min-width: 300px;
+      }
+
+      .project-scroll {
+          max-height: 80vh;
+          overflow-y: auto;
+          padding-right: 8px;
+      }
+
+          .project-scroll::-webkit-scrollbar {
+              width: 6px;
+          }
+
+          .project-scroll::-webkit-scrollbar-thumb {
+              background: #ccc;
+              border-radius: 3px;
+          }
+
+      /* Prevent iframe overflow */
+      .video-wrapper iframe {
+          border-radius: 8px;
+      }
+
+      /* Shared section title styling */
+      #projects-solutions h2 {
+          font-size: 1.8rem;
+          margin-bottom: 12px;
+          color: #222;
+      }
+
+      #projects-solutions .extra-intro {
+          font-size: 1rem;
+          margin-bottom: 20px;
+          color: #555;
+      }
+
+      .waving-bg {
+          position: relative;
+          background: url('logos2.png') no-repeat center center;
+          background-size: cover;
+          animation: waving-flag 3s infinite ease-in-out;
+          z-index: 0;
+          overflow: hidden;
+      }
+
+          .waving-bg .dark-overlay {
+              position: absolute;
+              top: 0;
+              left: 0;
+              width: 100%;
+              height: 100%;
+              background: rgba(0, 0, 0, 0.5); /* semi-transparent dark overlay */
+              z-index: 1;
+          }
+
+      /* Ensure the actual content appears above the dark overlay */
+      #projects-solutions .two-column-wrapper {
+          position: relative;
+          z-index: 2;
+      }
+      #projects-solutions h2,
+      #projects-solutions .extra-intro {
+          color: white;
+      }
 
 
   </style>
@@ -1046,7 +1189,7 @@
             <a href="#filmmaking">Filmmaking</a>
             <a href="#nursing">Nursing</a>
             <a href="#acuity">Acuity</a>
-            <a href="#extra-projects">Other Projects</a>
+            <a href="#projects-solutions">Other Projects</a>
             <a href="#info">Contact</a>
         </div>
     </nav>
@@ -1194,7 +1337,7 @@
             </div>
         </div>
     </section>
-    <!--  SECTION: Other Pojects -->
+    <!--  SECTION: Other Pojects
     <section id="extra-projects" class="section">
         <h2>Other Projects</h2>
         <p class="extra-intro">
@@ -1266,10 +1409,121 @@
                 </p>
             </div>
 
+    </div>
+    </section>-->
+    <section id="projects-solutions" class="section waving-bg">
+        <div class="dark-overlay"></div>
 
-            <!-- Add more cards as needed -->
+        <div class="two-column-wrapper">
+            <!-- LEFT: Other Projects -->
+            <div class="column project-scroll">
+                <h2>Other Projects</h2>
+                <p class="extra-intro">XR/VR experiments, collaborations, and technical demos.</p>
+                <div class="vertical-scroll-area">
+                    <div class="project-card">
+                        <h3>SFG-VR: Distributed VR Renderer</h3>
+                        <img src="master.png" alt="SFG-VR: Distributed VR Renderer">
+
+                        <p>
+                            A distributed VR rendering system that offloads visual computation to two networked PCs.
+                            The Meta Quest (master) sends headset transforms to slave PCs, which render separate halves
+                            of the view. Their outputs are stitched in real time and displayed in VR.
+                            <br><br>
+                            This is an extension of the <a href="https://www.usenix.org/conference/atc24/presentation/zhang-li-gaming" target="_blank" style="color:#ff6a00;">SFG architecture</a>
+                            from ATC’24. It features Unity + WebRTC networking, stereo occlusion rendering, and live UI-based IP config.
+                            <br><br>
+                            <a href="https://github.com/sroberto27/SFG-VR" target="_blank" style="color:#ff6a00;">View on GitHub →</a>
+                        </p>
+                    </div>
+                    <div class="project-card">
+                        <h3>VR Nursing Simulator Featured in La Louisiane Magazine</h3>
+                        <img src="Magazine.png" alt="La Louisiane Magazine Feature">
+
+                        <p>
+                            Our interdisciplinary research on the VR Nursing Visit Simulator was spotlighted in the Spring 2024 issue of <strong>La Louisiane</strong>, UL Lafayette’s official magazine.
+                            <br><br>
+                            The article, titled <em>"Virtual Reality Puts Health Care’s Future in Focus"</em>, covers how students and faculty from Nursing, Psychology, and Computer Science collaborated to simulate home visits and improve nursing education through VR.
+                            <br><br>
+                            Roberto Salazar helped adapt the system using Unity and Meta Quest to allow immersive, interactive home safety evaluations.
+                            <br><br>
+                            <a href="https://online.fliphtml5.com/gziml/cqsk/#p=8" target="_blank" style="color:#ff6a00;">📖 Read the article in La Louisiane →</a>
+                        </p>
+                    </div>
+
+                    <div class="project-card">
+                        <h3>AR Motivation for Reading (HoloLens + GPT)</h3>
+                        <div class="video-wrapper">
+                            <img src="AR.png" alt="AR Reading Motivation with HoloLens 2">
+                        </div>
+
+                        <p>
+                            This HoloLens 2 prototype uses AR to boost motivation during difficult readings. A mounted external webcam enhances document capture, and OCR is applied in real time to detect and extract text from the user’s view.
+                            <br><br>
+                            The recognized text is corrected and passed to GPT-4 to generate voice-based explanations, motivational insights, or fun facts. It adapts dynamically based on the user's educational level—from elementary to PhD.
+                            <br><br>
+                            Future versions aim to reduce cognitive load by integrating non-intrusive motivational feedback like memes, gifs, or visual highlights that enrich the reading experience without distraction.
+                        </p>
+                    </div>
+
+                    <div class="project-card">
+                        <h3>3D Scan of the LITE Center</h3>
+                        <div class="video-wrapper">
+                            <iframe src="https://www.youtube.com/embed/7O-imz7lbeA"
+                                    title="3D Scan of LITE Center - DJI Mini 2 + RealityCapture"
+                                    allowfullscreen
+                                    loading="lazy"></iframe>
+                        </div>
+
+                        <p>
+                            A detailed photogrammetry model of the LITE building in Lafayette, LA, created using a DJI Mini 2 drone and RealityCapture.
+                            This project explores drone-based 3D scanning for digital preservation and integration into virtual environments.
+                            <br><br>
+                            <strong>Tools:</strong> DJI Mini 2, RealityCapture<br>
+                            <strong>Location:</strong> Louisiana Immersive Technologies Enterprise (LITE), Lafayette, LA<br><br>
+                            <em>#Photogrammetry #RealityCapture #DroneMapping</em>
+                        </p>
+                    </div>
+
+                    <!-- Add more project cards here -->
+                </div>
+            </div>
+
+            <!-- RIGHT: Problems I Solve Fast -->
+            <div class="column">
+                <h2>Urgent, Hard Problems I Solve Fast</h2>
+                <p class="extra-intro">I help labs and startups build functional AI/VR prototypes fast.</p>
+                <div class="accordion-container">
+                    <div class="accordion-card fade-in">
+                        <button class="accordion-btn"><span>⚡</span> AI/VR Prototype in 2 Weeks</button>
+                        <div class="accordion-content">
+                            <p>I turn ideas into Unity/GPT demos in days, not months. Ideal for MVPs and pilots.</p>
+                        </div>
+                    </div>
+                    <div class="accordion-card fade-in">
+                        <button class="accordion-btn"><span>🤖</span> Custom GPT Agents</button>
+                        <div class="accordion-content">
+                            <p>GPT apps that automate domain tasks like summarization or planning.</p>
+                        </div>
+                    </div>
+                    <div class="accordion-card fade-in">
+                        <button class="accordion-btn"><span>🎓</span> VR Training Simulators</button>
+                        <div class="accordion-content">
+                            <p>Immersive training apps with feedback and logging for safety/health.</p>
+                        </div>
+                    </div>
+                    <div class="accordion-card fade-in">
+                        <button class="accordion-btn"><span>🔬</span> Research Grant Tool Builder</button>
+                        <div class="accordion-content">
+                            <p>I help labs quickly build what they proposed in grant submissions.</p>
+                        </div>
+                    </div>
+                </div>
+                <p style="margin-top: 30px; font-weight: bold; color: white; ">Need something fast? <a href="#info" style="color:#ff6a00;">Let’s connect</a>.</p>
+            </div>
         </div>
+        </div> <!-- end of dark-overlay -->
     </section>
+
 
 
 
@@ -1342,6 +1596,30 @@
         </div>
     </div>
 
+    <script>
+        // Accordion logic
+        document.querySelectorAll(".accordion-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                const content = btn.nextElementSibling;
+                const isOpen = content.style.display === "block";
+                document.querySelectorAll(".accordion-content").forEach(c => c.style.display = "none");
+                content.style.display = isOpen ? "none" : "block";
+            });
+        });
+
+        // Fade-in animation on scroll
+        const faders = document.querySelectorAll('.fade-in');
+        const appearOnScroll = new IntersectionObserver((entries, obs) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    obs.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        faders.forEach(el => appearOnScroll.observe(el));
+    </script>
 
 
 </body>
