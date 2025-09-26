@@ -903,8 +903,8 @@
   <!-- ===== SPOTIFY INTEGRATION (drop-in) ===== -->
   <script>
   /** ==== CONFIG: replace these NOW ==== */
-  const SPOTIFY_CLIENT_ID = 'REPLACE_WITH_YOUR_CLIENT_ID';
-  const SPOTIFY_REDIRECT_URI = 'http://127.0.0.1:5500/spotify-callback'; // example for local dev
+  const SPOTIFY_CLIENT_ID = 'f34d3823b063455193b0092c6c800978';
+  const SPOTIFY_REDIRECT_URI = 'https://sroberto27.github.io/Visualizer/sphere-audio-visualizerPro2_Spotify.html'; // example for local dev
 
   /** ==== UI refs (safe early) ==== */
   const loginBtn = document.getElementById('spotifyLoginBtn');
@@ -916,15 +916,19 @@
 
   /** Guard: prevent INVALID_CLIENT from placeholders */
   function assertConfigOrThrow(){
-    if (!SPOTIFY_CLIENT_ID || /YOUR_SPOTIFY_CLIENT_ID/i.test(SPOTIFY_CLIENT_ID)) {
-      alert('Set SPOTIFY_CLIENT_ID to your real Client ID from the Spotify dashboard.');
-      throw new Error('Missing Spotify Client ID');
-    }
-    if (!SPOTIFY_REDIRECT_URI || /your\.domain\/spotify-callback/i.test(SPOTIFY_REDIRECT_URI)) {
-      alert('Set SPOTIFY_REDIRECT_URI to a redirect you added in the dashboard (exact match).');
-      throw new Error('Missing Spotify Redirect URI');
-    }
+  const badClient = !SPOTIFY_CLIENT_ID ||
+    /REPLACE_WITH_YOUR_CLIENT_ID|YOUR_SPOTIFY_CLIENT_ID/i.test(SPOTIFY_CLIENT_ID);
+  if (badClient) {
+    alert('Set SPOTIFY_CLIENT_ID to your real Client ID from the Spotify dashboard.');
+    throw new Error('Missing Spotify Client ID');
   }
+  const badRedirect = !SPOTIFY_REDIRECT_URI;
+  if (badRedirect) {
+    alert('Set SPOTIFY_REDIRECT_URI and whitelist it in the Spotify dashboard.');
+    throw new Error('Missing Spotify Redirect URI');
+  }
+}
+
 
   /** ==== PKCE helpers ==== */
   function b64url(buf){return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
