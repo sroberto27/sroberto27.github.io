@@ -82,6 +82,29 @@
   <div id="spotifyStatus" class="info" style="margin-top:10px;">Not connected.</div>
 </div>
 
+<!-- Simple Spotify Search -->
+<div class="sp-search">
+  <div style="display:flex; gap:8px; margin-top:12px;">
+    <input id="spSearch" placeholder="Search songs, artists, playlists"
+           style="flex:1; padding:10px; border-radius:6px; border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.05); color:#fff;">
+    <select id="spType" style="padding:10px; border-radius:6px; background:rgba(255,255,255,.05); color:#fff; border:1px solid rgba(255,255,255,.15);">
+      <option value="all">All</option>
+      <option value="track">Songs</option>
+      <option value="playlist">Playlists</option>
+      <option value="artist">Artists</option>
+    </select>
+    <button id="spSearchBtn">Search</button>
+  </div>
+
+  <div style="display:flex; gap:8px; margin-top:8px;">
+    <button id="spMyPlaylistsBtn">My Playlists</button>
+    <button id="spLikedBtn">Liked Songs</button>
+  </div>
+
+  <div id="spResults" class="info" style="margin-top:10px; max-height:260px; overflow:auto;">
+    Search something to see results.
+  </div>
+</div>
 
     <h2>Audio Visualizer</h2>
 
@@ -1103,6 +1126,217 @@
     }
   })();
   </script>
+
+  <script>
+  /* ===== Simple Spotify Search + “Radio” ===== */
+
+  // Tiny helper to call the Web API
+  async function spApi(path, params = {}) {
+    const token = await getAccessToken();
+    if (!token) throw new Error('Not logged in');
+    const url = new URL('https://api.spotify.com/v1' + path);
+    Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+    const r = await fetch(url.toString(), { headers: { Authorization: 'Bearer ' + token } });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return await r.json();
+  }
+
+  // Play a list of track URIs (used for “radio” & liked songs)
+  async function playUris(uris = []) {
+    if (!uris.length) return;
+    const token = await getAccessToken();
+    if (!token || !spotifyDeviceId) { setStatus('Player not ready'); return; }
+    const r = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${encodeURIComponent(spotifyDeviceId)}`, {
+      method: 'PUT',
+      headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ uris })
+    });
+    if (!r.ok) setStatus('Play failed: HTTP ' + r.status);
+  }
+
+  // “Radio” = recommendations seeded by a track or artist (public API has no real “saved radios”)
+  async function startRadioFrom({ trackId = null, artistId = null } = {}) {
+    const params = { limit: 30 };
+    if (trackId)  params.seed_tracks  = trackId;
+    if (artistId) params.seed_artists = artistId;
+    const rec = await spApi('/recommendations', params);
+    const uris = (rec.tracks || []).map(t => t.uri);
+    if (!uris.length) { setStatus('No recommendations'); return; }
+    await playUris(uris);
+    setStatus('Starting radio…');
+  }
+
+  // Render helpers
+  function h(tag, attrs = {}, children = []) {
+    const el = document.createElement(tag);
+    Object.assign(el, attrs);
+    for (const c of children) el.append(c);
+    return el;
+  }
+
+  function renderSection(title) {
+    const header = h('div', { className: 'section-title', textContent: title });
+    const wrap = h('div', { style: 'display:flex; flex-direction:column; gap:8px; margin:8px 0;' });
+    return { header, wrap };
+  }
+
+  function clearResults(msg = '') {
+    const box = document.getElementById('spResults');
+    box.innerHTML = msg || '';
+    return box;
+  }
+
+  // Compact card
+  function resultRow({ title, subtitle, onPlay, onRadio, uri }) {
+    const row = h('div', {
+      style:
+        'display:flex; align-items:center; gap:8px; background:rgba(255,255,255,.05);' +
+        'border:1px solid rgba(255,255,255,.1); border-radius:8px; padding:8px;'
+    });
+
+    const text = h('div', { style: 'flex:1; overflow:hidden;' }, [
+      h('div', { style: 'font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;', textContent: title }),
+      subtitle ? h('div', { style: 'font-size:.85em; color:#9ca3af; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;', textContent: subtitle }) : null
+    ].filter(Boolean));
+
+    const playBtn = h('button', { textContent: 'Play' });
+    playBtn.onclick = onPlay ? onPlay : () => playSpotifyURI(uri);
+
+    row.append(text, playBtn);
+
+    if (onRadio) {
+      const radioBtn = h('button', { textContent: 'Radio' });
+      radioBtn.onclick = onRadio;
+      row.append(radioBtn);
+    }
+    return row;
+  }
+
+  // Render search results (tracks / playlists / artists)
+  function renderResults(payload, heading = 'Results') {
+    const box = clearResults();
+    const titleEl = h('div', { className: 'section-title', textContent: heading });
+    box.append(titleEl);
+
+    const sections = [];
+
+    // Tracks
+    if (payload.tracks?.items?.length) {
+      const { header, wrap } = renderSection('Songs');
+      payload.tracks.items.forEach(t => {
+        const artists = (t.artists || []).map(a => a.name).join(', ');
+        wrap.append(
+          resultRow({
+            title: t.name,
+            subtitle: artists,
+            uri: t.uri,
+            onRadio: () => startRadioFrom({ trackId: t.id })
+          })
+        );
+      });
+      sections.push(header, wrap);
+    }
+
+    // Playlists
+    if (payload.playlists?.items?.length) {
+      const { header, wrap } = renderSection('Playlists');
+      payload.playlists.items.forEach(p => {
+        wrap.append(
+          resultRow({
+            title: p.name,
+            subtitle: p.owner?.display_name ? `by ${p.owner.display_name}` : '',
+            uri: p.uri
+          })
+        );
+      });
+      sections.push(header, wrap);
+    }
+
+    // Artists (radio only)
+    if (payload.artists?.items?.length) {
+      const { header, wrap } = renderSection('Artists');
+      payload.artists.items.forEach(a => {
+        wrap.append(
+          resultRow({
+            title: a.name,
+            subtitle: 'Artist',
+            onPlay: null, // artists aren’t directly playable, but we can start a station
+            onRadio: () => startRadioFrom({ artistId: a.id })
+          })
+        );
+      });
+      sections.push(header, wrap);
+    }
+
+    if (!sections.length) {
+      box.append(h('div', { textContent: 'No results.' }));
+    } else {
+      sections.forEach(el => box.append(el));
+    }
+  }
+
+  // Search
+  async function runSearch() {
+    const q = (document.getElementById('spSearch').value || '').trim();
+    const typeSel = document.getElementById('spType').value;
+    if (!q) { setStatus('Enter something to search'); return; }
+    setStatus('Searching…');
+    try {
+      const type = (typeSel === 'all') ? 'track,playlist,artist' : typeSel;
+      const res = await spApi('/search', { q, type, limit: 10 });
+      renderResults(res, 'Results');
+      setStatus('Done');
+    } catch (e) {
+      clearResults('Search failed.');
+      setStatus(e.message);
+    }
+  }
+
+  // My playlists
+  async function loadMyPlaylists() {
+    setStatus('Loading your playlists…');
+    try {
+      const res = await spApi('/me/playlists', { limit: 20 });
+      renderResults({ playlists: res }, 'My Playlists');
+      setStatus('Done');
+    } catch (e) {
+      clearResults('Could not load your playlists.');
+      setStatus(e.message);
+    }
+  }
+
+  // Liked songs (top 50) → play immediately
+  async function playLikedSongs() {
+    setStatus('Loading Liked Songs…');
+    try {
+      const res = await spApi('/me/tracks', { limit: 50 });
+      const uris = (res.items || []).map(i => i.track?.uri).filter(Boolean);
+      if (!uris.length) { setStatus('No liked songs'); return; }
+      await playUris(uris);
+      setStatus('Playing your Liked Songs…');
+    } catch (e) {
+      setStatus(e.message);
+    }
+  }
+
+  // Wire up UI
+  const spSearch     = document.getElementById('spSearch');
+  const spType       = document.getElementById('spType');
+  const spSearchBtn  = document.getElementById('spSearchBtn');
+  const spMyPlBtn    = document.getElementById('spMyPlaylistsBtn');
+  const spLikedBtn   = document.getElementById('spLikedBtn');
+
+  if (spSearchBtn) spSearchBtn.addEventListener('click', runSearch);
+  if (spSearch)    spSearch.addEventListener('keydown', (e) => { if (e.key === 'Enter') runSearch(); });
+  if (spMyPlBtn)   spMyPlBtn.addEventListener('click', loadMyPlaylists);
+  if (spLikedBtn)  spLikedBtn.addEventListener('click', playLikedSongs);
+
+  // Optional: auto-load playlists after login
+  (async () => {
+    try { if (await getAccessToken()) { /* tiny delay until device is ready */ setTimeout(() => loadMyPlaylists().catch(()=>{}), 500); } } catch {}
+  })();
+  </script>
+
 
   <!-- Load AFTER the integration code to avoid race conditions -->
   <script src="https://sdk.scdn.co/spotify-player.js"></script>
