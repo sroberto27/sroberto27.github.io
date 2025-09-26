@@ -1,0 +1,1111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>Advanced 3D Audio Visualizer</title>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Oxygen,Ubuntu,sans-serif;background:#000;overflow:hidden;position:relative}
+    #canvas{display:block;cursor:grab}
+    #canvas:active{cursor:grabbing}
+    .menu-toggle{position:absolute;top:20px;right:20px;width:40px;height:40px;background:rgba(20,20,20,.8);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .3s ease;z-index:1001}
+    .menu-toggle:hover{background:rgba(40,40,40,.9);transform:scale(1.05)}
+    .menu-toggle svg{width:24px;height:24px;fill:#fff;transition:transform .3s ease}
+    .menu-toggle.active svg{transform:rotate(180deg)}
+    .controls{position:absolute;top:20px;left:20px;background:rgba(20,20,20,.95);backdrop-filter:blur(20px);padding:25px;border-radius:15px;border:1px solid rgba(255,255,255,.1);color:#fff;width:320px;max-height:calc(100vh - 40px);overflow-y:auto;transition:transform .4s cubic-bezier(.4,0,.2,1),opacity .4s ease;z-index:1000;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.3) transparent}
+    .controls::-webkit-scrollbar{width:6px}
+    .controls::-webkit-scrollbar-track{background:transparent}
+    .controls::-webkit-scrollbar-thumb{background:rgba(255,255,255,.3);border-radius:3px}
+    .controls.hidden{transform:translateX(-350px);opacity:0}
+    .controls h2{margin-bottom:20px;font-size:1.4em;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-transform:uppercase;letter-spacing:2px}
+    .section{margin-bottom:25px;padding-bottom:20px;border-bottom:1px solid rgba(255,255,255,.1)}
+    .section:last-child{border-bottom:none}
+    .section-title{font-size:.9em;color:#9ca3af;text-transform:uppercase;letter-spacing:1px;margin-bottom:15px;display:flex;align-items:center;gap:8px}
+    .section-title::before{content:'';width:3px;height:12px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:2px}
+    button{width:100%;padding:12px 20px;margin-bottom:10px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border:none;border-radius:8px;color:#fff;font-size:1em;font-weight:600;cursor:pointer;transition:all .3s ease;text-transform:uppercase;letter-spacing:.5px}
+    button:hover{transform:translateY(-2px);box-shadow:0 5px 20px rgba(102,126,234,.4)}
+    button:active{transform:translateY(0)}
+    button.active{background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);animation:pulse 2s infinite}
+    @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(245,87,108,.7)}70%{box-shadow:0 0 0 10px rgba(245,87,108,0)}100%{box-shadow:0 0 0 0 rgba(245,87,108,0)}}
+    .checkbox-group{display:flex;flex-direction:column;gap:12px}
+    .checkbox-wrapper{display:flex;align-items:center;padding:10px;background:rgba(255,255,255,.05);border-radius:8px;transition:all .3s ease;cursor:pointer}
+    .checkbox-wrapper:hover{background:rgba(255,255,255,.1)}
+    .checkbox-wrapper input[type="checkbox"]{width:20px;height:20px;margin-right:12px;cursor:pointer;accent-color:#764ba2}
+    .checkbox-wrapper label{flex:1;cursor:pointer;font-size:.95em;color:#e5e7eb}
+    .slider-container{margin:15px 0}
+    .slider-label{display:flex;justify-content:space-between;margin-bottom:8px;font-size:.9em;color:#d1d5db}
+    .slider-value{color:#9333ea;font-weight:600;min-width:40px;text-align:right}
+    input[type="range"]{width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.1);outline:none;-webkit-appearance:none}
+    input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);cursor:pointer;transition:all .3s ease;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+    input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.2);box-shadow:0 0 15px rgba(147,51,234,.6)}
+    input[type="range"]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);cursor:pointer;border:none;box-shadow:0 2px 4px rgba(0,0,0,.2)}
+    .shape-selector{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
+    .shape-btn{padding:10px 8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#d1d5db;font-size:.85em;cursor:pointer;transition:all .3s ease;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .shape-btn:hover{background:rgba(255,255,255,.1);border-color:rgba(147,51,234,.5)}
+    .shape-btn.active{background:rgba(147,51,234,.3);border-color:#9333ea;color:#fff}
+    .color-mode-selector{display:flex;gap:8px;margin-bottom:15px}
+    .color-mode-btn{flex:1;padding:8px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:6px;color:#d1d5db;font-size:.85em;cursor:pointer;transition:all .3s ease}
+    .color-mode-btn:hover{background:rgba(255,255,255,.1)}
+    .color-mode-btn.active{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-color:#9333ea;color:#fff}
+    .color-picker-group{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:10px}
+    .color-input-wrapper{display:flex;align-items:center;gap:8px}
+    .color-input-wrapper label{font-size:.85em;color:#9ca3af;min-width:60px}
+    .color-input{width:50px;height:30px;border:1px solid rgba(255,255,255,.2);border-radius:4px;cursor:pointer;background:transparent}
+    .mood-indicator{margin-top:10px;padding:10px;background:rgba(255,255,255,.05);border-radius:6px;font-size:.85em;color:#d1d5db;text-align:center}
+    .mood-label{color:#9ca3af;font-size:.8em;text-transform:uppercase;letter-spacing:1px}
+    .mood-value{font-size:1.2em;font-weight:600;margin-top:5px;background:linear-gradient(135deg,var(--mood-color-1,#667eea) 0%,var(--mood-color-2,#764ba2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+    .info{margin-top:15px;padding:12px;background:rgba(255,255,255,.05);border-radius:8px;font-size:.85em;color:#9ca3af;line-height:1.6}
+    .frequency-bars{position:absolute;bottom:0;left:0;width:100%;height:100px;display:flex;align-items:flex-end;justify-content:center;gap:2px;padding:0 20px;pointer-events:none;opacity:0;transition:opacity .3s ease}
+    .frequency-bars.active{opacity:.7}
+    .freq-bar{flex:1;max-width:20px;background:linear-gradient(to top,#9333ea,#667eea);border-radius:2px 2px 0 0;transition:height .05s ease}
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <div class="menu-toggle" id="menuToggle" title="Toggle Menu">
+    <svg viewBox="0 0 24 24"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/></svg>
+  </div>
+
+  <div class="controls" id="controls">
+    <!-- Add inside your .controls panel -->
+<div class="section">
+  <div class="section-title">Spotify</div>
+  <button id="spotifyLoginBtn">Log in with Spotify</button>
+  <div style="display:flex; gap:8px; margin-top:10px;">
+    <input id="spotifyUri" placeholder="spotify:track:... or open.spotify.com/..."
+           style="flex:1; padding:10px; border-radius:6px; border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.05); color:#fff;">
+    <button id="spotifyPlayBtn">Play</button>
+    <button id="spotifyPauseBtn">Pause</button>
+  </div>
+  <div id="spotifyStatus" class="info" style="margin-top:10px;">Not connected.</div>
+</div>
+
+
+    <h2>Audio Visualizer</h2>
+
+    <div class="section">
+      <div class="section-title">Color Mode</div>
+      <div class="color-mode-selector">
+        <button class="color-mode-btn active" data-mode="mood">Auto Mood</button>
+        <button class="color-mode-btn" data-mode="manual">Manual</button>
+        <button class="color-mode-btn" data-mode="spectrum">Spectrum</button>
+      </div>
+
+      <div id="moodIndicator" class="mood-indicator">
+        <div class="mood-label">Detected Mood</div>
+        <div class="mood-value" id="moodValue">Waiting...</div>
+      </div>
+
+      <div id="manualColors" class="color-picker-group" style="display:none">
+        <div class="color-input-wrapper"><label>Primary</label><input type="color" id="primaryColor" class="color-input" value="#9333ea"></div>
+        <div class="color-input-wrapper"><label>Secondary</label><input type="color" id="secondaryColor" class="color-input" value="#4c1d95"></div>
+        <div class="color-input-wrapper"><label>Glow</label><input type="color" id="glowColor" class="color-input" value="#667eea"></div>
+        <div class="color-input-wrapper"><label>Particle</label><input type="color" id="particleColor" class="color-input" value="#ffffff"></div>
+      </div>
+    </div>
+
+    <div class="section"><button id="startBtn">Start Microphone</button></div>
+
+    <div class="section">
+      <div class="section-title">Shape</div>
+      <div class="shape-selector">
+        <button class="shape-btn active" data-shape="sphere">Sphere</button>
+        <button class="shape-btn" data-shape="cube">Cube</button>
+        <button class="shape-btn" data-shape="torus">Torus</button>
+        <button class="shape-btn" data-shape="icosahedron">Icosahedron</button>
+        <button class="shape-btn" data-shape="cylinder">Cylinder</button>
+        <button class="shape-btn" data-shape="dna">DNA Helix</button>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Visual Effects</div>
+      <div class="checkbox-group">
+        <div class="checkbox-wrapper"><input type="checkbox" id="wireframeToggle" checked><label for="wireframeToggle">Wireframe Mode</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="particlesToggle" checked><label for="particlesToggle">Particle System</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="glowToggle" checked><label for="glowToggle">Glow Effect</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="trailsToggle"><label for="trailsToggle">Motion Trails</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="kaleidoscopeToggle"><label for="kaleidoscopeToggle">Kaleidoscope</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="frequencyBarsToggle"><label for="frequencyBarsToggle">Frequency Bars</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="mirrorToggle"><label for="mirrorToggle">Mirror Effect</label></div>
+        <div class="checkbox-wrapper"><input type="checkbox" id="rgbSplitToggle"><label for="rgbSplitToggle">RGB Split</label></div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Audio Response</div>
+      <div class="slider-container">
+        <div class="slider-label"><span>Bass Boost</span><span class="slider-value" id="bassValue">1.5</span></div>
+        <input type="range" id="bassBoost" min="0.5" max="3" step="0.1" value="1.5">
+      </div>
+      <div class="slider-container">
+        <div class="slider-label"><span>Treble Boost</span><span class="slider-value" id="trebleValue">1.0</span></div>
+        <input type="range" id="trebleBoost" min="0.5" max="3" step="0.1" value="1">
+      </div>
+      <div class="slider-container">
+        <div class="slider-label"><span>Sensitivity</span><span class="slider-value" id="sensitivityValue">50</span></div>
+        <input type="range" id="sensitivity" min="1" max="100" value="50">
+      </div>
+      <div class="slider-container">
+        <div class="slider-label"><span>Smoothing</span><span class="slider-value" id="smoothingValue">0.8</span></div>
+        <input type="range" id="smoothing" min="0" max="0.99" step="0.01" value="0.8">
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Animation</div>
+      <div class="slider-container">
+        <div class="slider-label"><span>Rotation Speed</span><span class="slider-value" id="rotationValue">1</span></div>
+        <input type="range" id="rotation" min="0" max="5" step="0.1" value="1">
+      </div>
+      <div class="slider-container">
+        <div class="slider-label"><span>Zoom</span><span class="slider-value" id="zoomValue">8</span></div>
+        <input type="range" id="zoom" min="3" max="20" step="0.5" value="8">
+      </div>
+      <div class="slider-container">
+        <div class="slider-label"><span>Speed Multiplier</span><span class="slider-value" id="speedValue">1</span></div>
+        <input type="range" id="speed" min="0.1" max="3" step="0.1" value="1">
+      </div>
+    </div>
+
+    <div class="info" id="info">Press spacebar to toggle menu. Click and drag to rotate view.</div>
+  </div>
+
+  <div class="frequency-bars" id="frequencyBars"></div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script>
+    // --- Scene setup ---
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.Fog(0x000000, 10, 50);
+
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, .1, 1000);
+    const renderer = new THREE.WebGLRenderer({
+      canvas: document.getElementById('canvas'),
+      antialias: true,
+      alpha: true
+    });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+    // --- Shapes ---
+    const shapes = {
+      sphere: () => new THREE.SphereGeometry(3, 64, 64),
+      cube: () => new THREE.BoxGeometry(4, 4, 4, 16, 16, 16),
+      torus: () => new THREE.TorusGeometry(3, 1, 32, 64),
+      icosahedron: () => new THREE.IcosahedronGeometry(3, 3),
+      cylinder: () => new THREE.CylinderGeometry(2, 2, 5, 64, 32),
+      dna: () => {
+        const geometry = new THREE.BufferGeometry();
+        const points = [];
+        for (let i = 0; i < 200; i++) {
+          const t = i / 50;
+          const x = Math.sin(t) * 2;
+          const y = (i - 100) * 0.05;
+          const z = Math.cos(t) * 2;
+          points.push(x, y, z);
+        }
+        geometry.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
+        return geometry;
+      }
+    };
+
+    let currentShape = 'sphere';
+    let geometry = shapes[currentShape]();
+    let originalPositions = geometry.attributes.position.array.slice();
+
+    // Materials
+    const material = new THREE.MeshPhongMaterial({
+      color: 0x9333ea,
+      emissive: 0x4c1d95,
+      specular: 0xffffff,
+      shininess: 100,
+      wireframe: true,
+      transparent: true,
+      opacity: 0.9
+    });
+    let lineMaterial = null;
+
+    let mainMesh = new THREE.Mesh(geometry, material);
+    mainMesh.castShadow = true;
+    mainMesh.receiveShadow = true;
+    scene.add(mainMesh);
+
+    // Mirror mesh
+    let mirrorMesh = null;
+
+    // Particles
+    const particleCount = 2000;
+    const particlesGeometry = new THREE.BufferGeometry();
+    const particlesPositions = new Float32Array(particleCount * 3);
+    const particlesColors = new Float32Array(particleCount * 3);
+    const particlesVelocities = new Float32Array(particleCount * 3);
+
+    for (let i = 0; i < particleCount * 3; i += 3) {
+      particlesPositions[i] = (Math.random() - 0.5) * 20;
+      particlesPositions[i + 1] = (Math.random() - 0.5) * 20;
+      particlesPositions[i + 2] = (Math.random() - 0.5) * 20;
+
+      particlesColors[i] = Math.random();
+      particlesColors[i + 1] = Math.random();
+      particlesColors[i + 2] = Math.random();
+
+      particlesVelocities[i] = (Math.random() - 0.5) * 0.01;
+      particlesVelocities[i + 1] = (Math.random() - 0.5) * 0.01;
+      particlesVelocities[i + 2] = (Math.random() - 0.5) * 0.01;
+    }
+    particlesGeometry.setAttribute('position', new THREE.BufferAttribute(particlesPositions, 3));
+    particlesGeometry.setAttribute('color', new THREE.BufferAttribute(particlesColors, 3));
+    const particlesMaterial = new THREE.PointsMaterial({
+      size: 0.05,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.8,
+      blending: THREE.AdditiveBlending
+    });
+    const particleSystem = new THREE.Points(particlesGeometry, particlesMaterial);
+    scene.add(particleSystem);
+
+    // Lights
+    scene.add(new THREE.AmbientLight(0x404040, .5));
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(5, 5, 5);
+    directionalLight.castShadow = true;
+    directionalLight.shadow.camera.near = .1;
+    directionalLight.shadow.camera.far = 50;
+    scene.add(directionalLight);
+
+    const pointLights = [];
+    const lightColors = [0xff00ff, 0x00ffff, 0xffff00];
+    for (let i = 0; i < 3; i++) {
+      const light = new THREE.PointLight(lightColors[i], .5, 100);
+      light.position.set(Math.cos(i * Math.PI * 2 / 3) * 10, 0, Math.sin(i * Math.PI * 2 / 3) * 10);
+      scene.add(light);
+      pointLights.push(light);
+    }
+
+    // Glow
+    const glowMaterial = new THREE.MeshBasicMaterial({ color: 0x9333ea, transparent: true, opacity: .3, side: THREE.BackSide });
+    const glowMesh = new THREE.Mesh(geometry.clone(), glowMaterial);
+    glowMesh.scale.multiplyScalar(1.2);
+    scene.add(glowMesh);
+
+    camera.position.z = 8;
+
+    // --- Audio ---
+    let audioContext, analyser, microphone, dataArray;
+    let bassAnalyser, trebleAnalyser, bassDataArray, trebleDataArray;
+    let isListening = false;
+
+    // UI refs
+    const startBtn = document.getElementById('startBtn');
+    const menuToggle = document.getElementById('menuToggle');
+    const controls = document.getElementById('controls');
+    const info = document.getElementById('info');
+    const frequencyBarsContainer = document.getElementById('frequencyBars');
+
+    // Frequency bars
+    for (let i = 0; i < 64; i++) {
+      const bar = document.createElement('div');
+      bar.className = 'freq-bar';
+      frequencyBarsContainer.appendChild(bar);
+    }
+    const frequencyBars = frequencyBarsContainer.querySelectorAll('.freq-bar');
+
+    // Menu toggle
+    menuToggle.addEventListener('click', () => {
+      controls.classList.toggle('hidden');
+      menuToggle.classList.toggle('active');
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.code === 'Space') {
+        e.preventDefault();
+        controls.classList.toggle('hidden');
+        menuToggle.classList.toggle('active');
+      }
+    });
+
+    // Shape selector
+    document.querySelectorAll('.shape-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.shape-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        currentShape = btn.dataset.shape;
+        updateShape();
+      });
+    });
+
+    function updateShape() {
+      scene.remove(mainMesh);
+      scene.remove(glowMesh);
+      if (mirrorMesh) scene.remove(mirrorMesh);
+
+      if (geometry) geometry.dispose();
+      geometry = shapes[currentShape]();
+
+      if (currentShape === 'dna') {
+        if (lineMaterial) lineMaterial.dispose?.();
+        lineMaterial = new THREE.LineBasicMaterial({
+          color: material.color.clone(),
+          transparent: true,
+          opacity: 0.9
+        });
+        mainMesh = new THREE.Line(geometry, lineMaterial);
+        originalPositions = null; // no vertex displacement for DNA line
+      } else {
+        mainMesh = new THREE.Mesh(geometry, material);
+        originalPositions = geometry.attributes.position.array.slice();
+      }
+
+      scene.add(mainMesh);
+
+      // Rebuild glow for mesh shapes
+      if (currentShape !== 'dna') {
+        glowMesh.geometry.dispose();
+        glowMesh.geometry = geometry.clone();
+        scene.add(glowMesh);
+      }
+
+      if (document.getElementById('mirrorToggle').checked) createMirrorMesh();
+    }
+
+    function createMirrorMesh() {
+      if (mirrorMesh) scene.remove(mirrorMesh);
+      mirrorMesh = mainMesh.clone();
+      mirrorMesh.scale.y = -1;
+      mirrorMesh.position.y = -6;
+      mirrorMesh.material = (mainMesh.isLine ? mainMesh.material.clone() : material.clone());
+      mirrorMesh.material.opacity = 0.3;
+      mirrorMesh.material.transparent = true;
+      scene.add(mirrorMesh);
+    }
+
+    // Effects toggles
+    document.getElementById('wireframeToggle').addEventListener('change', (e) => {
+      material.wireframe = e.target.checked; // no effect for line shapes (DNA)
+    });
+    document.getElementById('particlesToggle').addEventListener('change', (e) => { particleSystem.visible = e.target.checked; });
+    document.getElementById('glowToggle').addEventListener('change', (e) => { glowMesh.visible = e.target.checked; });
+    document.getElementById('frequencyBarsToggle').addEventListener('change', (e) => {
+      frequencyBarsContainer.classList.toggle('active', e.target.checked);
+    });
+    document.getElementById('mirrorToggle').addEventListener('change', (e) => {
+      if (e.target.checked) createMirrorMesh();
+      else if (mirrorMesh) { scene.remove(mirrorMesh); mirrorMesh = null; }
+    });
+
+    // Sliders
+    const sliders = {
+      bassBoost: { element: document.getElementById('bassBoost'), display: 'bassValue' },
+      trebleBoost: { element: document.getElementById('trebleBoost'), display: 'trebleValue' },
+      sensitivity: { element: document.getElementById('sensitivity'), display: 'sensitivityValue' },
+      smoothing: { element: document.getElementById('smoothing'), display: 'smoothingValue' },
+      rotation: { element: document.getElementById('rotation'), display: 'rotationValue' },
+      zoom: { element: document.getElementById('zoom'), display: 'zoomValue' },
+      speed: { element: document.getElementById('speed'), display: 'speedValue' }
+    };
+    Object.keys(sliders).forEach(key => {
+      sliders[key].element.addEventListener('input', (e) => {
+        document.getElementById(sliders[key].display).textContent = e.target.value;
+        if (key === 'smoothing' && analyser) {
+          const v = parseFloat(e.target.value);
+          analyser.smoothingTimeConstant = v;
+          if (bassAnalyser) bassAnalyser.smoothingTimeConstant = v;
+          if (trebleAnalyser) trebleAnalyser.smoothingTimeConstant = v;
+        }
+        if (key === 'zoom') camera.position.z = parseFloat(e.target.value);
+      });
+    });
+
+    // Mouse drag
+    let mouseX = 0, mouseY = 0, targetX = 0, targetY = 0, isDragging = false;
+    document.addEventListener('mousedown', (e) => { if (e.target === renderer.domElement) isDragging = true; });
+    document.addEventListener('mouseup', () => { isDragging = false; });
+    document.addEventListener('mousemove', (e) => {
+      if (isDragging) {
+        mouseX = (e.clientX - window.innerWidth / 2) / 100;
+        mouseY = (e.clientY - window.innerHeight / 2) / 100;
+      }
+    });
+
+    // Start/stop audio
+    startBtn.addEventListener('click', async () => {
+      if (!isListening) {
+        try {
+          if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('getUserMedia is not supported in this browser');
+          info.innerHTML = '<span style="color:#fbbf24;">Requesting microphone access...</span>';
+          const stream = await navigator.mediaDevices.getUserMedia({
+            audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
+          });
+          audioContext = new (window.AudioContext || window.webkitAudioContext)();
+          if (audioContext.state === 'suspended') await audioContext.resume();
+
+          analyser = audioContext.createAnalyser();
+          analyser.fftSize = 2048;
+          analyser.smoothingTimeConstant = parseFloat(sliders.smoothing.element.value);
+
+          bassAnalyser = audioContext.createAnalyser();
+          bassAnalyser.fftSize = 256;
+          bassAnalyser.smoothingTimeConstant = parseFloat(sliders.smoothing.element.value);
+
+          trebleAnalyser = audioContext.createAnalyser();
+          trebleAnalyser.fftSize = 2048;
+          trebleAnalyser.smoothingTimeConstant = parseFloat(sliders.smoothing.element.value);
+
+          const lowpassFilter = audioContext.createBiquadFilter();
+          lowpassFilter.type = 'lowpass';
+          lowpassFilter.frequency.value = 200;
+
+          const highpassFilter = audioContext.createBiquadFilter();
+          highpassFilter.type = 'highpass';
+          highpassFilter.frequency.value = 2000;
+
+          microphone = audioContext.createMediaStreamSource(stream);
+          microphone.connect(analyser);
+          microphone.connect(lowpassFilter);
+          lowpassFilter.connect(bassAnalyser);
+          microphone.connect(highpassFilter);
+          highpassFilter.connect(trebleAnalyser);
+
+          dataArray = new Uint8Array(analyser.frequencyBinCount);
+          bassDataArray = new Uint8Array(bassAnalyser.frequencyBinCount);
+          trebleDataArray = new Uint8Array(trebleAnalyser.frequencyBinCount);
+
+          isListening = true;
+          startBtn.textContent = 'Stop Microphone';
+          startBtn.classList.add('active');
+          info.innerHTML = '<span style="color:#86efac;">✓ Microphone active. Visualizing audio!</span>';
+        } catch (error) {
+          console.error('Error accessing microphone:', error);
+          let errorMessage = 'Could not access microphone. ';
+          if (error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError') errorMessage += 'Permission denied. Please allow microphone access and try again.';
+          else if (error.name === 'NotFoundError' || error.name === 'DevicesNotFoundError') errorMessage += 'No microphone found. Please connect a microphone.';
+          else if (error.name === 'NotReadableError' || error.name === 'TrackStartError') errorMessage += 'Microphone is already in use by another application.';
+          else if (error.name === 'OverconstrainedError' || error.name === 'ConstraintNotSatisfiedError') errorMessage += 'Microphone settings are not supported.';
+          else if (String(error.message).includes('https')) errorMessage += 'Microphone access requires HTTPS or localhost.';
+          else errorMessage += error.message || 'Unknown error occurred.';
+          info.innerHTML = `<span style="color:#f87171;">Error: ${errorMessage}</span>`;
+        }
+      } else {
+        try { microphone?.mediaStream?.getTracks()?.forEach(t => t.stop()); } catch {}
+        try { await audioContext?.close(); } catch {}
+        isListening = false;
+        startBtn.textContent = 'Start Microphone';
+        startBtn.classList.remove('active');
+        info.innerHTML = 'Microphone stopped. Click "Start Microphone" to resume.';
+        resetVisualization();
+      }
+    });
+
+    function resetVisualization() {
+      if (currentShape !== 'dna' && originalPositions && geometry.attributes.position) {
+        const positions = geometry.attributes.position.array;
+        for (let i = 0; i < positions.length; i++) positions[i] = originalPositions[i];
+        geometry.attributes.position.needsUpdate = true;
+      }
+    }
+
+    // Trails
+    let trailMeshes = [];
+    const maxTrails = 5;
+
+    // RGB Split
+    let rgbMeshes = [];
+    function createRGBSplit() {
+      rgbMeshes.forEach(m => scene.remove(m));
+      rgbMeshes = [];
+      const colors = [0xff0000, 0x00ff00, 0x0000ff];
+      const offsets = [-0.1, 0, 0.1];
+      for (let i = 0; i < 3; i++) {
+        const mesh = mainMesh.clone();
+        mesh.material = (mainMesh.isLine ? mainMesh.material.clone() : material.clone());
+        mesh.material.color = new THREE.Color(colors[i]);
+        mesh.material.transparent = true;
+        mesh.material.opacity = 0.3;
+        mesh.position.x = offsets[i];
+        rgbMeshes.push(mesh);
+        scene.add(mesh);
+      }
+    }
+    document.getElementById('rgbSplitToggle').addEventListener('change', (e) => {
+      if (e.target.checked) createRGBSplit();
+      else { rgbMeshes.forEach(m => scene.remove(m)); rgbMeshes = []; }
+    });
+
+    // Kaleidoscope
+    let kaleidoscopeMeshes = [];
+    function createKaleidoscope() {
+      kaleidoscopeMeshes.forEach(m => scene.remove(m));
+      kaleidoscopeMeshes = [];
+      for (let i = 0; i < 6; i++) {
+        const mesh = mainMesh.clone();
+        mesh.rotation.z = (Math.PI * 2 / 6) * i;
+        kaleidoscopeMeshes.push(mesh);
+        scene.add(mesh);
+      }
+    }
+    document.getElementById('kaleidoscopeToggle').addEventListener('change', (e) => {
+      if (e.target.checked) createKaleidoscope();
+      else { kaleidoscopeMeshes.forEach(m => scene.remove(m)); kaleidoscopeMeshes = []; }
+    });
+
+    // --- Color modes ---
+    let colorMode = 'mood';
+    let currentMood = 'neutral';
+    const targetColors = {
+      primary: new THREE.Color(0x9333ea),
+      secondary: new THREE.Color(0x4c1d95),
+      glow: new THREE.Color(0x667eea),
+      particle: new THREE.Color(0xffffff)
+    };
+    const currentColors = {
+      primary: new THREE.Color(0x9333ea),
+      secondary: new THREE.Color(0x4c1d95),
+      glow: new THREE.Color(0x667eea),
+      particle: new THREE.Color(0xffffff)
+    };
+
+    const moodColors = {
+      energetic: { primary: 0xff006e, secondary: 0xfb5607, glow: 0xffbe0b, particle: 0xff4365, name: '🔥 Energetic' },
+      happy:     { primary: 0xffbe0b, secondary: 0xfb5607, glow: 0x8ac926, particle: 0xffca3a, name: '😊 Happy' },
+      romantic:  { primary: 0xff006e, secondary: 0xc77dff, glow: 0xffc6ff, particle: 0xffafcc, name: '💕 Romantic' },
+      melancholic:{primary:0x7209b7, secondary: 0x560bad, glow: 0x4361ee, particle: 0x3f37c9, name: '😢 Melancholic' },
+      aggressive:{ primary: 0xd00000, secondary: 0x370617, glow: 0xdc2f02, particle: 0xff0000, name: '🤘 Aggressive' },
+      chill:     { primary: 0x4361ee, secondary: 0x4895ef, glow: 0x4cc9f0, particle: 0x7209b7, name: '😌 Chill' },
+      mysterious:{ primary: 0x7209b7, secondary: 0x240046, glow: 0x9d4edd, particle: 0xc77dff, name: '🔮 Mysterious' },
+      neutral:   { primary: 0x9333ea, secondary: 0x4c1d95, glow: 0x667eea, particle: 0xffffff, name: '🎵 Neutral' }
+    };
+
+    document.querySelectorAll('.color-mode-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.color-mode-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        colorMode = btn.dataset.mode;
+        document.getElementById('moodIndicator').style.display = colorMode === 'mood' ? 'block' : 'none';
+        document.getElementById('manualColors').style.display = colorMode === 'manual' ? 'grid' : 'none';
+        if (colorMode === 'spectrum') {
+          info.innerHTML = '<span style="color:#86efac;">Spectrum mode: Colors change across frequency range</span>';
+        }
+      });
+    });
+
+    const colorInputs = {
+      primary: document.getElementById('primaryColor'),
+      secondary: document.getElementById('secondaryColor'),
+      glow: document.getElementById('glowColor'),
+      particle: document.getElementById('particleColor')
+    };
+    Object.keys(colorInputs).forEach(key => {
+      colorInputs[key].addEventListener('input', (e) => {
+        if (colorMode === 'manual') targetColors[key].set(e.target.value);
+      });
+    });
+
+    function detectMood(bassAvg, midAvg, trebleAvg, tempo, variance) {
+      const energy = (bassAvg * 0.4 + midAvg * 0.3 + trebleAvg * 0.3);
+      const brightness = trebleAvg / (bassAvg + 0.1);
+      const heaviness = bassAvg / (trebleAvg + 0.1);
+      const dynamics = variance;
+
+      const moodScores = {
+        energetic: energy * 1.5 + tempo * 0.8 + brightness * 0.5,
+        happy: brightness * 1.2 + tempo * 0.6 + (1 - heaviness) * 0.7,
+        romantic: (1 - tempo) * 0.8 + midAvg * 1.2 + (1 - dynamics) * 0.6,
+        melancholic: (1 - energy) * 0.9 + heaviness * 0.7 + (1 - brightness) * 0.8,
+        aggressive: heaviness * 1.3 + dynamics * 1.1 + bassAvg * 1.2,
+        chill: (1 - tempo) * 1.0 + (1 - dynamics) * 0.9 + midAvg * 0.7,
+        mysterious: (1 - brightness) * 0.8 + midAvg * 0.9 + variance * 0.6
+      };
+      let best = 'neutral', max = -Infinity;
+      for (const [m, s] of Object.entries(moodScores)) if (s > max) { max = s; best = m; }
+      return best;
+    }
+
+    function lerpColors(delta = 0.05) {
+      Object.keys(currentColors).forEach(k => currentColors[k].lerp(targetColors[k], delta));
+    }
+
+    // --- Beat/BPM detection (added) ---
+    let time = 0;
+    let beatDetected = false;
+    let beatHistory = [];
+    let lastBeatTime = 0; // ms
+    let estimatedBPM = 0;
+    const bassHistory = [];
+    const bassHistorySize = 60;
+
+    function detectBeat(currentBass) {
+      const now = performance.now();
+      bassHistory.push(currentBass);
+      if (bassHistory.length > bassHistorySize) bassHistory.shift();
+      const avg = bassHistory.reduce((a,b)=>a+b,0) / bassHistory.length;
+      const variance = bassHistory.reduce((a,b)=>a+(b-avg)*(b-avg),0) / bassHistory.length;
+      const std = Math.sqrt(variance);
+      const threshold = avg + Math.max(0.02, std * 1.5);
+
+      const cooldownMs = 250; // debounce
+      if (currentBass > threshold && (now - lastBeatTime) > cooldownMs) {
+        if (lastBeatTime > 0) {
+          const interval = now - lastBeatTime;
+          beatHistory.push(interval);
+          if (beatHistory.length > 8) beatHistory.shift();
+          const avgInterval = beatHistory.reduce((a,b)=>a+b,0) / beatHistory.length;
+          estimatedBPM = 60000 / avgInterval;
+        }
+        lastBeatTime = now;
+        return true;
+      }
+      return false;
+    }
+
+    // --- Animation ---
+    const audioHistory = [];
+    const historySize = 120;
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const speedMultiplier = parseFloat(document.getElementById('speed').value);
+      time += 0.01 * speedMultiplier;
+
+      if (isListening && analyser) {
+        analyser.getByteFrequencyData(dataArray);
+        bassAnalyser.getByteFrequencyData(bassDataArray);
+        trebleAnalyser.getByteFrequencyData(trebleDataArray);
+
+        const bassBoost = parseFloat(document.getElementById('bassBoost').value);
+        const trebleBoost = parseFloat(document.getElementById('trebleBoost').value);
+        const sensitivity = parseFloat(document.getElementById('sensitivity').value) / 50;
+
+        const bassAverage = bassDataArray.reduce((a,b)=>a+b,0) / bassDataArray.length / 255 * bassBoost;
+        const trebleAverage = trebleDataArray.reduce((a,b)=>a+b,0) / trebleDataArray.length / 255 * trebleBoost;
+        const overallAverage = dataArray.reduce((a,b)=>a+b,0) / dataArray.length / 255;
+
+        beatDetected = detectBeat(bassAverage);
+
+        audioHistory.push({ bass: bassAverage, mid: overallAverage, treble: trebleAverage });
+        if (audioHistory.length > historySize) audioHistory.shift();
+
+        let variance = 0;
+        if (audioHistory.length > 10) {
+          const last10 = audioHistory.slice(-10);
+          const recentAvg = last10.reduce((a,b)=>a + b.bass + b.mid + b.treble, 0) / (last10.length * 3);
+          variance = last10.reduce((a,b)=>{
+            const diff = (b.bass + b.mid + b.treble)/3 - recentAvg;
+            return a + diff*diff;
+          },0) / last10.length;
+        }
+
+        if (colorMode === 'mood' && audioHistory.length > 30) {
+          const tempo = estimatedBPM > 0 ? Math.min(estimatedBPM / 160, 1) : 0.5;
+          const detectedMood = detectMood(bassAverage, overallAverage, trebleAverage, tempo, Math.min(variance * 10, 1));
+          if (detectedMood !== currentMood) {
+            currentMood = detectedMood;
+            const moodData = moodColors[currentMood];
+            targetColors.primary.set(moodData.primary);
+            targetColors.secondary.set(moodData.secondary);
+            targetColors.glow.set(moodData.glow);
+            targetColors.particle.set(moodData.particle);
+            const moodValue = document.getElementById('moodValue');
+            moodValue.textContent = moodData.name;
+            moodValue.style.setProperty('--mood-color-1', `#${moodData.primary.toString(16).padStart(6,'0')}`);
+            moodValue.style.setProperty('--mood-color-2', `#${moodData.secondary.toString(16).padStart(6,'0')}`);
+          }
+        } else if (colorMode === 'spectrum') {
+          const hue = (bassAverage * 0.3 + overallAverage * 0.4 + trebleAverage * 0.3) * 360;
+          const saturation = 0.7 + overallAverage * 0.3;
+          const lightness = 0.4 + trebleAverage * 0.3;
+          targetColors.primary.setHSL(hue/360, saturation, lightness);
+          targetColors.secondary.setHSL((hue+30)/360, saturation, lightness*0.7);
+          targetColors.glow.setHSL((hue+60)/360, saturation, Math.min(1, lightness*1.2));
+          targetColors.particle.setHSL((hue+180)/360, saturation, lightness);
+        }
+
+        // Color updates
+        lerpColors(0.05);
+        // Apply to current mesh material(s)
+        if (mainMesh.isLine) {
+          mainMesh.material.color.copy(currentColors.primary);
+        } else {
+          material.color.copy(currentColors.primary);
+          material.emissive.copy(currentColors.secondary);
+        }
+        glowMaterial.color.copy(currentColors.glow);
+
+        // Vertex displacement for mesh shapes only
+        if (currentShape !== 'dna' && geometry && geometry.attributes && geometry.attributes.position && originalPositions) {
+          const positions = geometry.attributes.position.array;
+          const vertex = new THREE.Vector3();
+          for (let i = 0; i < positions.length; i += 3) {
+            vertex.set(originalPositions[i], originalPositions[i+1], originalPositions[i+2]);
+            vertex.normalize();
+            const dataIndex = Math.floor((i / 3) % dataArray.length);
+            const frequency = dataArray[dataIndex] / 255;
+
+            let displacement = 3;
+            if (dataIndex < dataArray.length * 0.1) displacement += bassAverage * sensitivity * 2;        // bass
+            else if (dataIndex > dataArray.length * 0.7) displacement += trebleAverage * sensitivity * 1.5; // treble
+            else displacement += frequency * sensitivity;                                                  // mids
+
+            displacement += Math.sin(time * 2 + i * 0.01) * 0.1 * overallAverage;
+            vertex.multiplyScalar(displacement);
+
+            positions[i] = vertex.x; positions[i+1] = vertex.y; positions[i+2] = vertex.z;
+          }
+          geometry.attributes.position.needsUpdate = true;
+        }
+
+        // Glow pulse
+        if (glowMesh.visible) {
+          glowMesh.scale.setScalar(1.2 + overallAverage * 0.3);
+          glowMaterial.opacity = 0.3 + overallAverage * 0.4;
+        }
+
+        // Particles
+        if (particleSystem.visible) {
+          const p = particleSystem.geometry.attributes.position.array;
+          const c = particleSystem.geometry.attributes.color.array;
+          for (let i = 0; i < p.length; i += 3) {
+            p[i]   += particlesVelocities[i]   * (1 + bassAverage * 2) * speedMultiplier;
+            p[i+1] += particlesVelocities[i+1] * (1 + overallAverage)  * speedMultiplier;
+            p[i+2] += particlesVelocities[i+2] * (1 + trebleAverage* 2) * speedMultiplier;
+
+            if (Math.abs(p[i]) > 10) p[i] *= -0.9;
+            if (Math.abs(p[i+1]) > 10) p[i+1] *= -0.9;
+            if (Math.abs(p[i+2]) > 10) p[i+2] *= -0.9;
+
+            if (colorMode === 'spectrum') {
+              const hue = (i / p.length) + time * 0.1;
+              c[i]   = Math.sin(hue)     * 0.5 + 0.5;
+              c[i+1] = Math.sin(hue + 2) * 0.5 + 0.5;
+              c[i+2] = Math.sin(hue + 4) * 0.5 + 0.5;
+            } else {
+              c[i]   = currentColors.particle.r * (0.5 + bassAverage);
+              c[i+1] = currentColors.particle.g * (0.5 + overallAverage);
+              c[i+2] = currentColors.particle.b * (0.5 + trebleAverage);
+            }
+          }
+          particleSystem.geometry.attributes.position.needsUpdate = true;
+          particleSystem.geometry.attributes.color.needsUpdate = true;
+          particlesMaterial.size = 0.05 + overallAverage * 0.1;
+        }
+
+        // Lights animate
+        pointLights.forEach((light, idx) => {
+          const angle = time + (idx * Math.PI * 2 / 3);
+          light.position.x = Math.cos(angle) * (10 + bassAverage * 5);
+          light.position.z = Math.sin(angle) * (10 + bassAverage * 5);
+          light.position.y = Math.sin(time * 2 + idx) * 5;
+          light.intensity = 0.5 + overallAverage;
+          if (colorMode !== 'spectrum') {
+            if (idx === 0) light.color.copy(currentColors.primary);
+            else if (idx === 1) light.color.copy(currentColors.secondary);
+            else light.color.copy(currentColors.glow);
+          }
+        });
+
+        // Frequency bars
+        if (document.getElementById('frequencyBarsToggle').checked) {
+          const barData = new Uint8Array(64);
+          for (let i = 0; i < 64; i++) {
+            const dataIndex = Math.floor((i / 64) * dataArray.length);
+            barData[i] = dataArray[dataIndex];
+          }
+          frequencyBars.forEach((bar, i) => {
+            const h = (barData[i] / 255) * 100;
+            bar.style.height = `${h}px`;
+            bar.style.opacity = 0.5 + (barData[i] / 255) * 0.5;
+
+            if (colorMode === 'spectrum') {
+              const hue = (i / 64) * 360;
+              bar.style.background = `linear-gradient(to top, hsl(${hue},70%,50%), hsl(${(hue+30)%360},70%,60%))`;
+            } else {
+              const c1 = currentColors.primary.clone().multiplyScalar(255);
+              const c2 = currentColors.glow.clone().multiplyScalar(255);
+              bar.style.background = `linear-gradient(to top,
+                rgb(${Math.floor(c1.r)},${Math.floor(c1.g)},${Math.floor(c1.b)}),
+                rgb(${Math.floor(c2.r)},${Math.floor(c2.g)},${Math.floor(c2.b)}))`;
+            }
+          });
+        }
+
+        // Beat camera jiggle
+        if (beatDetected) {
+          camera.position.x += (Math.random() - 0.5) * 0.1;
+          camera.position.y += (Math.random() - 0.5) * 0.1;
+          beatDetected = false;
+        }
+      }
+
+      // Camera ease back to center
+      camera.position.x *= 0.95;
+      camera.position.y *= 0.95;
+
+      // Trails
+      if (document.getElementById('trailsToggle').checked) {
+        if (trailMeshes.length >= maxTrails) {
+          const old = trailMeshes.shift();
+          scene.remove(old);
+          old.geometry.dispose();
+          old.material.dispose();
+        }
+        const trail = mainMesh.clone();
+        trail.material = (mainMesh.isLine ? mainMesh.material.clone() : material.clone());
+        trail.material.opacity = 0.1;
+        trail.material.transparent = true;
+        trailMeshes.push(trail);
+        scene.add(trail);
+      } else if (trailMeshes.length > 0) {
+        trailMeshes.forEach(t => { scene.remove(t); t.geometry.dispose(); t.material.dispose(); });
+        trailMeshes = [];
+      }
+      trailMeshes.forEach((t, i) => { t.material.opacity = (0.3 * i) / maxTrails; });
+
+      // Smooth rotation
+      targetX += (mouseX - targetX) * 0.05;
+      targetY += (mouseY - targetY) * 0.05;
+      const rotSpeed = parseFloat(document.getElementById('rotation').value);
+      mainMesh.rotation.y += 0.005 * rotSpeed * speedMultiplier;
+      mainMesh.rotation.x = targetY * 0.5;
+      mainMesh.rotation.y += targetX * 0.5;
+
+      if (mirrorMesh) mirrorMesh.rotation.copy(mainMesh.rotation);
+      if (rgbMeshes.length) rgbMeshes.forEach((m, i) => { m.rotation.copy(mainMesh.rotation); m.position.x = (i - 1) * 0.2 * Math.sin(time); });
+      if (kaleidoscopeMeshes.length) kaleidoscopeMeshes.forEach((m, i) => { m.rotation.copy(mainMesh.rotation); m.rotation.z += (Math.PI * 2 / 6) * i; });
+
+      renderer.render(scene, camera);
+    }
+
+    // Init checks
+    console.log('Initializing audio visualizer...');
+    window.addEventListener('load', () => {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        info.innerHTML = '<span style="color:#f87171;">Error: Your browser does not support audio input. Please use Chrome, Firefox, or Edge.</span>';
+        startBtn.disabled = true; startBtn.style.opacity = '0.5'; startBtn.style.cursor = 'not-allowed';
+      } else {
+        console.log('Browser supports getUserMedia');
+        info.innerHTML = 'Click "Start Microphone" to begin. Make sure to allow microphone access when prompted.';
+      }
+    });
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+
+    animate();
+  </script>
+
+  <!-- ===== SPOTIFY INTEGRATION (drop-in) ===== -->
+  <script>
+  /** ==== CONFIG: replace these NOW ==== */
+  const SPOTIFY_CLIENT_ID = 'REPLACE_WITH_YOUR_CLIENT_ID';
+  const SPOTIFY_REDIRECT_URI = 'http://127.0.0.1:5500/spotify-callback'; // example for local dev
+
+  /** ==== UI refs (safe early) ==== */
+  const loginBtn = document.getElementById('spotifyLoginBtn');
+  const playBtn  = document.getElementById('spotifyPlayBtn');
+  const pauseBtn = document.getElementById('spotifyPauseBtn');
+  const uriInput = document.getElementById('spotifyUri');
+  const statusEl = document.getElementById('spotifyStatus');
+  function setStatus(t){ if(statusEl) statusEl.textContent = t; console.log('[Spotify]', t); }
+
+  /** Guard: prevent INVALID_CLIENT from placeholders */
+  function assertConfigOrThrow(){
+    if (!SPOTIFY_CLIENT_ID || /YOUR_SPOTIFY_CLIENT_ID/i.test(SPOTIFY_CLIENT_ID)) {
+      alert('Set SPOTIFY_CLIENT_ID to your real Client ID from the Spotify dashboard.');
+      throw new Error('Missing Spotify Client ID');
+    }
+    if (!SPOTIFY_REDIRECT_URI || /your\.domain\/spotify-callback/i.test(SPOTIFY_REDIRECT_URI)) {
+      alert('Set SPOTIFY_REDIRECT_URI to a redirect you added in the dashboard (exact match).');
+      throw new Error('Missing Spotify Redirect URI');
+    }
+  }
+
+  /** ==== PKCE helpers ==== */
+  function b64url(buf){return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'')}
+  function randStr(n){const a=new Uint8Array(n);crypto.getRandomValues(a);const alphabet='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._~';return [...a].map(x=>alphabet[x%alphabet.length]).join('')}
+  async function sha256(txt){const enc=new TextEncoder().encode(txt);return await crypto.subtle.digest('SHA-256',enc)}
+
+  /** ==== OAuth (PKCE) ==== */
+  async function spotifyLogin(){
+    assertConfigOrThrow();
+    const verifier = randStr(64);
+    localStorage.setItem('sp_verifier', verifier);
+    const challenge = b64url(await sha256(verifier));
+    const scope = [
+      'streaming',
+      'user-read-email','user-read-private',
+      'user-read-playback-state','user-modify-playback-state'
+    ].join(' ');
+    const u = new URL('https://accounts.spotify.com/authorize');
+    u.searchParams.set('client_id', SPOTIFY_CLIENT_ID);
+    u.searchParams.set('response_type', 'code');
+    u.searchParams.set('redirect_uri', SPOTIFY_REDIRECT_URI);
+    u.searchParams.set('code_challenge_method', 'S256');
+    u.searchParams.set('code_challenge', challenge);
+    u.searchParams.set('scope', scope);
+    console.log('Authorize URL →', u.toString());
+    location.href = u.toString();
+  }
+
+  async function exchangeCodeForToken(code){
+    const verifier = localStorage.getItem('sp_verifier');
+    const body = new URLSearchParams({
+      client_id: SPOTIFY_CLIENT_ID,
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: SPOTIFY_REDIRECT_URI,
+      code_verifier: verifier
+    });
+    const r = await fetch('https://accounts.spotify.com/api/token',{
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body
+    });
+    if(!r.ok){ const txt = await r.text().catch(()=> ''); throw new Error('Token exchange failed: '+txt); }
+    const json = await r.json();
+    setTokens(json);
+  }
+
+  function setTokens({access_token, refresh_token, expires_in}){
+    const exp = Date.now() + (expires_in*1000 - 60000);
+    localStorage.setItem('sp_access', access_token || '');
+    if(refresh_token) localStorage.setItem('sp_refresh', refresh_token);
+    localStorage.setItem('sp_exp', String(exp));
+  }
+
+  async function refreshToken(){
+    const refresh = localStorage.getItem('sp_refresh');
+    if(!refresh) return null;
+    const body = new URLSearchParams({
+      client_id: SPOTIFY_CLIENT_ID,
+      grant_type: 'refresh_token',
+      refresh_token: refresh
+    });
+    const r = await fetch('https://accounts.spotify.com/api/token',{
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body
+    });
+    if(!r.ok) return null;
+    const json = await r.json();
+    setTokens(json);
+    return json.access_token;
+  }
+
+  async function getAccessToken(){
+    const token = localStorage.getItem('sp_access');
+    const exp = Number(localStorage.getItem('sp_exp')||0);
+    if(token && Date.now()<exp) return token;
+    return await refreshToken();
+  }
+
+  /** ==== Web Playback SDK ==== */
+  let spotifyPlayer, spotifyDeviceId;
+
+  window.onSpotifyWebPlaybackSDKReady = async () => {
+    const token = await getAccessToken();
+    if(!token){ setStatus('Log in to initialize the player.'); return; }
+    spotifyPlayer = new Spotify.Player({
+      name: 'Visualizer Player',
+      getOAuthToken: async cb => cb(await getAccessToken() || ''),
+      volume: 0.8
+    });
+
+    spotifyPlayer.addListener('ready', ({ device_id }) => {
+      spotifyDeviceId = device_id;
+      setStatus('Player ready. Transferring playback…');
+      transferPlaybackHere(true).catch(err => setStatus('Transfer failed: '+err.message));
+    });
+    spotifyPlayer.addListener('initialization_error', ({message}) => setStatus('Init error: '+message));
+    spotifyPlayer.addListener('authentication_error', ({message}) => setStatus('Auth error: '+message));
+    spotifyPlayer.addListener('account_error', ({message}) => setStatus('Account error: '+message+' (Premium required)'));
+    spotifyPlayer.addListener('playback_error', ({message}) => setStatus('Playback error: '+message));
+    spotifyPlayer.addListener('player_state_changed', state => {
+      // optional: hook your visualizer UI here
+    });
+
+    setStatus('Connecting to Spotify…');
+    await spotifyPlayer.connect();
+  };
+
+  async function transferPlaybackHere(autoplay=false){
+    const token = await getAccessToken();
+    const r = await fetch('https://api.spotify.com/v1/me/player', {
+      method:'PUT',
+      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+      body: JSON.stringify({ device_ids:[spotifyDeviceId], play: autoplay })
+    });
+    if(!r.ok) throw new Error('HTTP '+r.status);
+  }
+
+  async function playSpotifyURI(uriOrUrl){
+    const token = await getAccessToken();
+    if(!token || !spotifyDeviceId){ setStatus('Not connected.'); return; }
+
+    let uri = (uriOrUrl||'').trim();
+    if(!uri) uri = 'spotify:playlist:37i9dQZF1DXcBWIGoYBM5M';
+    if(uri.includes('open.spotify.com/')){
+      const parts = new URL(uri).pathname.split('/').filter(Boolean);
+      const type = parts[0], id = parts[1];
+      uri = `spotify:${type}:${id}`;
+    }
+
+    const body = uri.startsWith('spotify:track:')
+      ? { uris:[uri] }
+      : { context_uri: uri };
+
+    const r = await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${encodeURIComponent(spotifyDeviceId)}`,{
+      method:'PUT',
+      headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},
+      body: JSON.stringify(body)
+    });
+    if(r.ok) setStatus('Playing…'); else setStatus('Play failed: HTTP '+r.status);
+  }
+
+  async function pauseSpotify(){
+    const token = await getAccessToken();
+    const r = await fetch(`https://api.spotify.com/v1/me/player/pause?device_id=${encodeURIComponent(spotifyDeviceId)}`,{
+      method:'PUT', headers:{'Authorization':'Bearer '+token}
+    });
+    if(r.ok) setStatus('Paused'); else setStatus('Pause failed: HTTP '+r.status);
+  }
+
+  /** ==== UI wiring ==== */
+  if(loginBtn) loginBtn.addEventListener('click', spotifyLogin);
+  if(playBtn)  playBtn.addEventListener('click', () => playSpotifyURI(uriInput.value));
+  if(pauseBtn) pauseBtn.addEventListener('click', pauseSpotify);
+
+  /** Handle authorization redirect */
+  (async function handleAuthRedirect(){
+    const params = new URLSearchParams(location.search);
+    const code = params.get('code');
+    if(code){
+      try{
+        await exchangeCodeForToken(code);
+        history.replaceState({}, '', location.pathname);
+        setStatus('Logged in. Initializing player…');
+        if(window.Spotify && window.onSpotifyWebPlaybackSDKReady) window.onSpotifyWebPlaybackSDKReady();
+      }catch(e){ setStatus('Login error: '+e.message); }
+    }else{
+      if(await getAccessToken()){
+        if(window.Spotify && window.onSpotifyWebPlaybackSDKReady) window.onSpotifyWebPlaybackSDKReady();
+      }
+    }
+  })();
+  </script>
+
+  <!-- Load AFTER the integration code to avoid race conditions -->
+  <script src="https://sdk.scdn.co/spotify-player.js"></script>
+  <!-- ===== END SPOTIFY INTEGRATION ===== -->
+
+
+
+
+</body>
+</html>
