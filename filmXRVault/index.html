@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>XR Filmmaking Vault — Unifying XR/AR/VR Tools Across the Film Pipeline</title>
+  <meta name="description" content="An open taxonomy, database, and similarity-based browsing tool for XR, AR, and VR filmmaking tools across the production pipeline. Inspired by Locomotion Vault.">
+  <meta name="author" content="sroberto27">
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Favicon (inline SVG) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%230a0c10'/><text x='50' y='68' text-anchor='middle' font-size='52' font-weight='bold' fill='%2300d4ff'>XV</text></svg>">
+</head>
+<body>
+
+  <!-- ================================ HEADER ================================ -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="site-logo">
+        <span class="logo-icon">XV</span>
+        XR Filmmaking Vault
+      </a>
+
+      <nav class="site-nav" id="site-nav">
+        <a href="index.html" class="nav-link active">Database</a>
+        <a href="about.html" class="nav-link">About</a>
+        <a href="https://github.com/sroberto27/sroberto27.github.io/issues" target="_blank" class="nav-link">Suggest a Change</a>
+        <a href="https://forms.gle/PLACEHOLDER" target="_blank" class="nav-link cta">+ Submit Entry</a>
+      </nav>
+
+      <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle menu">☰</button>
+    </div>
+  </header>
+
+  <!-- ================================ HERO ================================ -->
+  <section class="hero">
+    <span class="hero-badge">🎬 Open Research Database</span>
+    <h1>
+      <span class="gradient-text">XR Filmmaking Vault</span>
+    </h1>
+    <p class="hero-subtitle">
+      An open taxonomy and interactive database of XR, AR &amp; VR tools across the film production pipeline — with attribute-based similarity browsing for research synthesis and tool design exploration.
+    </p>
+    <p class="hero-citation">
+      Inspired by <a href="https://locomotionvault.github.io/" target="_blank">Locomotion Vault</a> (Di Luca et al., CHI 2021). Hosted at <a href="https://sroberto27.github.io/filmXRVault/" target="_blank">sroberto27.github.io/filmXRVault</a>.
+    </p>
+
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-number" id="stat-entries">46</div>
+        <div class="stat-label">Entries</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number" id="stat-attributes">11</div>
+        <div class="stat-label">Attributes</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-number" id="stat-years">2014–2025</div>
+        <div class="stat-label">Year Range</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================================ SEARCH ================================ -->
+  <div class="search-container">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+      </svg>
+      <input type="text" class="search-input" id="search-input" placeholder="Search entries by title, author, keywords…">
+      <button class="search-clear" id="search-clear">&times;</button>
+    </div>
+  </div>
+
+  <!-- ================================ SECTION TABS ================================ -->
+  <div class="section-tabs-wrapper">
+    <div class="section-tabs">
+      <button class="section-tab active" data-tab="gallery">Gallery</button>
+      <button class="section-tab" data-tab="similarity">Similarity Graph</button>
+    </div>
+  </div>
+
+  <!-- ================================ GALLERY TAB ================================ -->
+  <div class="tab-content active" id="tab-gallery">
+    <div class="main-content">
+
+      <!-- Filter Backdrop (mobile) -->
+      <div class="filter-backdrop" id="filter-backdrop"></div>
+
+      <!-- Filter Panel -->
+      <aside class="filter-panel" id="filter-panel">
+        <div class="filter-header">
+          <h3>Filters</h3>
+          <button class="filter-reset" id="filter-reset-btn">Reset All</button>
+        </div>
+
+        <div class="active-filters" id="active-filters"></div>
+
+        <div id="filter-sections">
+          <!-- Dynamically generated by JS -->
+        </div>
+      </aside>
+
+      <!-- Gallery Area -->
+      <main class="gallery-area">
+        <div class="results-header">
+          <div class="results-count" id="results-count">
+            Showing <strong>46</strong> of <strong>46</strong> entries
+          </div>
+          <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap;">
+            <select class="sort-select" id="sort-select">
+              <option value="year-desc">Year (Newest)</option>
+              <option value="year-asc">Year (Oldest)</option>
+              <option value="title-asc">Title (A–Z)</option>
+              <option value="title-desc">Title (Z–A)</option>
+            </select>
+            <div class="view-toggles">
+              <button class="view-btn active" data-view="grid" title="Grid view">▦</button>
+              <button class="view-btn" data-view="list" title="List view">☰</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="gallery-grid" id="gallery-grid">
+          <!-- Dynamically generated by JS -->
+          <div class="loading-spinner"></div>
+        </div>
+      </main>
+
+    </div>
+  </div>
+
+  <!-- ================================ SIMILARITY TAB ================================ -->
+  <div class="tab-content" id="tab-similarity">
+    <section class="similarity-section">
+      <div class="similarity-header">
+        <h2>Similarity Graph</h2>
+        <p>Explore attribute-based similarity between entries. Nodes closer together share more taxonomy attributes. Click any node to view details.</p>
+      </div>
+
+      <div class="similarity-controls">
+        <div class="sim-control-group">
+          <label>Threshold:</label>
+          <input type="range" class="sim-slider" id="sim-threshold" min="0.1" max="0.9" step="0.05" value="0.45">
+          <span id="sim-threshold-val">0.45</span>
+        </div>
+        <div class="sim-control-group">
+          <label>Color by:</label>
+          <select class="sort-select" id="sim-color-by">
+            <option value="maturity">Maturity</option>
+            <option value="xrModality">XR Modality</option>
+            <option value="sourceType">Source Type</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Legend -->
+      <div style="display:flex;justify-content:center;gap:1.5rem;margin-bottom:1rem;flex-wrap:wrap;font-size:0.75rem;color:var(--text-muted);" id="sim-legend"></div>
+
+      <div class="similarity-canvas-wrapper">
+        <div id="similarity-canvas"></div>
+        <div class="sim-tooltip" id="sim-tooltip"></div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ================================ MODAL ================================ -->
+  <div class="modal-overlay" id="modal-overlay">
+    <div class="modal-content" id="modal-inner">
+      <!-- Dynamically generated by JS -->
+    </div>
+  </div>
+
+  <!-- ================================ MOBILE FILTER BUTTON ================================ -->
+  <button class="filter-drawer-toggle" id="filter-drawer-toggle" aria-label="Toggle filters">
+    ⚙
+  </button>
+
+  <!-- ================================ FOOTER ================================ -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-links">
+        <a href="https://github.com/sroberto27/sroberto27.github.io" target="_blank">GitHub Repository</a>
+        <a href="about.html">About &amp; Codebook</a>
+        <a href="https://forms.gle/PLACEHOLDER" target="_blank">Submit New Entry</a>
+        <a href="https://github.com/sroberto27/sroberto27.github.io/issues" target="_blank">Report Issue</a>
+      </div>
+      <p class="footer-copy">
+        XR Filmmaking Vault &copy; 2025. Inspired by <a href="https://locomotionvault.github.io/" target="_blank">Locomotion Vault</a> (Di Luca et al., CHI 2021).
+        <br>Data versioned in repository. Contributions welcome via GitHub or Google Form.
+      </p>
+    </div>
+  </footer>
+
+  <!-- ================================ SCRIPTS ================================ -->
+  <script src="js/app.js"></script>
+
+  <!-- Similarity legend dynamic update -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const legends = {
+        maturity: [
+          { label: 'Concept', color: '#8892a4' },
+          { label: 'Prototype', color: '#00d4ff' },
+          { label: 'Deployed/Pilot', color: '#7b5cff' },
+          { label: 'Commercial', color: '#ffaa2c' }
+        ],
+        xrModality: [
+          { label: 'VR', color: '#00d4ff' },
+          { label: 'AR', color: '#ff3d71' },
+          { label: 'MR', color: '#7b5cff' }
+        ],
+        sourceType: [
+          { label: 'Conference', color: '#00d4ff' },
+          { label: 'Journal', color: '#7b5cff' },
+          { label: 'Book', color: '#ffaa2c' },
+          { label: 'Industry Report', color: '#ff3d71' }
+        ]
+      };
+
+      function updateLegend(key) {
+        const el = document.getElementById('sim-legend');
+        if (!el) return;
+        const items = legends[key] || [];
+        el.innerHTML = items.map(item =>
+          `<span style="display:flex;align-items:center;gap:0.35rem;">
+            <span style="width:10px;height:10px;border-radius:50%;background:${item.color};display:inline-block;"></span>
+            ${item.label}
+          </span>`
+        ).join('');
+      }
+
+      updateLegend('maturity');
+
+      const sel = document.getElementById('sim-color-by');
+      if (sel) sel.addEventListener('change', () => updateLegend(sel.value));
+
+      const slider = document.getElementById('sim-threshold');
+      const sliderVal = document.getElementById('sim-threshold-val');
+      if (slider && sliderVal) {
+        slider.addEventListener('input', () => { sliderVal.textContent = slider.value; });
+      }
+    });
+  </script>
+
+</body>
+</html>

@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>About — XR Filmmaking Vault</title>
+  <meta name="description" content="About the XR Filmmaking Vault: taxonomy, codebook, methodology, and contribution guidelines.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=JetBrains+Mono:wght@400;500;600;700&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='16' fill='%230a0c10'/><text x='50' y='68' text-anchor='middle' font-size='52' font-weight='bold' fill='%2300d4ff'>XV</text></svg>">
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="index.html" class="site-logo">
+        <span class="logo-icon">XV</span>
+        XR Filmmaking Vault
+      </a>
+      <nav class="site-nav" id="site-nav">
+        <a href="index.html" class="nav-link">Database</a>
+        <a href="about.html" class="nav-link active">About</a>
+        <a href="https://github.com/sroberto27/sroberto27.github.io/issues" target="_blank" class="nav-link">Suggest a Change</a>
+        <a href="https://forms.gle/PLACEHOLDER" target="_blank" class="nav-link cta">+ Submit Entry</a>
+      </nav>
+      <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle menu">☰</button>
+    </div>
+  </header>
+
+  <!-- CONTENT -->
+  <div class="about-content">
+
+    <h2>About XR Filmmaking Vault</h2>
+    <p>
+      <strong>XR Filmmaking Vault</strong> is an open taxonomy, database, and interactive visualization of XR, AR, and VR tools and systems across the film production pipeline. It is designed to support systematic comparison, gap analysis, and tool design exploration for researchers, practitioners, and educators working at the intersection of immersive technology and filmmaking.
+    </p>
+    <p>
+      This project is modeled after <a href="https://locomotionvault.github.io/" target="_blank">Locomotion Vault</a> (Di Luca, Seifi, Egan &amp; Gonzalez-Franco, CHI 2021), which demonstrated the value of an attribute-based database with similarity-driven navigation for organizing a high-dimensional design space.
+    </p>
+
+    <h2>Research Framing</h2>
+    <p>
+      Virtual production is widely framed as a way to make film and television work more efficiently by combining real-time, computer-generated environments with production workflows. However, its boundaries and terminology evolve rapidly, making knowledge fragmented across academic papers, conference demos, standards initiatives, vendor documentation, and production case studies.
+    </p>
+    <p>
+      This project addresses three central research questions:
+    </p>
+    <ul>
+      <li>What XR-relevant filmmaking tools and systems have been described across academic and industry sources, and what production stages and use-cases do they support?</li>
+      <li>What attribute dimensions consistently characterize these tools in ways that enable structured comparison?</li>
+      <li>Can an attribute-based similarity metric support navigation of the design space in a scalable way?</li>
+    </ul>
+
+    <h2>Taxonomy &amp; Codebook</h2>
+    <p>
+      Every entry in the database is coded with the following attributes, derived from a systematic analysis of the literature and aligned with established XR and filmmaking taxonomies:
+    </p>
+
+    <table class="codebook-table">
+      <thead>
+        <tr>
+          <th>Attribute</th>
+          <th>Type</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Film Pipeline Stage(s)</strong></td>
+          <td>Multi-label</td>
+          <td>The stage(s) of the film production process: Pre-production, Production, Post-production.</td>
+        </tr>
+        <tr>
+          <td><strong>Use-Case(s)</strong></td>
+          <td>Multi-label</td>
+          <td>Specific filmmaking tasks: Previsualization &amp; Storyboarding, Virtual Location Scouting/Set Design, On-Set Visualization (Virtual Production), Immersive Storytelling (XR Content Creation), Remote Collaboration, Training &amp; Rehearsal, Post-production Review.</td>
+        </tr>
+        <tr>
+          <td><strong>XR Modality</strong></td>
+          <td>Categorical</td>
+          <td>Type of extended reality technology: AR, VR, or MR.</td>
+        </tr>
+        <tr>
+          <td><strong>Platform/Hardware</strong></td>
+          <td>Multi-label</td>
+          <td>Required hardware: VR HMD (Tethered/Standalone), AR/MR Headset, Mobile Device, Projection/Spatial Display, Tracking System, Other Peripherals.</td>
+        </tr>
+        <tr>
+          <td><strong>Core Interaction Techniques</strong></td>
+          <td>Multi-label</td>
+          <td>Interaction patterns: Navigation/Travel, Selection &amp; Manipulation, System Control, Annotation/Markup, Collaboration Mechanisms, Perspective/Camera Control.</td>
+        </tr>
+        <tr>
+          <td><strong>Input/Output Data Formats</strong></td>
+          <td>Multi-label</td>
+          <td>Data types: 3D Models/Assets, Spatial Scans/Point Clouds, 2D Images/Video, Motion/Tracking Data, Game Engine/Scene Files, Metadata/Script Data.</td>
+        </tr>
+        <tr>
+          <td><strong>Target User Role(s)</strong></td>
+          <td>Multi-label</td>
+          <td>Intended users: Director, Cinematographer/DP, Production Designer, VFX Supervisor, Editor, Producer, Actor/Performer, Other Crew.</td>
+        </tr>
+        <tr>
+          <td><strong>Evaluation</strong></td>
+          <td>Multi-label</td>
+          <td>Validation methods: User Study, Expert Review, Case Study, Controlled Experiment, Qualitative Analysis, No Formal Evaluation.</td>
+        </tr>
+        <tr>
+          <td><strong>Reported Outcomes</strong></td>
+          <td>Multi-label</td>
+          <td>Key results: Efficiency Gains, Improved Decision Quality, Enhanced Collaboration, Higher Usability, Creative Enablement, Realism/Presence, Learning Outcomes.</td>
+        </tr>
+        <tr>
+          <td><strong>Open Science</strong></td>
+          <td>Categorical</td>
+          <td>Availability of code/data: No (Closed), Code Available, Data Available, Code &amp; Data Available.</td>
+        </tr>
+        <tr>
+          <td><strong>Maturity</strong></td>
+          <td>Ordinal</td>
+          <td>Development stage: Concept → Prototype → Deployed/Pilot → Commercial/Production-Ready.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>Similarity Metric</h2>
+    <p>
+      The similarity visualization uses a Gower-style mixed-data distance function that combines Jaccard similarity for multi-label attributes (e.g., pipeline stages, use-cases, modalities) with exact-match similarity for categorical attributes (e.g., maturity, open science) and normalized proximity for numerical attributes (e.g., year). This approach enables automatic similarity computation without requiring expert-created similarity judgments for every pair.
+    </p>
+
+    <h2>Search Strategy &amp; Methodology</h2>
+    <p>
+      Literature was gathered through a multi-pronged search strategy spanning Google Scholar, ACM Digital Library, IEEE Xplore, arXiv, Springer/Elsevier, SIGGRAPH archives, SMPTE publications, and industry sources (Epic Games, ILM, FXGuide, American Cinematographer, etc.). The search covered 2014–2025, with selective inclusion of earlier foundational works.
+    </p>
+    <p>
+      The methodology follows a PRISMA-style approach with backward and forward snowballing from a seed list of 46+ key references, iterative query refinement, and deduplication.
+    </p>
+
+    <h2>Data Schema (JSON)</h2>
+    <p>
+      Each entry in <code>data/database.json</code> follows this schema:
+    </p>
+    <pre style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:1.25rem;font-size:0.8rem;color:var(--text-secondary);overflow-x:auto;font-family:var(--font-mono);line-height:1.7;">
+{
+  "id": 1,
+  "title": "string",
+  "authors": ["string"],
+  "year": 2022,
+  "source": "string (venue name)",
+  "sourceType": "Conference | Journal | Book | Industry Report",
+  "doi": "string (optional)",
+  "url": "string (optional)",
+  "abstract": "string",
+  "pipelineStages": ["Pre-production", "Production", "Post-production"],
+  "useCases": ["string (from allowed values)"],
+  "xrModality": ["AR", "VR", "MR"],
+  "platformHardware": ["string (from allowed values)"],
+  "coreInteraction": ["string (from allowed values)"],
+  "dataFormats": ["string (from allowed values)"],
+  "targetRoles": ["string (from allowed values)"],
+  "evaluation": ["string (from allowed values)"],
+  "reportedOutcomes": ["string (from allowed values)"],
+  "openScience": "string (from allowed values)",
+  "maturity": "Concept | Prototype | Deployed/Pilot | Commercial/Production-Ready",
+  "tags": ["string"]
+}
+    </pre>
+
+    <h2>Contributing</h2>
+    <p>
+      We welcome contributions from the research community. There are two ways to submit entries or corrections:
+    </p>
+    <ul>
+      <li><strong>Google Form:</strong> <a href="https://forms.gle/PLACEHOLDER" target="_blank">Submit a new entry</a> — best for single entries, no GitHub account needed.</li>
+      <li><strong>GitHub Issues / Pull Requests:</strong> <a href="https://github.com/sroberto27/sroberto27.github.io/issues" target="_blank">Open an issue</a> or submit a PR adding entries to <code>filmXRVault/data/database.json</code>. Follow the JSON schema above.</li>
+    </ul>
+    <p>
+      All submissions are reviewed for completeness and coding accuracy before inclusion in the database.
+    </p>
+
+    <h2>Site Architecture</h2>
+    <p>
+      The website is a lightweight static site designed for long-term maintenance:
+    </p>
+    <ul>
+      <li><strong>Hosting:</strong> GitHub Pages at <code>https://sroberto27.github.io/filmXRVault/</code></li>
+      <li><strong>Stack:</strong> Pure HTML, CSS, and vanilla JavaScript — no build tools or frameworks required</li>
+      <li><strong>Data:</strong> Versioned JSON file in the repository (<code>data/database.json</code>)</li>
+      <li><strong>Deployment:</strong> Push to <code>main</code> branch → automatic GitHub Pages deployment</li>
+    </ul>
+    <p>File structure:</p>
+    <pre style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:1.25rem;font-size:0.8rem;color:var(--text-secondary);overflow-x:auto;font-family:var(--font-mono);line-height:1.7;">
+sroberto27.github.io/
+└── filmXRVault/
+    ├── index.html              # Main database page
+    ├── about.html              # About, codebook, contribution guide
+    ├── css/
+    │   └── style.css           # All styles
+    ├── js/
+    │   └── app.js              # Application logic
+    ├── data/
+    │   └── database.json       # Versioned database
+    └── img/                    # (optional) images, thumbnails
+    </pre>
+
+    <h2>Deployment Checklist</h2>
+    <ul>
+      <li>Clone your existing repository: <code>git clone https://github.com/sroberto27/sroberto27.github.io.git</code></li>
+      <li>Create a <code>filmXRVault/</code> folder inside the repository root</li>
+      <li>Copy all project files (index.html, about.html, css/, js/, data/) into <code>filmXRVault/</code></li>
+      <li>Commit and push to <code>main</code></li>
+      <li>Visit <code>https://sroberto27.github.io/filmXRVault/</code> to verify</li>
+      <li>Set up Google Form for contributions and replace <code>PLACEHOLDER</code> in nav links</li>
+      <li>Add DOI via Zenodo integration for data citation (optional)</li>
+    </ul>
+
+    <h2>Citation</h2>
+    <p>
+      If you use this database or website in your work, please cite:
+    </p>
+    <pre style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius-md);padding:1.25rem;font-size:0.8rem;color:var(--text-secondary);overflow-x:auto;font-family:var(--font-mono);line-height:1.6;">
+@article{xrfilmmakingvault2025,
+  title={XR Filmmaking Vault: Unifying XR, AR, and VR Tools
+         Across the Film Pipeline with an Open Taxonomy,
+         Database, and Similarity-Based Browsing},
+  author={[Author Names]},
+  year={2025},
+  url={https://sroberto27.github.io/filmXRVault/}
+}
+    </pre>
+
+    <h2>Acknowledgments</h2>
+    <p>
+      This work is inspired by the Locomotion Vault (Di Luca, Seifi, Egan &amp; Gonzalez-Franco, CHI 2021) and its approach to organizing high-dimensional design spaces through attribute-based databases and similarity-driven navigation. We thank the authors for making their methodology and website open for reference.
+    </p>
+
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div class="footer-links">
+        <a href="https://github.com/sroberto27/sroberto27.github.io" target="_blank">GitHub Repository</a>
+        <a href="index.html">Database</a>
+        <a href="https://forms.gle/PLACEHOLDER" target="_blank">Submit New Entry</a>
+        <a href="https://github.com/sroberto27/sroberto27.github.io/issues" target="_blank">Report Issue</a>
+      </div>
+      <p class="footer-copy">
+        XR Filmmaking Vault &copy; 2025. Inspired by <a href="https://locomotionvault.github.io/" target="_blank">Locomotion Vault</a> (Di Luca et al., CHI 2021).
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    // Mobile menu toggle
+    const btn = document.getElementById('mobile-menu-btn');
+    const nav = document.getElementById('site-nav');
+    if (btn && nav) btn.addEventListener('click', () => nav.classList.toggle('open'));
+  </script>
+
+</body>
+</html>
