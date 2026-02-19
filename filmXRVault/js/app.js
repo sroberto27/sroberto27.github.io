@@ -111,27 +111,35 @@
   document.addEventListener('DOMContentLoaded', init);
 
   function init() {
-    fetch('data/database.json')
-      .then(r => r.json())
-      .then(data => {
-        database = data;
-        filteredData = [...data];
-        buildFilterPanel();
-        renderGallery();
-        updateStats();
-        initSearch();
-        initViewToggles();
-        initSort();
-        initMobileMenu();
-        initFilterDrawer();
-        initSimilarityViz();
-        initTabs();
-      })
-      .catch(err => {
-        console.error('Failed to load database:', err);
-        const gallery = $('#gallery-grid');
-        if (gallery) gallery.innerHTML = '<div class="empty-state"><h3>Error Loading Database</h3><p>Could not load the entry database. Please check the data file.</p></div>';
-      });
+    // Primary: load from the <script src="data/database.js"> global
+    // Fallback: fetch JSON (works on web servers but not file://)
+    if (window.XR_DATABASE) {
+      onDataLoaded(window.XR_DATABASE);
+    } else {
+      fetch('data/database.json')
+        .then(r => r.json())
+        .then(data => onDataLoaded(data))
+        .catch(err => {
+          console.error('Failed to load database:', err);
+          const gallery = $('#gallery-grid');
+          if (gallery) gallery.innerHTML = '<div class="empty-state"><h3>Error Loading Database</h3><p>Could not load the entry database. Please check the data file.</p></div>';
+        });
+    }
+  }
+
+  function onDataLoaded(data) {
+    database = data;
+    filteredData = [...data];
+    buildFilterPanel();
+    renderGallery();
+    updateStats();
+    initSearch();
+    initViewToggles();
+    initSort();
+    initMobileMenu();
+    initFilterDrawer();
+    initSimilarityViz();
+    initTabs();
   }
 
   // ---- Filter Panel ----
@@ -569,17 +577,100 @@
 
     const thresholdSlider = $('#sim-threshold');
     const colorSelect = $('#sim-color-by');
+    const zoomInBtn = $('#sim-zoom-in');
+    const zoomOutBtn = $('#sim-zoom-out');
+    const zoomResetBtn = $('#sim-zoom-reset');
+
+    // Zoom / pan state
+    let viewBox = { x: 0, y: 0, w: 1000, h: 700 };
+    const defaultViewBox = { x: 0, y: 0, w: 1000, h: 700 };
+    let isPanning = false;
+    let panStart = { x: 0, y: 0 };
+    let nodePositions = [];
+
+    // Pre-compute positions once (reused across redraws)
+    function computeLayout() {
+      if (database.length === 0) return [];
+      const n = database.length;
+      const W = 1000;
+      const H = 700;
+      const padding = 60;
+
+      // Initialize positions in a large circle
+      const positions = database.map((_, i) => {
+        const angle = (i / n) * Math.PI * 2;
+        const radius = Math.min(W, H) * 0.35;
+        return {
+          x: W / 2 + Math.cos(angle) * radius + (Math.random() - 0.5) * 40,
+          y: H / 2 + Math.sin(angle) * radius + (Math.random() - 0.5) * 40
+        };
+      });
+
+      // Force-directed layout — higher repulsion to spread nodes
+      const iterations = 150;
+      const repulsion = 2500;
+      const attraction = 0.005;
+
+      for (let iter = 0; iter < iterations; iter++) {
+        const forces = positions.map(() => ({ fx: 0, fy: 0 }));
+        const cooling = 1 - (iter / iterations);
+
+        for (let i = 0; i < n; i++) {
+          for (let j = i + 1; j < n; j++) {
+            const dx = positions[j].x - positions[i].x;
+            const dy = positions[j].y - positions[i].y;
+            const dist = Math.sqrt(dx * dx + dy * dy) + 0.1;
+
+            // Repulsion — all pairs push apart
+            const repF = repulsion / (dist * dist);
+            const ux = dx / dist;
+            const uy = dy / dist;
+            forces[i].fx -= ux * repF;
+            forces[i].fy -= uy * repF;
+            forces[j].fx += ux * repF;
+            forces[j].fy += uy * repF;
+
+            // Attraction — similar nodes pull together
+            const sim = computeSimilarity(database[i], database[j]);
+            if (sim > 0.25) {
+              const idealDist = (1 - sim) * 300 + 40;
+              const attF = attraction * (dist - idealDist);
+              forces[i].fx += ux * attF;
+              forces[i].fy += uy * attF;
+              forces[j].fx -= ux * attF;
+              forces[j].fy -= uy * attF;
+            }
+          }
+
+          // Gravity toward center
+          const cx = positions[i].x - W / 2;
+          const cy = positions[i].y - H / 2;
+          forces[i].fx -= cx * 0.0003;
+          forces[i].fy -= cy * 0.0003;
+        }
+
+        // Apply forces with cooling
+        const step = 0.6 * cooling;
+        positions.forEach((pos, i) => {
+          pos.x += Math.max(-20, Math.min(20, forces[i].fx * step));
+          pos.y += Math.max(-20, Math.min(20, forces[i].fy * step));
+          pos.x = Math.max(padding, Math.min(W - padding, pos.x));
+          pos.y = Math.max(padding, Math.min(H - padding, pos.y));
+        });
+      }
+
+      return positions;
+    }
+
+    nodePositions = computeLayout();
 
     function drawSimilarityGraph() {
-      if (database.length === 0) return;
+      if (database.length === 0 || nodePositions.length === 0) return;
 
-      const threshold = thresholdSlider ? parseFloat(thresholdSlider.value) : 0.5;
+      const threshold = thresholdSlider ? parseFloat(thresholdSlider.value) : 0.45;
       const colorBy = colorSelect ? colorSelect.value : 'maturity';
-      const width = canvas.clientWidth;
-      const height = canvas.clientHeight;
-
-      // Compute positions using simple force-directed layout substitute (MDS-like)
-      const positions = computePositions(database, width, height);
+      const W = 1000;
+      const H = 700;
 
       // Color mapping
       const colorMap = {
@@ -602,15 +693,17 @@
         }
       };
 
-      // Build SVG
-      let svg = `<svg width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">`;
+      // Build SVG with viewBox for zoom/pan
+      const vb = viewBox;
+      let svg = `<svg width="100%" height="100%" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" preserveAspectRatio="xMidYMid meet" id="sim-svg">`;
 
       // Draw edges
       for (let i = 0; i < database.length; i++) {
         for (let j = i + 1; j < database.length; j++) {
           const sim = computeSimilarity(database[i], database[j]);
           if (sim >= threshold) {
-            svg += `<line x1="${positions[i].x}" y1="${positions[i].y}" x2="${positions[j].x}" y2="${positions[j].y}" stroke="rgba(0,212,255,${sim * 0.15})" stroke-width="1"/>`;
+            const opacity = 0.06 + sim * 0.18;
+            svg += `<line x1="${nodePositions[i].x}" y1="${nodePositions[i].y}" x2="${nodePositions[j].x}" y2="${nodePositions[j].y}" stroke="rgba(0,212,255,${opacity})" stroke-width="${0.5 + sim * 1.5}"/>`;
           }
         }
       }
@@ -629,44 +722,61 @@
           color = colors[entry.sourceType] || '#8892a4';
         }
 
-        const r = 6;
-        svg += `<circle cx="${positions[i].x}" cy="${positions[i].y}" r="${r}" fill="${color}" stroke="rgba(255,255,255,0.15)" stroke-width="1" class="sim-node-svg" data-id="${entry.id}" style="cursor:pointer">
-          <title>${entry.title} (${entry.year})</title>
-        </circle>`;
+        const r = 10;
+        svg += `<circle cx="${nodePositions[i].x}" cy="${nodePositions[i].y}" r="${r}" fill="${color}" fill-opacity="0.85" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" class="sim-node-svg" data-id="${entry.id}" data-idx="${i}" style="cursor:pointer"/>`;
       });
 
       svg += '</svg>';
       canvas.innerHTML = svg;
 
-      // Node click events
+      // Bind node events
       $$('.sim-node-svg', canvas).forEach(node => {
-        node.addEventListener('click', () => {
-          const id = parseInt(node.dataset.id);
-          openModal(id);
+        node.addEventListener('click', (e) => {
+          e.stopPropagation();
+          openModal(parseInt(node.dataset.id));
         });
         node.addEventListener('mouseenter', (e) => {
-          node.setAttribute('r', '10');
-          node.setAttribute('stroke-width', '2');
+          node.setAttribute('r', '15');
+          node.setAttribute('stroke-width', '2.5');
+          node.setAttribute('fill-opacity', '1');
           showSimTooltip(e, node.dataset.id);
         });
         node.addEventListener('mouseleave', () => {
-          node.setAttribute('r', '6');
-          node.setAttribute('stroke-width', '1');
+          node.setAttribute('r', '10');
+          node.setAttribute('stroke-width', '1.5');
+          node.setAttribute('fill-opacity', '0.85');
           hideSimTooltip();
         });
       });
+
+      // Bind pan on SVG
+      const svgEl = $('#sim-svg');
+      if (svgEl) {
+        svgEl.addEventListener('mousedown', onPanStart);
+        svgEl.addEventListener('mousemove', onPanMove);
+        svgEl.addEventListener('mouseup', onPanEnd);
+        svgEl.addEventListener('mouseleave', onPanEnd);
+        svgEl.addEventListener('wheel', onZoomWheel, { passive: false });
+
+        // Touch support
+        svgEl.addEventListener('touchstart', onTouchStart, { passive: false });
+        svgEl.addEventListener('touchmove', onTouchMove, { passive: false });
+        svgEl.addEventListener('touchend', onPanEnd);
+      }
     }
 
+    // --- Tooltip ---
     function showSimTooltip(e, id) {
       const entry = database.find(d => d.id === parseInt(id));
       if (!entry) return;
-      let tooltip = $('#sim-tooltip');
+      const tooltip = $('#sim-tooltip');
       if (!tooltip) return;
-      tooltip.innerHTML = `<strong>${entry.title}</strong><br>${entry.year} · ${entry.authors[0]}${entry.authors.length > 1 ? ' et al.' : ''}`;
+      tooltip.innerHTML = `<strong>${entry.title}</strong><br><span style="opacity:0.7">${entry.year} · ${entry.authors[0]}${entry.authors.length > 1 ? ' et al.' : ''}</span>`;
       tooltip.style.display = 'block';
-      const rect = canvas.getBoundingClientRect();
-      tooltip.style.left = (e.clientX - rect.left + 12) + 'px';
-      tooltip.style.top = (e.clientY - rect.top - 10) + 'px';
+      const wrapper = $('#sim-wrapper');
+      const rect = wrapper.getBoundingClientRect();
+      tooltip.style.left = Math.min(e.clientX - rect.left + 14, rect.width - 260) + 'px';
+      tooltip.style.top = (e.clientY - rect.top - 12) + 'px';
     }
 
     function hideSimTooltip() {
@@ -674,114 +784,94 @@
       if (tooltip) tooltip.style.display = 'none';
     }
 
-    // Compute 2D positions (simplified MDS using similarity as spring lengths)
-    function computePositions(data, w, h) {
-      const n = data.length;
-      const padding = 50;
-      const usableW = w - 2 * padding;
-      const usableH = h - 2 * padding;
-
-      // Initialize positions in a spiral
-      const positions = data.map((_, i) => {
-        const angle = (i / n) * Math.PI * 6;
-        const radius = (i / n) * Math.min(usableW, usableH) * 0.4;
-        return {
-          x: w / 2 + Math.cos(angle) * radius,
-          y: h / 2 + Math.sin(angle) * radius
-        };
-      });
-
-      // Simple force-directed iteration
-      const iterations = 80;
-      const repulsion = 500;
-      const attraction = 0.01;
-
-      for (let iter = 0; iter < iterations; iter++) {
-        const forces = positions.map(() => ({ fx: 0, fy: 0 }));
-
-        for (let i = 0; i < n; i++) {
-          for (let j = i + 1; j < n; j++) {
-            const dx = positions[j].x - positions[i].x;
-            const dy = positions[j].y - positions[i].y;
-            const dist = Math.sqrt(dx * dx + dy * dy) + 1;
-
-            // Repulsion
-            const repF = repulsion / (dist * dist);
-            forces[i].fx -= (dx / dist) * repF;
-            forces[i].fy -= (dy / dist) * repF;
-            forces[j].fx += (dx / dist) * repF;
-            forces[j].fy += (dy / dist) * repF;
-
-            // Attraction based on similarity
-            const sim = computeSimilarity(data[i], data[j]);
-            if (sim > 0.3) {
-              const attF = attraction * sim * dist;
-              forces[i].fx += (dx / dist) * attF;
-              forces[i].fy += (dy / dist) * attF;
-              forces[j].fx -= (dx / dist) * attF;
-              forces[j].fy -= (dy / dist) * attF;
-            }
-          }
-        }
-
-        // Apply forces with damping
-        const damping = 0.5 * (1 - iter / iterations);
-        positions.forEach((pos, i) => {
-          pos.x += forces[i].fx * damping;
-          pos.y += forces[i].fy * damping;
-          // Constrain to bounds
-          pos.x = Math.max(padding, Math.min(w - padding, pos.x));
-          pos.y = Math.max(padding, Math.min(h - padding, pos.y));
-        });
-      }
-
-      return positions;
+    // --- Pan ---
+    function onPanStart(e) {
+      if (e.target.classList.contains('sim-node-svg')) return;
+      isPanning = true;
+      panStart = { x: e.clientX, y: e.clientY };
+      canvas.style.cursor = 'grabbing';
     }
 
-    // Gower-style similarity for mixed attributes
-    function computeSimilarity(a, b) {
-      let totalWeight = 0;
-      let totalSim = 0;
-
-      // Multi-label Jaccard similarity for array fields
-      const arrayFields = ['pipelineStages', 'useCases', 'xrModality', 'platformHardware', 'coreInteraction', 'dataFormats', 'targetRoles', 'evaluation', 'reportedOutcomes', 'tags'];
-
-      arrayFields.forEach(field => {
-        const setA = new Set(a[field] || []);
-        const setB = new Set(b[field] || []);
-        if (setA.size === 0 && setB.size === 0) return;
-
-        const union = new Set([...setA, ...setB]);
-        const intersection = [...setA].filter(x => setB.has(x));
-        const jaccard = union.size > 0 ? intersection.length / union.size : 0;
-        totalSim += jaccard;
-        totalWeight += 1;
-      });
-
-      // Categorical similarity
-      const catFields = ['maturity', 'openScience', 'sourceType'];
-      catFields.forEach(field => {
-        if (a[field] && b[field]) {
-          totalSim += a[field] === b[field] ? 1 : 0;
-          totalWeight += 1;
-        }
-      });
-
-      // Year proximity (normalized)
-      if (a.year && b.year) {
-        const maxYearDiff = 12;
-        const yearSim = 1 - Math.abs(a.year - b.year) / maxYearDiff;
-        totalSim += Math.max(0, yearSim);
-        totalWeight += 1;
-      }
-
-      return totalWeight > 0 ? totalSim / totalWeight : 0;
+    function onPanMove(e) {
+      if (!isPanning) return;
+      const dx = (e.clientX - panStart.x) * (viewBox.w / canvas.clientWidth);
+      const dy = (e.clientY - panStart.y) * (viewBox.h / canvas.clientHeight);
+      viewBox.x -= dx;
+      viewBox.y -= dy;
+      panStart = { x: e.clientX, y: e.clientY };
+      updateViewBox();
     }
+
+    function onPanEnd() {
+      isPanning = false;
+      canvas.style.cursor = 'grab';
+    }
+
+    // --- Touch pan ---
+    function onTouchStart(e) {
+      if (e.touches.length === 1) {
+        isPanning = true;
+        panStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      }
+    }
+
+    function onTouchMove(e) {
+      if (!isPanning || e.touches.length !== 1) return;
+      e.preventDefault();
+      const dx = (e.touches[0].clientX - panStart.x) * (viewBox.w / canvas.clientWidth);
+      const dy = (e.touches[0].clientY - panStart.y) * (viewBox.h / canvas.clientHeight);
+      viewBox.x -= dx;
+      viewBox.y -= dy;
+      panStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      updateViewBox();
+    }
+
+    // --- Zoom ---
+    function onZoomWheel(e) {
+      e.preventDefault();
+      const factor = e.deltaY > 0 ? 1.1 : 0.9;
+      zoomAt(e.clientX, e.clientY, factor);
+    }
+
+    function zoomAt(clientX, clientY, factor) {
+      const rect = canvas.getBoundingClientRect();
+      const mx = ((clientX - rect.left) / rect.width) * viewBox.w + viewBox.x;
+      const my = ((clientY - rect.top) / rect.height) * viewBox.h + viewBox.y;
+
+      const newW = Math.max(200, Math.min(3000, viewBox.w * factor));
+      const newH = Math.max(140, Math.min(2100, viewBox.h * factor));
+
+      viewBox.x = mx - (mx - viewBox.x) * (newW / viewBox.w);
+      viewBox.y = my - (my - viewBox.y) * (newH / viewBox.h);
+      viewBox.w = newW;
+      viewBox.h = newH;
+      updateViewBox();
+    }
+
+    function zoomBy(factor) {
+      const rect = canvas.getBoundingClientRect();
+      zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, factor);
+    }
+
+    function resetView() {
+      viewBox = { ...defaultViewBox };
+      updateViewBox();
+    }
+
+    function updateViewBox() {
+      const svgEl = $('#sim-svg');
+      if (svgEl) svgEl.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+    }
+
+    // --- Button bindings ---
+    if (zoomInBtn) zoomInBtn.addEventListener('click', () => zoomBy(0.75));
+    if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => zoomBy(1.33));
+    if (zoomResetBtn) zoomResetBtn.addEventListener('click', resetView);
 
     // Initial draw
     drawSimilarityGraph();
 
-    // Redraw on controls change
+    // Redraw on controls change (keeps positions, just updates edges/colors)
     if (thresholdSlider) thresholdSlider.addEventListener('input', drawSimilarityGraph);
     if (colorSelect) colorSelect.addEventListener('change', drawSimilarityGraph);
 
@@ -791,6 +881,46 @@
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(drawSimilarityGraph, 200);
     });
+  }
+
+  // Gower-style similarity for mixed attributes
+  function computeSimilarity(a, b) {
+    let totalWeight = 0;
+    let totalSim = 0;
+
+    // Multi-label Jaccard similarity for array fields
+    const arrayFields = ['pipelineStages', 'useCases', 'xrModality', 'platformHardware', 'coreInteraction', 'dataFormats', 'targetRoles', 'evaluation', 'reportedOutcomes', 'tags'];
+
+    arrayFields.forEach(field => {
+      const setA = new Set(a[field] || []);
+      const setB = new Set(b[field] || []);
+      if (setA.size === 0 && setB.size === 0) return;
+
+      const union = new Set([...setA, ...setB]);
+      const intersection = [...setA].filter(x => setB.has(x));
+      const jaccard = union.size > 0 ? intersection.length / union.size : 0;
+      totalSim += jaccard;
+      totalWeight += 1;
+    });
+
+    // Categorical similarity
+    const catFields = ['maturity', 'openScience', 'sourceType'];
+    catFields.forEach(field => {
+      if (a[field] && b[field]) {
+        totalSim += a[field] === b[field] ? 1 : 0;
+        totalWeight += 1;
+      }
+    });
+
+    // Year proximity (normalized)
+    if (a.year && b.year) {
+      const maxYearDiff = 12;
+      const yearSim = 1 - Math.abs(a.year - b.year) / maxYearDiff;
+      totalSim += Math.max(0, yearSim);
+      totalWeight += 1;
+    }
+
+    return totalWeight > 0 ? totalSim / totalWeight : 0;
   }
 
   // ---- Public API ----

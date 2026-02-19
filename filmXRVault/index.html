@@ -32,7 +32,7 @@
         <a href="index.html" class="nav-link active">Database</a>
         <a href="about.html" class="nav-link">About</a>
         <a href="https://github.com/sroberto27/sroberto27.github.io/issues" target="_blank" class="nav-link">Suggest a Change</a>
-        <a href="https://forms.gle/PLACEHOLDER" target="_blank" class="nav-link cta">+ Submit Entry</a>
+        <a href="mailto:sroberto27@gmail.com?subject=XR%20Filmmaking%20Vault%20%E2%80%93%20New%20Entry%20Submission&amp;body=Please%20provide%20the%20following%20for%20your%20submission%3A%0A%0A1.%20Title%3A%0A2.%20Authors%3A%0A3.%20Year%3A%0A4.%20Source%20%2F%20Publication%3A%0A5.%20DOI%20or%20URL%3A%0A6.%20Abstract%20(brief%20description)%3A%0A7.%20Pipeline%20Stage(s)%3A%20Pre-production%20%2F%20Production%20%2F%20Post-production%0A8.%20Use%20Case(s)%3A%0A9.%20XR%20Modality%3A%20AR%20%2F%20VR%20%2F%20MR%0A10.%20Platform%20%2F%20Hardware%3A%0A11.%20Target%20User%20Role(s)%3A%0A12.%20Evaluation%20Type%3A%0A13.%20Maturity%20Level%3A%20Concept%20%2F%20Prototype%20%2F%20Deployed%20%2F%20Commercial%0A14.%20Open%20Science%3A%20Code%20%2F%20Data%20%2F%20Both%20%2F%20None%0A15.%20Attach%20the%20paper%20or%20PDF%20if%20available." class="nav-link cta">+ Submit Entry</a>
       </nav>
 
       <button class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle menu">☰</button>
@@ -89,10 +89,11 @@
 
   <!-- ================================ GALLERY TAB ================================ -->
   <div class="tab-content active" id="tab-gallery">
-    <div class="main-content">
 
-      <!-- Filter Backdrop (mobile) -->
-      <div class="filter-backdrop" id="filter-backdrop"></div>
+    <!-- Filter Backdrop (mobile only — must be outside grid) -->
+    <div class="filter-backdrop" id="filter-backdrop"></div>
+
+    <div class="main-content">
 
       <!-- Filter Panel -->
       <aside class="filter-panel" id="filter-panel">
@@ -164,7 +165,13 @@
       <!-- Legend -->
       <div style="display:flex;justify-content:center;gap:1.5rem;margin-bottom:1rem;flex-wrap:wrap;font-size:0.75rem;color:var(--text-muted);" id="sim-legend"></div>
 
-      <div class="similarity-canvas-wrapper">
+      <div class="similarity-canvas-wrapper" id="sim-wrapper">
+        <div class="sim-zoom-controls">
+          <button class="sim-zoom-btn" id="sim-zoom-in" title="Zoom in">+</button>
+          <button class="sim-zoom-btn" id="sim-zoom-reset" title="Reset view">⟲</button>
+          <button class="sim-zoom-btn" id="sim-zoom-out" title="Zoom out">−</button>
+        </div>
+        <div class="sim-pan-hint">Scroll to zoom · Drag to pan</div>
         <div id="similarity-canvas"></div>
         <div class="sim-tooltip" id="sim-tooltip"></div>
       </div>
@@ -189,17 +196,18 @@
       <div class="footer-links">
         <a href="https://github.com/sroberto27/sroberto27.github.io" target="_blank">GitHub Repository</a>
         <a href="about.html">About &amp; Codebook</a>
-        <a href="https://forms.gle/PLACEHOLDER" target="_blank">Submit New Entry</a>
+        <a href="mailto:sroberto27@gmail.com?subject=XR%20Filmmaking%20Vault%20%E2%80%93%20New%20Entry%20Submission&amp;body=Please%20provide%20the%20following%20for%20your%20submission%3A%0A%0A1.%20Title%3A%0A2.%20Authors%3A%0A3.%20Year%3A%0A4.%20Source%20%2F%20Publication%3A%0A5.%20DOI%20or%20URL%3A%0A6.%20Abstract%20(brief%20description)%3A%0A7.%20Pipeline%20Stage(s)%3A%20Pre-production%20%2F%20Production%20%2F%20Post-production%0A8.%20Use%20Case(s)%3A%0A9.%20XR%20Modality%3A%20AR%20%2F%20VR%20%2F%20MR%0A10.%20Platform%20%2F%20Hardware%3A%0A11.%20Target%20User%20Role(s)%3A%0A12.%20Evaluation%20Type%3A%0A13.%20Maturity%20Level%3A%20Concept%20%2F%20Prototype%20%2F%20Deployed%20%2F%20Commercial%0A14.%20Open%20Science%3A%20Code%20%2F%20Data%20%2F%20Both%20%2F%20None%0A15.%20Attach%20the%20paper%20or%20PDF%20if%20available.">Submit New Entry</a>
         <a href="https://github.com/sroberto27/sroberto27.github.io/issues" target="_blank">Report Issue</a>
       </div>
       <p class="footer-copy">
         XR Filmmaking Vault &copy; 2025. Inspired by <a href="https://locomotionvault.github.io/" target="_blank">Locomotion Vault</a> (Di Luca et al., CHI 2021).
-        <br>Data versioned in repository. Contributions welcome via GitHub or Google Form.
+        <br>Data versioned in repository. Contributions welcome via GitHub or email.
       </p>
     </div>
   </footer>
 
   <!-- ================================ SCRIPTS ================================ -->
+  <script src="data/database.js"></script>
   <script src="js/app.js"></script>
 
   <!-- Similarity legend dynamic update -->
