@@ -570,213 +570,226 @@
     });
   }
 
-  // ---- Similarity Visualization ----
+  // ---- Similarity Visualization (Arc Diagram, Locomotion Vault style) ----
   function initSimilarityViz() {
     const canvas = $('#similarity-canvas');
     if (!canvas) return;
 
     const thresholdSlider = $('#sim-threshold');
     const colorSelect = $('#sim-color-by');
-    const zoomInBtn = $('#sim-zoom-in');
-    const zoomOutBtn = $('#sim-zoom-out');
-    const zoomResetBtn = $('#sim-zoom-reset');
+    const sortSelect = $('#sim-sort-by');
+    const scrollContainer = $('#sim-arc-scroll');
 
-    // Zoom / pan state
-    let viewBox = { x: 0, y: 0, w: 1000, h: 700 };
-    const defaultViewBox = { x: 0, y: 0, w: 1000, h: 700 };
-    let isPanning = false;
-    let panStart = { x: 0, y: 0 };
-    let nodePositions = [];
+    // Pre-compute all pairwise similarities once
+    let simMatrix = [];
 
-    // Pre-compute positions once (reused across redraws)
-    function computeLayout() {
-      if (database.length === 0) return [];
+    function precomputeSimilarity() {
       const n = database.length;
-      const W = 1000;
-      const H = 700;
-      const padding = 60;
-
-      // Initialize positions in a large circle
-      const positions = database.map((_, i) => {
-        const angle = (i / n) * Math.PI * 2;
-        const radius = Math.min(W, H) * 0.35;
-        return {
-          x: W / 2 + Math.cos(angle) * radius + (Math.random() - 0.5) * 40,
-          y: H / 2 + Math.sin(angle) * radius + (Math.random() - 0.5) * 40
-        };
-      });
-
-      // Force-directed layout — higher repulsion to spread nodes
-      const iterations = 150;
-      const repulsion = 2500;
-      const attraction = 0.005;
-
-      for (let iter = 0; iter < iterations; iter++) {
-        const forces = positions.map(() => ({ fx: 0, fy: 0 }));
-        const cooling = 1 - (iter / iterations);
-
-        for (let i = 0; i < n; i++) {
-          for (let j = i + 1; j < n; j++) {
-            const dx = positions[j].x - positions[i].x;
-            const dy = positions[j].y - positions[i].y;
-            const dist = Math.sqrt(dx * dx + dy * dy) + 0.1;
-
-            // Repulsion — all pairs push apart
-            const repF = repulsion / (dist * dist);
-            const ux = dx / dist;
-            const uy = dy / dist;
-            forces[i].fx -= ux * repF;
-            forces[i].fy -= uy * repF;
-            forces[j].fx += ux * repF;
-            forces[j].fy += uy * repF;
-
-            // Attraction — similar nodes pull together
-            const sim = computeSimilarity(database[i], database[j]);
-            if (sim > 0.25) {
-              const idealDist = (1 - sim) * 300 + 40;
-              const attF = attraction * (dist - idealDist);
-              forces[i].fx += ux * attF;
-              forces[i].fy += uy * attF;
-              forces[j].fx -= ux * attF;
-              forces[j].fy -= uy * attF;
-            }
-          }
-
-          // Gravity toward center
-          const cx = positions[i].x - W / 2;
-          const cy = positions[i].y - H / 2;
-          forces[i].fx -= cx * 0.0003;
-          forces[i].fy -= cy * 0.0003;
+      simMatrix = Array.from({ length: n }, () => new Float32Array(n));
+      for (let i = 0; i < n; i++) {
+        for (let j = i + 1; j < n; j++) {
+          const s = computeSimilarity(database[i], database[j]);
+          simMatrix[i][j] = s;
+          simMatrix[j][i] = s;
         }
-
-        // Apply forces with cooling
-        const step = 0.6 * cooling;
-        positions.forEach((pos, i) => {
-          pos.x += Math.max(-20, Math.min(20, forces[i].fx * step));
-          pos.y += Math.max(-20, Math.min(20, forces[i].fy * step));
-          pos.x = Math.max(padding, Math.min(W - padding, pos.x));
-          pos.y = Math.max(padding, Math.min(H - padding, pos.y));
-        });
       }
-
-      return positions;
     }
 
-    nodePositions = computeLayout();
+    function getSortedIndices() {
+      const sortBy = sortSelect ? sortSelect.value : 'year';
+      const indices = database.map((_, i) => i);
 
-    function drawSimilarityGraph() {
-      if (database.length === 0 || nodePositions.length === 0) return;
+      const maturityOrder = { 'Concept': 0, 'Prototype': 1, 'Deployed/Pilot': 2, 'Commercial/Production-Ready': 3 };
+      const sourceOrder = { 'Conference': 0, 'Journal': 1, 'Book': 2, 'Industry Report': 3 };
 
-      const threshold = thresholdSlider ? parseFloat(thresholdSlider.value) : 0.45;
+      indices.sort((a, b) => {
+        const ea = database[a], eb = database[b];
+        switch (sortBy) {
+          case 'year': return ea.year - eb.year || ea.title.localeCompare(eb.title);
+          case 'maturity': return (maturityOrder[ea.maturity] || 0) - (maturityOrder[eb.maturity] || 0) || ea.year - eb.year;
+          case 'sourceType': return (sourceOrder[ea.sourceType] || 0) - (sourceOrder[eb.sourceType] || 0) || ea.year - eb.year;
+          case 'title': return ea.title.localeCompare(eb.title);
+          default: return 0;
+        }
+      });
+      return indices;
+    }
+
+    function drawArcDiagram() {
+      if (database.length === 0) return;
+
+      const threshold = thresholdSlider ? parseFloat(thresholdSlider.value) : 0.5;
       const colorBy = colorSelect ? colorSelect.value : 'maturity';
-      const W = 1000;
-      const H = 700;
+      const sorted = getSortedIndices();
+      const n = sorted.length;
+
+      // Layout constants
+      const nodeSpacing = 32;
+      const nodeRadius = 8;
+      const labelHeight = 140;
+      const arcAreaHeight = 350;
+      const topPad = 20;
+      const leftPad = 40;
+      const totalWidth = leftPad * 2 + (n - 1) * nodeSpacing + 20;
+      const nodeY = topPad + arcAreaHeight;
+      const totalHeight = nodeY + 20 + labelHeight;
 
       // Color mapping
       const colorMap = {
-        maturity: {
-          'Concept': '#8892a4',
-          'Prototype': '#00d4ff',
-          'Deployed/Pilot': '#7b5cff',
-          'Commercial/Production-Ready': '#ffaa2c'
-        },
-        xrModality: {
-          'VR': '#00d4ff',
-          'AR': '#ff3d71',
-          'MR': '#7b5cff'
-        },
-        sourceType: {
-          'Conference': '#00d4ff',
-          'Journal': '#7b5cff',
-          'Book': '#ffaa2c',
-          'Industry Report': '#ff3d71'
-        }
+        maturity: { 'Concept': '#8892a4', 'Prototype': '#00d4ff', 'Deployed/Pilot': '#7b5cff', 'Commercial/Production-Ready': '#ffaa2c' },
+        xrModality: { 'VR': '#00d4ff', 'AR': '#ff3d71', 'MR': '#7b5cff' },
+        sourceType: { 'Conference': '#00d4ff', 'Journal': '#7b5cff', 'Book': '#ffaa2c', 'Industry Report': '#ff3d71' }
       };
 
-      // Build SVG with viewBox for zoom/pan
-      const vb = viewBox;
-      let svg = `<svg width="100%" height="100%" viewBox="${vb.x} ${vb.y} ${vb.w} ${vb.h}" preserveAspectRatio="xMidYMid meet" id="sim-svg">`;
+      function getColor(entry) {
+        const colors = colorMap[colorBy] || colorMap.maturity;
+        if (colorBy === 'xrModality') {
+          return colors[(entry.xrModality || [])[0]] || '#8892a4';
+        }
+        return colors[entry[colorBy]] || '#8892a4';
+      }
 
-      // Draw edges
-      for (let i = 0; i < database.length; i++) {
-        for (let j = i + 1; j < database.length; j++) {
-          const sim = computeSimilarity(database[i], database[j]);
+      // Node x positions
+      const nodeX = sorted.map((_, i) => leftPad + i * nodeSpacing);
+
+      // Position lookup: original DB index → horizontal position index
+      const posOf = {};
+      sorted.forEach((dbIdx, posIdx) => { posOf[dbIdx] = posIdx; });
+
+      // Build SVG
+      let svg = `<svg width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}" xmlns="http://www.w3.org/2000/svg">`;
+
+      // --- Draw arcs ---
+      // Collect edges above threshold
+      const edges = [];
+      for (let pi = 0; pi < n; pi++) {
+        for (let pj = pi + 1; pj < n; pj++) {
+          const di = sorted[pi];
+          const dj = sorted[pj];
+          const sim = simMatrix[di][dj];
           if (sim >= threshold) {
-            const opacity = 0.06 + sim * 0.18;
-            svg += `<line x1="${nodePositions[i].x}" y1="${nodePositions[i].y}" x2="${nodePositions[j].x}" y2="${nodePositions[j].y}" stroke="rgba(0,212,255,${opacity})" stroke-width="${0.5 + sim * 1.5}"/>`;
+            edges.push({ pi, pj, sim });
           }
         }
       }
 
-      // Draw nodes
-      database.forEach((entry, i) => {
-        const colors = colorMap[colorBy] || colorMap.maturity;
-        let color = '#8892a4';
+      // Sort edges so wider arcs draw first (behind)
+      edges.sort((a, b) => (b.pj - b.pi) - (a.pj - a.pi));
 
-        if (colorBy === 'xrModality') {
-          const mod = (entry.xrModality || [])[0];
-          color = colors[mod] || '#8892a4';
-        } else if (colorBy === 'maturity') {
-          color = colors[entry.maturity] || '#8892a4';
-        } else if (colorBy === 'sourceType') {
-          color = colors[entry.sourceType] || '#8892a4';
-        }
+      for (const edge of edges) {
+        const x1 = nodeX[edge.pi];
+        const x2 = nodeX[edge.pj];
+        const span = Math.abs(x2 - x1);
+        const midX = (x1 + x2) / 2;
+        // Arc height proportional to span (matching Locomotion Vault look)
+        const arcH = span * 0.5;
+        const opacity = 0.15 + edge.sim * 0.35;
 
-        const r = 10;
-        svg += `<circle cx="${nodePositions[i].x}" cy="${nodePositions[i].y}" r="${r}" fill="${color}" fill-opacity="0.85" stroke="rgba(255,255,255,0.2)" stroke-width="1.5" class="sim-node-svg" data-id="${entry.id}" data-idx="${i}" style="cursor:pointer"/>`;
+        svg += `<path d="M ${x1} ${nodeY} Q ${midX} ${nodeY - arcH} ${x2} ${nodeY}" fill="none" stroke="rgba(200,210,225,${opacity})" stroke-width="1"/>`;
+      }
+
+      // --- Draw nodes ---
+      sorted.forEach((dbIdx, posIdx) => {
+        const entry = database[dbIdx];
+        const cx = nodeX[posIdx];
+        const color = getColor(entry);
+
+        svg += `<circle cx="${cx}" cy="${nodeY}" r="${nodeRadius}" fill="${color}" stroke="rgba(255,255,255,0.12)" stroke-width="1.2" class="arc-node" data-id="${entry.id}" data-idx="${posIdx}" style="cursor:pointer"/>`;
+      });
+
+      // --- Draw labels ---
+      sorted.forEach((dbIdx, posIdx) => {
+        const entry = database[dbIdx];
+        const cx = nodeX[posIdx];
+        const labelY = nodeY + 14;
+
+        // Truncate title
+        let label = entry.title;
+        if (label.length > 28) label = label.substring(0, 26) + '…';
+
+        svg += `<text x="${cx}" y="${labelY}" transform="rotate(55, ${cx}, ${labelY})" font-size="9" font-family="'DM Sans', sans-serif" fill="var(--text-muted)" class="arc-label" data-id="${entry.id}" style="cursor:pointer">${escapeHtml(label)}</text>`;
       });
 
       svg += '</svg>';
       canvas.innerHTML = svg;
 
-      // Bind node events
-      $$('.sim-node-svg', canvas).forEach(node => {
-        node.addEventListener('click', (e) => {
+      // --- Bind events ---
+      $$('.arc-node, .arc-label', canvas).forEach(el => {
+        el.addEventListener('click', (e) => {
           e.stopPropagation();
-          openModal(parseInt(node.dataset.id));
-        });
-        node.addEventListener('mouseenter', (e) => {
-          node.setAttribute('r', '15');
-          node.setAttribute('stroke-width', '2.5');
-          node.setAttribute('fill-opacity', '1');
-          showSimTooltip(e, node.dataset.id);
-        });
-        node.addEventListener('mouseleave', () => {
-          node.setAttribute('r', '10');
-          node.setAttribute('stroke-width', '1.5');
-          node.setAttribute('fill-opacity', '0.85');
-          hideSimTooltip();
+          openModal(parseInt(el.dataset.id));
         });
       });
 
-      // Bind pan on SVG
-      const svgEl = $('#sim-svg');
-      if (svgEl) {
-        svgEl.addEventListener('mousedown', onPanStart);
-        svgEl.addEventListener('mousemove', onPanMove);
-        svgEl.addEventListener('mouseup', onPanEnd);
-        svgEl.addEventListener('mouseleave', onPanEnd);
-        svgEl.addEventListener('wheel', onZoomWheel, { passive: false });
-
-        // Touch support
-        svgEl.addEventListener('touchstart', onTouchStart, { passive: false });
-        svgEl.addEventListener('touchmove', onTouchMove, { passive: false });
-        svgEl.addEventListener('touchend', onPanEnd);
-      }
+      $$('.arc-node', canvas).forEach(node => {
+        const posIdx = parseInt(node.dataset.idx);
+        node.addEventListener('mouseenter', (e) => {
+          node.setAttribute('r', String(nodeRadius + 4));
+          node.setAttribute('stroke-width', '2.5');
+          highlightConnections(posIdx, threshold, sorted, nodeX, nodeY);
+          showSimTooltip(e, node.dataset.id);
+        });
+        node.addEventListener('mouseleave', () => {
+          node.setAttribute('r', String(nodeRadius));
+          node.setAttribute('stroke-width', '1.2');
+          clearHighlights();
+          hideSimTooltip();
+        });
+      });
     }
 
-    // --- Tooltip ---
+    function escapeHtml(str) {
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    function highlightConnections(hoverPosIdx, threshold, sorted, nodeX, nodeY) {
+      // Add highlight arcs for the hovered node
+      const svgEl = canvas.querySelector('svg');
+      if (!svgEl) return;
+
+      // Remove old highlights
+      clearHighlights();
+
+      const hoverDbIdx = sorted[hoverPosIdx];
+
+      sorted.forEach((dbIdx, posIdx) => {
+        if (posIdx === hoverPosIdx) return;
+        const sim = simMatrix[hoverDbIdx][dbIdx];
+        if (sim < threshold) return;
+
+        const x1 = nodeX[Math.min(hoverPosIdx, posIdx)];
+        const x2 = nodeX[Math.max(hoverPosIdx, posIdx)];
+        const span = Math.abs(x2 - x1);
+        const midX = (x1 + x2) / 2;
+        const arcH = span * 0.5;
+
+        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+        path.setAttribute('d', `M ${x1} ${nodeY} Q ${midX} ${nodeY - arcH} ${x2} ${nodeY}`);
+        path.setAttribute('fill', 'none');
+        path.setAttribute('stroke', 'rgba(0,212,255,0.7)');
+        path.setAttribute('stroke-width', '2');
+        path.classList.add('arc-highlight');
+        svgEl.appendChild(path);
+      });
+    }
+
+    function clearHighlights() {
+      $$('.arc-highlight', canvas).forEach(el => el.remove());
+    }
+
     function showSimTooltip(e, id) {
       const entry = database.find(d => d.id === parseInt(id));
       if (!entry) return;
       const tooltip = $('#sim-tooltip');
       if (!tooltip) return;
-      tooltip.innerHTML = `<strong>${entry.title}</strong><br><span style="opacity:0.7">${entry.year} · ${entry.authors[0]}${entry.authors.length > 1 ? ' et al.' : ''}</span>`;
+      tooltip.innerHTML = `<strong>${entry.title}</strong><br><span style="opacity:0.7">${entry.year} · ${entry.authors[0]}${entry.authors.length > 1 ? ' et al.' : ''}<br>${entry.maturity} · ${(entry.xrModality || []).join(', ')}</span>`;
       tooltip.style.display = 'block';
       const wrapper = $('#sim-wrapper');
       const rect = wrapper.getBoundingClientRect();
-      tooltip.style.left = Math.min(e.clientX - rect.left + 14, rect.width - 260) + 'px';
-      tooltip.style.top = (e.clientY - rect.top - 12) + 'px';
+      const x = Math.min(e.clientX - rect.left + 14, rect.width - 270);
+      const y = Math.max(e.clientY - rect.top - 60, 10);
+      tooltip.style.left = x + 'px';
+      tooltip.style.top = y + 'px';
     }
 
     function hideSimTooltip() {
@@ -784,102 +797,41 @@
       if (tooltip) tooltip.style.display = 'none';
     }
 
-    // --- Pan ---
-    function onPanStart(e) {
-      if (e.target.classList.contains('sim-node-svg')) return;
-      isPanning = true;
-      panStart = { x: e.clientX, y: e.clientY };
-      canvas.style.cursor = 'grabbing';
+    // --- Horizontal drag-scroll ---
+    if (scrollContainer) {
+      let isDown = false;
+      let startX, scrollLeft;
+
+      scrollContainer.addEventListener('mousedown', (e) => {
+        if (e.target.classList.contains('arc-node') || e.target.classList.contains('arc-label')) return;
+        isDown = true;
+        startX = e.pageX - scrollContainer.offsetLeft;
+        scrollLeft = scrollContainer.scrollLeft;
+      });
+      scrollContainer.addEventListener('mouseleave', () => { isDown = false; });
+      scrollContainer.addEventListener('mouseup', () => { isDown = false; });
+      scrollContainer.addEventListener('mousemove', (e) => {
+        if (!isDown) return;
+        e.preventDefault();
+        const x = e.pageX - scrollContainer.offsetLeft;
+        scrollContainer.scrollLeft = scrollLeft - (x - startX);
+      });
     }
 
-    function onPanMove(e) {
-      if (!isPanning) return;
-      const dx = (e.clientX - panStart.x) * (viewBox.w / canvas.clientWidth);
-      const dy = (e.clientY - panStart.y) * (viewBox.h / canvas.clientHeight);
-      viewBox.x -= dx;
-      viewBox.y -= dy;
-      panStart = { x: e.clientX, y: e.clientY };
-      updateViewBox();
-    }
+    // --- Init ---
+    precomputeSimilarity();
+    drawArcDiagram();
 
-    function onPanEnd() {
-      isPanning = false;
-      canvas.style.cursor = 'grab';
-    }
-
-    // --- Touch pan ---
-    function onTouchStart(e) {
-      if (e.touches.length === 1) {
-        isPanning = true;
-        panStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      }
-    }
-
-    function onTouchMove(e) {
-      if (!isPanning || e.touches.length !== 1) return;
-      e.preventDefault();
-      const dx = (e.touches[0].clientX - panStart.x) * (viewBox.w / canvas.clientWidth);
-      const dy = (e.touches[0].clientY - panStart.y) * (viewBox.h / canvas.clientHeight);
-      viewBox.x -= dx;
-      viewBox.y -= dy;
-      panStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
-      updateViewBox();
-    }
-
-    // --- Zoom ---
-    function onZoomWheel(e) {
-      e.preventDefault();
-      const factor = e.deltaY > 0 ? 1.1 : 0.9;
-      zoomAt(e.clientX, e.clientY, factor);
-    }
-
-    function zoomAt(clientX, clientY, factor) {
-      const rect = canvas.getBoundingClientRect();
-      const mx = ((clientX - rect.left) / rect.width) * viewBox.w + viewBox.x;
-      const my = ((clientY - rect.top) / rect.height) * viewBox.h + viewBox.y;
-
-      const newW = Math.max(200, Math.min(3000, viewBox.w * factor));
-      const newH = Math.max(140, Math.min(2100, viewBox.h * factor));
-
-      viewBox.x = mx - (mx - viewBox.x) * (newW / viewBox.w);
-      viewBox.y = my - (my - viewBox.y) * (newH / viewBox.h);
-      viewBox.w = newW;
-      viewBox.h = newH;
-      updateViewBox();
-    }
-
-    function zoomBy(factor) {
-      const rect = canvas.getBoundingClientRect();
-      zoomAt(rect.left + rect.width / 2, rect.top + rect.height / 2, factor);
-    }
-
-    function resetView() {
-      viewBox = { ...defaultViewBox };
-      updateViewBox();
-    }
-
-    function updateViewBox() {
-      const svgEl = $('#sim-svg');
-      if (svgEl) svgEl.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
-    }
-
-    // --- Button bindings ---
-    if (zoomInBtn) zoomInBtn.addEventListener('click', () => zoomBy(0.75));
-    if (zoomOutBtn) zoomOutBtn.addEventListener('click', () => zoomBy(1.33));
-    if (zoomResetBtn) zoomResetBtn.addEventListener('click', resetView);
-
-    // Initial draw
-    drawSimilarityGraph();
-
-    // Redraw on controls change (keeps positions, just updates edges/colors)
-    if (thresholdSlider) thresholdSlider.addEventListener('input', drawSimilarityGraph);
-    if (colorSelect) colorSelect.addEventListener('change', drawSimilarityGraph);
+    // Redraw on controls change
+    if (thresholdSlider) thresholdSlider.addEventListener('input', drawArcDiagram);
+    if (colorSelect) colorSelect.addEventListener('change', drawArcDiagram);
+    if (sortSelect) sortSelect.addEventListener('change', drawArcDiagram);
 
     // Redraw on resize
     let resizeTimer;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(drawSimilarityGraph, 200);
+      resizeTimer = setTimeout(drawArcDiagram, 250);
     });
   }
 
@@ -888,22 +840,18 @@
     let totalWeight = 0;
     let totalSim = 0;
 
-    // Multi-label Jaccard similarity for array fields
     const arrayFields = ['pipelineStages', 'useCases', 'xrModality', 'platformHardware', 'coreInteraction', 'dataFormats', 'targetRoles', 'evaluation', 'reportedOutcomes', 'tags'];
 
     arrayFields.forEach(field => {
       const setA = new Set(a[field] || []);
       const setB = new Set(b[field] || []);
       if (setA.size === 0 && setB.size === 0) return;
-
       const union = new Set([...setA, ...setB]);
       const intersection = [...setA].filter(x => setB.has(x));
-      const jaccard = union.size > 0 ? intersection.length / union.size : 0;
-      totalSim += jaccard;
+      totalSim += union.size > 0 ? intersection.length / union.size : 0;
       totalWeight += 1;
     });
 
-    // Categorical similarity
     const catFields = ['maturity', 'openScience', 'sourceType'];
     catFields.forEach(field => {
       if (a[field] && b[field]) {
@@ -912,11 +860,8 @@
       }
     });
 
-    // Year proximity (normalized)
     if (a.year && b.year) {
-      const maxYearDiff = 12;
-      const yearSim = 1 - Math.abs(a.year - b.year) / maxYearDiff;
-      totalSim += Math.max(0, yearSim);
+      totalSim += Math.max(0, 1 - Math.abs(a.year - b.year) / 12);
       totalWeight += 1;
     }
 

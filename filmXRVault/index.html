@@ -142,15 +142,15 @@
   <div class="tab-content" id="tab-similarity">
     <section class="similarity-section">
       <div class="similarity-header">
-        <h2>Similarity Graph</h2>
-        <p>Explore attribute-based similarity between entries. Nodes closer together share more taxonomy attributes. Click any node to view details.</p>
+        <h2>Similarity</h2>
+        <p>Arc height reflects distance between entries. Connected pairs exceed the similarity threshold. Click any node to view details.</p>
       </div>
 
       <div class="similarity-controls">
         <div class="sim-control-group">
-          <label>Threshold:</label>
-          <input type="range" class="sim-slider" id="sim-threshold" min="0.1" max="0.9" step="0.05" value="0.45">
-          <span id="sim-threshold-val">0.45</span>
+          <label>Similarity threshold:</label>
+          <input type="range" class="sim-slider" id="sim-threshold" min="0.1" max="0.9" step="0.05" value="0.5">
+          <span id="sim-threshold-val">0.5</span>
         </div>
         <div class="sim-control-group">
           <label>Color by:</label>
@@ -160,19 +160,24 @@
             <option value="sourceType">Source Type</option>
           </select>
         </div>
+        <div class="sim-control-group">
+          <label>Sort by:</label>
+          <select class="sort-select" id="sim-sort-by">
+            <option value="year">Year</option>
+            <option value="maturity">Maturity</option>
+            <option value="sourceType">Source Type</option>
+            <option value="title">Title</option>
+          </select>
+        </div>
       </div>
 
       <!-- Legend -->
-      <div style="display:flex;justify-content:center;gap:1.5rem;margin-bottom:1rem;flex-wrap:wrap;font-size:0.75rem;color:var(--text-muted);" id="sim-legend"></div>
+      <div class="sim-legend-row" id="sim-legend"></div>
 
       <div class="similarity-canvas-wrapper" id="sim-wrapper">
-        <div class="sim-zoom-controls">
-          <button class="sim-zoom-btn" id="sim-zoom-in" title="Zoom in">+</button>
-          <button class="sim-zoom-btn" id="sim-zoom-reset" title="Reset view">⟲</button>
-          <button class="sim-zoom-btn" id="sim-zoom-out" title="Zoom out">−</button>
+        <div class="sim-arc-scroll" id="sim-arc-scroll">
+          <div id="similarity-canvas"></div>
         </div>
-        <div class="sim-pan-hint">Scroll to zoom · Drag to pan</div>
-        <div id="similarity-canvas"></div>
         <div class="sim-tooltip" id="sim-tooltip"></div>
       </div>
     </section>
@@ -234,26 +239,23 @@
       };
 
       function updateLegend(key) {
-        const el = document.getElementById('sim-legend');
+        var el = document.getElementById('sim-legend');
         if (!el) return;
-        const items = legends[key] || [];
-        el.innerHTML = items.map(item =>
-          `<span style="display:flex;align-items:center;gap:0.35rem;">
-            <span style="width:10px;height:10px;border-radius:50%;background:${item.color};display:inline-block;"></span>
-            ${item.label}
-          </span>`
-        ).join('');
+        var items = legends[key] || [];
+        el.innerHTML = items.map(function(item) {
+          return '<span style="display:flex;align-items:center;gap:0.35rem;"><span style="width:10px;height:10px;border-radius:50%;background:' + item.color + ';display:inline-block;"></span>' + item.label + '</span>';
+        }).join('');
       }
 
       updateLegend('maturity');
 
-      const sel = document.getElementById('sim-color-by');
-      if (sel) sel.addEventListener('change', () => updateLegend(sel.value));
+      var sel = document.getElementById('sim-color-by');
+      if (sel) sel.addEventListener('change', function() { updateLegend(sel.value); });
 
-      const slider = document.getElementById('sim-threshold');
-      const sliderVal = document.getElementById('sim-threshold-val');
+      var slider = document.getElementById('sim-threshold');
+      var sliderVal = document.getElementById('sim-threshold-val');
       if (slider && sliderVal) {
-        slider.addEventListener('input', () => { sliderVal.textContent = slider.value; });
+        slider.addEventListener('input', function() { sliderVal.textContent = slider.value; });
       }
     });
   </script>
