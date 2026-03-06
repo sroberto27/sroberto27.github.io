@@ -405,7 +405,7 @@
 
     /* Top row: heading on left, paragraph on right */
       .filmmaking-text-row {
-          
+
           display: flex;
           justify-content: center;
           align-items: center;
@@ -1171,6 +1171,126 @@
       }
 
 
+      /* --- SECTION: Cine ROro (#cinepi) --- */
+      #cinepi {
+          background: url('Screenshot_2026-02-12_115846_2.jpg') no-repeat center center;
+          background-size: cover;
+          scroll-snap-align: start;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 40px 20px;
+          position: relative;
+      }
+
+      #cinepi::before {
+          content: "";
+          position: absolute;
+          top: 0; left: 0; width: 100%; height: 100%;
+          background: rgba(0, 0, 0, 0.55);
+      }
+
+      .cinepi-wrapper {
+          position: relative;
+          z-index: 2;
+          max-width: 1200px;
+          width: 100%;
+          margin: 0 auto;
+      }
+
+      .cinepi-text-row {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          padding: 40px 20px;
+          text-align: center;
+      }
+
+      .cinepi-overlay {
+          background-color: rgba(255, 255, 255, 0.75);
+          padding: 30px 24px;
+          border-radius: 16px;
+          box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+          max-width: 800px;
+          width: 100%;
+      }
+
+      .cinepi-overlay h2 {
+          font-size: 2.2rem;
+          margin-bottom: 20px;
+          color: #111;
+      }
+
+      .cinepi-overlay p {
+          font-size: 1.1rem;
+          line-height: 1.6;
+          color: #333;
+      }
+
+      .cinepi-overlay .cinepi-version-note {
+          font-size: 0.95rem;
+          color: #555;
+          font-style: italic;
+          border-left: 3px solid #ff6a00;
+          padding-left: 12px;
+          margin-top: 14px;
+          text-align: left;
+      }
+
+      .cinepi-media-row {
+          display: flex;
+          flex-direction: row;
+          gap: 20px;
+          max-width: 800px;
+          margin: 0 auto;
+      }
+
+      .cinepi-media-row iframe {
+          flex: 1;
+          min-width: 0;
+      }
+
+      .cinepi-media-row img {
+          flex: 1;
+          min-width: 0;
+          width: 50%;
+          object-fit: cover;
+          border-radius: 8px;
+      }
+
+      .cinepi-credits {
+          text-align: center;
+          color: rgba(255,255,255,0.75);
+          font-size: 0.85rem;
+          line-height: 1.5;
+          margin-top: 20px;
+      }
+
+      .cinepi-credits a {
+          color: #ff6a00;
+          text-decoration: none;
+      }
+
+      .cinepi-credits a:hover {
+          text-decoration: underline;
+      }
+
+      @media (max-width: 768px) {
+          .cinepi-media-row {
+              flex-direction: column;
+          }
+          .cinepi-media-row img {
+              width: 100%;
+          }
+          .cinepi-overlay h2 {
+              font-size: 1.8rem;
+          }
+          .cinepi-overlay p {
+              font-size: 1rem;
+          }
+      }
+
   </style>
 
 </head>
@@ -1187,9 +1307,11 @@
         <div class="nav-links">
             <a href="#intro">Home</a>
             <a href="#filmmaking">Filmmaking</a>
+            <a href="#cinepi">Cine ROro</a>
             <a href="#nursing">Nursing</a>
             <a href="#acuity">Acuity</a>
             <a href="#projects-solutions">Other Projects</a>
+            <a href="/blog/">Blog</a>
             <a href="#info">Contact</a>
         </div>
     </nav>
@@ -1273,6 +1395,46 @@
                         allowfullscreen>
                 </iframe>
             </div>
+        </div>
+    </section>
+
+    <!-- SECTION: CINE RORO — DIY CinePi Camera -->
+    <section id="cinepi" class="section">
+        <div class="cinepi-wrapper">
+
+            <div class="cinepi-text-row">
+                <div class="cinepi-overlay">
+                    <h2>Cine ROro — DIY Digital Cinema.</h2>
+                    <p>
+                        Cine ROro is a custom-built CinePi camera system designed to explore low-cost digital cinema using open hardware and open software. The system runs <strong>Cinemate 3.2</strong> on a <strong>Raspberry Pi 5</strong> with an <strong>IMX477 sensor</strong>, paired with a vintage <strong>Cosmicar 12.5mm television lens</strong> — fungus and all.
+                        <br><br>
+                        Audio is captured with a <strong>Wavo PRO DS microphone</strong> and <strong>Zoom H1 recorder</strong>. Power comes from an Accsoon Toprig NP-F battery adapter, and framing happens on a compact 4" HDMI LCD. Footage is edited in <strong>DaVinci Resolve 20</strong> — still learning, always improving.
+                    </p>
+                    <p class="cinepi-version-note">
+                        v1.0 was a simpler build — bare Pi and sensor with minimal rigging. v1.2 adds the 3D-printed enclosure, integrated audio, battery power, and the LCD monitor for a more complete handheld cinema rig.
+                    </p>
+                    <a href="/blog/cine-roro/" style="color:#ff6a00;">Read the full build log →</a>
+                </div>
+            </div>
+
+            <div class="cinepi-media-row">
+                <iframe src="https://www.youtube.com/embed/hPdnLPs_rno"
+                        title="Cine ROro — First Video Test"
+                        frameborder="0"
+                        allowfullscreen
+                        loading="lazy"></iframe>
+                <img src="CoolTwo.png" alt="Cine ROro v1.2 — Custom CinePi Camera Build">
+            </div>
+
+            <div class="cinepi-credits">
+
+                Built & Filmed by Roberto Salazar &nbsp;·&nbsp;
+                <a href="https://cinepi.io/" target="_blank">CinePi Project</a> &nbsp;·&nbsp;
+                <a href="https://tiramisioux.github.io/cinemate/" target="_blank">Cinemate Software</a> &nbsp;·&nbsp;
+                <a href="https://www.thingiverse.com/axelanderk" target="_blank">CinePi Hardware Designs</a>
+                <a href="/blog/cine-roro/" style="color:#ff6a00;">Read the full build log →</a>
+            </div>
+
         </div>
     </section>
 

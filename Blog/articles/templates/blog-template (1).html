@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- ✏️ EDIT: Page title and description -->
+    <title>Article Title — Roberto Salazar</title>
+    <meta name="description" content="Brief description of this article for search engines.">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            scroll-behavior: smooth;
+            font-family: "Manrope", sans-serif;
+            color: #222;
+        }
+
+        body { background: #f4f3f1; }
+
+        /* --- NAVBAR (same as main site) --- */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 0;
+            z-index: 1000;
+        }
+
+        .navbar > div:first-child {
+            padding: 8px 15px;
+            font-weight: 500;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            transition: 0.3s;
+            font-size: 0.95rem;
+        }
+
+        .nav-links a:hover {
+            background: #ff6a00;
+            border-radius: 5px;
+        }
+
+        .menu-icon, #menu-toggle { display: none; }
+
+        @media (max-width: 768px) {
+            .menu-icon {
+                display: block;
+                font-size: 30px;
+                cursor: pointer;
+                color: white;
+                user-select: none;
+                padding: 0 15px;
+            }
+            .nav-links {
+                position: absolute;
+                top: 60px;
+                left: 0;
+                width: 100%;
+                background: rgba(0, 0, 0, 0.9);
+                flex-direction: column;
+                text-align: center;
+                padding: 0;
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.5s ease-in-out;
+            }
+            .nav-links a { display: block; padding: 15px; }
+            #menu-toggle:checked ~ .nav-links {
+                max-height: 1000px;
+                padding: 20px 0;
+            }
+        }
+
+        /* --- HERO --- */
+        .article-hero {
+            position: relative;
+            width: 100%;
+            min-height: 70vh;
+            display: flex;
+            align-items: flex-end;
+            overflow: hidden;
+        }
+
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            /* ✏️ EDIT: Your hero image (in same folder as this index.html) */
+            background: url('YOUR-HERO-IMAGE.jpg') no-repeat center center;
+            background-size: cover;
+        }
+
+        .hero-bg::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(0,0,0,0.2) 0%,
+                rgba(0,0,0,0.5) 60%,
+                rgba(0,0,0,0.8) 100%
+            );
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
+            padding: 60px 40px 50px;
+            color: #fff;
+        }
+
+        .hero-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #ff6a00;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+
+        .hero-content h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 14px;
+        }
+
+        .hero-meta {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9rem;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-weight: 500;
+        }
+
+        /* --- ARTICLE BODY --- */
+        .article-body {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 50px 30px 80px;
+        }
+
+        .article-body p {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: #333;
+            margin-bottom: 22px;
+            font-weight: 400;
+        }
+
+        .article-body h2 {
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: #111;
+            margin: 44px 0 16px;
+            padding-left: 16px;
+            border-left: 4px solid #ff6a00;
+        }
+
+        /* --- IMAGES --- */
+        .img-full {
+            width: 100%;
+            border-radius: 16px;
+            margin: 28px 0;
+            display: block;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+
+        .img-row {
+            display: flex;
+            gap: 16px;
+            margin: 28px 0;
+        }
+
+        .img-row img {
+            flex: 1;
+            min-width: 0;
+            border-radius: 16px;
+            object-fit: cover;
+            max-height: 340px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+
+        .img-caption {
+            font-size: 0.82rem;
+            color: #888;
+            text-align: center;
+            margin-top: -18px;
+            margin-bottom: 28px;
+            font-style: italic;
+        }
+
+        /* --- VIDEO --- */
+        .video-embed {
+            width: 100%;
+            aspect-ratio: 16/9;
+            border-radius: 16px;
+            border: none;
+            margin: 28px 0;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+
+        /* --- SPECS GRID --- */
+        .specs-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 28px 0;
+        }
+
+        .spec-item {
+            background-color: rgba(255, 255, 255, 0.75);
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+
+        .spec-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #999;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .spec-value {
+            font-size: 0.95rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        /* --- CALLOUT --- */
+        .callout {
+            background-color: rgba(255, 255, 255, 0.75);
+            border-left: 4px solid #ff6a00;
+            padding: 20px 24px;
+            border-radius: 0 16px 16px 0;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            margin: 28px 0;
+        }
+
+        .callout p {
+            margin-bottom: 0 !important;
+            font-size: 0.95rem;
+            color: #555;
+        }
+
+        .callout strong { color: #222; }
+
+        /* --- CREDITS --- */
+        .credits-section {
+            border-top: 2px solid #ddd;
+            margin-top: 44px;
+            padding-top: 28px;
+        }
+
+        .credits-section a {
+            color: #ff6a00;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .credits-section a:hover { text-decoration: underline; }
+
+        .credits-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 24px;
+            margin-top: 12px;
+        }
+
+        .credits-links a { font-size: 0.92rem; }
+
+        /* --- FOOTER --- */
+        .blog-footer {
+            text-align: center;
+            padding: 30px 20px;
+            color: #999;
+            font-size: 0.85rem;
+            border-top: 1px solid #ddd;
+        }
+
+        .blog-footer a { color: #ff6a00; text-decoration: none; }
+        .blog-footer a:hover { text-decoration: underline; }
+
+        /* --- BACK TO TOP --- */
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #ff6a00;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            display: none;
+            transition: 0.3s;
+            z-index: 999;
+            border: none;
+        }
+
+        .back-to-top:hover { background: #e65c00; }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .hero-content { padding: 40px 20px 40px; }
+            .article-body { padding: 36px 20px 60px; }
+            .img-row { flex-direction: column; }
+            .img-row img { max-height: none; }
+            .specs-grid { grid-template-columns: 1fr; }
+            .hero-meta { flex-direction: column; gap: 6px; }
+        }
+
+        /* --- FADE IN --- */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .fade-in.visible { opacity: 1; transform: translateY(0); }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <!--
+        PATH GUIDE (this file lives at blog/your-article/index.html):
+        ../../       → repo root (main portfolio)
+        ../          → blog/ landing page
+        ./           → this article folder
+        image.jpg    → image in this same folder
+    -->
+    <nav class="navbar">
+        <div>Roberto Salazar Magical Realism</div>
+        <input type="checkbox" id="menu-toggle" />
+        <label for="menu-toggle" class="menu-icon">☰</label>
+        <div class="nav-links">
+            <a href="../../">Home</a>
+            <a href="../">Blog</a>
+            <a href="../../#filmmaking">Filmmaking</a>
+            <a href="../../#nursing">Nursing</a>
+            <a href="../../#acuity">Acuity</a>
+            <a href="../../#info">Contact</a>
+        </div>
+    </nav>
+
+    <!-- HERO — ✏️ Edit background image in .hero-bg CSS above -->
+    <header class="article-hero">
+        <div class="hero-bg"></div>
+        <div class="hero-content">
+            <!-- ✏️ EDIT -->
+            <span class="hero-tag">Project / Build Log / Research</span>
+            <h1>Your Article Title Goes Here</h1>
+            <div class="hero-meta">
+                <span>Roberto Salazar</span>
+                <span>Month Year</span>
+                <span>Optional Tag</span>
+            </div>
+        </div>
+    </header>
+
+    <article class="article-body">
+
+        <!-- ✏️ INTRO -->
+        <p class="fade-in">Opening paragraph — set the context.</p>
+        <p class="fade-in">Second paragraph — personal note.</p>
+
+        <!-- ✏️ VIDEO SECTION -->
+        <h2 class="fade-in">Section Title</h2>
+        <p class="fade-in">Describe what the reader is about to see.</p>
+
+        <!-- ✏️ Replace VIDEO_ID -->
+        <iframe class="video-embed fade-in"
+                src="https://www.youtube.com/embed/VIDEO_ID"
+                title="Video Title"
+                frameborder="0"
+                allowfullscreen
+                loading="lazy"></iframe>
+
+        <!-- ✏️ IMAGE SECTION -->
+        <h2 class="fade-in">Another Section</h2>
+        <p class="fade-in">Write about the process.</p>
+
+        <!-- ✏️ Images in same folder — just use filename -->
+        <div class="img-row fade-in">
+            <img src="image1.jpg" alt="Description 1">
+            <img src="image2.jpg" alt="Description 2">
+        </div>
+        <p class="img-caption">Caption for images above.</p>
+
+        <img class="img-full fade-in" src="image3.jpg" alt="Full-width description">
+        <p class="img-caption">Caption for the full-width image.</p>
+
+        <!-- ✏️ SPECS -->
+        <h2 class="fade-in">Specs / Details</h2>
+        <div class="specs-grid fade-in">
+            <div class="spec-item">
+                <div class="spec-label">Label</div>
+                <div class="spec-value">Value</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Label</div>
+                <div class="spec-value">Value</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Label</div>
+                <div class="spec-value">Value</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Label</div>
+                <div class="spec-value">Value</div>
+            </div>
+        </div>
+
+        <!-- ✏️ CALLOUT -->
+        <div class="callout fade-in">
+            <p><strong>Note:</strong> Highlighted context, version history, or disclaimer.</p>
+        </div>
+
+        <!-- ✏️ CREDITS -->
+        <div class="credits-section fade-in">
+            <h2>Credits / Links</h2>
+            <p>Acknowledge collaborators and resources.</p>
+            <div class="credits-links">
+                <a href="#" target="_blank">Link One →</a>
+                <a href="#" target="_blank">Link Two →</a>
+            </div>
+        </div>
+
+    </article>
+
+    <footer class="blog-footer">
+        <p>Roberto Salazar · <a href="../../">sroberto27.github.io</a></p>
+    </footer>
+
+    <div class="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">▲</div>
+
+    <script>
+        const faders = document.querySelectorAll('.fade-in');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+        faders.forEach(el => observer.observe(el));
+
+        window.addEventListener('scroll', function () {
+            document.querySelector('.back-to-top').style.display = (window.scrollY > 300) ? 'block' : 'none';
+        });
+    </script>
+
+</body>
+</html>

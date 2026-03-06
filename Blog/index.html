@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blog — Roberto Salazar</title>
+    <meta name="description" content="Build logs, experiments, and notes on DIY cinema, XR, VR, and creative tech by Roberto Salazar.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            scroll-behavior: smooth;
+            font-family: "Manrope", sans-serif;
+            color: #222;
+        }
+
+        body {
+            background: #f4f3f1;
+            min-height: 100vh;
+        }
+
+        /* --- NAVBAR (same as main site) --- */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 0;
+            z-index: 1000;
+        }
+
+        .navbar > div:first-child {
+            padding: 8px 15px;
+            font-weight: 500;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            transition: 0.3s;
+            font-size: 0.95rem;
+        }
+
+        .nav-links a:hover {
+            background: #ff6a00;
+            border-radius: 5px;
+        }
+
+        .menu-icon, #menu-toggle { display: none; }
+
+        @media (max-width: 768px) {
+            .menu-icon {
+                display: block;
+                font-size: 30px;
+                cursor: pointer;
+                color: white;
+                user-select: none;
+                padding: 0 15px;
+            }
+            .nav-links {
+                position: absolute;
+                top: 60px;
+                left: 0;
+                width: 100%;
+                background: rgba(0, 0, 0, 0.9);
+                flex-direction: column;
+                text-align: center;
+                padding: 0;
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.5s ease-in-out;
+            }
+            .nav-links a {
+                display: block;
+                padding: 15px;
+            }
+            #menu-toggle:checked ~ .nav-links {
+                max-height: 1000px;
+                padding: 20px 0;
+            }
+        }
+
+        /* --- HERO HEADER --- */
+        .blog-hero {
+            position: relative;
+            width: 100%;
+            min-height: 50vh;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            /* ../ goes up from blog/ to repo root where logos2.png lives */
+            background: url('../logos2.png') no-repeat center center;
+            background-size: cover;
+            animation: waving-flag 3s infinite ease-in-out;
+        }
+
+        @keyframes waving-flag {
+            0% { background-position: 50% 50%; }
+            25% { background-position: 52% 48%; }
+            50% { background-position: 50% 52%; }
+            75% { background-position: 48% 50%; }
+            100% { background-position: 50% 50%; }
+        }
+
+        .blog-hero::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .hero-inner {
+            position: relative;
+            z-index: 2;
+            text-align: center;
+            padding: 80px 30px 50px;
+            color: #fff;
+        }
+
+        .hero-inner h1 {
+            font-size: clamp(2.2rem, 5vw, 3.2rem);
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        .hero-inner p {
+            font-size: 1.1rem;
+            font-weight: 400;
+            color: rgba(255,255,255,0.8);
+            max-width: 500px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        /* --- ARTICLES SECTION --- */
+        .articles-section {
+            max-width: 1000px;
+            margin: -40px auto 0;
+            padding: 0 30px 80px;
+            position: relative;
+            z-index: 3;
+        }
+
+        /* --- CARD (glass card matching main site) --- */
+        .article-card {
+            display: flex;
+            background-color: rgba(255, 255, 255, 0.75);
+            border-radius: 16px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+            overflow: hidden;
+            text-decoration: none;
+            color: inherit;
+            margin-bottom: 24px;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .article-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        .card-thumb {
+            width: 300px;
+            min-height: 220px;
+            flex-shrink: 0;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .card-body {
+            padding: 28px 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            flex: 1;
+        }
+
+        .card-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: #ff6a00;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .card-body h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #111;
+            margin-bottom: 10px;
+            line-height: 1.3;
+        }
+
+        .card-body p {
+            font-size: 0.95rem;
+            color: #555;
+            line-height: 1.6;
+            margin-bottom: 14px;
+            font-weight: 400;
+        }
+
+        .card-meta {
+            font-size: 0.8rem;
+            color: #888;
+            display: flex;
+            gap: 16px;
+            font-weight: 500;
+        }
+
+        .card-arrow {
+            font-size: 0.9rem;
+            color: #ff6a00;
+            font-weight: 600;
+            margin-top: 12px;
+        }
+
+        .more-coming {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+
+        /* --- FOOTER --- */
+        .blog-footer {
+            text-align: center;
+            padding: 30px 20px;
+            color: #999;
+            font-size: 0.85rem;
+            border-top: 1px solid #ddd;
+        }
+
+        .blog-footer a {
+            color: #ff6a00;
+            text-decoration: none;
+        }
+
+        .blog-footer a:hover { text-decoration: underline; }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .article-card { flex-direction: column; }
+            .card-thumb { width: 100%; min-height: 200px; }
+            .card-body { padding: 20px; }
+            .articles-section { padding: 0 16px 60px; }
+        }
+
+        /* --- FADE IN --- */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div>Roberto Salazar Magical Realism</div>
+        <input type="checkbox" id="menu-toggle" />
+        <label for="menu-toggle" class="menu-icon">☰</label>
+        <!-- ../ goes up from blog/ to repo root -->
+        <div class="nav-links">
+            <a href="../">Home</a>
+            <a href="./">Blog</a>
+            <a href="../#filmmaking">Filmmaking</a>
+            <a href="../#nursing">Nursing</a>
+            <a href="../#acuity">Acuity</a>
+            <a href="../#projects-solutions">Other Projects</a>
+            <a href="../#info">Contact</a>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <header class="blog-hero">
+        <div class="hero-inner">
+            <h1>Blog</h1>
+            <p>Build logs, experiments, and notes on DIY cinema, XR, and creative tech.</p>
+        </div>
+    </header>
+
+    <!-- ARTICLES -->
+    <section class="articles-section">
+
+        <!--
+            ✏️ TO ADD A NEW ARTICLE:
+            1. Create a new folder: blog/your-article/
+            2. Put index.html + images inside it
+            3. Copy the card block below, update href/thumb/text
+            4. Paste ABOVE existing cards (newest first)
+        -->
+
+        <!-- ARTICLE: Cine ROro -->
+        <!-- href is relative: blog/cine-roro/ from blog/ -->
+        <a href="cine-roro/" class="article-card fade-in">
+            <div class="card-thumb" style="background-image: url('cine-roro/CoolTwo.png');"></div>
+            <div class="card-body">
+                <span class="card-tag">Build Log</span>
+                <h2>Cine ROro — Building a DIY Digital Cinema Camera</h2>
+                <p>Experimenting with low-cost digital cinema using a Raspberry Pi 5, CinePi, and a vintage Cosmicar lens with fungus. From bare-bones v1.0 to a 3D-printed v1.2 rig.</p>
+                <div class="card-meta">
+                    <span>March 2026</span>
+                    <span>Build v1.2</span>
+                </div>
+                <span class="card-arrow">Read article →</span>
+            </div>
+        </a>
+
+        <!--
+        ✏️ TEMPLATE — Copy for future articles:
+
+        <a href="your-article-folder/" class="article-card fade-in">
+            <div class="card-thumb" style="background-image: url('your-article-folder/thumbnail.jpg');"></div>
+            <div class="card-body">
+                <span class="card-tag">Category</span>
+                <h2>Article Title</h2>
+                <p>Short description in 1–2 sentences.</p>
+                <div class="card-meta">
+                    <span>Month Year</span>
+                </div>
+                <span class="card-arrow">Read article →</span>
+            </div>
+        </a>
+        -->
+
+        <div class="more-coming">More articles coming soon.</div>
+
+    </section>
+
+    <footer class="blog-footer">
+        <p>Roberto Salazar · <a href="../">sroberto27.github.io</a></p>
+    </footer>
+
+    <script>
+        const faders = document.querySelectorAll('.fade-in');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+        faders.forEach(el => observer.observe(el));
+    </script>
+
+</body>
+</html>

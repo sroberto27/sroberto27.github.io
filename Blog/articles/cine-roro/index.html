@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cine ROro — DIY CinePi Camera Build | Roberto Salazar</title>
+    <meta name="description" content="Building a DIY digital cinema camera with Raspberry Pi 5, CinePi, and a vintage Cosmicar lens. Cine ROro build log by Roberto Salazar.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body {
+            scroll-behavior: smooth;
+            font-family: "Manrope", sans-serif;
+            color: #222;
+        }
+
+        body {
+            background: #f4f3f1;
+        }
+
+        /* --- NAVBAR (same as main site) --- */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 0;
+            z-index: 1000;
+        }
+
+        .navbar > div:first-child {
+            padding: 8px 15px;
+            font-weight: 500;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 15px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 8px 15px;
+            transition: 0.3s;
+            font-size: 0.95rem;
+        }
+
+        .nav-links a:hover {
+            background: #ff6a00;
+            border-radius: 5px;
+        }
+
+        .menu-icon, #menu-toggle { display: none; }
+
+        @media (max-width: 768px) {
+            .menu-icon {
+                display: block;
+                font-size: 30px;
+                cursor: pointer;
+                color: white;
+                user-select: none;
+                padding: 0 15px;
+            }
+            .nav-links {
+                position: absolute;
+                top: 60px;
+                left: 0;
+                width: 100%;
+                background: rgba(0, 0, 0, 0.9);
+                flex-direction: column;
+                text-align: center;
+                padding: 0;
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.5s ease-in-out;
+            }
+            .nav-links a {
+                display: block;
+                padding: 15px;
+            }
+            #menu-toggle:checked ~ .nav-links {
+                max-height: 1000px;
+                padding: 20px 0;
+            }
+        }
+
+        /* --- HERO --- */
+        .article-hero {
+            position: relative;
+            width: 100%;
+            min-height: 70vh;
+            display: flex;
+            align-items: flex-end;
+            overflow: hidden;
+        }
+
+        .hero-bg {
+            position: absolute;
+            inset: 0;
+            /* Image is in same folder: blog/cine-roro/CoolTwo.png */
+            background: url('CoolTwo.png') no-repeat center center;
+            background-size: cover;
+        }
+
+        .hero-bg::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(0,0,0,0.2) 0%,
+                rgba(0,0,0,0.5) 60%,
+                rgba(0,0,0,0.8) 100%
+            );
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            max-width: 800px;
+            padding: 60px 40px 50px;
+            color: #fff;
+        }
+
+        .hero-tag {
+            display: inline-block;
+            font-size: 0.7rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #ff6a00;
+            font-weight: 600;
+            margin-bottom: 14px;
+        }
+
+        .hero-content h1 {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 14px;
+        }
+
+        .hero-meta {
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9rem;
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+            font-weight: 500;
+        }
+
+        /* --- ARTICLE BODY --- */
+        .article-body {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 50px 30px 80px;
+        }
+
+        .article-body p {
+            font-size: 1.05rem;
+            line-height: 1.7;
+            color: #333;
+            margin-bottom: 22px;
+            font-weight: 400;
+        }
+
+        .article-body h2 {
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: #111;
+            margin: 44px 0 16px;
+            padding-left: 16px;
+            border-left: 4px solid #ff6a00;
+        }
+
+        /* --- IMAGES --- */
+        .img-full {
+            width: 100%;
+            border-radius: 16px;
+            margin: 28px 0;
+            display: block;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+
+        .img-row {
+            display: flex;
+            gap: 16px;
+            margin: 28px 0;
+        }
+
+        .img-row img {
+            flex: 1;
+            min-width: 0;
+            border-radius: 16px;
+            object-fit: cover;
+            max-height: 340px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+
+        .img-caption {
+            font-size: 0.82rem;
+            color: #888;
+            text-align: center;
+            margin-top: -18px;
+            margin-bottom: 28px;
+            font-style: italic;
+        }
+
+        /* --- VIDEO --- */
+        .video-embed {
+            width: 100%;
+            aspect-ratio: 16/9;
+            border-radius: 16px;
+            border: none;
+            margin: 28px 0;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
+        }
+
+        /* --- SPECS GRID --- */
+        .specs-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: 28px 0;
+        }
+
+        .spec-item {
+            background-color: rgba(255, 255, 255, 0.75);
+            padding: 16px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        }
+
+        .spec-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            color: #999;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        .spec-value {
+            font-size: 0.95rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        /* --- CALLOUT --- */
+        .callout {
+            background-color: rgba(255, 255, 255, 0.75);
+            border-left: 4px solid #ff6a00;
+            padding: 20px 24px;
+            border-radius: 0 16px 16px 0;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.08);
+            margin: 28px 0;
+        }
+
+        .callout p {
+            margin-bottom: 0 !important;
+            font-size: 0.95rem;
+            color: #555;
+        }
+
+        .callout strong { color: #222; }
+
+        /* --- CREDITS --- */
+        .credits-section {
+            border-top: 2px solid #ddd;
+            margin-top: 44px;
+            padding-top: 28px;
+        }
+
+        .credits-section a {
+            color: #ff6a00;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .credits-section a:hover { text-decoration: underline; }
+
+        .credits-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px 24px;
+            margin-top: 12px;
+        }
+
+        .credits-links a { font-size: 0.92rem; }
+
+        /* --- FOOTER --- */
+        .blog-footer {
+            text-align: center;
+            padding: 30px 20px;
+            color: #999;
+            font-size: 0.85rem;
+            border-top: 1px solid #ddd;
+        }
+
+        .blog-footer a {
+            color: #ff6a00;
+            text-decoration: none;
+        }
+
+        .blog-footer a:hover { text-decoration: underline; }
+
+        /* --- BACK TO TOP --- */
+        .back-to-top {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #ff6a00;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 50%;
+            font-size: 20px;
+            cursor: pointer;
+            display: none;
+            transition: 0.3s;
+            z-index: 999;
+            border: none;
+        }
+
+        .back-to-top:hover { background: #e65c00; }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            .hero-content { padding: 40px 20px 40px; }
+            .article-body { padding: 36px 20px 60px; }
+            .img-row { flex-direction: column; }
+            .img-row img { max-height: none; }
+            .specs-grid { grid-template-columns: 1fr; }
+            .hero-meta { flex-direction: column; gap: 6px; }
+        }
+
+        /* --- FADE IN --- */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="navbar">
+        <div>Roberto Salazar Magical Realism</div>
+        <input type="checkbox" id="menu-toggle" />
+        <label for="menu-toggle" class="menu-icon">☰</label>
+        <div class="nav-links">
+            <!-- ../ goes up from blog/cine-roro/ to blog/ -->
+            <!-- ../../ goes up to repo root -->
+            <a href="../../">Home</a>
+            <a href="../">Blog</a>
+            <a href="../../#filmmaking">Filmmaking</a>
+            <a href="../../#nursing">Nursing</a>
+            <a href="../../#acuity">Acuity</a>
+            <a href="../../#info">Contact</a>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <header class="article-hero">
+        <div class="hero-bg"></div>
+        <div class="hero-content">
+            <span class="hero-tag">Build Log</span>
+            <h1>Cine ROro — Building a DIY Digital Cinema Camera</h1>
+            <div class="hero-meta">
+                <span>Roberto Salazar</span>
+                <span>March 2026</span>
+                <span>Build v1.2</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- ARTICLE -->
+    <article class="article-body">
+
+        <p class="fade-in">
+            I've been wanting to build my own digital cinema camera for a while now. Not because I need one — I have access to plenty of cameras but because I wanted to learn. That curiosity led me to the CinePi project, an open-source digital cinema camera built around a Raspberry Pi. What started as "let me just try this(I was planning to make a warm farm but decided to invest on this better)" turned into Cine ROro, my own custom build.
+        </p>
+
+        <p class="fade-in">
+            This isn't a polished production tool. It is rough but cute. A learning device. And honestly, that's what makes it fun.
+        </p>
+
+        <!-- FIRST TEST VIDEO -->
+        <h2 class="fade-in">First Video Test</h2>
+
+        <p class="fade-in">
+            Here's the first footage captured with Cine ROro v1.2. Nothing fancy — just testing how the sensor handles light, how the vintage lens renders, and whether the whole thing actually works as a filmmaking tool. The color grading is still rough (I'm learning DaVinci Resolve as I go), but the image has a film vibes that I really like.
+        </p>
+
+        <iframe class="video-embed fade-in"
+                src="https://www.youtube.com/embed/hPdnLPs_rno"
+                title="Cine ROro — First Video Test"
+                frameborder="0"
+                allowfullscreen
+                loading="lazy"></iframe>
+
+        <!-- THE BUILD -->
+        <h2 class="fade-in">The Build</h2>
+
+        <p class="fade-in">
+            The heart of Cine ROro, Raspberry Pi 5 8GB running Cinemate 3.2 with the IMX477 sensor. The whole thing sits inside a 3D-printed enclosure designed by the CinePi community, which I printed on my Anycubic Kobra. The case took about 36 hours and only one fail to print and came out with some really nice structural detail. Cleaning was tedious, but maybe it was my fault on the sides, I used flat supports instead of trees, and the vents were rough..
+        </p>
+
+        <!-- Images are in same folder: blog/cine-roro/ -->
+        <div class="img-row fade-in">
+            <img src="IMG_20260216_094342628_HDR_AE.jpg" alt="3D printing the CinePi enclosure on Anycubic Kobra">
+            <img src="print.gif" alt="3D printing timelapse of the camera enclosure">
+        </div>
+        <p class="img-caption">Printing the v1.2 enclosure on the Anycubic Kobra. About 36 hours, sleeping in a different room, and a lot of patience.</p>
+
+        <p class="fade-in">
+            For the lens, I'm using a vintage Cosmicar/Soligor 12.5mm television lens that I got cheap from Ebay. It has some fungus in it, which honestly I kind of not like it, But I guess it literary gives organic quality to the image that I wasn't expecting. Sometimes the best looks come from imperfections is this the case I don't know.
+        </p>
+
+        <div class="img-row fade-in">
+            <img src="Screenshot_2026-02-12_115857_2.jpg" alt="Cosmicar 12.5mm vintage television lens close-up">
+            <img src="Screenshot_2026-02-12_115846_2.jpg" alt="Looking through the rear element of the Cosmicar lens">
+        </div>
+        <p class="img-caption">The Cosmicar 12.5mm — fungus and all. Looking through the front and rear elements.</p>
+
+        <img class="img-full fade-in" src="CoolTwo.png" alt="Cine ROro v1.2 complete build with JOBY mic against colorful backdrop">
+        <p class="img-caption">Cine ROro v1.2 in all its glory. Art in front of art.</p>
+
+        <!-- SPECS -->
+        <h2 class="fade-in">Camera Setup</h2>
+
+        <div class="specs-grid fade-in">
+            <div class="spec-item">
+                <div class="spec-label">Camera</div>
+                <div class="spec-value">CinePi / Cinemate 3.2</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Brain</div>
+                <div class="spec-value">Raspberry Pi 5 (8GB)</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Sensor</div>
+                <div class="spec-value">IMX477</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Lens</div>
+                <div class="spec-value">Cosmicar 12.5mm TV Lens</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Power</div>
+                <div class="spec-value">Accsoon Toprig NP-F + NP-F970</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Monitor</div>
+                <div class="spec-value">4" HDMI LCD Square Display</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Audio</div>
+                <div class="spec-value">Wavo PRO DS + Zoom H1</div>
+            </div>
+            <div class="spec-item">
+                <div class="spec-label">Editing</div>
+                <div class="spec-value">DaVinci Resolve 20</div>
+            </div>
+        </div>
+
+        <!-- VERSION HISTORY -->
+        <h2 class="fade-in">From v1.0 to v1.2</h2>
+
+        <div class="callout fade-in">
+            <p>
+
+                <strong>v1.0</strong> was the bare-bones start — just the Pi, the sensor, and a lens mounted on a tripod stick with an Anker power bank. No case, no audio, no monitor. Wires , tape holding things together of course ziptied. It looked like a science project, but it worked. That version proved the concept and gave me the confidence to invest in a proper build. Thanks to <a href="https://www.youtube.com/@ExplainingComputers" target="_blank" style="color:#ff6a00;">ExplainingComputers</a> .
+            </p>
+        </div>
+
+        <div class="img-row fade-in">
+            <img src="blank1.png" alt="Cine ROro v1.0 — bare-bones build, side view">
+            <img src="blanlk2.png" alt="Cine ROro v1.0 — bare-bones build, front view">
+        </div>
+        <p class="img-caption">Cine ROro v1.0 — wires, tape, an Anker power bank.</p>
+
+        <p class="fade-in">
+            <strong>v1.2</strong> is where it starts feeling like an actual camera. The 3D-printed enclosure gives it structure. The NP-F battery system means I'm not tethered to a USB power bank anymore. The 4" LCD lets me to frame shots without an external monitor. And the Wavo PRO DS microphone plus Zoom H1 setup handles audio separately, which makes a massive difference in post.
+        </p>
+
+        <p class="fade-in">
+            It's still evolving. Future versions might explore different sensors, better lens adapters, XR who knows. But for now, v1.2 is the one making me capturing lights and that's what matters. I also got a gimbal(Old Cheap hope it work xD.)
+        </p>
+
+        <!-- CREDITS -->
+        <div class="credits-section fade-in">
+            <h2>Open Source Credits</h2>
+            <div class="credits-links">
+                <a href="https://cinepi.io/" target="_blank">CinePi Project →</a>
+                <a href="https://tiramisioux.github.io/cinemate/" target="_blank">Cinemate Software →</a>
+                <a href="https://www.thingiverse.com/axelanderk" target="_blank">CinePi Hardware Designs →</a>
+            </div>
+        </div>
+
+    </article>
+
+    <!-- FOOTER -->
+    <footer class="blog-footer">
+        <p>Roberto Salazar · <a href="../../">sroberto27.github.io</a></p>
+    </footer>
+
+    <!-- BACK TO TOP -->
+    <div class="back-to-top" onclick="window.scrollTo({top:0,behavior:'smooth'})">▲</div>
+
+    <script>
+        const faders = document.querySelectorAll('.fade-in');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+        faders.forEach(el => observer.observe(el));
+
+        window.addEventListener('scroll', function () {
+            document.querySelector('.back-to-top').style.display = (window.scrollY > 300) ? 'block' : 'none';
+        });
+    </script>
+
+</body>
+</html>
