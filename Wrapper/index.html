@@ -2,94 +2,65 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>Campus Virtual Tour — Prototype</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
   <!-- ============================================================
-       TOP BAR — campus-wide navigation / branding
+       TOP BAR
        ============================================================ -->
   <header id="top-bar">
     <a href="#" id="back-link" onclick="resetToHomeView(); return false;">
       &#8592; Back to Welcome Page
     </a>
     <span id="current-location-label">Campus View (Home)</span>
+    <button id="menu-toggle-btn" onclick="toggleMenu()" aria-label="Toggle menu">
+      <span class="hamburger-icon">
+        <span></span><span></span><span></span>
+      </span>
+    </button>
   </header>
 
   <!-- ============================================================
-       MAIN LAYOUT — Treedis viewer + side menu
+       MAIN CONTENT — fills viewport below top bar, above map
        ============================================================ -->
   <div id="main-layout">
 
-    <!-- --------------------------------------------------------
-         LEFT: TREEDIS VIEWER AREA
-         In production this will be either:
-           • an <iframe> pointing at app.treedis.com/tour/<model-id>
-           • a popup opened via window.open()
-         For now it is a placeholder <div>.
-         -------------------------------------------------------- -->
+    <!-- TREEDIS VIEWER — fills all remaining space -->
     <section id="treedis-viewer">
-      <!-- STATUS: PLACEHOLDER / TO BE ADAPTED -->
-      <!-- Replace the placeholder below with a real Treedis embed:
-           <iframe id="tour-frame"
-                   src="https://app.treedis.com/tour/YOUR_MODEL_ID"
-                   allow="fullscreen"
-                   style="width:100%;height:100%;border:none;"></iframe>
-      -->
-      <!-- Replace the #treedis-placeholder div with this -->
       <iframe
         id="tour-frame"
         src="https://spaces.dtsxr.com/tour/0df38e34"
         allow="fullscreen; xr-spatial-tracking"
         style="width:100%;height:100%;border:none;"
       ></iframe>
-    <!--  <div id="treedis-placeholder">
-        <img
-          id="treedis-placeholder-img"
-          src="https://images.unsplash.com/photo-1562774053-701939374585?w=1200&q=80"
-          alt="Campus placeholder"
-        />
-        <div id="treedis-overlay">
-          <span id="treedis-overlay-label">Treedis Window — Placeholder</span>
-          <span id="treedis-overlay-sub">Click a location to simulate navigation</span>
-        </div>
 
-        <div id="treedis-loading" class="hidden">
-          <div class="spinner"></div>
-          <span>Loading tour…</span>
+      <!-- Mobile touch guard -->
+      <div id="touch-guard">
+        <div id="touch-guard-prompt">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h8"/><path d="M18 20a6 6 0 0 0 0-12v12z"/><path d="m22 14-4 4"/></svg>
+          <span>Tap to interact with tour</span>
         </div>
-      </div> -->
+      </div>
     </section>
 
-    <!-- --------------------------------------------------------
-         RIGHT: CUSTOM SIDE MENU
-         This panel is entirely outside of Treedis. Each item
-         calls a wrapper function that will later issue real
-         postMessage SDK commands to the tour.
-         -------------------------------------------------------- -->
-    <nav id="side-menu">
+    <!-- SIDE MENU — retractable right panel -->
+    <nav id="side-menu" class="menu-open">
       <div id="menu-header">
         <span>MENU</span>
         <button id="menu-close" onclick="toggleMenu()" aria-label="Close menu">&times;</button>
       </div>
-
-      <!-- LOCATIONS group -->
       <div class="menu-group">
         <h3 class="menu-group-title">LOCATIONS</h3>
-        <ul class="menu-list" id="locations-list">
-          <!-- Populated by script.js from LOCATION_DATA -->
-        </ul>
+        <ul class="menu-list" id="locations-list"></ul>
       </div>
-
-      <!-- SUPPORT group -->
       <div class="menu-group">
         <h3 class="menu-group-title">SUPPORT</h3>
         <ul class="menu-list">
-          <!--<li><a href="#" onclick="switchToVRMode(); return false;">Switch to VR</a></li>-->
           <li><a href="#" onclick="openStudentPortal(); return false;">Student Portal</a></li>
-          <li><a href="#" onclick="scrollToMap(); return false;">Campus Map</a></li>
+          <li><a href="#" onclick="toggleMapPanel(); return false;" id="toggle-map-link">Hide Map</a></li>
           <li><a href="#" onclick="showHelp(); return false;">Help</a></li>
           <li><a href="#" onclick="exitExperience(); return false;">Exit</a></li>
         </ul>
@@ -98,29 +69,42 @@
   </div>
 
   <!-- ============================================================
-       BOTTOM: INTERACTIVE CAMPUS MAP
-       A purely HTML/CSS/JS map — no GIS library.
-       Uses an aerial placeholder image with positioned markers.
+       BOTTOM: MAP PANEL — retractable, with zoom/pan
        ============================================================ -->
-  <section id="campus-map">
-    <h2 id="map-title">Interactive Campus Map</h2>
-    <div id="map-container">
-      <!-- Aerial campus placeholder image -->
-      <img
-        id="map-bg"
-        src="Map.jpg"
-        alt="Aerial campus view"
-      />
-      <!-- Map markers — positioned via CSS percentages.
-           Each marker's data-location must match an id in LOCATION_DATA. -->
-      <div id="map-markers">
-        <!-- Generated by script.js from LOCATION_DATA -->
+  <section id="campus-map" class="map-desktop-only map-visible">
+    <!-- Map toolbar: toggle + zoom controls -->
+    <div id="map-toolbar">
+      <h2 id="map-title">Interactive Campus Map</h2>
+      <div id="map-controls">
+        <button onclick="mapZoomIn()" title="Zoom in" class="map-ctrl-btn">+</button>
+        <button onclick="mapZoomOut()" title="Zoom out" class="map-ctrl-btn">&minus;</button>
+        <button onclick="mapResetView()" title="Reset view" class="map-ctrl-btn map-ctrl-reset">&#8634;</button>
+        <button onclick="toggleMapPanel()" title="Hide map" id="map-hide-btn" class="map-ctrl-btn">&#9660; Hide</button>
+      </div>
+    </div>
+    <div id="map-viewport">
+      <div id="map-inner">
+        <img id="map-bg" src="Map.png" alt="Aerial campus view" draggable="false" />
+        <div id="map-markers"></div>
       </div>
     </div>
   </section>
 
+  <!-- Collapsed map tab — shown when map is hidden -->
+  <button id="map-show-tab" class="map-desktop-only" onclick="toggleMapPanel()">
+    &#9650; Show Campus Map
+  </button>
+
   <!-- ============================================================
-       HELP MODAL (hidden by default)
+       MOBILE LOCATION LIST (phones only, replaces map)
+       ============================================================ -->
+  <section id="mobile-locations" class="map-mobile-only">
+    <h2 id="mobile-locations-title">Campus Locations</h2>
+    <div id="mobile-locations-list"></div>
+  </section>
+
+  <!-- ============================================================
+       HELP MODAL
        ============================================================ -->
   <div id="help-modal" class="modal hidden">
     <div class="modal-content">
@@ -133,13 +117,14 @@
         <li><strong>Scroll wheel</strong> to zoom</li>
         <li><strong>Double-click</strong> to move to a point</li>
       </ul>
+      <p>Use the map controls to <strong>zoom</strong> and <strong>drag</strong> the campus map.</p>
       <p class="help-note">This is a prototype. Real Treedis controls will be available
          once the tour model IDs are configured.</p>
     </div>
   </div>
 
   <!-- ============================================================
-       EVENT LOG (development helper — toggle with the 📋 button)
+       EVENT LOG
        ============================================================ -->
   <div id="event-log" class="hidden">
     <div id="event-log-header">
