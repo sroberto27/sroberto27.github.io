@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Responsive Campus Wrapper Reference</title>
+  <style>
+    :root{
+      --bd:#111;
+      --muted:#6f6f6f;
+      --bg:#fff;
+      --soft:#f6f6f6;
+      --panel:#f7f7f7;
+      --header-h:84px;
+      --tour-h:56px;
+      --mobile-half:230px;
+      --mobile-peek:48px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{margin:0;padding:0;background:#fafafa;font-family:Arial,Helvetica,sans-serif;color:#111;height:100%}
+    body{min-height:100vh}
+
+    .app{min-height:100vh;display:grid;background:#fff}
+
+    .header{position:sticky;top:0;z-index:50;background:var(--soft);border-bottom:1px solid var(--bd);padding:10px 12px}
+    .topline{display:flex;justify-content:space-between;font-size:11px;font-weight:700;text-transform:uppercase;margin-bottom:10px}
+    .toggle{display:flex;justify-content:center}
+    .toggle .group{display:inline-flex;border:1px solid var(--bd);overflow:hidden;background:#000}
+    .toggle button{border:0;background:#000;color:#fff;padding:5px 14px;font-size:10px;cursor:pointer}
+    .toggle button.active{background:#fff;color:#000}
+
+    .layout{display:grid;grid-template-columns:280px 1fr 320px;min-height:calc(100vh - var(--tour-h))}
+
+    .sidebar{border-right:1px solid var(--bd);background:#fff}
+    .sidebar h3{margin:10px 12px 4px;font-size:10px;text-transform:uppercase;color:#111}
+    .sidebar .subline{margin:0 12px 10px;font-size:9px;color:#666}
+    .list{list-style:none;margin:0;padding:0}
+    .item{border-top:1px solid #ddd;padding:10px 12px;font-size:12px;cursor:pointer;display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+    .item.active{background:#bdf5c8}
+    .item-main{display:block}
+    .item-name{font-size:12px;font-weight:700;line-height:1.2;margin-bottom:3px}
+    .item-sub{font-size:9px;text-transform:uppercase;color:#555;line-height:1.2}
+    .item-arrow{font-size:14px;line-height:1;color:#111;padding-top:2px}
+
+    .stage{position:relative;background:#f3f3f3;min-height:calc(100vh - var(--header-h) - var(--tour-h))}
+    .map,.street{position:absolute;inset:0}
+    .street{display:none;background:#f2f2f2}
+    .app[data-view="street"] .street{display:block}
+    .app[data-view="street"] .map{display:none}
+    .map svg,.street svg{display:block;width:100%;height:100%}
+
+    .pins{position:absolute;inset:0}
+    .pin{position:absolute;width:20px;height:20px;transform:translate(-50%,-50%);border:0;background:transparent;cursor:pointer;padding:0}
+    .pin::before{content:"";position:absolute;left:50%;top:50%;width:7px;height:7px;background:#000;border-radius:50%;transform:translate(-50%,-50%);z-index:2}
+    .pin::after{content:"";position:absolute;left:50%;top:56%;width:14px;height:14px;transform:translate(-50%,-50%) rotate(45deg);border-radius:50% 50% 50% 0;background:currentColor}
+    .pin.inactive{color:#7d7d7d}
+
+    .meta{border-left:1px solid var(--bd);background:var(--panel);padding:0;display:flex;flex-direction:column}
+    .meta-scroll{padding:10px 10px 0;overflow:auto;flex:1}
+    .meta-topline{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+    .meta-eyebrow{font-size:7px;text-transform:uppercase;color:#666;line-height:1.2}
+    .meta-close{border:0;background:transparent;font-size:18px;line-height:1;cursor:pointer;padding:0 2px}
+    .meta h2{margin:0;font-size:30px;line-height:1;font-weight:700}
+    .meta .sub{font-size:10px;line-height:1.35;margin:4px 0 10px;color:#333}
+    .meta .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid #000;background:#000;color:#fff;padding:5px 10px;font-size:10px;cursor:pointer;margin-bottom:10px}
+    .meta .img{height:120px;border:1px solid #d6d6d6;background:#eee;position:relative;margin-bottom:12px}
+    .meta .img::before,.meta .img::after{content:"";position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+    .meta .img::before{background:linear-gradient(to bottom right, transparent calc(50% - .5px), #dfb0b0, transparent calc(50% + .5px))}
+    .meta .img::after{background:linear-gradient(to top right, transparent calc(50% - .5px), #dfb0b0, transparent calc(50% + .5px))}
+    .img-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;text-transform:uppercase;color:#666;letter-spacing:.08em}
+    .meta p{font-size:10px;line-height:1.55;margin:0 0 12px}
+    .section-label{font-size:8px;font-weight:700;text-transform:uppercase;margin:0 0 6px}
+    .tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
+    .tag{border:1px solid #000;padding:2px 4px;font-size:7px;text-transform:uppercase;line-height:1}
+    .rooms{margin-bottom:10px}
+    .room{display:flex;justify-content:space-between;align-items:center;width:100%;border:0;border-top:1px solid #bbb;background:transparent;padding:7px 0;font-size:10px;text-align:left;cursor:pointer}
+    .meta-footer{border-top:1px solid var(--bd);padding:7px 10px 8px;margin-top:auto}
+    .meta-footer-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+    .vr-note{display:flex;align-items:center;gap:4px;font-size:8px;color:#444;white-space:nowrap}
+    .vr-dot{width:6px;height:6px;border-radius:50%;background:#666;display:inline-block}
+
+    .tourbar{position:sticky;bottom:0;border-top:1px solid var(--bd);background:var(--panel);display:grid;grid-template-columns:36px 1fr 36px;align-items:center;gap:10px;padding:8px 12px;z-index:60}
+    .round{width:24px;height:24px;border-radius:50%;border:1px solid #000;background:#000;color:#fff;cursor:pointer}
+    .center{text-align:center}
+    .center .label{font-size:8px;text-transform:uppercase;color:#666}
+    .center .name{font-size:12px;font-weight:700}
+    .center .count{font-size:9px;color:#666}
+
+    .panel,.mobile-locations-btn,.mobile-drawer,.mobile-backdrop{display:none}
+
+    @media (max-width: 768px){
+      .layout{grid-template-columns:1fr}
+      .sidebar,.meta{display:none}
+
+      .mobile-locations-btn{
+        display:block;position:absolute;left:12px;top:12px;z-index:58;border:1px solid var(--bd);background:#fff;padding:6px 10px;font-size:10px;cursor:pointer
+      }
+
+      .mobile-drawer{
+        display:block;position:fixed;left:0;top:var(--header-h);bottom:var(--tour-h);width:min(82vw,320px);background:#fff;border-right:1px solid var(--bd);z-index:72;transform:translateX(-100%);transition:transform .22s ease;overflow:auto
+      }
+      .mobile-drawer.open{transform:translateX(0)}
+      .mobile-drawer-header{padding:10px 12px 4px;border-bottom:1px solid #ddd;font-size:10px;text-transform:uppercase;color:#111;font-weight:700}
+      .mobile-drawer-sub{padding:0 12px 10px;border-bottom:1px solid #ddd;font-size:9px;color:#666}
+
+      .mobile-backdrop{position:fixed;inset:var(--header-h) 0 var(--tour-h) 0;background:rgba(0,0,0,.18);z-index:70}
+      .mobile-backdrop.show{display:block}
+
+      .panel{
+        display:block;position:fixed;left:0;right:0;bottom:var(--tour-h);height:var(--mobile-half);background:var(--panel);border-top:1px solid var(--bd);transition:height .22s ease, transform .22s ease;z-index:55;overflow:hidden
+      }
+      .panel.full{height:calc(100dvh - var(--header-h))}
+      .panel.hidden{transform:translateY(calc(100% - var(--mobile-peek)))}
+      .handle{display:flex;justify-content:center;padding:8px 0;touch-action:none;cursor:grab;user-select:none}
+      .handle::before{content:"";width:52px;height:4px;border-radius:999px;background:#bdbdbd}
+      .pclose{position:absolute;right:10px;top:10px;border:0;background:transparent;font-size:18px;cursor:pointer}
+      .pscroll{height:calc(100% - 20px);overflow:auto;padding:0 12px 0}
+      .eyebrow{font-size:7px;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+      .title{font-size:30px;margin:0;line-height:1;font-weight:700}
+      .sub{font-size:10px;line-height:1.35;margin:4px 0 10px}
+      .btn{display:inline-flex;align-items:center;gap:6px;border:1px solid #000;background:#000;color:#fff;padding:5px 10px;font-size:10px;margin-bottom:10px;cursor:pointer}
+      .img{height:118px;border:1px solid #d6d6d6;background:#eee;position:relative;margin-bottom:12px}
+      .img::before,.img::after{content:"";position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
+      .img::before{background:linear-gradient(to bottom right, transparent calc(50% - .5px), #dfb0b0, transparent calc(50% + .5px))}
+      .img::after{background:linear-gradient(to top right, transparent calc(50% - .5px), #dfb0b0, transparent calc(50% + .5px))}
+      .extra{display:none;padding-bottom:10px}
+      .panel.full .extra{display:block}
+      .mobile-panel-footer{border-top:1px solid var(--bd);padding:7px 0 8px;margin-top:8px}
+      .mobile-panel-footer-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+      .mobile-vr-note{display:flex;align-items:center;gap:4px;font-size:8px;color:#444;white-space:nowrap}
+    }
+  </style>
+</head>
+<body>
+<div class="app" id="app" data-view="map">
+  <div class="header">
+    <div class="topline"><span>SCSU Metaversity</span><span>Help</span></div>
+    <div class="toggle"><div class="group">
+      <button class="active" data-mode="explore">Explore</button>
+      <button data-mode="learn">Learn</button>
+    </div></div>
+  </div>
+
+  <div class="layout">
+    <aside class="sidebar">
+      <h3>Campus Locations</h3>
+      <div class="subline">5 locations to explore.</div>
+      <ul class="list" id="list"></ul>
+    </aside>
+
+    <aside class="mobile-drawer" id="mobileDrawer">
+      <div class="mobile-drawer-header">Campus Locations</div>
+      <div class="mobile-drawer-sub">5 locations to explore.</div>
+      <ul class="list" id="mobileList"></ul>
+    </aside>
+    <div class="mobile-backdrop" id="mobileBackdrop"></div>
+
+    <main class="stage">
+      <button class="mobile-locations-btn" id="mobileLocationsBtn" type="button">☰ Locations</button>
+      <section class="map" id="map">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          <path d="M0 75 L30 80 L55 55 L100 58" fill="none" stroke="#d0d7df" stroke-width="1.3"></path>
+          <path d="M8 12 L92 85" fill="none" stroke="#d0d7df" stroke-width="1"></path>
+          <path d="M22 0 L48 30" fill="none" stroke="#d0d7df" stroke-width="1"></path>
+          <path d="M72 8 L32 48" fill="none" stroke="#d0d7df" stroke-width="1.2"></path>
+        </svg>
+        <div class="pins" id="pins"></div>
+      </section>
+      <section class="street" id="street">
+        <svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+          <rect x="20" y="12" width="60" height="56" fill="#f0f0f0" stroke="#d7d7d7"></rect>
+          <rect x="44" y="44" width="12" height="24" fill="#dedede" stroke="#cfcfcf"></rect>
+          <rect x="28" y="24" width="10" height="16" fill="#f7f7f7" stroke="#d7d7d7"></rect>
+          <rect x="45" y="24" width="10" height="16" fill="#f7f7f7" stroke="#d7d7d7"></rect>
+          <rect x="62" y="24" width="10" height="16" fill="#f7f7f7" stroke="#d7d7d7"></rect>
+          <text x="50" y="76" text-anchor="middle" font-size="4" fill="#555">STREET VIEW</text>
+        </svg>
+      </section>
+    </main>
+
+    <aside class="meta">
+      <div class="meta-scroll">
+        <div class="meta-topline">
+          <div class="meta-eyebrow">Academic Building</div>
+          <button class="meta-close" type="button">×</button>
+        </div>
+        <h2 id="dTitle"></h2>
+        <div class="sub" id="dSub"></div>
+        <button class="btn" id="dExplore" type="button">↗ Explore</button>
+        <div class="img"><div class="img-label">Location Image</div></div>
+        <p id="dDesc"></p>
+        <div class="section-label">What Happens Here?</div>
+        <div class="tags" id="dTags"></div>
+        <div class="section-label">Explorable Locations</div>
+        <div class="rooms" id="dRooms"></div>
+      </div>
+      <div class="meta-footer">
+        <div class="meta-footer-row">
+          <button class="btn" id="dExploreFooter" type="button" style="margin:0">↗ Explore</button>
+          <div class="vr-note"><span class="vr-dot"></span>VR-Enabled</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <section class="panel" id="panel">
+    <div class="handle" id="handle"></div>
+    <button class="pclose" id="pclose" type="button">×</button>
+    <div class="pscroll">
+      <div class="eyebrow">Academic Building</div>
+      <h2 class="title" id="mTitle"></h2>
+      <div class="sub" id="mSub"></div>
+      <button class="btn" id="mExplore" type="button">↗ Explore</button>
+      <div class="img"><div class="img-label">Location Image</div></div>
+      <div class="extra">
+        <p id="mDesc"></p>
+        <div class="section-label">What Happens Here?</div>
+        <div class="tags" id="mTags"></div>
+        <div class="section-label">Explorable Locations</div>
+        <div class="rooms" id="mRooms"></div>
+        <div class="mobile-panel-footer">
+          <div class="mobile-panel-footer-row">
+            <button class="btn" id="mExploreFooter" type="button" style="margin:0">↗ Explore</button>
+            <div class="mobile-vr-note"><span class="vr-dot"></span>VR-Enabled</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="tourbar">
+    <button class="round" id="prev" type="button">‹</button>
+    <div class="center"><div class="label">Tour</div><div class="name" id="tName"></div><div class="count" id="tCount"></div></div>
+    <button class="round" id="next" type="button">›</button>
+  </div>
+</div>
+
+<script>
+(() => {
+  const DATA = [
+    {
+      name:'Nance Hall',
+      sub:'Mathematics & Science, College of Agriculture',
+      desc:'Home to the College of Agriculture and the Mathematics & Science departments. Nance Hall hosts several of the USDA-aligned laboratory spaces used in the NRM curriculum.',
+      x:'45%', y:'45%',
+      listSub:'Math & Science',
+      tags:['USDA Research','NRM Labs','Faculty Offices'],
+      rooms:['Room 100 - General Lecture','Room 110 - Baby','Faculty Suite']
+    },
+    {
+      name:'Crawford-Zimmerman',
+      sub:'Admissions',
+      desc:'Student-facing location with welcome, processing, and information areas related to admissions and campus entry workflows.',
+      x:'70%', y:'30%',
+      listSub:'Admissions',
+      tags:['Admissions','Front Desk'],
+      rooms:['Reception','Office Suite']
+    },
+    {
+      name:'Legacy Plaza',
+      sub:'Memorial',
+      desc:'Outdoor location used as a campus landmark and transition point for visitors exploring nearby buildings.',
+      x:'30%', y:'60%',
+      listSub:'Memorial',
+      tags:['Landmark','Outdoor'],
+      rooms:['Plaza Center']
+    }
+  ];
+
+  const app = document.getElementById('app');
+  const list = document.getElementById('list');
+  const mobileList = document.getElementById('mobileList');
+  const mobileDrawer = document.getElementById('mobileDrawer');
+  const mobileBackdrop = document.getElementById('mobileBackdrop');
+  const pins = document.getElementById('pins');
+  const panel = document.getElementById('panel');
+  const handle = document.getElementById('handle');
+  const mobileLocationsBtn = document.getElementById('mobileLocationsBtn');
+  const mq = window.matchMedia('(max-width: 768px)');
+
+  const dTitle = document.getElementById('dTitle');
+  const dSub = document.getElementById('dSub');
+  const dDesc = document.getElementById('dDesc');
+  const dTags = document.getElementById('dTags');
+  const dRooms = document.getElementById('dRooms');
+
+  const mTitle = document.getElementById('mTitle');
+  const mSub = document.getElementById('mSub');
+  const mDesc = document.getElementById('mDesc');
+  const mTags = document.getElementById('mTags');
+  const mRooms = document.getElementById('mRooms');
+
+  const tName = document.getElementById('tName');
+  const tCount = document.getElementById('tCount');
+
+  let i = 0;
+  let dragging = false;
+  let startY = 0;
+  let startMode = 'half';
+  let currentY = 0;
+  let mode = 'half';
+  let drawerOpen = false;
+
+  function isMobile() { return mq.matches; }
+
+  function buildListItem(it, idx, onClick) {
+    const li = document.createElement('li');
+    li.className = 'item' + (idx === i ? ' active' : '');
+      li.innerHTML = `
+        <span class="item-main">
+          <span class="item-name">${it.name}</span>
+          <span class="item-sub">${it.listSub}</span>
+        </span>
+        <span class="item-arrow">›</span>
+      `;
+    li.addEventListener('click', onClick);
+    return li;
+  }
+
+  function fillTags(container, tags) {
+    container.innerHTML = '';
+    tags.forEach(tag => {
+      const el = document.createElement('span');
+      el.className = 'tag';
+      el.textContent = tag;
+      container.appendChild(el);
+    });
+  }
+
+  function fillRooms(container, rooms) {
+    container.innerHTML = '';
+    rooms.forEach(room => {
+      const el = document.createElement('button');
+      el.type = 'button';
+      el.className = 'room';
+      el.innerHTML = `<span>${room}</span><span>›</span>`;
+      container.appendChild(el);
+    });
+  }
+
+  function renderLocationLists() {
+    list.innerHTML = '';
+    mobileList.innerHTML = '';
+
+    DATA.forEach((it, idx) => {
+      list.appendChild(buildListItem(it, idx, () => {
+        i = idx;
+        app.dataset.view = 'map';
+        render();
+      }));
+
+      mobileList.appendChild(buildListItem(it, idx, () => {
+        i = idx;
+        drawerOpen = false;
+        mode = 'half';
+        app.dataset.view = 'map';
+        render();
+      }));
+    });
+  }
+
+  function renderPins() {
+    pins.innerHTML = '';
+    DATA.forEach((it, idx) => {
+      const p = document.createElement('button');
+      p.type = 'button';
+      p.className = 'pin' + (idx === i ? '' : ' inactive');
+      p.style.left = it.x;
+      p.style.top = it.y;
+      p.addEventListener('click', () => {
+        i = idx;
+        drawerOpen = false;
+        app.dataset.view = 'map';
+        render();
+      });
+      pins.appendChild(p);
+    });
+  }
+
+  function render() {
+    const d = DATA[i];
+    dTitle.textContent = d.name;
+    dSub.textContent = d.sub;
+    dDesc.textContent = d.desc;
+    fillTags(dTags, d.tags);
+    fillRooms(dRooms, d.rooms);
+
+    mTitle.textContent = d.name;
+    mSub.textContent = d.sub;
+    mDesc.textContent = d.desc;
+    fillTags(mTags, d.tags);
+    fillRooms(mRooms, d.rooms);
+
+    tName.textContent = d.name;
+    tCount.textContent = (i + 1) + '/' + DATA.length;
+
+    renderLocationLists();
+    renderPins();
+
+    panel.classList.toggle('full', mode === 'full');
+    panel.classList.toggle('hidden', mode === 'hidden');
+    mobileDrawer.classList.toggle('open', drawerOpen && isMobile());
+    mobileBackdrop.classList.toggle('show', drawerOpen && isMobile());
+    panel.style.transform = mode === 'drag' ? panel.style.transform : '';
+  }
+
+  function setMobileDefaultState() {
+    if (!isMobile()) {
+      drawerOpen = false;
+      mode = 'half';
+      panel.style.transform = '';
+    } else if (mode === 'hidden' && !drawerOpen) {
+      mode = 'half';
+    }
+    render();
+  }
+
+  document.getElementById('prev').addEventListener('click', () => {
+    i = (i - 1 + DATA.length) % DATA.length;
+    drawerOpen = false;
+    render();
+  });
+
+  document.getElementById('next').addEventListener('click', () => {
+    i = (i + 1) % DATA.length;
+    drawerOpen = false;
+    render();
+  });
+
+  const exploreHandler = () => {
+    app.dataset.view = 'street';
+    drawerOpen = false;
+    if (isMobile()) mode = 'hidden';
+    render();
+  };
+
+  document.getElementById('dExplore').addEventListener('click', exploreHandler);
+  document.getElementById('dExploreFooter').addEventListener('click', exploreHandler);
+  document.getElementById('mExplore').addEventListener('click', exploreHandler);
+  document.getElementById('mExploreFooter').addEventListener('click', exploreHandler);
+
+  mobileLocationsBtn.addEventListener('click', () => {
+    drawerOpen = true;
+    mode = 'hidden';
+    app.dataset.view = 'map';
+    render();
+  });
+
+  mobileBackdrop.addEventListener('click', () => {
+    drawerOpen = false;
+    mode = 'half';
+    render();
+  });
+
+  document.getElementById('pclose').addEventListener('click', () => {
+    drawerOpen = false;
+    mode = 'hidden';
+    app.dataset.view = 'map';
+    render();
+  });
+
+  function pointerDown(e) {
+    if (!isMobile() || drawerOpen) return;
+    dragging = true;
+    startY = e.clientY;
+    currentY = e.clientY;
+    startMode = mode;
+    panel.style.transition = 'none';
+    handle.setPointerCapture?.(e.pointerId);
+  }
+
+  function pointerMove(e) {
+    if (!dragging || !isMobile() || drawerOpen) return;
+    currentY = e.clientY;
+    const delta = currentY - startY;
+
+    if (startMode === 'full') {
+      panel.style.transform = `translateY(${Math.max(0, delta)}px)`;
+    } else if (startMode === 'half') {
+      panel.style.transform = `translateY(${Math.max(-140, delta)}px)`;
+    } else if (startMode === 'hidden') {
+      panel.style.transform = `translateY(${Math.min(0, -120 + delta)}px)`;
+    }
+  }
+
+  function pointerUp() {
+    if (!dragging || !isMobile() || drawerOpen) return;
+    dragging = false;
+    panel.style.transition = '';
+    panel.style.transform = '';
+
+    const delta = currentY - startY;
+
+    if (startMode === 'half') {
+      if (delta < -30) mode = 'full';
+      else if (delta > 30) mode = 'hidden';
+      else mode = 'half';
+    } else if (startMode === 'full') {
+      if (delta > 30) mode = 'half';
+      else mode = 'full';
+    } else if (startMode === 'hidden') {
+      if (delta < -30) mode = 'half';
+      else mode = 'hidden';
+    }
+
+    render();
+  }
+
+  handle.addEventListener('pointerdown', pointerDown);
+  window.addEventListener('pointermove', pointerMove);
+  window.addEventListener('pointerup', pointerUp);
+  window.addEventListener('pointercancel', pointerUp);
+  window.addEventListener('resize', setMobileDefaultState);
+  mq.addEventListener?.('change', setMobileDefaultState);
+
+  render();
+})();
+</script>
+</body>
+</html>
