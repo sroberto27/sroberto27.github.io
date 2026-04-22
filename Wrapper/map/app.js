@@ -362,6 +362,7 @@ function focusPaddingFor(layer) {
 function selectFeature(layer, kind, { focus = false } = {}) {
   if (selectedLayer && selectedLayer !== layer) {
     resetLayerStyle(selectedLayer, selectedKind);
+    if (selectedLayer.closeTooltip) selectedLayer.closeTooltip();
   }
   selectedLayer = layer;
   selectedKind  = kind;
@@ -405,7 +406,11 @@ function selectFeature(layer, kind, { focus = false } = {}) {
 }
 
 function clearSelection() {
-  if (selectedLayer) resetLayerStyle(selectedLayer, selectedKind);
+  if (selectedLayer) {
+    resetLayerStyle(selectedLayer, selectedKind);
+    if (selectedLayer.closeTooltip) selectedLayer.closeTooltip();
+  }
+
   selectedLayer = null;
   selectedKind  = null;
   tourIndex = -1;
@@ -442,6 +447,7 @@ function bindEvents(feature, layer, kind) {
     mouseout: () => {
       if (selectedLayer === layer) return;
       resetLayerStyle(layer, kind);
+      if (layer.closeTooltip) layer.closeTooltip();
     },
     click: (e) => {
       L.DomEvent.stopPropagation(e);
