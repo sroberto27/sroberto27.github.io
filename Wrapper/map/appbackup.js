@@ -78,10 +78,10 @@ function getDescription(name) {
 const map = L.map("map", {
   zoomControl: false,
   attributionControl: true,
+  minZoom: 15,
   maxZoom: 20,
   zoomSnap: 0.25,
-  wheelPxPerZoomLevel: 120,
-  maxBoundsViscosity: 1.0
+  wheelPxPerZoomLevel: 120
 });
 
 L.control.zoom({ position: "topright" }).addTo(map);
@@ -218,45 +218,6 @@ function saveAlign(a) {
 let align = loadAlign();
 
 /* -----------------------------------------------------------
-   6a. Map constraints + refresh helpers
-   ----------------------------------------------------------- */
-function getCampusCoverZoom() {
-  if (!imageBounds) return 15;
-  return Math.min(map.getMaxZoom(), map.getBoundsZoom(imageBounds, true));
-}
-
-function refreshMapConstraints({ recenterIfNeeded = true } = {}) {
-  if (!imageBounds) return;
-
-  map.invalidateSize({ pan: false });
-
-  const coverZoom = getCampusCoverZoom();
-  map.setMaxBounds(imageBounds);
-  map.setMinZoom(coverZoom);
-
-  if (!recenterIfNeeded) return;
-
-  if (map.getZoom() < coverZoom) {
-    map.setView(imageBounds.getCenter(), coverZoom, { animate: false });
-  } else {
-    map.panInsideBounds(imageBounds, { animate: false });
-  }
-}
-
-function resetCampusView(animate = false) {
-  if (!imageBounds) return;
-  refreshMapConstraints({ recenterIfNeeded: false });
-  map.setView(imageBounds.getCenter(), getCampusCoverZoom(), { animate });
-}
-
-function scheduleMapRefresh({ recenterIfNeeded = true, delay = 0 } = {}) {
-  clearTimeout(scheduleMapRefresh._t);
-  scheduleMapRefresh._t = setTimeout(() => {
-    refreshMapConstraints({ recenterIfNeeded });
-  }, delay);
-}
-
-/* -----------------------------------------------------------
    7. Details panel
    ----------------------------------------------------------- */
 function openDetails()  {
@@ -268,8 +229,6 @@ function openDetails()  {
     closeMobileLocations({ silent: true });
     setDetailsMode("half");
   }
-
-  scheduleMapRefresh({ delay: 260 });
 }
 
 function closeDetails() {
@@ -279,8 +238,6 @@ function closeDetails() {
   el.details.style.transform = "";
   detailsMode = null;
   el.shell.classList.remove("details-full");
-
-  scheduleMapRefresh({ delay: 260 });
 }
 
 function setDetailsMode(next) {
@@ -294,8 +251,6 @@ function setDetailsMode(next) {
   el.details.classList.remove("is-hidden", "is-dragging");
   el.details.style.transform = "";
   el.shell.classList.toggle("details-full", next === "full");
-
-  scheduleMapRefresh({ delay: 260 });
 }
 
 function renderDetails(feature, kind) {
@@ -361,16 +316,14 @@ function selectFeature(layer, kind, { focus = false } = {}) {
       maxZoom: config.tour.focusZoom,
       duration: 0.55
     };
-    // Let the layout settle before flying so Leaflet measures the
-    // latest shell width after the details panel state changes.
-    const fly = () => {
-      refreshMapConstraints({ recenterIfNeeded: false });
-      map.flyToBounds(layer.getBounds(), fitOpts);
-    };
+    // Slight delay on mobile so the details sheet has started its
+    // slide-up animation before we recenter — avoids two competing
+    // reflows at once.
+    const fly = () => map.flyToBounds(layer.getBounds(), fitOpts);
     if (isMobile()) {
       requestAnimationFrame(() => requestAnimationFrame(fly));
     } else {
-      requestAnimationFrame(fly);
+      fly();
     }
   }
 
@@ -633,7 +586,7 @@ function renderLocationsList() {
     row.addEventListener("click", () => {
       if (row.dataset.all) {
         clearSelection();
-        if (imageBounds) resetCampusView(true);
+        if (imageBounds) map.flyToBounds(imageBounds, { padding: [20, 20], duration: 0.5 });
         // On mobile, close the drawer after action
         closeMobileLocations();
         return;
@@ -671,8 +624,6 @@ function openMobileLocations() {
   if (el.details.classList.contains("is-open")) {
     clearSelection();
   }
-
-  scheduleMapRefresh({ delay: 260 });
 }
 
 function closeMobileLocations(opts = {}) {
@@ -684,8 +635,6 @@ function closeMobileLocations(opts = {}) {
   el.locations.classList.remove("is-open");
   el.locationsBackdrop.classList.remove("is-open");
   el.shell.classList.remove("drawer-open");
-
-  scheduleMapRefresh({ delay: 260 });
 }
 
 el.locationsToggle.addEventListener("click", () => {
@@ -788,8 +737,6 @@ function handleViewportChange() {
       setDetailsMode("half");
     }
   }
-
-  scheduleMapRefresh({ delay: 80 });
 }
 mqMobile.addEventListener?.("change", handleViewportChange);
 
@@ -947,7 +894,7 @@ function reapplyAlign() {
     align
   );
   imageOverlay.setBounds(imageBounds);
-  refreshMapConstraints();
+  map.setMaxBounds(imageBounds.pad(0.25));
   renderAlignValues();
   saveAlign(align);
 }
@@ -1046,7 +993,7 @@ if (el.tourPrevMobile) el.tourPrevMobile.addEventListener("click", tourPrevActio
 if (el.tourNextMobile) el.tourNextMobile.addEventListener("click", tourNextAction);
 
 el.fitBtn.addEventListener("click", () => {
-  if (imageBounds) resetCampusView(true);
+  if (imageBounds) map.flyToBounds(imageBounds, { padding: [20, 20], duration: 0.5 });
 });
 
 el.detailsClose.addEventListener("click", () => clearSelection());
@@ -1069,10 +1016,6 @@ el.modeBtns.forEach((btn) => {
       b.setAttribute("aria-selected", b === btn ? "true" : "false");
     });
   });
-});
-
-window.addEventListener("resize", () => {
-  scheduleMapRefresh({ delay: 80 });
 });
 
 // Help button — simple info overlay for now
@@ -1099,10 +1042,6 @@ el.fullscreenBtn.addEventListener("click", () => {
   } else {
     document.exitFullscreen?.();
   }
-});
-
-document.addEventListener("fullscreenchange", () => {
-  scheduleMapRefresh({ delay: 80 });
 });
 
 // Keyboard shortcuts
@@ -1256,7 +1195,8 @@ async function boot() {
     attribution: "© SC State University | Imagery: SC_2023_RGB WMTS"
   }).addTo(map);
 
-  resetCampusView(false);
+  map.setMaxBounds(imageBounds.pad(0.25));
+  map.fitBounds(imageBounds, { padding: [20, 20] });
 
   // Add overlays (z-order: zones → buildings → tours)
   zonesLayer.addTo(map);
@@ -1293,7 +1233,6 @@ async function boot() {
     el.app.classList.add("is-ready");
     el.splash.classList.add("is-hidden");
     setTimeout(() => { el.splash.style.display = "none"; }, 500);
-    scheduleMapRefresh({ delay: 80 });
   });
 }
 
