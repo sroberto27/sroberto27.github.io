@@ -264,7 +264,7 @@ function resetCampusView(animate = false) {
   refreshMapConstraints({ recenterIfNeeded: false });
 
   const zoom = getCampusCoverZoom();
-  const center = getCampusOffsetCenter(zoom, 0, 1200); // 12000 px downward visual offset
+  const center = getCampusOffsetCenter(zoom, 0, -230); // 600 px downward visual offset
 
   map.setView(center, zoom, { animate });
 }
@@ -289,7 +289,7 @@ function openDetails()  {
     setDetailsMode("half");
   }
 
-  scheduleMapRefresh({ delay: 260 });
+  scheduleMapRefresh({ recenterIfNeeded: false, delay: 260 });
 }
 
 function closeDetails() {
@@ -300,7 +300,7 @@ function closeDetails() {
   detailsMode = null;
   el.shell.classList.remove("details-full");
 
-  scheduleMapRefresh({ delay: 260 });
+  scheduleMapRefresh({ recenterIfNeeded: false, delay: 260 });
 }
 
 function setDetailsMode(next) {
@@ -315,7 +315,7 @@ function setDetailsMode(next) {
   el.details.style.transform = "";
   el.shell.classList.toggle("details-full", next === "full");
 
-  scheduleMapRefresh({ delay: 260 });
+  scheduleMapRefresh({ recenterIfNeeded: false, delay: 260 });
 }
 
 function renderDetails(feature, kind) {
@@ -692,7 +692,7 @@ function openMobileLocations() {
     clearSelection();
   }
 
-  scheduleMapRefresh({ delay: 260 });
+  scheduleMapRefresh({ recenterIfNeeded: false, delay: 260 });
 }
 
 function closeMobileLocations(opts = {}) {
@@ -705,7 +705,7 @@ function closeMobileLocations(opts = {}) {
   el.locationsBackdrop.classList.remove("is-open");
   el.shell.classList.remove("drawer-open");
 
-  scheduleMapRefresh({ delay: 260 });
+  scheduleMapRefresh({ recenterIfNeeded: false, delay: 260 });
 }
 
 el.locationsToggle.addEventListener("click", () => {
