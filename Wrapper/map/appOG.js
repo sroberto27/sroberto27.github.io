@@ -104,6 +104,7 @@ const el = {
 
   helpBtn:         $("helpBtn"),
   fullscreenBtn:   $("fullscreenBtn"),
+  searchBtn:       $("searchBtn"),
 
   locations:       $("locations"),
   locationsList:   $("locationsList"),
@@ -118,15 +119,27 @@ const el = {
   detailsSub:      $("detailsSub"),
   detailsBody:     $("detailsBody"),
 
+  // Desktop tour nav (inside sidebar footer)
   tourName:        $("tourName"),
   tourCurrent:     $("tourCurrent"),
   tourTotal:       $("tourTotal"),
   tourPrev:        $("tourPrev"),
   tourNext:        $("tourNext"),
 
+  // Mobile tour nav (separate .tourbar at the bottom of viewport)
+  tourNameMobile:    $("tourNameMobile"),
+  tourCurrentMobile: $("tourCurrentMobile"),
+  tourTotalMobile:   $("tourTotalMobile"),
+  tourPrevMobile:    $("tourPrevMobile"),
+  tourNextMobile:    $("tourNextMobile"),
+
   fitBtn:          $("fitBtn"),
+
+  metabarSearch:   $("metabarSearch"),
   searchInput:     $("searchInput"),
   searchResults:   $("searchResults"),
+  searchClear:     $("searchClear"),
+
   modeBtns:        document.querySelectorAll(".mode-btn")
 };
 
@@ -394,8 +407,10 @@ function buildTourPins() {
   });
 
   tourStops.sort((a, b) => a.order - b.order);
-  el.tourTotal.textContent = tourStops.length;
-  el.tourCurrent.textContent = 0;
+  setText(el.tourTotal,       tourStops.length);
+  setText(el.tourTotalMobile, tourStops.length);
+  setText(el.tourCurrent,       0);
+  setText(el.tourCurrentMobile, 0);
   updateTourbar();
 }
 
@@ -409,23 +424,40 @@ function highlightActivePin() {
 }
 
 /* -----------------------------------------------------------
-   12. Tourbar
+   12. Tourbar (shared between desktop sidebar footer & mobile bar)
    ----------------------------------------------------------- */
+function setText(node, value) { if (node) node.textContent = value; }
+
 function updateTourbar() {
   if (tourIndex < 0 || !tourStops[tourIndex]) {
-    el.tourName.textContent = tourStops.length
-      ? "Start your tour"
-      : "No stops configured";
-    el.tourCurrent.textContent = tourIndex < 0 ? 0 : tourIndex + 1;
-    el.tourPrev.disabled = true;
-    el.tourNext.disabled = !tourStops.length;
+    const label = tourStops.length ? "Start your tour" : "No stops configured";
+    setText(el.tourName,       label);
+    setText(el.tourNameMobile, label);
+    const cur = tourIndex < 0 ? 0 : tourIndex + 1;
+    setText(el.tourCurrent,       cur);
+    setText(el.tourCurrentMobile, cur);
+
+    const prevDisabled = true;
+    const nextDisabled = !tourStops.length;
+    if (el.tourPrev)       el.tourPrev.disabled       = prevDisabled;
+    if (el.tourNext)       el.tourNext.disabled       = nextDisabled;
+    if (el.tourPrevMobile) el.tourPrevMobile.disabled = prevDisabled;
+    if (el.tourNextMobile) el.tourNextMobile.disabled = nextDisabled;
     return;
   }
   const stop = tourStops[tourIndex];
-  el.tourName.textContent = cleanName(stop.feature.properties.name);
-  el.tourCurrent.textContent = tourIndex + 1;
-  el.tourPrev.disabled = tourIndex === 0;
-  el.tourNext.disabled = tourIndex === tourStops.length - 1;
+  const name = cleanName(stop.feature.properties.name);
+  setText(el.tourName,       name);
+  setText(el.tourNameMobile, name);
+  setText(el.tourCurrent,       tourIndex + 1);
+  setText(el.tourCurrentMobile, tourIndex + 1);
+
+  const prevDisabled = tourIndex === 0;
+  const nextDisabled = tourIndex === tourStops.length - 1;
+  if (el.tourPrev)       el.tourPrev.disabled       = prevDisabled;
+  if (el.tourNext)       el.tourNext.disabled       = nextDisabled;
+  if (el.tourPrevMobile) el.tourPrevMobile.disabled = prevDisabled;
+  if (el.tourNextMobile) el.tourNextMobile.disabled = nextDisabled;
 }
 
 function goToStop(i) {
@@ -433,6 +465,12 @@ function goToStop(i) {
   tourIndex = Math.max(0, Math.min(i, tourStops.length - 1));
   const stop = tourStops[tourIndex];
   selectFeature(stop.layer, "tour", { focus: true });
+}
+
+function tourPrevAction() { goToStop(Math.max(0, tourIndex - 1)); }
+function tourNextAction() {
+  if (tourIndex < 0) return goToStop(0);
+  goToStop(tourIndex + 1);
 }
 
 /* -----------------------------------------------------------
@@ -516,6 +554,88 @@ el.locationsToggle.addEventListener("click", openMobileLocations);
 el.locationsClose.addEventListener("click", closeMobileLocations);
 
 /* -----------------------------------------------------------
+   14b. Mobile search toggle
+   ------------------------------------------------------------
+   On desktop the search field lives permanently in the header,
+   so the SEARCH button just focuses it. On mobile the search
+   panel is hidden by default and the SEARCH button slides it
+   in from under the header. The "x" button on the right of the
+   field has two states:
+     • if the input has text → clear the text
+     • if empty              → close the whole panel
+   ----------------------------------------------------------- */
+function updateSearchBtnState() {
+  if (!el.searchBtn) return;
+  const open = el.metabarSearch.classList.contains("is-open");
+  el.searchBtn.classList.toggle("is-active", open);
+  el.searchBtn.setAttribute("aria-expanded", String(open));
+}
+
+function openSearchPanel() {
+  el.metabarSearch.classList.add("is-open");
+  // Let the DOM settle before focusing (avoids iOS keyboard flash)
+  requestAnimationFrame(() => el.searchInput && el.searchInput.focus());
+  updateSearchBtnState();
+}
+
+function closeSearchPanel() {
+  el.metabarSearch.classList.remove("is-open");
+  el.searchInput.value = "";
+  el.searchResults.hidden = true;
+  el.searchResults.innerHTML = "";
+  refreshSearchClear();
+  updateSearchBtnState();
+}
+
+function refreshSearchClear() {
+  if (!el.searchClear) return;
+  // Desktop: always hidden (the input behaves like a normal field).
+  // Mobile : visible so the user can clear text or close the panel.
+  if (mqMobile.matches) {
+    el.searchClear.hidden = false;
+  } else {
+    el.searchClear.hidden = true;
+  }
+}
+
+if (el.searchBtn) {
+  el.searchBtn.addEventListener("click", () => {
+    if (mqMobile.matches) {
+      if (el.metabarSearch.classList.contains("is-open")) {
+        closeSearchPanel();
+      } else {
+        openSearchPanel();
+      }
+    } else {
+      // Desktop: just focus the field
+      el.searchInput.focus();
+      el.searchInput.select();
+    }
+  });
+}
+
+if (el.searchClear) {
+  el.searchClear.addEventListener("click", () => {
+    if (el.searchInput.value) {
+      // First click with text → clear it
+      el.searchInput.value = "";
+      el.searchResults.hidden = true;
+      el.searchResults.innerHTML = "";
+      el.searchInput.focus();
+    } else {
+      // Second click with empty input → close the panel (mobile only)
+      if (mqMobile.matches) {
+        closeSearchPanel();
+      }
+    }
+  });
+}
+
+// Keep the clear-button visibility in sync with the viewport
+mqMobile.addEventListener?.("change", refreshSearchClear);
+refreshSearchClear();
+
+/* -----------------------------------------------------------
    15. Search
    ----------------------------------------------------------- */
 function renderSearch(q) {
@@ -551,6 +671,8 @@ function renderSearch(q) {
       selectFeature(m.layer, m.kind, { focus: true });
       el.searchInput.value = cleanName(m.props.name);
       el.searchResults.hidden = true;
+      // On mobile, tucking the search away after a pick feels right
+      if (mqMobile.matches) closeSearchPanel();
     });
   });
 }
@@ -677,12 +799,11 @@ alignUI.panel.addEventListener("click", (e) => {
   }
 });
 
-/* ------- Tour navigation buttons ------- */
-el.tourPrev.addEventListener("click", () => goToStop(Math.max(0, tourIndex - 1)));
-el.tourNext.addEventListener("click", () => {
-  if (tourIndex < 0) return goToStop(0);
-  goToStop(tourIndex + 1);
-});
+/* ------- Tour navigation buttons (desktop + mobile) ------- */
+if (el.tourPrev)       el.tourPrev.addEventListener("click",       tourPrevAction);
+if (el.tourNext)       el.tourNext.addEventListener("click",       tourNextAction);
+if (el.tourPrevMobile) el.tourPrevMobile.addEventListener("click", tourPrevAction);
+if (el.tourNextMobile) el.tourNextMobile.addEventListener("click", tourNextAction);
 
 el.fitBtn.addEventListener("click", () => {
   if (imageBounds) map.flyToBounds(imageBounds, { padding: [20, 20], duration: 0.5 });
@@ -693,7 +814,11 @@ el.detailsClose.addEventListener("click", () => clearSelection());
 if (el.searchInput) {
   el.searchInput.addEventListener("input", (e) => renderSearch(e.target.value));
   document.addEventListener("click", (e) => {
-    if (!e.target.closest(".search-wrap")) el.searchResults.hidden = true;
+    // Don't hide results if the click is inside the search area itself
+    if (e.target.closest(".metabar-search")) return;
+    // Don't hide if user is tapping the SEARCH toggle button
+    if (e.target.closest("#searchBtn")) return;
+    el.searchResults.hidden = true;
   });
 }
 
@@ -712,7 +837,7 @@ el.helpBtn.addEventListener("click", () => {
     "SCSU Metaversity\n\n" +
     "• Tap or click a location on the map to see details.\n" +
     "• Use the list on the left to jump to tour stops.\n" +
-    "• Arrow buttons at the bottom step through the tour.\n" +
+    "• Arrow buttons step through the tour.\n" +
     "• Arrow keys ← / → also navigate the tour.\n" +
     "• Press Escape to close any open panel.\n\n" +
     "Image alignment:\n" +
@@ -734,7 +859,18 @@ el.fullscreenBtn.addEventListener("click", () => {
 
 // Keyboard shortcuts
 document.addEventListener("keydown", (e) => {
-  if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
+  if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) {
+    // Allow Escape inside the search field to close / blur
+    if (e.key === "Escape" && e.target === el.searchInput) {
+      if (mqMobile.matches && el.metabarSearch.classList.contains("is-open")) {
+        closeSearchPanel();
+      } else {
+        el.searchInput.blur();
+        el.searchResults.hidden = true;
+      }
+    }
+    return;
+  }
 
   // Shift+A → toggle alignment tool
   if ((e.key === "a" || e.key === "A") && e.shiftKey) {
@@ -764,9 +900,16 @@ document.addEventListener("keydown", (e) => {
   }
 
   // Otherwise: arrow keys drive the tour
-  if (e.key === "ArrowRight") { el.tourNext.click(); e.preventDefault(); }
-  else if (e.key === "ArrowLeft")  { el.tourPrev.click(); e.preventDefault(); }
-  else if (e.key === "Escape")     { clearSelection(); closeMobileLocations(); }
+  if (e.key === "ArrowRight")      { tourNextAction(); e.preventDefault(); }
+  else if (e.key === "ArrowLeft")  { tourPrevAction(); e.preventDefault(); }
+  else if (e.key === "Escape")     {
+    if (mqMobile.matches && el.metabarSearch.classList.contains("is-open")) {
+      closeSearchPanel();
+    } else {
+      clearSelection();
+      closeMobileLocations();
+    }
+  }
 });
 
 // Clicking the bare map clears selection

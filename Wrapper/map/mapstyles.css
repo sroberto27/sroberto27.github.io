@@ -34,6 +34,11 @@
   --details-w:    360px;
   --sidebar-tour-h: 92px; /* tour footer inside the left sidebar */
 
+  /* Mobile details-panel heights. --mobile-peek is the portion that
+     remains visible when the panel is in its "hidden" state. */
+  --mobile-half-h: 46dvh;
+  --mobile-peek:   0px;
+
   --border: 1.5px solid var(--line);
 }
 
@@ -324,6 +329,11 @@ button { font-family: inherit; cursor: pointer; }
   border-bottom: var(--border);
   background: var(--paper);
   padding: 12px 16px;
+  /* Mobile: the toggle row must always stay on top of the locations
+     drawer and details sheet. On desktop it's already in its grid
+     row so the z-index is a no-op, but it keeps behaviour consistent. */
+  position: relative;
+  z-index: 900;
 }
 
 .mode-btn {
@@ -359,6 +369,7 @@ button { font-family: inherit; cursor: pointer; }
   border-bottom: var(--border);
   transition: grid-template-columns .25s ease;
   background: var(--paper);
+  position: relative;  /* needed for mobile absolute-positioned overlays */
 }
 
 .shell.has-details {
@@ -384,7 +395,13 @@ button { font-family: inherit; cursor: pointer; }
   position: relative;
   font-family: var(--mono);
   flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
 }
+
+.locations-heading { min-width: 0; flex: 1 1 auto; }
 
 .locations-title {
   font-size: 12px;
@@ -401,9 +418,6 @@ button { font-family: inherit; cursor: pointer; }
 
 .locations-close {
   display: none; /* desktop: always visible list, no close needed */
-  position: absolute;
-  top: 12px;
-  right: 12px;
   width: 28px;
   height: 28px;
   border: 1.5px solid var(--line);
@@ -412,6 +426,7 @@ button { font-family: inherit; cursor: pointer; }
   padding: 0;
   align-items: center;
   justify-content: center;
+  flex: 0 0 auto;
 }
 
 .locations-close svg { width: 14px; height: 14px; }
@@ -507,6 +522,11 @@ button { font-family: inherit; cursor: pointer; }
 
 .sidebar-tour .tour-arrow { width: 40px; height: 40px; }
 
+/* Mobile-only backdrop behind the locations drawer */
+.locations-backdrop {
+  display: none;
+}
+
 /* ===========================================================
    MAP AREA
    =========================================================== */
@@ -589,6 +609,9 @@ button { font-family: inherit; cursor: pointer; }
   pointer-events: auto;
 }
 
+/* Drag handle — only shown on mobile */
+.details-handle { display: none; }
+
 .details-close {
   position: absolute;
   top: 12px;
@@ -611,6 +634,10 @@ button { font-family: inherit; cursor: pointer; }
   flex: 1;
   font-family: var(--mono);
 }
+
+/* Desktop: peek and extra sit together in a single scrollable flow */
+.details-peek,
+.details-extra { display: contents; }
 
 .details-tag {
   display: inline-block;
@@ -982,14 +1009,15 @@ button { font-family: inherit; cursor: pointer; }
 
 /* ===========================================================
    MOBILE (≤ 880px)
-   Match the Figma Mobile Device Flow:
-     - Metabar stays at top but loses its inline search field
-     - SEARCH link in the metabar toggles a dropdown search
-     - Mode toggle stays
-     - Locations is a slide-down overlay with an X close button
-     - Map fills available space; a "Locations" button floats
-       at top-left, and a fit-to-view button floats bottom-right
-     - Details is a bottom sheet
+   Matches the Figma Mobile Device Flow:
+     - Metabar stays at top
+     - Mode toggle (Explore/Learn) stays permanently at row 2
+     - Locations drawer slides IN FROM THE LEFT over part of the
+       map, leaving a visible sliver of map behind it
+     - Details panel is a bottom sheet that can be dragged
+       between half-screen and full-screen states
+     - Locations drawer and details panel are mutually exclusive
+     - Map fills the space between mode toggle and tourbar
      - Sidebar tour-nav footer is hidden; the separate TOURBAR
        at the very bottom takes over
    =========================================================== */
@@ -1045,87 +1073,156 @@ button { font-family: inherit; cursor: pointer; }
 
   .mode-btn { padding: 9px 32px; font-size: 13px; }
 
+  /* The shell stays a single column on mobile so the map can
+     stretch edge-to-edge. The locations drawer and details
+     sheet are positioned absolutely over it. */
   .shell,
   .shell.has-details {
     grid-template-columns: 1fr;
     position: relative;
+    overflow: hidden;
   }
 
-  /* Locations becomes a drop-down overlay, hidden by default.
-     It has an X close button in the header (shown only on mobile). */
+  /* ---- LOCATIONS DRAWER (slides in from the LEFT) ---- */
   .locations {
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    height: auto;
-    max-height: 100%;
-    z-index: 800;
-    border-right: none;
-    border-bottom: var(--border);
-    transform: translateY(-100%);
-    transition: transform .25s ease;
-    box-shadow: 0 8px 16px rgba(0,0,0,.08);
+    bottom: 0;
+    width: min(82vw, 320px);
+    max-width: 82vw;
+    height: 100%;
+    z-index: 820;
+    border-right: var(--border);
+    border-bottom: none;
+    transform: translateX(-100%);
+    transition: transform .26s ease;
+    box-shadow: 4px 0 16px rgba(0,0,0,.08);
   }
 
   .locations.is-open {
-    transform: translateY(0);
+    transform: translateX(0);
   }
 
-  .locations-close { display: grid; }
-  .locations-head { padding-right: 52px; }
-
-  .locations-list { max-height: calc(70vh - 60px); }
+  .locations-close { display: inline-flex; }
+  .locations-head { padding-right: 18px; }
 
   /* Sidebar tour footer is desktop-only; hide on mobile */
   .sidebar-tour { display: none; }
 
   .locations-toggle { display: inline-flex; }
 
-  /* Details becomes a bottom sheet */
+  /* Backdrop over the visible sliver of map (behind the drawer).
+     Tap-off dismisses the drawer. */
+  .locations-backdrop {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,.18);
+    z-index: 810;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .22s ease;
+  }
+  .locations-backdrop.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ---- DETAILS: BOTTOM-SHEET ---- */
+  /* On mobile the details aside is absolutely positioned inside
+     .shell so it sits on top of the map but below the mode toggle
+     and tourbar. It has three states driven by JS:
+       .is-open           → half height (default after selection)
+       .is-open.is-full   → full height (dragged up)
+       .is-open.is-hidden → minimised to a small peek strip
+  */
   .details {
-    position: fixed;
+    position: absolute;
     left: 0;
     right: 0;
-    bottom: var(--tourbar-h);
+    bottom: 0;
     top: auto;
-    z-index: 900;
-    max-height: 72vh;
+    z-index: 830;
+    height: var(--mobile-half-h);
+    max-height: calc(100% - 8px);
     border: none;
     border-top: var(--border);
     background: var(--paper);
     transform: translateY(100%);
-    transition: transform .3s cubic-bezier(.4,0,.2,1);
+    transition: transform .28s cubic-bezier(.4,0,.2,1),
+                height    .28s cubic-bezier(.4,0,.2,1);
     opacity: 1;
     pointer-events: auto;
     box-shadow: 0 -8px 24px rgba(0,0,0,.12);
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* When the details sheet is being dragged, JS sets .is-dragging
+     and writes a live translateY via the style attribute. Disable
+     CSS transition so drag feels 1:1 with the finger. */
+  .details.is-dragging {
+    transition: none;
   }
 
   .details.is-open {
     transform: translateY(0);
   }
 
+  .details.is-open.is-full {
+    height: 100%;
+  }
+
+  .details.is-open.is-hidden {
+    transform: translateY(calc(100% - var(--mobile-peek)));
+  }
+
   .shell.has-details .details { opacity: 1; }
   .shell.has-details { grid-template-columns: 1fr; } /* don't reflow */
 
-  .details::before {
+  /* Drag handle bar */
+  .details-handle {
+    display: block;
+    position: relative;
+    width: 100%;
+    padding: 10px 0 6px;
+    touch-action: none;
+    cursor: grab;
+    user-select: none;
+    flex-shrink: 0;
+  }
+  .details-handle::before {
     content: "";
-    position: absolute;
-    top: 8px;
-    left: 50%;
-    transform: translateX(-50%);
+    display: block;
+    margin: 0 auto;
     width: 44px;
     height: 4px;
-    border-radius: 2px;
+    border-radius: 999px;
     background: var(--line-soft);
   }
+  .details.is-dragging .details-handle { cursor: grabbing; }
 
   .details-content {
-    padding: 28px 18px 40px;
+    padding: 10px 18px 24px;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
   }
 
+  /* On mobile, peek and extra are real wrappers (not display:contents)
+     so we can hide "extra" in the half state. */
+  .details-peek,
+  .details-extra { display: block; }
+
+  /* Half state hides the "extra" block. Full state shows it. */
+  .details-extra { display: none; }
+  .details.is-full .details-extra { display: block; }
+
   .details-close {
-    top: 16px;
+    top: 14px;
     right: 14px;
   }
 
@@ -1145,6 +1242,14 @@ button { font-family: inherit; cursor: pointer; }
     top: calc(100% - 4px);
     left: 14px;
     right: 14px;
+  }
+
+  /* Hide the floating "Locations" button when either the drawer
+     or the details sheet (in full state) is open — it'd otherwise
+     sit on top of the drawer content or the details title. */
+  .shell.drawer-open .locations-toggle,
+  .shell.has-details.details-full .locations-toggle {
+    display: none;
   }
 }
 

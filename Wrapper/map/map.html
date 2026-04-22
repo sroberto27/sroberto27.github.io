@@ -88,12 +88,19 @@
     <!-- ==== MAIN GRID ==== -->
     <main class="shell">
 
+      <!-- Mobile backdrop — dims the sliver of map visible behind the
+           locations drawer and lets the user tap-off to close it. -->
+      <div class="locations-backdrop" id="locationsBackdrop"
+           aria-hidden="true"></div>
+
       <!-- ───── LEFT: LOCATIONS SIDEBAR ───── -->
       <aside class="locations" id="locations" aria-label="Campus locations">
         <header class="locations-head">
-          <div class="locations-title">CAMPUS LOCATIONS</div>
-          <div class="locations-sub">
-            <span id="locationsCount">0</span> locations to explore.
+          <div class="locations-heading">
+            <div class="locations-title">CAMPUS LOCATIONS</div>
+            <div class="locations-sub">
+              <span id="locationsCount">0</span> locations to explore.
+            </div>
           </div>
           <button class="locations-close" id="locationsClose"
                   type="button" aria-label="Close locations list">
@@ -164,6 +171,12 @@
       <!-- ───── RIGHT: METADATA PANEL ───── -->
       <aside class="details" id="details"
              aria-label="Location details" aria-hidden="true">
+
+        <!-- Mobile-only drag handle (from drag.html pattern). On
+             desktop this is hidden; on mobile it lets the user pull
+             the panel between half-height and full-height. -->
+        <div class="details-handle" id="detailsHandle" aria-hidden="true"></div>
+
         <button class="details-close" id="detailsClose"
                 type="button" aria-label="Close details">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -173,57 +186,65 @@
         </button>
 
         <div class="details-content">
-          <div class="details-tag" id="detailsTag">ACADEMIC BUILDING</div>
-          <h2 class="details-title" id="detailsTitle">—</h2>
-          <div class="details-sub"  id="detailsSub">—</div>
+          <!-- "Peek" content — shown in half state on mobile, always
+               visible on desktop -->
+          <div class="details-peek">
+            <div class="details-tag" id="detailsTag">ACADEMIC BUILDING</div>
+            <h2 class="details-title" id="detailsTitle">—</h2>
+            <div class="details-sub"  id="detailsSub">—</div>
 
-          <button class="explore-cta" id="exploreCta" type="button">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M13 4l7 8-7 8M4 12h15"
-                    stroke="currentColor" stroke-width="2"
-                    stroke-linecap="round" stroke-linejoin="round" fill="none"/>
-            </svg>
-            <span>Explore</span>
-          </button>
-
-          <figure class="details-image" id="detailsImage">
-            <div class="details-image-x" aria-hidden="true"></div>
-            <figcaption>LOCATION IMAGE</figcaption>
-          </figure>
-
-          <p class="details-body" id="detailsBody">
-            Select a location from the list or map to see details.
-          </p>
-
-          <div class="details-block">
-            <div class="details-block-h">WHAT HAPPENS HERE?</div>
-            <div class="chip-row" id="chipsHere">
-              <span class="chip">USDA RESEARCH</span>
-              <span class="chip">NRM LABS</span>
-              <span class="chip">FACULTY OFFICES</span>
-            </div>
-          </div>
-
-          <div class="details-block">
-            <div class="details-block-h">EXPLORABLE LOCATIONS</div>
-            <ul class="sub-list" id="subList">
-              <li><span>Room 100 — General Lecture</span><span class="chev">›</span></li>
-              <li><span>Room 110 — Baby</span><span class="chev">›</span></li>
-              <li><span>Faculty Suite</span><span class="chev">›</span></li>
-            </ul>
-          </div>
-
-          <div class="details-vr">
-            <button class="vr-btn" id="vrBtn" type="button">
-              <svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16">
-                <path d="M6 7h12a2 2 0 012 2v6a2 2 0 01-2 2h-2l-2-2h-4l-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2z"
-                      stroke="currentColor" stroke-width="1.5" fill="none"/>
+            <button class="explore-cta" id="exploreCta" type="button">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M13 4l7 8-7 8M4 12h15"
+                      stroke="currentColor" stroke-width="2"
+                      stroke-linecap="round" stroke-linejoin="round" fill="none"/>
               </svg>
               <span>Explore</span>
             </button>
-            <span class="vr-label">
-              <span class="vr-dot" aria-hidden="true"></span> VR-Enabled
-            </span>
+
+            <figure class="details-image" id="detailsImage">
+              <div class="details-image-x" aria-hidden="true"></div>
+              <figcaption>LOCATION IMAGE</figcaption>
+            </figure>
+          </div>
+
+          <!-- "Extra" content — desktop: always visible.
+                                 mobile: only visible in full state. -->
+          <div class="details-extra">
+            <p class="details-body" id="detailsBody">
+              Select a location from the list or map to see details.
+            </p>
+
+            <div class="details-block">
+              <div class="details-block-h">WHAT HAPPENS HERE?</div>
+              <div class="chip-row" id="chipsHere">
+                <span class="chip">USDA RESEARCH</span>
+                <span class="chip">NRM LABS</span>
+                <span class="chip">FACULTY OFFICES</span>
+              </div>
+            </div>
+
+            <div class="details-block">
+              <div class="details-block-h">EXPLORABLE LOCATIONS</div>
+              <ul class="sub-list" id="subList">
+                <li><span>Room 100 — General Lecture</span><span class="chev">›</span></li>
+                <li><span>Room 110 — Baby</span><span class="chev">›</span></li>
+                <li><span>Faculty Suite</span><span class="chev">›</span></li>
+              </ul>
+            </div>
+
+            <div class="details-vr">
+              <button class="vr-btn" id="vrBtn" type="button">
+                <svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16">
+                  <path d="M6 7h12a2 2 0 012 2v6a2 2 0 01-2 2h-2l-2-2h-4l-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2z"
+                        stroke="currentColor" stroke-width="1.5" fill="none"/>
+                </svg>
+                <span>Explore</span>
+              </button>
+              <span class="vr-label">
+                <span class="vr-dot" aria-hidden="true"></span> VR-Enabled
+              </span>
+            </div>
           </div>
         </div>
       </aside>

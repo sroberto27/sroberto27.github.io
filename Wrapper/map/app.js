@@ -106,13 +106,15 @@ const el = {
   fullscreenBtn:   $("fullscreenBtn"),
   searchBtn:       $("searchBtn"),
 
-  locations:       $("locations"),
-  locationsList:   $("locationsList"),
-  locationsCount:  $("locationsCount"),
-  locationsClose:  $("locationsClose"),
-  locationsToggle: $("locationsToggle"),
+  locations:          $("locations"),
+  locationsList:      $("locationsList"),
+  locationsCount:     $("locationsCount"),
+  locationsClose:     $("locationsClose"),
+  locationsToggle:    $("locationsToggle"),
+  locationsBackdrop:  $("locationsBackdrop"),
 
   details:         $("details"),
+  detailsHandle:   $("detailsHandle"),
   detailsClose:    $("detailsClose"),
   detailsTag:      $("detailsTag"),
   detailsTitle:    $("detailsTitle"),
@@ -142,6 +144,9 @@ const el = {
 
   modeBtns:        document.querySelectorAll(".mode-btn")
 };
+
+const mqMobile = window.matchMedia("(max-width: 880px)");
+function isMobile() { return mqMobile.matches; }
 
 /* -----------------------------------------------------------
    5. Styling helpers
@@ -180,6 +185,15 @@ let tourStops  = []; // [{ feature, layer, marker, order }]
 let tourIndex  = -1;
 let allFeatures = [];
 
+/* Mobile drawer state. At any given time on mobile we can be in:
+     - "map only"         (nothing open)
+     - drawer open        (locations list visible)
+     - details half       (bottom sheet covering ~half the screen)
+     - details full       (bottom sheet covering the whole map area)
+   The drawer and details are mutually exclusive. */
+let drawerOpen   = false;
+let detailsMode  = null; // null | "half" | "full"
+
 /* Image-alignment state. Loaded from localStorage first (so
    the user's tuning persists), then falls back to the values
    in config.js. */
@@ -209,14 +223,34 @@ let align = loadAlign();
 function openDetails()  {
   el.shell.classList.add("has-details");
   el.details.setAttribute("aria-hidden", "false");
-  if (window.matchMedia("(max-width: 880px)").matches) {
-    el.details.classList.add("is-open");
+
+  if (isMobile()) {
+    // Always open mutually-exclusive with drawer
+    closeMobileLocations({ silent: true });
+    setDetailsMode("half");
   }
 }
+
 function closeDetails() {
   el.shell.classList.remove("has-details");
   el.details.setAttribute("aria-hidden", "true");
-  el.details.classList.remove("is-open");
+  el.details.classList.remove("is-open", "is-full", "is-hidden", "is-dragging");
+  el.details.style.transform = "";
+  detailsMode = null;
+  el.shell.classList.remove("details-full");
+}
+
+function setDetailsMode(next) {
+  // next ∈ { "half", "full" }. On mobile, toggles the CSS state flags.
+  if (!isMobile()) return;
+  if (next !== "half" && next !== "full") return;
+
+  detailsMode = next;
+  el.details.classList.add("is-open");
+  el.details.classList.toggle("is-full", next === "full");
+  el.details.classList.remove("is-hidden", "is-dragging");
+  el.details.style.transform = "";
+  el.shell.classList.toggle("details-full", next === "full");
 }
 
 function renderDetails(feature, kind) {
@@ -240,6 +274,26 @@ function resetLayerStyle(layer, kind) {
   layer.setStyle(styleFor(kind, layer.feature?.properties || {}));
 }
 
+/* Compute the padding to use when flying to a selected feature.
+   On mobile, the details sheet covers roughly the bottom half of
+   the shell area, so we inflate the *bottom* padding so that the
+   feature's center ends up in the visible upper half of the map. */
+function focusPaddingFor(layer) {
+  if (!isMobile()) return { padding: [80, 80] };
+
+  const shell = el.shell;
+  const shellH = shell ? shell.clientHeight : 600;
+  // matches --mobile-half-h (46dvh of the whole viewport)
+  // We need the portion of the shell that will be covered, roughly.
+  const panelH = Math.round(window.innerHeight * 0.46);
+  const bottomPad = Math.min(Math.max(panelH, 140), shellH - 80);
+
+  return {
+    paddingTopLeft:     [24, 24],
+    paddingBottomRight: [24, bottomPad]
+  };
+}
+
 function selectFeature(layer, kind, { focus = false } = {}) {
   if (selectedLayer && selectedLayer !== layer) {
     resetLayerStyle(selectedLayer, selectedKind);
@@ -257,11 +311,20 @@ function selectFeature(layer, kind, { focus = false } = {}) {
   if (layer.openTooltip) layer.openTooltip();
 
   if (focus && layer.getBounds) {
-    map.flyToBounds(layer.getBounds(), {
-      padding: [80, 80],
+    const fitOpts = {
+      ...focusPaddingFor(layer),
       maxZoom: config.tour.focusZoom,
       duration: 0.55
-    });
+    };
+    // Slight delay on mobile so the details sheet has started its
+    // slide-up animation before we recenter — avoids two competing
+    // reflows at once.
+    const fly = () => map.flyToBounds(layer.getBounds(), fitOpts);
+    if (isMobile()) {
+      requestAnimationFrame(() => requestAnimationFrame(fly));
+    } else {
+      fly();
+    }
   }
 
   // Update the left-side locations list
@@ -524,7 +587,7 @@ function renderLocationsList() {
       if (row.dataset.all) {
         clearSelection();
         if (imageBounds) map.flyToBounds(imageBounds, { padding: [20, 20], duration: 0.5 });
-        // On mobile, close the overlay after action
+        // On mobile, close the drawer after action
         closeMobileLocations();
         return;
       }
@@ -533,25 +596,149 @@ function renderLocationsList() {
         (s) => cleanName(s.feature.properties.name).toLowerCase() === name
       );
       if (stop) {
+        // On mobile, close the drawer BEFORE selecting so the map
+        // has the full width to recenter with correct padding.
+        closeMobileLocations({ silent: true });
         selectFeature(stop.layer, "tour", { focus: true });
-        closeMobileLocations();
       }
     });
   });
 }
 
 /* -----------------------------------------------------------
-   14. Mobile locations overlay
-   ----------------------------------------------------------- */
-const mqMobile = window.matchMedia("(max-width: 880px)");
+   14. Mobile locations drawer
+   -----------------------------------------------------------
+   The drawer slides in from the left, covering ~82% of the
+   shell width. The remaining sliver of map behind it is dimmed
+   by a backdrop that also tap-closes the drawer.
 
-function openMobileLocations()  { el.locations.classList.add("is-open"); }
-function closeMobileLocations() {
-  if (mqMobile.matches) el.locations.classList.remove("is-open");
+   Drawer and details are mutually exclusive.
+   ----------------------------------------------------------- */
+function openMobileLocations() {
+  drawerOpen = true;
+  el.locations.classList.add("is-open");
+  el.locationsBackdrop.classList.add("is-open");
+  el.shell.classList.add("drawer-open");
+
+  // Mutually exclusive with details: close the bottom sheet first.
+  if (el.details.classList.contains("is-open")) {
+    clearSelection();
+  }
 }
 
-el.locationsToggle.addEventListener("click", openMobileLocations);
-el.locationsClose.addEventListener("click", closeMobileLocations);
+function closeMobileLocations(opts = {}) {
+  if (!isMobile() && !opts.force) {
+    // On desktop the list is permanent; nothing to do.
+    return;
+  }
+  drawerOpen = false;
+  el.locations.classList.remove("is-open");
+  el.locationsBackdrop.classList.remove("is-open");
+  el.shell.classList.remove("drawer-open");
+}
+
+el.locationsToggle.addEventListener("click", () => {
+  if (drawerOpen) closeMobileLocations();
+  else openMobileLocations();
+});
+el.locationsClose.addEventListener("click", () => closeMobileLocations());
+el.locationsBackdrop.addEventListener("click", () => closeMobileLocations());
+
+/* -----------------------------------------------------------
+   14a. Mobile details drag/slide
+   -----------------------------------------------------------
+   Ported from drag.html. The bottom sheet has two "snapped"
+   states, "half" and "full", plus a transient "dragging" state
+   where JS writes a live transform on the element. On release,
+   the direction & distance of the drag decide which state to
+   snap back to.
+   ----------------------------------------------------------- */
+let dragging  = false;
+let dragStartY = 0;
+let dragCurrY  = 0;
+let dragStartMode = "half";
+
+function onDetailsPointerDown(e) {
+  if (!isMobile()) return;
+  if (detailsMode !== "half" && detailsMode !== "full") return;
+
+  dragging = true;
+  dragStartY = e.clientY;
+  dragCurrY  = e.clientY;
+  dragStartMode = detailsMode;
+
+  el.details.classList.add("is-dragging");
+  try { el.detailsHandle.setPointerCapture(e.pointerId); } catch (_) {}
+  e.preventDefault();
+}
+
+function onDetailsPointerMove(e) {
+  if (!dragging || !isMobile()) return;
+  dragCurrY = e.clientY;
+  const delta = dragCurrY - dragStartY;
+
+  // We only let the user drag in the "meaningful" direction for the
+  // starting state. From "full", you can only pull down (delta>0).
+  // From "half", you can either pull up to expand or down to dismiss.
+  if (dragStartMode === "full") {
+    el.details.style.transform = `translateY(${Math.max(0, delta)}px)`;
+  } else if (dragStartMode === "half") {
+    // Allow pull-up by up to 140px preview, pull-down unlimited.
+    el.details.style.transform = `translateY(${Math.max(-140, delta)}px)`;
+  }
+}
+
+function onDetailsPointerUp() {
+  if (!dragging || !isMobile()) return;
+  dragging = false;
+  el.details.classList.remove("is-dragging");
+  el.details.style.transform = "";
+
+  const delta = dragCurrY - dragStartY;
+  const THRESH = 40; // px of drag before we commit to a state change
+
+  if (dragStartMode === "half") {
+    if (delta < -THRESH) {
+      setDetailsMode("full");
+    } else if (delta > THRESH) {
+      // Pulled down from half → dismiss entirely.
+      clearSelection();
+    } else {
+      setDetailsMode("half");
+    }
+  } else if (dragStartMode === "full") {
+    if (delta > THRESH) {
+      setDetailsMode("half");
+    } else {
+      setDetailsMode("full");
+    }
+  }
+}
+
+el.detailsHandle.addEventListener("pointerdown", onDetailsPointerDown);
+window.addEventListener("pointermove", onDetailsPointerMove);
+window.addEventListener("pointerup",   onDetailsPointerUp);
+window.addEventListener("pointercancel", onDetailsPointerUp);
+
+/* Handle viewport changes. Switching from mobile → desktop (or vice
+   versa) needs to reset panel state so the right CSS rules win. */
+function handleViewportChange() {
+  if (!isMobile()) {
+    // On desktop: clear mobile-only state.
+    drawerOpen = false;
+    el.locations.classList.remove("is-open");
+    el.locationsBackdrop.classList.remove("is-open");
+    el.shell.classList.remove("drawer-open", "details-full");
+    el.details.classList.remove("is-full", "is-hidden", "is-dragging");
+    el.details.style.transform = "";
+  } else {
+    // On mobile: if details is open, restore the half state.
+    if (el.shell.classList.contains("has-details")) {
+      setDetailsMode("half");
+    }
+  }
+}
+mqMobile.addEventListener?.("change", handleViewportChange);
 
 /* -----------------------------------------------------------
    14b. Mobile search toggle
@@ -591,7 +778,7 @@ function refreshSearchClear() {
   if (!el.searchClear) return;
   // Desktop: always hidden (the input behaves like a normal field).
   // Mobile : visible so the user can clear text or close the panel.
-  if (mqMobile.matches) {
+  if (isMobile()) {
     el.searchClear.hidden = false;
   } else {
     el.searchClear.hidden = true;
@@ -600,7 +787,7 @@ function refreshSearchClear() {
 
 if (el.searchBtn) {
   el.searchBtn.addEventListener("click", () => {
-    if (mqMobile.matches) {
+    if (isMobile()) {
       if (el.metabarSearch.classList.contains("is-open")) {
         closeSearchPanel();
       } else {
@@ -624,7 +811,7 @@ if (el.searchClear) {
       el.searchInput.focus();
     } else {
       // Second click with empty input → close the panel (mobile only)
-      if (mqMobile.matches) {
+      if (isMobile()) {
         closeSearchPanel();
       }
     }
@@ -672,7 +859,7 @@ function renderSearch(q) {
       el.searchInput.value = cleanName(m.props.name);
       el.searchResults.hidden = true;
       // On mobile, tucking the search away after a pick feels right
-      if (mqMobile.matches) closeSearchPanel();
+      if (isMobile()) closeSearchPanel();
     });
   });
 }
@@ -862,7 +1049,7 @@ document.addEventListener("keydown", (e) => {
   if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) {
     // Allow Escape inside the search field to close / blur
     if (e.key === "Escape" && e.target === el.searchInput) {
-      if (mqMobile.matches && el.metabarSearch.classList.contains("is-open")) {
+      if (isMobile() && el.metabarSearch.classList.contains("is-open")) {
         closeSearchPanel();
       } else {
         el.searchInput.blur();
@@ -903,11 +1090,12 @@ document.addEventListener("keydown", (e) => {
   if (e.key === "ArrowRight")      { tourNextAction(); e.preventDefault(); }
   else if (e.key === "ArrowLeft")  { tourPrevAction(); e.preventDefault(); }
   else if (e.key === "Escape")     {
-    if (mqMobile.matches && el.metabarSearch.classList.contains("is-open")) {
+    if (isMobile() && el.metabarSearch.classList.contains("is-open")) {
       closeSearchPanel();
+    } else if (drawerOpen) {
+      closeMobileLocations();
     } else {
       clearSelection();
-      closeMobileLocations();
     }
   }
 });
@@ -915,6 +1103,8 @@ document.addEventListener("keydown", (e) => {
 // Clicking the bare map clears selection
 map.on("click", (e) => {
   if (e.originalEvent.target.closest(".leaflet-interactive")) return;
+  // Don't steal the tap that closes the drawer
+  if (drawerOpen) { closeMobileLocations(); return; }
   clearSelection();
 });
 
