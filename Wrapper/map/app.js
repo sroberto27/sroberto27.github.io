@@ -231,13 +231,16 @@ function refreshMapConstraints({ recenterIfNeeded = true } = {}) {
   map.invalidateSize({ pan: false });
 
   const coverZoom = getCampusCoverZoom();
+  const extraZoomOut = 0.75; // try 0.25, 0.5, 0.75, or 1.0
+  const minAllowedZoom = Math.max(0, coverZoom - extraZoomOut);
+
   map.setMaxBounds(imageBounds);
-  map.setMinZoom(coverZoom);
+  map.setMinZoom(minAllowedZoom);
 
   if (!recenterIfNeeded) return;
 
-  if (map.getZoom() < coverZoom) {
-    map.setView(imageBounds.getCenter(), coverZoom, { animate: false });
+  if (map.getZoom() < minAllowedZoom) {
+    map.setView(imageBounds.getCenter(), minAllowedZoom, { animate: false });
   } else {
     map.panInsideBounds(imageBounds, { animate: false });
   }
