@@ -246,10 +246,27 @@ function refreshMapConstraints({ recenterIfNeeded = true } = {}) {
   }
 }
 
+function getCampusOffsetCenter(zoom, offsetXPx = 0, offsetYPx = 60) {
+  if (!imageBounds) return null;
+
+  const baseCenter = imageBounds.getCenter();
+  const projected = map.project(baseCenter, zoom);
+
+  // Negative Y here makes the image appear lower on screen.
+  const shifted = L.point(projected.x + offsetXPx, projected.y - offsetYPx);
+
+  return map.unproject(shifted, zoom);
+}
+
 function resetCampusView(animate = false) {
   if (!imageBounds) return;
+
   refreshMapConstraints({ recenterIfNeeded: false });
-  map.setView(imageBounds.getCenter(), getCampusCoverZoom(), { animate });
+
+  const zoom = getCampusCoverZoom();
+  const center = getCampusOffsetCenter(zoom, 0, 800); // 60 px downward visual offset
+
+  map.setView(center, zoom, { animate });
 }
 
 function scheduleMapRefresh({ recenterIfNeeded = true, delay = 0 } = {}) {
