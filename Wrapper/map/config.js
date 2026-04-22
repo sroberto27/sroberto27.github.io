@@ -48,7 +48,7 @@ window.CAMPUS_CONFIG = {
   /* -- Tour configuration ---------------------------------- */
   tour: {
     defaultGroup: "mainTour",
-    focusZoom: 18
+    focusZoom: 19
   },
 
   /* -- Category overrides for tour stops ------------------
