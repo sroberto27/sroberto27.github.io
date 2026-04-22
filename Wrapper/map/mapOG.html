@@ -39,37 +39,8 @@
         <span class="brand-sc">SCSU</span>
         <span class="brand-product">METAVERSITY</span>
       </div>
-
-      <!-- Desktop: centered search field inside the header. On mobile
-           this is hidden by default; the SEARCH link on the right
-           toggles it into view below the header. -->
-      <div class="metabar-search" id="metabarSearch">
-        <div class="search-field">
-          <svg viewBox="0 0 24 24" class="search-icon" aria-hidden="true">
-            <circle cx="11" cy="11" r="7" stroke="currentColor"
-                    stroke-width="2" fill="none"/>
-            <path d="M21 21l-4.3-4.3" stroke="currentColor"
-                  stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          <input id="searchInput" type="search"
-                 placeholder="Search for buildings, locations, courses"
-                 aria-label="Search locations" />
-          <button class="search-clear" id="searchClear"
-                  type="button" aria-label="Clear / close search" hidden>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor"
-                    stroke-width="2" stroke-linecap="round" fill="none"/>
-            </svg>
-          </button>
-        </div>
-        <div id="searchResults" class="search-results" hidden></div>
-      </div>
-
       <nav class="metabar-nav" aria-label="Utility">
-        <button class="link-btn" id="searchBtn" type="button"
-                aria-label="Toggle search">SEARCH</button>
-        <button class="link-btn" id="alignBtn" type="button"
-                title="Align image to polygons (Shift+A)">ALIGN</button>
+        <button class="link-btn" id="alignBtn" type="button" title="Align image to polygons (Shift+A)">ALIGN</button>
         <button class="link-btn" id="helpBtn" type="button">HELP</button>
         <button class="link-btn" id="fullscreenBtn" type="button">
           <span class="fs-label">FULLSCREEN</span>
@@ -107,33 +78,6 @@
         <ul class="locations-list" id="locationsList" role="listbox">
           <!-- populated by JS -->
         </ul>
-
-        <!-- Desktop tour nav lives at the bottom of the sidebar -->
-        <footer class="sidebar-tour" aria-label="Tour navigation">
-          <button class="tour-arrow" id="tourPrev" type="button"
-                  aria-label="Previous stop">
-            <svg viewBox="0 0 24 24"><path
-              d="M15 6l-6 6 6 6" stroke="currentColor"
-              stroke-width="2" fill="none" stroke-linecap="round"
-              stroke-linejoin="round"/></svg>
-          </button>
-
-          <div class="tour-info">
-            <div class="tour-label">TOUR</div>
-            <div class="tour-name" id="tourName">—</div>
-            <div class="tour-count">
-              <span id="tourCurrent">0</span>/<span id="tourTotal">0</span>
-            </div>
-          </div>
-
-          <button class="tour-arrow" id="tourNext" type="button"
-                  aria-label="Next stop">
-            <svg viewBox="0 0 24 24"><path
-              d="M9 6l6 6-6 6" stroke="currentColor"
-              stroke-width="2" fill="none" stroke-linecap="round"
-              stroke-linejoin="round"/></svg>
-          </button>
-        </footer>
       </aside>
 
       <!-- ───── CENTER: MAP ───── -->
@@ -229,9 +173,9 @@
       </aside>
     </main>
 
-    <!-- ==== MOBILE-ONLY TOUR BAR ==== -->
-    <footer class="tourbar" role="contentinfo" aria-label="Tour navigation">
-      <button class="tour-arrow" id="tourPrevMobile" type="button"
+    <!-- ==== BOTTOM TOUR NAV ==== -->
+    <footer class="tourbar" role="contentinfo">
+      <button class="tour-arrow" id="tourPrev" type="button"
               aria-label="Previous stop">
         <svg viewBox="0 0 24 24"><path
           d="M15 6l-6 6 6 6" stroke="currentColor"
@@ -241,13 +185,11 @@
 
       <div class="tour-info">
         <div class="tour-label">TOUR</div>
-        <div class="tour-name" id="tourNameMobile">—</div>
-        <div class="tour-count">
-          <span id="tourCurrentMobile">0</span>/<span id="tourTotalMobile">0</span>
-        </div>
+        <div class="tour-name" id="tourName">—</div>
+        <div class="tour-count"><span id="tourCurrent">0</span>/<span id="tourTotal">0</span></div>
       </div>
 
-      <button class="tour-arrow" id="tourNextMobile" type="button"
+      <button class="tour-arrow" id="tourNext" type="button"
               aria-label="Next stop">
         <svg viewBox="0 0 24 24"><path
           d="M9 6l6 6-6 6" stroke="currentColor"
@@ -256,8 +198,20 @@
       </button>
     </footer>
 
-    <!-- ==== DESKTOP FOOTER (slim bar) ==== -->
-    <div class="site-footer" aria-hidden="true"></div>
+    <!-- ==== Search ==== -->
+    <div class="search-wrap" id="searchWrap">
+      <div class="search-field">
+        <svg viewBox="0 0 24 24" class="search-icon" aria-hidden="true">
+          <circle cx="11" cy="11" r="7" stroke="currentColor"
+                  stroke-width="2" fill="none"/>
+          <path d="M21 21l-4.3-4.3" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input id="searchInput" type="search"
+               placeholder="Search locations…" aria-label="Search locations" />
+      </div>
+      <div id="searchResults" class="search-results" hidden></div>
+    </div>
 
     <!-- ==== ALIGNMENT TOOL (hidden until activated) ==== -->
     <div class="align-panel" id="alignPanel" hidden>
