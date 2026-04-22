@@ -1,27 +1,11 @@
-/* ===========================================================
-   SCSU METAVERSITY — App
-   -----------------------------------------------------------
-   Data loading strategy:
-     1. Try fetching the .geojson files (works over http://
-        and https:// — i.e., once deployed on a website).
-     2. If fetch fails (e.g., someone opens index.html
-        directly from disk), fall back to window.SCSU_DATA
-        which is populated by the data/*.js shim scripts.
-   Either way the app ends up with the same data.
-   =========================================================== */
-
 const config = window.CAMPUS_CONFIG;
 
-/* -----------------------------------------------------------
-   1. Reprojection (EPSG:3857 meters → EPSG:4326 lat/lng)
-   ----------------------------------------------------------- */
 const EARTH_HALF_CIRC = 20037508.34;
 
 function mercatorToLatLng(x, y) {
   const lng = (x / EARTH_HALF_CIRC) * 180;
   let lat = (y / EARTH_HALF_CIRC) * 180;
-  lat = (180 / Math.PI) *
-        (2 * Math.atan(Math.exp((lat * Math.PI) / 180)) - Math.PI / 2);
+  lat = (180 / Math.PI) * (2 * Math.atan(Math.exp((lat * Math.PI) / 180)) - Math.PI / 2);
   return [lng, lat];
 }
 
@@ -42,16 +26,12 @@ function reprojectFC(fc, crs) {
     features: fc.features.map((f) => ({
       ...f,
       geometry: f.geometry
-        ? { ...f.geometry,
-            coordinates: reprojectCoords(f.geometry.coordinates, crs) }
+        ? { ...f.geometry, coordinates: reprojectCoords(f.geometry.coordinates, crs) }
         : null
     }))
   };
 }
 
-/* -----------------------------------------------------------
-   2. Helpers
-   ----------------------------------------------------------- */
 function cleanName(name) {
   if (!name) return "";
   const cleaned = String(name).replace(/\s+/g, " ").trim();
@@ -61,178 +41,351 @@ function cleanName(name) {
 
 function getCategory(name) {
   if (!name) return "";
-  const k = name.toLowerCase();
-  return config.categoryMap[k] || "CAMPUS";
+  return config.categoryMap[name.toLowerCase()] || "CAMPUS";
 }
 
 function getDescription(name) {
   if (!name) return "";
-  const k = name.toLowerCase();
-  return config.descriptionMap[k] ||
-         `${name} — more information about this location is coming soon.`;
+  return config.descriptionMap[name.toLowerCase()] || `${name} — more information about this location is coming soon.`;
 }
 
-/* -----------------------------------------------------------
-   3. Leaflet map + panes
-   ----------------------------------------------------------- */
+const DETAILS_META = {
+  "south carolina state university bookstore": {
+    tags: ["TEXTBOOKS", "APPAREL", "SUPPLIES"],
+    rooms: ["Main store", "Textbook counter", "Campus merchandise"]
+  },
+  "nance hall": {
+    tags: ["MATH & SCIENCE", "RESEARCH LABS", "FACULTY OFFICES"],
+    rooms: ["General lecture", "Research labs", "Faculty suite"]
+  },
+  "s-h-m memorial square": {
+    tags: ["MEMORIAL", "HISTORY", "CAMPUS LANDMARK"],
+    rooms: ["Central square", "Memorial area", "Outdoor gathering space"]
+  },
+  "oliver c. dawson stadium": {
+    tags: ["ATHLETICS", "GAME DAY", "EVENTS"],
+    rooms: ["Field view", "Seating bowl", "Entry concourse"]
+  },
+  "kirkland w. green student center": {
+    tags: ["STUDENT LIFE", "DINING", "MEETING ROOMS"],
+    rooms: ["Student lounge", "Dining area", "Meeting spaces"]
+  }
+};
+
+function getDetailMeta(name) {
+  const key = String(name || "").toLowerCase();
+  if (DETAILS_META[key]) return DETAILS_META[key];
+  const cat = getCategory(name);
+  return {
+    tags: [cat || "CAMPUS", "TOUR STOP"],
+    rooms: ["Main entrance", "Interior tour", "Campus overview"]
+  };
+}
+
 const map = L.map("map", {
   zoomControl: false,
   attributionControl: true,
   minZoom: 15,
   maxZoom: 20,
   zoomSnap: 0.25,
-  wheelPxPerZoomLevel: 120
+  wheelPxPerZoomLevel: 120,
+  zoomAnimation: true,
+  fadeAnimation: true,
+  markerZoomAnimation: true
 });
 
 L.control.zoom({ position: "topright" }).addTo(map);
 
-map.createPane("imagePane");     map.getPane("imagePane").style.zIndex     = 200;
-map.createPane("zonesPane");     map.getPane("zonesPane").style.zIndex     = 410;
-map.createPane("buildingsPane"); map.getPane("buildingsPane").style.zIndex = 420;
-map.createPane("toursPane");     map.getPane("toursPane").style.zIndex     = 430;
-map.createPane("pinsPane");      map.getPane("pinsPane").style.zIndex      = 500;
+map.createPane("imagePane");
+map.getPane("imagePane").style.zIndex = 200;
+map.createPane("zonesPane");
+map.getPane("zonesPane").style.zIndex = 410;
+map.createPane("buildingsPane");
+map.getPane("buildingsPane").style.zIndex = 420;
+map.createPane("toursPane");
+map.getPane("toursPane").style.zIndex = 430;
+map.createPane("pinsPane");
+map.getPane("pinsPane").style.zIndex = 500;
 
-/* -----------------------------------------------------------
-   4. DOM refs
-   ----------------------------------------------------------- */
 const $ = (id) => document.getElementById(id);
 
 const el = {
-  splash:          $("splash"),
-  app:             $("app"),
-  shell:           document.querySelector(".shell"),
+  splash: $("splash"),
+  app: $("app"),
+  shell: document.querySelector(".shell"),
+  metabar: document.querySelector(".metabar"),
+  modeToggle: document.querySelector(".mode-toggle"),
 
-  helpBtn:         $("helpBtn"),
-  fullscreenBtn:   $("fullscreenBtn"),
+  desktopSearchSlot: document.querySelector(".metabar-search-slot"),
+  mobileSearchBar: $("mobileSearchBar"),
+  searchWrap: $("searchWrap"),
+  searchInput: $("searchInput"),
+  searchResults: $("searchResults"),
+  searchClose: $("searchClose"),
+  searchToggleBtn: $("searchToggleBtn"),
 
-  locations:       $("locations"),
-  locationsList:   $("locationsList"),
-  locationsCount:  $("locationsCount"),
-  locationsClose:  $("locationsClose"),
+  helpBtn: $("helpBtn"),
+  fullscreenBtn: $("fullscreenBtn"),
+  alignBtn: $("alignBtn"),
+
+  locations: $("locations"),
+  locationsList: $("locationsList"),
+  locationsCount: $("locationsCount"),
   locationsToggle: $("locationsToggle"),
+  locationsClose: $("locationsClose"),
 
-  details:         $("details"),
-  detailsClose:    $("detailsClose"),
-  detailsTag:      $("detailsTag"),
-  detailsTitle:    $("detailsTitle"),
-  detailsSub:      $("detailsSub"),
-  detailsBody:     $("detailsBody"),
+  details: $("details"),
+  detailsHandle: $("detailsHandle"),
+  detailsClose: $("detailsClose"),
+  detailsTag: $("detailsTag"),
+  detailsTitle: $("detailsTitle"),
+  detailsSub: $("detailsSub"),
+  detailsBody: $("detailsBody"),
+  chipsHere: $("chipsHere"),
+  subList: $("subList"),
+  exploreCta: $("exploreCta"),
+  vrBtn: $("vrBtn"),
 
-  tourName:        $("tourName"),
-  tourCurrent:     $("tourCurrent"),
-  tourTotal:       $("tourTotal"),
-  tourPrev:        $("tourPrev"),
-  tourNext:        $("tourNext"),
+  fitBtn: $("fitBtn"),
+  modeBtns: document.querySelectorAll(".mode-btn"),
 
-  fitBtn:          $("fitBtn"),
-  searchInput:     $("searchInput"),
-  searchResults:   $("searchResults"),
-  modeBtns:        document.querySelectorAll(".mode-btn")
+  tourbar: $("tourbar"),
+  tourPrev: $("tourPrev"),
+  tourNext: $("tourNext"),
+  tourName: $("tourName"),
+  tourCurrent: $("tourCurrent"),
+  tourTotal: $("tourTotal"),
+
+  sideTourPrev: $("sideTourPrev"),
+  sideTourNext: $("sideTourNext"),
+  sideTourName: $("sideTourName"),
+  sideTourCurrent: $("sideTourCurrent"),
+  sideTourTotal: $("sideTourTotal"),
+
+  alignPanel: $("alignPanel"),
+  alignClose: $("alignClose"),
+  alignCopy: $("alignCopy"),
+  alignSave: $("alignSave"),
+  valLat: $("valLat"),
+  valLng: $("valLng"),
+  valSx: $("valSx"),
+  valSy: $("valSy")
 };
 
-/* -----------------------------------------------------------
-   5. Styling helpers
-   ----------------------------------------------------------- */
-function styleFor(kind, props = {}) {
-  const s = config.styles;
-  if (kind === "building") return { ...s.buildings };
-  if (kind === "tour")     return { ...s.tours };
-  const override = props.color ? { color: props.color, fillColor: props.color } : {};
-  return { ...s.zones, ...override };
-}
+const mqMobile = window.matchMedia("(max-width: 880px)");
 
-function hoverStyleFor(kind, props = {}) {
-  const s = config.styles;
-  if (kind === "building") return { ...s.buildingsHover };
-  if (kind === "tour")     return { ...s.toursHover };
-  const override = props.color ? { color: props.color, fillColor: props.color } : {};
-  return { ...s.zonesHover, ...override };
-}
-
-/* -----------------------------------------------------------
-   6. State
-   ----------------------------------------------------------- */
-let imageBounds     = null;
-let imageOverlay    = null; // kept so alignment tool can update it live
-let dataBounds      = null;
-let buildingsLayer  = null;
-let toursLayer      = null;
-let zonesLayer      = null;
-let tourPinsLayer   = L.layerGroup([], { pane: "pinsPane" });
+let imageBounds = null;
+let imageOverlay = null;
+let dataBounds = null;
+let buildingsLayer = null;
+let toursLayer = null;
+let zonesLayer = null;
+let tourPinsLayer = L.layerGroup([], { pane: "pinsPane" });
 
 let selectedLayer = null;
-let selectedKind  = null;
-
-let tourStops  = []; // [{ feature, layer, marker, order }]
-let tourIndex  = -1;
+let selectedKind = null;
+let tourStops = [];
+let tourIndex = -1;
 let allFeatures = [];
+let mobileSearchOpen = false;
+let mobileSheetState = "hidden";
+let alignMode = false;
+let initialCampusZoom = null;
+let refreshTimer = null;
 
-/* Image-alignment state. Loaded from localStorage first (so
-   the user's tuning persists), then falls back to the values
-   in config.js. */
 const ALIGN_KEY = "scsu-map.align.v1";
+
 function loadAlign() {
   const fromCfg = {
     offsetLat: config.imageOffsetLat || 0,
     offsetLng: config.imageOffsetLng || 0,
-    scaleX:    config.imageScaleX    || 1,
-    scaleY:    config.imageScaleY    || 1
+    scaleX: config.imageScaleX || 1,
+    scaleY: config.imageScaleY || 1
   };
   try {
     const raw = localStorage.getItem(ALIGN_KEY);
     if (!raw) return fromCfg;
-    const parsed = JSON.parse(raw);
-    return { ...fromCfg, ...parsed };
-  } catch (_) { return fromCfg; }
-}
-function saveAlign(a) {
-  try { localStorage.setItem(ALIGN_KEY, JSON.stringify(a)); } catch (_) {}
-}
-let align = loadAlign();
-
-/* -----------------------------------------------------------
-   7. Details panel
-   ----------------------------------------------------------- */
-function openDetails()  {
-  el.shell.classList.add("has-details");
-  el.details.setAttribute("aria-hidden", "false");
-  if (window.matchMedia("(max-width: 880px)").matches) {
-    el.details.classList.add("is-open");
+    return { ...fromCfg, ...JSON.parse(raw) };
+  } catch {
+    return fromCfg;
   }
 }
-function closeDetails() {
+
+function saveAlign(align) {
+  try {
+    localStorage.setItem(ALIGN_KEY, JSON.stringify(align));
+  } catch {}
+}
+
+let align = loadAlign();
+
+function isMobile() {
+  return mqMobile.matches;
+}
+
+function queueMapRefresh(delay = 40) {
+  clearTimeout(refreshTimer);
+  refreshTimer = setTimeout(() => {
+    map.invalidateSize({ pan: false });
+  }, delay);
+}
+
+function fillChips(container, values) {
+  container.innerHTML = "";
+  values.forEach((value) => {
+    const span = document.createElement("span");
+    span.className = "chip";
+    span.textContent = value;
+    container.appendChild(span);
+  });
+}
+
+function fillRooms(container, values) {
+  container.innerHTML = "";
+  values.forEach((value) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<span>${value}</span><span class="chev">›</span>`;
+    container.appendChild(li);
+  });
+}
+
+function moveSearchWrap() {
+  if (isMobile()) {
+    if (el.searchWrap.parentElement !== el.mobileSearchBar) {
+      el.mobileSearchBar.appendChild(el.searchWrap);
+    }
+  } else if (el.searchWrap.parentElement !== el.desktopSearchSlot) {
+    el.desktopSearchSlot.appendChild(el.searchWrap);
+  }
+}
+
+function setMobileSearch(open, { focus = false } = {}) {
+  if (!isMobile()) {
+    mobileSearchOpen = false;
+    el.mobileSearchBar.classList.remove("is-open");
+    el.mobileSearchBar.setAttribute("aria-hidden", "true");
+    el.searchToggleBtn.classList.remove("is-active");
+    el.searchToggleBtn.setAttribute("aria-expanded", "false");
+    return;
+  }
+
+  mobileSearchOpen = !!open;
+  el.mobileSearchBar.classList.toggle("is-open", mobileSearchOpen);
+  el.mobileSearchBar.setAttribute("aria-hidden", String(!mobileSearchOpen));
+  el.searchToggleBtn.classList.toggle("is-active", mobileSearchOpen);
+  el.searchToggleBtn.setAttribute("aria-expanded", String(mobileSearchOpen));
+
+  if (!mobileSearchOpen) {
+    el.searchResults.hidden = true;
+  }
+
+  queueMapRefresh(260);
+  if (mobileSearchOpen && focus) {
+    requestAnimationFrame(() => el.searchInput.focus());
+  }
+}
+
+function syncSearchPlacement() {
+  moveSearchWrap();
+  if (!isMobile()) {
+    mobileSearchOpen = false;
+    el.mobileSearchBar.classList.remove("is-open");
+    el.mobileSearchBar.setAttribute("aria-hidden", "true");
+    el.searchToggleBtn.classList.remove("is-active");
+    el.searchToggleBtn.setAttribute("aria-expanded", "false");
+  }
+}
+
+function styleFor(kind, props = {}) {
+  if (kind === "building") return { ...config.styles.buildings };
+  if (kind === "tour") return { ...config.styles.tours };
+  const override = props.color ? { color: props.color, fillColor: props.color } : {};
+  return { ...config.styles.zones, ...override };
+}
+
+function hoverStyleFor(kind, props = {}) {
+  if (kind === "building") return { ...config.styles.buildingsHover };
+  if (kind === "tour") return { ...config.styles.toursHover };
+  const override = props.color ? { color: props.color, fillColor: props.color } : {};
+  return { ...config.styles.zonesHover, ...override };
+}
+
+function openDetailsPanel() {
+  if (isMobile()) {
+    if (!selectedLayer) return;
+    if (mobileSheetState === "hidden") mobileSheetState = "peek";
+    applyMobileSheetState();
+    return;
+  }
+  el.shell.classList.add("has-details");
+  el.details.setAttribute("aria-hidden", "false");
+  queueMapRefresh(260);
+}
+
+function dismissDetailsPanel() {
+  if (isMobile()) {
+    mobileSheetState = "hidden";
+    applyMobileSheetState();
+    return;
+  }
   el.shell.classList.remove("has-details");
   el.details.setAttribute("aria-hidden", "true");
-  el.details.classList.remove("is-open");
+  queueMapRefresh(260);
+}
+
+function clearSelection() {
+  if (selectedLayer && typeof selectedLayer.setStyle === "function") {
+    selectedLayer.setStyle(styleFor(selectedKind, selectedLayer.feature?.properties || {}));
+  }
+  selectedLayer = null;
+  selectedKind = null;
+  tourIndex = -1;
+  dismissDetailsPanel();
+  updateTourbar();
+  highlightActivePin();
+  syncLocationsList();
 }
 
 function renderDetails(feature, kind) {
   const props = (feature && feature.properties) || {};
   const name = cleanName(props.name);
+  const meta = getDetailMeta(name);
 
-  el.detailsTag.textContent = (kind === "tour"     ? "TOUR STOP"
-                            :  kind === "zone"     ? "HIGHLIGHT"
-                            :  "CAMPUS BUILDING");
-
+  el.detailsTag.textContent = kind === "tour" ? "TOUR STOP" : kind === "zone" ? "HIGHLIGHT ZONE" : "CAMPUS BUILDING";
   el.detailsTitle.textContent = name || "—";
-  el.detailsSub.textContent   = getCategory(name) || "—";
-  el.detailsBody.textContent  = getDescription(name);
+  el.detailsSub.textContent = getCategory(name) || "—";
+  el.detailsBody.textContent = getDescription(name);
+  fillChips(el.chipsHere, meta.tags || []);
+  fillRooms(el.subList, meta.rooms || []);
 }
 
-/* -----------------------------------------------------------
-   8. Selection + focus
-   ----------------------------------------------------------- */
 function resetLayerStyle(layer, kind) {
   if (!layer || typeof layer.setStyle !== "function") return;
   layer.setStyle(styleFor(kind, layer.feature?.properties || {}));
+}
+
+function focusLayer(layer) {
+  if (!layer || !layer.getBounds) return;
+  const bounds = layer.getBounds();
+  if (!bounds || !bounds.isValid()) return;
+  const padFactor = selectedKind === "tour" ? (isMobile() ? 2.35 : 2.9) : (isMobile() ? 0.9 : 1.35);
+  const target = bounds.pad(padFactor);
+  const padding = isMobile() ? [28, 28] : [70, 70];
+  const maxZoom = Math.min(config.tour.focusZoom || 18, isMobile() ? 17.5 : 18);
+  map.flyToBounds(target, {
+    padding,
+    maxZoom,
+    duration: 0.55
+  });
 }
 
 function selectFeature(layer, kind, { focus = false } = {}) {
   if (selectedLayer && selectedLayer !== layer) {
     resetLayerStyle(selectedLayer, selectedKind);
   }
+
   selectedLayer = layer;
-  selectedKind  = kind;
+  selectedKind = kind;
 
   if (selectedLayer && typeof selectedLayer.setStyle === "function") {
     selectedLayer.setStyle({ ...config.styles.selected });
@@ -240,41 +393,17 @@ function selectFeature(layer, kind, { focus = false } = {}) {
   }
 
   renderDetails(layer.feature, kind);
-  openDetails();
+  openDetailsPanel();
   if (layer.openTooltip) layer.openTooltip();
+  if (focus) focusLayer(layer);
 
-  if (focus && layer.getBounds) {
-    map.flyToBounds(layer.getBounds(), {
-      padding: [80, 80],
-      maxZoom: config.tour.focusZoom,
-      duration: 0.55
-    });
-  }
-
-  // Update the left-side locations list
-  syncLocationsList();
-
-  // Update tour index + pin highlight
-  const idx = tourStops.findIndex((s) => s.layer === layer);
+  const idx = tourStops.findIndex((stop) => stop.layer === layer);
   tourIndex = idx;
   updateTourbar();
   highlightActivePin();
-}
-
-function clearSelection() {
-  if (selectedLayer) resetLayerStyle(selectedLayer, selectedKind);
-  selectedLayer = null;
-  selectedKind  = null;
-  tourIndex = -1;
-  closeDetails();
-  updateTourbar();
-  highlightActivePin();
   syncLocationsList();
 }
 
-/* -----------------------------------------------------------
-   9. Layer builders
-   ----------------------------------------------------------- */
 function bindEvents(feature, layer, kind) {
   const props = feature.properties || {};
   const label = cleanName(props.name);
@@ -291,8 +420,7 @@ function bindEvents(feature, layer, kind) {
 
   layer.on({
     mouseover: () => {
-      if (selectedLayer === layer) return;
-      if (!config.ui.enableHoverPreview) return;
+      if (selectedLayer === layer || !config.ui.enableHoverPreview) return;
       layer.setStyle(hoverStyleFor(kind, props));
       if (layer.bringToFront) layer.bringToFront();
     },
@@ -303,6 +431,7 @@ function bindEvents(feature, layer, kind) {
     click: (e) => {
       L.DomEvent.stopPropagation(e);
       selectFeature(layer, kind, { focus: true });
+      closeMobileLocations();
     }
   });
 }
@@ -315,21 +444,20 @@ function buildLayer(data, kind, paneName) {
   });
 }
 
-/* -----------------------------------------------------------
-   10. Image-bounds computation
-   ----------------------------------------------------------- */
-function computeImageBounds(b, imgPxW, imgPxH, padPct, align) {
-  const s = b.getSouth(), n = b.getNorth();
-  const w = b.getWest(),  e = b.getEast();
+function computeImageBounds(b, imgPxW, imgPxH, padPct, alignState) {
+  const s = b.getSouth();
+  const n = b.getNorth();
+  const w = b.getWest();
+  const e = b.getEast();
   const latC = (s + n) / 2;
   const lngC = (w + e) / 2;
 
   let heightDeg = n - s;
-  let widthDeg  = e - w;
+  let widthDeg = e - w;
 
   const latScale = Math.cos((latC * Math.PI) / 180);
   const dataAspect = (widthDeg * latScale) / heightDeg;
-  const imgAspect  = imgPxW / imgPxH;
+  const imgAspect = imgPxW / imgPxH;
 
   if (imgAspect > dataAspect) {
     widthDeg = (heightDeg * imgAspect) / latScale;
@@ -337,17 +465,15 @@ function computeImageBounds(b, imgPxW, imgPxH, padPct, align) {
     heightDeg = (widthDeg * latScale) / imgAspect;
   }
 
-  widthDeg  *= 1 + padPct;
+  widthDeg *= 1 + padPct;
   heightDeg *= 1 + padPct;
 
-  // Apply user-tunable alignment offsets + independent X/Y scale
-  const a = align || {};
-  const offLat = Number(a.offsetLat) || 0;
-  const offLng = Number(a.offsetLng) || 0;
-  const sx = Number.isFinite(a.scaleX) && a.scaleX > 0 ? a.scaleX : 1;
-  const sy = Number.isFinite(a.scaleY) && a.scaleY > 0 ? a.scaleY : 1;
+  const offLat = Number(alignState.offsetLat) || 0;
+  const offLng = Number(alignState.offsetLng) || 0;
+  const sx = Number.isFinite(alignState.scaleX) && alignState.scaleX > 0 ? alignState.scaleX : 1;
+  const sy = Number.isFinite(alignState.scaleY) && alignState.scaleY > 0 ? alignState.scaleY : 1;
 
-  widthDeg  *= sx;
+  widthDeg *= sx;
   heightDeg *= sy;
 
   const cLat = latC + offLat;
@@ -359,27 +485,59 @@ function computeImageBounds(b, imgPxW, imgPxH, padPct, align) {
   );
 }
 
-/* -----------------------------------------------------------
-   11. Tour pins (numbered circles over stops)
-   ----------------------------------------------------------- */
+function getPrimaryCampusBounds() {
+  if (toursLayer) {
+    try {
+      const tb = toursLayer.getBounds();
+      if (tb && tb.isValid()) return tb;
+    } catch {}
+  }
+  return dataBounds;
+}
+
+function getCampusFrameBounds() {
+  const base = getPrimaryCampusBounds();
+  if (!base || !base.isValid()) return dataBounds;
+  return base.pad(isMobile() ? 0.12 : 0.08);
+}
+
+function fitCampusFrame({ animate = true } = {}) {
+  const bounds = getCampusFrameBounds();
+  if (!bounds || !bounds.isValid()) return;
+
+  const padding = isMobile() ? L.point(16, 16) : L.point(22, 22);
+  const zoom = map.getBoundsZoom(bounds, false, padding);
+  initialCampusZoom = zoom;
+  map.setMinZoom(Math.max(15, zoom - 0.25));
+
+  if (animate) {
+    map.flyTo(bounds.getCenter(), zoom, { duration: 0.5 });
+  } else {
+    map.setView(bounds.getCenter(), zoom, { animate: false });
+  }
+}
+
 function buildTourPins() {
   tourStops = [];
+  tourPinsLayer.clearLayers();
 
   toursLayer.eachLayer((layer) => {
-    const f = layer.feature;
-    const props = f.properties || {};
+    const props = layer.feature?.properties || {};
     const order = Number(props.order_num);
     if (!Number.isFinite(order)) return;
 
     let center;
-    try { center = layer.getBounds().getCenter(); }
-    catch (e) { return; }
+    try {
+      center = layer.getBounds().getCenter();
+    } catch {
+      return;
+    }
 
     const icon = L.divIcon({
       className: "tour-pin-wrap",
       html: `<div class="tour-pin" data-order="${order}">${order}</div>`,
-      iconSize: [26, 26],
-      iconAnchor: [13, 13]
+      iconSize: [28, 28],
+      iconAnchor: [14, 14]
     });
 
     const marker = L.marker(center, {
@@ -388,95 +546,99 @@ function buildTourPins() {
       interactive: false,
       keyboard: false
     });
-    tourPinsLayer.addLayer(marker);
 
-    tourStops.push({ feature: f, layer, marker, order });
+    tourPinsLayer.addLayer(marker);
+    tourStops.push({ feature: layer.feature, layer, marker, order });
   });
 
   tourStops.sort((a, b) => a.order - b.order);
-  el.tourTotal.textContent = tourStops.length;
-  el.tourCurrent.textContent = 0;
-  updateTourbar();
 }
 
 function highlightActivePin() {
-  document.querySelectorAll(".tour-pin.is-active")
-          .forEach((n) => n.classList.remove("is-active"));
+  document.querySelectorAll(".tour-pin.is-active").forEach((node) => node.classList.remove("is-active"));
   const stop = tourStops[tourIndex];
   if (!stop) return;
-  const node = stop.marker.getElement()?.querySelector(".tour-pin");
-  if (node) node.classList.add("is-active");
+  const pin = stop.marker.getElement()?.querySelector(".tour-pin");
+  if (pin) pin.classList.add("is-active");
 }
 
-/* -----------------------------------------------------------
-   12. Tourbar
-   ----------------------------------------------------------- */
 function updateTourbar() {
-  if (tourIndex < 0 || !tourStops[tourIndex]) {
-    el.tourName.textContent = tourStops.length
-      ? "Start your tour"
-      : "No stops configured";
-    el.tourCurrent.textContent = tourIndex < 0 ? 0 : tourIndex + 1;
-    el.tourPrev.disabled = true;
-    el.tourNext.disabled = !tourStops.length;
-    return;
-  }
-  const stop = tourStops[tourIndex];
-  el.tourName.textContent = cleanName(stop.feature.properties.name);
-  el.tourCurrent.textContent = tourIndex + 1;
-  el.tourPrev.disabled = tourIndex === 0;
-  el.tourNext.disabled = tourIndex === tourStops.length - 1;
+  const targets = [
+    {
+      prev: el.tourPrev,
+      next: el.tourNext,
+      name: el.tourName,
+      current: el.tourCurrent,
+      total: el.tourTotal
+    },
+    {
+      prev: el.sideTourPrev,
+      next: el.sideTourNext,
+      name: el.sideTourName,
+      current: el.sideTourCurrent,
+      total: el.sideTourTotal
+    }
+  ];
+
+  targets.forEach((ui) => {
+    ui.total.textContent = tourStops.length;
+
+    if (tourIndex < 0 || !tourStops[tourIndex]) {
+      ui.name.textContent = tourStops.length ? "Start your tour" : "No stops configured";
+      ui.current.textContent = 0;
+      ui.prev.disabled = true;
+      ui.next.disabled = !tourStops.length;
+      return;
+    }
+
+    const stop = tourStops[tourIndex];
+    ui.name.textContent = cleanName(stop.feature.properties.name);
+    ui.current.textContent = tourIndex + 1;
+    ui.prev.disabled = tourIndex === 0;
+    ui.next.disabled = tourIndex === tourStops.length - 1;
+  });
 }
 
-function goToStop(i) {
+function goToStop(index) {
   if (!tourStops.length) return;
-  tourIndex = Math.max(0, Math.min(i, tourStops.length - 1));
+  tourIndex = Math.max(0, Math.min(index, tourStops.length - 1));
   const stop = tourStops[tourIndex];
   selectFeature(stop.layer, "tour", { focus: true });
 }
 
-/* -----------------------------------------------------------
-   13. Locations sidebar (Figma-style list)
-   ----------------------------------------------------------- */
 function syncLocationsList() {
-  const rows = el.locationsList.querySelectorAll(".location-row");
-  rows.forEach((r) => {
-    const name = r.dataset.name || "";
-    const active = selectedLayer &&
-                   cleanName(selectedLayer.feature.properties.name).toLowerCase() === name;
-    r.classList.toggle("is-active", !!active);
+  el.locationsList.querySelectorAll(".location-row[data-name]").forEach((row) => {
+    const rowName = row.dataset.name || "";
+    const activeName = selectedLayer ? cleanName(selectedLayer.feature.properties.name).toLowerCase() : "";
+    row.classList.toggle("is-active", !!activeName && activeName === rowName);
   });
 }
 
 function renderLocationsList() {
   el.locationsCount.textContent = tourStops.length;
-  const rows = [];
 
-  // "All locations" row — fits the map to the entire campus.
-  rows.push(`
-    <li class="location-row all-row" role="option" data-all="1">
-      <div>
-        <div class="location-name">All Locations</div>
+  const rows = [
+    `<li class="location-row all-row" role="option" data-all="1">
+      <div class="location-main">
+        <div class="location-name"><span class="label-desktop">Campus Map</span><span class="label-mobile">All Locations</span></div>
         <div class="location-num">${tourStops.length} LOCATIONS</div>
       </div>
       <span class="location-chev">›</span>
-    </li>
-  `);
+    </li>`
+  ];
 
-  tourStops.forEach((stop, i) => {
+  tourStops.forEach((stop, idx) => {
     const name = cleanName(stop.feature.properties.name);
     const cat = getCategory(name);
-    rows.push(`
-      <li class="location-row" role="option" data-name="${name.toLowerCase()}">
-        <div>
-          <div class="location-name">
-            <span class="location-index">${i + 1}.</span>${name}
-          </div>
+    rows.push(
+      `<li class="location-row" role="option" data-name="${name.toLowerCase()}">
+        <div class="location-main">
+          <div class="location-name"><span class="location-index">${idx + 1}.</span>${name}</div>
           <div class="location-cat">${cat}</div>
         </div>
         <span class="location-chev">›</span>
-      </li>
-    `);
+      </li>`
+    );
   });
 
   el.locationsList.innerHTML = rows.join("");
@@ -485,15 +647,12 @@ function renderLocationsList() {
     row.addEventListener("click", () => {
       if (row.dataset.all) {
         clearSelection();
-        if (imageBounds) map.flyToBounds(imageBounds, { padding: [20, 20], duration: 0.5 });
-        // On mobile, close the overlay after action
+        fitCampusFrame();
         closeMobileLocations();
         return;
       }
-      const name = row.dataset.name;
-      const stop = tourStops.find(
-        (s) => cleanName(s.feature.properties.name).toLowerCase() === name
-      );
+
+      const stop = tourStops.find((item) => cleanName(item.feature.properties.name).toLowerCase() === row.dataset.name);
       if (stop) {
         selectFeature(stop.layer, "tour", { focus: true });
         closeMobileLocations();
@@ -502,114 +661,171 @@ function renderLocationsList() {
   });
 }
 
-/* -----------------------------------------------------------
-   14. Mobile locations overlay
-   ----------------------------------------------------------- */
-const mqMobile = window.matchMedia("(max-width: 880px)");
-
-function openMobileLocations()  { el.locations.classList.add("is-open"); }
-function closeMobileLocations() {
-  if (mqMobile.matches) el.locations.classList.remove("is-open");
+function openMobileLocations() {
+  if (!isMobile()) return;
+  setMobileSearch(false);
+  el.locations.classList.add("is-open");
 }
 
-el.locationsToggle.addEventListener("click", openMobileLocations);
-el.locationsClose.addEventListener("click", closeMobileLocations);
+function closeMobileLocations() {
+  if (!isMobile()) return;
+  el.locations.classList.remove("is-open");
+}
 
-/* -----------------------------------------------------------
-   15. Search
-   ----------------------------------------------------------- */
-function renderSearch(q) {
-  const term = q.trim().toLowerCase();
-  if (!term) { el.searchResults.hidden = true; el.searchResults.innerHTML = ""; return; }
+function renderSearch(query) {
+  const term = query.trim().toLowerCase();
+  if (!term) {
+    el.searchResults.hidden = true;
+    el.searchResults.innerHTML = "";
+    return;
+  }
 
+  const seen = new Set();
   const matches = allFeatures
-    .filter((x) => {
-      const n = cleanName(x.props.name).toLowerCase();
-      return n && n.includes(term);
+    .filter((item) => {
+      const name = cleanName(item.props.name).toLowerCase();
+      return name && name.includes(term);
+    })
+    .filter((item) => {
+      const key = `${item.kind}:${cleanName(item.props.name).toLowerCase()}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
     })
     .slice(0, 12);
 
   if (!matches.length) {
     el.searchResults.hidden = false;
-    el.searchResults.innerHTML =
-      `<div class="search-empty">No matches for "${q}".</div>`;
+    el.searchResults.innerHTML = `<div class="search-empty">No matches for "${query}".</div>`;
     return;
   }
 
   el.searchResults.hidden = false;
-  el.searchResults.innerHTML = matches.map((m, i) => `
-    <div class="search-result" data-i="${i}" role="option">
-      <span>${cleanName(m.props.name)}</span>
-      <span class="tag ${m.kind}">${m.kind}</span>
+  el.searchResults.innerHTML = matches.map((item, idx) => `
+    <div class="search-result" data-i="${idx}" role="option">
+      <span>${cleanName(item.props.name)}</span>
+      <span class="tag ${item.kind}">${item.kind}</span>
     </div>
   `).join("");
 
   el.searchResults.querySelectorAll(".search-result").forEach((node) => {
     node.addEventListener("click", () => {
-      const m = matches[Number(node.dataset.i)];
-      if (!m) return;
-      selectFeature(m.layer, m.kind, { focus: true });
-      el.searchInput.value = cleanName(m.props.name);
+      const match = matches[Number(node.dataset.i)];
+      if (!match) return;
+      selectFeature(match.layer, match.kind, { focus: true });
+      el.searchInput.value = cleanName(match.props.name);
       el.searchResults.hidden = true;
+      closeMobileLocations();
+      if (isMobile()) setMobileSearch(false);
     });
   });
 }
 
-/* -----------------------------------------------------------
-   16. Event wiring
-   ----------------------------------------------------------- */
+function getPeekHeight() {
+  return Math.min(Math.max(280, Math.round(window.innerHeight * 0.38)), 340);
+}
 
-/* ------- IMAGE ALIGNMENT TOOL ------- */
-const alignUI = {
-  btn:    $("alignBtn"),
-  panel:  $("alignPanel"),
-  close:  $("alignClose"),
-  copy:   $("alignCopy"),
-  save:   $("alignSave"),
-  valLat: $("valLat"),
-  valLng: $("valLng"),
-  valSx:  $("valSx"),
-  valSy:  $("valSy")
+function getFullSheetHeight() {
+  const top = (el.metabar?.offsetHeight || 0) + (el.mobileSearchBar?.offsetHeight || 0) + (el.modeToggle?.offsetHeight || 0);
+  const bottom = el.tourbar ? el.tourbar.offsetHeight : (el.tourPrev.closest(".tourbar")?.offsetHeight || 0);
+  return Math.max(getPeekHeight() + 80, Math.round(window.innerHeight - top - bottom));
+}
+
+function applyMobileSheetState() {
+  if (!isMobile()) {
+    el.details.classList.remove("is-open", "sheet-peek", "sheet-full");
+    el.details.style.removeProperty("height");
+    return;
+  }
+
+  const open = !!selectedLayer && mobileSheetState !== "hidden";
+  el.details.classList.toggle("is-open", open);
+  el.details.classList.toggle("sheet-peek", open && mobileSheetState === "peek");
+  el.details.classList.toggle("sheet-full", open && mobileSheetState === "full");
+  el.details.setAttribute("aria-hidden", String(!open));
+
+  if (!open) {
+    el.details.style.removeProperty("height");
+    queueMapRefresh(260);
+    return;
+  }
+
+  el.details.style.height = `${mobileSheetState === "full" ? getFullSheetHeight() : getPeekHeight()}px`;
+  queueMapRefresh(260);
+}
+
+const sheetDrag = {
+  active: false,
+  startY: 0,
+  startHeight: 0,
+  currentHeight: 0
 };
 
-let alignMode = false;
+function onSheetPointerDown(e) {
+  if (!isMobile() || !selectedLayer) return;
+  sheetDrag.active = true;
+  sheetDrag.startY = e.clientY;
+  sheetDrag.startHeight = el.details.getBoundingClientRect().height || getPeekHeight();
+  sheetDrag.currentHeight = sheetDrag.startHeight;
+  el.details.style.transition = "none";
+  el.detailsHandle.setPointerCapture?.(e.pointerId);
+}
 
-/** Recompute bounds & push them to the live overlay. */
+function onSheetPointerMove(e) {
+  if (!sheetDrag.active || !isMobile()) return;
+  const delta = sheetDrag.startY - e.clientY;
+  const nextHeight = Math.max(0, Math.min(getFullSheetHeight(), sheetDrag.startHeight + delta));
+  sheetDrag.currentHeight = nextHeight;
+  el.details.style.height = `${nextHeight}px`;
+}
+
+function onSheetPointerUp() {
+  if (!sheetDrag.active || !isMobile()) return;
+  sheetDrag.active = false;
+  el.details.style.transition = "";
+
+  const peek = getPeekHeight();
+  const full = getFullSheetHeight();
+  const h = sheetDrag.currentHeight;
+
+  if (h < peek * 0.56) {
+    mobileSheetState = "hidden";
+  } else if (h > (peek + full) / 2) {
+    mobileSheetState = "full";
+  } else {
+    mobileSheetState = "peek";
+  }
+
+  applyMobileSheetState();
+}
+
+function renderAlignValues() {
+  el.valLat.textContent = align.offsetLat.toFixed(6);
+  el.valLng.textContent = align.offsetLng.toFixed(6);
+  el.valSx.textContent = align.scaleX.toFixed(4);
+  el.valSy.textContent = align.scaleY.toFixed(4);
+}
+
 function reapplyAlign() {
   if (!imageOverlay || !dataBounds) return;
-  imageBounds = computeImageBounds(
-    dataBounds,
-    config.imageWidthPx,
-    config.imageHeightPx,
-    config.imagePaddingPct,
-    align
-  );
+  imageBounds = computeImageBounds(dataBounds, config.imageWidthPx, config.imageHeightPx, config.imagePaddingPct, align);
   imageOverlay.setBounds(imageBounds);
-  map.setMaxBounds(imageBounds.pad(0.25));
+  map.setMaxBounds(imageBounds.pad(0.14));
   renderAlignValues();
   saveAlign(align);
 }
 
-function renderAlignValues() {
-  alignUI.valLat.textContent = align.offsetLat.toFixed(6);
-  alignUI.valLng.textContent = align.offsetLng.toFixed(6);
-  alignUI.valSx .textContent = align.scaleX.toFixed(4);
-  alignUI.valSy .textContent = align.scaleY.toFixed(4);
-}
-
 function nudge(dir, big) {
-  // 1 base step ≈ ~2.5 m at this latitude (0.00002° lat, 0.00003° lng)
-  const latStep = (big ? 0.0002  : 0.00002);
-  const lngStep = (big ? 0.00024 : 0.000024);
-  if (dir === "up")    align.offsetLat += latStep;
-  if (dir === "down")  align.offsetLat -= latStep;
-  if (dir === "left")  align.offsetLng -= lngStep;
+  const latStep = big ? 0.0002 : 0.00002;
+  const lngStep = big ? 0.00024 : 0.000024;
+  if (dir === "up") align.offsetLat += latStep;
+  if (dir === "down") align.offsetLat -= latStep;
+  if (dir === "left") align.offsetLng -= lngStep;
   if (dir === "right") align.offsetLng += lngStep;
   reapplyAlign();
 }
 
 function scaleBy(axis, delta) {
-  // delta is multiplicative factor, e.g. +0.002 or -0.002
   if (axis === "x") align.scaleX = Math.max(0.5, Math.min(2, align.scaleX + delta));
   if (axis === "y") align.scaleY = Math.max(0.5, Math.min(2, align.scaleY + delta));
   reapplyAlign();
@@ -623,295 +839,382 @@ function resetAlign() {
 function toggleAlign(force) {
   alignMode = typeof force === "boolean" ? force : !alignMode;
   document.body.classList.toggle("align-mode", alignMode);
-  alignUI.btn.classList.toggle("is-active", alignMode);
-  alignUI.panel.hidden = !alignMode;
-  if (imageOverlay) imageOverlay.setOpacity(alignMode ? 0.55 : 1);
+  el.alignBtn?.classList.toggle("is-active", alignMode);
+  el.alignPanel.hidden = !alignMode;
+  if (imageOverlay) imageOverlay.setOpacity(alignMode ? 0.6 : 1);
   if (alignMode) renderAlignValues();
 }
 
-alignUI.btn  .addEventListener("click", () => toggleAlign());
-alignUI.close.addEventListener("click", () => toggleAlign(false));
-alignUI.save .addEventListener("click", () => toggleAlign(false));
-
-alignUI.copy.addEventListener("click", () => {
-  const snippet =
-`  imageOffsetLat: ${align.offsetLat.toFixed(6)},
-  imageOffsetLng: ${align.offsetLng.toFixed(6)},
-  imageScaleX:    ${align.scaleX.toFixed(4)},
-  imageScaleY:    ${align.scaleY.toFixed(4)},`;
-  const done = () => {
-    alignUI.copy.classList.add("is-copied");
-    alignUI.copy.textContent = "Copied ✓";
-    setTimeout(() => {
-      alignUI.copy.classList.remove("is-copied");
-      alignUI.copy.textContent = "Copy config";
-    }, 1400);
-  };
-  if (navigator.clipboard?.writeText) {
-    navigator.clipboard.writeText(snippet).then(done, () => fallback(snippet, done));
-  } else {
-    fallback(snippet, done);
-  }
-});
-function fallback(text, cb) {
-  const ta = document.createElement("textarea");
-  ta.value = text;
-  document.body.appendChild(ta);
-  ta.select();
-  try { document.execCommand("copy"); cb(); } catch (_) {}
-  ta.remove();
+function waitWindowLoad() {
+  if (document.readyState === "complete") return Promise.resolve();
+  return new Promise((resolve) => window.addEventListener("load", resolve, { once: true }));
 }
 
-alignUI.panel.addEventListener("click", (e) => {
-  const nudgeBtn = e.target.closest("[data-nudge]");
-  if (nudgeBtn) return nudge(nudgeBtn.dataset.nudge, e.shiftKey);
+function waitFontsReady() {
+  if (!document.fonts || !document.fonts.ready) return Promise.resolve();
+  return document.fonts.ready.catch(() => {});
+}
 
-  const resetBtn = e.target.closest('[data-action="reset"]');
-  if (resetBtn) return resetAlign();
+function waitOverlayReady(overlay) {
+  return new Promise((resolve) => {
+    let finished = false;
+    const done = () => {
+      if (finished) return;
+      finished = true;
+      resolve();
+    };
 
-  const scaleBtn = e.target.closest("[data-scale]");
-  if (scaleBtn) {
-    const [axis, sign] = [scaleBtn.dataset.scale[0], scaleBtn.dataset.scale[1]];
-    const step = e.shiftKey ? 0.02 : 0.002;
-    scaleBy(axis, sign === "+" ? step : -step);
-  }
-});
-
-/* ------- Tour navigation buttons ------- */
-el.tourPrev.addEventListener("click", () => goToStop(Math.max(0, tourIndex - 1)));
-el.tourNext.addEventListener("click", () => {
-  if (tourIndex < 0) return goToStop(0);
-  goToStop(tourIndex + 1);
-});
-
-el.fitBtn.addEventListener("click", () => {
-  if (imageBounds) map.flyToBounds(imageBounds, { padding: [20, 20], duration: 0.5 });
-});
-
-el.detailsClose.addEventListener("click", () => clearSelection());
-
-if (el.searchInput) {
-  el.searchInput.addEventListener("input", (e) => renderSearch(e.target.value));
-  document.addEventListener("click", (e) => {
-    if (!e.target.closest(".search-wrap")) el.searchResults.hidden = true;
+    overlay.once("load", done);
+    overlay.once("error", done);
+    setTimeout(done, 5000);
   });
 }
 
-el.modeBtns.forEach((btn) => {
-  btn.addEventListener("click", () => {
-    el.modeBtns.forEach((b) => {
-      b.classList.toggle("is-active", b === btn);
-      b.setAttribute("aria-selected", b === btn ? "true" : "false");
+function waitForMapPaint() {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        map.invalidateSize({ pan: false });
+        resolve();
+      }, 120);
     });
   });
-});
+}
 
-// Help button — simple info overlay for now
-el.helpBtn.addEventListener("click", () => {
-  alert(
-    "SCSU Metaversity\n\n" +
-    "• Tap or click a location on the map to see details.\n" +
-    "• Use the list on the left to jump to tour stops.\n" +
-    "• Arrow buttons at the bottom step through the tour.\n" +
-    "• Arrow keys ← / → also navigate the tour.\n" +
-    "• Press Escape to close any open panel.\n\n" +
-    "Image alignment:\n" +
-    "• If the satellite image doesn't line up with the polygons,\n" +
-    "  click ALIGN in the header (or press Shift+A) to enter\n" +
-    "  alignment mode. Use the on-screen controls or arrow keys\n" +
-    "  to nudge the image, then hit Save & close."
-  );
-});
-
-// Fullscreen toggle
-el.fullscreenBtn.addEventListener("click", () => {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen?.();
-  } else {
-    document.exitFullscreen?.();
-  }
-});
-
-// Keyboard shortcuts
-document.addEventListener("keydown", (e) => {
-  if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
-
-  // Shift+A → toggle alignment tool
-  if ((e.key === "a" || e.key === "A") && e.shiftKey) {
-    toggleAlign();
-    e.preventDefault();
-    return;
-  }
-
-  // When alignment tool is open, arrow keys nudge the image, +/- scale
-  if (alignMode) {
-    if (e.key === "ArrowUp")    { nudge("up",    e.shiftKey); e.preventDefault(); }
-    if (e.key === "ArrowDown")  { nudge("down",  e.shiftKey); e.preventDefault(); }
-    if (e.key === "ArrowLeft")  { nudge("left",  e.shiftKey); e.preventDefault(); }
-    if (e.key === "ArrowRight") { nudge("right", e.shiftKey); e.preventDefault(); }
-    if (e.key === "+" || e.key === "=") {
-      scaleBy("x",  e.shiftKey ? 0.02 :  0.002);
-      scaleBy("y",  e.shiftKey ? 0.02 :  0.002);
-      e.preventDefault();
-    }
-    if (e.key === "-" || e.key === "_") {
-      scaleBy("x", e.shiftKey ? -0.02 : -0.002);
-      scaleBy("y", e.shiftKey ? -0.02 : -0.002);
-      e.preventDefault();
-    }
-    if (e.key === "Escape") { toggleAlign(false); }
-    return;
-  }
-
-  // Otherwise: arrow keys drive the tour
-  if (e.key === "ArrowRight") { el.tourNext.click(); e.preventDefault(); }
-  else if (e.key === "ArrowLeft")  { el.tourPrev.click(); e.preventDefault(); }
-  else if (e.key === "Escape")     { clearSelection(); closeMobileLocations(); }
-});
-
-// Clicking the bare map clears selection
-map.on("click", (e) => {
-  if (e.originalEvent.target.closest(".leaflet-interactive")) return;
-  clearSelection();
-});
-
-/* -----------------------------------------------------------
-   17. BOOT
-   ----------------------------------------------------------- */
-
-/** Try to fetch a GeoJSON file. Returns null on any failure
- *  (network error, 404, CORS, file://, non-JSON body). */
 async function tryFetchGeoJSON(url) {
   try {
-    const r = await fetch(url, { cache: "no-cache" });
-    if (!r.ok) return null;
-    const ct = r.headers.get("content-type") || "";
-    // Some servers serve .geojson as octet-stream or text/plain; that's fine.
-    // What we really want is to not accidentally parse HTML.
+    const response = await fetch(url, { cache: "no-cache" });
+    if (!response.ok) return null;
+    const ct = response.headers.get("content-type") || "";
     if (ct.includes("text/html")) return null;
-    return await r.json();
-  } catch (_) {
+    return await response.json();
+  } catch {
     return null;
   }
 }
 
-/** Load all three datasets. Tries fetch first (works when the
- *  page is served over http/https) and falls back to the
- *  window.SCSU_DATA shim (works when opened from disk). */
 async function loadAllData() {
   const [bFetch, tFetch, zFetch] = await Promise.all([
     tryFetchGeoJSON(config.dataFiles?.buildings || "data/buildings.geojson"),
-    tryFetchGeoJSON(config.dataFiles?.tours     || "data/tours.geojson"),
-    tryFetchGeoJSON(config.dataFiles?.zones     || "data/zones.geojson")
+    tryFetchGeoJSON(config.dataFiles?.tours || "data/tours.geojson"),
+    tryFetchGeoJSON(config.dataFiles?.zones || "data/zones.geojson")
   ]);
 
   const fallback = window.SCSU_DATA || {};
   const empty = { type: "FeatureCollection", features: [] };
 
-  const buildings = bFetch || fallback.buildings || empty;
-  const tours     = tFetch || fallback.tours     || empty;
-  const zones     = zFetch || fallback.zones     || empty;
+  return {
+    buildings: bFetch || fallback.buildings || empty,
+    tours: tFetch || fallback.tours || empty,
+    zones: zFetch || fallback.zones || empty
+  };
+}
 
-  const source =
-    (bFetch && tFetch && zFetch) ? "fetch (.geojson files)"
-    : (bFetch || tFetch || zFetch) ? "mixed (fetch + shim)"
-    : "shim (window.SCSU_DATA)";
-  console.info(`[metaversity] data loaded via ${source}`);
+function handleSearchClose() {
+  if (el.searchInput.value.trim()) {
+    el.searchInput.value = "";
+    renderSearch("");
+    el.searchInput.focus();
+    return;
+  }
 
-  return { buildings, tours, zones };
+  if (isMobile()) {
+    setMobileSearch(false);
+  } else {
+    el.searchInput.blur();
+    el.searchResults.hidden = true;
+  }
+}
+
+function handleExploreAction() {
+  if (!selectedLayer) return;
+  if (isMobile()) {
+    mobileSheetState = "full";
+    applyMobileSheetState();
+  }
+  focusLayer(selectedLayer);
+}
+
+function registerStaticEvents() {
+  el.locationsToggle.addEventListener("click", openMobileLocations);
+  el.locationsClose.addEventListener("click", closeMobileLocations);
+
+  el.searchToggleBtn.addEventListener("click", () => {
+    if (isMobile()) {
+      closeMobileLocations();
+      setMobileSearch(!mobileSearchOpen, { focus: !mobileSearchOpen });
+      return;
+    }
+    el.searchInput.focus();
+    el.searchInput.select();
+  });
+
+  el.searchClose.addEventListener("click", handleSearchClose);
+  el.searchInput.addEventListener("input", (e) => renderSearch(e.target.value));
+  document.addEventListener("click", (e) => {
+    if (!e.target.closest("#searchWrap") && !e.target.closest("#searchToggleBtn")) {
+      el.searchResults.hidden = true;
+    }
+  });
+
+  el.fitBtn.addEventListener("click", () => fitCampusFrame());
+  el.detailsClose.addEventListener("click", dismissDetailsPanel);
+  el.exploreCta.addEventListener("click", handleExploreAction);
+  el.vrBtn.addEventListener("click", handleExploreAction);
+
+  [el.tourPrev, el.sideTourPrev].forEach((btn) => btn.addEventListener("click", () => goToStop(Math.max(0, tourIndex - 1))));
+  [el.tourNext, el.sideTourNext].forEach((btn) => btn.addEventListener("click", () => {
+    if (tourIndex < 0) {
+      goToStop(0);
+      return;
+    }
+    goToStop(tourIndex + 1);
+  }));
+
+  el.modeBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      el.modeBtns.forEach((node) => {
+        const active = node === btn;
+        node.classList.toggle("is-active", active);
+        node.setAttribute("aria-selected", String(active));
+      });
+    });
+  });
+
+  el.helpBtn.addEventListener("click", () => {
+    alert(
+      "SCSU Metaversity\n\n" +
+      "• Use the list or map to open a location.\n" +
+      "• Use the arrows to move through the tour stops.\n" +
+      "• On mobile, tap SEARCH to open the search bar.\n" +
+      "• Drag the details panel up or down on mobile.\n\n" +
+      "Alignment tool:\n" +
+      "• Press Shift+A or use ALIGN on desktop.\n" +
+      "• Nudge the satellite image until it lines up with the polygons."
+    );
+  });
+
+  el.fullscreenBtn.addEventListener("click", () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen?.();
+    } else {
+      document.exitFullscreen?.();
+    }
+  });
+
+  el.alignBtn?.addEventListener("click", () => toggleAlign());
+  el.alignClose.addEventListener("click", () => toggleAlign(false));
+  el.alignSave.addEventListener("click", () => toggleAlign(false));
+  el.alignCopy.addEventListener("click", () => {
+    const snippet = `  imageOffsetLat: ${align.offsetLat.toFixed(6)},\n  imageOffsetLng: ${align.offsetLng.toFixed(6)},\n  imageScaleX:    ${align.scaleX.toFixed(4)},\n  imageScaleY:    ${align.scaleY.toFixed(4)},`;
+    const complete = () => {
+      el.alignCopy.classList.add("is-copied");
+      el.alignCopy.textContent = "Copied ✓";
+      setTimeout(() => {
+        el.alignCopy.classList.remove("is-copied");
+        el.alignCopy.textContent = "Copy config";
+      }, 1400);
+    };
+
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(snippet).then(complete, () => fallbackCopy(snippet, complete));
+    } else {
+      fallbackCopy(snippet, complete);
+    }
+  });
+
+  el.alignPanel.addEventListener("click", (e) => {
+    const nudgeBtn = e.target.closest("[data-nudge]");
+    if (nudgeBtn) return nudge(nudgeBtn.dataset.nudge, e.shiftKey);
+
+    const resetBtn = e.target.closest('[data-action="reset"]');
+    if (resetBtn) return resetAlign();
+
+    const scaleBtn = e.target.closest("[data-scale]");
+    if (!scaleBtn) return;
+    const [axis, sign] = [scaleBtn.dataset.scale[0], scaleBtn.dataset.scale[1]];
+    const step = e.shiftKey ? 0.02 : 0.002;
+    scaleBy(axis, sign === "+" ? step : -step);
+  });
+
+  el.detailsHandle.addEventListener("pointerdown", onSheetPointerDown);
+  window.addEventListener("pointermove", onSheetPointerMove);
+  window.addEventListener("pointerup", onSheetPointerUp);
+  window.addEventListener("pointercancel", onSheetPointerUp);
+
+  document.addEventListener("keydown", (e) => {
+    if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) return;
+
+    if ((e.key === "a" || e.key === "A") && e.shiftKey) {
+      toggleAlign();
+      e.preventDefault();
+      return;
+    }
+
+    if (alignMode) {
+      if (e.key === "ArrowUp") { nudge("up", e.shiftKey); e.preventDefault(); }
+      if (e.key === "ArrowDown") { nudge("down", e.shiftKey); e.preventDefault(); }
+      if (e.key === "ArrowLeft") { nudge("left", e.shiftKey); e.preventDefault(); }
+      if (e.key === "ArrowRight") { nudge("right", e.shiftKey); e.preventDefault(); }
+      if (e.key === "+" || e.key === "=") {
+        scaleBy("x", e.shiftKey ? 0.02 : 0.002);
+        scaleBy("y", e.shiftKey ? 0.02 : 0.002);
+        e.preventDefault();
+      }
+      if (e.key === "-" || e.key === "_") {
+        scaleBy("x", e.shiftKey ? -0.02 : -0.002);
+        scaleBy("y", e.shiftKey ? -0.02 : -0.002);
+        e.preventDefault();
+      }
+      if (e.key === "Escape") toggleAlign(false);
+      return;
+    }
+
+    if (e.key === "ArrowRight") {
+      if (tourIndex < 0) goToStop(0);
+      else goToStop(tourIndex + 1);
+      e.preventDefault();
+    } else if (e.key === "ArrowLeft") {
+      goToStop(Math.max(0, tourIndex - 1));
+      e.preventDefault();
+    } else if (e.key === "Escape") {
+      dismissDetailsPanel();
+      closeMobileLocations();
+      setMobileSearch(false);
+    }
+  });
+
+  const refreshLayout = () => {
+    syncSearchPlacement();
+    closeMobileLocations();
+    if (!isMobile()) {
+      mobileSheetState = "hidden";
+      el.details.style.removeProperty("height");
+      el.details.classList.remove("is-open", "sheet-peek", "sheet-full");
+      el.details.setAttribute("aria-hidden", el.shell.classList.contains("has-details") ? "false" : "true");
+    } else if (selectedLayer && mobileSheetState === "hidden") {
+      mobileSheetState = "peek";
+      applyMobileSheetState();
+    } else {
+      applyMobileSheetState();
+    }
+
+    queueMapRefresh(40);
+    setTimeout(() => {
+      map.invalidateSize({ pan: false });
+      if (!selectedLayer) fitCampusFrame({ animate: false });
+      else if (!isMobile() && el.shell.classList.contains("has-details")) focusLayer(selectedLayer);
+    }, 80);
+  };
+
+  window.addEventListener("resize", refreshLayout);
+  mqMobile.addEventListener?.("change", refreshLayout);
+}
+
+function fallbackCopy(text, callback) {
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand("copy");
+    callback();
+  } catch {}
+  ta.remove();
 }
 
 async function boot() {
-  const { buildings: rawB, tours: rawT, zones: rawZ } = await loadAllData();
+  registerStaticEvents();
+  syncSearchPlacement();
 
-  const buildingsGeo = reprojectFC(rawB, config.dataCRS);
-  const toursGeo     = reprojectFC(rawT, config.dataCRS);
-  const zonesGeo     = reprojectFC(rawZ, config.dataCRS);
+  const { buildings: rawBuildings, tours: rawTours, zones: rawZones } = await loadAllData();
+
+  const buildingsGeo = reprojectFC(rawBuildings, config.dataCRS);
+  const toursGeo = reprojectFC(rawTours, config.dataCRS);
+  const zonesGeo = reprojectFC(rawZones, config.dataCRS);
 
   buildingsLayer = buildLayer(buildingsGeo, "building", "buildingsPane");
-  toursLayer     = buildLayer(toursGeo,     "tour",     "toursPane");
-  zonesLayer     = buildLayer(zonesGeo,     "zone",     "zonesPane");
+  toursLayer = buildLayer(toursGeo, "tour", "toursPane");
+  zonesLayer = buildLayer(zonesGeo, "zone", "zonesPane");
 
-  // Data extent (from all three layers combined)
   dataBounds = L.latLngBounds([]);
-  [buildingsLayer, toursLayer, zonesLayer].forEach((l) => {
+  [buildingsLayer, toursLayer, zonesLayer].forEach((layerGroup) => {
     try {
-      const b = l.getBounds();
-      if (b && b.isValid()) dataBounds.extend(b);
-    } catch (_) {}
+      const bounds = layerGroup.getBounds();
+      if (bounds && bounds.isValid()) dataBounds.extend(bounds);
+    } catch {}
   });
 
   if (!dataBounds.isValid()) {
-    console.warn("[metaversity] no valid geometry found; falling back");
     dataBounds = L.latLngBounds([33.494, -80.855], [33.502, -80.843]);
   }
 
-  // Image bounds computed to match the image's native aspect
-  imageBounds = computeImageBounds(
-    dataBounds,
-    config.imageWidthPx,
-    config.imageHeightPx,
-    config.imagePaddingPct,
-    align
-  );
+  imageBounds = computeImageBounds(dataBounds, config.imageWidthPx, config.imageHeightPx, config.imagePaddingPct, align);
 
   imageOverlay = L.imageOverlay(config.imageUrl, imageBounds, {
     pane: "imagePane",
     interactive: false,
     opacity: 1,
     attribution: "© SC State University | Imagery: SC_2023_RGB WMTS"
-  }).addTo(map);
+  });
 
-  map.setMaxBounds(imageBounds.pad(0.25));
-  map.fitBounds(imageBounds, { padding: [20, 20] });
+  const overlayReady = waitOverlayReady(imageOverlay);
+  imageOverlay.addTo(map);
 
-  // Add overlays (z-order: zones → buildings → tours)
+  map.setMaxBounds(imageBounds.pad(0.14));
+
   zonesLayer.addTo(map);
   buildingsLayer.addTo(map);
   toursLayer.addTo(map);
 
-  // Tour pins
   buildTourPins();
   tourPinsLayer.addTo(map);
-
-  // Locations list
+  updateTourbar();
   renderLocationsList();
+  syncLocationsList();
+  renderAlignValues();
 
-  // Search index
-  const push = (layer, kind) => {
-    layer.eachLayer((lyr) => {
-      const n = cleanName(lyr.feature.properties.name);
-      if (n) allFeatures.push({ kind, layer: lyr, props: lyr.feature.properties });
+  allFeatures = [];
+  const push = (layerGroup, kind) => {
+    layerGroup.eachLayer((layer) => {
+      const name = cleanName(layer.feature?.properties?.name);
+      if (!name) return;
+      allFeatures.push({ kind, layer, props: layer.feature.properties });
     });
   };
+  push(toursLayer, "tour");
   push(buildingsLayer, "building");
-  push(toursLayer,     "tour");
-  push(zonesLayer,     "zone");
+  push(zonesLayer, "zone");
 
-  console.info("[metaversity] ready", {
-    buildings: buildingsLayer.getLayers().length,
-    tours:     toursLayer.getLayers().length,
-    zones:     zonesLayer.getLayers().length
+  fitCampusFrame({ animate: false });
+  map.invalidateSize({ pan: false });
+
+  map.on("click", (e) => {
+    if (e.originalEvent?.target?.closest(".leaflet-interactive")) return;
+    clearSelection();
   });
 
-  // Reveal app
+  await Promise.all([
+    waitWindowLoad(),
+    waitFontsReady(),
+    overlayReady,
+    waitForMapPaint(),
+    new Promise((resolve) => setTimeout(resolve, 250))
+  ]);
+
   requestAnimationFrame(() => {
     el.app.setAttribute("aria-hidden", "false");
     el.app.classList.add("is-ready");
     el.splash.classList.add("is-hidden");
-    setTimeout(() => { el.splash.style.display = "none"; }, 500);
+    setTimeout(() => {
+      el.splash.style.display = "none";
+      map.invalidateSize({ pan: false });
+      fitCampusFrame({ animate: false });
+    }, 420);
   });
 }
 
-// Small delay so the splash is actually visible; also gives Leaflet
-// time to measure its container.
-setTimeout(() => {
-  boot().catch((err) => {
-    console.error("[metaversity] fatal:", err);
-    el.splash.innerHTML =
-      "<div style='font-family:monospace;padding:24px;color:#b91c1c;" +
-      "text-align:center;max-width:480px'>" +
-      "Failed to initialise the map:<br><br><code>" +
-      String(err && err.message || err) + "</code></div>";
-  });
-}, 350);
+boot().catch((err) => {
+  console.error("[metaversity] fatal:", err);
+  el.splash.innerHTML = `<div style="font-family:monospace;padding:24px;color:#b91c1c;text-align:center;max-width:520px">Failed to initialise the map:<br><br><code>${String(err?.message || err)}</code></div>`;
+});
