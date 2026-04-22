@@ -264,7 +264,7 @@ function resetCampusView(animate = false) {
   refreshMapConstraints({ recenterIfNeeded: false });
 
   const zoom = getCampusCoverZoom();
-  const center = getCampusOffsetCenter(zoom, 0, 800); // 60 px downward visual offset
+  const center = getCampusOffsetCenter(zoom, 0, 1200); // 12000 px downward visual offset
 
   map.setView(center, zoom, { animate });
 }
