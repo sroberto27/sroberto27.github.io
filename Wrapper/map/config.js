@@ -23,10 +23,10 @@ window.CAMPUS_CONFIG = {
   // the top bar (or Shift+A) and nudge the image with arrow keys
   // until it lines up, then hit "Copy config" and paste the
   // values back here.
-  imageOffsetLat: 0.000000,
-  imageOffsetLng: 0.000000,
-  imageScaleX:    1.0000,
-  imageScaleY:    1.0000,
+  imageOffsetLat: -0.000040,
+  imageOffsetLng: -0.000048,
+  imageScaleX:    1.4040,
+  imageScaleY:    0.9940,
 
   /* -- Coordinate system of the GeoJSON data --------------- */
   // "EPSG:3857" (Web Mercator meters, QGIS default)
