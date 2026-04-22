@@ -10,7 +10,7 @@ window.CAMPUS_CONFIG = {
   },
 
   /* -- Satellite image ------------------------------------- */
-  imageUrl: "assets/campus_satellite.png",
+  imageUrl: "assets/campus_satellite.svg",
   imageWidthPx: 3507,
   imageHeightPx: 2480,
 
