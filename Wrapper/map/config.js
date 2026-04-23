@@ -41,7 +41,7 @@ window.CAMPUS_CONFIG = {
      ------------------------------------------------------- */
   dataFiles: {
     buildings: "data/buildings.geojson",
-    tours:     "data/tours.geojson",
+    tours:     "data/tours.geojson"
   },
 
   /* -- Tour configuration ---------------------------------- */
@@ -56,23 +56,11 @@ window.CAMPUS_CONFIG = {
      Keys are matched case-insensitively against `name`.
      ------------------------------------------------------- */
   categoryMap: {
-    "south carolina state university bookstore": "STUDENT LIFE",
-    "nance hall":                                  "ClASS ROOMS",
+    "crawford zimmerman":                          "Student services, Warehouse, Campus Bookstore",
+    "nance hall":                                  "MATH & SCIENCE",
     "s-h-m memorial square":                       "MEMORIAL",
     "oliver c. dawson stadium":                    "ATHLETICS",
     "kirkland w. green student center":            "STUDENT LIFE"
-  },
-
-  /* -- Location images ------------------------------------
-     Paths are relative to index.html. Omit a key (or set it
-     to "") to fall back to the placeholder.
-     ------------------------------------------------------- */
-  imageMap: {
-    "crawford zimmerman":                "assets/locations/crawford-zimmerman.jpg",
-    "kirkland w. green student center":  "assets/locations/kirkland-green.jpg",
-    "s-h-m memorial square":             "assets/locations/shm-memorial.jpg",
-    "nance hall":                        "assets/locations/nance-hall.jpg",
-    "oliver c. dawson stadium":          "assets/locations/dawson-stadium.jpg"
   },
 
   /* -- Description overrides ------------------------------
@@ -80,25 +68,93 @@ window.CAMPUS_CONFIG = {
      you can override what appears in the details panel.
      ------------------------------------------------------- */
   descriptionMap: {
-    "Crawford Zimmerman":
-      "Crawford-Zimmerman Building is a key administrative and operations "+
-      "facility located on campus. It houses several, departments, including"+
-      " Procurement & Compliance, and serves as a hub for student services,"+
+    "crawford zimmerman":
+      "Crawford-Zimmerman Building is a key administrative and operations " +
+      "facility located on campus. It houses several departments, including " +
+      "Procurement & Compliance, and serves as a hub for student services, " +
       "such as the SCSU Bookstore.",
-    "nance hall":
-      "Nance Hall serves as a hub for academic activities offering modern" +
-      "and resources to support student learning.",
-    "s-h-m memorial square":
-      "Nance Hall serves as a hub for academic activities " +
-      "killed in the 1968 Orangeburg Massacre — a defining moment in the " +
-      "civil rights movement and in university history.",
-    "oliver c. dawson stadium":
-      "Home of the SC State Bulldogs football program. The stadium seats " +
-      "over 22,000 fans and hosts the annual MEAC/SWAC Challenge.",
     "kirkland w. green student center":
-      "The heart of student life on campus. The Student Center houses " +
-      "dining, the campus post office, lounges, meeting rooms, and a " +
-      "variety of student organizations."
+      "The Kirkland W. Green Student Center is the central hub for campus " +
+      "life offering dining, social, and recreational spaces for students.",
+    "s-h-m memorial square":
+      "The Smith-Hammond-Middleton Legacy Plaza at South Carolina State " +
+      "University, dedicated in 2022, honors the three victims of the 1968 " +
+      "Orangeburg Massacre.",
+    "nance hall":
+      "Nance Hall serves as a hub for academic activities offering modern " +
+      "classrooms and resources to support student learning.",
+    "oliver c. dawson stadium":
+      "Oliver C. Dawson Stadium is a 22,000 seat multi purpose stadium. " +
+      "The Home of SC State Bulldogs football."
+  },
+
+  /* -- Location images ------------------------------------
+     Paths are relative to index.html. Omit a key (or set it
+     to "") to fall back to the placeholder.
+     ------------------------------------------------------- */
+  imageMap: {
+    "Crawford Zimmerman":                "assets/locations/crawford-zimmerman.jpg",
+    "kirkland w. green student center":  "assets/locations/kirkland-green.jpg",
+    "s-h-m memorial square":             "assets/locations/shm-memorial.jpg",
+    "nance hall":                        "assets/locations/nance-hall.jpg",
+    "oliver c. dawson stadium":          "assets/locations/dawson-stadium.jpg"
+  },
+
+  /* -- "What happens here?" chips -------------------------
+     Shown as pill chips in the metadata panel. Each array
+     entry becomes one chip.
+     ------------------------------------------------------- */
+  happensHereMap: {
+    "crawford zimmerman": [
+      "Student services",
+      "Warehouse",
+      "Campus Bookstore"
+    ],
+    "kirkland w. green student center": [
+      "Dining (\"The Pitt\")",
+      "Campus Hub"
+    ],
+    "s-h-m memorial square": [
+      "Memorial bronze busts",
+      "Annual commemoration",
+      "Historical marker"
+    ],
+    "nance hall": [
+      "Classrooms",
+      "General lecture room"
+    ],
+    "oliver c. dawson stadium": [
+      "Bulldogs Football",
+      "SC State women's soccer team"
+    ]
+  },
+
+  /* -- "Explorable locations" list ------------------------
+     Shown as the list of sub-locations in the metadata
+     panel. Each entry becomes one row.
+     ------------------------------------------------------- */
+  explorableMap: {
+    "crawford zimmerman": [
+      "Campus Bookstore",
+      "Office of Student Financial Services",
+      "Facilities Management & Operations",
+      "Admissions & Financial Aid"
+    ],
+    "kirkland w. green student center": [],
+    "s-h-m memorial square": [
+      "Historical marker",
+      "Bronze Busts/Monuments"
+    ],
+    "nance hall": [
+      "Room 110",
+      "General Lecture Room",
+      "Room 100"
+    ],
+    "oliver c. dawson stadium": [
+      "Midfield",
+      "Gate 1",
+      "Bulldog wall"
+    ]
   },
 
   /* -- Layer styles ---------------------------------------- */
