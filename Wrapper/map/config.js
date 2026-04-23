@@ -56,8 +56,8 @@ window.CAMPUS_CONFIG = {
      Keys are matched case-insensitively against `name`.
      ------------------------------------------------------- */
   categoryMap: {
-    "crawford zimmerman":                          "Student services, Warehouse, Campus Bookstore",
-    "nance hall":                                  "MATH & SCIENCE",
+    "Crawford Zimmerman":                          "STUDENT SERVICES",
+    "nance hall":                                  "ACADEMICS",
     "s-h-m memorial square":                       "MEMORIAL",
     "oliver c. dawson stadium":                    "ATHLETICS",
     "kirkland w. green student center":            "STUDENT LIFE"
