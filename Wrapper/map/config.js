@@ -56,7 +56,7 @@ window.CAMPUS_CONFIG = {
      Keys are matched case-insensitively against `name`.
      ------------------------------------------------------- */
   categoryMap: {
-    "Crawford Zimmerman":                          "STUDENT SERVICES",
+    "crawford zimmerman":                          "STUDENT SERVICES",
     "nance hall":                                  "ACADEMICS",
     "s-h-m memorial square":                       "MEMORIAL",
     "oliver c. dawson stadium":                    "ATHLETICS",
@@ -93,7 +93,7 @@ window.CAMPUS_CONFIG = {
      to "") to fall back to the placeholder.
      ------------------------------------------------------- */
   imageMap: {
-    "Crawford Zimmerman":                "assets/locations/crawford-zimmerman.jpg",
+    "crawford zimmerman":                "assets/locations/crawford-zimmerman.jpg",
     "kirkland w. green student center":  "assets/locations/kirkland-green.jpg",
     "s-h-m memorial square":             "assets/locations/shm-memorial.jpg",
     "nance hall":                        "assets/locations/nance-hall.jpg",
