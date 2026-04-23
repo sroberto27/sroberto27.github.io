@@ -42,7 +42,6 @@ window.CAMPUS_CONFIG = {
   dataFiles: {
     buildings: "data/buildings.geojson",
     tours:     "data/tours.geojson",
-    zones:     "data/zones.geojson"
   },
 
   /* -- Tour configuration ---------------------------------- */
@@ -58,10 +57,22 @@ window.CAMPUS_CONFIG = {
      ------------------------------------------------------- */
   categoryMap: {
     "south carolina state university bookstore": "STUDENT LIFE",
-    "nance hall":                                  "MATH & SCIENCE",
+    "nance hall":                                  "ClASS ROOMS",
     "s-h-m memorial square":                       "MEMORIAL",
     "oliver c. dawson stadium":                    "ATHLETICS",
     "kirkland w. green student center":            "STUDENT LIFE"
+  },
+
+  /* -- Location images ------------------------------------
+     Paths are relative to index.html. Omit a key (or set it
+     to "") to fall back to the placeholder.
+     ------------------------------------------------------- */
+  imageMap: {
+    "crawford zimmerman":                "assets/locations/crawford-zimmerman.jpg",
+    "kirkland w. green student center":  "assets/locations/kirkland-green.jpg",
+    "s-h-m memorial square":             "assets/locations/shm-memorial.jpg",
+    "nance hall":                        "assets/locations/nance-hall.jpg",
+    "oliver c. dawson stadium":          "assets/locations/dawson-stadium.jpg"
   },
 
   /* -- Description overrides ------------------------------
@@ -69,15 +80,16 @@ window.CAMPUS_CONFIG = {
      you can override what appears in the details panel.
      ------------------------------------------------------- */
   descriptionMap: {
-    "south carolina state university bookstore":
-      "The campus bookstore offers textbooks, official Bulldog apparel, " +
-      "supplies, and spirit gear for students, faculty, and visitors.",
+    "Crawford Zimmerman":
+      "Crawford-Zimmerman Building is a key administrative and operations "+
+      "facility located on campus. It houses several, departments, including"+
+      " Procurement & Compliance, and serves as a hub for student services,"+
+      "such as the SCSU Bookstore.",
     "nance hall":
-      "Home to the College of Mathematics, Natural Sciences and Engineering. " +
-      "Nance Hall hosts classrooms, research labs, and faculty offices " +
-      "central to SC State's STEM programs.",
+      "Nance Hall serves as a hub for academic activities offering modern" +
+      "and resources to support student learning.",
     "s-h-m memorial square":
-      "The Smith-Hammond-Middleton Memorial honors three SC State students " +
+      "Nance Hall serves as a hub for academic activities " +
       "killed in the 1968 Orangeburg Massacre — a defining moment in the " +
       "civil rights movement and in university history.",
     "oliver c. dawson stadium":
@@ -98,18 +110,10 @@ window.CAMPUS_CONFIG = {
       color: "#111111", weight: 1.5, fillColor: "#94A3B8", fillOpacity: 0.55
     },
     tours: {
-      color: "#111111", weight: 1.5, fillColor: "#A7F3D0", fillOpacity: 0.45
+      color: "#111111", weight: 1.5, fillColor: "#A7F3D0", fillOpacity: 0.35
     },
     toursHover: {
       color: "#111111", weight: 2, fillColor: "#6EE7B7", fillOpacity: 0.60
-    },
-    zones: {
-      color: "#E11D48", weight: 2, fillColor: "#FCA5A5", fillOpacity: 0.20,
-      dashArray: "4 3"
-    },
-    zonesHover: {
-      color: "#BE123C", weight: 2.5, fillColor: "#F87171", fillOpacity: 0.30,
-      dashArray: null
     },
     selected: {
       color: "#111111", weight: 2.5, fillColor: "#86EFAC", fillOpacity: 0.55

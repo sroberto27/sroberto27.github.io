@@ -1505,3 +1505,29 @@ body.align-mode .leaflet-interactive {
     margin: 0 auto;
   }
 }
+
+/*Metadata Images style*/
+.details-image.has-image {
+  padding: 0;
+  background: #000;
+  aspect-ratio: 3 / 2;
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.details-image.has-image img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  border-radius: inherit;
+}
+
+.details-image.has-image figcaption,
+.details-image.has-image .details-image-x {
+  display: none;
+}

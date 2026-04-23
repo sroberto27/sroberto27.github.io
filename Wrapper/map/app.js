@@ -72,6 +72,35 @@ function getDescription(name) {
          `${name} — more information about this location is coming soon.`;
 }
 
+function getHappensHere(name) {
+  if (!name) return [];
+  const k = name.toLowerCase();
+  const list = (config.happensHereMap || {})[k];
+  return Array.isArray(list) ? list : [];
+}
+
+function getImage(name) {
+  if (!name) return "";
+  const k = name.toLowerCase();
+  return (config.imageMap || {})[k] || "";
+}
+
+function getExplorable(name) {
+  if (!name) return [];
+  const k = name.toLowerCase();
+  const list = (config.explorableMap || {})[k];
+  return Array.isArray(list) ? list : [];
+}
+
+function escapeHTML(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 /* -----------------------------------------------------------
    3. Leaflet map + panes
    ----------------------------------------------------------- */
@@ -87,7 +116,6 @@ const map = L.map("map", {
 L.control.zoom({ position: "topright" }).addTo(map);
 
 map.createPane("imagePane");     map.getPane("imagePane").style.zIndex     = 200;
-map.createPane("zonesPane");     map.getPane("zonesPane").style.zIndex     = 410;
 map.createPane("buildingsPane"); map.getPane("buildingsPane").style.zIndex = 420;
 map.createPane("toursPane");     map.getPane("toursPane").style.zIndex     = 430;
 map.createPane("pinsPane");      map.getPane("pinsPane").style.zIndex      = 500;
@@ -121,6 +149,13 @@ const el = {
   detailsSub:      $("detailsSub"),
   detailsBody:     $("detailsBody"),
 
+  // Metadata panel dynamic sections
+  happensHereBlock: $("happensHereBlock"),
+  chipsHere:        $("chipsHere"),
+  explorableBlock:  $("explorableBlock"),
+  subList:          $("subList"),
+  detailsImage:     $("detailsImage"),
+
   // Desktop tour nav (inside sidebar footer)
   tourName:        $("tourName"),
   tourCurrent:     $("tourCurrent"),
@@ -151,20 +186,18 @@ function isMobile() { return mqMobile.matches; }
 /* -----------------------------------------------------------
    5. Styling helpers
    ----------------------------------------------------------- */
-function styleFor(kind, props = {}) {
+function styleFor(kind) {
   const s = config.styles;
   if (kind === "building") return { ...s.buildings };
   if (kind === "tour")     return { ...s.tours };
-  const override = props.color ? { color: props.color, fillColor: props.color } : {};
-  return { ...s.zones, ...override };
+  return { ...s.buildings };
 }
 
-function hoverStyleFor(kind, props = {}) {
+function hoverStyleFor(kind) {
   const s = config.styles;
   if (kind === "building") return { ...s.buildingsHover };
   if (kind === "tour")     return { ...s.toursHover };
-  const override = props.color ? { color: props.color, fillColor: props.color } : {};
-  return { ...s.zonesHover, ...override };
+  return { ...s.buildingsHover };
 }
 
 /* -----------------------------------------------------------
@@ -175,7 +208,6 @@ let imageOverlay    = null; // kept so alignment tool can update it live
 let dataBounds      = null;
 let buildingsLayer  = null;
 let toursLayer      = null;
-let zonesLayer      = null;
 let tourPinsLayer   = L.layerGroup([], { pane: "pinsPane" });
 
 let selectedLayer = null;
@@ -318,17 +350,79 @@ function setDetailsMode(next) {
   scheduleMapRefresh({ recenterIfNeeded: false, delay: 260 });
 }
 
+/* Render the "WHAT HAPPENS HERE?" chip row. Hides the whole
+   block if the list is empty. */
+function renderHappensHere(name) {
+  const items = getHappensHere(name);
+  if (!el.chipsHere || !el.happensHereBlock) return;
+
+  if (!items.length) {
+    el.happensHereBlock.hidden = true;
+    el.chipsHere.innerHTML = "";
+    return;
+  }
+
+  el.happensHereBlock.hidden = false;
+  el.chipsHere.innerHTML = items
+    .map((t) => `<span class="chip">${escapeHTML(t)}</span>`)
+    .join("");
+}
+
+/* Render the location hero image. Falls back to the
+   placeholder "X" frame if no image is mapped. */
+function renderImage(name) {
+  if (!el.detailsImage) return;
+  const src = getImage(name);
+
+  if (!src) {
+    el.detailsImage.classList.remove("has-image");
+    el.detailsImage.innerHTML =
+      '<div class="details-image-x" aria-hidden="true"></div>' +
+      '<figcaption>LOCATION IMAGE</figcaption>';
+    return;
+  }
+
+  el.detailsImage.classList.add("has-image");
+  el.detailsImage.innerHTML =
+    `<img src="${escapeHTML(src)}" alt="${escapeHTML(name)}" ` +
+    `onerror="this.parentNode.classList.remove('has-image');` +
+    `this.parentNode.innerHTML='&lt;div class=&quot;details-image-x&quot;&gt;&lt;/div&gt;` +
+    `&lt;figcaption&gt;LOCATION IMAGE&lt;/figcaption&gt;'">`;
+}
+
+/* Render the "EXPLORABLE LOCATIONS" list. Hides the whole
+   block if the list is empty. */
+function renderExplorable(name) {
+  const items = getExplorable(name);
+  if (!el.subList || !el.explorableBlock) return;
+
+  if (!items.length) {
+    el.explorableBlock.hidden = true;
+    el.subList.innerHTML = "";
+    return;
+  }
+
+  el.explorableBlock.hidden = false;
+  el.subList.innerHTML = items
+    .map((t) => `<li><span>${escapeHTML(t)}</span><span class="chev">›</span></li>`)
+    .join("");
+}
+
 function renderDetails(feature, kind) {
   const props = (feature && feature.properties) || {};
   const name = cleanName(props.name);
 
-  el.detailsTag.textContent = (kind === "tour"     ? "TOUR STOP"
-                            :  kind === "zone"     ? "HIGHLIGHT"
-                            :  "CAMPUS BUILDING");
+  el.detailsTag.textContent = (kind === "tour"
+                                 ? "TOUR STOP"
+                                 : "CAMPUS BUILDING");
 
   el.detailsTitle.textContent = name || "—";
   el.detailsSub.textContent   = getCategory(name) || "—";
   el.detailsBody.textContent  = getDescription(name);
+
+  renderHappensHere(name);
+  renderExplorable(name);
+  renderImage(name);
 }
 
 /* -----------------------------------------------------------
@@ -336,7 +430,7 @@ function renderDetails(feature, kind) {
    ----------------------------------------------------------- */
 function resetLayerStyle(layer, kind) {
   if (!layer || typeof layer.setStyle !== "function") return;
-  layer.setStyle(styleFor(kind, layer.feature?.properties || {}));
+  layer.setStyle(styleFor(kind));
 }
 
 /* Compute the padding to use when flying to a selected feature.
@@ -441,7 +535,7 @@ function bindEvents(feature, layer, kind) {
     mouseover: () => {
       if (selectedLayer === layer) return;
       if (!config.ui.enableHoverPreview) return;
-      layer.setStyle(hoverStyleFor(kind, props));
+      layer.setStyle(hoverStyleFor(kind));
       if (layer.bringToFront) layer.bringToFront();
     },
     mouseout: () => {
@@ -459,7 +553,7 @@ function bindEvents(feature, layer, kind) {
 function buildLayer(data, kind, paneName) {
   return L.geoJSON(data, {
     pane: paneName,
-    style: (f) => styleFor(kind, f.properties || {}),
+    style: () => styleFor(kind),
     onEachFeature: (f, l) => bindEvents(f, l, kind)
   });
 }
@@ -1215,14 +1309,13 @@ async function tryFetchGeoJSON(url) {
   }
 }
 
-/** Load all three datasets. Tries fetch first (works when the
+/** Load both datasets. Tries fetch first (works when the
  *  page is served over http/https) and falls back to the
  *  window.SCSU_DATA shim (works when opened from disk). */
 async function loadAllData() {
-  const [bFetch, tFetch, zFetch] = await Promise.all([
+  const [bFetch, tFetch] = await Promise.all([
     tryFetchGeoJSON(config.dataFiles?.buildings || "data/buildings.geojson"),
-    tryFetchGeoJSON(config.dataFiles?.tours     || "data/tours.geojson"),
-    tryFetchGeoJSON(config.dataFiles?.zones     || "data/zones.geojson")
+    tryFetchGeoJSON(config.dataFiles?.tours     || "data/tours.geojson")
   ]);
 
   const fallback = window.SCSU_DATA || {};
@@ -1230,31 +1323,28 @@ async function loadAllData() {
 
   const buildings = bFetch || fallback.buildings || empty;
   const tours     = tFetch || fallback.tours     || empty;
-  const zones     = zFetch || fallback.zones     || empty;
 
   const source =
-    (bFetch && tFetch && zFetch) ? "fetch (.geojson files)"
-    : (bFetch || tFetch || zFetch) ? "mixed (fetch + shim)"
+    (bFetch && tFetch) ? "fetch (.geojson files)"
+    : (bFetch || tFetch) ? "mixed (fetch + shim)"
     : "shim (window.SCSU_DATA)";
   console.info(`[metaversity] data loaded via ${source}`);
 
-  return { buildings, tours, zones };
+  return { buildings, tours };
 }
 
 async function boot() {
-  const { buildings: rawB, tours: rawT, zones: rawZ } = await loadAllData();
+  const { buildings: rawB, tours: rawT } = await loadAllData();
 
   const buildingsGeo = reprojectFC(rawB, config.dataCRS);
   const toursGeo     = reprojectFC(rawT, config.dataCRS);
-  const zonesGeo     = reprojectFC(rawZ, config.dataCRS);
 
   buildingsLayer = buildLayer(buildingsGeo, "building", "buildingsPane");
   toursLayer     = buildLayer(toursGeo,     "tour",     "toursPane");
-  zonesLayer     = buildLayer(zonesGeo,     "zone",     "zonesPane");
 
-  // Data extent (from all three layers combined)
+  // Data extent (from both layers combined)
   dataBounds = L.latLngBounds([]);
-  [buildingsLayer, toursLayer, zonesLayer].forEach((l) => {
+  [buildingsLayer, toursLayer].forEach((l) => {
     try {
       const b = l.getBounds();
       if (b && b.isValid()) dataBounds.extend(b);
@@ -1284,8 +1374,7 @@ async function boot() {
 
   resetCampusView(false);
 
-  // Add overlays (z-order: zones → buildings → tours)
-  zonesLayer.addTo(map);
+  // Add overlays (z-order: buildings → tours)
   buildingsLayer.addTo(map);
   toursLayer.addTo(map);
 
@@ -1305,12 +1394,10 @@ async function boot() {
   };
   push(buildingsLayer, "building");
   push(toursLayer,     "tour");
-  push(zonesLayer,     "zone");
 
   console.info("[metaversity] ready", {
     buildings: buildingsLayer.getLayers().length,
-    tours:     toursLayer.getLayers().length,
-    zones:     zonesLayer.getLayers().length
+    tours:     toursLayer.getLayers().length
   });
 
   // Reveal app

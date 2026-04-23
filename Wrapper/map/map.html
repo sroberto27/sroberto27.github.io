@@ -215,21 +215,17 @@
               Select a location from the list or map to see details.
             </p>
 
-            <div class="details-block">
+            <div class="details-block" id="happensHereBlock">
               <div class="details-block-h">WHAT HAPPENS HERE?</div>
               <div class="chip-row" id="chipsHere">
-                <span class="chip">USDA RESEARCH</span>
-                <span class="chip">NRM LABS</span>
-                <span class="chip">FACULTY OFFICES</span>
+                <!-- populated by JS -->
               </div>
             </div>
 
-            <div class="details-block">
+            <div class="details-block" id="explorableBlock">
               <div class="details-block-h">EXPLORABLE LOCATIONS</div>
               <ul class="sub-list" id="subList">
-                <li><span>Room 100 — General Lecture</span><span class="chev">›</span></li>
-                <li><span>Room 110 — Baby</span><span class="chev">›</span></li>
-                <li><span>Faculty Suite</span><span class="chev">›</span></li>
+                <!-- populated by JS -->
               </ul>
             </div>
 
@@ -351,7 +347,6 @@
        handlers keep things tidy if a file is missing. -->
   <script src="data/buildings.js" onerror="this.remove()"></script>
   <script src="data/tours.js"     onerror="this.remove()"></script>
-  <script src="data/zones.js"     onerror="this.remove()"></script>
 
   <script src="config.js"></script>
   <script src="app.js"></script>
