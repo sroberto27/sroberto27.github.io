@@ -92,13 +92,14 @@ window.CAMPUS_CONFIG = {
      Paths are relative to index.html. Omit a key (or set it
      to "") to fall back to the placeholder.
      ------------------------------------------------------- */
-  imageMap: {
-    "crawford zimmerman":                "assets/locations/crawford-zimmerman.jpg",
-    "kirkland w. green student center":  "assets/locations/kirkland-green.jpg",
-    "s-h-m memorial square":             "assets/locations/shm-memorial.jpg",
-    "nance hall":                        "assets/locations/nance-hall.jpg",
-    "oliver c. dawson stadium":          "assets/locations/dawson-stadium.jpg"
-  },
+
+     imageMap: {
+         "crawford zimmerman":                "assets/locations/crawford-zimmerman.jpg",
+         "kirkland w. green student center":  "assets/locations/kirkland-green.jpg",
+         "s-h-m memorial square":             "assets/locations/shm-memorial.jpg",
+         "nance hall":                        "assets/locations/nance-hall.jpg",
+         "oliver c. dawson stadium":          "assets/locations/dawson-stadium.jpg"
+       },
 
   /* -- "What happens here?" chips -------------------------
      Shown as pill chips in the metadata panel. Each array
