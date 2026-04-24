@@ -670,12 +670,28 @@ function renderImage(name) {
     return;
   }
 
-  el.detailsImage.classList.add("has-image");
+  // Show the placeholder immediately so the panel's slide-in has a
+  // simple box to render — then swap in the real <img> after the
+  // current frame commits. Because the image is already in the
+  // browser cache (preloaded on boot), this swap is effectively
+  // instant and doesn't cause layout thrash during the panel's
+  // transform animation.
+  el.detailsImage.classList.remove("has-image");
   el.detailsImage.innerHTML =
-    `<img src="${escapeHTML(src)}" alt="${escapeHTML(name)}" ` +
-    `onerror="this.parentNode.classList.remove('has-image');` +
-    `this.parentNode.innerHTML='&lt;div class=&quot;details-image-x&quot;&gt;&lt;/div&gt;` +
-    `&lt;figcaption&gt;LOCATION IMAGE&lt;/figcaption&gt;'">`;
+    '<div class="details-image-x" aria-hidden="true"></div>' +
+    '<figcaption>LOCATION IMAGE</figcaption>';
+
+  requestAnimationFrame(() => {
+    // Bail if the user has already navigated somewhere else.
+    if (el.detailsImage.dataset.pendingSrc !== src) return;
+    el.detailsImage.classList.add("has-image");
+    el.detailsImage.innerHTML =
+      `<img src="${escapeHTML(src)}" alt="${escapeHTML(name)}" ` +
+      `onerror="this.parentNode.classList.remove('has-image');` +
+      `this.parentNode.innerHTML='&lt;div class=&quot;details-image-x&quot;&gt;&lt;/div&gt;` +
+      `&lt;figcaption&gt;LOCATION IMAGE&lt;/figcaption&gt;'">`;
+  });
+  el.detailsImage.dataset.pendingSrc = src;
 }
 
 /* Render the "EXPLORABLE LOCATIONS" list. Hides the whole
@@ -1972,6 +1988,21 @@ async function boot() {
 
   // Locations list
   renderLocationsList();
+
+  // Leaflet warm-up: force the first selected-style application
+  // and immediately revert it. This pays the cost of Leaflet's
+  // lazy internal setup now, while the user is still looking at
+  // the splash, so the first real click feels snappy instead of
+  // stuttery. We do the same for a hover style to warm that path
+  // too.
+  try {
+    const warm = tourStops[0] && tourStops[0].layer;
+    if (warm) {
+      warm.setStyle({ ...config.styles.selected });
+      warm.setStyle(hoverStyleFor("tour"));
+      warm.setStyle(styleFor("tour"));
+    }
+  } catch (_) { /* non-critical */ }
 
   // Search index
   const push = (layer, kind) => {

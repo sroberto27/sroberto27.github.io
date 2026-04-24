@@ -131,7 +131,8 @@ button { font-family: inherit; cursor: pointer; }
 .app {
   display: grid;
   grid-template-rows: var(--topbar-h) var(--togglebar-h) 1fr var(--footer-h);
-  height: 100vh;
+  height: 100vh;          /* fallback for old browsers */
+  height: 100dvh;         /* dynamic viewport — excludes mobile browser chrome */
   background: var(--fog);
   opacity: 0;
   transition: opacity .3s .2s;
@@ -919,9 +920,12 @@ button { font-family: inherit; cursor: pointer; }
   gap: 18px;
   padding: 0 20px;
   background: var(--paper);
-  height: var(--tourbar-h);
-  border-top: var(--border);
+  /* Grow the whole bar by the safe-area inset so the tour arrows
+     stay vertically centered in the *visible* 72px, not in a
+     padding-squished region. */
+  height: calc(var(--tourbar-h) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
+  border-top: var(--border);
 }
 
 /* ===========================================================
@@ -1036,10 +1040,18 @@ button { font-family: inherit; cursor: pointer; }
     --tourbar-h: 72px;
   }
 
-  /* Layout swaps: no desktop footer, tourbar takes last row */
-  .app {
-    grid-template-rows: var(--topbar-h) var(--togglebar-h) 1fr var(--tourbar-h);
-  }
+  /* Layout swaps: no desktop footer, tourbar takes last row.
+       The tourbar row adds env(safe-area-inset-bottom) so the
+       home-indicator area on notched phones doesn't eat into the
+       tour arrows. */
+    .app {
+      grid-template-rows:
+        var(--topbar-h)
+        var(--togglebar-h)
+        1fr
+        calc(var(--tourbar-h) + env(safe-area-inset-bottom));
+    }
+
   .site-footer { display: none; }
   .tourbar { display: grid; }
 
@@ -1563,6 +1575,25 @@ body.align-mode .leaflet-interactive {
   overflow: hidden;
   /* Match the surrounding border so the seam isn't jarring. */
   border-left: var(--border);
+}
+
+/* Hide all Leaflet map controls and attribution while the street
+   view overlay is active. These controls have their own stacking
+   context anchored to the map corners, which otherwise pokes
+   through the z-index: 900 overlay. The `body.streetview-open`
+   class is toggled from openStreetView() / closeStreetView(). */
+body.streetview-open .leaflet-control-container,
+body.streetview-open .leaflet-control-zoom,
+body.streetview-open .leaflet-control-attribution {
+  display: none !important;
+}
+
+/* Also hide the floating "Fit to view" and "Locations" buttons —
+   these sit on the map at z-index 500 and aren't useful while
+   the 3D viewer is covering the map. */
+body.streetview-open .map-action,
+body.streetview-open .locations-toggle {
+  display: none !important;
 }
 
 .shell .map-wrap .streetview { border-left: 0; }
