@@ -379,6 +379,17 @@ const TourBridge = {
   requestSweeps() { this._post({ type: "RequestSweeps" }); },
   ping()          { this._post({ type: "Ping" }); },
 
+    /* Silent pre-warm: same as Navigate but with transitionTime: 0
+       so the (hidden) iframe jumps instantly rather than animating.
+       Used by warmAllSweeps() during boot to force Treedis to
+       fetch + cache every pano in the tour before the user clicks
+       Explore. The overlay is still visually hidden at this point
+       so the user never sees the jumps. */
+    warmSweep(sweepId) {
+      if (!sweepId) return;
+      this._post({ type: "Navigate", sweepId, transitionTime: 0 });
+    },
+
   _post(cmd) {
     if (!this._iframe || !this._iframe.contentWindow) return;
     // We use "*" for targetOrigin because the iframe src is set
@@ -1792,6 +1803,78 @@ function waitForTreedisReady(timeoutMs = 8000) {
   });
 }
 
+/* Walks every unique sweepId in config.treedisMap and silently
+   Navigates the (hidden) Treedis iframe to each one in turn.
+   This forces the viewer to fetch + cache every pano in the tour
+   while the user is still looking at the splash screen, so that
+   later "Explore" clicks feel instant instead of waiting for a
+   fresh sweep to download.
+
+   Mechanics:
+     • Waits for TourReady first (Navigate is ignored before that).
+     • Dedupes sweepIds — the config has multiple aliases that
+       point to the same sweep (e.g. olar demo farm / olar farm).
+     • Sends Navigate with transitionTime: 0 so the iframe jumps
+       rather than animating. The overlay is hidden throughout,
+       so the user sees nothing.
+     • Throttles to one sweep every `stepMs` because Treedis
+       processes Navigate commands serially — firing them all at
+       once just means later ones get dropped.
+     • Finishes by navigating back to homeSweepId so the viewer
+       opens on the campus entry point instead of whichever
+       sweep happened to be last in the loop.
+     • Resets lastStreetViewSweepId so the first real user click
+       still triggers a Navigate (otherwise we'd skip it thinking
+       we're "already there" from the warm-up).
+     • Runs independently of TourReady timeout — if Treedis never
+       became ready, we just skip the warm-up gracefully.
+   Never rejects. */
+async function warmAllSweeps(stepMs = 400) {
+  const ready = await waitForTreedisReady();
+  if (!ready.ok) {
+    console.warn("[preload] skipping sweep warm-up — Treedis not ready");
+    return { ok: false, reason: "not-ready" };
+  }
+
+  const map = config.treedisMap || {};
+  const seen = new Set();
+  const sweepIds = [];
+
+  for (const key in map) {
+    const raw = map[key];
+    const sweepId = typeof raw === "string" ? raw : (raw && raw.sweepId);
+    if (sweepId && !seen.has(sweepId)) {
+      seen.add(sweepId);
+      sweepIds.push(sweepId);
+    }
+  }
+
+  const homeSweep = (config.treedis && config.treedis.homeSweepId) || null;
+
+  console.info(`[preload] warming ${sweepIds.length} Treedis sweeps…`);
+
+  for (let i = 0; i < sweepIds.length; i++) {
+    TourBridge.warmSweep(sweepIds[i]);
+    // Wait between jumps so Treedis actually processes each one.
+    await new Promise((r) => setTimeout(r, stepMs));
+  }
+
+  // Return to the configured entry-point sweep so the first real
+  // Explore click opens on the expected view.
+  if (homeSweep) {
+    TourBridge.warmSweep(homeSweep);
+    await new Promise((r) => setTimeout(r, stepMs));
+  }
+
+  // Invalidate the "last nav" cache so the user's first real
+  // click is never skipped as a no-op.
+  lastStreetViewSweepId = null;
+
+  console.info(`[preload] sweep warm-up complete (${sweepIds.length} sweeps)`);
+  return { ok: true, count: sweepIds.length };
+}
+
+
 /* Builds the list of things to preload and tracks progress.
    `onProgress(done, total)` is called after each asset finishes. */
 function preloadAllAssets(onProgress) {
@@ -1802,10 +1885,13 @@ function preloadAllAssets(onProgress) {
     if (imgMap[key]) imageUrls.push(imgMap[key]);
   }
 
-  // Build the task list: each image + one Treedis-ready task.
-  const tasks = [];
-  imageUrls.forEach((u) => tasks.push(preloadImage(u)));
-  tasks.push(waitForTreedisReady());
+    // Build the task list: each image + one Treedis-ready task
+    // + one sweep warm-up pass (which internally waits for ready
+    // before walking every unique sweep in the tour).
+    const tasks = [];
+    imageUrls.forEach((u) => tasks.push(preloadImage(u)));
+    tasks.push(waitForTreedisReady());
+    tasks.push(warmAllSweeps());
 
   const total = tasks.length;
   let done = 0;
