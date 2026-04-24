@@ -1593,8 +1593,8 @@ body.align-mode .leaflet-interactive {
    rest of the Figma. */
 .streetview-close {
   position: absolute;
-  top: 32px;
-  right: 32px;
+  top: 22px;
+  right: 52px;
   z-index: 3;
   width: 40px;
   height: 40px;
@@ -1739,8 +1739,8 @@ body.align-mode .leaflet-interactive {
      needed here — just nudge the close button clear of the
      iOS safe area. */
   .streetview-close {
-    top: calc(32px + env(safe-area-inset-top, 0px));
-    right: calc(32px + env(safe-area-inset-right, 0px));
+    top: calc(22px + env(safe-area-inset-top, 0px));
+    right: calc(52px + env(safe-area-inset-right, 0px));
   }
   .streetview-caption {
     top: calc(12px + env(safe-area-inset-top, 0px));
