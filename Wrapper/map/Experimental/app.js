@@ -1732,6 +1732,57 @@ async function loadAllData() {
   return { buildings, tours };
 }
 
+/* -----------------------------------------------------------
+   Asset preloading — resolves when a URL is actually loaded.
+   Used by boot() so the splash only hides after the satellite
+   SVG, the building images, and (optionally) the Treedis
+   iframe have finished loading.
+   ----------------------------------------------------------- */
+function preloadImage(url) {
+  return new Promise((resolve) => {
+    if (!url) return resolve();
+    const img = new Image();
+    // Resolve on both success and failure so one missing asset
+    // can't soft-lock the splash forever.
+    img.onload  = () => resolve();
+    img.onerror = () => {
+      console.warn("[metaversity] image failed to preload:", url);
+      resolve();
+    };
+    img.src = url;
+  });
+}
+
+function preloadAllImages() {
+  const urls = [config.imageUrl];
+  const imgMap = config.imageMap || {};
+  for (const key in imgMap) {
+    if (imgMap[key]) urls.push(imgMap[key]);
+  }
+  return Promise.all(urls.map(preloadImage));
+}
+
+/* Waits for Treedis TourReady, but gives up after `timeoutMs`
+   so the splash still clears if Treedis is slow or offline.
+   The iframe keeps loading in the background either way. */
+function waitForTreedisReady(timeoutMs = 8000) {
+  return new Promise((resolve) => {
+    if (TourBridge.isReady) return resolve();
+    const start = Date.now();
+    const t = setInterval(() => {
+      if (TourBridge.isReady) {
+        clearInterval(t);
+        resolve();
+      } else if (Date.now() - start > timeoutMs) {
+        clearInterval(t);
+        console.warn("[metaversity] Treedis not ready within "
+          + timeoutMs + "ms — revealing app anyway");
+        resolve();
+      }
+    }, 100);
+  });
+}
+
 async function boot() {
   // Start the Treedis iframe loading in parallel with the map
   // data so it's warm by the time the user hits "Explore". The
@@ -1805,25 +1856,36 @@ async function boot() {
     tours:     toursLayer.getLayers().length
   });
 
+  // Wait for real assets to finish loading before hiding the
+  // splash. preloadAllImages() covers the satellite SVG and
+  // every entry in config.imageMap. waitForTreedisReady() has
+  // its own timeout so a slow iframe can't soft-lock us.
+  await Promise.all([
+    preloadAllImages(),
+    waitForTreedisReady()
+  ]);
+
   // Reveal app
   requestAnimationFrame(() => {
     el.app.setAttribute("aria-hidden", "false");
     el.app.classList.add("is-ready");
     el.splash.classList.add("is-hidden");
+    // Keep this timeout — it matches the .4s CSS opacity
+    // transition in mapstyles.css (.splash transition).
     setTimeout(() => { el.splash.style.display = "none"; }, 500);
     scheduleMapRefresh({ delay: 80 });
   });
 }
+}
 
-// Small delay so the splash is actually visible; also gives Leaflet
-// time to measure its container.
-setTimeout(() => {
-  boot().catch((err) => {
-    console.error("[metaversity] fatal:", err);
-    el.splash.innerHTML =
-      "<div style='font-family:monospace;padding:24px;color:#b91c1c;" +
-      "text-align:center;max-width:480px'>" +
-      "Failed to initialise the map:<br><br><code>" +
-      String(err && err.message || err) + "</code></div>";
-  });
-}, 350);
+// Kick off boot immediately. The splash now stays visible until
+// the satellite image, building photos, and Treedis iframe have
+// all finished loading (see the Promise.all at the end of boot).
+boot().catch((err) => {
+  console.error("[metaversity] fatal:", err);
+  el.splash.innerHTML =
+    "<div style='font-family:monospace;padding:24px;color:#b91c1c;" +
+    "text-align:center;max-width:480px'>" +
+    "Failed to initialise the map:<br><br><code>" +
+    String(err && err.message || err) + "</code></div>";
+});
