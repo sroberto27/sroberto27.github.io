@@ -265,9 +265,15 @@ let detailsMode  = null; // null | "half" | "full"
    except they drive Treedis via postMessage instead of flying the
    map to the next feature. */
 let streetViewActive = false;
+
 /* Track the last successful Treedis navigation so we don't fire a
    redundant Navigate message (e.g. selecting the same row twice). */
 let lastStreetViewSweepId = null;
+
+/* Set to true when the user takes a real street-view action, so
+   warmAllSweeps() aborts before clobbering their chosen sweep. */
+let warmupCancelled = false;
+
 
 /* Image-alignment state. Loaded from localStorage first (so
    the user's tuning persists), then falls back to the values
@@ -431,15 +437,18 @@ function setStreetViewCaption(title, sub) {
 /* Open the street view overlay at the given sweep. `title` and
    `sub` are display-only (they populate the small header pill
    in the top-left of the overlay). */
-function openStreetView(sweepId, title, sub) {
-  if (!sweepId) {
-    console.warn("[streetview] open request ignored — no sweep id for", title);
-    // Tiny visual nudge — still open the overlay so the user sees
-    // the tour, just without a targeted navigate. This way
-    // placeholder rows at least don't feel broken.
-  }
+   function openStreetView(sweepId, title, sub) {
+     if (!sweepId) {
+       console.warn("[streetview] open request ignored — no sweep id for", title);
+       // Tiny visual nudge — still open the overlay so the user sees
+       // the tour, just without a targeted navigate. This way
+       // placeholder rows at least don't feel broken.
+     }
 
-  streetViewActive = true;
+     // Cancel any in-flight warm-up so it can't clobber this Navigate.
+     warmupCancelled = true;
+
+     streetViewActive = true;
   if (el.streetview) {
     el.streetview.setAttribute("aria-hidden", "false");
     el.streetview.classList.add("is-open");
@@ -1870,21 +1879,20 @@ async function warmAllSweeps(stepMs = 400) {
   console.info(`[preload] warming ${sweepIds.length} Treedis sweeps…`);
 
   for (let i = 0; i < sweepIds.length; i++) {
+    if (warmupCancelled) {
+      console.info(`[preload] warm-up cancelled at sweep ${i}/${sweepIds.length}`);
+      return { ok: true, cancelled: true, count: i };
+    }
     TourBridge.warmSweep(sweepIds[i]);
-    // Wait between jumps so Treedis actually processes each one.
     await new Promise((r) => setTimeout(r, stepMs));
   }
 
-  // Return to the configured entry-point sweep so the first real
-  // Explore click opens on the expected view.
-  if (homeSweep) {
+  if (homeSweep && !warmupCancelled) {
     TourBridge.warmSweep(homeSweep);
     await new Promise((r) => setTimeout(r, stepMs));
   }
 
-  // Invalidate the "last nav" cache so the user's first real
-  // click is never skipped as a no-op.
-  lastStreetViewSweepId = null;
+  if (!warmupCancelled) lastStreetViewSweepId = null;
 
   console.info(`[preload] sweep warm-up complete (${sweepIds.length} sweeps)`);
   return { ok: true, count: sweepIds.length };
