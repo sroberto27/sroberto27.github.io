@@ -1854,7 +1854,7 @@ function waitForTreedisReady(timeoutMs = 8000) {
      • Runs independently of TourReady timeout — if Treedis never
        became ready, we just skip the warm-up gracefully.
    Never rejects. */
-async function warmAllSweeps(stepMs = 400) {
+async function warmAllSweeps(stepMs = 250) {
   const ready = await waitForTreedisReady();
   if (!ready.ok) {
     console.warn("[preload] skipping sweep warm-up — Treedis not ready");
