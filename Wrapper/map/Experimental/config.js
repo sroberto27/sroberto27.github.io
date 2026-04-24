@@ -130,42 +130,14 @@ window.CAMPUS_CONFIG = {
     },
 
     /* ---- Nance Hall sub-locations ----------------------- */
-    "1st floor": {
-      sweepId: "2ki84r23di9yq9p613u5yg34d",
-      parentName: "Nance Hall"
-    },
-    "2nd floor": {
-      sweepId: "1t7xp1xztp4aw4bs372705dwd",
-      parentName: "Nance Hall"
-    },
-    "room 100": {
-      // TODO: replace with the real sweep when available
-      sweepId: null,
-      parentName: "Nance Hall"
-    },
     "room 100 - general lecture": {
       // TODO: replace with the real sweep when available
-      sweepId: null,
+      sweepId: "2ki84r23di9yq9p613u5yg34d",
       parentName: "Nance Hall"
     },
     "general lecture room": {
       // TODO: replace with the real sweep when available
-      sweepId: null,
-      parentName: "Nance Hall"
-    },
-    "room 110": {
-      // TODO: replace with the real sweep when available
-      sweepId: null,
-      parentName: "Nance Hall"
-    },
-    "room 110 - baby": {
-      // TODO: replace with the real sweep when available
-      sweepId: null,
-      parentName: "Nance Hall"
-    },
-    "faculty suite": {
-      // TODO: replace with the real sweep when available
-      sweepId: null,
+      sweepId: "1t7xp1xztp4aw4bs372705dwd",
       parentName: "Nance Hall"
     },
 
