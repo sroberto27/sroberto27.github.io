@@ -1733,54 +1733,100 @@ async function loadAllData() {
 }
 
 /* -----------------------------------------------------------
-   Asset preloading — resolves when a URL is actually loaded.
-   Used by boot() so the splash only hides after the satellite
-   SVG, the building images, and (optionally) the Treedis
-   iframe have finished loading.
+   Asset preloading with progress tracking.
+
+   Every promise here is defensive: it resolves (never rejects)
+   on success, failure, OR after a per-asset timeout, so one
+   broken URL can never soft-lock the splash. A shared counter
+   updates the splash text as each asset finishes.
    ----------------------------------------------------------- */
-function preloadImage(url) {
+function preloadImage(url, timeoutMs = 10000) {
   return new Promise((resolve) => {
-    if (!url) return resolve();
+    if (!url) return resolve({ url, ok: false, reason: "empty" });
+
     const img = new Image();
-    // Resolve on both success and failure so one missing asset
-    // can't soft-lock the splash forever.
-    img.onload  = () => resolve();
+    let done = false;
+    const finish = (ok, reason) => {
+      if (done) return;
+      done = true;
+      resolve({ url, ok, reason });
+    };
+
+    const timer = setTimeout(() => {
+      console.warn("[preload] image timed out:", url);
+      finish(false, "timeout");
+    }, timeoutMs);
+
+    img.onload = () => {
+      clearTimeout(timer);
+      finish(true);
+    };
     img.onerror = () => {
-      console.warn("[metaversity] image failed to preload:", url);
-      resolve();
+      clearTimeout(timer);
+      console.warn("[preload] image failed:", url);
+      finish(false, "error");
     };
     img.src = url;
   });
 }
 
-function preloadAllImages() {
-  const urls = [config.imageUrl];
-  const imgMap = config.imageMap || {};
-  for (const key in imgMap) {
-    if (imgMap[key]) urls.push(imgMap[key]);
-  }
-  return Promise.all(urls.map(preloadImage));
-}
-
-/* Waits for Treedis TourReady, but gives up after `timeoutMs`
-   so the splash still clears if Treedis is slow or offline.
-   The iframe keeps loading in the background either way. */
+/* Resolves when Treedis posts TourReady, OR when `timeoutMs`
+   elapses — whichever comes first. Never rejects. */
 function waitForTreedisReady(timeoutMs = 8000) {
   return new Promise((resolve) => {
-    if (TourBridge.isReady) return resolve();
+    if (TourBridge.isReady) {
+      return resolve({ ok: true });
+    }
     const start = Date.now();
     const t = setInterval(() => {
       if (TourBridge.isReady) {
         clearInterval(t);
-        resolve();
+        resolve({ ok: true });
       } else if (Date.now() - start > timeoutMs) {
         clearInterval(t);
-        console.warn("[metaversity] Treedis not ready within "
-          + timeoutMs + "ms — revealing app anyway");
-        resolve();
+        console.warn("[preload] Treedis not ready within "
+          + timeoutMs + "ms — continuing anyway");
+        resolve({ ok: false, reason: "timeout" });
       }
     }, 100);
   });
+}
+
+/* Builds the list of things to preload and tracks progress.
+   `onProgress(done, total)` is called after each asset finishes. */
+function preloadAllAssets(onProgress) {
+  const imageUrls = [];
+  if (config.imageUrl) imageUrls.push(config.imageUrl);
+  const imgMap = config.imageMap || {};
+  for (const key in imgMap) {
+    if (imgMap[key]) imageUrls.push(imgMap[key]);
+  }
+
+  // Build the task list: each image + one Treedis-ready task.
+  const tasks = [];
+  imageUrls.forEach((u) => tasks.push(preloadImage(u)));
+  tasks.push(waitForTreedisReady());
+
+  const total = tasks.length;
+  let done = 0;
+
+  // Wrap each task so we can tick the counter as it finishes.
+  const tracked = tasks.map((p) =>
+    p.then((result) => {
+      done += 1;
+      try { onProgress && onProgress(done, total); } catch (_) {}
+      return result;
+    })
+  );
+
+  return Promise.all(tracked);
+}
+
+/* Updates the counter text shown on the splash. Called from
+   preloadAllAssets()'s onProgress callback. */
+function updateSplashProgress(done, total) {
+  const node = document.getElementById("splashProgress");
+  if (node) node.textContent = "Loading " + done + "/" + total + "…";
 }
 
 async function boot() {
@@ -1857,30 +1903,32 @@ async function boot() {
   });
 
   // Wait for real assets to finish loading before hiding the
-  // splash. preloadAllImages() covers the satellite SVG and
-  // every entry in config.imageMap. waitForTreedisReady() has
-  // its own timeout so a slow iframe can't soft-lock us.
-  await Promise.all([
-    preloadAllImages(),
-    waitForTreedisReady()
-  ]);
+  // splash. preloadAllAssets() covers the satellite SVG, every
+  // entry in config.imageMap, and a "Treedis TourReady" promise.
+  // It reports progress to the splash counter as each asset
+  // completes. Every underlying promise has its own timeout so
+  // it cannot hang; a final 15s hard cap reveals the app no
+  // matter what as an extra safety net.
+  const preload = preloadAllAssets(updateSplashProgress);
+  const hardCap = new Promise((r) => setTimeout(() => {
+    console.warn("[metaversity] hard cap reached — revealing app");
+    r("hardcap");
+  }, 15000));
+  await Promise.race([preload, hardCap]);
 
   // Reveal app
   requestAnimationFrame(() => {
     el.app.setAttribute("aria-hidden", "false");
     el.app.classList.add("is-ready");
     el.splash.classList.add("is-hidden");
-    // Keep this timeout — it matches the .4s CSS opacity
-    // transition in mapstyles.css (.splash transition).
     setTimeout(() => { el.splash.style.display = "none"; }, 500);
     scheduleMapRefresh({ delay: 80 });
   });
 }
-}
 
 // Kick off boot immediately. The splash now stays visible until
 // the satellite image, building photos, and Treedis iframe have
-// all finished loading (see the Promise.all at the end of boot).
+// all finished loading (see preloadAllAssets inside boot).
 boot().catch((err) => {
   console.error("[metaversity] fatal:", err);
   el.splash.innerHTML =

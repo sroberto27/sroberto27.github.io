@@ -97,6 +97,16 @@ button { font-family: inherit; cursor: pointer; }
   margin-bottom: 28px;
 }
 
+.splash-progress {
+  margin-top: 14px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .15em;
+  color: var(--ink);
+  opacity: .6;
+  text-transform: uppercase;
+}
+
 .splash-spinner {
   width: 14px;
   height: 14px;
