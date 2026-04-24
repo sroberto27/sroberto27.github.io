@@ -457,11 +457,12 @@ function setStreetViewCaption(title, sub) {
 
   setStreetViewCaption(title, sub);
 
-  if (sweepId && sweepId !== lastStreetViewSweepId) {
-    TourBridge.navigateToSweep(sweepId);
-    lastStreetViewSweepId = sweepId;
-  }
-
+    // Always fire — user explicitly asked for this sweep, even if
+    // lastStreetViewSweepId thinks we're already there.
+    if (sweepId) {
+      TourBridge.navigateToSweep(sweepId);
+      lastStreetViewSweepId = sweepId;
+    }
   // Show the mobile "tap to interact" guard whenever we (re)open
   // so the first deliberate tap is always the one that activates
   // 3D interaction.

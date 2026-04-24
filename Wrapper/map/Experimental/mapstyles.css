@@ -1578,19 +1578,14 @@ body.align-mode .leaflet-interactive {
 }
 
 /* Hide all Leaflet map controls and attribution while the street
-   view overlay is active. These controls have their own stacking
-   context anchored to the map corners, which otherwise pokes
-   through the z-index: 900 overlay. The `body.streetview-open`
-   class is toggled from openStreetView() / closeStreetView(). */
+   view overlay is active. */
 body.streetview-open .leaflet-control-container,
 body.streetview-open .leaflet-control-zoom,
 body.streetview-open .leaflet-control-attribution {
   display: none !important;
 }
 
-/* Also hide the floating "Fit to view" and "Locations" buttons —
-   these sit on the map at z-index 500 and aren't useful while
-   the 3D viewer is covering the map. */
+/* Also hide the floating "Fit to view" . */
 body.streetview-open .map-action,
 body.streetview-open .locations-toggle {
   display: none !important;
