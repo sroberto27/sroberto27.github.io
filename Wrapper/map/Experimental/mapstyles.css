@@ -1571,10 +1571,15 @@ body.align-mode .leaflet-interactive {
   inset: 0;
   z-index: 900;
   background: var(--ink);
-  display: none;                 /* shown via .is-open */
   overflow: hidden;
-  /* Match the surrounding border so the seam isn't jarring. */
   border-left: var(--border);
+
+  /* Rendered but invisible so the iframe actually loads on boot.
+     An ancestor with display:none would pause iframe loading. */
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .18s ease-out;
 }
 
 /* Hide all Leaflet map controls and attribution while the street
@@ -1594,13 +1599,9 @@ body.streetview-open .locations-toggle {
 .shell .map-wrap .streetview { border-left: 0; }
 
 .streetview.is-open {
-  display: block;
-  animation: streetview-fade-in .18s ease-out;
-}
-
-@keyframes streetview-fade-in {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+  visibility: visible;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .streetview-frame {

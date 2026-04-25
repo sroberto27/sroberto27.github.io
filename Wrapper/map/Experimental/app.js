@@ -385,16 +385,12 @@ const TourBridge = {
   requestSweeps() { this._post({ type: "RequestSweeps" }); },
   ping()          { this._post({ type: "Ping" }); },
 
-    /* Silent pre-warm: same as Navigate but with transitionTime: 0
-       so the (hidden) iframe jumps instantly rather than animating.
-       Used by warmAllSweeps() during boot to force Treedis to
-       fetch + cache every pano in the tour before the user clicks
-       Explore. The overlay is still visually hidden at this point
-       so the user never sees the jumps. */
-    warmSweep(sweepId) {
-      if (!sweepId) return;
-      this._post({ type: "Navigate", sweepId, transitionTime: 0 });
-    },
+  /* Silent pre-warm: Navigate with transitionTime: 0 so the
+     hidden iframe jumps instantly instead of animating. */
+  warmSweep(sweepId) {
+    if (!sweepId) return;
+    this._post({ type: "Navigate", sweepId, transitionTime: 0 });
+  },
 
   _post(cmd) {
     if (!this._iframe || !this._iframe.contentWindow) return;
@@ -437,18 +433,18 @@ function setStreetViewCaption(title, sub) {
 /* Open the street view overlay at the given sweep. `title` and
    `sub` are display-only (they populate the small header pill
    in the top-left of the overlay). */
-   function openStreetView(sweepId, title, sub) {
-     if (!sweepId) {
-       console.warn("[streetview] open request ignored — no sweep id for", title);
-       // Tiny visual nudge — still open the overlay so the user sees
-       // the tour, just without a targeted navigate. This way
-       // placeholder rows at least don't feel broken.
-     }
+function openStreetView(sweepId, title, sub) {
+  if (!sweepId) {
+    console.warn("[streetview] open request ignored — no sweep id for", title);
+    // Tiny visual nudge — still open the overlay so the user sees
+    // the tour, just without a targeted navigate. This way
+    // placeholder rows at least don't feel broken.
+  }
 
-     // Cancel any in-flight warm-up so it can't clobber this Navigate.
-     warmupCancelled = true;
+  // Cancel any in-flight warm-up so it can't clobber this Navigate.
+  warmupCancelled = true;
 
-     streetViewActive = true;
+  streetViewActive = true;
   if (el.streetview) {
     el.streetview.setAttribute("aria-hidden", "false");
     el.streetview.classList.add("is-open");
@@ -457,12 +453,11 @@ function setStreetViewCaption(title, sub) {
 
   setStreetViewCaption(title, sub);
 
-    // Always fire — user explicitly asked for this sweep, even if
-    // lastStreetViewSweepId thinks we're already there.
-    if (sweepId) {
-      TourBridge.navigateToSweep(sweepId);
-      lastStreetViewSweepId = sweepId;
-    }
+  // Always fire — user explicitly asked for this sweep.
+  if (sweepId) {
+    TourBridge.navigateToSweep(sweepId);
+    lastStreetViewSweepId = sweepId;
+  }
   // Show the mobile "tap to interact" guard whenever we (re)open
   // so the first deliberate tap is always the one that activates
   // 3D interaction.
@@ -1830,33 +1825,12 @@ function waitForTreedisReady(timeoutMs = 8000) {
 }
 
 /* Walks every unique sweepId in config.treedisMap and silently
-   Navigates the (hidden) Treedis iframe to each one in turn.
-   This forces the viewer to fetch + cache every pano in the tour
-   while the user is still looking at the splash screen, so that
-   later "Explore" clicks feel instant instead of waiting for a
-   fresh sweep to download.
-
-   Mechanics:
-     • Waits for TourReady first (Navigate is ignored before that).
-     • Dedupes sweepIds — the config has multiple aliases that
-       point to the same sweep (e.g. olar demo farm / olar farm).
-     • Sends Navigate with transitionTime: 0 so the iframe jumps
-       rather than animating. The overlay is hidden throughout,
-       so the user sees nothing.
-     • Throttles to one sweep every `stepMs` because Treedis
-       processes Navigate commands serially — firing them all at
-       once just means later ones get dropped.
-     • Finishes by navigating back to homeSweepId so the viewer
-       opens on the campus entry point instead of whichever
-       sweep happened to be last in the loop.
-     • Resets lastStreetViewSweepId so the first real user click
-       still triggers a Navigate (otherwise we'd skip it thinking
-       we're "already there" from the warm-up).
-     • Runs independently of TourReady timeout — if Treedis never
-       became ready, we just skip the warm-up gracefully.
-   Never rejects. */
+   Navigates the hidden iframe to each one, so later Explore
+   clicks are instant. Dedupes, throttles to one nav every
+   `stepMs`, returns to homeSweepId, and bails early if the user
+   starts interacting (warmupCancelled). Never rejects. */
 async function warmAllSweeps(stepMs = 250) {
-  const ready = await waitForTreedisReady();
+  const ready = await waitForTreedisReady(20000);
   if (!ready.ok) {
     console.warn("[preload] skipping sweep warm-up — Treedis not ready");
     return { ok: false, reason: "not-ready" };
@@ -1911,12 +1885,11 @@ function preloadAllAssets(onProgress) {
   }
 
     // Build the task list: each image + one Treedis-ready task
-    // + one sweep warm-up pass (which internally waits for ready
-    // before walking every unique sweep in the tour).
-    const tasks = [];
-    imageUrls.forEach((u) => tasks.push(preloadImage(u)));
-    tasks.push(waitForTreedisReady());
-    tasks.push(warmAllSweeps());
+  // + one sweep warm-up pass.
+  const tasks = [];
+  imageUrls.forEach((u) => tasks.push(preloadImage(u)));
+  tasks.push(waitForTreedisReady(20000));
+  tasks.push(warmAllSweeps());
 
   const total = tasks.length;
   let done = 0;
