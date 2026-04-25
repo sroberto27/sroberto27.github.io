@@ -10,7 +10,7 @@ window.CAMPUS_CONFIG = {
   },
 
   /* -- Satellite image ------------------------------------- */
-  imageUrl: "assets/campus_satellite.svg",
+  imageUrl: "assets/campus_satellite.webp",
   imageWidthPx: 7016,
   imageHeightPx: 4961,
 
@@ -281,11 +281,11 @@ window.CAMPUS_CONFIG = {
      ------------------------------------------------------- */
 
      imageMap: {
-         "crawford zimmerman":                "assets/locations/crawford-zimmerman.jpg",
-         "kirkland w. green student center":  "assets/locations/kirkland-green.jpg",
-         "s-h-m memorial square":             "assets/locations/shm-memorial.jpg",
-         "nance hall":                        "assets/locations/nance-hall.jpg",
-         "oliver c. dawson stadium":          "assets/locations/dawson-stadium.jpg"
+         "crawford zimmerman":                "assets/locations/crawford-zimmerman.webp",
+         "kirkland w. green student center":  "assets/locations/kirkland-green.webp",
+         "s-h-m memorial square":             "assets/locations/shm-memorial.webp",
+         "nance hall":                        "assets/locations/nance-hall.webp",
+         "oliver c. dawson stadium":          "assets/locations/dawson-stadium.webp"
        },
 
   /* -- "What happens here?" chips -------------------------
