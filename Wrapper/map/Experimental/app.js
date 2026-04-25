@@ -271,7 +271,7 @@ let streetViewActive = false;
 let lastStreetViewSweepId = null;
 
 /* Set to true when the user takes a real street-view action, so
-   warmAllSweeps() aborts before clobbering their chosen sweep. */
+   warmHomeSweep() aborts before clobbering their chosen sweep. */
 let warmupCancelled = false;
 
 
@@ -1824,58 +1824,59 @@ function waitForTreedisReady(timeoutMs = 8000) {
   });
 }
 
-/* Walks every unique sweepId in config.treedisMap and silently
-   Navigates the hidden iframe to each one, so later Explore
-   clicks are instant. Dedupes, throttles to one nav every
-   `stepMs`, returns to homeSweepId, and bails early if the user
-   starts interacting (warmupCancelled). Never rejects. */
-async function warmAllSweeps(stepMs = 250) {
-  const ready = await waitForTreedisReady(20000);
+/* Waits for TourReady (long deadline — Treedis can take 20s+ on
+   cold loads), then silently Navigates the hidden iframe to the
+   configured homeSweepId so the entry point is warm by the time
+   the user clicks Explore.
+
+   This runs detached from the splash. The splash never waits on
+   it. If the user clicks Explore before TourReady fires, the
+   warmupCancelled flag set by openStreetView() makes this bail
+   before sending the home Navigate, so the user's chosen sweep
+   wins.
+
+   Only one sweep is warmed (the home sweep) — Treedis caches
+   aggressively after the first nav so subsequent jumps are fast
+   anyway, and blasting many navs during boot just competes with
+   the model load and slows down TourReady. Never rejects. */
+async function warmHomeSweep() {
+  const ready = await waitForTreedisReady(60000);
   if (!ready.ok) {
-    console.warn("[preload] skipping sweep warm-up — Treedis not ready");
+    console.warn("[preload] skipping home-sweep warm-up — Treedis not ready");
     return { ok: false, reason: "not-ready" };
   }
 
-  const map = config.treedisMap || {};
-  const seen = new Set();
-  const sweepIds = [];
-
-  for (const key in map) {
-    const raw = map[key];
-    const sweepId = typeof raw === "string" ? raw : (raw && raw.sweepId);
-    if (sweepId && !seen.has(sweepId)) {
-      seen.add(sweepId);
-      sweepIds.push(sweepId);
-    }
+  if (warmupCancelled) {
+    console.info("[preload] home-sweep warm-up cancelled — user already navigated");
+    return { ok: true, cancelled: true };
   }
 
   const homeSweep = (config.treedis && config.treedis.homeSweepId) || null;
-
-  console.info(`[preload] warming ${sweepIds.length} Treedis sweeps…`);
-
-  for (let i = 0; i < sweepIds.length; i++) {
-    if (warmupCancelled) {
-      console.info(`[preload] warm-up cancelled at sweep ${i}/${sweepIds.length}`);
-      return { ok: true, cancelled: true, count: i };
-    }
-    TourBridge.warmSweep(sweepIds[i]);
-    await new Promise((r) => setTimeout(r, stepMs));
+  if (!homeSweep) {
+    console.warn("[preload] no homeSweepId configured — skipping warm-up");
+    return { ok: false, reason: "no-home-sweep" };
   }
 
-  if (homeSweep && !warmupCancelled) {
-    TourBridge.warmSweep(homeSweep);
-    await new Promise((r) => setTimeout(r, stepMs));
-  }
+  console.info("[preload] warming home sweep:", homeSweep);
+  TourBridge.warmSweep(homeSweep);
 
-  if (!warmupCancelled) lastStreetViewSweepId = null;
+  // Reset so the user's first real Explore click always fires a
+  // fresh Navigate (otherwise the dedup in navigateStreetViewToLayer
+  // would treat the click as a no-op).
+  lastStreetViewSweepId = null;
 
-  console.info(`[preload] sweep warm-up complete (${sweepIds.length} sweeps)`);
-  return { ok: true, count: sweepIds.length };
+  console.info("[preload] home sweep warm-up complete");
+  return { ok: true };
 }
 
 
-/* Builds the list of things to preload and tracks progress.
-   `onProgress(done, total)` is called after each asset finishes. */
+/* Builds the splash-blocking task list: ONLY images. The Treedis
+   iframe is started in the background by preloadTreedisIframe()
+   and is intentionally NOT in this list — its boot can take 20+
+   seconds and we don't want to hold the splash hostage to it.
+   The user can interact with the map immediately while the
+   iframe finishes loading off-screen. `onProgress(done, total)`
+   is called after each image finishes. */
 function preloadAllAssets(onProgress) {
   const imageUrls = [];
   if (config.imageUrl) imageUrls.push(config.imageUrl);
@@ -1884,12 +1885,7 @@ function preloadAllAssets(onProgress) {
     if (imgMap[key]) imageUrls.push(imgMap[key]);
   }
 
-    // Build the task list: each image + one Treedis-ready task
-  // + one sweep warm-up pass.
-  const tasks = [];
-  imageUrls.forEach((u) => tasks.push(preloadImage(u)));
-  tasks.push(waitForTreedisReady(20000));
-  tasks.push(warmAllSweeps());
+  const tasks = imageUrls.map((u) => preloadImage(u));
 
   const total = tasks.length;
   let done = 0;
@@ -2001,19 +1997,26 @@ async function boot() {
     tours:     toursLayer.getLayers().length
   });
 
-  // Wait for real assets to finish loading before hiding the
-  // splash. preloadAllAssets() covers the satellite SVG, every
-  // entry in config.imageMap, and a "Treedis TourReady" promise.
-  // It reports progress to the splash counter as each asset
-  // completes. Every underlying promise has its own timeout so
-  // it cannot hang; a final 15s hard cap reveals the app no
-  // matter what as an extra safety net.
+  // Wait for the map's own assets (satellite SVG + every entry in
+  // config.imageMap) before hiding the splash. The Treedis iframe
+  // is intentionally NOT in this list — it boots in the background
+  // via preloadTreedisIframe() and the user can interact with the
+  // map while that finishes. The 15s hard cap is just a safety net
+  // in case an image URL hangs.
   const preload = preloadAllAssets(updateSplashProgress);
   const hardCap = new Promise((r) => setTimeout(() => {
     console.warn("[metaversity] hard cap reached — revealing app");
     r("hardcap");
   }, 15000));
   await Promise.race([preload, hardCap]);
+
+  // Kick off the Treedis home-sweep warm-up detached. It waits
+  // for TourReady (up to 60s) then nudges the iframe to the home
+  // sweep so the first Explore click feels instant. Runs in the
+  // background while the user is exploring the map.
+  warmHomeSweep().catch((err) => {
+    console.warn("[preload] home-sweep warm-up errored:", err);
+  });
 
   // Reveal app
   requestAnimationFrame(() => {
@@ -2025,9 +2028,10 @@ async function boot() {
   });
 }
 
-// Kick off boot immediately. The splash now stays visible until
-// the satellite image, building photos, and Treedis iframe have
-// all finished loading (see preloadAllAssets inside boot).
+// Kick off boot immediately. The splash hides as soon as the
+// satellite image and building photos are loaded. The Treedis
+// iframe continues loading in the background and warms its home
+// sweep when ready (see warmHomeSweep inside boot).
 boot().catch((err) => {
   console.error("[metaversity] fatal:", err);
   el.splash.innerHTML =
