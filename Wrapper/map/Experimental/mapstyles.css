@@ -1657,6 +1657,7 @@ body.streetview-open .map-action {
 
 /* ---- Top-left caption pill -------------------------------- */
 .streetview-caption {
+  display: none;  /* Replaced by tour-bar metadata; kept in DOM in case we want it back. */
   position: absolute;
   top: 12px;
   left: 12px;

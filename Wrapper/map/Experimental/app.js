@@ -377,13 +377,23 @@ const TourBridge = {
       case "TagDocked":
         // Hook points for future custom tag handling
         break;
-      case "PoseChanged":
-        // Track the sweep Treedis says we're actually on. Used by
-        // _flushPendingSweep() to verify a queued Navigate landed.
-        if (data.sweep || data.sweepId) {
-          this._currentSweepId = data.sweep || data.sweepId;
-        }
-        break;
+        case "PoseChanged":
+          // Track the sweep Treedis says we're actually on. Used by
+          // _flushPendingSweep() to verify a queued Navigate landed.
+          if (data.sweep || data.sweepId) {
+            const newSweepId = data.sweep || data.sweepId;
+            const changed = newSweepId !== this._currentSweepId;
+            this._currentSweepId = newSweepId;
+
+            // When the user walks around inside Treedis, sync the
+            // wrapper UI (tour bar + counter) to wherever they are.
+            // Only fire on actual changes to avoid redundant work
+            // on every pose tick.
+            if (changed && streetViewActive) {
+              try { syncWrapperToSweep(newSweepId); } catch (_) {}
+            }
+          }
+          break;
       /* End of switch — unhandled types are silently ignored. */
     }
   },
@@ -450,6 +460,47 @@ function preloadTreedisIframe() {
 function setStreetViewCaption(title, sub) {
   if (el.streetviewTitle) el.streetviewTitle.textContent = title || "—";
   if (el.streetviewSub)   el.streetviewSub.textContent   = sub || "";
+}
+
+/* When the user navigates inside Treedis (clicking a hotspot,
+   walking to a new sweep, etc.), Treedis fires PoseChanged with
+   the new sweep id. This function maps that sweep id back to
+   the location it represents and updates the tour bar so the
+   wrapper UI stays in sync.
+
+   Sub-locations (rooms, floors) point at their parent via
+   `parentName` in config.treedisMap — when the user enters one
+   we surface the parent in the tour bar, since sub-locations
+   aren't tour stops in their own right. */
+function syncWrapperToSweep(sweepId) {
+  if (!sweepId || !config.treedisMap) return;
+
+  // Find the treedisMap entry whose sweepId matches.
+  let matchedKey = null;
+  let matchedEntry = null;
+  for (const [key, entry] of Object.entries(config.treedisMap)) {
+    if (entry && entry.sweepId === sweepId) {
+      matchedKey = key;
+      matchedEntry = entry;
+      break;
+    }
+  }
+  if (!matchedEntry) return; // unknown sweep — nothing to sync
+
+  // Resolve to the parent location name if this is a sub-location.
+  // Otherwise, the matched key IS the location name (lowercased
+  // — treedisMap keys are case-insensitive matches against
+  // GeoJSON `name`).
+  const targetName = (matchedEntry.parentName || matchedKey).toLowerCase();
+
+  // Find the corresponding tour stop and update the index.
+  const newIndex = tourStops.findIndex(
+    (s) => cleanName(s.feature.properties.name).toLowerCase() === targetName
+  );
+  if (newIndex < 0 || newIndex === tourIndex) return;
+
+  tourIndex = newIndex;
+  updateTourbar();
 }
 
 /* Open the street view overlay at the given sweep. `title` and
