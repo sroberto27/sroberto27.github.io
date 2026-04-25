@@ -328,6 +328,7 @@ const TourBridge = {
   _iframe: null,
   _pingInterval: null,
   _ready: false,
+  _currentSweepId: null,
 
   initialize(iframeEl) {
     this._iframe = iframeEl;
@@ -360,9 +361,13 @@ const TourBridge = {
       case "TourReady":
         this._ready = true;
         console.info("[treedis] TourReady");
-        // If the user opened street view before this point, fire
-        // their queued Navigate now and hide the loading veil.
-        try { _flushPendingSweep(); } catch (_) {}
+        // Defer the flush — TourReady fires when the bridge is up,
+        // but the showcase SDK takes another moment to be ready to
+        // act on Navigate. Without this delay the command lands in
+        // a dead zone and Treedis stays on its default sweep.
+        setTimeout(() => {
+          try { _flushPendingSweep(); } catch (_) {}
+        }, 600);
         break;
       case "SweepsChanged":
         console.info("[treedis] sweeps:", (data.sweeps || []).length);
@@ -372,7 +377,14 @@ const TourBridge = {
       case "TagDocked":
         // Hook points for future custom tag handling
         break;
-      /* PoseChanged fires continuously — intentionally no-op. */
+      case "PoseChanged":
+        // Track the sweep Treedis says we're actually on. Used by
+        // _flushPendingSweep() to verify a queued Navigate landed.
+        if (data.sweep || data.sweepId) {
+          this._currentSweepId = data.sweep || data.sweepId;
+        }
+        break;
+      /* End of switch — unhandled types are silently ignored. */
     }
   },
 
@@ -548,17 +560,68 @@ function _hideStreetViewLoading() {
    openStreetView() while Treedis was still booting, send the
    Navigate now and hide the loading veil. If nothing is queued
    but the panel is open, just hide the veil. No-op otherwise. */
+/* Called after TourReady. Fires the queued Navigate, then watches
+   PoseChanged to verify Treedis actually landed on the requested
+   sweep. If we don't see confirmation within `verifyMs`, the
+   Navigate gets re-sent. Caps at `maxAttempts` to avoid loops. */
 function _flushPendingSweep() {
   if (!pendingSweep) {
     if (streetViewActive) _hideStreetViewLoading();
     return;
   }
-  const { sweepId } = pendingSweep;
-  console.info("[streetview] TourReady — flushing queued sweep:", sweepId);
-  TourBridge.navigateToSweep(sweepId);
-  lastStreetViewSweepId = sweepId;
-  pendingSweep = null;
-  _hideStreetViewLoading();
+
+  const targetSweepId = pendingSweep.sweepId;
+  const verifyMs = 1500;
+  const maxAttempts = 4;
+  let attempt = 0;
+
+  const tryNavigate = () => {
+    // User may have closed the panel or queued a different sweep
+    // since this attempt was scheduled. Bail in either case.
+    if (!streetViewActive) return;
+    if (!pendingSweep || pendingSweep.sweepId !== targetSweepId) return;
+
+    attempt += 1;
+    console.info(
+      `[streetview] firing queued Navigate (attempt ${attempt}/${maxAttempts}):`,
+      targetSweepId
+    );
+    TourBridge.navigateToSweep(targetSweepId);
+    lastStreetViewSweepId = targetSweepId;
+
+    setTimeout(() => {
+      // Same bail conditions as above.
+      if (!streetViewActive) return;
+      if (!pendingSweep || pendingSweep.sweepId !== targetSweepId) return;
+
+      // Did Treedis actually land on the right sweep?
+      if (TourBridge._currentSweepId === targetSweepId) {
+        console.info("[streetview] Navigate confirmed via PoseChanged");
+        pendingSweep = null;
+        _hideStreetViewLoading();
+        return;
+      }
+
+      if (attempt < maxAttempts) {
+        console.warn(
+          "[streetview] no PoseChanged for target sweep yet — retrying. " +
+          "Treedis says it is on:", TourBridge._currentSweepId
+        );
+        tryNavigate();
+      } else {
+        // Give up gracefully — hide the veil so the user can at
+        // least interact with whatever sweep Treedis is on.
+        console.warn(
+          "[streetview] giving up after " + maxAttempts + " Navigate attempts. " +
+          "Showing the panel anyway."
+        );
+        pendingSweep = null;
+        _hideStreetViewLoading();
+      }
+    }, verifyMs);
+  };
+
+  tryNavigate();
 }
 
 function isTouchDevice() {
