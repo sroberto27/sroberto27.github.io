@@ -1832,15 +1832,15 @@ body.streetview-open .map-action {
        leaving the iframe's own controls (volume, share, fullscreen,
        3D model) untouched at the bottom of the viewer. */
     .shell .locations-toggle { z-index: 901; }
+
     body.streetview-open .shell .locations-toggle {
-      /* Caption is ~62–70px tall + 12px top inset + 10px gap.
-         env() keeps it clear of the iOS notch on the same axis
-         as the caption above it. */
-      top: calc(84px + env(safe-area-inset-top, 0px));
-      left: calc(12px + env(safe-area-inset-left, 0px));
-      bottom: auto;
-      right: auto;
-    }
+        /* Caption was removed — sit at the standard top inset.
+           env() keeps the pill clear of the iOS notch. */
+        top: calc(12px + env(safe-area-inset-top, 0px));
+        left: calc(12px + env(safe-area-inset-left, 0px));
+        bottom: auto;
+        right: auto;
+      }
 
   /* The fit-to-view button has no job while inside the
      street view — hide it so it doesn't overlap controls. */
