@@ -1590,10 +1590,19 @@ body.streetview-open .leaflet-control-attribution {
   display: none !important;
 }
 
-/* Also hide the floating "Fit to view" . */
-body.streetview-open .map-action,
-body.streetview-open .locations-toggle {
+/* Hide the "Fit to view" map button while in street view. */
+body.streetview-open .map-action {
   display: none !important;
+}
+
+/* On desktop, hide the locations toggle pill in street view —
+   the sidebar list is already visible on desktop, so the pill
+   would be redundant. On mobile we keep it (see mobile block
+   below) because it's the only way back to the locations menu. */
+@media (min-width: 881px) {
+  body.streetview-open .locations-toggle {
+    display: none !important;
+  }
 }
 
 .shell .map-wrap .streetview { border-left: 0; }
@@ -1815,16 +1824,22 @@ body.streetview-open .locations-toggle {
     max-width: calc(100% - 80px);   /* leave room for close btn */
   }
 
-  /* While the street view is open on mobile, the map-area
-     locations-toggle pill would sit on top of the 3D scene
-     and visually compete with the close button. Keep it
-     visible but move it to avoid the caption. */
-  .shell .locations-toggle { z-index: 901; }
-  body.streetview-open .shell .locations-toggle {
-    top: auto;
-    bottom: 12px;
-    left: 12px;
-  }
+  /* While the street view is open on mobile, keep the locations
+       toggle visible so users can re-access the list. Position it
+       directly below the STREET VIEW caption card on the top-left
+       so all "app chrome" navigation is grouped on the same side,
+       leaving the iframe's own controls (volume, share, fullscreen,
+       3D model) untouched at the bottom of the viewer. */
+    .shell .locations-toggle { z-index: 901; }
+    body.streetview-open .shell .locations-toggle {
+      /* Caption is ~62–70px tall + 12px top inset + 10px gap.
+         env() keeps it clear of the iOS notch on the same axis
+         as the caption above it. */
+      top: calc(84px + env(safe-area-inset-top, 0px));
+      left: calc(12px + env(safe-area-inset-left, 0px));
+      bottom: auto;
+      right: auto;
+    }
 
   /* The fit-to-view button has no job while inside the
      street view — hide it so it doesn't overlap controls. */
