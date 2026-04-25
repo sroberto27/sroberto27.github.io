@@ -198,6 +198,7 @@ const el = {
   streetviewTitle:   $("streetviewTitle"),
   streetviewSub:     $("streetviewSub"),
   streetviewTouchGuard: $("streetviewTouchGuard"),
+  streetviewLoading: $("streetviewLoading"),
 
   /* Explore CTA inside the metadata panel — used to launch
      the street view for the currently-selected location.    */
@@ -273,6 +274,12 @@ let lastStreetViewSweepId = null;
 /* Set to true when the user takes a real street-view action, so
    warmHomeSweep() aborts before clobbering their chosen sweep. */
 let warmupCancelled = false;
+
+/* When the user opens street view before TourReady has fired, we
+   stash their intended target here. Once Treedis reports ready,
+   _flushPendingSweep() sends the queued Navigate and hides the
+   loading veil. Cleared on close or on successful flush. */
+let pendingSweep = null;
 
 
 /* Image-alignment state. Loaded from localStorage first (so
@@ -353,6 +360,9 @@ const TourBridge = {
       case "TourReady":
         this._ready = true;
         console.info("[treedis] TourReady");
+        // If the user opened street view before this point, fire
+        // their queued Navigate now and hide the loading veil.
+        try { _flushPendingSweep(); } catch (_) {}
         break;
       case "SweepsChanged":
         console.info("[treedis] sweeps:", (data.sweeps || []).length);
@@ -432,7 +442,13 @@ function setStreetViewCaption(title, sub) {
 
 /* Open the street view overlay at the given sweep. `title` and
    `sub` are display-only (they populate the small header pill
-   in the top-left of the overlay). */
+   in the top-left of the overlay).
+
+   Two paths:
+     (a) Treedis is ready → fire Navigate immediately as before.
+     (b) Treedis is NOT ready → show the loading veil and queue
+         the sweep in pendingSweep. _flushPendingSweep() runs
+         when TourReady fires and finishes the job. */
 function openStreetView(sweepId, title, sub) {
   if (!sweepId) {
     console.warn("[streetview] open request ignored — no sweep id for", title);
@@ -453,11 +469,29 @@ function openStreetView(sweepId, title, sub) {
 
   setStreetViewCaption(title, sub);
 
-  // Always fire — user explicitly asked for this sweep.
   if (sweepId) {
-    TourBridge.navigateToSweep(sweepId);
-    lastStreetViewSweepId = sweepId;
+    if (TourBridge.isReady) {
+      // Happy path — Treedis is ready, fire the Navigate now.
+      TourBridge.navigateToSweep(sweepId);
+      lastStreetViewSweepId = sweepId;
+      _hideStreetViewLoading();
+      pendingSweep = null;
+    } else {
+      // Treedis hasn't reported TourReady yet (cold load, or the
+      // user clicked Explore unusually fast). Show our loading
+      // veil and queue the target — _flushPendingSweep() will
+      // send the Navigate the moment TourReady arrives.
+      console.info("[streetview] queueing sweep until TourReady:", sweepId);
+      pendingSweep = { sweepId, title, sub };
+      _showStreetViewLoading();
+    }
+  } else {
+    // No sweep id provided — just hide the loading veil if it's
+    // still up from a previous open. Caption already set above.
+    _hideStreetViewLoading();
+    pendingSweep = null;
   }
+
   // Show the mobile "tap to interact" guard whenever we (re)open
   // so the first deliberate tap is always the one that activates
   // 3D interaction.
@@ -488,6 +522,43 @@ function closeStreetView() {
     el.streetview.classList.remove("is-open");
   }
   document.body.classList.remove("streetview-open");
+  // If the user closed while we were still waiting on TourReady,
+  // drop the queued sweep so it doesn't fire after they've moved
+  // on. The loading veil gets hidden too.
+  pendingSweep = null;
+  _hideStreetViewLoading();
+}
+
+/* Show / hide the loading veil that sits over the iframe while
+   Treedis finishes booting. Safe to call repeatedly. */
+function _showStreetViewLoading() {
+  if (el.streetviewLoading) {
+    el.streetviewLoading.classList.add("is-active");
+    el.streetviewLoading.setAttribute("aria-hidden", "false");
+  }
+}
+function _hideStreetViewLoading() {
+  if (el.streetviewLoading) {
+    el.streetviewLoading.classList.remove("is-active");
+    el.streetviewLoading.setAttribute("aria-hidden", "true");
+  }
+}
+
+/* Called from the TourReady handler. If a sweep was queued by
+   openStreetView() while Treedis was still booting, send the
+   Navigate now and hide the loading veil. If nothing is queued
+   but the panel is open, just hide the veil. No-op otherwise. */
+function _flushPendingSweep() {
+  if (!pendingSweep) {
+    if (streetViewActive) _hideStreetViewLoading();
+    return;
+  }
+  const { sweepId } = pendingSweep;
+  console.info("[streetview] TourReady — flushing queued sweep:", sweepId);
+  TourBridge.navigateToSweep(sweepId);
+  lastStreetViewSweepId = sweepId;
+  pendingSweep = null;
+  _hideStreetViewLoading();
 }
 
 function isTouchDevice() {
@@ -496,7 +567,9 @@ function isTouchDevice() {
 
 /* Navigate street view to the location currently represented by
    `layer` (if it has a Treedis mapping). When the panel is closed
-   this is a no-op. */
+   this is a no-op. If TourReady hasn't fired yet, we update the
+   pendingSweep instead of firing Navigate (which Treedis would
+   ignore anyway). */
 function navigateStreetViewToLayer(layer) {
   if (!streetViewActive || !layer || !layer.feature) return;
   const name = cleanName(layer.feature.properties && layer.feature.properties.name);
@@ -511,6 +584,15 @@ function navigateStreetViewToLayer(layer) {
   }
 
   setStreetViewCaption(name, getCategory(name));
+
+  if (!TourBridge.isReady) {
+    // Still booting — re-queue. _flushPendingSweep() will fire
+    // this target when TourReady arrives. Loading veil stays up.
+    pendingSweep = { sweepId: entry.sweepId, title: name, sub: getCategory(name) };
+    _showStreetViewLoading();
+    return;
+  }
+
   if (entry.sweepId !== lastStreetViewSweepId) {
     TourBridge.navigateToSweep(entry.sweepId);
     lastStreetViewSweepId = entry.sweepId;

@@ -172,6 +172,19 @@
             src="about:blank"
           ></iframe>
 
+          <!-- Loading veil shown when the user opens the panel before
+               the iframe has reported TourReady. Hidden by default;
+               JS toggles .is-active when needed. -->
+          <div class="streetview-loading" id="streetviewLoading"
+               aria-hidden="true">
+            <div class="streetview-loading-inner">
+              <div class="streetview-loading-spinner" aria-hidden="true"></div>
+              <span class="streetview-loading-label">
+                Loading street view…
+              </span>
+            </div>
+          </div>
+
           <!-- Top-right semitransparent close button -->
           <button class="streetview-close" id="streetviewClose"
                   type="button" aria-label="Close street view">
