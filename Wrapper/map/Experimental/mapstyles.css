@@ -1841,6 +1841,18 @@ body.streetview-open .map-action {
         right: auto;
       }
 
+      /* The mobile locations drawer and its backdrop normally sit at
+       z-index 820/810 — fine over the map, but invisible behind the
+       street view overlay (z-index 900). When street view is open,
+       lift them above the overlay so the user can actually see and
+       interact with the menu they just summoned. */
+    body.streetview-open .locations {
+      z-index: 920;
+    }
+    body.streetview-open .locations-backdrop {
+      z-index: 910;
+    }
+
   /* The fit-to-view button has no job while inside the
      street view — hide it so it doesn't overlap controls. */
   body.streetview-open .map-action { display: none; }
