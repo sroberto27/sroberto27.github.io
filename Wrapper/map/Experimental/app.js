@@ -1332,12 +1332,49 @@ function renderLocationsList() {
       const stop = tourStops.find(
         (s) => cleanName(s.feature.properties.name).toLowerCase() === name
       );
-      if (stop) {
-        // On mobile, close the drawer BEFORE selecting so the map
-        // has the full width to recenter with correct padding.
-        closeMobileLocations({ silent: true });
-        selectFeature(stop.layer, "tour", { focus: true });
+      if (!stop) return;
+
+      const locationName = cleanName(stop.feature.properties.name);
+
+      // Two paths depending on which "mode" the user is in:
+      //
+      // Street view mode → drive the 3D viewer to the selected
+      //   location's sweep without leaving street view. This is
+      //   what the wireframe describes when it says "Tap the
+      //   LOCATIONS MENU to re-access the locations list" while
+      //   street view is active. We also keep the map's selected
+      //   feature in sync (silently, without flying the map or
+      //   opening the bottom sheet) so when the user eventually
+      //   closes street view, the map is already focused on the
+      //   right building.
+      //
+      // Map mode → existing behavior: select the feature, fly
+      //   the map, open the details bottom sheet.
+      closeMobileLocations({ silent: true });
+
+      if (streetViewActive) {
+        const entry = getTreedisEntry(locationName);
+        const sweepId = entry && entry.sweepId;
+        if (sweepId) {
+          openStreetView(sweepId, locationName, getCategory(locationName));
+        } else {
+          // No sweep mapped — fall back to selecting on the map
+          // and closing street view so the user isn't stranded.
+          console.warn(
+            "[locations] no Treedis sweep for", locationName,
+            "— falling back to map view"
+          );
+          closeStreetView();
+          selectFeature(stop.layer, "tour", { focus: true });
+        }
+        // Keep the underlying map selection in sync so the tour
+        // bar index, pin highlight, and details data are correct
+        // when the user closes street view later.
+        selectFeature(stop.layer, "tour", { focus: false });
+        return;
       }
+
+      selectFeature(stop.layer, "tour", { focus: true });
     });
   });
 }
@@ -1351,19 +1388,25 @@ function renderLocationsList() {
 
    Drawer and details are mutually exclusive.
    ----------------------------------------------------------- */
-function openMobileLocations() {
-  drawerOpen = true;
-  el.locations.classList.add("is-open");
-  el.locationsBackdrop.classList.add("is-open");
-  el.shell.classList.add("drawer-open");
+   function openMobileLocations() {
+     drawerOpen = true;
+     el.locations.classList.add("is-open");
+     el.locationsBackdrop.classList.add("is-open");
+     el.shell.classList.add("drawer-open");
 
-  // Mutually exclusive with details: close the bottom sheet first.
-  if (el.details.classList.contains("is-open")) {
-    clearSelection();
-  }
+     // Mutually exclusive with the details bottom sheet, but only
+     // when we're in map mode. When the user is in street view, the
+     // details panel may still have `is-open` set in the background
+     // even though it's not visible — clearing the selection there
+     // would also close the street view, which is not what the user
+     // intended by tapping the Locations pill. They just want the
+     // menu open *on top of* the current view (map or street view).
+     if (!streetViewActive && el.details.classList.contains("is-open")) {
+       clearSelection();
+     }
 
-  scheduleMapRefresh({ recenterIfNeeded: false, delay: 260 });
-}
+     scheduleMapRefresh({ recenterIfNeeded: false, delay: 260 });
+   }
 
 function closeMobileLocations(opts = {}) {
   if (!isMobile() && !opts.force) {
