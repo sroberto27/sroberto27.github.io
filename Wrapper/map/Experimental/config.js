@@ -11,8 +11,8 @@ window.CAMPUS_CONFIG = {
 
   /* -- Satellite image ------------------------------------- */
   imageUrl: "assets/campus_satellite.webp",
-  imageWidthPx: 8185,
-  imageHeightPx: 5787,
+  imageWidthPx: 7016,
+  imageHeightPx: 4961,
 
   // How much space QGIS left around the features when it
   // exported the PNG (overall scale).
