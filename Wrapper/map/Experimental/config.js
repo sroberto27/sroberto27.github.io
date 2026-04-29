@@ -16,7 +16,7 @@ window.CAMPUS_CONFIG = {
 
   // How much space QGIS left around the features when it
   // exported the PNG (overall scale).
-  imagePaddingPct: 0.12,
+  imagePaddingPct: 0.0,
 
   // Fine-tuning offsets/scale applied AFTER the padding math.
   // You don't have to guess these — press the "Align" button in
