@@ -259,27 +259,40 @@ let allFeatures = [];
 let drawerOpen   = false;
 let detailsMode  = null; // null | "half" | "full"
 
-/* Street view state. The iframe starts preloading the moment the
-   page boots, but stays hidden (aria-hidden + CSS) until the user
-   explicitly hits "Explore" on a location. While the street view
+/* Street view state. The Treedis iframe is loaded lazily on the
+   first user interaction (Explore CTA, tour-bar arrow, locations
+   row, sub-location row, etc.) — not at boot. This avoids the
+   cost of a 20s+ background tour load on every page view, and
+   means our loading veil is the single owner of "we are setting
+   up street view" feedback. The veil is shown for every Navigate
+   we initiate, and hidden once Treedis confirms the new sweep
+   via PoseChanged (or we time out gracefully). While street view
    is active the locations list and tour-bar arrows keep working,
-   except they drive Treedis via postMessage instead of flying the
-   map to the next feature. */
+   except they drive Treedis via postMessage instead of flying
+   the map to the next feature. */
 let streetViewActive = false;
 
-/* Track the last successful Treedis navigation so we don't fire a
-   redundant Navigate message (e.g. selecting the same row twice). */
+/* Track the last sweep we asked Treedis to Navigate to so we can
+   dedup redundant Navigates (e.g. selecting the same row twice).
+   Compared against TourBridge._currentSweepId for accuracy when
+   the user has been moving around inside the iframe. */
 let lastStreetViewSweepId = null;
 
-/* Set to true when the user takes a real street-view action, so
-   warmHomeSweep() aborts before clobbering their chosen sweep. */
-let warmupCancelled = false;
-
-/* When the user opens street view before TourReady has fired, we
-   stash their intended target here. Once Treedis reports ready,
-   _flushPendingSweep() sends the queued Navigate and hides the
-   loading veil. Cleared on close or on successful flush. */
+/* When the user requests a sweep before TourReady has fired (or
+   while a previous Navigate is still being confirmed), we stash
+   their intended target here. _navigateAndConfirm() owns this
+   slot — it sends the Navigate when possible, watches PoseChanged
+   for confirmation, retries if needed, and hides the loading veil
+   once we land on the target sweep. Cleared on close or on
+   successful confirmation. */
 let pendingSweep = null;
+
+/* Token used to invalidate stale verification timers. Each call
+   to _navigateAndConfirm() bumps this; in-flight verify timers
+   bail if the token has changed (i.e. a newer Navigate has been
+   issued). Prevents an old confirmation from hiding the veil
+   while a newer Navigate is still in progress. */
+let _navToken = 0;
 
 
 /* Image-alignment state. Loaded from localStorage first (so
@@ -373,24 +386,37 @@ const TourBridge = {
         console.info("[treedis] sweeps:", (data.sweeps || []).length);
         break;
       case "TagClicked":
+        // Best-effort: clicking a tag inside the experience often
+        // triggers an in-iframe sweep transition. Show the loading
+        // veil so the wrapper UI matches our other transitions.
+        // _onTreedisInternalNavStart caps the veil at a short
+        // timeout in case the tag doesn't actually move us.
+        if (streetViewActive) {
+          try { _onTreedisInternalNavStart("tag"); } catch (_) {}
+        }
+        break;
       case "TagFocused":
       case "TagDocked":
         // Hook points for future custom tag handling
         break;
         case "PoseChanged":
           // Track the sweep Treedis says we're actually on. Used by
-          // _flushPendingSweep() to verify a queued Navigate landed.
+          // _navigateAndConfirm() to verify a Navigate landed, and
+          // by syncWrapperToSweep to keep the tour bar in step with
+          // the user walking around inside Treedis.
           if (data.sweep || data.sweepId) {
             const newSweepId = data.sweep || data.sweepId;
             const changed = newSweepId !== this._currentSweepId;
             this._currentSweepId = newSweepId;
 
-            // When the user walks around inside Treedis, sync the
-            // wrapper UI (tour bar + counter) to wherever they are.
-            // Only fire on actual changes to avoid redundant work
-            // on every pose tick.
             if (changed && streetViewActive) {
+              // Sync the tour bar / counter to the new sweep.
               try { syncWrapperToSweep(newSweepId); } catch (_) {}
+
+              // If the user navigated INSIDE the iframe (no pending
+              // wrapper-initiated Navigate for this sweep), settle
+              // the loading veil that TagClicked may have raised.
+              try { _onTreedisInternalNavSettle(newSweepId); } catch (_) {}
             }
           }
           break;
@@ -437,13 +463,23 @@ const TourBridge = {
    6.6 STREET VIEW CONTROLLER
    -----------------------------------------------------------
    Thin UI layer over TourBridge. Responsible for:
-     • Preloading the iframe in the background on boot
+     • Lazily loading the iframe on the first user interaction
+       (no boot-time preload — see ensureTreedisIframe below)
      • Showing/hiding the overlay panel
      • Keeping header text in sync with the active location
      • Bridging user actions (Explore CTA, explorable list,
        tour-bar arrows, locations list) into Navigate calls
+     • Showing the "Loading street view…" veil for EVERY
+       Navigate we initiate, until Treedis confirms the new
+       sweep via PoseChanged (or we time out gracefully)
    ----------------------------------------------------------- */
-function preloadTreedisIframe() {
+
+/* Sets the iframe src and wires the postMessage bridge if it
+   hasn't been done already. Called on the first user interaction
+   that needs the tour — no boot-time preload, since that competed
+   with image loads and the long Treedis cold-load is now masked
+   by the loading veil regardless of when we kick it off. */
+function ensureTreedisIframe() {
   if (!el.tourFrame) return;
   const url = config.treedis && config.treedis.tourUrl;
   if (!url) {
@@ -453,6 +489,7 @@ function preloadTreedisIframe() {
   // Only set src once; subsequent calls are no-ops so we don't
   // reload the tour every time the overlay is reopened.
   if (el.tourFrame.src && el.tourFrame.src !== "about:blank") return;
+  console.info("[treedis] starting iframe load (lazy, first user interaction)");
   el.tourFrame.src = url;
   TourBridge.initialize(el.tourFrame);
 }
@@ -503,25 +540,213 @@ function syncWrapperToSweep(sweepId) {
   updateTourbar();
 }
 
-/* Open the street view overlay at the given sweep. `title` and
-   `sub` are display-only (they populate the small header pill
-   in the top-left of the overlay).
+/* Show / hide the loading veil that sits over the iframe.
+   Shown for EVERY Navigate we initiate — from the first Explore
+   click (cold iframe load) through every subsequent location
+   change (warm sweep transition). Hidden once Treedis confirms
+   the target sweep via PoseChanged, or after a timeout.
 
-   Two paths:
-     (a) Treedis is ready → fire Navigate immediately as before.
-     (b) Treedis is NOT ready → show the loading veil and queue
-         the sweep in pendingSweep. _flushPendingSweep() runs
-         when TourReady fires and finishes the job. */
-function openStreetView(sweepId, title, sub) {
+   Safe to call repeatedly. */
+function _showStreetViewLoading() {
+  if (el.streetviewLoading) {
+    el.streetviewLoading.classList.add("is-active");
+    el.streetviewLoading.setAttribute("aria-hidden", "false");
+  }
+}
+function _hideStreetViewLoading() {
+  if (el.streetviewLoading) {
+    el.streetviewLoading.classList.remove("is-active");
+    el.streetviewLoading.setAttribute("aria-hidden", "true");
+  }
+}
+
+/* Internal-navigation veil (best-effort).
+   When the user clicks a tag/hotspot INSIDE the Treedis iframe
+   we want the same loading veil treatment as wrapper-driven
+   navigation. We don't get a direct "transition started" event,
+   so we listen for TagClicked as a heuristic trigger and lift
+   the veil either when the next sweep change arrives via
+   PoseChanged (success), or after a short timeout (the click
+   was a no-op tag like an info popup). The wrapper-initiated
+   path uses pendingSweep / _navToken to track its own veil; the
+   two systems coexist by checking pendingSweep before touching
+   anything here. */
+let _internalNavVeilTimer = null;
+function _onTreedisInternalNavStart(/* reason */) {
+  // Don't clobber a wrapper-driven veil — that one owns its own
+  // hide via PoseChanged confirmation.
+  if (pendingSweep) return;
+  if (!streetViewActive) return;
+
+  _showStreetViewLoading();
+
+  // Fail-safe: if the click didn't actually trigger a sweep
+  // transition, drop the veil after a short window so the user
+  // isn't stuck staring at it.
+  if (_internalNavVeilTimer) clearTimeout(_internalNavVeilTimer);
+  _internalNavVeilTimer = setTimeout(() => {
+    _internalNavVeilTimer = null;
+    if (pendingSweep) return; // wrapper veil owns it
+    _hideStreetViewLoading();
+  }, 1400);
+}
+function _onTreedisInternalNavSettle(/* newSweepId */) {
+  // Wrapper-driven veil stays up until pendingSweep is cleared
+  // by _navigateAndConfirm. Only handle the internal-nav case.
+  if (pendingSweep) return;
+  if (_internalNavVeilTimer) {
+    clearTimeout(_internalNavVeilTimer);
+    _internalNavVeilTimer = null;
+  }
+  _hideStreetViewLoading();
+}
+
+/* Core Navigate-with-confirmation primitive. Used by every
+   wrapper-initiated street-view transition: the initial Explore
+   click, sub-location rows, the locations sidebar, and the tour
+   bar arrows. Lifecycle:
+
+     1. Stash {sweepId, title, sub} as pendingSweep and bump the
+        nav token so any older verify timer becomes a no-op.
+     2. Show the loading veil.
+     3. If TourReady hasn't fired yet, do nothing more — the
+        TourReady handler will call us back via _flushPendingSweep.
+     4. Otherwise, send Navigate and start a verify timer. When
+        PoseChanged arrives with the target sweepId we hide the
+        veil. If the timer expires without confirmation we retry,
+        capped at `maxAttempts`. After the cap we hide the veil
+        so the user isn't stranded behind it.
+
+   `force` skips the dedup-against-current-sweep check; useful
+   when we want to re-fire even if Treedis claims it's already
+   on the target (e.g. recovering from a prior failure). */
+function _navigateAndConfirm(sweepId, title, sub, opts) {
+  opts = opts || {};
+  const force = !!opts.force;
+
   if (!sweepId) {
-    console.warn("[streetview] open request ignored — no sweep id for", title);
-    // Tiny visual nudge — still open the overlay so the user sees
-    // the tour, just without a targeted navigate. This way
-    // placeholder rows at least don't feel broken.
+    // Nothing to confirm — clear any veil and bail.
+    pendingSweep = null;
+    _hideStreetViewLoading();
+    return;
   }
 
-  // Cancel any in-flight warm-up so it can't clobber this Navigate.
-  warmupCancelled = true;
+  // Dedup: if Treedis is already on this sweep AND we're not
+  // forcing, just hide the veil. Note we compare against the
+  // sweep Treedis last reported via PoseChanged, not just our
+  // last Navigate target — that way users walking around inside
+  // Treedis don't accidentally suppress their own Navigate.
+  if (
+    !force &&
+    TourBridge.isReady &&
+    TourBridge._currentSweepId === sweepId
+  ) {
+    pendingSweep = null;
+    lastStreetViewSweepId = sweepId;
+    _hideStreetViewLoading();
+    return;
+  }
+
+  pendingSweep = { sweepId, title, sub };
+  _showStreetViewLoading();
+
+  // Bump the nav token — older in-flight verify timers will see
+  // their snapshot doesn't match and bail without touching state.
+  const myToken = ++_navToken;
+
+  if (!TourBridge.isReady) {
+    // Treedis hasn't booted yet (this is the first Explore click
+    // on a cold iframe, typically). The TourReady handler will
+    // call _flushPendingSweep() once the bridge is up. The veil
+    // stays visible the whole time.
+    console.info("[streetview] queueing sweep until TourReady:", sweepId);
+    return;
+  }
+
+  const verifyMs   = 1800;
+  const maxAttempts = 4;
+  let attempt = 0;
+
+  const tryNavigate = () => {
+    // Bail if state has moved on since we were scheduled.
+    if (myToken !== _navToken) return;
+    if (!streetViewActive) return;
+    if (!pendingSweep || pendingSweep.sweepId !== sweepId) return;
+
+    attempt += 1;
+    console.info(
+      `[streetview] Navigate (attempt ${attempt}/${maxAttempts}):`,
+      sweepId
+    );
+    TourBridge.navigateToSweep(sweepId);
+    lastStreetViewSweepId = sweepId;
+
+    setTimeout(() => {
+      if (myToken !== _navToken) return;
+      if (!streetViewActive) return;
+      if (!pendingSweep || pendingSweep.sweepId !== sweepId) return;
+
+      if (TourBridge._currentSweepId === sweepId) {
+        console.info("[streetview] Navigate confirmed via PoseChanged");
+        pendingSweep = null;
+        _hideStreetViewLoading();
+        return;
+      }
+
+      if (attempt < maxAttempts) {
+        console.warn(
+          "[streetview] no PoseChanged for target sweep yet — retrying. " +
+          "Treedis says it is on:", TourBridge._currentSweepId
+        );
+        tryNavigate();
+      } else {
+        console.warn(
+          "[streetview] giving up after " + maxAttempts +
+          " Navigate attempts; revealing tour anyway."
+        );
+        pendingSweep = null;
+        _hideStreetViewLoading();
+      }
+    }, verifyMs);
+  };
+
+  tryNavigate();
+}
+
+/* Called from the TourReady handler. Picks up where
+   _navigateAndConfirm() left off when Treedis wasn't ready on
+   the original call. If nothing is queued but the panel is
+   open, just hide the veil. */
+function _flushPendingSweep() {
+  if (!pendingSweep) {
+    if (streetViewActive) _hideStreetViewLoading();
+    return;
+  }
+  const { sweepId, title, sub } = pendingSweep;
+  // Re-enter the navigate-and-confirm loop now that the bridge
+  // is up. Force = true since whatever Treedis says it's on at
+  // boot is the default sweep, not our target.
+  _navigateAndConfirm(sweepId, title, sub, { force: true });
+}
+
+/* Open the street view overlay at the given sweep. `title` and
+   `sub` are display-only (they populate the small caption pill
+   in the top-left of the overlay).
+
+   The loading veil is shown unconditionally — _navigateAndConfirm
+   hides it once Treedis confirms the requested sweep, so even
+   warm transitions get covered until the new sweep is actually
+   live. */
+function openStreetView(sweepId, title, sub) {
+  if (!sweepId) {
+    console.warn("[streetview] open request — no sweep id for", title);
+    // Still open the overlay so placeholder rows feel intentional
+    // rather than broken; no Navigate to confirm, no veil to hold.
+  }
+
+  // Lazy iframe load — first time through, this kicks off the
+  // ~20s Treedis cold load. The veil masks the wait.
+  ensureTreedisIframe();
 
   streetViewActive = true;
   if (el.streetview) {
@@ -532,27 +757,14 @@ function openStreetView(sweepId, title, sub) {
 
   setStreetViewCaption(title, sub);
 
+  // Always run the navigate-and-confirm flow when we have a
+  // target. With no target we just expose whatever Treedis is
+  // currently showing (and hide any stale veil).
   if (sweepId) {
-    if (TourBridge.isReady) {
-      // Happy path — Treedis is ready, fire the Navigate now.
-      TourBridge.navigateToSweep(sweepId);
-      lastStreetViewSweepId = sweepId;
-      _hideStreetViewLoading();
-      pendingSweep = null;
-    } else {
-      // Treedis hasn't reported TourReady yet (cold load, or the
-      // user clicked Explore unusually fast). Show our loading
-      // veil and queue the target — _flushPendingSweep() will
-      // send the Navigate the moment TourReady arrives.
-      console.info("[streetview] queueing sweep until TourReady:", sweepId);
-      pendingSweep = { sweepId, title, sub };
-      _showStreetViewLoading();
-    }
+    _navigateAndConfirm(sweepId, title, sub);
   } else {
-    // No sweep id provided — just hide the loading veil if it's
-    // still up from a previous open. Caption already set above.
-    _hideStreetViewLoading();
     pendingSweep = null;
+    _hideStreetViewLoading();
   }
 
   // Show the mobile "tap to interact" guard whenever we (re)open
@@ -585,94 +797,12 @@ function closeStreetView() {
     el.streetview.classList.remove("is-open");
   }
   document.body.classList.remove("streetview-open");
-  // If the user closed while we were still waiting on TourReady,
-  // drop the queued sweep so it doesn't fire after they've moved
-  // on. The loading veil gets hidden too.
+  // If the user closed mid-navigation, drop the queued sweep so
+  // it doesn't fire after they've moved on. Bumping the nav
+  // token also stops any in-flight verify timers from acting.
   pendingSweep = null;
+  _navToken++;
   _hideStreetViewLoading();
-}
-
-/* Show / hide the loading veil that sits over the iframe while
-   Treedis finishes booting. Safe to call repeatedly. */
-function _showStreetViewLoading() {
-  if (el.streetviewLoading) {
-    el.streetviewLoading.classList.add("is-active");
-    el.streetviewLoading.setAttribute("aria-hidden", "false");
-  }
-}
-function _hideStreetViewLoading() {
-  if (el.streetviewLoading) {
-    el.streetviewLoading.classList.remove("is-active");
-    el.streetviewLoading.setAttribute("aria-hidden", "true");
-  }
-}
-
-/* Called from the TourReady handler. If a sweep was queued by
-   openStreetView() while Treedis was still booting, send the
-   Navigate now and hide the loading veil. If nothing is queued
-   but the panel is open, just hide the veil. No-op otherwise. */
-/* Called after TourReady. Fires the queued Navigate, then watches
-   PoseChanged to verify Treedis actually landed on the requested
-   sweep. If we don't see confirmation within `verifyMs`, the
-   Navigate gets re-sent. Caps at `maxAttempts` to avoid loops. */
-function _flushPendingSweep() {
-  if (!pendingSweep) {
-    if (streetViewActive) _hideStreetViewLoading();
-    return;
-  }
-
-  const targetSweepId = pendingSweep.sweepId;
-  const verifyMs = 1500;
-  const maxAttempts = 4;
-  let attempt = 0;
-
-  const tryNavigate = () => {
-    // User may have closed the panel or queued a different sweep
-    // since this attempt was scheduled. Bail in either case.
-    if (!streetViewActive) return;
-    if (!pendingSweep || pendingSweep.sweepId !== targetSweepId) return;
-
-    attempt += 1;
-    console.info(
-      `[streetview] firing queued Navigate (attempt ${attempt}/${maxAttempts}):`,
-      targetSweepId
-    );
-    TourBridge.navigateToSweep(targetSweepId);
-    lastStreetViewSweepId = targetSweepId;
-
-    setTimeout(() => {
-      // Same bail conditions as above.
-      if (!streetViewActive) return;
-      if (!pendingSweep || pendingSweep.sweepId !== targetSweepId) return;
-
-      // Did Treedis actually land on the right sweep?
-      if (TourBridge._currentSweepId === targetSweepId) {
-        console.info("[streetview] Navigate confirmed via PoseChanged");
-        pendingSweep = null;
-        _hideStreetViewLoading();
-        return;
-      }
-
-      if (attempt < maxAttempts) {
-        console.warn(
-          "[streetview] no PoseChanged for target sweep yet — retrying. " +
-          "Treedis says it is on:", TourBridge._currentSweepId
-        );
-        tryNavigate();
-      } else {
-        // Give up gracefully — hide the veil so the user can at
-        // least interact with whatever sweep Treedis is on.
-        console.warn(
-          "[streetview] giving up after " + maxAttempts + " Navigate attempts. " +
-          "Showing the panel anyway."
-        );
-        pendingSweep = null;
-        _hideStreetViewLoading();
-      }
-    }, verifyMs);
-  };
-
-  tryNavigate();
 }
 
 function isTouchDevice() {
@@ -680,10 +810,9 @@ function isTouchDevice() {
 }
 
 /* Navigate street view to the location currently represented by
-   `layer` (if it has a Treedis mapping). When the panel is closed
-   this is a no-op. If TourReady hasn't fired yet, we update the
-   pendingSweep instead of firing Navigate (which Treedis would
-   ignore anyway). */
+   `layer` (if it has a Treedis mapping). Used by the locations
+   sidebar and tour bar arrows while the overlay is already open.
+   When the panel is closed this is a no-op. */
 function navigateStreetViewToLayer(layer) {
   if (!streetViewActive || !layer || !layer.feature) return;
   const name = cleanName(layer.feature.properties && layer.feature.properties.name);
@@ -692,25 +821,14 @@ function navigateStreetViewToLayer(layer) {
   const entry = getTreedisEntry(name);
   if (!entry || !entry.sweepId) {
     // No mapping — just update the caption so the user still gets
-    // feedback that the selection changed.
+    // feedback that the selection changed. No veil since there's
+    // nothing to wait for.
     setStreetViewCaption(name, getCategory(name));
     return;
   }
 
   setStreetViewCaption(name, getCategory(name));
-
-  if (!TourBridge.isReady) {
-    // Still booting — re-queue. _flushPendingSweep() will fire
-    // this target when TourReady arrives. Loading veil stays up.
-    pendingSweep = { sweepId: entry.sweepId, title: name, sub: getCategory(name) };
-    _showStreetViewLoading();
-    return;
-  }
-
-  if (entry.sweepId !== lastStreetViewSweepId) {
-    TourBridge.navigateToSweep(entry.sweepId);
-    lastStreetViewSweepId = entry.sweepId;
-  }
+  _navigateAndConfirm(entry.sweepId, name, getCategory(name));
 }
 
 /* Navigate street view to a sub-location (an item from the
@@ -2041,81 +2159,12 @@ function preloadImage(url, timeoutMs = 10000) {
   });
 }
 
-/* Resolves when Treedis posts TourReady, OR when `timeoutMs`
-   elapses — whichever comes first. Never rejects. */
-function waitForTreedisReady(timeoutMs = 8000) {
-  return new Promise((resolve) => {
-    if (TourBridge.isReady) {
-      return resolve({ ok: true });
-    }
-    const start = Date.now();
-    const t = setInterval(() => {
-      if (TourBridge.isReady) {
-        clearInterval(t);
-        resolve({ ok: true });
-      } else if (Date.now() - start > timeoutMs) {
-        clearInterval(t);
-        console.warn("[preload] Treedis not ready within "
-          + timeoutMs + "ms — continuing anyway");
-        resolve({ ok: false, reason: "timeout" });
-      }
-    }, 100);
-  });
-}
-
-/* Waits for TourReady (long deadline — Treedis can take 20s+ on
-   cold loads), then silently Navigates the hidden iframe to the
-   configured homeSweepId so the entry point is warm by the time
-   the user clicks Explore.
-
-   This runs detached from the splash. The splash never waits on
-   it. If the user clicks Explore before TourReady fires, the
-   warmupCancelled flag set by openStreetView() makes this bail
-   before sending the home Navigate, so the user's chosen sweep
-   wins.
-
-   Only one sweep is warmed (the home sweep) — Treedis caches
-   aggressively after the first nav so subsequent jumps are fast
-   anyway, and blasting many navs during boot just competes with
-   the model load and slows down TourReady. Never rejects. */
-async function warmHomeSweep() {
-  const ready = await waitForTreedisReady(60000);
-  if (!ready.ok) {
-    console.warn("[preload] skipping home-sweep warm-up — Treedis not ready");
-    return { ok: false, reason: "not-ready" };
-  }
-
-  if (warmupCancelled) {
-    console.info("[preload] home-sweep warm-up cancelled — user already navigated");
-    return { ok: true, cancelled: true };
-  }
-
-  const homeSweep = (config.treedis && config.treedis.homeSweepId) || null;
-  if (!homeSweep) {
-    console.warn("[preload] no homeSweepId configured — skipping warm-up");
-    return { ok: false, reason: "no-home-sweep" };
-  }
-
-  console.info("[preload] warming home sweep:", homeSweep);
-  TourBridge.warmSweep(homeSweep);
-
-  // Reset so the user's first real Explore click always fires a
-  // fresh Navigate (otherwise the dedup in navigateStreetViewToLayer
-  // would treat the click as a no-op).
-  lastStreetViewSweepId = null;
-
-  console.info("[preload] home sweep warm-up complete");
-  return { ok: true };
-}
-
-
 /* Builds the splash-blocking task list: ONLY images. The Treedis
-   iframe is started in the background by preloadTreedisIframe()
-   and is intentionally NOT in this list — its boot can take 20+
-   seconds and we don't want to hold the splash hostage to it.
-   The user can interact with the map immediately while the
-   iframe finishes loading off-screen. `onProgress(done, total)`
-   is called after each image finishes. */
+   iframe is no longer preloaded at boot — it's loaded lazily on
+   the first user interaction (Explore click, etc.) and the
+   loading veil masks the wait. This avoids spending the user's
+   bandwidth on a 20s+ tour load they may never trigger.
+   `onProgress(done, total)` is called after each image finishes. */
 function preloadAllAssets(onProgress) {
   const imageUrls = [];
   if (config.imageUrl) imageUrls.push(config.imageUrl);
@@ -2149,11 +2198,10 @@ function updateSplashProgress(done, total) {
 }
 
 async function boot() {
-  // Start the Treedis iframe loading in parallel with the map
-  // data so it's warm by the time the user hits "Explore". The
-  // iframe is still visually hidden — preloadTreedisIframe() only
-  // sets the src and wires the postMessage bridge.
-  preloadTreedisIframe();
+  // The Treedis iframe is no longer preloaded at boot — it loads
+  // lazily on the first user interaction (Explore click, etc.).
+  // Our loading veil covers the wait, so kicking it off earlier
+  // only wastes bandwidth for users who never enter street view.
 
   const { buildings: rawB, tours: rawT } = await loadAllData();
 
@@ -2238,24 +2286,16 @@ async function boot() {
 
   // Wait for the map's own assets (satellite SVG + every entry in
   // config.imageMap) before hiding the splash. The Treedis iframe
-  // is intentionally NOT in this list — it boots in the background
-  // via preloadTreedisIframe() and the user can interact with the
-  // map while that finishes. The 15s hard cap is just a safety net
-  // in case an image URL hangs.
+  // is intentionally NOT preloaded — it loads lazily when the user
+  // first opens street view, and the loading veil masks the wait.
+  // The 15s hard cap is just a safety net in case an image URL
+  // hangs.
   const preload = preloadAllAssets(updateSplashProgress);
   const hardCap = new Promise((r) => setTimeout(() => {
     console.warn("[metaversity] hard cap reached — revealing app");
     r("hardcap");
   }, 15000));
   await Promise.race([preload, hardCap]);
-
-  // Kick off the Treedis home-sweep warm-up detached. It waits
-  // for TourReady (up to 60s) then nudges the iframe to the home
-  // sweep so the first Explore click feels instant. Runs in the
-  // background while the user is exploring the map.
-  warmHomeSweep().catch((err) => {
-    console.warn("[preload] home-sweep warm-up errored:", err);
-  });
 
   // Reveal app
   requestAnimationFrame(() => {
@@ -2269,8 +2309,8 @@ async function boot() {
 
 // Kick off boot immediately. The splash hides as soon as the
 // satellite image and building photos are loaded. The Treedis
-// iframe continues loading in the background and warms its home
-// sweep when ready (see warmHomeSweep inside boot).
+// iframe is loaded on demand the first time the user opens
+// street view (see ensureTreedisIframe).
 boot().catch((err) => {
   console.error("[metaversity] fatal:", err);
   el.splash.innerHTML =

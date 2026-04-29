@@ -11,8 +11,8 @@ window.CAMPUS_CONFIG = {
 
   /* -- Satellite image ------------------------------------- */
   imageUrl: "assets/campus_satellite.webp",
-  imageWidthPx: 7016,
-  imageHeightPx: 4961,
+  imageWidthPx: 8185,
+  imageHeightPx: 5787,
 
   // How much space QGIS left around the features when it
   // exported the PNG (overall scale).
@@ -23,10 +23,10 @@ window.CAMPUS_CONFIG = {
   // the top bar (or Shift+A) and nudge the image with arrow keys
   // until it lines up, then hit "Copy config" and paste the
   // values back here.
-  imageOffsetLat: -0.000040,
-  imageOffsetLng: -0.000048,
-  imageScaleX:    1.4040,
-  imageScaleY:    0.9940,
+  imageOffsetLat: 0.000000,
+  imageOffsetLng: 0.000000,
+  imageScaleX:    1.0000,
+  imageScaleY:    0.0000,
 
   /* -- Coordinate system of the GeoJSON data --------------- */
   // "EPSG:3857" (Web Mercator meters, QGIS default)
@@ -79,7 +79,7 @@ window.CAMPUS_CONFIG = {
     studentPortal: "https://metaversitysportal.carrd.co/",
 
     /* Transition time (ms) used when Treedis moves sweep.     */
-    defaultTransitionTime: 1500,
+    defaultTransitionTime: 0,
 
     /* Campus "home" sweep — the view Treedis opens into first.
        If the iframe already opens at this sweep you can leave

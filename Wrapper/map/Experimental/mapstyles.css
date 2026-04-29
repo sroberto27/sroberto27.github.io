@@ -130,7 +130,7 @@ button { font-family: inherit; cursor: pointer; }
    =========================================================== */
 .app {
   display: grid;
-  grid-template-rows: var(--topbar-h) var(--togglebar-h) 1fr var(--footer-h);
+  grid-template-rows: var(--topbar-h) 1fr var(--footer-h);
   height: 100vh;          /* fallback for old browsers */
   height: 100dvh;         /* dynamic viewport — excludes mobile browser chrome */
   background: var(--fog);
@@ -329,6 +329,10 @@ button { font-family: inherit; cursor: pointer; }
 
 /* ===========================================================
    MODE TOGGLE (Explore / Learn)
+   Two instances exist in the DOM:
+     - .mode-toggle-desktop : inside the locations sidebar (desktop)
+     - .mode-toggle-mobile  : sibling of .shell (mobile top bar)
+   Each is hidden at the breakpoint where it's not used.
    =========================================================== */
 .mode-toggle {
   display: flex;
@@ -338,18 +342,19 @@ button { font-family: inherit; cursor: pointer; }
   border-bottom: var(--border);
   background: var(--paper);
   padding: 12px 16px;
-  /* Mobile: the toggle row must always stay on top of the locations
-     drawer and details sheet. On desktop it's already in its grid
-     row so the z-index is a no-op, but it keeps behaviour consistent. */
   position: relative;
   z-index: 900;
 }
 
+/* Desktop default: show sidebar toggle, hide mobile toggle */
+.mode-toggle-mobile { display: none; }
+
 .mode-btn {
+  flex: 1;                /* split the sidebar width 50/50 on desktop */
   font-family: var(--mono);
   font-size: 14px;
   font-weight: 500;
-  padding: 10px 42px;
+  padding: 10px 0;
   background: var(--paper);
   color: var(--ink);
   border: 1.5px solid var(--line);
@@ -1091,7 +1096,18 @@ button { font-family: inherit; cursor: pointer; }
 
   .link-btn { font-size: 11px; }
 
-  .mode-btn { padding: 9px 32px; font-size: 13px; }
+  /* On mobile: hide the in-sidebar (desktop) toggle, show the
+     standalone mobile toggle as a persistent top bar. The mobile
+     toggle naturally occupies its own row in the .app grid (row 2),
+     so it stays visible regardless of drawer/details state. */
+  .mode-toggle-desktop { display: none; }
+  .mode-toggle-mobile  { display: flex; }
+
+  .mode-toggle-mobile .mode-btn {
+    flex: 0 0 auto;        /* fixed-width centered buttons (Figma mobile) */
+    padding: 9px 32px;
+    font-size: 13px;
+  }
 
   /* The shell stays a single column on mobile so the map can
      stretch edge-to-edge. The locations drawer and details
@@ -1275,7 +1291,7 @@ button { font-family: inherit; cursor: pointer; }
 
 /* Very small phones */
 @media (max-width: 420px) {
-  .mode-btn { padding: 9px 28px; }
+  .mode-toggle-mobile .mode-btn { padding: 9px 28px; }
   .tour-name { font-size: 13px; }
   .tour-arrow { width: 38px; height: 38px; }
   .locations-toggle { padding: 8px 12px 8px 10px; }

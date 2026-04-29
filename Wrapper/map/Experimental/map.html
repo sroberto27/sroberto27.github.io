@@ -78,8 +78,13 @@
       </nav>
     </header>
 
-    <!-- ==== EXPLORE / LEARN TOGGLE ==== -->
-    <div class="mode-toggle" role="tablist" aria-label="Mode">
+    <!-- ==== EXPLORE / LEARN TOGGLE (mobile only) ====
+         Lives outside the sidebar so it remains visible regardless of
+         whether the locations drawer is open. Hidden on desktop via CSS;
+         the toggle inside the sidebar takes over there.
+         Both toggles share the .mode-btn class — the existing JS in
+         app.js (querySelectorAll('.mode-btn')) keeps them in sync. -->
+    <div class="mode-toggle mode-toggle-mobile" role="tablist" aria-label="Mode">
       <button class="mode-btn is-active" role="tab"
               aria-selected="true" data-mode="explore" type="button">Explore</button>
       <button class="mode-btn" role="tab"
@@ -96,6 +101,15 @@
 
       <!-- ───── LEFT: LOCATIONS SIDEBAR ───── -->
       <aside class="locations" id="locations" aria-label="Campus locations">
+        <!-- ==== EXPLORE / LEARN TOGGLE (desktop only) ====
+             Hidden on mobile via CSS; the .mode-toggle-mobile outside
+             the shell takes over there. -->
+        <div class="mode-toggle mode-toggle-desktop" role="tablist" aria-label="Mode">
+          <button class="mode-btn is-active" role="tab"
+                  aria-selected="true" data-mode="explore" type="button">Explore</button>
+          <button class="mode-btn" role="tab"
+                  aria-selected="false" data-mode="learn" type="button">Learn</button>
+        </div>
         <header class="locations-head">
           <div class="locations-heading">
             <div class="locations-title">CAMPUS LOCATIONS</div>
@@ -151,16 +165,16 @@
         <!-- =========================================================
              TREEDIS STREET VIEW OVERLAY
              ---------------------------------------------------------
-             The iframe starts loading in the background the moment
-             the page loads, but is visually hidden until the user
-             hits "Explore" in the metadata panel (or clicks an entry
-             in the "Explorable Locations" list).
-
-             While this panel is open the map is still in the DOM
-             beneath it; the X button in the top-right returns the
-             user to the map. The left-side Locations list and the
-             Tour-bar arrows stay connected and drive Treedis via
-             postMessage while the street view is active.
+             The iframe starts blank and is only loaded when the
+             user first opens street view (Explore CTA, sub-location
+             row, etc.). The loading veil shown by JS covers the
+             wait. While this panel is open the map is still in the
+             DOM beneath it; the X button in the top-right returns
+             the user to the map. The left-side Locations list and
+             the Tour-bar arrows stay connected and drive Treedis
+             via postMessage while the street view is active. Every
+             wrapper-driven Navigate raises the loading veil until
+             Treedis confirms the new sweep via PoseChanged.
              ========================================================= -->
         <div id="streetview" class="streetview" aria-hidden="true">
           <iframe
@@ -168,13 +182,15 @@
             class="streetview-frame"
             title="Campus street view"
             allow="fullscreen; xr-spatial-tracking"
-            loading="eager"
+            loading="lazy"
             src="about:blank"
           ></iframe>
 
-          <!-- Loading veil shown when the user opens the panel before
-               the iframe has reported TourReady. Hidden by default;
-               JS toggles .is-active when needed. -->
+          <!-- Loading veil shown over the iframe. Active for the
+               first cold load AND for every subsequent navigation
+               (location row, tour-bar arrow, sub-location, in-tour
+               tag click) until Treedis confirms the new sweep.
+               JS toggles .is-active. -->
           <div class="streetview-loading" id="streetviewLoading"
                aria-hidden="true">
             <div class="streetview-loading-inner">
