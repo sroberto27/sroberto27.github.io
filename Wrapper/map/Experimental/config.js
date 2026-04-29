@@ -31,7 +31,7 @@ window.CAMPUS_CONFIG = {
   /* -- Coordinate system of the GeoJSON data --------------- */
   // "EPSG:3857" (Web Mercator meters, QGIS default)
   // "EPSG:4326" (raw lon/lat degrees)
-  dataCRS: "EPSG:3857",
+  dataCRS: "EPSG:4326",
 
   /* -- Data files -----------------------------------------
      Paths to the GeoJSON files, relative to index.html.
