@@ -10,27 +10,33 @@ window.CAMPUS_CONFIG = {
   },
 
   /* -- Satellite image ------------------------------------- */
-  imageUrl: "assets/campus_satellite.webp",
-  imageWidthPx: 7016,
-  imageHeightPx: 4961,
+  /* -- Base map tiles -------------------------------------- */
+  mapMode: "tiles",
 
-  // How much space QGIS left around the features when it
-  // exported the PNG (overall scale).
-  imagePaddingPct: 0.0,
+  tiles: {
+    url: "assets/tiles/{z}/{x}/{y}.png",
 
-  // Fine-tuning offsets/scale applied AFTER the padding math.
-  // You don't have to guess these — press the "Align" button in
-  // the top bar (or Shift+A) and nudge the image with arrow keys
-  // until it lines up, then hit "Copy config" and paste the
-  // values back here.
-  imageOffsetLat: 0.000000,
-  imageOffsetLng: 0.000000,
-  imageScaleX:    1.0000,
-  imageScaleY:    0.0000,
+    // Match the QGIS OUTPUT_HTML.html values.
+    minZoom: 15,
+    maxZoom: 20,
+    maxNativeZoom: 20,
+    tms: false,
+
+    // QGIS preview center from OUTPUT_HTML.html.
+    initialCenter: [33.4977, -80.8493],
+    initialZoom: 17,
+
+    // Extra space around building/tour bounds when fitting the map.
+    boundsPadding: 0.35,
+    bounds: [
+      [33.4909200101593001, -80.8627640321827954],
+      [33.5051108680217027, -80.8355473474424997]
+    ],
+
+    attribution: "© SC State University | Imagery: SC_2023_RGB WMTS"
+  },
 
   /* -- Coordinate system of the GeoJSON data --------------- */
-  // "EPSG:3857" (Web Mercator meters, QGIS default)
-  // "EPSG:4326" (raw lon/lat degrees)
   dataCRS: "EPSG:4326",
 
   /* -- Data files -----------------------------------------

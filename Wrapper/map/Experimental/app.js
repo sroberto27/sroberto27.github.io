@@ -236,8 +236,9 @@ function hoverStyleFor(kind) {
 /* -----------------------------------------------------------
    6. State
    ----------------------------------------------------------- */
-let imageBounds     = null;
-let imageOverlay    = null; // kept so alignment tool can update it live
+let imageBounds     = null; // still used as campus bounds by reset/fit helpers
+let imageOverlay    = null; // old single-image mode only
+let baseTileLayer   = null; // new tile mode
 let dataBounds      = null;
 let buildingsLayer  = null;
 let toursLayer      = null;
@@ -784,8 +785,24 @@ function resetCampusView(animate = false) {
 
   refreshMapConstraints({ recenterIfNeeded: false });
 
+  // Tile mode: fit to the campus/vector bounds, not to a fake image box.
+  if (config.mapMode === "tiles") {
+    const opts = {
+      padding: [24, 24],
+      animate
+    };
+
+    if (config.tiles && config.tiles.initialZoom) {
+      opts.maxZoom = config.tiles.initialZoom;
+    }
+
+    map.fitBounds(imageBounds, opts);
+    return;
+  }
+
+  // Legacy single-image mode.
   const zoom = getCampusCoverZoom();
-  const center = getCampusOffsetCenter(zoom, 0, -230); // 600 px downward visual offset
+  const center = getCampusOffsetCenter(zoom, 0, -230);
 
   map.setView(center, zoom, { animate });
 }
@@ -1724,9 +1741,17 @@ function toggleAlign(force) {
   if (alignMode) renderAlignValues();
 }
 
-alignUI.btn  .addEventListener("click", () => toggleAlign());
-alignUI.close.addEventListener("click", () => toggleAlign(false));
-alignUI.save .addEventListener("click", () => toggleAlign(false));
+if (config.mapMode === "tiles") {
+  // Tiles are already georeferenced by the XYZ grid.
+  // The old image alignment tool is only for single imageOverlay mode.
+  if (alignUI.btn) {
+    alignUI.btn.hidden = true;
+  }
+} else {
+  alignUI.btn  .addEventListener("click", () => toggleAlign());
+  alignUI.close.addEventListener("click", () => toggleAlign(false));
+  alignUI.save .addEventListener("click", () => toggleAlign(false));
+}
 
 alignUI.copy.addEventListener("click", () => {
   const snippet =
@@ -2118,7 +2143,12 @@ async function warmHomeSweep() {
    is called after each image finishes. */
 function preloadAllAssets(onProgress) {
   const imageUrls = [];
-  if (config.imageUrl) imageUrls.push(config.imageUrl);
+
+  // In tile mode, the base map loads tile-by-tile through Leaflet.
+  // Do not block the splash screen by trying to preload one giant image.
+  if (config.mapMode !== "tiles" && config.imageUrl) {
+    imageUrls.push(config.imageUrl);
+  }
   const imgMap = config.imageMap || {};
   for (const key in imgMap) {
     if (imgMap[key]) imageUrls.push(imgMap[key]);
@@ -2147,7 +2177,25 @@ function updateSplashProgress(done, total) {
   const node = document.getElementById("splashProgress");
   if (node) node.textContent = "Loading " + done + "/" + total + "…";
 }
+function addBaseTileLayer() {
+  const t = config.tiles || {};
 
+  if (!t.url) {
+    console.warn("[metaversity] mapMode is 'tiles' but config.tiles.url is missing.");
+    return null;
+  }
+
+  return L.tileLayer(t.url, {
+    pane: "imagePane",
+    minZoom: t.minZoom ?? 15,
+    maxZoom: t.maxZoom ?? 20,
+    maxNativeZoom: t.maxNativeZoom ?? t.maxZoom ?? 20,
+    tms: !!t.tms,
+    noWrap: true,
+    bounds: t.bounds ? L.latLngBounds(t.bounds) : undefined,
+    attribution: t.attribution || "Created by QGIS"
+  }).addTo(map);
+}
 async function boot() {
   // Start the Treedis iframe loading in parallel with the map
   // data so it's warm by the time the user hits "Explore". The
@@ -2177,7 +2225,29 @@ async function boot() {
     dataBounds = L.latLngBounds([33.494, -80.855], [33.502, -80.843]);
   }
 
-  // Image bounds computed to match the image's native aspect
+// Base map: tiles are preferred for production.
+// In tile mode, the raster map is already georeferenced by the XYZ tile grid.
+// We do NOT compute image bounds from the polygons anymore.
+if (config.mapMode === "tiles") {
+  baseTileLayer = addBaseTileLayer();
+
+  // Use explicit tile bounds if provided; otherwise use the vector data
+  // bounds with padding only for fit/reset/maxBounds behavior.
+  if (config.tiles && config.tiles.bounds) {
+    imageBounds = L.latLngBounds(config.tiles.bounds);
+  } else {
+    imageBounds = dataBounds.pad((config.tiles && config.tiles.boundsPadding) ?? 0.35);
+  }
+
+  if (config.tiles && config.tiles.initialCenter && config.tiles.initialZoom) {
+    map.setView(config.tiles.initialCenter, config.tiles.initialZoom, { animate: false });
+  } else {
+    resetCampusView(false);
+  }
+
+  refreshMapConstraints({ recenterIfNeeded: false });
+} else {
+  // Legacy single-image mode
   imageBounds = computeImageBounds(
     dataBounds,
     config.imageWidthPx,
@@ -2194,6 +2264,7 @@ async function boot() {
   }).addTo(map);
 
   resetCampusView(false);
+}
 
   // Add overlays (z-order: buildings → tours)
   buildingsLayer.addTo(map);
