@@ -753,7 +753,11 @@ function refreshMapConstraints({ recenterIfNeeded = true } = {}) {
   map.invalidateSize({ pan: false });
 
   const coverZoom = getCampusCoverZoom();
-  const extraZoomOut = 0.75; // try 0.25, 0.5, 0.75, or 1.0
+  const extraZoomOut =
+  config.mapMode === "tiles"
+    ? ((config.tiles && config.tiles.zoomOutExtra) ?? 0.75)
+    : 0.75;
+
   const minAllowedZoom = Math.max(0, coverZoom - extraZoomOut);
 
   map.setMaxBounds(imageBounds);

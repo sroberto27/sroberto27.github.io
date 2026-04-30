@@ -26,6 +26,8 @@ window.CAMPUS_CONFIG = {
     initialCenter: [33.4977, -80.8493],
     initialZoom: 17,
 
+    zoomOutExtra: 0.65,
+
     // Extra space around building/tour bounds when fitting the map.
     boundsPadding: 0.35,
     bounds: [
