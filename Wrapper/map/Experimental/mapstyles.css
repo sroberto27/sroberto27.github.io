@@ -1473,6 +1473,32 @@ img    { user-select: none; -webkit-user-drag: none; }
   .shell.has-details.details-full .locations-toggle {
     display: none;
   }
+
+  /* Mobile — keep Leaflet controls clear of the bottom sheet */
+  .leaflet-top.leaflet-right {
+    top: 12px;
+    right: 12px;
+  }
+
+  .leaflet-bottom.leaflet-right,
+  .leaflet-bottom.leaflet-left {
+    bottom: 8px;
+    transition: bottom .25s ease, opacity .2s ease;
+  }
+
+  .shell.has-details:not(.details-full) .leaflet-bottom.leaflet-right,
+  .shell.has-details:not(.details-full) .leaflet-bottom.leaflet-left {
+    bottom: calc(var(--mobile-half-h) + 8px);
+  }
+
+  .shell.has-details.details-full .leaflet-bottom.leaflet-right,
+  .shell.has-details.details-full .leaflet-bottom.leaflet-left {
+    opacity: 0;
+    pointer-events: none;
+  }
+}  /* ← this is the existing closing brace of the mobile media query */
+
+
 }
 
 /* Very small phones */
