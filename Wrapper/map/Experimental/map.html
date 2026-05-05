@@ -34,6 +34,14 @@
        ============================================================ -->
   <div class="app" id="app" aria-hidden="true">
 
+    <!-- Burger menu state checkbox (CSS-only toggle).
+         MUST be a direct child of .app because the sibling selectors
+         (.burger-toggle:checked ~ .burger-panel, etc.) only traverse
+         within the same parent. The label triggers below in the
+         metabar reference this by id="burgerToggle". -->
+    <input type="checkbox" id="burgerToggle" class="burger-toggle"
+           aria-hidden="true" />
+
     <!-- Brand red accent strip across the very top -->
     <div class="brand-flair" aria-hidden="true"></div>
 
@@ -59,14 +67,10 @@
                 aria-selected="false" data-mode="learn" type="button">Learn</button>
       </div>
 
-      <!-- Burger menu trigger. Pure-CSS toggle via the hidden checkbox
-           below — clicking the label opens/closes #burgerPanel without
-           any JS. The original metabar nav buttons (search/help/etc.)
-           remain in the DOM (visually hidden) because the existing JS
-           still binds to them. -->
+      <!-- Burger menu trigger. The actual checkbox lives at the top
+           of .app so the sibling-selector CSS can reach the slide-in
+           panel below — labels can reference it from anywhere. -->
       <div class="metabar-actions">
-        <input type="checkbox" id="burgerToggle" class="burger-toggle"
-               aria-hidden="true" />
         <label for="burgerToggle" class="burger-btn"
                role="button" aria-label="Open menu" tabindex="0">
           <img src="assets/Icons/charm_menu-hamburger.svg"
@@ -109,15 +113,12 @@
       <nav class="burger-panel-list" aria-label="Site links">
         <a class="burger-link" href="#">
           <span>How to use</span>
-          <span class="burger-chev" aria-hidden="true">›</span>
         </a>
         <a class="burger-link" href="#">
           <span>Student Portal</span>
-          <span class="burger-chev" aria-hidden="true">›</span>
         </a>
         <a class="burger-link" href="#">
           <span>Exit</span>
-          <span class="burger-chev" aria-hidden="true">›</span>
         </a>
       </nav>
     </aside>
@@ -364,16 +365,19 @@
             </div>
 
             <div class="details-vr">
-              <button class="vr-btn" id="vrBtn" type="button">
-                <svg viewBox="0 0 24 24" aria-hidden="true" width="16" height="16">
-                  <path d="M6 7h12a2 2 0 012 2v6a2 2 0 01-2 2h-2l-2-2h-4l-2 2H6a2 2 0 01-2-2V9a2 2 0 012-2z"
-                        stroke="currentColor" stroke-width="1.5" fill="none"/>
-                </svg>
-                <span>Explore</span>
-              </button>
               <span class="vr-label">
                 <span class="vr-dot" aria-hidden="true"></span> VR-Enabled
               </span>
+              <!-- The standalone "Explore" / VR button that used to live
+                   here was a duplicate of the red Explore CTA at the top
+                   of the panel. It's been removed per the redesign.
+                   The button stays in the DOM — visually hidden — because
+                   the existing JS still binds click + dataset hooks to
+                   #vrBtn and would otherwise throw a null-deref. -->
+              <button class="vr-btn vr-btn-hidden" id="vrBtn" type="button"
+                      tabindex="-1" aria-hidden="true">
+                <span>Explore</span>
+              </button>
             </div>
           </div>
         </div>
