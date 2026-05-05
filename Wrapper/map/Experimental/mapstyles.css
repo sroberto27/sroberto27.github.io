@@ -1,11 +1,23 @@
 /* ===========================================================
-   SCSU METAVERSITY — Styles
-   Monospace, bordered, architectural aesthetic
-   matching the Figma "Metaversity" boards.
+   SCSU VIRTUAL CAMPUS — Styles (redesigned)
+   -----------------------------------------------------------
+   Dark sidebar + dark header, brand-red flair, pill toggles,
+   integrated search, Featured/All tabs, slide-in burger menu.
+   Pixel margins from the design spec are converted to clamp()
+   so the layout stays fluid across breakpoints.
    =========================================================== */
 
 :root {
-  /* Palette */
+  /* ---------- New brand palette (per design spec) ---------- */
+  --header-bg:   #000000;       /* metabar background */
+  --brand-red:   #872837;       /* header flair / Explore active state */
+  --brand-red-2: #6f1f2c;       /* hover */
+  --sidebar-bg:  #333333;       /* left/right panel surrounds */
+  --cell-bg:     #222222;       /* clickable cells inside the sidebar */
+  --cell-active: #000000;       /* hover/active cell state */
+  --cell-border: #1a1a1a;       /* hairline between cells */
+
+  /* ---------- Existing accent palette (kept) ---------- */
   --ink:         #0b0b0b;
   --ink-2:       #1f2937;
   --fog:         #f5f5f4;
@@ -19,27 +31,38 @@
   --rose:        #fca5a5;
   --alert:       #e11d48;
 
-  /* Typography */
+  /* ---------- Text on dark surfaces ---------- */
+  --on-dark:        #ffffff;
+  --on-dark-muted:  rgba(255,255,255,.62);
+  --on-dark-faint:  rgba(255,255,255,.38);
+  --on-dark-line:   rgba(255,255,255,.10);
+
+  /* ---------- Typography ---------- */
   --mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace,
           SFMono-Regular, Menlo, Consolas, monospace;
   --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
           Roboto, system-ui, sans-serif;
 
-  /* Structural */
-  --topbar-h:     56px;
-  --togglebar-h:  64px;
-  --footer-h:     32px;   /* desktop slim footer */
-  --tourbar-h:    76px;   /* mobile-only tour bar */
-  --sidebar-w:    320px;
-  --details-w:    360px;
-  --sidebar-tour-h: 92px; /* tour footer inside the left sidebar */
+  /* ---------- Structural sizes ---------- */
+  /* Header height absorbs the 20px top padding called out in the
+     design spec plus a 60px content row. */
+  --topbar-h:      80px;
+  --tourbar-h:     85px;       /* matches the 85px sidebar tour height */
+  --sidebar-w:     clamp(280px, 22vw, 340px);  /* 300px @ ~1366px */
+  --details-w:     clamp(300px, 24vw, 360px);  /* 340px @ ~1366px */
+  --sidebar-tour-h:85px;
 
-  /* Mobile details-panel heights. --mobile-peek is the portion that
-     remains visible when the panel is in its "hidden" state. */
+  /* Page edge gutter — 20px → ~1.4vw fluid, capped */
+  --edge-gutter:   clamp(14px, 1.45vw, 20px);
+
+  /* Mobile details-panel heights */
   --mobile-half-h: 46dvh;
   --mobile-peek:   0px;
 
-  --border: 1.5px solid var(--line);
+  /* Brand red flair height */
+  --flair-h: 4px;
+
+  --border-light: 1px solid var(--on-dark-line);
 }
 
 * { box-sizing: border-box; }
@@ -51,12 +74,13 @@ html, body {
   overflow: hidden;
   font-family: var(--sans);
   color: var(--ink);
-  background: var(--fog);
+  background: var(--header-bg);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
 button { font-family: inherit; cursor: pointer; }
+img    { user-select: none; -webkit-user-drag: none; }
 
 /* ===========================================================
    SPLASH / TITLE SCREEN
@@ -119,130 +143,439 @@ button { font-family: inherit; cursor: pointer; }
 
 /* ===========================================================
    APP GRID
-   Desktop layout:
-     row 1  — METABAR     (full width)  — has search inline
-     row 2  — MODE TOGGLE (full width)
-     row 3  — LOCATIONS | MAP | DETAILS  (tour nav lives at the
-                                          bottom of LOCATIONS)
-     row 4  — SITE FOOTER (thin bar)
-   Mobile:
-     row 4 becomes the TOURBAR instead.
+     row 1 — brand red flair (4px)
+     row 2 — METABAR (logo | mode toggle | burger)
+     row 3 — LOCATIONS | MAP | DETAILS
+     row 4 — TOURBAR (mobile only; hidden on desktop)
    =========================================================== */
 .app {
   display: grid;
-  grid-template-rows: var(--topbar-h) 1fr var(--footer-h);
-  height: 100vh;          /* fallback for old browsers */
-  height: 100dvh;         /* dynamic viewport — excludes mobile browser chrome */
-  background: var(--fog);
+  grid-template-rows: var(--flair-h) var(--topbar-h) 1fr;
+  height: 100vh;
+  height: 100dvh;
+  background: var(--header-bg);
   opacity: 0;
   transition: opacity .3s .2s;
 }
 
 .app.is-ready { opacity: 1; }
 
+/* Brand red flair line at the very top. */
+.brand-flair {
+  background: var(--brand-red);
+  height: 100%;
+}
+
 /* ===========================================================
-   METABAR (top header with brand, search, nav)
+   METABAR (top header — black, persistent on every breakpoint)
    =========================================================== */
 .metabar {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
-  gap: 20px;
-  padding: 0 20px;
-  border-bottom: var(--border);
-  background: var(--paper);
-  font-family: var(--mono);
+  gap: clamp(12px, 2vw, 28px);
+  padding: 0 var(--edge-gutter);
   padding-top: env(safe-area-inset-top);
   height: calc(var(--topbar-h) + env(safe-area-inset-top));
+  background: var(--header-bg);
+  color: var(--on-dark);
+  font-family: var(--mono);
   position: relative;
-  z-index: 1000; /* above the search dropdown trigger area */
+  z-index: 1000;
 }
 
+/* ---- Brand block (logo + product name) ---- */
 .metabar-brand {
   display: flex;
-  align-items: baseline;
-  gap: 10px;
-  font-weight: 600;
-  letter-spacing: .05em;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
 }
 
-.brand-sc {
-  font-size: 12px;
-  padding: 4px 7px;
-  background: var(--ink);
-  color: var(--paper);
-  border-radius: 2px;
+.brand-logo {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: var(--paper); /* in case logo has transparent edges */
+  flex-shrink: 0;
 }
 
 .brand-product {
-  font-size: 13px;
-  letter-spacing: .12em;
+  font-size: clamp(12px, 1.05vw, 14px);
+  font-weight: 600;
+  letter-spacing: .14em;
+  color: var(--on-dark);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-/* ---- Search inside the metabar (desktop) ---- */
+/* ---- Right-side actions (burger) ---- */
+.metabar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-self: end;
+}
+
+/* The actual burger trigger label.  Hidden checkbox below
+   drives the open/closed state via CSS sibling selectors. */
+.burger-toggle {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+.burger-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  cursor: pointer;
+  color: var(--on-dark);
+  transition: background .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.burger-btn:hover  { background: rgba(255,255,255,.08); }
+.burger-btn:active { background: rgba(255,255,255,.14); }
+.burger-btn img    { width: 22px; height: 22px; filter: invert(1) brightness(2); }
+.burger-btn .burger-fallback { font-size: 22px; line-height: 1; }
+
+/* Hidden utility buttons that JS still wires up */
+.hidden-utilities {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  pointer-events: none;
+}
+
+/* ===========================================================
+   MODE TOGGLE (Explore / Learn) — pill-shaped, in the header
+   =========================================================== */
+.mode-toggle {
+  display: flex;
+  justify-self: center;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  background: rgba(255,255,255,.06);
+  border-radius: 999px;
+  /* Width is content-driven; flex children control individual size */
+}
+
+.mode-btn {
+  flex: 0 0 auto;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  padding: 9px 26px;
+  background: transparent;
+  color: var(--on-dark-muted);
+  border: none;
+  border-radius: 999px;
+  transition: background .15s, color .15s, transform .08s;
+  white-space: nowrap;
+}
+
+.mode-btn:hover  { color: var(--on-dark); }
+.mode-btn:active { transform: scale(.98); }
+
+.mode-btn.is-active {
+  background: var(--brand-red);
+  color: var(--on-dark);
+  box-shadow: 0 1px 0 rgba(0,0,0,.4);
+}
+.mode-btn.is-active:hover { background: var(--brand-red-2); }
+
+/* ===========================================================
+   BURGER SLIDE-IN PANEL (right side)
+   Pure-CSS open/close via the hidden #burgerToggle checkbox.
+   =========================================================== */
+.burger-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(420px, 88vw);
+  background: var(--sidebar-bg);
+  color: var(--on-dark);
+  z-index: 1500;
+  transform: translateX(100%);
+  transition: transform .26s ease;
+  display: flex;
+  flex-direction: column;
+  padding-top: env(safe-area-inset-top);
+  box-shadow: -8px 0 24px rgba(0,0,0,.35);
+  font-family: var(--mono);
+  border-left: var(--border-light);
+}
+
+.burger-toggle:checked ~ .burger-panel { transform: translateX(0); }
+
+/* Backdrop */
+.burger-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.5);
+  z-index: 1400;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .22s ease;
+}
+
+.burger-toggle:checked ~ .burger-backdrop {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.burger-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px var(--edge-gutter) 14px;
+  border-bottom: var(--border-light);
+}
+
+.burger-panel-kicker {
+  font-size: 11px;
+  letter-spacing: .18em;
+  font-weight: 600;
+  color: var(--on-dark-muted);
+}
+
+.burger-panel-close {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.06);
+  color: var(--on-dark);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.burger-panel-close:hover { background: rgba(255,255,255,.14); }
+.burger-panel-close svg   { width: 14px; height: 14px; }
+
+.burger-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 14px;
+  overflow-y: auto;
+}
+
+.burger-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 16px 18px;
+  background: var(--cell-bg);
+  color: var(--on-dark);
+  text-decoration: none;
+  font-family: var(--mono);
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 4px;
+  transition: background .14s, transform .08s;
+}
+.burger-link:hover  { background: var(--cell-active); }
+.burger-link:active { transform: translateY(1px); }
+.burger-chev        { color: var(--brand-red); font-size: 18px; line-height: 1; }
+
+/* ===========================================================
+   SHELL (locations | map | details)
+   =========================================================== */
+.shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr 0px;
+  min-height: 0;
+  background: var(--header-bg);
+  position: relative;
+  /* Edge gutters from the design spec — black around the panels. */
+  padding: 0 var(--edge-gutter) var(--edge-gutter);
+  gap: var(--edge-gutter);
+  transition: grid-template-columns .25s ease;
+}
+
+.shell.has-details {
+  grid-template-columns: var(--sidebar-w) 1fr var(--details-w);
+}
+
+/* ===========================================================
+   LOCATIONS SIDEBAR (dark theme)
+   =========================================================== */
+.locations {
+  background: var(--sidebar-bg);
+  color: var(--on-dark);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 6px;
+  font-family: var(--mono);
+}
+
+.locations-head {
+  padding: 18px 18px 10px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.locations-heading { min-width: 0; flex: 1 1 auto; }
+
+.locations-kicker {
+  font-size: 11px;
+  letter-spacing: .18em;
+  font-weight: 600;
+  color: var(--on-dark-muted);
+  margin-bottom: 6px;
+}
+
+.locations-title {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: clamp(20px, 1.7vw, 26px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--on-dark);
+  line-height: 1.1;
+}
+
+/* Desktop: hidden (no close button — sidebar is always visible) */
+.locations-close {
+  display: none;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--on-dark-line);
+  background: transparent;
+  color: var(--on-dark);
+  border-radius: 4px;
+  padding: 0;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  cursor: pointer;
+}
+.locations-close:hover { background: rgba(255,255,255,.08); }
+.locations-close img   { width: 16px; height: 16px; filter: invert(1) brightness(2); }
+.locations-close .lc-fallback { font-size: 18px; font-weight: 600; line-height: 1; }
+
+/* ---- Featured / All tabs ---- */
+.loc-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  margin: 0 18px 12px;
+  padding: 4px;
+  background: rgba(0,0,0,.35);
+  border-radius: 999px;
+  position: relative;
+}
+
+.loc-tab-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+.loc-tab {
+  display: grid;
+  place-items: center;
+  padding: 8px 12px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--on-dark-muted);
+  border-radius: 999px;
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.loc-tab:hover { color: var(--on-dark); }
+
+#locTabFeatured:checked ~ .loc-tab[for="locTabFeatured"],
+#locTabAll:checked      ~ .loc-tab[for="locTabAll"] {
+  background: var(--cell-bg);
+  color: var(--on-dark);
+  box-shadow: 0 1px 0 rgba(0,0,0,.5);
+}
+
+/* ---- Search field (now lives inside the sidebar) ---- */
 .metabar-search {
   position: relative;
-  justify-self: center;
-  width: min(460px, 100%);
+  margin: 0 18px 12px;
 }
 
 .metabar-search .search-field {
   position: relative;
   display: flex;
   align-items: center;
-  background: var(--paper);
-  border: 1.5px solid var(--line);
-  border-radius: 4px;
-  height: 36px;
-  box-shadow: 0 2px 0 var(--line);
+  background: var(--cell-bg);
+  border: 1px solid var(--on-dark-line);
+  border-radius: 999px;
+  height: 40px;
 }
 
 .metabar-search .search-icon {
   position: absolute;
-  left: 10px;
+  left: 14px;
   top: 50%;
   transform: translateY(-50%);
   width: 14px;
   height: 14px;
-  color: var(--ink);
+  color: var(--on-dark-muted);
   fill: none;
   pointer-events: none;
 }
 
 .metabar-search #searchInput {
   width: 100%;
-  padding: 0 36px 0 32px;
-  height: 32px;
+  padding: 0 40px 0 38px;
+  height: 38px;
   border: none;
   background: transparent;
   font-family: var(--mono);
-  font-size: 13px;
-  color: var(--ink);
+  font-size: 12.5px;
+  color: var(--on-dark);
   outline: none;
 }
 
-.metabar-search #searchInput::placeholder { color: #78716c; }
+.metabar-search #searchInput::placeholder { color: var(--on-dark-faint); }
 
-/* Two-state close button (clear text -> close panel).
-   Hidden on desktop where the bar is always visible; appears
-   only on mobile when the search panel is open. */
 .search-clear {
   position: absolute;
   right: 6px;
   top: 50%;
   transform: translateY(-50%);
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border: none;
   background: transparent;
-  border-radius: 3px;
+  border-radius: 50%;
   display: grid;
   place-items: center;
   padding: 0;
-  color: var(--ink);
+  color: var(--on-dark);
 }
 .search-clear svg { width: 14px; height: 14px; }
-.search-clear:hover { background: var(--fog); }
+.search-clear:hover { background: rgba(255,255,255,.1); }
 
 .search-results {
   position: absolute;
@@ -251,11 +584,12 @@ button { font-family: inherit; cursor: pointer; }
   right: 0;
   max-height: 320px;
   overflow-y: auto;
-  background: var(--paper);
-  border: 1.5px solid var(--line);
-  border-radius: 4px;
-  box-shadow: 0 4px 0 var(--line), 0 8px 24px rgba(0,0,0,.1);
+  background: var(--cell-bg);
+  border: 1px solid var(--on-dark-line);
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(0,0,0,.45);
   z-index: 1100;
+  color: var(--on-dark);
 }
 
 .search-result {
@@ -266,193 +600,76 @@ button { font-family: inherit; cursor: pointer; }
   padding: 10px 12px;
   font-family: var(--mono);
   font-size: 12px;
-  border-bottom: 1px solid var(--line-soft);
+  border-bottom: 1px solid var(--on-dark-line);
   cursor: pointer;
   transition: background .12s;
-  color: var(--ink);
+  color: var(--on-dark);
 }
 .search-result:last-child { border-bottom: none; }
-.search-result:hover { background: var(--fog); }
+.search-result:hover      { background: var(--cell-active); }
 
 .search-result .tag {
   font-size: 9px;
   padding: 2px 6px;
-  border: 1px solid var(--line);
-  border-radius: 3px;
+  border: 1px solid var(--on-dark-line);
+  border-radius: 999px;
   letter-spacing: .08em;
   font-weight: 600;
+  color: var(--on-dark-muted);
 }
-.search-result .tag.tour     { background: var(--mint); }
-.search-result .tag.zone     { background: #fee2e2; }
-.search-result .tag.building { background: var(--fog-2); }
+.search-result .tag.tour     { color: var(--on-dark); border-color: var(--brand-red); background: var(--brand-red); }
+.search-result .tag.zone     { color: var(--on-dark); }
+.search-result .tag.building { color: var(--on-dark-muted); }
 
 .search-empty {
   padding: 14px;
-  color: #78716c;
+  color: var(--on-dark-muted);
   font-size: 12px;
   text-align: center;
   font-family: var(--mono);
 }
 
-/* ---- Nav links ---- */
-.metabar-nav {
-  display: flex;
-  gap: 18px;
-  align-items: center;
-}
-
-.link-btn {
-  background: none;
-  border: none;
-  padding: 4px 2px;
-  color: var(--ink);
-  font-family: var(--mono);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: .08em;
-  border-bottom: 1.5px solid transparent;
-  transition: border-color .15s, background .15s, color .15s;
-}
-
-.link-btn:hover { border-bottom-color: var(--ink); }
-
-.link-btn.is-active {
-  background: var(--mint);
-  padding: 4px 8px;
-  border-radius: 3px;
-  border-bottom-color: transparent;
-}
-
-/* On desktop the SEARCH button is not needed — the field is
-   already visible in the metabar. Keep it visible but subtle. */
-#searchBtn { display: none; } /* desktop hides it; mobile re-enables */
-
-/* ===========================================================
-   MODE TOGGLE (Explore / Learn)
-   Two instances exist in the DOM:
-     - .mode-toggle-desktop : inside the locations sidebar (desktop)
-     - .mode-toggle-mobile  : sibling of .shell (mobile top bar)
-   Each is hidden at the breakpoint where it's not used.
-   =========================================================== */
-.mode-toggle {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 0;
-  border-bottom: var(--border);
-  background: var(--paper);
-  padding: 12px 16px;
-  position: relative;
-  z-index: 900;
-}
-
-/* Desktop default: show sidebar toggle, hide mobile toggle */
-.mode-toggle-mobile { display: none; }
-
-.mode-btn {
-  flex: 1;                /* split the sidebar width 50/50 on desktop */
-  font-family: var(--mono);
-  font-size: 14px;
-  font-weight: 500;
-  padding: 10px 0;
-  background: var(--paper);
-  color: var(--ink);
-  border: 1.5px solid var(--line);
-  transition: background .15s, color .15s;
-}
-
-.mode-btn:first-child { border-radius: 4px 0 0 4px; border-right-width: 0; }
-.mode-btn:last-child  { border-radius: 0 4px 4px 0; }
-
-.mode-btn.is-active {
-  background: var(--ink);
-  color: var(--paper);
-}
-
-.mode-btn:not(.is-active):hover {
-  background: var(--fog-2);
-}
-
-/* ===========================================================
-   SHELL (locations | map | details)
-   =========================================================== */
-.shell {
-  display: grid;
-  grid-template-columns: var(--sidebar-w) 1fr 0px;
-  min-height: 0;
-  border-bottom: var(--border);
-  transition: grid-template-columns .25s ease;
-  background: var(--paper);
-  position: relative;  /* needed for mobile absolute-positioned overlays */
-}
-
-.shell.has-details {
-  grid-template-columns: var(--sidebar-w) 1fr var(--details-w);
-}
-
-/* ===========================================================
-   LOCATIONS SIDEBAR
-   Contains: header, scrollable list, tour nav footer (desktop)
-   =========================================================== */
-.locations {
-  border-right: var(--border);
-  background: var(--paper);
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.locations-head {
-  padding: 16px 18px 14px;
-  border-bottom: var(--border);
-  position: relative;
-  font-family: var(--mono);
+.locations-meta {
+  font-size: 11px;
+  letter-spacing: .12em;
+  color: var(--on-dark-muted);
+  text-transform: uppercase;
+  padding: 0 18px 10px;
   flex-shrink: 0;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 10px;
 }
 
-.locations-heading { min-width: 0; flex: 1 1 auto; }
-
-.locations-title {
-  font-size: 12px;
-  letter-spacing: .14em;
-  font-weight: 600;
-  color: var(--ink);
-}
-
-.locations-sub {
-  font-size: 12px;
-  margin-top: 4px;
-  color: #52525b;
-}
-
-.locations-close {
-  display: none; /* desktop: always visible list, no close needed */
-  width: 28px;
-  height: 28px;
-  border: 1.5px solid var(--line);
-  background: var(--paper);
-  border-radius: 4px;
-  padding: 0;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-}
-
-.locations-close svg { width: 14px; height: 14px; }
-
+/* ---- Location lists ---- */
 .locations-list {
   list-style: none;
   margin: 0;
-  padding: 0;
+  padding: 0 14px 14px;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
   -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Tab visibility — only one list visible at a time */
+.locations-list-all      { display: none; }
+.loc-tabs:has(#locTabAll:checked)      ~ .metabar-search ~ .locations-meta ~ .locations-list-featured,
+.loc-tabs:has(#locTabAll:checked)      ~ .locations-list-featured {
+  /* fallback handled below for older browsers */
+}
+
+/* Robust toggle that doesn't depend on :has(): we use the
+   adjacent-sibling chain on the radio inputs themselves. */
+.locations:has(#locTabAll:checked)      .locations-list-featured { display: none; }
+.locations:has(#locTabAll:checked)      .locations-list-all      { display: flex; }
+.locations:has(#locTabFeatured:checked) .locations-list-all      { display: none; }
+.locations:has(#locTabFeatured:checked) .locations-list-featured { display: flex; }
+
+/* Fallback for browsers without :has() — leave Featured visible */
+@supports not selector(:has(*)) {
+  .locations-list-featured { display: flex; }
+  .locations-list-all      { display: none; }
 }
 
 .location-row {
@@ -460,70 +677,85 @@ button { font-family: inherit; cursor: pointer; }
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 8px;
-  padding: 14px 18px;
-  border-bottom: 1px solid var(--line-soft);
-  background: var(--paper);
+  padding: 14px 16px;
+  background: var(--cell-bg);
+  color: var(--on-dark);
   cursor: pointer;
-  transition: background .12s;
+  transition: background .14s, transform .08s;
   font-family: var(--mono);
+  border-radius: 4px;
+  border: 1px solid transparent;
 }
 
-.location-row:hover       { background: var(--fog); }
-.location-row.is-active   { background: var(--mint); }
-.location-row.is-active:hover { background: var(--mint-deep); }
+.location-row:hover     { background: var(--cell-active); }
+.location-row:active    { transform: translateY(1px); }
+.location-row.is-active {
+  background: var(--cell-active);
+  border-color: var(--brand-red);
+}
 
 .location-name {
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 600;
   line-height: 1.25;
-  color: var(--ink);
+  color: var(--on-dark);
   word-wrap: break-word;
 }
 
 .location-cat {
   font-size: 10px;
   letter-spacing: .14em;
-  color: #52525b;
+  color: var(--on-dark-muted);
   margin-top: 4px;
   font-weight: 500;
+  text-transform: uppercase;
 }
 
 .location-chev {
-  color: #78716c;
+  color: var(--brand-red);
   font-family: var(--mono);
-  font-size: 16px;
-  font-weight: 400;
+  font-size: 18px;
+  font-weight: 600;
   line-height: 1;
 }
 
-.location-row.is-active .location-chev,
-.location-row.is-active .location-cat { color: var(--ink); }
+.location-row.is-active .location-chev { color: var(--brand-red); }
 
-/* Special "All Locations" row */
+/* "All Locations" first row inside Featured (kept for legacy JS) */
 .location-row.all-row .location-name { font-weight: 500; }
 .location-row.all-row .location-num {
   font-size: 10px;
   letter-spacing: .14em;
-  color: #78716c;
+  color: var(--on-dark-muted);
   margin-top: 4px;
   display: block;
 }
 
-/* Numbered rows: 1. Nance Hall style when tour active */
 .location-index {
-  font-weight: 600;
+  font-weight: 700;
   margin-right: 6px;
+  color: var(--brand-red);
 }
 
-/* -- Tour navigation footer inside the sidebar (desktop) -- */
+/* Empty-state placeholder for the All tab while data loads */
+.locations-empty {
+  padding: 24px 18px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--on-dark-muted);
+  text-align: center;
+  letter-spacing: .04em;
+}
+
+/* ---- Tour navigation footer inside the sidebar (desktop) ---- */
 .sidebar-tour {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 14px;
   padding: 14px 16px;
-  border-top: var(--border);
-  background: var(--paper);
+  border-top: var(--border-light);
+  background: var(--sidebar-bg);
   height: var(--sidebar-tour-h);
   flex-shrink: 0;
 }
@@ -531,15 +763,14 @@ button { font-family: inherit; cursor: pointer; }
 .sidebar-tour .tour-info {
   text-align: center;
   font-family: var(--mono);
-  min-width: 0; /* allow ellipsis inside flex/grid */
+  min-width: 0;
+  color: var(--on-dark);
 }
 
 .sidebar-tour .tour-arrow { width: 40px; height: 40px; }
 
 /* Mobile-only backdrop behind the locations drawer */
-.locations-backdrop {
-  display: none;
-}
+.locations-backdrop { display: none; }
 
 /* ===========================================================
    MAP AREA
@@ -547,14 +778,15 @@ button { font-family: inherit; cursor: pointer; }
 .map-wrap {
   position: relative;
   min-height: 0;
-  background: var(--fog-2);
+  background: #0e0e0e;
   overflow: hidden;
+  border-radius: 6px;
 }
 
 #map {
   position: absolute;
   inset: 0;
-  background: #e7e5e4;
+  background: #1a1a1a;
 }
 
 .leaflet-container {
@@ -573,17 +805,18 @@ button { font-family: inherit; cursor: pointer; }
   gap: 8px;
   padding: 9px 14px 9px 12px;
   background: var(--paper);
-  border: 1.5px solid var(--line);
-  border-radius: 4px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
   font-family: var(--mono);
   font-size: 13px;
   font-weight: 600;
   color: var(--ink);
-  box-shadow: 0 2px 0 var(--line);
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
 }
 
-.locations-toggle svg { width: 18px; height: 18px; fill: none; }
-.locations-toggle:active { transform: translateY(1px); box-shadow: none; }
+.locations-toggle .locations-toggle-icon { width: 18px; height: 18px; display: block; }
+.locations-toggle .lt-fallback           { font-size: 18px; font-weight: 600; line-height: 1; }
+.locations-toggle:active { transform: translateY(1px); box-shadow: 0 1px 4px rgba(0,0,0,.25); }
 
 .map-action {
   position: absolute;
@@ -592,22 +825,22 @@ button { font-family: inherit; cursor: pointer; }
   z-index: 500;
   width: 40px;
   height: 40px;
-  border: 1.5px solid var(--line);
+  border: 1px solid var(--line);
   background: var(--paper);
-  border-radius: 4px;
-  box-shadow: 0 2px 0 var(--line);
+  border-radius: 999px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
   display: grid;
   place-items: center;
 }
-.map-action svg { width: 18px; height: 18px; }
-.map-action:active { transform: translateY(1px); box-shadow: none; }
+.map-action svg     { width: 18px; height: 18px; }
+.map-action:active  { transform: translateY(1px); box-shadow: 0 1px 4px rgba(0,0,0,.25); }
 
 /* ===========================================================
-   DETAILS PANEL (right side on desktop)
+   DETAILS PANEL (right side on desktop) — dark theme
    =========================================================== */
 .details {
-  border-left: var(--border);
-  background: var(--paper);
+  background: var(--sidebar-bg);
+  color: var(--on-dark);
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -616,6 +849,8 @@ button { font-family: inherit; cursor: pointer; }
   opacity: 0;
   pointer-events: none;
   transition: opacity .2s;
+  border-radius: 6px;
+  font-family: var(--mono);
 }
 
 .shell.has-details .details {
@@ -623,63 +858,58 @@ button { font-family: inherit; cursor: pointer; }
   pointer-events: auto;
 }
 
-/* Drag handle — only shown on mobile */
 .details-handle { display: none; }
 
 .details-close {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 14px;
+  right: 14px;
   width: 28px;
   height: 28px;
-  border: 1.5px solid var(--line);
-  background: var(--paper);
-  border-radius: 4px;
+  border: 1px solid var(--on-dark-line);
+  background: transparent;
+  color: var(--on-dark);
+  border-radius: 50%;
   z-index: 2;
   display: grid;
   place-items: center;
 }
-.details-close svg { width: 14px; height: 14px; }
-.details-close:hover { background: var(--fog); }
+.details-close svg   { width: 14px; height: 14px; }
+.details-close:hover { background: rgba(255,255,255,.08); }
 
 .details-content {
-  padding: 20px 20px 40px;
+  padding: 22px 22px 32px;
   overflow-y: auto;
   flex: 1;
-  font-family: var(--mono);
 }
 
-/* Desktop: peek and extra sit together in a single scrollable flow */
 .details-peek,
 .details-extra { display: contents; }
 
 .details-tag {
   display: inline-block;
   font-size: 10px;
-  letter-spacing: .16em;
+  letter-spacing: .18em;
   font-weight: 600;
-  background: var(--paper);
-  color: var(--ink);
-  border: 1.5px solid var(--line);
-  padding: 4px 8px;
-  border-radius: 3px;
-  margin-bottom: 10px;
+  color: var(--on-dark-muted);
+  padding: 0 0 8px;
+  text-transform: uppercase;
 }
 
 .details-title {
-  font-size: 26px;
+  font-size: clamp(20px, 1.6vw, 26px);
   font-weight: 700;
   line-height: 1.15;
   margin: 0 0 6px;
   letter-spacing: -0.01em;
-  font-family: var(--mono);
-  color: var(--ink);
+  font-family: var(--sans);
+  color: var(--on-dark);
 }
 
 .details-sub {
-  font-size: 12px;
-  color: #52525b;
-  margin-bottom: 14px;
+  font-size: 12.5px;
+  color: var(--on-dark-muted);
+  margin-bottom: 16px;
   letter-spacing: .02em;
 }
 
@@ -687,33 +917,36 @@ button { font-family: inherit; cursor: pointer; }
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
-  background: var(--ink);
-  color: var(--paper);
-  border: 1.5px solid var(--line);
-  border-radius: 4px;
+  padding: 10px 18px;
+  background: var(--brand-red);
+  color: var(--on-dark);
+  border: none;
+  border-radius: 999px;
   font-family: var(--mono);
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
   letter-spacing: .05em;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+  transition: background .14s, transform .08s;
 }
-.explore-cta svg { width: 14px; height: 14px; }
-.explore-cta:hover { background: var(--ink-2); }
+.explore-cta:hover  { background: var(--brand-red-2); }
+.explore-cta:active { transform: translateY(1px); }
+.explore-cta svg,
+.explore-cta .explore-cta-icon-fallback { width: 16px; height: 16px; }
 
 .details-image {
   margin: 0 0 16px;
   padding: 0;
   aspect-ratio: 16 / 10;
   position: relative;
-  border: 1.5px solid var(--line);
-  background: var(--paper);
+  border: 1px solid var(--on-dark-line);
+  background: var(--cell-bg);
   display: grid;
   place-items: center;
   overflow: hidden;
+  border-radius: 4px;
 }
 
-/* The red-X placeholder from the Figma */
 .details-image-x {
   position: absolute;
   inset: 0;
@@ -726,7 +959,7 @@ button { font-family: inherit; cursor: pointer; }
                     var(--alert) calc(50% - 0.75px),
                     var(--alert) calc(50% + 0.75px),
                     transparent calc(50% + 0.75px));
-  opacity: .55;
+  opacity: .35;
 }
 
 .details-image figcaption {
@@ -735,31 +968,32 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 11px;
   letter-spacing: .14em;
   font-weight: 600;
-  color: var(--ink);
-  background: var(--paper);
+  color: var(--on-dark);
+  background: rgba(0,0,0,.6);
   padding: 4px 8px;
-  border: 1.5px solid var(--line);
+  border: 1px solid var(--on-dark-line);
+  border-radius: 3px;
 }
 
 .details-body {
   font-family: var(--sans);
   font-size: 14px;
   line-height: 1.55;
-  color: #27272a;
-  margin: 0 0 20px;
+  color: var(--on-dark);
+  margin: 0 0 22px;
+  opacity: .9;
 }
 
-.details-block {
-  margin-bottom: 18px;
-}
+.details-block { margin-bottom: 20px; }
 
 .details-block-h {
   font-family: var(--mono);
   font-size: 11px;
-  letter-spacing: .16em;
+  letter-spacing: .18em;
   font-weight: 600;
   margin-bottom: 8px;
-  color: var(--ink);
+  color: var(--on-dark-muted);
+  text-transform: uppercase;
 }
 
 .chip-row {
@@ -774,19 +1008,19 @@ button { font-family: inherit; cursor: pointer; }
   font-size: 11px;
   letter-spacing: .06em;
   font-weight: 500;
-  padding: 4px 8px;
-  border: 1.5px solid var(--line);
-  border-radius: 3px;
-  background: var(--paper);
-  color: var(--ink);
+  padding: 5px 10px;
+  border: 1px solid var(--on-dark-line);
+  border-radius: 4px;
+  background: var(--cell-bg);
+  color: var(--on-dark);
 }
 
 .sub-list {
   list-style: none;
   margin: 0;
   padding: 0;
-  border: 1.5px solid var(--line);
-  border-radius: 3px;
+  border: 1px solid var(--on-dark-line);
+  border-radius: 4px;
   overflow: hidden;
 }
 
@@ -794,48 +1028,49 @@ button { font-family: inherit; cursor: pointer; }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 12px;
+  padding: 12px 14px;
   font-family: var(--mono);
   font-size: 12px;
-  border-bottom: 1px solid var(--line-soft);
-  color: var(--ink);
-  background: var(--paper);
+  border-bottom: 1px solid var(--on-dark-line);
+  color: var(--on-dark);
+  background: var(--cell-bg);
   transition: background .12s;
   cursor: pointer;
 }
 .sub-list li:last-child { border-bottom: none; }
-.sub-list li:hover { background: var(--fog); }
+.sub-list li:hover      { background: var(--cell-active); }
 
-.sub-list .chev { color: #78716c; font-size: 14px; }
+.sub-list .chev { color: var(--brand-red); font-size: 16px; }
 
 .details-vr {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-top: 20px;
-  padding-top: 16px;
-  border-top: 1px solid var(--line-soft);
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--on-dark-line);
 }
 
 .vr-btn {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 12px;
-  background: var(--ink);
-  color: var(--paper);
-  border: 1.5px solid var(--line);
-  border-radius: 4px;
+  padding: 8px 14px;
+  background: var(--cell-bg);
+  color: var(--on-dark);
+  border: 1px solid var(--on-dark-line);
+  border-radius: 999px;
   font-family: var(--mono);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: .06em;
 }
+.vr-btn:hover { background: var(--cell-active); }
 
 .vr-label {
   font-family: var(--mono);
   font-size: 11px;
-  color: #52525b;
+  color: var(--on-dark-muted);
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -845,55 +1080,54 @@ button { font-family: inherit; cursor: pointer; }
   width: 8px;
   height: 8px;
   background: var(--mint-deep);
-  border: 1.5px solid var(--line);
+  border: 1px solid var(--on-dark-line);
   border-radius: 50%;
   display: inline-block;
 }
 
 /* ===========================================================
-   TOUR ARROW (shared button used both in sidebar footer
-   and in the mobile tour bar)
+   TOUR ARROW (sidebar footer + mobile tour bar)
    =========================================================== */
 .tour-arrow {
   width: 42px;
   height: 42px;
-  border: 1.5px solid var(--line);
-  background: var(--ink);
-  color: var(--paper);
+  border: 1px solid var(--on-dark-line);
+  background: var(--cell-bg);
+  color: var(--on-dark);
   border-radius: 50%;
   display: grid;
   place-items: center;
-  box-shadow: 0 2px 0 var(--line);
-  transition: transform .08s, box-shadow .08s, background .12s;
+  transition: transform .08s, background .12s;
   padding: 0;
 }
-.tour-arrow svg { width: 18px; height: 18px; }
-.tour-arrow:hover { background: var(--ink-2); }
-.tour-arrow:active { transform: translateY(1px); box-shadow: 0 1px 0 var(--line); }
+.tour-arrow svg     { width: 18px; height: 18px; }
+.tour-arrow:hover   { background: var(--cell-active); }
+.tour-arrow:active  { transform: translateY(1px); }
 .tour-arrow:disabled {
   opacity: .35;
   cursor: not-allowed;
-  box-shadow: 0 2px 0 var(--line-soft);
-  border-color: var(--line-soft);
+  background: var(--cell-bg);
 }
 
 .tour-info {
   text-align: center;
   font-family: var(--mono);
   min-width: 0;
+  color: var(--on-dark);
 }
 
 .tour-label {
   font-size: 10px;
   letter-spacing: .18em;
-  color: #52525b;
+  color: var(--on-dark-muted);
   font-weight: 600;
+  text-transform: uppercase;
 }
 
 .tour-name {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--ink);
+  color: var(--on-dark);
   line-height: 1.2;
   margin: 2px 0;
   overflow: hidden;
@@ -903,44 +1137,36 @@ button { font-family: inherit; cursor: pointer; }
 
 .tour-count {
   font-size: 11px;
-  color: #52525b;
+  color: var(--on-dark-muted);
   letter-spacing: .06em;
 }
 
 /* ===========================================================
-   BOTTOM BARS
-   Desktop: thin site footer (non-interactive placeholder)
-   Mobile : tourbar takes its place
+   BOTTOM TOURBAR
+   Desktop: hidden (the sidebar footer takes its place)
+   Mobile : visible
    =========================================================== */
-.site-footer {
-  background: var(--fog-2);
-  border-top: var(--border);
-  height: var(--footer-h);
-}
-
 .tourbar {
-  display: none; /* hidden on desktop; shown on mobile */
+  display: none;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 18px;
-  padding: 0 20px;
-  background: var(--paper);
-  /* Grow the whole bar by the safe-area inset so the tour arrows
-     stay vertically centered in the *visible* 72px, not in a
-     padding-squished region. */
+  padding: 0 var(--edge-gutter);
+  background: var(--sidebar-bg);
+  color: var(--on-dark);
   height: calc(var(--tourbar-h) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
-  border-top: var(--border);
+  border-top: var(--border-light);
 }
 
 /* ===========================================================
    LEAFLET OVERRIDES
    =========================================================== */
 .leaflet-control-zoom {
-  border: 1.5px solid var(--line) !important;
+  border: 1px solid var(--line) !important;
   border-radius: 4px !important;
   overflow: hidden;
-  box-shadow: 0 2px 0 var(--line) !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25) !important;
 }
 
 .leaflet-control-zoom a {
@@ -954,30 +1180,30 @@ button { font-family: inherit; cursor: pointer; }
   border-bottom: 1px solid var(--line-soft) !important;
 }
 
-.leaflet-control-zoom a:hover { background: var(--fog) !important; }
+.leaflet-control-zoom a:hover     { background: var(--fog) !important; }
 .leaflet-control-zoom a:last-child { border-bottom: none !important; }
 
 .leaflet-control-attribution {
-  background: rgba(255,255,255,0.9) !important;
   font-family: var(--mono) !important;
   font-size: 10px !important;
-  padding: 3px 8px !important;
-  border-radius: 0 !important;
-  border-top: 1px solid var(--line) !important;
-  border-left: 1px solid var(--line) !important;
+  background: rgba(0,0,0,.65) !important;
+  color: var(--on-dark) !important;
+  padding: 2px 6px !important;
+  border-radius: 3px !important;
 }
+.leaflet-control-attribution a { color: var(--on-dark) !important; }
 
-/* Always-visible label on selected feature */
+/* Leaflet tooltips (campus labels) */
 .leaflet-tooltip.campus-label {
   background: var(--paper);
-  border: 1.5px solid var(--line);
+  border: 1px solid var(--line);
   border-radius: 3px;
   color: var(--ink);
   font-family: var(--mono);
   font-size: 12px;
   font-weight: 600;
   padding: 5px 9px;
-  box-shadow: 0 2px 0 var(--line);
+  box-shadow: 0 2px 6px rgba(0,0,0,.2);
   white-space: nowrap;
 }
 .leaflet-tooltip.campus-label::before { border-top-color: var(--line); }
@@ -986,138 +1212,84 @@ button { font-family: inherit; cursor: pointer; }
 .tour-pin {
   width: 26px;
   height: 26px;
-  background: var(--mint);
-  border: 1.5px solid var(--line);
+  background: var(--paper);
+  border: 1.5px solid var(--brand-red);
   border-radius: 50%;
   display: grid;
   place-items: center;
   font-family: var(--mono);
   font-size: 12px;
   font-weight: 700;
-  color: var(--ink);
-  box-shadow: 0 2px 0 var(--line);
+  color: var(--brand-red);
+  box-shadow: 0 2px 6px rgba(0,0,0,.3);
   transition: transform .15s;
 }
 
 .tour-pin-wrap { pointer-events: none; }
 
 .tour-pin.is-active {
-  background: var(--ink);
-  color: var(--mint);
+  background: var(--brand-red);
+  color: var(--paper);
   transform: scale(1.15);
 }
 
 /* ===========================================================
    RESPONSIVE — desktop breakpoints
    =========================================================== */
-
-/* Tablet — narrower details panel, narrower search field */
 @media (max-width: 1200px) {
-  :root { --details-w: 320px; --sidebar-w: 280px; }
-  .metabar-search { width: min(360px, 100%); }
+  :root { --details-w: clamp(280px, 24vw, 320px); }
 }
 
 @media (max-width: 1040px) {
-  :root { --details-w: 300px; --sidebar-w: 260px; }
-  .metabar-search { width: min(280px, 100%); }
-  .metabar-nav { gap: 12px; }
-  .fs-label { display: none; }
+  :root { --details-w: 280px; }
+  .brand-product { font-size: 12px; }
 }
 
 /* ===========================================================
    MOBILE (≤ 880px)
-   Matches the Figma Mobile Device Flow:
-     - Metabar stays at top
-     - Mode toggle (Explore/Learn) stays permanently at row 2
-     - Locations drawer slides IN FROM THE LEFT over part of the
-       map, leaving a visible sliver of map behind it
-     - Details panel is a bottom sheet that can be dragged
-       between half-screen and full-screen states
-     - Locations drawer and details panel are mutually exclusive
-     - Map fills the space between mode toggle and tourbar
-     - Sidebar tour-nav footer is hidden; the separate TOURBAR
-       at the very bottom takes over
+   - Header stays at top with the SAME mode toggle
+   - Locations sidebar slides in from the LEFT over the map
+   - Details sheet slides up from the bottom
+   - Tourbar pinned to the bottom of viewport
    =========================================================== */
 @media (max-width: 880px) {
   :root {
-    --topbar-h: 48px;
-    --togglebar-h: 56px;
+    --topbar-h:  64px;
     --tourbar-h: 72px;
+    --edge-gutter: 0px; /* Mobile: panels go edge-to-edge */
   }
 
-  /* Layout swaps: no desktop footer, tourbar takes last row.
-       The tourbar row adds env(safe-area-inset-bottom) so the
-       home-indicator area on notched phones doesn't eat into the
-       tour arrows. */
-    .app {
-      grid-template-rows:
-        var(--topbar-h)
-        var(--togglebar-h)
-        1fr
-        calc(var(--tourbar-h) + env(safe-area-inset-bottom));
-    }
+  .app {
+    grid-template-rows:
+      var(--flair-h)
+      var(--topbar-h)
+      1fr
+      calc(var(--tourbar-h) + env(safe-area-inset-bottom));
+  }
 
-  .site-footer { display: none; }
   .tourbar { display: grid; }
 
-  /* Metabar becomes 2-column (brand | nav). Inline search is
-     hidden and repositioned as a dropdown below the metabar
-     when the user taps SEARCH. */
+  /* Smaller header items */
   .metabar {
-    grid-template-columns: auto auto;
-    justify-content: space-between;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px;
   }
+  .brand-logo    { width: 30px; height: 30px; }
+  .brand-product { font-size: 11px; letter-spacing: .12em; }
+  .mode-btn      { padding: 8px 18px; font-size: 12px; }
 
-  .metabar-search {
-    display: none;       /* hidden by default on mobile */
-    position: absolute;
-    top: calc(var(--topbar-h) + env(safe-area-inset-top));
-    left: 0;
-    right: 0;
-    width: auto;
-    padding: 10px 14px;
-    background: var(--paper);
-    border-bottom: var(--border);
-    z-index: 950;
-    box-shadow: 0 4px 10px rgba(0,0,0,.06);
-  }
-  .metabar-search.is-open { display: block; }
-
-  .metabar-search .search-field {
-    box-shadow: none;
-    height: 38px;
-  }
-
-  /* The X-style close becomes visible on mobile */
-  .search-clear { display: grid; }
-
-  /* Show the SEARCH link in the nav on mobile */
-  #searchBtn { display: inline-block; }
-
-  .link-btn { font-size: 11px; }
-
-  /* On mobile: hide the in-sidebar (desktop) toggle, show the
-     standalone mobile toggle as a persistent top bar. The mobile
-     toggle naturally occupies its own row in the .app grid (row 2),
-     so it stays visible regardless of drawer/details state. */
-  .mode-toggle-desktop { display: none; }
-  .mode-toggle-mobile  { display: flex; }
-
-  .mode-toggle-mobile .mode-btn {
-    flex: 0 0 auto;        /* fixed-width centered buttons (Figma mobile) */
-    padding: 9px 32px;
-    font-size: 13px;
-  }
-
-  /* The shell stays a single column on mobile so the map can
-     stretch edge-to-edge. The locations drawer and details
-     sheet are positioned absolutely over it. */
+  /* No edge gutter on the shell — panels go edge to edge */
   .shell,
   .shell.has-details {
     grid-template-columns: 1fr;
     position: relative;
     overflow: hidden;
+    padding: 0;
+    gap: 0;
   }
+
+  /* Map gets no rounded corners full-bleed */
+  .map-wrap { border-radius: 0; }
 
   /* ---- LOCATIONS DRAWER (slides in from the LEFT) ---- */
   .locations {
@@ -1125,15 +1297,14 @@ button { font-family: inherit; cursor: pointer; }
     top: 0;
     left: 0;
     bottom: 0;
-    width: min(82vw, 320px);
-    max-width: 82vw;
+    width: min(86vw, 360px);
+    max-width: 86vw;
     height: 100%;
     z-index: 820;
-    border-right: var(--border);
-    border-bottom: none;
     transform: translateX(-100%);
     transition: transform .26s ease;
-    box-shadow: 4px 0 16px rgba(0,0,0,.08);
+    box-shadow: 4px 0 16px rgba(0,0,0,.4);
+    border-radius: 0;
   }
 
   .locations.is-open {
@@ -1141,20 +1312,18 @@ button { font-family: inherit; cursor: pointer; }
   }
 
   .locations-close { display: inline-flex; }
-  .locations-head { padding-right: 18px; }
 
-  /* Sidebar tour footer is desktop-only; hide on mobile */
+  /* Sidebar tour footer is desktop-only; mobile uses .tourbar */
   .sidebar-tour { display: none; }
 
   .locations-toggle { display: inline-flex; }
 
-  /* Backdrop over the visible sliver of map (behind the drawer).
-     Tap-off dismisses the drawer. */
+  /* Backdrop over the visible sliver of map */
   .locations-backdrop {
     display: block;
     position: absolute;
     inset: 0;
-    background: rgba(0,0,0,.18);
+    background: rgba(0,0,0,.45);
     z-index: 810;
     opacity: 0;
     pointer-events: none;
@@ -1165,14 +1334,7 @@ button { font-family: inherit; cursor: pointer; }
     pointer-events: auto;
   }
 
-  /* ---- DETAILS: BOTTOM-SHEET ---- */
-  /* On mobile the details aside is absolutely positioned inside
-     .shell so it sits on top of the map but below the mode toggle
-     and tourbar. It has three states driven by JS:
-       .is-open           → half height (default after selection)
-       .is-open.is-full   → full height (dragged up)
-       .is-open.is-hidden → minimised to a small peek strip
-  */
+  /* ---- DETAILS BOTTOM-SHEET ---- */
   .details {
     position: absolute;
     left: 0;
@@ -1182,40 +1344,26 @@ button { font-family: inherit; cursor: pointer; }
     z-index: 830;
     height: var(--mobile-half-h);
     max-height: calc(100% - 8px);
-    border: none;
-    border-top: var(--border);
-    background: var(--paper);
+    border-radius: 12px 12px 0 0;
     transform: translateY(100%);
     transition: transform .28s cubic-bezier(.4,0,.2,1),
                 height    .28s cubic-bezier(.4,0,.2,1);
     opacity: 1;
     pointer-events: auto;
-    box-shadow: 0 -8px 24px rgba(0,0,0,.12);
+    box-shadow: 0 -8px 24px rgba(0,0,0,.3);
     display: flex;
     flex-direction: column;
   }
 
-  /* When the details sheet is being dragged, JS sets .is-dragging
-     and writes a live translateY via the style attribute. Disable
-     CSS transition so drag feels 1:1 with the finger. */
-  .details.is-dragging {
-    transition: none;
-  }
-
-  .details.is-open {
-    transform: translateY(0);
-  }
-
-  .details.is-open.is-full {
-    height: 100%;
-  }
-
+  .details.is-dragging   { transition: none; }
+  .details.is-open       { transform: translateY(0); }
+  .details.is-open.is-full { height: 100%; border-radius: 0; }
   .details.is-open.is-hidden {
     transform: translateY(calc(100% - var(--mobile-peek)));
   }
 
   .shell.has-details .details { opacity: 1; }
-  .shell.has-details { grid-template-columns: 1fr; } /* don't reflow */
+  .shell.has-details          { grid-template-columns: 1fr; }
 
   /* Drag handle bar */
   .details-handle {
@@ -1235,12 +1383,12 @@ button { font-family: inherit; cursor: pointer; }
     width: 44px;
     height: 4px;
     border-radius: 999px;
-    background: var(--line-soft);
+    background: rgba(255,255,255,.3);
   }
   .details.is-dragging .details-handle { cursor: grabbing; }
 
   .details-content {
-    padding: 10px 18px 24px;
+    padding: 8px 18px 24px;
     flex: 1;
     min-height: 0;
     display: flex;
@@ -1248,41 +1396,25 @@ button { font-family: inherit; cursor: pointer; }
     gap: 0;
   }
 
-  /* On mobile, peek and extra are real wrappers (not display:contents)
-     so we can hide "extra" in the half state. */
   .details-peek,
   .details-extra { display: block; }
-
-  /* Half state hides the "extra" block. Full state shows it. */
   .details-extra { display: none; }
   .details.is-full .details-extra { display: block; }
 
-  .details-close {
-    top: 14px;
-    right: 14px;
-  }
+  .details-close { top: 14px; right: 14px; }
+  .map-action    { bottom: 12px; right: 12px; }
 
-  /* Map action button doesn't fight the tourbar */
-  .map-action {
-    bottom: 12px;
-    right: 12px;
-  }
-
-  /* Title in metabar gets tighter on phones */
-  .brand-product { font-size: 11px; }
-  .brand-sc { font-size: 11px; padding: 3px 6px; }
-
-  /* Search results popover on mobile sits under the search bar */
+  /* Search results popover sits within the sidebar drawer
+     (not below the bar) since the bar is now inside the drawer. */
   .search-results {
     position: absolute;
     top: calc(100% - 4px);
-    left: 14px;
-    right: 14px;
+    left: 0;
+    right: 0;
   }
 
-  /* Hide the floating "Locations" button when either the drawer
-     or the details sheet (in full state) is open — it'd otherwise
-     sit on top of the drawer content or the details title. */
+  /* Hide the floating "Locations" button when the drawer or
+     full-state details panel is showing */
   .shell.drawer-open .locations-toggle,
   .shell.has-details.details-full .locations-toggle {
     display: none;
@@ -1291,23 +1423,24 @@ button { font-family: inherit; cursor: pointer; }
 
 /* Very small phones */
 @media (max-width: 420px) {
-  .mode-toggle-mobile .mode-btn { padding: 9px 28px; }
-  .tour-name { font-size: 13px; }
-  .tour-arrow { width: 38px; height: 38px; }
-  .locations-toggle { padding: 8px 12px 8px 10px; }
+  .mode-btn         { padding: 7px 16px; font-size: 11.5px; }
+  .brand-product    { font-size: 10.5px; }
+  .tour-name        { font-size: 13px; }
+  .tour-arrow       { width: 38px; height: 38px; }
+  .locations-toggle { padding: 8px 12px 8px 10px; font-size: 12px; }
 }
 
-/* Landscape phone — shrink header/footer heights */
+/* Landscape phone — shrink header heights */
 @media (max-height: 520px) and (orientation: landscape) {
-  :root { --topbar-h: 42px; --togglebar-h: 48px; --tourbar-h: 60px; }
+  :root { --topbar-h: 52px; --tourbar-h: 60px; }
   .details { max-height: 85vh; }
 }
 
 /* Touch: disable hover styles that feel laggy */
 @media (hover: none) {
-  .location-row:hover { background: var(--paper); }
-  .location-row.is-active:hover { background: var(--mint); }
-  .mode-btn:not(.is-active):hover { background: var(--paper); }
+  .location-row:hover     { background: var(--cell-bg); }
+  .location-row.is-active:hover { background: var(--cell-active); }
+  .mode-btn:not(.is-active):hover { color: var(--on-dark-muted); }
 }
 
 /* Respect reduced-motion */
@@ -1316,15 +1449,10 @@ button { font-family: inherit; cursor: pointer; }
 }
 
 /* ===========================================================
-   IMAGE ALIGNMENT TOOL
-   Dev tool that lets the user visually nudge the satellite
-   image so it lines up with the polygon overlays.
+   IMAGE ALIGNMENT TOOL (kept as-is — dev-only)
    =========================================================== */
-body.align-mode .leaflet-interactive {
-  stroke-width: 3px !important;
-}
+body.align-mode .leaflet-interactive { stroke-width: 3px !important; }
 
-/* When align mode is on, the `.metabar` button is visually active */
 #alignBtn.is-active {
   background: var(--ink);
   color: var(--paper);
@@ -1335,15 +1463,15 @@ body.align-mode .leaflet-interactive {
 
 .align-panel {
   position: fixed;
-  top: calc(var(--topbar-h) + var(--togglebar-h) + 14px);
+  top: calc(var(--topbar-h) + 14px);
   right: 14px;
   z-index: 1100;
   width: 260px;
   padding: 14px 14px 12px;
   background: var(--paper);
   border: 1.5px solid var(--line);
-  border-radius: 4px;
-  box-shadow: 0 4px 0 var(--line), 0 12px 28px rgba(0,0,0,.18);
+  border-radius: 6px;
+  box-shadow: 0 12px 28px rgba(0,0,0,.25);
   font-family: var(--mono);
   color: var(--ink);
 }
@@ -1373,7 +1501,7 @@ body.align-mode .leaflet-interactive {
   place-items: center;
   padding: 0;
 }
-.align-close svg { width: 12px; height: 12px; }
+.align-close svg   { width: 12px; height: 12px; }
 .align-close:hover { background: var(--fog); }
 
 .align-hint {
@@ -1385,7 +1513,7 @@ body.align-mode .leaflet-interactive {
 }
 
 .align-hint kbd,
-.align-tip  kbd {
+.align-tip kbd {
   font-family: var(--mono);
   font-size: 10px;
   padding: 1px 5px;
@@ -1395,7 +1523,6 @@ body.align-mode .leaflet-interactive {
   color: var(--ink);
 }
 
-/* 3×3 style directional pad */
 .align-pad {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
@@ -1405,9 +1532,6 @@ body.align-mode .leaflet-interactive {
   width: 132px;
 }
 
-/*    .  ↑  .
-      ←  •  →
-      .  ↓  .   */
 .align-pad .align-dir[data-nudge="up"]    { grid-column: 2; grid-row: 1; }
 .align-pad .align-dir[data-nudge="left"]  { grid-column: 1; grid-row: 2; }
 .align-pad .align-reset                   { grid-column: 2; grid-row: 2; }
@@ -1510,9 +1634,7 @@ body.align-mode .leaflet-interactive {
   transform: translateY(1px);
   box-shadow: 0 1px 0 var(--line);
 }
-.align-copy.is-copied {
-  background: var(--mint);
-}
+.align-copy.is-copied { background: var(--mint); }
 
 .align-tip {
   margin: 0;
@@ -1529,7 +1651,6 @@ body.align-mode .leaflet-interactive {
   border: 1px solid var(--line-soft);
 }
 
-/* Mobile: align panel becomes a floating bottom card */
 @media (max-width: 880px) {
   .align-panel {
     top: auto;
@@ -1542,7 +1663,7 @@ body.align-mode .leaflet-interactive {
   }
 }
 
-/*Metadata Images style*/
+/* Metadata image styling (when a real image is set by JS) */
 .details-image.has-image {
   padding: 0;
   background: #000;
@@ -1564,23 +1685,10 @@ body.align-mode .leaflet-interactive {
 }
 
 .details-image.has-image figcaption,
-.details-image.has-image .details-image-x {
-  display: none;
-}
+.details-image.has-image .details-image-x { display: none; }
 
 /* ===========================================================
-   TREEDIS STREET VIEW OVERLAY
-   -----------------------------------------------------------
-   The street view covers the centre map column on desktop and
-   the whole shell on mobile. It's hidden until a user hits
-   Explore in the metadata panel — but the iframe preloads in
-   the background so the first open is instant.
-
-   Layering rationale:
-   • z-index 900 keeps it above all Leaflet controls, the
-     tour-pins, and the mobile location-toggle pill, but below
-     the details bottom-sheet drag handle so the user can still
-     drag the handle on mobile if they want to expand details.
+   TREEDIS STREET VIEW OVERLAY (mostly preserved)
    =========================================================== */
 .streetview {
   position: absolute;
@@ -1588,40 +1696,24 @@ body.align-mode .leaflet-interactive {
   z-index: 900;
   background: var(--ink);
   overflow: hidden;
-  border-left: var(--border);
-
-  /* Rendered but invisible so the iframe actually loads on boot.
-     An ancestor with display:none would pause iframe loading. */
   visibility: hidden;
   opacity: 0;
   pointer-events: none;
   transition: opacity .18s ease-out;
+  border-radius: inherit;
 }
 
-/* Hide all Leaflet map controls and attribution while the street
-   view overlay is active. */
 body.streetview-open .leaflet-control-container,
 body.streetview-open .leaflet-control-zoom,
 body.streetview-open .leaflet-control-attribution {
   display: none !important;
 }
 
-/* Hide the "Fit to view" map button while in street view. */
-body.streetview-open .map-action {
-  display: none !important;
-}
+body.streetview-open .map-action { display: none !important; }
 
-/* On desktop, hide the locations toggle pill in street view —
-   the sidebar list is already visible on desktop, so the pill
-   would be redundant. On mobile we keep it (see mobile block
-   below) because it's the only way back to the locations menu. */
 @media (min-width: 881px) {
-  body.streetview-open .locations-toggle {
-    display: none !important;
-  }
+  body.streetview-open .locations-toggle { display: none !important; }
 }
-
-.shell .map-wrap .streetview { border-left: 0; }
 
 .streetview.is-open {
   visibility: visible;
@@ -1639,23 +1731,19 @@ body.streetview-open .map-action {
   background: var(--ink);
 }
 
-/* ---- Close (X) button, top-right ---------------------------
-   Semitransparent so you can see the 3D scene behind it.
-   Matches the architectural, monospace aesthetic from the
-   rest of the Figma. */
 .streetview-close {
   position: absolute;
   top: 22px;
-  right: 52px;
+  right: 22px;
   z-index: 3;
   width: 40px;
   height: 40px;
   display: grid;
   place-items: center;
-  border: 1.5px solid rgba(255, 255, 255, .55);
-  background: rgba(11, 11, 11, .45);
+  border: 1px solid rgba(255,255,255,.55);
+  background: rgba(11,11,11,.45);
   color: #fff;
-  border-radius: 4px;
+  border-radius: 50%;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   transition: background .15s, border-color .15s;
@@ -1663,71 +1751,22 @@ body.streetview-open .map-action {
 }
 .streetview-close svg { width: 18px; height: 18px; display: block; }
 .streetview-close:hover {
-  background: rgba(11, 11, 11, .7);
-  border-color: rgba(255, 255, 255, .9);
+  background: rgba(11,11,11,.7);
+  border-color: rgba(255,255,255,.9);
 }
 .streetview-close:focus-visible {
   outline: 2px solid #fff;
   outline-offset: 2px;
 }
 
-/* ---- Top-left caption pill -------------------------------- */
-.streetview-caption {
-  display: none;  /* Replaced by tour-bar metadata; kept in DOM in case we want it back. */
-  position: absolute;
-  top: 12px;
-  left: 12px;
-  z-index: 3;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px 12px;
-  background: rgba(11, 11, 11, .45);
-  color: #fff;
-  border: 1.5px solid rgba(255, 255, 255, .4);
-  border-radius: 4px;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  font-family: var(--mono);
-  max-width: min(70%, 420px);
-}
+.streetview-caption { display: none; }
 
-.streetview-caption-kicker {
-  font-size: 10px;
-  letter-spacing: .18em;
-  font-weight: 600;
-  color: rgba(255, 255, 255, .75);
-}
-
-.streetview-caption-title {
-  font-size: 14px;
-  font-weight: 700;
-  letter-spacing: .02em;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.streetview-caption-sub {
-  font-size: 11px;
-  letter-spacing: .06em;
-  color: rgba(255, 255, 255, .7);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.streetview-caption-sub:empty { display: none; }
-
-/* ---- Touch guard (mobile only) --------------------------- */
-/* Loading veil shown over the iframe when the user opens the
-   street view before Treedis has booted. Sits above the touch
-   guard (z-index 3 vs 2) so it eclipses everything until we hide
-   it once TourReady fires. */
 .streetview-loading {
   display: none;
   position: absolute;
   inset: 0;
   z-index: 3;
-  background: rgba(11, 11, 11, .92);
+  background: rgba(11,11,11,.92);
   align-items: center;
   justify-content: center;
 }
@@ -1738,9 +1777,9 @@ body.streetview-open .map-action {
   align-items: center;
   gap: 14px;
   padding: 14px 20px;
-  background: rgba(0, 0, 0, .55);
+  background: rgba(0,0,0,.55);
   color: #fff;
-  border: 1.5px solid rgba(255, 255, 255, .35);
+  border: 1px solid rgba(255,255,255,.35);
   border-radius: 6px;
   font-family: var(--mono);
   font-size: 13px;
@@ -1751,7 +1790,7 @@ body.streetview-open .map-action {
 .streetview-loading-spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(255, 255, 255, .25);
+  border: 2px solid rgba(255,255,255,.25);
   border-top-color: #fff;
   border-radius: 50%;
   animation: spin .9s linear infinite;
@@ -1763,7 +1802,7 @@ body.streetview-open .map-action {
   position: absolute;
   inset: 0;
   z-index: 2;
-  background: rgba(0, 0, 0, .35);
+  background: rgba(0,0,0,.35);
   align-items: center;
   justify-content: center;
   cursor: pointer;
@@ -1776,9 +1815,9 @@ body.streetview-open .map-action {
   align-items: center;
   gap: 10px;
   padding: 12px 18px;
-  background: rgba(11, 11, 11, .65);
+  background: rgba(11,11,11,.65);
   color: #fff;
-  border: 1.5px solid rgba(255, 255, 255, .55);
+  border: 1px solid rgba(255,255,255,.55);
   border-radius: 6px;
   font-family: var(--mono);
   font-size: 13px;
@@ -1786,102 +1825,34 @@ body.streetview-open .map-action {
   letter-spacing: .03em;
 }
 
-/* ---- Sub-list rows — visibly clickable, with "pending"
-        state for entries whose Treedis sweep isn't wired yet. */
 .sub-list li.sub-row { outline: none; }
 .sub-list li.sub-row:focus-visible {
-  background: var(--fog);
-  box-shadow: inset 0 0 0 2px var(--ink);
+  background: var(--cell-active);
+  box-shadow: inset 0 0 0 2px var(--brand-red);
 }
-.sub-list li.sub-row .chev {
-  transition: transform .12s ease;
-}
+.sub-list li.sub-row .chev { transition: transform .12s ease; }
 .sub-list li.sub-row:hover .chev,
-.sub-list li.sub-row:focus-visible .chev {
-  transform: translateX(2px);
-}
-/* Pending items (no sweep mapped yet) read as "available but
-   not live" — still clickable so the viewer at least opens at
-   the parent sweep. */
-.sub-list li.sub-row.is-pending {
-  color: #6b7280;
-}
-.sub-list li.sub-row.is-pending::after {
-  content: "";
-}
-.explore-cta.is-pending {
-  /* Subtle distinction that's easy to spot during data entry. */
-  background: var(--ink-2);
-}
+.sub-list li.sub-row:focus-visible .chev { transform: translateX(2px); }
+.sub-list li.sub-row.is-pending { color: var(--on-dark-faint); }
+.explore-cta.is-pending { background: var(--brand-red-2); }
 
-/* ===========================================================
-   MOBILE ADJUSTMENTS FOR STREET VIEW
-   -----------------------------------------------------------
-   On mobile the details panel is a bottom sheet sitting over
-   the map. Per the Figma flow, the street view replaces the
-   map layer entirely (the panel is dismissed first), so the
-   user gets a clean, fullscreen 3D viewport with just the
-   header + tour bar chrome surrounding it.
-   =========================================================== */
 @media (max-width: 880px) {
-  /* The streetview overlay lives inside .map-wrap on mobile
-     too — which already fills the full row between topbar /
-     toggle and the tourbar. That's exactly the area the
-     Figma shows the 3D scene in, so no geometry tweaks are
-     needed here — just nudge the close button clear of the
-     iOS safe area. */
   .streetview-close {
     top: calc(22px + env(safe-area-inset-top, 0px));
-    right: calc(52px + env(safe-area-inset-right, 0px));
+    right: calc(22px + env(safe-area-inset-right, 0px));
   }
-  .streetview-caption {
+
+  .shell .locations-toggle { z-index: 901; }
+  body.streetview-open .shell .locations-toggle {
     top: calc(12px + env(safe-area-inset-top, 0px));
     left: calc(12px + env(safe-area-inset-left, 0px));
-    max-width: calc(100% - 80px);   /* leave room for close btn */
+    bottom: auto;
+    right: auto;
   }
-
-  /* While the street view is open on mobile, keep the locations
-       toggle visible so users can re-access the list. Position it
-       directly below the STREET VIEW caption card on the top-left
-       so all "app chrome" navigation is grouped on the same side,
-       leaving the iframe's own controls (volume, share, fullscreen,
-       3D model) untouched at the bottom of the viewer. */
-    .shell .locations-toggle { z-index: 901; }
-
-    body.streetview-open .shell .locations-toggle {
-        /* Caption was removed — sit at the standard top inset.
-           env() keeps the pill clear of the iOS notch. */
-        top: calc(12px + env(safe-area-inset-top, 0px));
-        left: calc(12px + env(safe-area-inset-left, 0px));
-        bottom: auto;
-        right: auto;
-      }
-
-      /* The mobile locations drawer and its backdrop normally sit at
-       z-index 820/810 — fine over the map, but invisible behind the
-       street view overlay (z-index 900). When street view is open,
-       lift them above the overlay so the user can actually see and
-       interact with the menu they just summoned. */
-    body.streetview-open .locations {
-      z-index: 920;
-    }
-    body.streetview-open .locations-backdrop {
-      z-index: 910;
-    }
-
-  /* The fit-to-view button has no job while inside the
-     street view — hide it so it doesn't overlap controls. */
-  body.streetview-open .map-action { display: none; }
+  body.streetview-open .locations         { z-index: 920; }
+  body.streetview-open .locations-backdrop { z-index: 910; }
 }
 
-/* Very small phones — tighten the caption so it doesn't
-   crowd the close X. */
 @media (max-width: 420px) {
-  .streetview-caption {
-    padding: 6px 10px;
-    max-width: calc(100% - 70px);
-  }
-  .streetview-caption-title { font-size: 13px; }
-  .streetview-caption-sub   { font-size: 10px; }
   .streetview-close { width: 36px; height: 36px; }
 }

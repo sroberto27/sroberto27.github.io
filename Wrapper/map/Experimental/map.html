@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="theme-color" content="#0b0b0b" />
-  <title>SCSU Metaversity — Virtual Campus Tour</title>
+  <meta name="theme-color" content="#000000" />
+  <title>SCSU Virtual Campus</title>
 
   <!-- Fonts: monospace primary, clean sans for body -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -18,78 +18,112 @@
 <body>
 
   <!-- ============================================================
-       SPLASH / LOADING (mobile title screen from the Figma flow)
+       SPLASH / LOADING
        ============================================================ -->
-<div id="splash" class="splash" role="status" aria-label="Loading">
-  <div class="splash-brand">
-    <div class="splash-sc">SCSU</div>
-    <div class="splash-title">Metaversity</div>
-    <div class="splash-spinner" aria-hidden="true"></div>
-    <div class="splash-progress" id="splashProgress">Loading…</div>
+  <div id="splash" class="splash" role="status" aria-label="Loading">
+    <div class="splash-brand">
+      <div class="splash-sc">SCSU</div>
+      <div class="splash-title">Virtual Campus</div>
+      <div class="splash-spinner" aria-hidden="true"></div>
+      <div class="splash-progress" id="splashProgress">Loading…</div>
+    </div>
   </div>
-</div>
 
   <!-- ============================================================
        APP CHROME
        ============================================================ -->
   <div class="app" id="app" aria-hidden="true">
 
-    <!-- ==== TOP HEADER ==== -->
+    <!-- Brand red accent strip across the very top -->
+    <div class="brand-flair" aria-hidden="true"></div>
+
+    <!-- ==== TOP HEADER (persistent on desktop AND mobile) ==== -->
     <header class="metabar" role="banner">
       <div class="metabar-brand">
-        <span class="brand-sc">SCSU</span>
-        <span class="brand-product">METAVERSITY</span>
+        <img class="brand-logo"
+             src="assets/Icons/logo.jpg"
+             alt="South Carolina State University"
+             onerror="this.style.display='none'" />
+        <span class="brand-product">SCSU VIRTUAL CAMPUS</span>
       </div>
 
-      <!-- Desktop: centered search field inside the header. On mobile
-           this is hidden by default; the SEARCH link on the right
-           toggles it into view below the header. -->
-      <div class="metabar-search" id="metabarSearch">
-        <div class="search-field">
-          <svg viewBox="0 0 24 24" class="search-icon" aria-hidden="true">
-            <circle cx="11" cy="11" r="7" stroke="currentColor"
-                    stroke-width="2" fill="none"/>
-            <path d="M21 21l-4.3-4.3" stroke="currentColor"
-                  stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          <input id="searchInput" type="search"
-                 placeholder="Search for buildings, locations, courses"
-                 aria-label="Search locations" />
-          <button class="search-clear" id="searchClear"
-                  type="button" aria-label="Clear / close search" hidden>
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor"
-                    stroke-width="2" stroke-linecap="round" fill="none"/>
-            </svg>
-          </button>
-        </div>
-        <div id="searchResults" class="search-results" hidden></div>
+      <!-- ==== EXPLORE / LEARN TOGGLE (persistent in header) ====
+           Single instance; lives in the top bar at every breakpoint.
+           Uses the .mode-btn class so the existing JS (which targets
+           every .mode-btn via querySelectorAll) keeps it in sync. -->
+      <div class="mode-toggle mode-toggle-header"
+           role="tablist" aria-label="Mode">
+        <button class="mode-btn is-active" role="tab"
+                aria-selected="true" data-mode="explore" type="button">Explore</button>
+        <button class="mode-btn" role="tab"
+                aria-selected="false" data-mode="learn" type="button">Learn</button>
       </div>
 
-      <nav class="metabar-nav" aria-label="Utility">
+      <!-- Burger menu trigger. Pure-CSS toggle via the hidden checkbox
+           below — clicking the label opens/closes #burgerPanel without
+           any JS. The original metabar nav buttons (search/help/etc.)
+           remain in the DOM (visually hidden) because the existing JS
+           still binds to them. -->
+      <div class="metabar-actions">
+        <input type="checkbox" id="burgerToggle" class="burger-toggle"
+               aria-hidden="true" />
+        <label for="burgerToggle" class="burger-btn"
+               role="button" aria-label="Open menu" tabindex="0">
+          <img src="assets/Icons/charm_menu-hamburger.svg"
+               alt="" aria-hidden="true"
+               onerror="this.replaceWith(Object.assign(document.createElement('span'),{className:'burger-fallback',textContent:'≡'}))" />
+        </label>
+      </div>
+
+      <!-- Hidden utility buttons that the existing JS still binds to.
+           They're not part of the new design but the JS references
+           them, so we keep them in the DOM and visually hide them. -->
+      <div class="hidden-utilities" aria-hidden="true">
         <button class="link-btn" id="searchBtn" type="button"
-                aria-label="Toggle search">SEARCH</button>
+                tabindex="-1">SEARCH</button>
         <button class="link-btn" id="alignBtn" type="button"
-                title="Align image to polygons (Shift+A)">ALIGN</button>
-        <button class="link-btn" id="helpBtn" type="button">HELP</button>
-        <button class="link-btn" id="fullscreenBtn" type="button">
+                tabindex="-1" title="Align image to polygons (Shift+A)">ALIGN</button>
+        <button class="link-btn" id="helpBtn" type="button"
+                tabindex="-1">HELP</button>
+        <button class="link-btn" id="fullscreenBtn" type="button"
+                tabindex="-1">
           <span class="fs-label">FULLSCREEN</span>
         </button>
-      </nav>
+      </div>
     </header>
 
-    <!-- ==== EXPLORE / LEARN TOGGLE (mobile only) ====
-         Lives outside the sidebar so it remains visible regardless of
-         whether the locations drawer is open. Hidden on desktop via CSS;
-         the toggle inside the sidebar takes over there.
-         Both toggles share the .mode-btn class — the existing JS in
-         app.js (querySelectorAll('.mode-btn')) keeps them in sync. -->
-    <div class="mode-toggle mode-toggle-mobile" role="tablist" aria-label="Mode">
-      <button class="mode-btn is-active" role="tab"
-              aria-selected="true" data-mode="explore" type="button">Explore</button>
-      <button class="mode-btn" role="tab"
-              aria-selected="false" data-mode="learn" type="button">Learn</button>
-    </div>
+    <!-- ==== BURGER SLIDE-IN PANEL (right side) ==== -->
+    <aside class="burger-panel" id="burgerPanel"
+           aria-label="Menu" aria-hidden="true">
+      <header class="burger-panel-head">
+        <span class="burger-panel-kicker">MENU</span>
+        <label for="burgerToggle" class="burger-panel-close"
+               role="button" aria-label="Close menu" tabindex="0">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" fill="none"/>
+          </svg>
+        </label>
+      </header>
+
+      <nav class="burger-panel-list" aria-label="Site links">
+        <a class="burger-link" href="#">
+          <span>How to use</span>
+          <span class="burger-chev" aria-hidden="true">›</span>
+        </a>
+        <a class="burger-link" href="#">
+          <span>Student Portal</span>
+          <span class="burger-chev" aria-hidden="true">›</span>
+        </a>
+        <a class="burger-link" href="#">
+          <span>Exit</span>
+          <span class="burger-chev" aria-hidden="true">›</span>
+        </a>
+      </nav>
+    </aside>
+    <!-- Click-outside backdrop for the burger panel -->
+    <label for="burgerToggle" class="burger-backdrop"
+           aria-hidden="true"></label>
 
     <!-- ==== MAIN GRID ==== -->
     <main class="shell">
@@ -101,32 +135,76 @@
 
       <!-- ───── LEFT: LOCATIONS SIDEBAR ───── -->
       <aside class="locations" id="locations" aria-label="Campus locations">
-        <!-- ==== EXPLORE / LEARN TOGGLE (desktop only) ====
-             Hidden on mobile via CSS; the .mode-toggle-mobile outside
-             the shell takes over there. -->
-        <div class="mode-toggle mode-toggle-desktop" role="tablist" aria-label="Mode">
-          <button class="mode-btn is-active" role="tab"
-                  aria-selected="true" data-mode="explore" type="button">Explore</button>
-          <button class="mode-btn" role="tab"
-                  aria-selected="false" data-mode="learn" type="button">Learn</button>
-        </div>
+
         <header class="locations-head">
           <div class="locations-heading">
-            <div class="locations-title">CAMPUS LOCATIONS</div>
-            <div class="locations-sub">
-              <span id="locationsCount">0</span> locations to explore.
-            </div>
+            <div class="locations-kicker">CAMPUS MAP</div>
+            <h1 class="locations-title">Locations</h1>
           </div>
           <button class="locations-close" id="locationsClose"
                   type="button" aria-label="Close locations list">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M6 6l12 12M18 6L6 18" stroke="currentColor"
-                    stroke-width="2" stroke-linecap="round" fill="none"/>
-            </svg>
+            <img src="assets/Icons/locations_sidebar-close.svg" alt=""
+                 aria-hidden="true"
+                 onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'×',className:'lc-fallback'}))" />
           </button>
         </header>
 
-        <ul class="locations-list" id="locationsList" role="listbox">
+        <!-- ==== TABS: FEATURED / ALL ====
+             Pure-CSS tab switcher using radio inputs. The Featured tab
+             shows the original tour-stop list (#locationsList, populated
+             by JS). The All tab shows #allLocationsList, populated by
+             JS from the building layer. -->
+        <div class="loc-tabs" role="tablist" aria-label="Location filter">
+          <input type="radio" name="locTab" id="locTabFeatured"
+                 class="loc-tab-input" checked />
+          <label for="locTabFeatured" class="loc-tab"
+                 role="tab" aria-controls="locationsList">Featured</label>
+
+          <input type="radio" name="locTab" id="locTabAll"
+                 class="loc-tab-input" />
+          <label for="locTabAll" class="loc-tab"
+                 role="tab" aria-controls="allLocationsList">All</label>
+        </div>
+
+        <!-- Search lives inside the sidebar now -->
+        <div class="metabar-search" id="metabarSearch">
+          <div class="search-field">
+            <svg viewBox="0 0 24 24" class="search-icon" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" stroke="currentColor"
+                      stroke-width="2" fill="none"/>
+              <path d="M21 21l-4.3-4.3" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <input id="searchInput" type="search"
+                   placeholder="Search for buildings, locations, courses…"
+                   aria-label="Search locations" />
+            <button class="search-clear" id="searchClear"
+                    type="button" aria-label="Clear search" hidden>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round" fill="none"/>
+              </svg>
+            </button>
+          </div>
+          <div id="searchResults" class="search-results" hidden></div>
+        </div>
+
+        <div class="locations-meta" aria-live="polite">
+          <span id="locationsCount">0</span> locations to explore.
+        </div>
+
+        <!-- Featured list (tour stops). The existing JS owns this. -->
+        <ul class="locations-list locations-list-featured"
+            id="locationsList" role="listbox"
+            aria-labelledby="locTabFeatured">
+          <!-- populated by JS -->
+        </ul>
+
+        <!-- All list (every building from the building layer).
+             A small new JS function populates this from buildingsLayer. -->
+        <ul class="locations-list locations-list-all"
+            id="allLocationsList" role="listbox"
+            aria-labelledby="locTabAll">
           <!-- populated by JS -->
         </ul>
 
@@ -141,10 +219,10 @@
           </button>
 
           <div class="tour-info">
-            <div class="tour-label">TOUR</div>
+            <div class="tour-label">GUIDED TOUR</div>
             <div class="tour-name" id="tourName">—</div>
             <div class="tour-count">
-              <span id="tourCurrent">0</span>/<span id="tourTotal">0</span>
+              <span id="tourCurrent">0</span> / <span id="tourTotal">0</span>
             </div>
           </div>
 
@@ -164,17 +242,6 @@
 
         <!-- =========================================================
              TREEDIS STREET VIEW OVERLAY
-             ---------------------------------------------------------
-             The iframe starts blank and is only loaded when the
-             user first opens street view (Explore CTA, sub-location
-             row, etc.). The loading veil shown by JS covers the
-             wait. While this panel is open the map is still in the
-             DOM beneath it; the X button in the top-right returns
-             the user to the map. The left-side Locations list and
-             the Tour-bar arrows stay connected and drive Treedis
-             via postMessage while the street view is active. Every
-             wrapper-driven Navigate raises the loading veil until
-             Treedis confirms the new sweep via PoseChanged.
              ========================================================= -->
         <div id="streetview" class="streetview" aria-hidden="true">
           <iframe
@@ -186,11 +253,6 @@
             src="about:blank"
           ></iframe>
 
-          <!-- Loading veil shown over the iframe. Active for the
-               first cold load AND for every subsequent navigation
-               (location row, tour-bar arrow, sub-location, in-tour
-               tag click) until Treedis confirms the new sweep.
-               JS toggles .is-active. -->
           <div class="streetview-loading" id="streetviewLoading"
                aria-hidden="true">
             <div class="streetview-loading-inner">
@@ -201,7 +263,6 @@
             </div>
           </div>
 
-          <!-- Top-right semitransparent close button -->
           <button class="streetview-close" id="streetviewClose"
                   type="button" aria-label="Close street view">
             <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -210,15 +271,12 @@
             </svg>
           </button>
 
-          <!-- Subtle label showing which location is currently shown -->
           <div class="streetview-caption" id="streetviewCaption">
             <span class="streetview-caption-kicker">STREET VIEW</span>
             <span class="streetview-caption-title" id="streetviewTitle">—</span>
             <span class="streetview-caption-sub" id="streetviewSub"></span>
           </div>
 
-          <!-- Mobile "tap to interact" guard so accidental drags on
-               the page don't get swallowed by the 3D viewer. -->
           <div class="streetview-touch-guard" id="streetviewTouchGuard"
                aria-hidden="true">
             <div class="streetview-touch-guard-prompt">
@@ -234,13 +292,12 @@
           </div>
         </div>
 
-        <!-- Mobile: reveal the locations list -->
+        <!-- Mobile: reveal the locations list. New icon. -->
         <button class="locations-toggle" id="locationsToggle"
                 type="button" aria-label="Open locations list">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor"
-                  stroke-width="2" stroke-linecap="round" fill="none"/>
-          </svg>
+          <img src="assets/Icons/locations_sidebar-close.svg"
+               alt="" aria-hidden="true" class="locations-toggle-icon"
+               onerror="this.replaceWith(Object.assign(document.createElement('span'),{textContent:'≡',className:'lt-fallback'}))" />
           <span>Locations</span>
         </button>
 
@@ -259,9 +316,6 @@
       <aside class="details" id="details"
              aria-label="Location details" aria-hidden="true">
 
-        <!-- Mobile-only drag handle (from drag.html pattern). On
-             desktop this is hidden; on mobile it lets the user pull
-             the panel between half-height and full-height. -->
         <div class="details-handle" id="detailsHandle" aria-hidden="true"></div>
 
         <button class="details-close" id="detailsClose"
@@ -273,17 +327,16 @@
         </button>
 
         <div class="details-content">
-          <!-- "Peek" content — shown in half state on mobile, always
-               visible on desktop -->
           <div class="details-peek">
             <div class="details-tag" id="detailsTag">ACADEMIC BUILDING</div>
             <h2 class="details-title" id="detailsTitle">—</h2>
             <div class="details-sub"  id="detailsSub">—</div>
 
             <button class="explore-cta" id="exploreCta" type="button">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M13 4l7 8-7 8M4 12h15"
-                      stroke="currentColor" stroke-width="2"
+              <svg class="explore-cta-icon-fallback" viewBox="0 0 24 24"
+                   aria-hidden="true">
+                <path d="M5 12h12M13 6l6 6-6 6"
+                      stroke="currentColor" stroke-width="2.2"
                       stroke-linecap="round" stroke-linejoin="round" fill="none"/>
               </svg>
               <span>Explore</span>
@@ -295,8 +348,6 @@
             </figure>
           </div>
 
-          <!-- "Extra" content — desktop: always visible.
-                                 mobile: only visible in full state. -->
           <div class="details-extra">
             <p class="details-body" id="detailsBody">
               Select a location from the list or map to see details.
@@ -304,16 +355,12 @@
 
             <div class="details-block" id="happensHereBlock">
               <div class="details-block-h">WHAT HAPPENS HERE?</div>
-              <div class="chip-row" id="chipsHere">
-                <!-- populated by JS -->
-              </div>
+              <div class="chip-row" id="chipsHere"></div>
             </div>
 
             <div class="details-block" id="explorableBlock">
               <div class="details-block-h">EXPLORABLE LOCATIONS</div>
-              <ul class="sub-list" id="subList">
-                <!-- populated by JS -->
-              </ul>
+              <ul class="sub-list" id="subList"></ul>
             </div>
 
             <div class="details-vr">
@@ -344,10 +391,10 @@
       </button>
 
       <div class="tour-info">
-        <div class="tour-label">TOUR</div>
+        <div class="tour-label">GUIDED TOUR</div>
         <div class="tour-name" id="tourNameMobile">—</div>
         <div class="tour-count">
-          <span id="tourCurrentMobile">0</span>/<span id="tourTotalMobile">0</span>
+          <span id="tourCurrentMobile">0</span> / <span id="tourTotalMobile">0</span>
         </div>
       </div>
 
@@ -360,8 +407,7 @@
       </button>
     </footer>
 
-    <!-- ==== DESKTOP FOOTER (slim bar) ==== -->
-    <div class="site-footer" aria-hidden="true"></div>
+    <!-- Footer bar removed per redesign spec -->
 
     <!-- ==== ALIGNMENT TOOL (hidden until activated) ==== -->
     <div class="align-panel" id="alignPanel" hidden>
@@ -425,13 +471,6 @@
        ============================================================ -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-  <!-- OPTIONAL offline shims. When the page is served over http://
-       or https:// (i.e. on a real website), app.js fetches the
-       .geojson files directly and these shims aren't needed. They
-       exist so the page also works when opened straight from disk
-       (file://), where browsers block fetch(). Delete them if you
-       are only ever serving this from a web server — the `onerror`
-       handlers keep things tidy if a file is missing. -->
   <script src="data/buildings.js" onerror="this.remove()"></script>
   <script src="data/tours.js"     onerror="this.remove()"></script>
 

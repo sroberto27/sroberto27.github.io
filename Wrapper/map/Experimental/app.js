@@ -155,6 +155,7 @@ const el = {
 
   locations:          $("locations"),
   locationsList:      $("locationsList"),
+  allLocationsList:   $("allLocationsList"),
   locationsCount:     $("locationsCount"),
   locationsClose:     $("locationsClose"),
   locationsToggle:    $("locationsToggle"),
@@ -1305,6 +1306,17 @@ function syncLocationsList() {
                    cleanName(selectedLayer.feature.properties.name).toLowerCase() === name;
     r.classList.toggle("is-active", !!active);
   });
+
+  // Also sync the All-tab list (added for the Featured/All redesign)
+  if (el.allLocationsList) {
+    const allRows = el.allLocationsList.querySelectorAll(".location-row");
+    allRows.forEach((r) => {
+      const name = r.dataset.name || "";
+      const active = selectedLayer &&
+                     cleanName(selectedLayer.feature.properties.name).toLowerCase() === name;
+      r.classList.toggle("is-active", !!active);
+    });
+  }
 }
 
 function renderLocationsList() {
@@ -1396,6 +1408,78 @@ function renderLocationsList() {
       }
 
       selectFeature(stop.layer, "tour", { focus: true });
+    });
+  });
+}
+
+/* -----------------------------------------------------------
+   13b. "All" tab — every building on the campus
+   -----------------------------------------------------------
+   Populates #allLocationsList from buildingsLayer (the full
+   building polygon set). Clicking a row selects that feature
+   on the map and opens the details panel, exactly like the
+   Featured rows do for tour stops.
+   ----------------------------------------------------------- */
+function renderAllLocationsList() {
+  if (!el.allLocationsList || !buildingsLayer) return;
+
+  // Collect (name, layer) pairs from the building features. We
+  // dedupe by lower-cased clean name so duplicate features don't
+  // each get their own row.
+  const seen = new Map();
+  buildingsLayer.eachLayer((layer) => {
+    const f = layer.feature;
+    if (!f || !f.properties) return;
+    const raw = f.properties.name;
+    if (!raw) return;
+    const name = cleanName(raw);
+    const key = name.toLowerCase();
+    if (seen.has(key)) return;
+    seen.set(key, { name, layer });
+  });
+
+  // Sort alphabetically for the All list — the Featured tab is
+  // intentionally ordered by tour sequence, but "All" reads
+  // better as an alphabetical reference.
+  const items = Array.from(seen.values())
+                     .sort((a, b) => a.name.localeCompare(b.name));
+
+  if (!items.length) {
+    el.allLocationsList.innerHTML =
+      `<li class="locations-empty">No buildings loaded.</li>`;
+    return;
+  }
+
+  const rows = items.map((it) => {
+    const cat = getCategory(it.name);
+    return `
+      <li class="location-row" role="option"
+          data-name="${it.name.toLowerCase()}">
+        <div>
+          <div class="location-name">${it.name}</div>
+          <div class="location-cat">${cat}</div>
+        </div>
+        <span class="location-chev">›</span>
+      </li>
+    `;
+  });
+
+  el.allLocationsList.innerHTML = rows.join("");
+
+  el.allLocationsList.querySelectorAll(".location-row").forEach((row) => {
+    row.addEventListener("click", () => {
+      const name = row.dataset.name;
+      const item = items.find(
+        (i) => i.name.toLowerCase() === name
+      );
+      if (!item) return;
+
+      // Mobile: close the drawer after the user picks something.
+      closeMobileLocations({ silent: true });
+
+      // Same flow as the Featured rows — but kind:"building"
+      // because these come from the buildings layer, not tours.
+      selectFeature(item.layer, "building", { focus: true });
     });
   });
 }
@@ -2280,6 +2364,7 @@ if (config.mapMode === "tiles") {
 
   // Locations list
   renderLocationsList();
+  renderAllLocationsList();
 
   // Leaflet warm-up: force the first selected-style application
   // and immediately revert it. This pays the cost of Leaflet's
