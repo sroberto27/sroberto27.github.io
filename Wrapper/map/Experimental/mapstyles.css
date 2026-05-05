@@ -1473,7 +1473,6 @@ img    { user-select: none; -webkit-user-drag: none; }
   .shell.has-details.details-full .locations-toggle {
     display: none;
   }
-
   /* Mobile — keep Leaflet controls clear of the bottom sheet */
   .leaflet-top.leaflet-right {
     top: 12px;
@@ -1496,7 +1495,6 @@ img    { user-select: none; -webkit-user-drag: none; }
     opacity: 0;
     pointer-events: none;
   }
-}  /* ← this is the existing closing brace of the mobile media query */
 
 
 }
