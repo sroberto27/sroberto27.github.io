@@ -2081,13 +2081,23 @@ body.streetview-open .map-action { display: none !important; }
 /* The four dim panels that surround the cutout. Each is sized
    and positioned per-step from JS using inline top/left/width
    /height. Default to covering the full viewport so a missed
-   measurement still gives a sane (fully dimmed) state. */
+   measurement still gives a sane (fully dimmed) state.
+
+   IMPORTANT: pointer-events is ONLY auto when the overlay is
+   actually visible. Without this guard the masks keep
+   swallowing clicks even after the walkthrough closes,
+   because their inline width/height still cover the screen
+   and `pointer-events: auto` would override the parent's
+   `pointer-events: none`. */
 .coachmark-mask {
   position: absolute;
   background: rgba(0, 0, 0, .58);
-  pointer-events: auto;     /* swallow clicks on the dimmed area */
+  pointer-events: none;
   transition: top .28s ease, left .28s ease,
               width .28s ease, height .28s ease;
+}
+.coachmark-overlay[aria-hidden="false"] .coachmark-mask {
+  pointer-events: auto;     /* swallow clicks on the dimmed area */
 }
 .coachmark-mask-top    { top: 0; left: 0; right: 0;    height: 0; }
 .coachmark-mask-bottom { left: 0; right: 0; bottom: 0; height: 0; }
@@ -2105,7 +2115,9 @@ body.streetview-open .map-action { display: none !important; }
               width .28s ease, height .28s ease;
 }
 
-/* The tooltip card itself. Position is set inline by JS. */
+/* The tooltip card itself. Position is set inline by JS.
+   Pointer-events is gated on the overlay being visible — same
+   rationale as the masks. */
 .coachmark-card {
   position: absolute;
   width: min(360px, calc(100vw - 48px));
@@ -2113,11 +2125,14 @@ body.streetview-open .map-action { display: none !important; }
   color: var(--ink);
   padding: 20px 22px 16px;
   box-shadow: 0 16px 36px rgba(0, 0, 0, .35);
-  pointer-events: auto;
+  pointer-events: none;
   font-family: var(--sans);
   /* Square corners to match the Figma board. */
   border-radius: 0;
   transition: top .28s ease, left .28s ease;
+}
+.coachmark-overlay[aria-hidden="false"] .coachmark-card {
+  pointer-events: auto;
 }
 
 .coachmark-close {

@@ -2554,7 +2554,7 @@ if (config.mapMode === "tiles") {
       title: "Locations Sidebar",
       body:
         "Browse all campus locations here. Use the search bar to find " +
-        "buildings or courses, switch between Featured and All to filter " +
+        "buildings, switch between Featured and All to filter " +
         "the list, and follow the Guided Tour at the bottom to step " +
         "through key stops in order.",
       getRect: () => {
@@ -2830,7 +2830,17 @@ if (config.mapMode === "tiles") {
     // Allow the details panel layout transition to settle
     // before measuring. 320ms covers the 260ms map-refresh
     // delay used elsewhere.
-    setTimeout(renderStep, 320);
+    setTimeout(() => {
+      renderStep();
+      // Move focus into the card and trap Tab navigation
+      // there. We do this after renderStep so the buttons
+      // hidden state for the current step is settled (the
+      // first step has no Previous button so focus shouldn't
+      // start there).
+      try { closeBtn.focus({ preventScroll: true }); }
+      catch (_) { /* ignore */ }
+      installFocusTrap(card);
+    }, 320);
 
     window.addEventListener("resize", onResize);
     document.addEventListener("keydown", onKey);
@@ -2842,9 +2852,25 @@ if (config.mapMode === "tiles") {
 
     overlay.setAttribute("aria-hidden", "true");
     document.body.classList.remove("coachmarks-active");
+    removeFocusTrap();
 
     window.removeEventListener("resize", onResize);
     document.removeEventListener("keydown", onKey);
+
+    // Defensive: collapse the masks/ring/card to zero size so
+    // even if a browser leaves them paintable for a frame, they
+    // can't swallow clicks. The CSS pointer-events guard should
+    // already prevent this, but inline-style cleanup is cheap
+    // insurance.
+    try {
+      Object.values(masks).forEach((m) => {
+        m.style.cssText = "top:0;left:0;width:0;height:0";
+      });
+      ring.style.cssText = "display:none;top:0;left:0;width:0;height:0";
+      card.style.top = "";
+      card.style.left = "";
+      card.dataset.arrow = "none";
+    } catch (_) { /* ignore */ }
 
     // Reset everything we touched: clear the auto-selected
     // building, close the details panel, and put the map
@@ -2887,6 +2913,82 @@ if (config.mapMode === "tiles") {
 
   /* -- Start screen ---------------------------------------- */
 
+  /* -- Focus trap -------------------------------------------
+     A modal that visually blocks the page must also block
+     keyboard navigation, otherwise Tab can land focus on the
+     burger button or the search input behind the dim layer.
+     We install a single document-level keydown listener while
+     a trap is active and bounce focus back when it tries to
+     leave the trapped container.
+
+     The trap also intercepts Tab cycling so Shift+Tab from
+     the first focusable wraps to the last and vice versa,
+     which is the standard accessible-modal pattern. -------- */
+  let activeTrapContainer = null;
+
+  function getFocusables(container) {
+    if (!container) return [];
+    const selector = [
+      'a[href]',
+      'button:not([disabled])',
+      'input:not([disabled]):not([type="hidden"])',
+      'select:not([disabled])',
+      'textarea:not([disabled])',
+      '[tabindex]:not([tabindex="-1"])'
+    ].join(',');
+    return Array.from(container.querySelectorAll(selector))
+      .filter((node) => {
+        // Skip nodes that are visually hidden — the visually-
+        // hidden checkbox inputs we use under custom styling
+        // are still focusable, which is what we want, so the
+        // only thing we filter out here is `display: none`.
+        if (node.offsetParent === null && node.getClientRects().length === 0) {
+          // Allow our visually-hidden-but-focusable inputs through:
+          // they have offsetParent null only when truly hidden.
+          // The clip-path trick keeps offsetParent set, but the
+          // CSS `clip` rect trick we use does not. Detect ours
+          // by class so they stay reachable.
+          if (node.matches('input[type="checkbox"]')) return true;
+          return false;
+        }
+        return true;
+      });
+  }
+
+  function onTrapKeydown(e) {
+    if (e.key !== "Tab" || !activeTrapContainer) return;
+    const focusables = getFocusables(activeTrapContainer);
+    if (focusables.length === 0) {
+      e.preventDefault();
+      return;
+    }
+    const first = focusables[0];
+    const last  = focusables[focusables.length - 1];
+    const current = document.activeElement;
+
+    if (e.shiftKey) {
+      if (current === first || !activeTrapContainer.contains(current)) {
+        e.preventDefault();
+        last.focus();
+      }
+    } else {
+      if (current === last || !activeTrapContainer.contains(current)) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+  }
+
+  function installFocusTrap(container) {
+    activeTrapContainer = container;
+    document.addEventListener("keydown", onTrapKeydown, true);
+  }
+
+  function removeFocusTrap() {
+    activeTrapContainer = null;
+    document.removeEventListener("keydown", onTrapKeydown, true);
+  }
+
   function showStartScreen(opts) {
     // If the user has previously checked "Don't show again",
     // skip the modal on natural boots. Burger-menu re-opens
@@ -2900,17 +3002,30 @@ if (config.mapMode === "tiles") {
     syncPrefControls();
 
     startScreen.setAttribute("aria-hidden", "false");
-    // Move focus into the modal for screen readers.
+
+    // Mark the body so any global keyboard shortcuts (Escape
+    // to close panels, Shift+A for align, etc.) can opt out
+    // while the modal is open.
+    document.body.classList.add("modal-open");
+
+    // Move focus into the modal for screen readers and keyboard
+    // users, then trap Tab navigation inside it so the user
+    // can't accidentally focus the burger button or any other
+    // background control sitting visually-hidden behind the dim
+    // layer.
     if (startEnterBtn) {
       requestAnimationFrame(() => {
         try { startEnterBtn.focus({ preventScroll: true }); }
         catch (_) { /* ignore */ }
       });
     }
+    installFocusTrap(startScreen);
   }
 
   function hideStartScreen() {
     startScreen.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    removeFocusTrap();
   }
 
   // Expose to boot()
