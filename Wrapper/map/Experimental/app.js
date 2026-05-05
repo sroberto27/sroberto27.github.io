@@ -2424,6 +2424,16 @@ if (config.mapMode === "tiles") {
     el.splash.classList.add("is-hidden");
     setTimeout(() => { el.splash.style.display = "none"; }, 500);
     scheduleMapRefresh({ delay: 80 });
+
+    // Show the welcome / start screen modal. The user picks
+    // between "Enter Experience" (just dismiss) and "How to Use"
+    // (start the coachmark walkthrough). Only show on the first
+    // boot — re-opens are driven from the burger menu.
+    if (typeof showStartScreen === "function") {
+      // Small delay so the splash fade-out doesn't visually clash
+      // with the start screen fade-in.
+      setTimeout(() => showStartScreen(), 220);
+    }
   });
 }
 
@@ -2431,6 +2441,538 @@ if (config.mapMode === "tiles") {
 // satellite image and building photos are loaded. The Treedis
 // iframe continues loading in the background and warms its home
 // sweep when ready (see warmHomeSweep inside boot).
+
+/* ============================================================
+   START SCREEN + COACHMARK WALKTHROUGH
+   ------------------------------------------------------------
+   First-run welcome modal with two paths:
+
+     • "Enter Experience" — dismisses the modal; the user
+       gets the campus map in its default state.
+     • "How to Use"       — runs a 3-step coachmark sequence
+       that highlights the left sidebar, the top bar, and the
+       right details panel.
+
+   The coachmark sequence starts by selecting the first tour
+   stop (Crawford-Zimmerman) so the right details panel is
+   populated with real content the user can see being pointed
+   to. When the walkthrough finishes (final step's "next" or
+   the X button), we clear that selection and reset the
+   campus view so the app is back to its untouched state.
+
+   The walkthrough is also reachable from the burger menu's
+   "How to use" link at any time after the initial visit.
+   ============================================================ */
+(function setupOnboarding() {
+  // Pull the DOM nodes once. If any are missing we silently
+  // disable the feature rather than throw — the rest of the
+  // app should still work.
+  const startScreen   = document.getElementById("startScreen");
+  const startEnterBtn = document.getElementById("startEnterBtn");
+  const startHowBtn   = document.getElementById("startHowToUseBtn");
+
+  const overlay     = document.getElementById("coachmarkOverlay");
+  const card        = document.getElementById("coachmarkCard");
+  const ring        = document.getElementById("coachmarkRing");
+  const titleEl     = document.getElementById("coachmarkTitle");
+  const bodyEl      = document.getElementById("coachmarkBody");
+  const prevBtn     = document.getElementById("coachmarkPrev");
+  const nextBtn     = document.getElementById("coachmarkNext");
+  const closeBtn    = document.getElementById("coachmarkClose");
+  const currentEl   = document.getElementById("coachmarkCurrent");
+  const totalEl     = document.getElementById("coachmarkTotal");
+  const burgerHowTo = document.getElementById("burgerHowToUse");
+  const burgerCheckbox = document.getElementById("burgerToggle");
+
+  // New: the two mirrored controls for the "show start screen
+  // on startup" preference. The start-screen one is worded
+  // negatively ("Don't show again") so its `checked` state is
+  // INVERTED relative to the underlying preference.
+  const suppressCheckbox = document.getElementById("startScreenSuppress");
+  const startupSwitch    = document.getElementById("burgerShowStartScreen");
+
+  if (!startScreen || !overlay || !card) {
+    console.warn("[onboarding] required nodes missing — disabled");
+    return;
+  }
+
+  /* -- Preferences: "show start screen on startup" -----------
+     Single source of truth is localStorage. The flag we store
+     is `scsu:showStartScreen`, value "1" (default, show) or
+     "0" (don't show). We expose getters/setters so the two
+     controls stay in sync without either knowing about the
+     other directly. --------------------------------------- */
+  const PREF_KEY = "scsu:showStartScreen";
+
+  function readShowOnStartup() {
+    try {
+      const v = localStorage.getItem(PREF_KEY);
+      // Default to true when nothing is stored yet.
+      return v === null ? true : v === "1";
+    } catch (_) {
+      // localStorage can throw in private mode / sandboxed
+      // contexts — fall back to "always show".
+      return true;
+    }
+  }
+
+  function writeShowOnStartup(show) {
+    try {
+      localStorage.setItem(PREF_KEY, show ? "1" : "0");
+    } catch (_) {
+      // Silent — preference just won't persist this session.
+    }
+  }
+
+  // Push the current preference into both controls. Called
+  // once at init and again whenever either control changes
+  // so they stay mirrored.
+  function syncPrefControls() {
+    const show = readShowOnStartup();
+    if (suppressCheckbox) suppressCheckbox.checked = !show; // inverted
+    if (startupSwitch)    startupSwitch.checked    = show;
+  }
+
+  // The four edge masks that collectively dim everything around
+  // the highlighted target rectangle.
+  const masks = {
+    top:    overlay.querySelector('[data-mask="top"]'),
+    right:  overlay.querySelector('[data-mask="right"]'),
+    bottom: overlay.querySelector('[data-mask="bottom"]'),
+    left:   overlay.querySelector('[data-mask="left"]')
+  };
+
+  /* -- Step definitions ------------------------------------
+     `getRect()` returns the on-screen rect of the element to
+     highlight. We resolve it lazily per-step so a layout shift
+     between steps (e.g. details panel opening) is reflected.
+     `placement` controls which side of the highlight the card
+     sits on. ------------------------------------------------- */
+  const STEPS = [
+    {
+      id: "left-sidebar",
+      title: "Locations Sidebar",
+      body:
+        "Browse all campus locations here. Use the search bar to find " +
+        "buildings or courses, switch between Featured and All to filter " +
+        "the list, and follow the Guided Tour at the bottom to step " +
+        "through key stops in order.",
+      getRect: () => {
+        const node = document.getElementById("locations");
+        return node ? node.getBoundingClientRect() : null;
+      },
+      placement: "right"
+    },
+    {
+      id: "top-bar",
+      title: "Top Navigation",
+      body:
+        "Toggle between Explore and Learn modes from the pill at the top " +
+        "of the screen. The menu icon on the right opens shortcuts, " +
+        "including this walkthrough — you can reopen it any time from " +
+        "“How to use”.",
+      getRect: () => {
+        const node = document.querySelector(".metabar");
+        return node ? node.getBoundingClientRect() : null;
+      },
+      placement: "bottom"
+    },
+    {
+      id: "right-panel",
+      title: "Location Details",
+      body:
+        "When you select a building from the map, sidebar, search, or " +
+        "guided tour, its details appear here. Tap Explore to drop into " +
+        "an immersive street view (where available), and use the " +
+        "Explorable Locations list to jump to specific rooms or sub-areas.",
+      getRect: () => {
+        const node = document.getElementById("details");
+        return node ? node.getBoundingClientRect() : null;
+      },
+      placement: "left"
+    }
+  ];
+
+  let stepIndex = 0;
+  let active    = false;
+  let resizeRaf = 0;
+  let prevFocus = null;
+
+  /* -- Layout helpers ---------------------------------------
+     positionCutout() applies inline geometry to the four mask
+     rectangles so they cover everything except the supplied
+     target rect. positionCard() places the tooltip relative
+     to that rect and chooses an arrow orientation that points
+     at the target. --------------------------------------- */
+
+  function positionCutout(rect) {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    if (!rect || rect.width === 0 || rect.height === 0) {
+      // No measurable target — fully dim the screen and skip
+      // the ring. The card will fall back to centered.
+      masks.top.style.cssText    = "top:0;left:0;width:100%;height:100%";
+      masks.right.style.cssText  = "top:0;left:0;width:0;height:0";
+      masks.bottom.style.cssText = "top:0;left:0;width:0;height:0";
+      masks.left.style.cssText   = "top:0;left:0;width:0;height:0";
+      ring.style.display = "none";
+      return;
+    }
+
+    // Inset the cutout slightly so the ring has visual breathing
+    // room without obscuring content beyond the actual target.
+    const pad = 6;
+    const x  = Math.max(0, rect.left   - pad);
+    const y  = Math.max(0, rect.top    - pad);
+    const w  = Math.min(vw - x, rect.width  + pad * 2);
+    const h  = Math.min(vh - y, rect.height + pad * 2);
+
+    // Top strip — full width, from 0 to y
+    masks.top.style.top    = "0";
+    masks.top.style.left   = "0";
+    masks.top.style.width  = vw + "px";
+    masks.top.style.height = y + "px";
+
+    // Bottom strip — full width, from y+h to vh
+    masks.bottom.style.top    = (y + h) + "px";
+    masks.bottom.style.left   = "0";
+    masks.bottom.style.width  = vw + "px";
+    masks.bottom.style.height = Math.max(0, vh - (y + h)) + "px";
+
+    // Left strip — only the band beside the cutout
+    masks.left.style.top    = y + "px";
+    masks.left.style.left   = "0";
+    masks.left.style.width  = x + "px";
+    masks.left.style.height = h + "px";
+
+    // Right strip — only the band beside the cutout
+    masks.right.style.top    = y + "px";
+    masks.right.style.left   = (x + w) + "px";
+    masks.right.style.width  = Math.max(0, vw - (x + w)) + "px";
+    masks.right.style.height = h + "px";
+
+    // Subtle outline on the cutout itself
+    ring.style.display = "block";
+    ring.style.top    = y + "px";
+    ring.style.left   = x + "px";
+    ring.style.width  = w + "px";
+    ring.style.height = h + "px";
+  }
+
+  function positionCard(rect, placement) {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const cardW = card.offsetWidth  || 360;
+    const cardH = card.offsetHeight || 180;
+    const gap   = 18;
+    const edge  = 16;
+
+    let top, left, arrow = "none";
+
+    if (!rect || rect.width === 0 || rect.height === 0) {
+      // Centered fallback
+      top  = Math.max(edge, (vh - cardH) / 2);
+      left = Math.max(edge, (vw - cardW) / 2);
+      card.dataset.arrow = "none";
+      card.style.top  = top  + "px";
+      card.style.left = left + "px";
+      return;
+    }
+
+    // Pick the placement, then clamp into viewport with a tiny
+    // edge margin so the card never sits off-screen.
+    switch (placement) {
+      case "right":
+        left  = rect.right + gap;
+        top   = rect.top   + Math.min(40, rect.height / 2 - 24);
+        arrow = "left";
+        break;
+      case "left":
+        left  = rect.left - gap - cardW;
+        top   = rect.top   + Math.min(40, rect.height / 2 - 24);
+        arrow = "right";
+        break;
+      case "bottom":
+        left  = rect.left + Math.min(40, rect.width / 2 - 24);
+        top   = rect.bottom + gap;
+        arrow = "top";
+        break;
+      case "top":
+      default:
+        left  = rect.left + Math.min(40, rect.width / 2 - 24);
+        top   = rect.top - gap - cardH;
+        arrow = "bottom";
+        break;
+    }
+
+    // If the chosen placement runs off-screen, fall back to a
+    // centered (no-arrow) position rather than clamping the
+    // card on top of the highlight.
+    const fitsHoriz = left >= edge && (left + cardW) <= (vw - edge);
+    const fitsVert  = top  >= edge && (top  + cardH) <= (vh - edge);
+
+    if (!fitsHoriz || !fitsVert) {
+      // Try to keep the original axis intent if possible.
+      if (placement === "right" || placement === "left") {
+        // Horizontal placement failed — center horizontally,
+        // place under the target.
+        left  = Math.max(edge, Math.min(vw - cardW - edge, (vw - cardW) / 2));
+        top   = rect.bottom + gap;
+        if (top + cardH > vh - edge) {
+          top = Math.max(edge, rect.top - gap - cardH);
+        }
+        arrow = "none";
+      } else {
+        // Vertical placement failed — center vertically, place
+        // beside the target on whichever side has more room.
+        const roomRight = vw - rect.right;
+        const roomLeft  = rect.left;
+        if (roomRight >= roomLeft) {
+          left  = Math.min(vw - cardW - edge, rect.right + gap);
+          arrow = "left";
+        } else {
+          left  = Math.max(edge, rect.left - gap - cardW);
+          arrow = "right";
+        }
+        top = Math.max(edge, Math.min(vh - cardH - edge, (vh - cardH) / 2));
+      }
+
+      // Final clamp
+      left = Math.max(edge, Math.min(vw - cardW - edge, left));
+      top  = Math.max(edge, Math.min(vh - cardH - edge, top));
+    }
+
+    card.dataset.arrow = arrow;
+    card.style.top  = top  + "px";
+    card.style.left = left + "px";
+  }
+
+  function renderStep() {
+    const step = STEPS[stepIndex];
+    if (!step) return;
+
+    titleEl.textContent = step.title;
+    bodyEl.textContent  = step.body;
+    currentEl.textContent = String(stepIndex + 1);
+    totalEl.textContent   = String(STEPS.length);
+
+    // First step has no Previous, last step has no Next.
+    prevBtn.hidden = stepIndex === 0;
+    nextBtn.hidden = stepIndex === STEPS.length - 1;
+
+    // Resolve target rect AFTER the next paint so any
+    // panel-open side-effects from a previous step have
+    // settled.
+    requestAnimationFrame(() => {
+      const rect = step.getRect && step.getRect();
+      positionCutout(rect);
+      // Card needs to be measured AFTER content is in place.
+      requestAnimationFrame(() => positionCard(rect, step.placement));
+    });
+  }
+
+  function onResize() {
+    if (!active) return;
+    cancelAnimationFrame(resizeRaf);
+    resizeRaf = requestAnimationFrame(() => {
+      const step = STEPS[stepIndex];
+      if (!step) return;
+      const rect = step.getRect && step.getRect();
+      positionCutout(rect);
+      positionCard(rect, step.placement);
+    });
+  }
+
+  function onKey(e) {
+    if (!active) return;
+    if (e.key === "Escape") {
+      e.preventDefault();
+      closeWalkthrough();
+    } else if (e.key === "ArrowRight") {
+      if (stepIndex < STEPS.length - 1) {
+        stepIndex += 1;
+        renderStep();
+      }
+    } else if (e.key === "ArrowLeft") {
+      if (stepIndex > 0) {
+        stepIndex -= 1;
+        renderStep();
+      }
+    }
+  }
+
+  /* -- Open / close ----------------------------------------- */
+
+  function openWalkthrough() {
+    if (active) return;
+    active = true;
+    stepIndex = 0;
+
+    // Remember focus so we can restore it on close.
+    prevFocus = document.activeElement;
+
+    // Programmatically pick the first tour stop so the right
+    // details panel has real content to point at. This drives
+    // the same `selectFeature` path that a normal click would.
+    try {
+      if (Array.isArray(tourStops) && tourStops.length) {
+        // goToStop already handles selecting + flying to bounds.
+        goToStop(0);
+      }
+    } catch (err) {
+      console.warn("[onboarding] could not focus first tour stop:", err);
+    }
+
+    document.body.classList.add("coachmarks-active");
+    overlay.setAttribute("aria-hidden", "false");
+
+    // Allow the details panel layout transition to settle
+    // before measuring. 320ms covers the 260ms map-refresh
+    // delay used elsewhere.
+    setTimeout(renderStep, 320);
+
+    window.addEventListener("resize", onResize);
+    document.addEventListener("keydown", onKey);
+  }
+
+  function closeWalkthrough() {
+    if (!active) return;
+    active = false;
+
+    overlay.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("coachmarks-active");
+
+    window.removeEventListener("resize", onResize);
+    document.removeEventListener("keydown", onKey);
+
+    // Reset everything we touched: clear the auto-selected
+    // building, close the details panel, and put the map
+    // back at the campus-wide default view.
+    try { if (typeof clearSelection === "function") clearSelection(); }
+    catch (err) { console.warn("[onboarding] clearSelection failed:", err); }
+
+    try {
+      if (typeof resetCampusView === "function") resetCampusView(true);
+    } catch (err) {
+      console.warn("[onboarding] resetCampusView failed:", err);
+    }
+
+    // Restore focus
+    if (prevFocus && typeof prevFocus.focus === "function") {
+      try { prevFocus.focus({ preventScroll: true }); }
+      catch (_) { /* ignore */ }
+    }
+    prevFocus = null;
+  }
+
+  function nextStep() {
+    if (stepIndex >= STEPS.length - 1) {
+      // Last step — "Next" finishes the walkthrough. Per the
+      // spec, the final step's button is hidden, so this is
+      // really only reachable via ArrowRight. Treat it as a
+      // graceful close.
+      closeWalkthrough();
+      return;
+    }
+    stepIndex += 1;
+    renderStep();
+  }
+
+  function prevStep() {
+    if (stepIndex <= 0) return;
+    stepIndex -= 1;
+    renderStep();
+  }
+
+  /* -- Start screen ---------------------------------------- */
+
+  function showStartScreen(opts) {
+    // If the user has previously checked "Don't show again",
+    // skip the modal on natural boots. Burger-menu re-opens
+    // pass { force: true } to override.
+    const force = !!(opts && opts.force);
+    if (!force && !readShowOnStartup()) return;
+
+    // Always re-sync the controls before showing — the user
+    // might have toggled the burger-panel switch in a previous
+    // session and we want the checkbox to reflect that state.
+    syncPrefControls();
+
+    startScreen.setAttribute("aria-hidden", "false");
+    // Move focus into the modal for screen readers.
+    if (startEnterBtn) {
+      requestAnimationFrame(() => {
+        try { startEnterBtn.focus({ preventScroll: true }); }
+        catch (_) { /* ignore */ }
+      });
+    }
+  }
+
+  function hideStartScreen() {
+    startScreen.setAttribute("aria-hidden", "true");
+  }
+
+  // Expose to boot()
+  window.showStartScreen = showStartScreen;
+
+  /* -- Wire up event listeners ----------------------------- */
+
+  if (startEnterBtn) {
+    startEnterBtn.addEventListener("click", () => {
+      hideStartScreen();
+    });
+  }
+
+  if (startHowBtn) {
+    startHowBtn.addEventListener("click", () => {
+      hideStartScreen();
+      // Brief pause so the start-screen fade-out completes
+      // before the coachmark fade-in begins.
+      setTimeout(openWalkthrough, 200);
+    });
+  }
+
+  prevBtn.addEventListener("click", prevStep);
+  nextBtn.addEventListener("click", nextStep);
+  closeBtn.addEventListener("click", closeWalkthrough);
+
+  // The burger menu's "How to use" link reopens the walkthrough.
+  // We close the burger panel first by unchecking its checkbox.
+  if (burgerHowTo) {
+    burgerHowTo.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (burgerCheckbox) burgerCheckbox.checked = false;
+      // Wait for the panel slide-out animation (.26s) before
+      // starting so the dim layer doesn't fight the slide.
+      setTimeout(openWalkthrough, 280);
+    });
+  }
+
+  /* -- Mirrored "show on startup" preference controls -------
+     The start-screen checkbox is worded negatively
+     ("Don't show again") and the burger-panel switch is worded
+     positively ("Show welcome screen on startup"). They both
+     write the same flag, so toggling either one immediately
+     updates the other for visual consistency. -------------- */
+  if (suppressCheckbox) {
+    suppressCheckbox.addEventListener("change", () => {
+      writeShowOnStartup(!suppressCheckbox.checked);
+      syncPrefControls();
+    });
+  }
+  if (startupSwitch) {
+    startupSwitch.addEventListener("change", () => {
+      writeShowOnStartup(startupSwitch.checked);
+      syncPrefControls();
+    });
+  }
+
+  // Reflect any stored preference into both controls now so
+  // they're correct even before the start screen ever opens.
+  syncPrefControls();
+})();
+
 boot().catch((err) => {
   console.error("[metaversity] fatal:", err);
   el.splash.innerHTML =

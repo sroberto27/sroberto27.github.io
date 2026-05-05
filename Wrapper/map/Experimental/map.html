@@ -111,7 +111,7 @@
       </header>
 
       <nav class="burger-panel-list" aria-label="Site links">
-        <a class="burger-link" href="#">
+        <a class="burger-link" href="#" id="burgerHowToUse">
           <span>How to use</span>
         </a>
         <a class="burger-link" href="#">
@@ -120,6 +120,30 @@
         <a class="burger-link" href="#">
           <span>Exit</span>
         </a>
+
+        <!-- Settings group — sits below the navigation links with a
+             small visual break. Mirrors the start-screen checkbox
+             (with inverted wording: positive opt-in here, negative
+             opt-out there). Both write the same localStorage flag. -->
+        <div class="burger-settings" role="group"
+             aria-label="Display settings">
+          <label class="burger-toggle-row">
+            <span class="burger-toggle-text">
+              <span class="burger-toggle-label">
+                Show welcome screen on startup
+              </span>
+              <span class="burger-toggle-hint">
+                Takes effect next time you open the site
+              </span>
+            </span>
+            <span class="burger-switch">
+              <input type="checkbox" id="burgerShowStartScreen" />
+              <span class="burger-switch-track" aria-hidden="true">
+                <span class="burger-switch-thumb"></span>
+              </span>
+            </span>
+          </label>
+        </div>
       </nav>
     </aside>
     <!-- Click-outside backdrop for the burger panel -->
@@ -468,6 +492,110 @@
       </p>
     </div>
 
+  </div>
+
+  <!-- ============================================================
+       START SCREEN MODAL
+       Shown after the splash hides, before the user can interact.
+       Two paths: "Enter Experience" → close & use normally,
+                  "How to Use" → start the coachmark walkthrough.
+       Re-openable from the burger menu's "How to use" link.
+       ============================================================ -->
+  <div id="startScreen" class="start-screen" role="dialog"
+       aria-modal="true" aria-labelledby="startScreenTitle"
+       aria-hidden="true">
+    <div class="start-screen-card">
+      <img class="start-screen-logo"
+           src="assets/Icons/logo.jpg"
+           alt="South Carolina State University"
+           onerror="this.style.display='none'" />
+      <h2 class="start-screen-title" id="startScreenTitle">
+        Virtual Campus Tour
+      </h2>
+      <p class="start-screen-body">
+        Welcome to the South Carolina State University Virtual Campus
+        Tour. Explore academic buildings, athletic facilities, and
+        landmarks across campus, or follow a guided tour through key
+        locations. Some stops include immersive street-view experiences.
+      </p>
+
+      <!-- "Don't show again" toggle. Mirrored to the burger panel's
+           "Show welcome screen on startup" toggle — they read & write
+           the same localStorage flag, just with inverted wording. -->
+      <label class="start-screen-checkbox">
+        <input type="checkbox" id="startScreenSuppress" />
+        <span class="start-screen-checkbox-box" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 12l5 5 9-11" stroke="currentColor"
+                  stroke-width="2.4" stroke-linecap="round"
+                  stroke-linejoin="round" fill="none"/>
+          </svg>
+        </span>
+        <span class="start-screen-checkbox-label">
+          Don't show this again
+        </span>
+      </label>
+
+      <div class="start-screen-actions">
+        <button class="start-screen-btn start-screen-btn-secondary"
+                id="startHowToUseBtn" type="button">How to Use</button>
+        <button class="start-screen-btn start-screen-btn-primary"
+                id="startEnterBtn" type="button">Enter Experience</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       COACHMARK SYSTEM
+       Three-step interactive walkthrough. Activated either from
+       the start screen "How to Use" or the burger menu's "How
+       to use" link. Dims the map background, highlights one
+       region of the UI per step, and shows a tooltip card with
+       Previous / Next / Close controls.
+       ============================================================ -->
+  <div id="coachmarkOverlay" class="coachmark-overlay"
+       aria-hidden="true">
+    <!-- Four edge masks form the dimmed area AROUND the highlight.
+         The highlight cutout itself stays clear because nothing
+         covers it. This avoids needing SVG masks and works in all
+         browsers. JS sets the four mask rects per step. -->
+    <div class="coachmark-mask coachmark-mask-top"    data-mask="top"></div>
+    <div class="coachmark-mask coachmark-mask-right"  data-mask="right"></div>
+    <div class="coachmark-mask coachmark-mask-bottom" data-mask="bottom"></div>
+    <div class="coachmark-mask coachmark-mask-left"   data-mask="left"></div>
+
+    <!-- Optional outline ring around the highlighted target -->
+    <div class="coachmark-ring" id="coachmarkRing" aria-hidden="true"></div>
+
+    <!-- The tooltip card. Position is set per step via JS. -->
+    <div class="coachmark-card" id="coachmarkCard" role="dialog"
+         aria-modal="true" aria-labelledby="coachmarkTitle"
+         aria-describedby="coachmarkBody">
+      <button class="coachmark-close" id="coachmarkClose"
+              type="button" aria-label="Close walkthrough">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" fill="none"/>
+        </svg>
+      </button>
+
+      <div class="coachmark-card-arrow" id="coachmarkArrow"
+           aria-hidden="true"></div>
+
+      <h3 class="coachmark-title" id="coachmarkTitle">—</h3>
+      <p class="coachmark-body" id="coachmarkBody">—</p>
+
+      <div class="coachmark-footer">
+        <button class="coachmark-nav coachmark-nav-prev"
+                id="coachmarkPrev" type="button">Previous</button>
+        <span class="coachmark-count">
+          <span id="coachmarkCurrent">1</span> of
+          <span id="coachmarkTotal">3</span>
+        </span>
+        <button class="coachmark-nav coachmark-nav-next"
+                id="coachmarkNext" type="button">Next</button>
+      </div>
+    </div>
   </div>
 
   <!-- ============================================================
