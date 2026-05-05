@@ -143,6 +143,27 @@
               </span>
             </span>
           </label>
+
+          <!-- Second toggle: 3D navigation instructions modal.
+               Mirrors the "Don't show this again" checkbox inside
+               that modal. Wording is positive here (opt-in) to
+               match the welcome-screen toggle above. -->
+          <label class="burger-toggle-row">
+            <span class="burger-toggle-text">
+              <span class="burger-toggle-label">
+                Show 3D navigation instructions
+              </span>
+              <span class="burger-toggle-hint">
+                Appears the next time you enter a 3D view
+              </span>
+            </span>
+            <span class="burger-switch">
+              <input type="checkbox" id="burgerShowNavInstructions" />
+              <span class="burger-switch-track" aria-hidden="true">
+                <span class="burger-switch-thumb"></span>
+              </span>
+            </span>
+          </label>
         </div>
       </nav>
     </aside>
@@ -594,6 +615,62 @@
         </span>
         <button class="coachmark-nav coachmark-nav-next"
                 id="coachmarkNext" type="button">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       NAVIGATION INSTRUCTIONS MODAL (3D street view onboarding)
+       ------------------------------------------------------------
+       Shown the first time the user opens street view via the
+       Explore button. Single "Got it" CTA, "Don't show again"
+       checkbox. Re-openable from the burger menu's "Show 3D
+       navigation instructions" toggle. Stores its preference
+       under a separate localStorage key from the welcome screen
+       so the two settings don't conflict.
+
+       PLACEHOLDER IMAGE: assets/Icons/nav-instructions.png
+       The image already has white text and is partially
+       transparent — the dark #333333 modal background is what
+       gives it contrast.
+       ============================================================ -->
+  <div id="navInstructions" class="nav-instructions" role="dialog"
+       aria-modal="true" aria-labelledby="navInstructionsTitle"
+       aria-hidden="true">
+    <div class="nav-instructions-card">
+      <h2 class="nav-instructions-title" id="navInstructionsTitle">
+        Instructions for Navigating in 3D
+      </h2>
+
+      <div class="nav-instructions-image">
+        <img src="assets/Icons/nav-instructions.png"
+             alt="Navigation instructions for 360° tour"
+             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';" />
+        <!-- Fallback shown if the image is missing. Specs are
+             still being finalized; replace this with the real
+             content when it lands. -->
+        <div class="nav-instructions-fallback" style="display:none;">
+          TBD
+        </div>
+      </div>
+
+      <label class="nav-instructions-checkbox">
+        <input type="checkbox" id="navInstructionsSuppress" />
+        <span class="nav-instructions-checkbox-box" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 12l5 5 9-11" stroke="currentColor"
+                  stroke-width="2.4" stroke-linecap="round"
+                  stroke-linejoin="round" fill="none"/>
+          </svg>
+        </span>
+        <span class="nav-instructions-checkbox-label">
+          Don't show this again
+        </span>
+      </label>
+
+      <div class="nav-instructions-actions">
+        <button class="nav-instructions-btn" id="navInstructionsGotIt"
+                type="button">Got it</button>
       </div>
     </div>
   </div>

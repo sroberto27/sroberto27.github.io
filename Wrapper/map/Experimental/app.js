@@ -2491,22 +2491,34 @@ if (config.mapMode === "tiles") {
   const suppressCheckbox = document.getElementById("startScreenSuppress");
   const startupSwitch    = document.getElementById("burgerShowStartScreen");
 
+  // Mirrored controls for the "show 3D navigation instructions"
+  // preference. Same pattern: modal checkbox is inverted, burger
+  // switch is direct. Separate localStorage key so the two
+  // settings don't conflict.
+  const navModal           = document.getElementById("navInstructions");
+  const navGotItBtn        = document.getElementById("navInstructionsGotIt");
+  const navSuppressCheckbox = document.getElementById("navInstructionsSuppress");
+  const navInstructionsSwitch = document.getElementById("burgerShowNavInstructions");
+
   if (!startScreen || !overlay || !card) {
     console.warn("[onboarding] required nodes missing — disabled");
     return;
   }
 
-  /* -- Preferences: "show start screen on startup" -----------
-     Single source of truth is localStorage. The flag we store
-     is `scsu:showStartScreen`, value "1" (default, show) or
-     "0" (don't show). We expose getters/setters so the two
-     controls stay in sync without either knowing about the
-     other directly. --------------------------------------- */
+  /* -- Preferences ------------------------------------------
+     Two independent settings, both stored in localStorage:
+       • scsu:showStartScreen   — welcome window on boot
+       • scsu:showNavInstructions — 3D nav modal on first
+                                    Explore click of a session
+     Both default to "show" (true) when no value is stored.
+     The same read/write helpers handle both, parameterized by
+     storage key. --------------------------------------------- */
   const PREF_KEY = "scsu:showStartScreen";
+  const NAV_PREF_KEY = "scsu:showNavInstructions";
 
-  function readShowOnStartup() {
+  function readPref(key) {
     try {
-      const v = localStorage.getItem(PREF_KEY);
+      const v = localStorage.getItem(key);
       // Default to true when nothing is stored yet.
       return v === null ? true : v === "1";
     } catch (_) {
@@ -2516,21 +2528,32 @@ if (config.mapMode === "tiles") {
     }
   }
 
-  function writeShowOnStartup(show) {
+  function writePref(key, show) {
     try {
-      localStorage.setItem(PREF_KEY, show ? "1" : "0");
+      localStorage.setItem(key, show ? "1" : "0");
     } catch (_) {
       // Silent — preference just won't persist this session.
     }
   }
 
-  // Push the current preference into both controls. Called
-  // once at init and again whenever either control changes
-  // so they stay mirrored.
+  // Backwards-compatible aliases so the existing showStartScreen
+  // call sites don't need to change.
+  function readShowOnStartup()        { return readPref(PREF_KEY); }
+  function writeShowOnStartup(show)   { writePref(PREF_KEY, show); }
+  function readShowNavInstructions()  { return readPref(NAV_PREF_KEY); }
+  function writeShowNavInstructions(show) { writePref(NAV_PREF_KEY, show); }
+
+  // Push current preferences into all four controls. Called
+  // at init and whenever any control changes so its mirror
+  // stays in sync.
   function syncPrefControls() {
-    const show = readShowOnStartup();
-    if (suppressCheckbox) suppressCheckbox.checked = !show; // inverted
-    if (startupSwitch)    startupSwitch.checked    = show;
+    const showStart = readShowOnStartup();
+    if (suppressCheckbox) suppressCheckbox.checked = !showStart; // inverted
+    if (startupSwitch)    startupSwitch.checked    = showStart;
+
+    const showNav = readShowNavInstructions();
+    if (navSuppressCheckbox)  navSuppressCheckbox.checked  = !showNav; // inverted
+    if (navInstructionsSwitch) navInstructionsSwitch.checked = showNav;
   }
 
   // The four edge masks that collectively dim everything around
@@ -2554,7 +2577,7 @@ if (config.mapMode === "tiles") {
       title: "Locations Sidebar",
       body:
         "Browse all campus locations here. Use the search bar to find " +
-        "buildings, switch between Featured and All to filter " +
+        "buildings or courses, switch between Featured and All to filter " +
         "the list, and follow the Guided Tour at the bottom to step " +
         "through key stops in order.",
       getRect: () => {
@@ -3028,6 +3051,97 @@ if (config.mapMode === "tiles") {
     removeFocusTrap();
   }
 
+  /* -- Navigation Instructions modal ------------------------
+     Same modal pattern as the start screen but for the 3D
+     street view onboarding. Shows the first time the user
+     clicks Explore on a building's details panel (or any
+     other path that opens street view), unless they've
+     opted out. Single "Got it" button + "Don't show again"
+     checkbox. -------------------------------------------- */
+
+  function showNavInstructions(opts) {
+    if (!navModal) return false;
+
+    const force = !!(opts && opts.force);
+    if (!force && !readShowNavInstructions()) return false;
+
+    syncPrefControls();
+    navModal.setAttribute("aria-hidden", "false");
+    document.body.classList.add("modal-open");
+
+    if (navGotItBtn) {
+      requestAnimationFrame(() => {
+        try { navGotItBtn.focus({ preventScroll: true }); }
+        catch (_) { /* ignore */ }
+      });
+    }
+    installFocusTrap(navModal);
+    return true;
+  }
+
+  function hideNavInstructions() {
+    if (!navModal) return;
+    navModal.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("modal-open");
+    removeFocusTrap();
+  }
+
+  /* -- openStreetView gating wrapper ------------------------
+     The 3D nav-instructions modal must show on the first
+     street-view open within a session. There are several call
+     sites that open street view (the Explore CTA, the sub-list
+     "Room 100"/etc rows, the locations list while inside SV,
+     internal warm-ups), so the cleanest seam is the function
+     itself: we monkey-patch window.openStreetView once, and
+     every caller automatically goes through the gate.
+
+     Skipped when:
+       • the preference is off
+       • street view is already active (mid-session navigation
+         between sweeps shouldn't re-prompt)
+     ------------------------------------------------------- */
+  let pendingStreetViewArgs = null;
+  let originalOpenStreetView = null;
+
+  function installStreetViewGate() {
+    if (typeof window.openStreetView !== "function") {
+      console.warn("[onboarding] openStreetView not on window — gate disabled");
+      return;
+    }
+    originalOpenStreetView = window.openStreetView;
+
+    window.openStreetView = function gatedOpenStreetView() {
+      const args = Array.prototype.slice.call(arguments);
+
+      // Mid-session navigation between sweeps — skip the modal.
+      if (typeof streetViewActive !== "undefined" && streetViewActive) {
+        return originalOpenStreetView.apply(this, args);
+      }
+
+      // Preference says skip → straight through.
+      if (!readShowNavInstructions()) {
+        return originalOpenStreetView.apply(this, args);
+      }
+
+      // Cache the args, show the modal. The "Got it" handler
+      // replays the call by invoking the original function
+      // directly with these same arguments.
+      pendingStreetViewArgs = args;
+      showNavInstructions();
+      // Returning undefined matches the original's signature.
+    };
+  }
+
+  function replayPendingStreetView() {
+    if (!pendingStreetViewArgs || !originalOpenStreetView) return;
+    const args = pendingStreetViewArgs;
+    pendingStreetViewArgs = null;
+    try { originalOpenStreetView.apply(null, args); }
+    catch (err) {
+      console.warn("[onboarding] failed to replay street view:", err);
+    }
+  }
+
   // Expose to boot()
   window.showStartScreen = showStartScreen;
 
@@ -3082,6 +3196,34 @@ if (config.mapMode === "tiles") {
       syncPrefControls();
     });
   }
+
+  /* -- Nav-instructions modal: button + mirrored controls -- */
+  if (navGotItBtn) {
+    navGotItBtn.addEventListener("click", () => {
+      hideNavInstructions();
+      // Replay the deferred openStreetView() call that
+      // triggered this modal.
+      replayPendingStreetView();
+    });
+  }
+  if (navSuppressCheckbox) {
+    navSuppressCheckbox.addEventListener("change", () => {
+      writeShowNavInstructions(!navSuppressCheckbox.checked);
+      syncPrefControls();
+    });
+  }
+  if (navInstructionsSwitch) {
+    navInstructionsSwitch.addEventListener("change", () => {
+      writeShowNavInstructions(navInstructionsSwitch.checked);
+      syncPrefControls();
+    });
+  }
+
+  // Install the gate AFTER the rest of app.js has run, so
+  // window.openStreetView exists. The IIFE itself runs at
+  // script-load time, but openStreetView is declared at
+  // top-level above this IIFE so it's already on `window`.
+  installStreetViewGate();
 
   // Reflect any stored preference into both controls now so
   // they're correct even before the start screen ever opens.
