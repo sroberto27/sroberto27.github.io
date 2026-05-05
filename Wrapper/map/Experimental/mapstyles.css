@@ -1473,10 +1473,10 @@ img    { user-select: none; -webkit-user-drag: none; }
   .shell.has-details.details-full .locations-toggle {
     display: none;
   }
-  /* Mobile — hide zoom buttons, keep attribution clear of the sheet */
-  .leaflet-top.leaflet-right,
-  .leaflet-control-zoom {
-    display: none !important;
+  /* Mobile — keep Leaflet controls clear of the bottom sheet */
+  .leaflet-top.leaflet-right {
+    top: 12px;
+    right: 12px;
   }
 
   .leaflet-bottom.leaflet-right,
