@@ -1875,6 +1875,29 @@ body.streetview-open .map-action { display: none !important; }
   flex-shrink: 0;
 }
 
+.streetview-loading-cancel {
+  margin-left: 14px;
+  padding: 6px 14px;
+  background: transparent;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.55);
+  border-radius: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .03em;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.streetview-loading-cancel:hover {
+  background: rgba(255,255,255,.12);
+  border-color: rgba(255,255,255,.9);
+}
+.streetview-loading-cancel:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
 .streetview-touch-guard {
   display: none;
   position: absolute;

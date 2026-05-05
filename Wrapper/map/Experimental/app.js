@@ -200,6 +200,10 @@ const el = {
   streetviewSub:     $("streetviewSub"),
   streetviewTouchGuard: $("streetviewTouchGuard"),
   streetviewLoading: $("streetviewLoading"),
+  streetviewLoading: $("streetviewLoading"),
+  streetviewLoadingLabel:  $("streetviewLoadingLabel"),
+  streetviewLoadingCancel: $("streetviewLoadingCancel"),
+
 
   /* Explore CTA inside the metadata panel — used to launch
      the street view for the currently-selected location.    */
@@ -594,18 +598,71 @@ function closeStreetView() {
   _hideStreetViewLoading();
 }
 
-/* Show / hide the loading veil that sits over the iframe while
-   Treedis finishes booting. Safe to call repeatedly. */
-function _showStreetViewLoading() {
-  if (el.streetviewLoading) {
-    el.streetviewLoading.classList.add("is-active");
-    el.streetviewLoading.setAttribute("aria-hidden", "false");
-  }
+
+   /* Show / hide the loading veil that sits over the iframe while
+   Treedis finishes booting. Safe to call repeatedly.
+
+   On slow connections (e.g. 4G) Treedis can take 20–60s to boot.
+   To keep the user informed instead of staring at a static
+   spinner, we escalate the messaging on timers:
+     • t = 0s    → "Loading street view…"
+     • t = 8s    → switch to a slow-connection note
+     • t = 25s   → reveal a Cancel button that closes the panel
+   Timers are cleared whenever the veil is hidden so they don't
+   leak across opens. */
+const STREETVIEW_LOADING_DEFAULT = "Loading street view…";
+const STREETVIEW_LOADING_SLOW =
+  "Loading 3D tour — this can take a moment on slower connections.";
+let _streetviewLoadingTimers = [];
+
+function _clearStreetViewLoadingTimers() {
+  _streetviewLoadingTimers.forEach((t) => clearTimeout(t));
+  _streetviewLoadingTimers = [];
 }
+
+function _showStreetViewLoading() {
+  if (!el.streetviewLoading) return;
+
+  el.streetviewLoading.classList.add("is-active");
+  el.streetviewLoading.setAttribute("aria-hidden", "false");
+
+  // Reset to initial state every time we (re)show the veil so a
+  // fast second open doesn't inherit the "slow" copy from a
+  // previous slow open.
+  if (el.streetviewLoadingLabel) {
+    el.streetviewLoadingLabel.textContent = STREETVIEW_LOADING_DEFAULT;
+  }
+  if (el.streetviewLoadingCancel) {
+    el.streetviewLoadingCancel.hidden = true;
+  }
+
+  // Wipe any prior timers before scheduling fresh ones.
+  _clearStreetViewLoadingTimers();
+
+  _streetviewLoadingTimers.push(setTimeout(() => {
+    if (el.streetviewLoadingLabel) {
+      el.streetviewLoadingLabel.textContent = STREETVIEW_LOADING_SLOW;
+    }
+  }, 8000));
+
+  _streetviewLoadingTimers.push(setTimeout(() => {
+    if (el.streetviewLoadingCancel) {
+      el.streetviewLoadingCancel.hidden = false;
+    }
+  }, 25000));
+}
+
 function _hideStreetViewLoading() {
+  _clearStreetViewLoadingTimers();
   if (el.streetviewLoading) {
     el.streetviewLoading.classList.remove("is-active");
     el.streetviewLoading.setAttribute("aria-hidden", "true");
+  }
+  if (el.streetviewLoadingCancel) {
+    el.streetviewLoadingCancel.hidden = true;
+  }
+  if (el.streetviewLoadingLabel) {
+    el.streetviewLoadingLabel.textContent = STREETVIEW_LOADING_DEFAULT;
   }
 }
 
@@ -1933,6 +1990,13 @@ if (el.vrBtn) {
 
 if (el.streetviewClose) {
   el.streetviewClose.addEventListener("click", () => closeStreetView());
+}
+
+if (el.streetviewLoadingCancel) {
+  el.streetviewLoadingCancel.addEventListener("click", () => {
+    console.info("[streetview] user cancelled while loading");
+    closeStreetView();
+  });
 }
 
 if (el.streetviewTouchGuard) {

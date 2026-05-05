@@ -303,9 +303,15 @@
                aria-hidden="true">
             <div class="streetview-loading-inner">
               <div class="streetview-loading-spinner" aria-hidden="true"></div>
-              <span class="streetview-loading-label">
+              <span class="streetview-loading-label" id="streetviewLoadingLabel">
                 Loading street view…
               </span>
+              <button type="button"
+                      class="streetview-loading-cancel"
+                      id="streetviewLoadingCancel"
+                      hidden>
+                Cancel
+              </button>
             </div>
           </div>
 
