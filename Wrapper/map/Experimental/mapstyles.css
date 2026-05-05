@@ -86,11 +86,13 @@ img    { user-select: none; -webkit-user-drag: none; }
 
 /* ===========================================================
    SPLASH / TITLE SCREEN
+   Dark sidebar bg + brand-red typography to match the rest of
+   the app chrome. White is used as a secondary accent.
    =========================================================== */
 .splash {
   position: fixed;
   inset: 0;
-  background: var(--fog);
+  background: var(--sidebar-bg);   /* #333333 */
   display: grid;
   place-items: center;
   z-index: 9999;
@@ -110,32 +112,35 @@ img    { user-select: none; -webkit-user-drag: none; }
 .splash-sc {
   font-size: 11px;
   letter-spacing: .2em;
-  color: var(--ink);
+  color: var(--on-dark);           /* white kicker */
   font-weight: 600;
   margin-bottom: 8px;
+  opacity: .75;
 }
 
 .splash-title {
   font-size: 32px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: var(--ink);
+  color: var(--brand-red);         /* #872837 */
   margin-bottom: 28px;
 }
+
 .splash-progress {
   margin-top: 14px;
   font-family: var(--mono);
   font-size: 11px;
   letter-spacing: .15em;
-  color: var(--ink);
-  opacity: .6;
+  color: var(--on-dark);           /* white, dimmed */
+  opacity: .55;
   text-transform: uppercase;
 }
+
 .splash-spinner {
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--line-soft);
-  border-top-color: var(--ink);
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, .18);
+  border-top-color: var(--brand-red);  /* spinning arc in brand red */
   border-radius: 50%;
   margin: 0 auto;
   animation: spin 0.8s linear infinite;
