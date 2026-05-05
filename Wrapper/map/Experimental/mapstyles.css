@@ -1288,23 +1288,49 @@ img    { user-select: none; -webkit-user-drag: none; }
   }
 
   .app {
-    grid-template-rows:
-      var(--flair-h)
-      var(--topbar-h)
-      1fr
-      calc(var(--tourbar-h) + env(safe-area-inset-bottom));
+      grid-template-rows:
+        var(--flair-h)
+        auto                                 /* metabar grows to fit two rows */
+        1fr
+        calc(var(--tourbar-h) + env(safe-area-inset-bottom));
   }
 
   .tourbar { display: grid; }
 
-  /* Smaller header items */
+  /* Mobile metabar — per Figma:
+       • No SCSU logo (hidden)
+       • "SCSU VIRTUAL CAMPUS" centered as the only brand element
+       • Mode toggle drops to the second row of the header
+       • Burger stays pinned to the right
+     We give the metabar two rows so the brand sits above the
+     Explore/Learn pill instead of fighting it for horizontal space. */
   .metabar {
-    grid-template-columns: auto 1fr auto;
-    gap: 10px;
+    grid-template-columns: 1fr auto;     /* brand row | burger */
+    grid-template-rows: auto auto;
+    grid-template-areas:
+      "brand burger"
+      "toggle toggle";
+    column-gap: 10px;
+    row-gap: 6px;
+    padding-top: calc(env(safe-area-inset-top) + 8px);
+    padding-bottom: 8px;
+    height: auto;                        /* let content drive height */
   }
-  .brand-logo    { width: 30px; height: 30px; }
-  .brand-product { font-size: 11px; letter-spacing: .12em; }
-  .mode-btn      { padding: 8px 18px; font-size: 12px; }
+
+  /* Place each metabar child into its grid area */
+  .metabar-brand        { grid-area: brand; justify-self: center; padding-left: 40px; /* visually balance the burger on the right */ }
+  .metabar-actions      { grid-area: burger; }
+  .mode-toggle-header   { grid-area: toggle; justify-self: center; }
+
+  /* Hide the round SCSU logo on mobile — Figma shows text only */
+  .brand-logo    { display: none; }
+
+  .brand-product {
+    font-size: 12px;
+    letter-spacing: .14em;
+  }
+
+  .mode-btn { padding: 8px 22px; font-size: 12px; }
 
   /* No edge gutter on the shell — panels go edge to edge */
   .shell,
