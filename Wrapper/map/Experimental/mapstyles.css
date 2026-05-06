@@ -43,14 +43,23 @@
   --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
           Roboto, system-ui, sans-serif;
 
-  /* ---------- Structural sizes ---------- */
-  /* Header height absorbs the 20px top padding called out in the
-     design spec plus a 60px content row. */
+  /* ---------- Structural sizes ----------
+     Per Figma:
+       • Top bar:     60px content row + 20px top pad (red flair)  = ~80px
+       • Sidebar:     300px wide, 20px inner gutters
+       • Details:     340px wide, 20px inner gutters
+       • Tour bar:    85px tall, BLACK (matches --header-bg, not --sidebar-bg)
+       • Cell height: 65px
+       • Cell gap:    2px
+     Widths use clamp() so the layout stays usable on smaller laptops,
+     but the Figma-spec value (300/340) is the upper bound. */
   --topbar-h:      80px;
   --tourbar-h:     85px;       /* matches the 85px sidebar tour height */
-  --sidebar-w:     clamp(280px, 22vw, 340px);  /* 300px @ ~1366px */
-  --details-w:     clamp(300px, 24vw, 360px);  /* 340px @ ~1366px */
+  --sidebar-w:     clamp(280px, 22vw, 300px);  /* 300px per Figma */
+  --details-w:     clamp(300px, 24vw, 340px);  /* 340px per Figma */
   --sidebar-tour-h:85px;
+  --cell-h:        65px;       /* per Figma "LOCATION CELL — 65px" */
+  --gutter:        20px;       /* per Figma — 20px inside sidebars/panels */
 
   /* Page edge gutter — kept ultra-thin so panels read as connected
      to the metabar, matching the Figma board. */
@@ -175,13 +184,15 @@ img    { user-select: none; -webkit-user-drag: none; }
 
 /* ===========================================================
    METABAR (top header — black, persistent on every breakpoint)
+   Per Figma: 60px content row, 20px L/R gutters, sits below
+   a 4px brand-red flair line. Total chrome height ≈ 80px.
    =========================================================== */
 .metabar {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: clamp(12px, 2vw, 28px);
-  padding: 0 clamp(16px, 1.6vw, 24px);
+  padding: 0 var(--gutter);                       /* 20px L/R per Figma */
   padding-top: env(safe-area-inset-top);
   height: calc(var(--topbar-h) + env(safe-area-inset-top));
   background: var(--header-bg);
@@ -444,7 +455,9 @@ img    { user-select: none; -webkit-user-drag: none; }
 }
 
 .locations-head {
-  padding: 18px 18px 10px;
+  /* 20px L/R gutter per Figma. Top padding gives the 60px header
+     content row some breathing room below the metabar. */
+  padding: 18px var(--gutter) 10px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -495,7 +508,7 @@ img    { user-select: none; -webkit-user-drag: none; }
 .loc-tabs {
   display: flex;
   gap: 22px;
-  margin: 0 18px 14px;
+  margin: 0 var(--gutter) 14px;
   padding: 0;
   border-bottom: 1px solid var(--on-dark-line);
   position: relative;
@@ -545,7 +558,7 @@ img    { user-select: none; -webkit-user-drag: none; }
 /* ---- Search field (now lives inside the sidebar) ---- */
 .metabar-search {
   position: relative;
-  margin: 0 18px 12px;
+  margin: 0 var(--gutter) 12px;
 }
 
 .metabar-search .search-field {
@@ -659,7 +672,7 @@ img    { user-select: none; -webkit-user-drag: none; }
   letter-spacing: .12em;
   color: var(--on-dark-muted);
   text-transform: uppercase;
-  padding: 0 18px 10px;
+  padding: 0 var(--gutter) 10px;
   flex-shrink: 0;
 }
 
@@ -667,14 +680,14 @@ img    { user-select: none; -webkit-user-drag: none; }
 .locations-list {
   list-style: none;
   margin: 0;
-  padding: 0 18px 18px;
+  padding: 0 var(--gutter) 18px;
   overflow-y: auto;
   flex: 1;
   min-height: 0;
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 2px;                        /* GAP: 2px (per Figma) */
 }
 
 /* Tab visibility — only one list visible at a time */
@@ -702,6 +715,10 @@ img    { user-select: none; -webkit-user-drag: none; }
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 8px;
+  /* Cell height = 65px per Figma. Vertical padding kept for the
+     two-line variant (name + category); min-height enforces the
+     spec for both single- and two-line cells. */
+  min-height: var(--cell-h);
   padding: 14px 16px;
   background: var(--cell-bg);
   color: var(--on-dark);
@@ -742,7 +759,7 @@ img    { user-select: none; -webkit-user-drag: none; }
   line-height: 1;
 }
 
-.location-row.is-active .location-chev { color: var(--brand-red); }
+.location-row.is-active .location-chev { color: var(--on-dark); }
 
 /* "All Locations" first row inside Featured (kept for legacy JS) */
 .location-row.all-row .location-name { font-weight: 500; }
@@ -762,7 +779,7 @@ img    { user-select: none; -webkit-user-drag: none; }
 
 /* Empty-state placeholder for the All tab while data loads */
 .locations-empty {
-  padding: 24px 18px;
+  padding: 24px var(--gutter);
   font-family: var(--mono);
   font-size: 12px;
   color: var(--on-dark-muted);
@@ -770,15 +787,20 @@ img    { user-select: none; -webkit-user-drag: none; }
   letter-spacing: .04em;
 }
 
-/* ---- Tour navigation footer inside the sidebar (desktop) ---- */
+/* ---- Tour navigation footer inside the sidebar (desktop) ----
+   Per the Figma design, this bar is BLACK (matching the top bar),
+   NOT the sidebar gray (#333333) it lives over. The visual effect
+   is a black band that connects to the top metabar — sandwiching
+   the gray sidebar between two black bars. The 20px L/R gutters
+   match the rest of the panel chrome. */
 .sidebar-tour {
   display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 14px;
-  padding: 14px 16px;
+  padding: 14px var(--gutter);
   border-top: var(--border-light);
-  background: var(--sidebar-bg);
+  background: var(--header-bg);    /* BLACK — matches top bar (Figma) */
   height: var(--sidebar-tour-h);
   flex-shrink: 0;
 }
@@ -899,7 +921,9 @@ img    { user-select: none; -webkit-user-drag: none; }
 .details-close:hover { background: rgba(255,255,255,.08); }
 
 .details-content {
-  padding: 22px 22px 32px;
+  /* 20px L/R gutter per Figma metadata panel. Bottom gets extra
+     room so the last block doesn't hug the panel edge. */
+  padding: 22px var(--gutter) 32px;
   overflow-y: auto;
   flex: 1;
 }
@@ -1173,14 +1197,20 @@ img    { user-select: none; -webkit-user-drag: none; }
    BOTTOM TOURBAR
    Desktop: hidden (the sidebar footer takes its place)
    Mobile : visible
+
+   Per Figma: this bar is BLACK (matches the top bar / header),
+   NOT the sidebar gray. The previous build used --sidebar-bg
+   (#333333) which made it visually disconnected from the
+   metabar; both bars should read as the same black chrome
+   bracketing the map.
    =========================================================== */
 .tourbar {
   display: none;
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 18px;
-  padding: 0 clamp(16px, 1.6vw, 24px);
-  background: var(--sidebar-bg);
+  padding: 0 var(--gutter);
+  background: var(--header-bg);    /* BLACK — matches top bar (Figma) */
   color: var(--on-dark);
   height: calc(var(--tourbar-h) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
