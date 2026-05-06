@@ -1128,6 +1128,29 @@ img    { user-select: none; -webkit-user-drag: none; }
   gap: 6px;
 }
 
+/* When the VR-Enabled label is a deep-link to a Meta Quest headset,
+   give it button-like affordance: pointer cursor, subtle border,
+   and a clear hover/focus state so users know it's interactive.
+   The browser's native tooltip (from the `title` attribute) handles
+   the explanatory hover text. */
+a.vr-link {
+  text-decoration: none;
+  cursor: pointer;
+  padding: 6px 10px;
+  border: 1px solid var(--on-dark-line);
+  border-radius: 999px;
+  background: var(--cell-bg);
+  transition: background .14s, color .14s, border-color .14s, transform .08s;
+}
+a.vr-link:hover,
+a.vr-link:focus-visible {
+  background: var(--cell-active);
+  color: var(--on-dark);
+  border-color: var(--on-dark);
+  outline: none;
+}
+a.vr-link:active { transform: translateY(1px); }
+
 .vr-dot {
   width: 8px;
   height: 8px;
