@@ -2665,9 +2665,31 @@ if (config.mapMode === "tiles") {
       },
       {
         id: "top-bar",
-        desktop: { /* current Top Navigation step, unchanged */ },
-        mobile:  { /* same — but you may want placement: "bottom" only,
-                      which it already is */ }
+        desktop: {
+          title: "Top Navigation",
+          body:
+            "Toggle between Explore and Learn modes from the pill at the top " +
+            "of the screen. The menu icon on the right opens shortcuts, " +
+            "including this walkthrough — you can reopen it any time from " +
+            "“How to use”.",
+          getRect: () => {
+            const node = document.querySelector(".metabar");
+            return node ? node.getBoundingClientRect() : null;
+          },
+          placement: "bottom"
+        },
+        mobile: {
+          title: "Top Navigation",
+          body:
+            "Switch between Explore and Learn from the pill at the top. " +
+            "Tap the menu icon for shortcuts, including this walkthrough " +
+            "(reopen it any time from “How to use”).",
+          getRect: () => {
+            const node = document.querySelector(".metabar");
+            return node ? node.getBoundingClientRect() : null;
+          },
+          placement: "bottom"
+        }
       },
       {
         id: "right-panel",
