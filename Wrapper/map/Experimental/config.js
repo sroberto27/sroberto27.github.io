@@ -1,7 +1,31 @@
 /* ============================================================
    SCSU METAVERSITY — Configuration
+   ------------------------------------------------------------
+   This file holds the *structural* settings that wire the app
+   together: brand strings, map tiles, the coordinate system,
+   data file paths, Treedis SDK plumbing, Leaflet styles, and
+   UI flags. It rarely changes.
+
+   Per-location *content* lives in sibling files so non-technical
+   editors can update copy without touching app plumbing:
+
+     • data/locations.js       — descriptionMap, imageMap,
+                                 categoryMap, happensHereMap,
+                                 explorableMap
+     • data/treedis-sweeps.js  — treedisMap (per-location
+                                 sweep IDs)
+     • data/courses.js         — Learn-mode course catalog
+
+   Those files all assign onto `window.CAMPUS_CONFIG`, so app.js
+   keeps reading them as `config.descriptionMap`, `config.treedisMap`,
+   etc. without any code changes.
+
+   IMPORTANT loading order: this file is loaded AFTER the data/*.js
+   files in index.html. We use `Object.assign(window.CAMPUS_CONFIG
+   || {}, …)` below so we merge into whatever the data files
+   already set, rather than overwriting it.
    ============================================================ */
-window.CAMPUS_CONFIG = {
+window.CAMPUS_CONFIG = Object.assign(window.CAMPUS_CONFIG || {}, {
   /* -- Branding ------------------------------------------- */
   brand: {
     name: "SCSU",
@@ -59,19 +83,8 @@ window.CAMPUS_CONFIG = {
   },
 
   /* -- Treedis street view configuration ------------------
-     Merged from the standalone wrapper prototype.
-     Keys in `treedisMap` are matched case-insensitively
-     against `name` (same pattern as descriptionMap, etc).
-
-     Each entry can be either:
-       • a string  → treated as { sweepId: "...", parentName: null }
-       • an object → { sweepId, parentName?, transitionTime? }
-
-     Sub-locations (e.g. "Room 100", "1st Floor") set
-     parentName so the street view header keeps showing the
-     parent building's title. Missing sweep IDs can be left
-     as null/placeholder — the app will show a warning in
-     the console but everything else keeps working.
+     Top-level SDK plumbing only. The per-location sweep
+     lookup (treedisMap) lives in data/treedis-sweeps.js.
      ------------------------------------------------------- */
   treedis: {
     /* Shared model — every sweep lives inside this model.    */
@@ -94,263 +107,6 @@ window.CAMPUS_CONFIG = {
        this as a string; the app only actively navigates when
        the user picks a location. */
     homeSweepId: "0df38e34"
-  },
-
-  /* -- Treedis sweep map ----------------------------------
-     Case-insensitive keys match `name` from the GeoJSON data
-     (same convention as descriptionMap / imageMap etc).
-     Sub-locations (rooms, floors, etc.) use a `parentName`
-     so the street view UI can show the right building title.
-
-     ⚠ Entries marked TODO are placeholders — replace the
-     sweepId with the real value from the spreadsheet when
-     available. The app treats a missing sweepId gracefully
-     and logs a warning rather than breaking.
-     ------------------------------------------------------- */
-  treedisMap: {
-    /* ---- Top-level buildings ---------------------------- */
-    "nance hall": {
-      sweepId: "asfnat04t866bzrkzegbaki6c"
-    },
-    "crawford zimmerman": {
-      sweepId: "d2brr5bczkx2m8pg0ap06di9d"
-    },
-    "kirkland w. green student center": {
-      sweepId: "itqbbw5un90s6fubay1sg9wpb"
-    },
-    "oliver c. dawson stadium": {
-      sweepId: "a69zbymdc8gnx3nzhy7nm3rna"
-    },
-    "s-h-m memorial square": {
-      sweepId: "uf2k18cpw057bbexxqs9g2w4a"
-    },
-    "olar demo farm": {
-      sweepId: "pgq02k1ubi2mb2gc7cpfpm24d"
-    },
-    "olar farm": {
-      sweepId: "pgq02k1ubi2mb2gc7cpfpm24d"
-    },
-    "legacy plaza": {
-      sweepId: "uf2k18cpw057bbexxqs9g2w4a"
-    },
-    "street view": {
-      sweepId: "gs6itzr7wgg9zm7iicpmf27qd"
-    },
-
-    /* ---- Nance Hall sub-locations ----------------------- */
-    "1st floor": {
-      sweepId: "2ki84r23di9yq9p613u5yg34d",
-      parentName: "Nance Hall"
-    },
-    "2nd floor": {
-      sweepId: "1t7xp1xztp4aw4bs372705dwd",
-      parentName: "Nance Hall"
-    },
-    "room 100": {
-      // TODO: replace with the real sweep when available
-      sweepId: null,
-      parentName: "Nance Hall"
-    },
-    "room 100 - general lecture": {
-      // TODO: replace with the real sweep when available
-      sweepId: null,
-      parentName: "Nance Hall"
-    },
-    "general lecture room": {
-      // TODO: replace with the real sweep when available
-      sweepId: null,
-      parentName: "Nance Hall"
-    },
-    "room 110": {
-      // TODO: replace with the real sweep when available
-      sweepId: null,
-      parentName: "Nance Hall"
-    },
-    "room 110 - baby": {
-      // TODO: replace with the real sweep when available
-      sweepId: null,
-      parentName: "Nance Hall"
-    },
-    "faculty suite": {
-      // TODO: replace with the real sweep when available
-      sweepId: null,
-      parentName: "Nance Hall"
-    },
-
-    /* ---- Crawford-Zimmerman sub-locations --------------- */
-    "crawford zimmerman 1st floor": {
-      sweepId: "sawh7uqgn3msc6b6y5aeabgpc",
-      parentName: "Crawford-Zimmerman"
-    },
-    "campus bookstore": {
-      // TODO: real sweep
-      sweepId: null,
-      parentName: "Crawford-Zimmerman"
-    },
-    "office of student financial services": {
-      // TODO: real sweep
-      sweepId: null,
-      parentName: "Crawford-Zimmerman"
-    },
-    "facilities management & operations": {
-      // TODO: real sweep
-      sweepId: null,
-      parentName: "Crawford-Zimmerman"
-    },
-    "admissions & financial aid": {
-      // TODO: real sweep
-      sweepId: null,
-      parentName: "Crawford-Zimmerman"
-    },
-
-    /* ---- Student Center floors -------------------------- */
-    "student center 1st floor": {
-      // TODO: spreadsheet has no sweep id
-      sweepId: null,
-      parentName: "Kirkland W. Green Student Center"
-    },
-    "student center 2nd floor": {
-      // TODO: spreadsheet has no sweep id
-      sweepId: null,
-      parentName: "Kirkland W. Green Student Center"
-    },
-
-    /* ---- Memorial sub-locations ------------------------- */
-    "historical marker": {
-      // TODO: real sweep
-      sweepId: null,
-      parentName: "S-H-M Memorial Square"
-    },
-    "bronze busts/monuments": {
-      // TODO: real sweep
-      sweepId: null,
-      parentName: "S-H-M Memorial Square"
-    },
-
-    /* ---- Stadium sub-locations -------------------------- */
-    "midfield": {
-      // TODO: real sweep
-      sweepId: null,
-      parentName: "Oliver C. Dawson Stadium"
-    },
-    "gate 1": {
-      // TODO: real sweep
-      sweepId: null,
-      parentName: "Oliver C. Dawson Stadium"
-    },
-    "bulldog wall": {
-      // TODO: real sweep
-      sweepId: null,
-      parentName: "Oliver C. Dawson Stadium"
-    }
-  },
-
-  /* -- Category overrides for tour stops ------------------
-     These power the department labels shown in the locations
-     list (e.g. "MATH & SCIENCE" under "Nance Hall").
-     Keys are matched case-insensitively against `name`.
-     ------------------------------------------------------- */
-  categoryMap: {
-    "crawford zimmerman":                          "STUDENT SERVICES",
-    "nance hall":                                  "ACADEMICS",
-    "s-h-m memorial square":                       "MEMORIAL",
-    "oliver c. dawson stadium":                    "ATHLETICS",
-    "kirkland w. green student center":            "STUDENT LIFE"
-  },
-
-  /* -- Description overrides ------------------------------
-     Because the source data has description: "none",
-     you can override what appears in the details panel.
-     ------------------------------------------------------- */
-  descriptionMap: {
-    "crawford zimmerman":
-      "Crawford-Zimmerman Building is a key administrative and operations " +
-      "facility located on campus. It houses several departments, including " +
-      "Procurement & Compliance, and serves as a hub for student services, " +
-      "such as the SCSU Bookstore.",
-    "kirkland w. green student center":
-      "The Kirkland W. Green Student Center is the central hub for campus " +
-      "life offering dining, social, and recreational spaces for students.",
-    "s-h-m memorial square":
-      "The Smith-Hammond-Middleton Legacy Plaza at South Carolina State " +
-      "University, dedicated in 2022, honors the three victims of the 1968 " +
-      "Orangeburg Massacre.",
-    "nance hall":
-      "Nance Hall serves as a hub for academic activities offering modern " +
-      "classrooms and resources to support student learning.",
-    "oliver c. dawson stadium":
-      "Oliver C. Dawson Stadium is a 22,000 seat multi purpose stadium. " +
-      "The Home of SC State Bulldogs football."
-  },
-
-  /* -- Location images ------------------------------------
-     Paths are relative to index.html. Omit a key (or set it
-     to "") to fall back to the placeholder.
-     ------------------------------------------------------- */
-
-     imageMap: {
-         "crawford zimmerman":                "assets/locations/crawford-zimmerman.webp",
-         "kirkland w. green student center":  "assets/locations/kirkland-green.webp",
-         "s-h-m memorial square":             "assets/locations/shm-memorial.webp",
-         "nance hall":                        "assets/locations/nance-hall.webp",
-         "oliver c. dawson stadium":          "assets/locations/dawson-stadium.webp"
-       },
-
-  /* -- "What happens here?" chips -------------------------
-     Shown as pill chips in the metadata panel. Each array
-     entry becomes one chip.
-     ------------------------------------------------------- */
-  happensHereMap: {
-    "crawford zimmerman": [
-      "Student services",
-      "Warehouse",
-      "Campus Bookstore"
-    ],
-    "kirkland w. green student center": [
-      "Dining (\"The Pitt\")",
-      "Campus Hub"
-    ],
-    "s-h-m memorial square": [
-      "Memorial bronze busts",
-      "Annual commemoration",
-      "Historical marker"
-    ],
-    "nance hall": [
-      "Classrooms",
-      "General lecture room"
-    ],
-    "oliver c. dawson stadium": [
-      "Bulldogs Football",
-      "SC State women's soccer team"
-    ]
-  },
-
-  /* -- "Explorable locations" list ------------------------
-     Shown as the list of sub-locations in the metadata
-     panel. Each entry becomes one row.
-     ------------------------------------------------------- */
-  explorableMap: {
-    "crawford zimmerman": [
-      "Campus Bookstore",
-      "Office of Student Financial Services",
-      "Facilities Management & Operations",
-      "Admissions & Financial Aid"
-    ],
-    "kirkland w. green student center": [],
-    "s-h-m memorial square": [
-      "Historical marker",
-      "Bronze Busts/Monuments"
-    ],
-    "nance hall": [
-      "Room 110",
-      "General Lecture Room",
-      "Room 100"
-    ],
-    "oliver c. dawson stadium": [
-      "Midfield",
-      "Gate 1",
-      "Bulldog wall"
-    ]
   },
 
   /* -- Layer styles ---------------------------------------- */
@@ -376,4 +132,4 @@ window.CAMPUS_CONFIG = {
     enableHoverPreview: true,
     showBuildingTooltips: true
   }
-};
+});
