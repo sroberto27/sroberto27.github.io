@@ -1380,12 +1380,13 @@ function renderLocationsList() {
   el.locationsCount.textContent = tourStops.length;
   const rows = [];
 
-  // "All locations" row — fits the map to the entire campus.
+  // "Recenter on Tour" row — fits the map to all tour stops so the
+  // user can re-orient on the full route after navigating away.
   rows.push(`
     <li class="location-row all-row" role="option" data-all="1">
       <div>
-        <div class="location-name">All Locations</div>
-        <div class="location-num">${tourStops.length} LOCATIONS</div>
+        <div class="location-name">Recenter on Tour</div>
+        <div class="location-num">${tourStops.length} STOPS</div>
       </div>
       <span class="location-chev">›</span>
     </li>

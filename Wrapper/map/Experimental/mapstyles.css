@@ -55,8 +55,11 @@
      but the Figma-spec value (300/340) is the upper bound. */
   --topbar-h:      80px;
   --tourbar-h:     85px;       /* matches the 85px sidebar tour height */
-  --sidebar-w:     clamp(280px, 22vw, 300px);  /* 300px per Figma */
-  --details-w:     clamp(300px, 24vw, 340px);  /* 340px per Figma */
+  /* Locked to exact Figma spec on desktop. The narrower-laptop
+     breakpoint below scales them down only when the viewport
+     can no longer comfortably fit both panels at full width. */
+  --sidebar-w:     300px;      /* 300px per Figma */
+  --details-w:     340px;      /* 340px per Figma */
   --sidebar-tour-h:85px;
   --cell-h:        65px;       /* per Figma "LOCATION CELL — 65px" */
   --gutter:        20px;       /* per Figma — 20px inside sidebars/panels */
@@ -567,7 +570,7 @@ img    { user-select: none; -webkit-user-drag: none; }
   align-items: center;
   background: var(--cell-bg);
   border: 1px solid var(--on-dark-line);
-  border-radius: 4px;
+  border-radius: 0;                /* square corners per Figma */
   height: 40px;
 }
 
@@ -726,6 +729,7 @@ img    { user-select: none; -webkit-user-drag: none; }
   transition: background .14s, transform .08s;
   font-family: var(--mono);
   border: none;
+  border-radius: 6px;              /* slight rounding per Figma */
 }
 
 .location-row:hover     { background: var(--cell-active); }
@@ -1318,11 +1322,17 @@ a.vr-link:active { transform: translateY(1px); }
    RESPONSIVE — desktop breakpoints
    =========================================================== */
 @media (max-width: 1200px) {
-  :root { --details-w: clamp(280px, 24vw, 320px); }
+  :root {
+    --sidebar-w: clamp(260px, 22vw, 300px);
+    --details-w: clamp(280px, 24vw, 320px);
+  }
 }
 
 @media (max-width: 1040px) {
-  :root { --details-w: 280px; }
+  :root {
+    --sidebar-w: 260px;
+    --details-w: 280px;
+  }
   .brand-product { font-size: 12px; }
 }
 
