@@ -114,7 +114,7 @@ window.CAMPUS_CONFIG.explorableMap = {
   ],
   "nance hall": [
     "Room 110",
-    "General Lecture Room",
+    "Lecture Room",
     "Room 100"
   ],
   "oliver c. dawson stadium": [
