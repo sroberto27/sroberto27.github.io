@@ -2316,6 +2316,16 @@ body.streetview-open .map-action { display: none !important; }
 .coachmark-nav-prev      { justify-self: start; text-align: left; }
 .coachmark-nav-next      { justify-self: end;   text-align: right; }
 
+/* Final step: Next becomes a filled "Finish" pill so the user
+   has a clear end-state CTA instead of the trailing X button. */
+.coachmark-nav-finish {
+  background: var(--brand-red);
+  color: #fff;
+  padding: 8px 18px;
+  border-radius: 999px;
+}
+.coachmark-nav-finish:hover { background: var(--brand-red-2); color: #fff; }
+
 .coachmark-count {
   font-size: 13px;
   font-weight: 700;

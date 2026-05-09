@@ -2846,8 +2846,13 @@ if (config.mapMode === "tiles") {
     totalEl.textContent   = String(STEPS.length);
 
     // First step has no Previous, last step has no Next.
-    prevBtn.hidden = stepIndex === 0;
-    nextBtn.hidden = stepIndex === STEPS.length - 1;
+    const isFirst = stepIndex === 0;
+    const isLast  = stepIndex === STEPS.length - 1;
+
+    prevBtn.hidden = isFirst;
+    nextBtn.hidden = false;                            // always visible now
+    nextBtn.textContent = isLast ? "Finish" : "Next";
+    nextBtn.classList.toggle("coachmark-nav-finish", isLast);
 
     // Resolve target rect AFTER the next paint so any
     // panel-open side-effects from a previous step have
