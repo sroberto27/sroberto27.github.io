@@ -440,6 +440,127 @@
       </aside>
     </main>
 
+    <!-- ============================================================
+         LEARN MODE SHELL
+         ------------------------------------------------------------
+         Mirrors the Explore shell's two-column layout: a dark course
+         list on the left and a course-detail panel on the right.
+         Hidden by default — `body.mode-learn` swaps which shell is
+         visible (see CSS). All copy/data is rendered by app.js from
+         window.SCSU_DATA.courses (see data/courses.js).
+
+         Mobile flow (≤880px) reuses the same DOM: when no course is
+         picked the list view is full-bleed; tapping a course adds
+         `.has-detail` to .learn-shell, which slides the detail pane
+         in over the list. The "Back" button removes the class.
+         ============================================================ -->
+    <main class="learn-shell" id="learnShell"
+          aria-label="Course catalog" aria-hidden="true">
+
+      <!-- ───── LEFT: COURSE LIST ───── -->
+      <aside class="courses" id="courses" aria-label="Available courses">
+        <header class="courses-head">
+          <div class="courses-kicker">AVAILABLE COURSES</div>
+          <div class="courses-meta" aria-live="polite">
+            <span id="coursesCount">0</span> courses available.
+          </div>
+        </header>
+
+        <ul class="course-list" id="courseList" role="listbox"
+            aria-label="Available courses">
+          <!-- populated by app.js renderCourseList() -->
+        </ul>
+      </aside>
+
+      <!-- ───── RIGHT: COURSE DETAIL ───── -->
+      <section class="course-detail" id="courseDetail"
+               aria-label="Course details">
+
+        <!-- Mobile-only "Back" — returns to the course list view -->
+        <button class="course-back" id="courseBack" type="button"
+                aria-label="Back to course list">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M15 6l-6 6 6 6" stroke="currentColor"
+                  stroke-width="2" fill="none" stroke-linecap="round"
+                  stroke-linejoin="round"/>
+          </svg>
+          <span>Back</span>
+        </button>
+
+        <!-- Empty-state shown until a course is selected -->
+        <div class="course-empty" id="courseEmpty">
+          <div class="course-empty-kicker">SELECT A COURSE</div>
+          <p class="course-empty-msg">
+            Pick a course from the list to view its overview,
+            curriculum, and immersive options.
+          </p>
+        </div>
+
+        <!-- Course body — populated by app.js renderCourseDetail() -->
+        <article class="course-body" id="courseBody" hidden>
+          <header class="course-detail-head">
+            <div class="course-detail-meta">
+              <span class="course-code" id="courseCode">—</span>
+              <span class="course-credits" id="courseCredits">—</span>
+            </div>
+            <div class="course-updated">
+              LAST UPDATED:
+              <span id="courseUpdated">—</span>
+            </div>
+          </header>
+
+          <h1 class="course-title" id="courseTitle">—</h1>
+          <p class="course-lede" id="courseLede">—</p>
+
+          <div class="course-columns">
+            <section class="course-column">
+              <div class="course-column-h">COURSE OVERVIEW</div>
+              <p class="course-overview" id="courseOverview">—</p>
+            </section>
+
+            <section class="course-column">
+              <div class="course-column-h">COURSE CURRICULUM</div>
+              <ul class="course-curriculum" id="courseCurriculum"></ul>
+            </section>
+          </div>
+
+          <footer class="course-actions">
+            <button class="course-cta" id="courseBeginBtn" type="button">
+              Begin Course
+            </button>
+
+            <div class="course-vr" id="courseVr" hidden>
+              <span class="course-vr-label">
+                <svg viewBox="0 0 24 24" aria-hidden="true"
+                     class="course-vr-icon">
+                  <path d="M3 9.5A2.5 2.5 0 0 1 5.5 7h13A2.5 2.5 0 0 1 21
+                           9.5v5A2.5 2.5 0 0 1 18.5 17h-2.6a1 1 0 0 1-.7-.3
+                           l-1.4-1.4a2 2 0 0 0-2.6 0l-1.4 1.4a1 1 0 0 1-.7.3
+                           H5.5A2.5 2.5 0 0 1 3 14.5z"
+                        stroke="currentColor" stroke-width="1.6"
+                        fill="none" stroke-linejoin="round"/>
+                  <circle cx="8" cy="12" r="1.2" fill="currentColor"/>
+                  <circle cx="16" cy="12" r="1.2" fill="currentColor"/>
+                </svg>
+                VR-Enabled
+              </span>
+              <button type="button" class="course-vr-help"
+                      id="courseVrHelp" aria-label="What does VR-Enabled mean?">
+                ?
+              </button>
+              <div class="course-vr-tooltip" id="courseVrTooltip"
+                   role="tooltip" aria-hidden="true">
+                <div class="course-vr-tooltip-kicker">
+                  THIS COURSE IS IMMERSIVE
+                </div>
+                <p id="courseVrNote">—</p>
+              </div>
+            </div>
+          </footer>
+        </article>
+      </section>
+    </main>
+
     <!-- ==== MOBILE-ONLY TOUR BAR ==== -->
     <footer class="tourbar" role="contentinfo" aria-label="Tour navigation">
       <button class="tour-arrow" id="tourPrevMobile" type="button"
@@ -693,6 +814,7 @@
 
   <script src="data/buildings.js" onerror="this.remove()"></script>
   <script src="data/tours.js"     onerror="this.remove()"></script>
+  <script src="data/courses.js"   onerror="this.remove()"></script>
 
   <script src="config.js"></script>
   <script src="app.js"></script>

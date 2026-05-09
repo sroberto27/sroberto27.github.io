@@ -2686,3 +2686,530 @@ body.coachmarks-active {
 @media (max-width: 480px) {
   .nav-instructions-btn { width: 100%; min-width: 0; }
 }
+
+/* ===========================================================
+   LEARN MODE — Course catalog shell
+   -----------------------------------------------------------
+   Sits as a sibling of `.shell` (Explore) inside the .app
+   wrapper. By default Explore is visible and Learn is hidden;
+   the body class `.mode-learn` (set by the JS that already
+   handles the .mode-btn pill) swaps which shell is shown.
+
+   Visual language matches Explore: dark surfaces from the
+   palette tokens (`--sidebar-bg`, `--cell-bg`, `--brand-red`),
+   JetBrains Mono for chrome, Inter for long prose, brand-red
+   chevron + CTA. No new colors are introduced.
+   =========================================================== */
+
+/* ---- mode visibility swap (no animation, just a hard switch
+   so the map doesn't keep ticking in the background) ---- */
+.learn-shell { display: none; }
+
+body.mode-learn .shell                 { display: none; }
+body.mode-learn .tourbar               { display: none; }
+body.mode-learn .learn-shell           { display: grid; }
+body.mode-learn .locations-backdrop    { display: none !important; }
+body.mode-learn .map-action,
+body.mode-learn .locations-toggle      { display: none !important; }
+
+/* The map's right details panel is part of .shell so it's
+   already hidden by the rule above — but make sure the
+   global body class doesn't leave the panel marked open. */
+body.mode-learn .details               { display: none; }
+
+/* ---- Shell layout ----
+   Mirrors `.shell` (Explore):
+     • Desktop: 300px course list  | 1fr course detail
+     • Mobile : single column; the detail slides over the list. */
+.learn-shell {
+  grid-template-columns: var(--sidebar-w) 1fr;
+  min-height: 0;
+  background: var(--header-bg);
+  position: relative;
+  padding: 0;
+  gap: 0;
+  overflow: hidden;
+}
+
+/* ===========================================================
+   COURSE LIST (left column)
+   =========================================================== */
+.courses {
+  background: var(--sidebar-bg);
+  color: var(--on-dark);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  font-family: var(--mono);
+}
+
+.courses-head {
+  padding: 22px var(--gutter) 14px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--on-dark-line);
+}
+
+.courses-kicker {
+  font-size: 11px;
+  letter-spacing: .18em;
+  font-weight: 700;
+  color: var(--on-dark);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.courses-meta {
+  font-size: 11px;
+  letter-spacing: .12em;
+  color: var(--on-dark-muted);
+  text-transform: uppercase;
+}
+
+.course-list {
+  list-style: none;
+  margin: 0;
+  padding: 14px var(--gutter) 18px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;                          /* matches location-row 2px gap */
+}
+
+/* One course row — same chrome as `.location-row` so the two
+   sidebars feel like the same component family. */
+.course-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-height: var(--cell-h);
+  padding: 14px 16px;
+  background: var(--cell-bg);
+  color: var(--on-dark);
+  cursor: pointer;
+  transition: background .14s, transform .08s;
+  font-family: var(--mono);
+  border: none;
+  border-radius: 6px;
+  text-align: left;
+  width: 100%;
+}
+
+.course-row:hover  { background: var(--cell-active); }
+.course-row:active { transform: translateY(1px); }
+.course-row.is-active { background: var(--cell-active); }
+
+.course-row-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--on-dark);
+}
+
+.course-row-code {
+  font-size: 10px;
+  letter-spacing: .14em;
+  color: var(--on-dark-muted);
+  margin-top: 4px;
+  font-weight: 500;
+  text-transform: uppercase;
+}
+
+.course-row-chev {
+  color: var(--brand-red);
+  font-family: var(--mono);
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1;
+}
+.course-row.is-active .course-row-chev { color: var(--on-dark); }
+
+/* ===========================================================
+   COURSE DETAIL (right column)
+   =========================================================== */
+.course-detail {
+  background: var(--header-bg);      /* black, like the map background */
+  color: var(--on-dark);
+  position: relative;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  font-family: var(--sans);
+  display: flex;
+  flex-direction: column;
+}
+
+/* Empty state — shown until the user picks a course */
+.course-empty {
+  margin: auto;
+  padding: 48px 32px;
+  text-align: center;
+  max-width: 360px;
+  font-family: var(--mono);
+}
+.course-empty-kicker {
+  font-size: 11px;
+  letter-spacing: .18em;
+  font-weight: 700;
+  color: var(--on-dark-muted);
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.course-empty-msg {
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--on-dark-muted);
+  margin: 0;
+}
+
+.course-body[hidden] { display: none; }
+.course-body {
+  padding: 32px clamp(24px, 4vw, 56px) 80px;
+  display: block;
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.course-detail-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
+  font-family: var(--mono);
+}
+
+.course-detail-meta {
+  display: flex;
+  gap: clamp(16px, 4vw, 48px);
+  align-items: baseline;
+}
+
+.course-code {
+  font-size: 12px;
+  letter-spacing: .14em;
+  font-weight: 700;
+  color: var(--on-dark);
+  text-transform: uppercase;
+}
+
+.course-credits {
+  font-size: 11px;
+  letter-spacing: .14em;
+  color: var(--on-dark-muted);
+  text-transform: uppercase;
+}
+
+.course-updated {
+  font-size: 10.5px;
+  letter-spacing: .14em;
+  color: var(--on-dark-muted);
+  text-transform: uppercase;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.course-title {
+  font-family: var(--sans);
+  font-size: clamp(28px, 3.2vw, 44px);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--on-dark);
+  margin: 0 0 18px;
+}
+
+.course-lede {
+  font-family: var(--sans);
+  font-size: clamp(15px, 1.3vw, 18px);
+  line-height: 1.5;
+  color: var(--on-dark);
+  opacity: .92;
+  margin: 0 0 36px;
+  max-width: 70ch;
+}
+
+/* Two-up layout: Course Overview | Course Curriculum.
+   Collapses to a single column under ~720px so the columns
+   never get cramped. */
+.course-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: clamp(28px, 4vw, 64px);
+  margin-bottom: 42px;
+  padding-top: 6px;
+  border-top: 1px solid var(--on-dark-line);
+  padding-top: 28px;
+}
+
+.course-column-h {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .18em;
+  font-weight: 700;
+  color: var(--on-dark-muted);
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.course-overview {
+  font-family: var(--sans);
+  font-size: 14.5px;
+  line-height: 1.6;
+  color: var(--on-dark);
+  opacity: .9;
+  margin: 0;
+}
+
+.course-curriculum {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-family: var(--sans);
+}
+
+.course-curriculum li {
+  position: relative;
+  padding-left: 18px;
+  font-size: 14.5px;
+  line-height: 1.55;
+  color: var(--on-dark);
+  opacity: .9;
+}
+.course-curriculum li::before {
+  content: "•";
+  position: absolute;
+  left: 2px;
+  top: 0;
+  color: var(--brand-red);
+  font-weight: 700;
+}
+
+/* ---- Footer actions ---- */
+.course-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding-top: 24px;
+  border-top: 1px solid var(--on-dark-line);
+}
+
+.course-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  background: var(--brand-red);
+  color: var(--on-dark);
+  border: none;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .05em;
+  cursor: pointer;
+  transition: background .14s, transform .08s;
+}
+.course-cta:hover  { background: var(--brand-red-2); }
+.course-cta:active { transform: translateY(1px); }
+
+/* VR-Enabled label + tooltip popover (THIS COURSE IS IMMERSIVE) */
+.course-vr {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  letter-spacing: .04em;
+  color: var(--on-dark);
+}
+.course-vr[hidden] { display: none; }
+
+.course-vr-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--on-dark);
+}
+
+.course-vr-icon { width: 22px; height: 22px; }
+
+.course-vr-help {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid var(--on-dark-line);
+  background: transparent;
+  color: var(--on-dark-muted);
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  transition: background .14s, color .14s;
+}
+.course-vr-help:hover {
+  background: rgba(255,255,255,.08);
+  color: var(--on-dark);
+}
+
+.course-vr-tooltip {
+  position: absolute;
+  bottom: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  max-width: min(320px, 80vw);
+  padding: 14px 16px;
+  background: var(--cell-bg);
+  border: 1px solid var(--on-dark-line);
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--on-dark);
+  box-shadow: 0 8px 24px rgba(0,0,0,.4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .15s ease;
+  z-index: 5;
+}
+.course-vr-tooltip.is-open { opacity: 1; pointer-events: auto; }
+
+/* Little arrow pointing down to the (?) trigger. */
+.course-vr-tooltip::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: var(--cell-bg);
+}
+
+.course-vr-tooltip-kicker {
+  font-size: 10.5px;
+  letter-spacing: .18em;
+  font-weight: 700;
+  color: var(--on-dark-muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.course-vr-tooltip p { margin: 0; }
+
+/* ---- Mobile-only "Back" button ----
+   Hidden on desktop (the list and detail are both visible at
+   the same time, so there's nothing to go back from). */
+.course-back {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  color: var(--on-dark);
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .04em;
+  padding: 10px 14px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.course-back svg { width: 18px; height: 18px; }
+.course-back:hover { opacity: .8; }
+
+/* ===========================================================
+   LEARN MODE — Responsive
+   =========================================================== */
+
+/* Mid-width tablet/laptop: collapse the two-column course body. */
+@media (max-width: 880px) {
+  .course-columns { grid-template-columns: 1fr; gap: 28px; }
+}
+
+/* Mobile (≤880px) — single-pane flow.
+   The list takes the full viewport; tapping a course adds
+   `.has-detail` to .learn-shell, which slides the detail
+   panel in over the list. */
+@media (max-width: 880px) {
+  .learn-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    position: relative;
+  }
+
+  /* Both panes occupy the same grid cell; we toggle which one
+     is visible/active via the .has-detail class. */
+  .courses,
+  .course-detail {
+    grid-row: 1;
+    grid-column: 1;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+  }
+
+  /* List visible by default, detail hidden. */
+  .course-detail {
+    transform: translateX(100%);
+    transition: transform .26s ease;
+    background: var(--header-bg);
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  .learn-shell.has-detail .course-detail {
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  /* When the detail is showing, hide the list from the a11y
+     tree and visually push it out so it doesn't render under
+     the (translucent-edged) detail. */
+  .learn-shell.has-detail .courses {
+    visibility: hidden;
+  }
+
+  .course-back {
+    display: inline-flex;
+    margin: 14px 8px 0;
+  }
+
+  /* Tighter padding inside the course body on phones */
+  .course-body {
+    padding: 8px 20px 56px;
+  }
+
+  .course-detail-head {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .course-updated { text-align: left; }
+
+  .course-title { font-size: 26px; margin-bottom: 14px; }
+  .course-lede  { font-size: 15px; margin-bottom: 24px; }
+
+  /* Empty state shouldn't appear on mobile — the list IS the
+     empty state on small screens until a course is picked. */
+  .course-empty { display: none; }
+}
+
+/* Small phones */
+@media (max-width: 420px) {
+  .courses-head { padding: 18px 16px 12px; }
+  .course-list  { padding: 12px 16px 16px; }
+  .course-row   { padding: 12px 14px; }
+  .course-body  { padding: 8px 16px 56px; }
+}
