@@ -2636,50 +2636,66 @@ if (config.mapMode === "tiles") {
      between steps (e.g. details panel opening) is reflected.
      `placement` controls which side of the highlight the card
      sits on. ------------------------------------------------- */
-  const STEPS = [
-    {
-      id: "left-sidebar",
-      title: "Locations Sidebar",
-      body:
-        "Browse all campus locations here. Use the search bar to find " +
-        "buildings or courses, switch between Featured and All to filter " +
-        "the list, and follow the Guided Tour at the bottom to step " +
-        "through key stops in order.",
-      getRect: () => {
-        const node = document.getElementById("locations");
-        return node ? node.getBoundingClientRect() : null;
+     const STEPS = [
+      {
+        id: "left-sidebar",
+        desktop: {
+          title: "Locations Sidebar",
+          body: "Browse all campus locations here. Use the search bar to find " +
+                "buildings or courses, switch between Featured and All to filter " +
+                "the list, and follow the Guided Tour at the bottom to step " +
+                "through key stops in order.",
+          getRect: () => {
+            const node = document.getElementById("locations");
+            return node ? node.getBoundingClientRect() : null;
+          },
+          placement: "right"
+        },
+        mobile: {
+          title: "Locations Menu",
+          body: "Tap the Locations button to open the full list of campus " +
+                "stops. From there you can search, switch between Featured " +
+                "and All, and follow the Guided Tour in order.",
+          getRect: () => {
+            const node = document.getElementById("locationsToggle");
+            return node ? node.getBoundingClientRect() : null;
+          },
+          placement: "bottom"
+        }
       },
-      placement: "right"
-    },
-    {
-      id: "top-bar",
-      title: "Top Navigation",
-      body:
-        "Toggle between Explore and Learn modes from the pill at the top " +
-        "of the screen. The menu icon on the right opens shortcuts, " +
-        "including this walkthrough — you can reopen it any time from " +
-        "“How to use”.",
-      getRect: () => {
-        const node = document.querySelector(".metabar");
-        return node ? node.getBoundingClientRect() : null;
+      {
+        id: "top-bar",
+        desktop: { /* current Top Navigation step, unchanged */ },
+        mobile:  { /* same — but you may want placement: "bottom" only,
+                      which it already is */ }
       },
-      placement: "bottom"
-    },
-    {
-      id: "right-panel",
-      title: "Location Details",
-      body:
-        "When you select a building from the map, sidebar, search, or " +
-        "guided tour, its details appear here. Tap Explore to drop into " +
-        "an immersive street view (where available), and use the " +
-        "Explorable Locations list to jump to specific rooms or sub-areas.",
-      getRect: () => {
-        const node = document.getElementById("details");
-        return node ? node.getBoundingClientRect() : null;
-      },
-      placement: "left"
-    }
-  ];
+      {
+        id: "right-panel",
+        desktop: {
+          title: "Location Details",
+          body: "When you select a building from the map, sidebar, search, or " +
+                "guided tour, its details appear here. Tap Explore to drop into " +
+                "an immersive street view (where available), and use the " +
+                "Explorable Locations list to jump to specific rooms or sub-areas.",
+          getRect: () => {
+            const node = document.getElementById("details");
+            return node ? node.getBoundingClientRect() : null;
+          },
+          placement: "left"
+        },
+        mobile: {
+          title: "Location Details",
+          body: "When you pick a stop, its details slide up from the bottom. " +
+                "Drag the panel up for the full view — including the Explore " +
+                "button for street view and the list of rooms inside.",
+          getRect: () => {
+            const node = document.getElementById("details");
+            return node ? node.getBoundingClientRect() : null;
+          },
+          placement: "top"     // card sits ABOVE the bottom sheet on mobile
+        }
+      }
+    ];
 
   let stepIndex = 0;
   let active    = false;
@@ -2837,30 +2853,29 @@ if (config.mapMode === "tiles") {
   }
 
   function renderStep() {
-    const step = STEPS[stepIndex];
-    if (!step) return;
+    const stepBase = STEPS[stepIndex];
+    if (!stepBase) return;
+
+    // Resolve the variant for the current viewport. Fall back to
+    // desktop if the mobile variant isn't defined for some step.
+    const step = (isMobile() && stepBase.mobile) ? stepBase.mobile
+                                                 : stepBase.desktop;
 
     titleEl.textContent = step.title;
     bodyEl.textContent  = step.body;
     currentEl.textContent = String(stepIndex + 1);
     totalEl.textContent   = String(STEPS.length);
 
-    // First step has no Previous, last step has no Next.
     const isFirst = stepIndex === 0;
     const isLast  = stepIndex === STEPS.length - 1;
-
     prevBtn.hidden = isFirst;
-    nextBtn.hidden = false;                            // always visible now
+    nextBtn.hidden = false;
     nextBtn.textContent = isLast ? "Finish" : "Next";
     nextBtn.classList.toggle("coachmark-nav-finish", isLast);
 
-    // Resolve target rect AFTER the next paint so any
-    // panel-open side-effects from a previous step have
-    // settled.
     requestAnimationFrame(() => {
       const rect = step.getRect && step.getRect();
       positionCutout(rect);
-      // Card needs to be measured AFTER content is in place.
       requestAnimationFrame(() => positionCard(rect, step.placement));
     });
   }
@@ -2869,8 +2884,10 @@ if (config.mapMode === "tiles") {
     if (!active) return;
     cancelAnimationFrame(resizeRaf);
     resizeRaf = requestAnimationFrame(() => {
-      const step = STEPS[stepIndex];
-      if (!step) return;
+      const stepBase = STEPS[stepIndex];
+      if (!stepBase) return;
+      const step = (isMobile() && stepBase.mobile) ? stepBase.mobile
+                                                   : stepBase.desktop;
       const rect = step.getRect && step.getRect();
       positionCutout(rect);
       positionCard(rect, step.placement);
