@@ -2824,6 +2824,13 @@ body.mode-learn .details               { display: none; }
      • Mobile : single column; the detail slides over the list. */
 .learn-shell {
   grid-template-columns: var(--sidebar-w) 1fr;
+  /* Bound the row height so grid items get a definite height to
+     flex against. Without this the row sizes to content and
+     .course-detail's flex column has nothing to push the action
+     bar to the bottom of. `minmax(0, 1fr)` is the same trick
+     `.shell` would get from the surrounding chrome — making it
+     explicit here so it doesn't depend on auto-placement. */
+  grid-template-rows: minmax(0, 1fr);
   min-height: 0;
   background: var(--header-bg);
   position: relative;
@@ -3066,7 +3073,12 @@ body.mode-learn .details               { display: none; }
   position: relative;
   margin: 0 0 36px;
   padding: 0;
-  aspect-ratio: 16 / 6;
+  /* Shallower than a typical hero so it earns attention without
+     overwhelming the article below. Combined with a max-height
+     cap so on wide viewports it doesn't grow past a sensible
+     ceiling. */
+  aspect-ratio: 16 / 5;
+  max-height: 280px;
   background: var(--cell-bg);
   border: 1px solid var(--on-dark-line);
   border-radius: 6px;
