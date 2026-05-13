@@ -3615,6 +3615,7 @@ boot().catch((err) => {
     body:         document.getElementById("courseBody"),
     actions:      document.getElementById("courseActions"),
     heroStamp:    document.getElementById("courseHeroStamp"),
+    hero:      document.getElementById("courseHero"),
     code:         document.getElementById("courseCode"),
     credits:      document.getElementById("courseCredits"),
     updated:      document.getElementById("courseUpdated"),
@@ -3713,10 +3714,33 @@ boot().catch((err) => {
     if (L.lede)     L.lede.textContent     = course.lede || "";
     if (L.overview) L.overview.textContent = course.overview || "";
 
-    // Hero watermark — uses the course code so each course gets
-    // a visually distinct hero placeholder before real artwork
-    // is wired in. Strips the space ("NRM 342" → "NRM342") to
-    // keep the stamp compact at large sizes.
+    // Hero — bind real artwork if the course has an `image` field;
+    // otherwise fall back to the watermarked placeholder. Mirrors
+    // the .details-image.has-image bind used in Explore mode so
+    // the two modes stay visually consistent.
+    if (L.hero) {
+      // Reset to placeholder state first so navigating between
+      // courses doesn't leave a stale <img> behind.
+      L.hero.classList.remove("has-image");
+      const oldImg = L.hero.querySelector("img");
+      if (oldImg) oldImg.remove();
+
+      if (course.image) {
+        const img = document.createElement("img");
+        img.src = course.image;
+        img.alt = course.title || "";
+        // If the file 404s, drop back to the placeholder.
+        img.onerror = () => {
+          L.hero.classList.remove("has-image");
+          img.remove();
+        };
+        L.hero.appendChild(img);
+        L.hero.classList.add("has-image");
+      }
+    }
+
+    // Hero watermark — still set even when an image is bound, so
+    // the placeholder is correct if the image fails to load.
     if (L.heroStamp) {
       const stamp = (course.code || "").replace(/\s+/g, "");
       L.heroStamp.textContent = stamp;

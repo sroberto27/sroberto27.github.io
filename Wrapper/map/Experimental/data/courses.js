@@ -28,6 +28,7 @@ window.SCSU_DATA.courses = [
     id:          "nrm-342",
     code:        "NRM 342",
     title:       "Agronomy & Soils",
+    image: "assets/courses/nrm-342.webp",
     credits:     "3 Course Credits",
     lastUpdated: "1 OCTOBER, 2026",
     lede:
@@ -76,6 +77,7 @@ window.SCSU_DATA.courses = [
     id:          "nrm-431",
     code:        "NRM 431",
     title:       "Soil Fertility",
+    image: "assets/courses/nrm-431.webp",
     credits:     "3 Course Credits",
     lastUpdated: "1 OCTOBER, 2026",
     lede:
