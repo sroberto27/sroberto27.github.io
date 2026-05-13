@@ -1958,6 +1958,44 @@ body.streetview-open .map-action { display: none !important; }
   body.streetview-open .locations-toggle { display: none !important; }
 }
 
+/* ============================================================
+   XR / VR MODE — streetview takes over the details column
+   ------------------------------------------------------------
+   When the page is opened in a VR/XR browser (Meta Quest, Pico,
+   etc.) AND street view is active, the details panel should be
+   hidden so the 3D tour can use the space the panel was taking.
+
+   Outside of street view (or outside of VR mode), the details
+   panel behaves exactly as it does on desktop/mobile — the
+   user can still open/close it, see info, scroll, etc. The
+   override only fires for the specific combination:
+       body.xr-mode  +  body.streetview-open
+
+   `body.xr-mode` is set by app.js at boot via applyTreedisProfile().
+   `body.streetview-open` is set by openStreetView() / cleared
+   by closeStreetView() in app.js.
+
+   We:
+     1) Collapse the right column of .shell back to zero so the
+        center map cell (which contains the streetview overlay)
+        reclaims the width.
+     2) Hide the .details aside outright so any partial open/close
+        animation can't peek through.
+
+   The desktop-only media guard mirrors the existing rules above
+   — on mobile (<=880px) the details panel is already a bottom
+   sheet that gets hidden on street-view entry, so this rule is
+   only needed at tablet+ widths where the panel is a side column.
+   ============================================================ */
+@media (min-width: 881px) {
+  body.xr-mode.streetview-open .shell.has-details {
+    grid-template-columns: var(--sidebar-w) 1fr 0px;
+  }
+  body.xr-mode.streetview-open .details {
+    display: none !important;
+  }
+}
+
 .streetview.is-open {
   visibility: visible;
   opacity: 1;

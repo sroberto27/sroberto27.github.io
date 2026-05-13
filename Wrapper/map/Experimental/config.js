@@ -12,8 +12,9 @@
      • data/locations.js       — descriptionMap, imageMap,
                                  categoryMap, happensHereMap,
                                  explorableMap
-     • data/treedis-sweeps.js  — treedisMap (per-location
-                                 sweep IDs)
+     • data/treedis-sweeps.js  — treedisMaps (per-location
+                                 sweep IDs, split into desktop
+                                 vs. vr profiles)
      • data/courses.js         — Learn-mode course catalog
 
    Those files all assign onto `window.CAMPUS_CONFIG`, so app.js
@@ -24,6 +25,16 @@
    files in index.html. We use `Object.assign(window.CAMPUS_CONFIG
    || {}, …)` below so we merge into whatever the data files
    already set, rather than overwriting it.
+
+   ─── Treedis dual-profile (desktop / VR) ────────────────────
+   The SCSU campus exists in two separate Treedis models — one
+   for desktop/tablet/mobile, one for XR/VR headset browsers.
+   Sweep IDs are scoped per model, so we keep both `modelId` and
+   `tourUrl` under `treedis.profiles.{desktop, vr}` and let app.js
+   pick a profile at boot. The legacy top-level fields
+   `treedis.modelId` / `treedis.tourUrl` are kept as
+   desktop-profile aliases for backward compatibility; app.js
+   overwrites them with the VR equivalents when XR is detected.
    ============================================================ */
 window.CAMPUS_CONFIG = Object.assign(window.CAMPUS_CONFIG || {}, {
   /* -- Branding ------------------------------------------- */
@@ -83,34 +94,51 @@ window.CAMPUS_CONFIG = Object.assign(window.CAMPUS_CONFIG || {}, {
   },
 
   /* -- Treedis street view configuration ------------------
-     Top-level SDK plumbing only. The per-location sweep
-     lookup (treedisMap) lives in data/treedis-sweeps.js.
+     Shared SDK plumbing lives at the top level; the model-
+     specific fields (modelId, tourUrl) live under `profiles`
+     because we ship two Treedis models — one for desktop,
+     one for VR.
+
+     The per-location sweep lookup (treedisMaps) lives in
+     data/treedis-sweeps.js.
      ------------------------------------------------------- */
   treedis: {
-    /* Shared model — every sweep in data/treedis-sweeps.js lives
-       inside this model. If you swap models you also need to swap
-       the sweep IDs, since they're scoped per model.            */
+    /* Per-profile model + tour URL. app.js picks one of these at
+       boot via detectXRProfile() and copies its values up to
+       treedis.modelId / treedis.tourUrl. */
+    profiles: {
+      desktop: {
+        modelId: "8e4ca3fc",
+        tourUrl: "https://spaces.dtsxr.com/tour/8e4ca3fc",
+        /* Campus "home" sweep — null = open the iframe at the
+           model's default sweep. Set this to a real sweep id
+           later if a campus landing is desired. */
+        homeSweepId: null
+      },
+      vr: {
+        modelId: "scsu-campus-ade0f346",
+        tourUrl: "https://spaces.dtsxr.com/tour/scsu-campus-ade0f346",
+        homeSweepId: null
+      }
+    },
+
+    /* Active-profile aliases. These default to the desktop
+       profile and get overwritten by app.js (resolveTreedisProfile)
+       at boot if XR is detected. Older code paths that read
+       config.treedis.modelId / .tourUrl keep working. */
     modelId: "8e4ca3fc",
-
-    /* Origin used by the Treedis SDK for postMessage safety. */
-    origin:  "https://spaces.dtsxr.com",
-
-    /* Full tour URL built from the model id.                  */
     tourUrl: "https://spaces.dtsxr.com/tour/8e4ca3fc",
+    homeSweepId: null,
+
+    /* Origin used by the Treedis SDK for postMessage safety.
+       Both models live on the same origin, so this stays shared. */
+    origin: "https://spaces.dtsxr.com",
 
     /* External student portal referenced by the legacy menu. */
     studentPortal: "https://metaversitysportal.carrd.co/",
 
     /* Transition time (ms) used when Treedis moves sweep.     */
-    defaultTransitionTime: 0,
-
-    /* Campus "home" sweep — the view Treedis opens into first.
-       null = open the iframe at the model's default sweep and
-       only navigate when the user picks a location. The new
-       model in the SCSU_Links sheet has no dedicated home sweep;
-       set this to a real sweep id later if a campus landing is
-       desired.                                                  */
-    homeSweepId: null
+    defaultTransitionTime: 0
   },
 
   /* -- Layer styles ---------------------------------------- */

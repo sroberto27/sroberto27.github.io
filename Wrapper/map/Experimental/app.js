@@ -13,6 +13,159 @@
 const config = window.CAMPUS_CONFIG;
 
 /* -----------------------------------------------------------
+   1.bis  XR / VR DETECTION + TREEDIS PROFILE SELECTION
+   -----------------------------------------------------------
+   The campus has two Treedis models — a desktop/tablet/mobile
+   one and an XR-headset one — with different sweep IDs. We pick
+   the right one as early as possible so the iframe preload, the
+   sweep lookups, and the layout-mode class on <body> all use a
+   single source of truth.
+
+   Strategy (defense in depth):
+     1. UA-token check (sync, runs at module load). Catches Meta
+        Quest Browser even when it's switched to "Desktop" mode,
+        because the OculusBrowser / VR / Quest tokens stay in the
+        UA regardless of that toggle. Also catches Pico headsets.
+     2. WebXR API confirmation (async, runs from boot()). If the
+        UA looks ambiguous we still call
+        navigator.xr.isSessionSupported("immersive-vr") and
+        upgrade to the VR profile when it resolves true. This
+        runs only when the UA didn't already commit to VR, so a
+        confirmed VR UA never gets downgraded by a transient
+        async failure.
+
+   Either signal alone is enough to flip the app into VR mode.
+   ----------------------------------------------------------- */
+
+/* Synchronous, user-agent-only check. Set once at module load
+   so the very first call to resolveTreedisProfile() picks the
+   right map before the iframe src is set. Re-evaluated as part
+   of detectXRAsync() too — never trusted as the sole signal. */
+function isXRUserAgent() {
+  try {
+    const ua = (navigator.userAgent || "").toString();
+    // OculusBrowser appears in every Meta Quest Browser UA,
+    // mobile-mode or desktop-mode. " VR " (with surrounding
+    // spaces) catches the `VR Safari` / `Mobile VR Safari`
+    // token. `Pico` catches Pico headsets.
+    if (/OculusBrowser|Quest\s|Quest\)| VR |Mobile VR|Pico/i.test(ua)) {
+      return true;
+    }
+  } catch (_) {}
+  return false;
+}
+
+/* Async, runs once at boot. Resolves true if the browser
+   exposes a WebXR-immersive-VR-capable device. Never rejects —
+   on any error or unsupported environment, resolves false.
+   Wrapped in a per-page-load cache so repeated calls are free. */
+let _xrAsyncPromise = null;
+function detectXRAsync() {
+  if (_xrAsyncPromise) return _xrAsyncPromise;
+  _xrAsyncPromise = (async () => {
+    try {
+      if (!navigator.xr || typeof navigator.xr.isSessionSupported !== "function") {
+        return false;
+      }
+      const ok = await navigator.xr.isSessionSupported("immersive-vr");
+      return !!ok;
+    } catch (_) {
+      return false;
+    }
+  })();
+  return _xrAsyncPromise;
+}
+
+/* Currently-active profile name: "desktop" or "vr". Set by
+   resolveTreedisProfile() at module-load time and refined by
+   maybeUpgradeToVRProfile() once detectXRAsync() resolves.
+   Treat as read-only outside those two functions. */
+let activeTreedisProfile = "desktop";
+
+/* Pick the initial profile from the sync UA check and copy its
+   model/tourUrl/homeSweepId values up to the legacy top-level
+   keys so any older code path reading config.treedis.modelId
+   keeps working. Also repoints config.treedisMap to the chosen
+   per-location sweep map. Called once at module load — runs
+   before preloadTreedisIframe() so the iframe src is correct
+   from the very first load. */
+function resolveTreedisProfile() {
+  const wantVR = isXRUserAgent();
+  applyTreedisProfile(wantVR ? "vr" : "desktop");
+}
+
+function applyTreedisProfile(profileName) {
+  if (profileName !== "desktop" && profileName !== "vr") {
+    console.warn("[treedis] unknown profile, falling back to desktop:",
+      profileName);
+    profileName = "desktop";
+  }
+  activeTreedisProfile = profileName;
+
+  // Mirror the profile onto <body> so CSS can react (the
+  // VR-mode streetview rules in mapstyles.css key off this).
+  try {
+    document.body.classList.toggle("xr-mode", profileName === "vr");
+  } catch (_) {
+    // <body> not parsed yet on module load — that's fine, the
+    // class gets re-applied below when this runs again from boot.
+  }
+
+  const cfg = config.treedis || {};
+  const profile = (cfg.profiles && cfg.profiles[profileName]) || null;
+  if (!profile) {
+    console.warn("[treedis] no profile config for:", profileName);
+    return;
+  }
+  cfg.modelId     = profile.modelId;
+  cfg.tourUrl     = profile.tourUrl;
+  cfg.homeSweepId = profile.homeSweepId;
+
+  // Swap the per-location sweep map alias.
+  const maps = config.treedisMaps || {};
+  config.treedisMap = maps[profileName] || maps.desktop || {};
+
+  console.info("[treedis] active profile:", profileName,
+               "model:", cfg.modelId);
+}
+
+/* Called from boot(). If the sync UA check missed but the
+   WebXR API later confirms an XR device, switch profiles.
+   No-op when already on the VR profile, or when the iframe
+   has already been loaded with desktop content (we don't try
+   to reload mid-session — that would clobber a tour the user
+   may already be inside). */
+async function maybeUpgradeToVRProfile() {
+  if (activeTreedisProfile === "vr") return;
+  const isXR = await detectXRAsync();
+  if (!isXR) return;
+  if (TourBridge && TourBridge._iframe && TourBridge._iframe.src &&
+      TourBridge._iframe.src !== "about:blank") {
+    console.info(
+      "[treedis] WebXR detected after iframe load — leaving desktop " +
+      "profile active to avoid disrupting an in-flight tour");
+    return;
+  }
+  console.info("[treedis] WebXR detected — upgrading to VR profile");
+  applyTreedisProfile("vr");
+}
+
+/* Read-only accessor for the rest of the app. */
+function isVRMode() {
+  return activeTreedisProfile === "vr";
+}
+
+// Run the sync check immediately. This happens before any
+// other code touches config.treedisMap / config.treedis.tourUrl,
+// so the rest of app.js sees a consistent profile.
+resolveTreedisProfile();
+
+// Kick off the async WebXR detection in parallel — boot() will
+// await this promise, but pre-warming here means it's likely
+// already resolved by then and adds zero latency to boot.
+detectXRAsync();
+
+/* -----------------------------------------------------------
    1. Reprojection (EPSG:3857 meters → EPSG:4326 lat/lng)
    ----------------------------------------------------------- */
 const EARTH_HALF_CIRC = 20037508.34;
@@ -2375,6 +2528,21 @@ function addBaseTileLayer() {
   }).addTo(map);
 }
 async function boot() {
+  // If the sync UA check missed but the WebXR API confirms an
+  // XR device, switch to the VR profile *before* preloading the
+  // iframe — otherwise we'd point it at the desktop tour URL
+  // and have to reload. The async detection was kicked off at
+  // module load (detectXRAsync() is memoised), so this awaits
+  // a promise that's already in flight, not a fresh probe.
+  try {
+    await maybeUpgradeToVRProfile();
+    // Re-apply the body class — at module-load time <body>
+    // might not have been parsed yet.
+    document.body.classList.toggle("xr-mode", isVRMode());
+  } catch (err) {
+    console.warn("[treedis] XR detection failed:", err);
+  }
+
   // Start the Treedis iframe loading in parallel with the map
   // data so it's warm by the time the user hits "Explore". The
   // iframe is still visually hidden — preloadTreedisIframe() only
