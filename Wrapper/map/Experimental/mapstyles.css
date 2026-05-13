@@ -1019,8 +1019,10 @@ img    { user-select: none; -webkit-user-drag: none; }
    live inside .details-content are hidden — their roles are taken
    by the persistent footer above. They remain in the DOM so the
    existing JS bindings on #exploreCta / .vr-link keep functioning
-   (the footer button proxies clicks to #exploreCta). */
-.explore-cta-inline,
+   (the footer button proxies clicks to #exploreCta).
+   Chained selector on the CTA bumps specificity above the plain
+   `.explore-cta { display: inline-flex }` rule further down. */
+.explore-cta.explore-cta-inline,
 .details-vr-inline {
   display: none;
 }
@@ -1610,10 +1612,12 @@ a.vr-link:active { transform: translateY(1px); }
 
   /* Mobile keeps the inline Explore CTA + VR row in the scrolling
      content area (original behavior). The persistent desktop/iPad
-     footer is hidden here so it never appears on small screens. */
-  .explore-cta-inline { display: inline-flex; }
-  .details-vr-inline  { display: flex; }
-  .details-footer     { display: none; }
+     footer is hidden here so it never appears on small screens.
+     Chained `.explore-cta.explore-cta-inline` matches the chained
+     hide selector at the top of this file. */
+  .explore-cta.explore-cta-inline { display: inline-flex; }
+  .details-vr-inline              { display: flex; }
+  .details-footer                 { display: none; }
 
   .details-close { top: 14px; right: 14px; }
   .map-action    { bottom: 12px; right: 12px; }
