@@ -1022,8 +1022,9 @@ img    { user-select: none; -webkit-user-drag: none; }
    (the footer button proxies clicks to #exploreCta).
    Chained selector on the CTA bumps specificity above the plain
    `.explore-cta { display: inline-flex }` rule further down. */
+
 .explore-cta.explore-cta-inline,
-.details-vr-inline {
+.details-vr.details-vr-inline {
   display: none;
 }
 
@@ -1441,7 +1442,7 @@ a.vr-link:active { transform: translateY(1px); }
     --tourbar-h: 72px;
     --edge-gutter: 0px; /* Mobile: panels go edge-to-edge */
   }
-
+  .details-vr.details-vr-inline  { display: flex; }
   .app {
       grid-template-rows:
         var(--flair-h)
