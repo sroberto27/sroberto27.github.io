@@ -952,9 +952,13 @@ img    { user-select: none; -webkit-user-drag: none; }
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px var(--gutter);
-  background: var(--sidebar-bg);
-  border-top: 1px solid var(--on-dark-line);
+  padding: 14px var(--gutter);
+  /* Match the sidebar tour bar exactly: black background (so it
+     reads as a continuation of the top metabar) and the same
+     85px height token both bars share. */
+  background: var(--header-bg);
+  border-top: var(--border-light);
+  height: var(--sidebar-tour-h);
   flex-shrink: 0;
 }
 
