@@ -10,20 +10,16 @@
        id:          "nrm-342",          // stable slug, used as DOM key
        code:        "NRM 342",          // course code shown above the title
        title:       "Agronomy & Soils", // shown in the list & detail header
-       credits:     "X Course Credits", // string so "TBD" / "3 Credits" both work
+       credits:     "3 Course Credits", // string so "TBD" / "3 Credits" both work
        lastUpdated: "1 OCTOBER, 2026",  // free-form; rendered verbatim
-       lede:        "Lorem ipsum…",     // 1–2 sentence dek under the title
-       overview:    "Sed ut perspici…", // long-form paragraph
-       curriculum:  [ "Sed ut…", … ],   // bullets in the right column
+       lede:        "…",                // 1–2 sentence dek under the title
+       overview:    "…",                // long-form paragraph
+       curriculum:  [ "…", … ],         // bullets in the right column
        immersive: {                     // omit / null if not VR-enabled
          vrUrl: "https://www.#",
-         note:  "In your headset, navigate to [ … ] and lorem ipsum…"
+         note:  "In your headset, navigate to [ … ] and …"
        }
      }
-
-   Placeholder text mirrors the Figma "Learn Tab" board exactly
-   so the layout can be QA'd against the design before real
-   course copy is wired in.
    ============================================================ */
 window.SCSU_DATA = window.SCSU_DATA || {};
 
@@ -32,37 +28,47 @@ window.SCSU_DATA.courses = [
     id:          "nrm-342",
     code:        "NRM 342",
     title:       "Agronomy & Soils",
-    credits:     "X Course Credits",
+    credits:     "3 Course Credits",
     lastUpdated: "1 OCTOBER, 2026",
     lede:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, " +
-      "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "Soil is the living foundation of agriculture; a dynamic system " +
+      "shaped by climate, parent material, organisms, and time. This " +
+      "course builds the conceptual and practical skills needed to read " +
+      "a field, diagnose its constraints, and design nutrient programs " +
+      "that sustain yield while protecting soil and water quality. " +
+      "Through immersive case fields, lab simulations, and decision " +
+      "exercises, students move from soil chemistry and physics to " +
+      "in-season fertility decisions and 4Rs stewardship.",
     overview:
-      "Sed ut perspiciatis unde omnis iste natus error sit voluptatem " +
-      "accusantium doloremque laudantium, totam rem aperiam, eaque ipsa " +
-      "quae ab illo inventore veritatis et quasi architecto beatae vitae " +
-      "dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit " +
-      "aspernatur aut odit aut fugit, sed quia consequuntur magni dolores " +
-      "eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam " +
-      "est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci " +
-      "velit, sed quia non numquam eius modi tempora incidunt ut labore " +
-      "et dolore magnam aliquam quaerat voluptatem.",
+      "Beginning with soil-forming processes, horizon development, and " +
+      "the physical and chemical properties that govern water, air, and " +
+      "nutrient behavior, students learn to connect soil conditions to " +
+      "crop response. The course then moves through the nitrogen cycle, " +
+      "phosphorus and potassium dynamics, and the secondary and " +
+      "micronutrients that shape plant health. Students develop fluency " +
+      "with the diagnostic toolkit of modern agronomy: soil sampling " +
+      "protocols, lab extractants, tissue analysis, and soil health " +
+      "indices, and learn to translate test results into site-specific " +
+      "nutrient plans across diverse cropping systems and fields.",
     curriculum: [
-      "Sed ut perspiciatis unde omnis",
-      "Iste natus error sit voluptatem accusantium doloremque laudantium",
-      "Totam rem aperiam, eaque ipsa quae ab illo inventore veritatis " +
-        "et quasi architecto beatae vitae dicta sunt explicabo",
-      "Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit " +
-        "aut fugit",
-      "Sed quia consequuntur magni dolores eos qui ratione voluptatem " +
-        "sequi nesciunt",
-      "Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet"
+      "Soil formation, horizon development, and physical-chemical " +
+        "properties that govern nutrient retention and crop response",
+      "Nitrogen, phosphorus, and potassium cycling, availability, and " +
+        "loss pathways in soils",
+      "Secondary and micronutrient diagnostics, deficiencies, " +
+        "toxicities, and nutrient balance",
+      "Soil sampling, lab interpretation, tissue analysis, and soil " +
+        "health indices",
+      "Site-specific nutrient management, fertilizer programs, and " +
+        "precision application technologies",
+      "Field case studies, cost-benefit analysis, and communicating " +
+        "site-specific nutrient plans"
     ],
     immersive: {
       vrUrl: "https://www.#",
       note:
-        "In your headset, navigate to [ https://www.# ] and lorem ipsum " +
-        "dolor set amet consequat."
+        "In your headset, navigate to [ https://www.# ] to enter the " +
+        "immersive case fields and lab simulations for this course."
     }
   },
 
@@ -70,22 +76,39 @@ window.SCSU_DATA.courses = [
     id:          "nrm-431",
     code:        "NRM 431",
     title:       "Soil Fertility",
-    credits:     "X Course Credits",
+    credits:     "3 Course Credits",
     lastUpdated: "1 OCTOBER, 2026",
     lede:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit, " +
-      "sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+      "This course moves from the science of soil chemistry, water, and " +
+      "biology into the applied work of designing, implementing, and " +
+      "adjusting nutrient management programs across diverse cropping " +
+      "systems. Students engage with crop-specific requirements, organic " +
+      "and sustainable practices, environmental compliance, and emerging " +
+      "precision technologies to manage fertility as a dynamic, " +
+      "real-world farm system.",
     overview:
-      "Sed ut perspiciatis unde omnis iste natus error sit voluptatem " +
-      "accusantium doloremque laudantium, totam rem aperiam, eaque ipsa " +
-      "quae ab illo inventore veritatis et quasi architecto beatae vitae " +
-      "dicta sunt explicabo.",
+      "Building from root-zone chemistry, cation exchange, and buffering " +
+      "capacity, the course turns to the systems that shape fertility " +
+      "in practice: soil structure and water, pH and salinity, and the " +
+      "role of organic matter and microbial cycling in supplying " +
+      "nutrients to crops across seasons. Students then move into the " +
+      "decision space of nutrient management: defining yield goals, " +
+      "building budgets, tailoring fertilizer programs to crop demand, " +
+      "and navigating environmental audits, certifications, and " +
+      "emerging precision and climate-adaptation technologies.",
     curriculum: [
-      "Sed ut perspiciatis unde omnis",
-      "Iste natus error sit voluptatem",
-      "Totam rem aperiam, eaque ipsa quae ab illo inventore",
-      "Nemo enim ipsam voluptatem quia voluptas",
-      "Sed quia consequuntur magni dolores"
+      "Soil physical health, water management, irrigation efficiency, " +
+        "and moisture conservation strategies",
+      "Soil pH management, liming strategies, salinity, and sodicity " +
+        "in nutrient dynamics",
+      "Crop-specific nutrient requirements, growth stage timing, and " +
+        "nutrient antagonisms",
+      "Organic and sustainable systems: composting, legumes, green " +
+        "manures, and certification",
+      "Environmental audits, regulatory compliance, and cost-benefit " +
+        "decision support tools",
+      "Precision agriculture, nutrient recycling, and climate-resilient " +
+        "management strategies"
     ],
     immersive: null
   }

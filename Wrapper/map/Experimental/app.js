@@ -3399,6 +3399,8 @@ boot().catch((err) => {
     count:        document.getElementById("coursesCount"),
     empty:        document.getElementById("courseEmpty"),
     body:         document.getElementById("courseBody"),
+    actions:      document.getElementById("courseActions"),
+    heroStamp:    document.getElementById("courseHeroStamp"),
     code:         document.getElementById("courseCode"),
     credits:      document.getElementById("courseCredits"),
     updated:      document.getElementById("courseUpdated"),
@@ -3478,14 +3480,17 @@ boot().catch((err) => {
   /* ---- Render: course detail panel ---- */
   function renderCourseDetail(course) {
     if (!course) {
-      // No selection — show empty state.
-      if (L.empty) L.empty.style.display = "";
-      if (L.body)  L.body.hidden = true;
+      // No selection — show empty state, hide article AND the
+      // persistent action bar (it has no course to act on).
+      if (L.empty)   L.empty.style.display = "";
+      if (L.body)    L.body.hidden = true;
+      if (L.actions) L.actions.hidden = true;
       return;
     }
 
-    if (L.empty) L.empty.style.display = "none";
-    if (L.body)  L.body.hidden = false;
+    if (L.empty)   L.empty.style.display = "none";
+    if (L.body)    L.body.hidden = false;
+    if (L.actions) L.actions.hidden = false;
 
     if (L.code)     L.code.textContent     = course.code || "";
     if (L.credits)  L.credits.textContent  = course.credits || "";
@@ -3493,6 +3498,15 @@ boot().catch((err) => {
     if (L.title)    L.title.textContent    = course.title || "";
     if (L.lede)     L.lede.textContent     = course.lede || "";
     if (L.overview) L.overview.textContent = course.overview || "";
+
+    // Hero watermark — uses the course code so each course gets
+    // a visually distinct hero placeholder before real artwork
+    // is wired in. Strips the space ("NRM 342" → "NRM342") to
+    // keep the stamp compact at large sizes.
+    if (L.heroStamp) {
+      const stamp = (course.code || "").replace(/\s+/g, "");
+      L.heroStamp.textContent = stamp;
+    }
 
     if (L.curriculum) {
       L.curriculum.innerHTML = "";

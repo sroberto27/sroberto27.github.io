@@ -559,65 +559,96 @@
         <!-- Course body — populated by app.js renderCourseDetail() -->
         <article class="course-body" id="courseBody" hidden>
           <header class="course-detail-head">
+            <!-- Identifier pill: course code is the loudest piece,
+                 credits sit as a smaller separator next to it. The
+                 "last updated" line has moved DOWN into the action
+                 bar (it's provenance, not a top-line fact). -->
             <div class="course-detail-meta">
               <span class="course-code" id="courseCode">—</span>
+              <span class="course-meta-sep" aria-hidden="true">·</span>
               <span class="course-credits" id="courseCredits">—</span>
-            </div>
-            <div class="course-updated">
-              LAST UPDATED:
-              <span id="courseUpdated">—</span>
             </div>
           </header>
 
           <h1 class="course-title" id="courseTitle">—</h1>
           <p class="course-lede" id="courseLede">—</p>
 
+          <!-- Hero placeholder. Holds a course image once the team
+               has artwork; until then it shows a dark cell with
+               a faint grid pattern, the course code stamped large
+               as a watermark, and a "COURSE IMAGERY" kicker. The
+               JS sets the watermark text from the course code so
+               every course gets a distinct placeholder. -->
+          <figure class="course-hero" id="courseHero" aria-hidden="true">
+            <div class="course-hero-grid"  aria-hidden="true"></div>
+            <div class="course-hero-stamp" id="courseHeroStamp">—</div>
+            <figcaption class="course-hero-cap">COURSE IMAGERY</figcaption>
+          </figure>
+
           <div class="course-columns">
-            <section class="course-column">
+            <section class="course-column course-column-overview">
               <div class="course-column-h">COURSE OVERVIEW</div>
               <p class="course-overview" id="courseOverview">—</p>
             </section>
 
-            <section class="course-column">
+            <section class="course-column course-column-curriculum">
               <div class="course-column-h">COURSE CURRICULUM</div>
-              <ul class="course-curriculum" id="courseCurriculum"></ul>
+              <ol class="course-curriculum" id="courseCurriculum"></ol>
             </section>
           </div>
+        </article>
 
-          <footer class="course-actions">
-            <button class="course-cta" id="courseBeginBtn" type="button">
-              Begin Course
-            </button>
-
-            <div class="course-vr" id="courseVr" hidden>
-              <span class="course-vr-label">
-                <svg viewBox="0 0 24 24" aria-hidden="true"
-                     class="course-vr-icon">
-                  <path d="M3 9.5A2.5 2.5 0 0 1 5.5 7h13A2.5 2.5 0 0 1 21
-                           9.5v5A2.5 2.5 0 0 1 18.5 17h-2.6a1 1 0 0 1-.7-.3
-                           l-1.4-1.4a2 2 0 0 0-2.6 0l-1.4 1.4a1 1 0 0 1-.7.3
-                           H5.5A2.5 2.5 0 0 1 3 14.5z"
-                        stroke="currentColor" stroke-width="1.6"
-                        fill="none" stroke-linejoin="round"/>
-                  <circle cx="8" cy="12" r="1.2" fill="currentColor"/>
-                  <circle cx="16" cy="12" r="1.2" fill="currentColor"/>
-                </svg>
-                VR-Enabled
-              </span>
-              <button type="button" class="course-vr-help"
-                      id="courseVrHelp" aria-label="What does VR-Enabled mean?">
-                ?
+        <!-- ==== PERSISTENT ACTION BAR (desktop & iPad) ====
+             Mirrors the metadata-panel footer pattern: lives
+             OUTSIDE .course-body so it stays pinned at the
+             bottom while the article above scrolls. Hidden when
+             no course is selected (the empty-state is showing
+             instead). On mobile it sits inline at the end of
+             the article (see CSS). -->
+        <footer class="course-actions" id="courseActions" hidden>
+          <div class="course-actions-inner">
+            <div class="course-actions-primary">
+              <button class="course-cta" id="courseBeginBtn" type="button">
+                Begin Course
               </button>
-              <div class="course-vr-tooltip" id="courseVrTooltip"
-                   role="tooltip" aria-hidden="true">
-                <div class="course-vr-tooltip-kicker">
-                  THIS COURSE IS IMMERSIVE
+
+              <div class="course-vr" id="courseVr" hidden>
+                <span class="course-vr-label">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"
+                       class="course-vr-icon">
+                    <path d="M3 9.5A2.5 2.5 0 0 1 5.5 7h13A2.5 2.5 0 0 1 21
+                             9.5v5A2.5 2.5 0 0 1 18.5 17h-2.6a1 1 0 0 1-.7-.3
+                             l-1.4-1.4a2 2 0 0 0-2.6 0l-1.4 1.4a1 1 0 0 1-.7.3
+                             H5.5A2.5 2.5 0 0 1 3 14.5z"
+                          stroke="currentColor" stroke-width="1.6"
+                          fill="none" stroke-linejoin="round"/>
+                    <circle cx="8" cy="12" r="1.2" fill="currentColor"/>
+                    <circle cx="16" cy="12" r="1.2" fill="currentColor"/>
+                  </svg>
+                  VR-Enabled
+                </span>
+                <button type="button" class="course-vr-help"
+                        id="courseVrHelp" aria-label="What does VR-Enabled mean?">
+                  ?
+                </button>
+                <div class="course-vr-tooltip" id="courseVrTooltip"
+                     role="tooltip" aria-hidden="true">
+                  <div class="course-vr-tooltip-kicker">
+                    THIS COURSE IS IMMERSIVE
+                  </div>
+                  <p id="courseVrNote">—</p>
                 </div>
-                <p id="courseVrNote">—</p>
               </div>
             </div>
-          </footer>
-        </article>
+
+            <!-- Provenance line — demoted from the top of the page
+                 (where it was competing with the title) to the bar. -->
+            <div class="course-actions-updated">
+              LAST UPDATED:
+              <span id="courseUpdated">—</span>
+            </div>
+          </div>
+        </footer>
       </section>
     </main>
 
