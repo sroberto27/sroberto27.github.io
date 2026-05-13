@@ -129,16 +129,62 @@ function applyTreedisProfile(profileName) {
                "model:", cfg.modelId);
 }
 
+/* Plausibility gate for the async WebXR upgrade. The reason we
+   can't trust navigator.xr.isSessionSupported("immersive-vr")
+   on its own is that desktop Chrome on Windows exposes WebXR
+   whenever an OpenXR runtime is installed — SteamVR, Windows
+   Mixed Reality, the Oculus desktop app, etc. — even with no
+   headset plugged in. So the user agent reports "yes, immersive
+   VR is supported" on plenty of regular desktop PCs, and using
+   that signal alone would put every such machine on the VR
+   profile.
+
+   To rule that case out, we only let the async signal upgrade
+   the profile when the UA *also* looks like a plausible
+   standalone-headset platform: Android-on-handheld, or one of
+   the headset tokens (Quest / Pico / VR / OculusBrowser, which
+   the sync check would already have caught — listed here as a
+   belt-and-braces fallback in case the regex got too strict).
+   Anything that looks like a desktop OS (Windows / macOS / X11
+   without Android) stays on the desktop profile no matter what
+   WebXR reports. */
+function isPlausibleHeadsetUA() {
+  try {
+    const ua = (navigator.userAgent || "").toString();
+    // Desktop OS markers — if any of these are present, we are
+    // not on a standalone headset. Note: Quest 3's UA contains
+    // "X11; Linux x86_64; Quest 3" so we have to combine the
+    // Linux test with an explicit absence of headset markers.
+    const looksDesktop =
+      /Windows NT|Macintosh|Mac OS X(?!.*Mobile)/i.test(ua) ||
+      (/X11/.test(ua) && !/Quest|OculusBrowser|Pico/i.test(ua));
+    if (looksDesktop) return false;
+    // Headset-platform markers
+    return /OculusBrowser|Quest|Pico|Android|Mobile VR| VR /i.test(ua);
+  } catch (_) {
+    return false;
+  }
+}
+
 /* Called from boot(). If the sync UA check missed but the
-   WebXR API later confirms an XR device, switch profiles.
-   No-op when already on the VR profile, or when the iframe
-   has already been loaded with desktop content (we don't try
-   to reload mid-session — that would clobber a tour the user
-   may already be inside). */
+   WebXR API later confirms an XR device AND the UA looks like
+   a plausible headset platform, switch profiles. No-op when
+   already on the VR profile, or when the iframe has already
+   been loaded with desktop content (we don't try to reload
+   mid-session — that would clobber a tour the user may already
+   be inside). */
 async function maybeUpgradeToVRProfile() {
   if (activeTreedisProfile === "vr") return;
   const isXR = await detectXRAsync();
   if (!isXR) return;
+  if (!isPlausibleHeadsetUA()) {
+    console.info(
+      "[treedis] WebXR reports immersive-vr supported, but UA looks " +
+      "like a desktop — staying on desktop profile. " +
+      "(This is normal on a PC with SteamVR / WMR / Oculus desktop " +
+      "installed.)");
+    return;
+  }
   if (TourBridge && TourBridge._iframe && TourBridge._iframe.src &&
       TourBridge._iframe.src !== "about:blank") {
     console.info(
