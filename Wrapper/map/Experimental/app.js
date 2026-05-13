@@ -208,6 +208,7 @@ const el = {
   /* Explore CTA inside the metadata panel — used to launch
      the street view for the currently-selected location.    */
   exploreCta:        $("exploreCta"),
+  exploreCtaFooter:  $("exploreCtaFooter"),
   vrBtn:             $("vrBtn"),
 
   metabarSearch:   $("metabarSearch"),
@@ -1055,6 +1056,14 @@ function renderDetails(feature, kind) {
     el.exploreCta.classList.toggle(
       "is-pending", !(entry && entry.sweepId)
     );
+    // Mirror the pending-state visual onto the desktop/iPad
+    // persistent footer button so it stays in sync with the
+    // canonical #exploreCta inside the scrolling content area.
+    if (el.exploreCtaFooter) {
+      el.exploreCtaFooter.classList.toggle(
+        "is-pending", !(entry && entry.sweepId)
+      );
+    }
   }
   if (el.vrBtn) {
     const entry = getTreedisEntry(name);
@@ -1971,6 +1980,18 @@ function handleExploreClick(e) {
   openStreetView(effectiveSweep, name, getCategory(name));
 }
 if (el.exploreCta) el.exploreCta.addEventListener("click", handleExploreClick);
+
+/* The persistent desktop/iPad footer carries its own Explore button.
+   Rather than duplicate the dataset/state logic above, the footer
+   button simply forwards its click to the canonical #exploreCta —
+   that element already has its dataset kept in sync by
+   updateDetailsPanel() above and runs through handleExploreClick. */
+if (el.exploreCtaFooter && el.exploreCta) {
+  el.exploreCtaFooter.addEventListener("click", (e) => {
+    e.preventDefault();
+    el.exploreCta.click();
+  });
+}
 
 /* The VR button carries a different intent than Explore: it shows
    a small instruction popup explaining how to open this location

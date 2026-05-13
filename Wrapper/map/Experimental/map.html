@@ -384,7 +384,14 @@
             <h2 class="details-title" id="detailsTitle">—</h2>
             <div class="details-sub"  id="detailsSub">—</div>
 
-            <button class="explore-cta" id="exploreCta" type="button">
+            <!-- Inline Explore CTA — shown on MOBILE only.
+                 On desktop/iPad, the persistent button bar
+                 (.details-footer below) holds the same control.
+                 We keep this element here as the canonical
+                 #exploreCta the JS binds to, and the footer's
+                 button proxies clicks to it.  -->
+            <button class="explore-cta explore-cta-inline"
+                    id="exploreCta" type="button">
               <svg class="explore-cta-icon-fallback" viewBox="0 0 24 24"
                    aria-hidden="true">
                 <path d="M5 12h12M13 6l6 6-6 6"
@@ -415,7 +422,10 @@
               <ul class="sub-list" id="subList"></ul>
             </div>
 
-            <div class="details-vr">
+            <!-- Inline VR-Enabled indicator — shown on MOBILE only.
+                 The persistent footer below carries the desktop/iPad
+                 version. Both link to the same Quest deep-link URL. -->
+            <div class="details-vr details-vr-inline">
               <a class="vr-label vr-link"
                  href="https://www.oculus.com/open_url/?url=https://sroberto27.github.io/Wrapper/map/Experimental/map.html"
                  target="_blank"
@@ -437,6 +447,56 @@
             </div>
           </div>
         </div>
+
+        <!-- ==== PERSISTENT BUTTON BAR (desktop & iPad only) ====
+             Mirrors the sidebar's bottom tour-bar pattern: lives
+             OUTSIDE .details-content so it never scrolls with the
+             metadata. Hidden on mobile (≤880px) — mobile keeps the
+             inline Explore CTA + VR indicator inside the scrollable
+             content area as before.
+             The Explore button here proxies clicks to the canonical
+             #exploreCta inside .details-content so all dataset/state
+             logic in app.js continues to work without changes. -->
+        <footer class="details-footer" aria-label="Location actions">
+          <button class="details-footer-explore"
+                  id="exploreCtaFooter" type="button"
+                  aria-label="Explore this location">
+            <svg viewBox="0 0 24 24" aria-hidden="true"
+                 class="details-footer-explore-icon">
+              <!-- Walking person icon, per Figma -->
+              <circle cx="13" cy="4" r="2"
+                      fill="currentColor"/>
+              <path d="M9 22l2-6 2 2 3 4M11 16l-2-5 4-2 3 3 3 1"
+                    stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    fill="none"/>
+            </svg>
+            <span>Explore</span>
+          </button>
+
+          <a class="details-footer-vr"
+             id="vrLabelFooter"
+             href="https://www.oculus.com/open_url/?url=https://sroberto27.github.io/Wrapper/map/Experimental/map.html"
+             target="_blank"
+             rel="noopener noreferrer"
+             title="Open this tour in your Meta Quest headset (requires a signed-in Meta account in your browser)"
+             aria-label="Open this tour in your Meta Quest headset">
+            <svg viewBox="0 0 24 24" aria-hidden="true"
+                 class="details-footer-vr-icon">
+              <!-- VR headset / camera-like icon, per Figma -->
+              <path d="M3 8.5C3 7.67 3.67 7 4.5 7h15c.83 0 1.5.67 1.5 1.5v7c0 .83-.67 1.5-1.5 1.5h-3.4c-.5 0-.97-.25-1.25-.67L13.5 14h-3l-1.35 2.33c-.28.42-.75.67-1.25.67H4.5C3.67 17 3 16.33 3 15.5v-7z"
+                    stroke="currentColor" stroke-width="1.8"
+                    stroke-linecap="round" stroke-linejoin="round"
+                    fill="none"/>
+              <circle cx="8" cy="12" r="1.3" fill="currentColor"/>
+              <circle cx="16" cy="12" r="1.3" fill="currentColor"/>
+            </svg>
+            <span class="details-footer-vr-text">VR-Enabled</span>
+            <span class="details-footer-vr-help"
+                  aria-hidden="true"
+                  title="Open this tour in your Meta Quest headset">?</span>
+          </a>
+        </footer>
       </aside>
     </main>
 
