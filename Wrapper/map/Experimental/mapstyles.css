@@ -42,6 +42,12 @@
           SFMono-Regular, Menlo, Consolas, monospace;
   --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
           Roboto, system-ui, sans-serif;
+  /* Minion (self-host via @font-face for production). EB Garamond is
+     loaded from Google Fonts as an open-source visual fallback —
+     it's an old-style serif with proportions close to Minion. */
+  --serif: "Minion Pro", "Minion 3", "Minion",
+           "EB Garamond", "Adobe Garamond Pro",
+           Georgia, "Times New Roman", serif;
 
   /* ---------- Structural sizes ----------
      Per Figma:
@@ -214,12 +220,15 @@ img    { user-select: none; -webkit-user-drag: none; }
 }
 
 .brand-logo {
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: var(--paper); /* in case logo has transparent edges */
+  /* 48x48 white-reversed SVG seal. No background fill — the SVG is
+     already white-on-transparent, so it sits cleanly on the black
+     header. No border-radius either; the artwork carries its own
+     circular silhouette. */
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
   flex-shrink: 0;
+  display: block;
 }
 
 .brand-product {
@@ -480,7 +489,8 @@ img    { user-select: none; -webkit-user-drag: none; }
 
 .locations-title {
   margin: 0;
-  font-family: var(--sans);
+  /* Minion serif per design — see --serif stack for fallbacks. */
+  font-family: var(--serif);
   font-size: clamp(20px, 1.7vw, 26px);
   font-weight: 600;
   letter-spacing: -0.01em;
@@ -727,7 +737,10 @@ img    { user-select: none; -webkit-user-drag: none; }
   color: var(--on-dark);
   cursor: pointer;
   transition: background .14s, transform .08s;
-  font-family: var(--mono);
+  /* Inter (sans) per design — applies to "Recenter on Tour" and
+     every building name in both Featured and All tabs. The small
+     uppercase category caption underneath inherits the family. */
+  font-family: var(--sans);
   border: none;
   border-radius: 6px;              /* slight rounding per Figma */
 }
@@ -1044,7 +1057,8 @@ img    { user-select: none; -webkit-user-drag: none; }
   line-height: 1.15;
   margin: 0 0 6px;
   letter-spacing: -0.01em;
-  font-family: var(--sans);
+  /* Minion serif per design — see --serif stack for fallbacks. */
+  font-family: var(--serif);
   color: var(--on-dark);
 }
 
@@ -1171,7 +1185,9 @@ img    { user-select: none; -webkit-user-drag: none; }
   justify-content: space-between;
   align-items: center;
   padding: 12px 14px;
-  font-family: var(--mono);
+  /* Inter (sans) per design — applies to every "Explorable Locations"
+     item (Room 110, Lecture Room, etc.) in the metadata panel. */
+  font-family: var(--sans);
   font-size: 12px;
   border-bottom: 1px solid var(--on-dark-line);
   color: var(--on-dark);
@@ -3027,11 +3043,11 @@ body.mode-learn .details               { display: none; }
   -webkit-overflow-scrolling: touch;
   padding: 32px clamp(24px, 4vw, 56px) 48px;
   display: block;
-  /* Tighter than the panel: keeps prose readable, leaves room
-     for the hero image to dominate visually. The action bar
-     below uses the same max-width so its buttons line up with
-     the article. */
-  max-width: 1100px;
+  /* Fill the full width of the .course-detail panel so the
+     content uses all the space available to the right of the
+     course list. No max-width cap — the panel itself is the
+     bound. The action bar below mirrors this so its buttons
+     align with the article edges. */
   width: 100%;
   margin: 0 auto;
 }
@@ -3294,7 +3310,6 @@ body.mode-learn .details               { display: none; }
 .course-actions[hidden] { display: none; }
 
 .course-actions-inner {
-  max-width: 1100px;
   width: 100%;
   margin: 0 auto;
   padding: 18px clamp(24px, 4vw, 56px);

@@ -7,10 +7,14 @@
   <meta name="theme-color" content="#000000" />
   <title>SCSU Virtual Campus</title>
 
-  <!-- Fonts: monospace primary, clean sans for body -->
+  <!-- Fonts: monospace primary, clean sans for body, serif for titles
+       EB Garamond loaded as an open-source visual fallback for Minion
+       (an old-style serif with similar proportions). If you self-host
+       Minion Pro / Minion 3 via @font-face, it will take priority via
+       the --serif font stack defined in mapstyles.css. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=EB+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="mapstyles.css" />
@@ -48,10 +52,15 @@
     <!-- ==== TOP HEADER (persistent on desktop AND mobile) ==== -->
     <header class="metabar" role="banner">
       <div class="metabar-brand">
+        <!-- White-reversed SVG seal. Sized to 48x48 via .brand-logo.
+             The <img> tag loads the external white SVG file; if that
+             asset is missing the onerror swaps in an inline fallback
+             SVG (white circular badge) so we never render nothing. -->
         <img class="brand-logo"
-             src="assets/Icons/logo.svg"
+             src="assets/Icons/logo-white.svg"
              alt="South Carolina State University"
-             onerror="this.style.display='none'" />
+             width="48" height="48"
+             onerror="this.outerHTML='&lt;svg class=&quot;brand-logo&quot; viewBox=&quot;0 0 48 48&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot; aria-label=&quot;South Carolina State University&quot; role=&quot;img&quot;&gt;&lt;circle cx=&quot;24&quot; cy=&quot;24&quot; r=&quot;22&quot; fill=&quot;none&quot; stroke=&quot;#ffffff&quot; stroke-width=&quot;1.5&quot;/&gt;&lt;circle cx=&quot;24&quot; cy=&quot;24&quot; r=&quot;17&quot; fill=&quot;none&quot; stroke=&quot;#ffffff&quot; stroke-width=&quot;0.75&quot;/&gt;&lt;text x=&quot;24&quot; y=&quot;22&quot; text-anchor=&quot;middle&quot; fill=&quot;#ffffff&quot; font-family=&quot;serif&quot; font-size=&quot;11&quot; font-weight=&quot;700&quot;&gt;SC&lt;/text&gt;&lt;text x=&quot;24&quot; y=&quot;32&quot; text-anchor=&quot;middle&quot; fill=&quot;#ffffff&quot; font-family=&quot;sans-serif&quot; font-size=&quot;4.5&quot; letter-spacing=&quot;0.6&quot;&gt;STATE&lt;/text&gt;&lt;/svg&gt;'" />
         <span class="brand-product">SCSU VIRTUAL CAMPUS</span>
       </div>
 
@@ -750,7 +759,7 @@
        aria-hidden="true">
     <div class="start-screen-card">
       <img class="start-screen-logo"
-           src="assets/Icons/logo.svg"
+           src="assets/Icons/logo.png"
            alt="South Carolina State University"
            onerror="this.style.display='none'" />
       <h2 class="start-screen-title" id="startScreenTitle">
