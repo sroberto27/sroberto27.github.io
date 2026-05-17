@@ -17,7 +17,21 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=EB+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="mapstyles.css" />
+
+  <!-- Split stylesheets — load order matters: later files override earlier
+       ones via the CSS cascade, mirroring the original single-file order.
+       See the matching split.py for the line ranges each piece covers. -->
+  <link rel="stylesheet" href="css/01-base.css" />
+  <link rel="stylesheet" href="css/02-header.css" />
+  <link rel="stylesheet" href="css/03-sidebar.css" />
+  <link rel="stylesheet" href="css/04-map-details.css" />
+  <link rel="stylesheet" href="css/05-leaflet-responsive.css" />
+  <link rel="stylesheet" href="css/06-align-tool.css" />
+  <link rel="stylesheet" href="css/07-streetview-xr.css" />
+  <link rel="stylesheet" href="css/08-start-coachmark.css" />
+  <link rel="stylesheet" href="css/09-burger-settings.css" />
+  <link rel="stylesheet" href="css/10-nav-instructions.css" />
+  <link rel="stylesheet" href="css/11-learn-mode.css" />
 </head>
 <body>
 
@@ -919,6 +933,23 @@
   <script src="data/treedis-sweeps.js" onerror="this.remove()"></script>
 
   <script src="config.js"></script>
-  <script src="app.js"></script>
+
+  <!-- Split app — must load in this order. Globals are shared via the
+       window scope exactly as in the original single-file app.js, so
+       each piece sees the helpers/state/refs declared before it.
+       See the matching split.py for the line ranges each piece covers. -->
+  <script src="js/01-utils.js"></script>
+  <script src="js/02-state.js"></script>
+  <script src="js/03-tour-bridge.js"></script>
+  <script src="js/04-street-view.js"></script>
+  <script src="js/05-map-helpers.js"></script>
+  <script src="js/06-details-panel.js"></script>
+  <script src="js/07-layer-builders.js"></script>
+  <script src="js/08-tourbar.js"></script>
+  <script src="js/09-sidebar-search.js"></script>
+  <script src="js/10-event-wiring.js"></script>
+  <script src="js/11-boot.js"></script>
+  <script src="js/12-start-screen.js"></script>
+  <script src="js/13-learn-mode.js"></script>
 </body>
 </html>
