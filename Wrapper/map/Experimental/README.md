@@ -97,7 +97,7 @@ The `js/01..13` numeric order is not cosmetic — it encodes the dependency chai
 2. **At boot** `js/11-boot.js` confirms with `navigator.xr.isSessionSupported('immersive-vr')` and upgrades to the VR profile if WebXR is available. `config.treedis.modelId` and `config.treedis.tourUrl` are rewritten to the active profile; the legacy `treedisMap` alias is repointed to the matching sweep table.
 3. **Geometry** is loaded by `fetch()` from `data/buildings.geojson` and `data/tours.geojson`. If `fetch` fails (e.g. `file://` origin), the app falls back to `window.SCSU_DATA.buildings` / `.tours` populated by `data/buildings.js` and `data/tours.js`.
 4. **Per-location overrides** — when a feature is selected, the app looks up its `name` (case-insensitively) in `descriptionMap`, `imageMap`, `categoryMap`, `addressMap`, etc. to render the details panel.
-5. **3D drop-in** — selecting a location resolves its sweep ID in the active-profile `treedisMaps` and posts a message into the Treedis iframe to move to that sweep. For `off_campus` features the map does NOT fly to the feature; the details panel opens and the user navigates via the Explore button or the address block.
+5. **3D drop-in** — selecting a location resolves its sweep ID in the active-profile `treedisMaps` and posts a message into the Treedis iframe to move to that sweep. For `off_campus` features the map does NOT fly to the feature; instead it animates back to the full campus view (so the user sees the directional arrow in context), and the user navigates via the Explore button or the address block.
 
 ---
 
