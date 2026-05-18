@@ -137,8 +137,13 @@ window.SCSU_DATA.courses = [
     // a Quest user clicking Begin Course will fall back to the
     // desktop URL (still opens in the Quest browser, no VR scene).
     eon: {
-      desktopUrl: "https://login.eonreality.com/?redirect=/courses/nrm-431"
+      desktopUrl: "https://login.eonreality.com/?redirect=/courses/nrm-431",
+      vrUrl:      "https://login.eonreality.com/vr?redirect=/courses/nrm-431"
     },
-    immersive: null
+    immersive: {
+      note:
+        "In your headset, sign in to EON Reality to enter the " +
+        "immersive case fields and lab simulations for this course."
+    }
   }
 ];
