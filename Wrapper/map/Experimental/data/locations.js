@@ -75,6 +75,7 @@ window.CAMPUS_CONFIG.imageMap = {
   "s-h-m memorial square":             "assets/locations/shm-memorial.webp",
   "nance hall":                        "assets/locations/nance-hall.webp",
   "oliver c. dawson stadium":          "assets/locations/dawson-stadium.webp"
+  "olar farm":                         "assets/locations/olar-farm.webp"
 };
 
 /* -- "What happens here?" chips ---------------------------
