@@ -401,3 +401,54 @@
 /* Mobile-only backdrop behind the locations drawer */
 .locations-backdrop { display: none; }
 
+
+/* -----------------------------------------------------------
+   Off-campus location row
+   -----------------------------------------------------------
+   Tour stops with `off_campus: true` get a small amber badge
+   showing their distance from campus, plus a slightly tinted
+   category label, so users browsing the sidebar list can tell
+   the entry isn't a normal campus building. The Olar Farm
+   (~20 mi from campus) is the current example.
+   ----------------------------------------------------------- */
+.location-row.is-offcampus .location-name::after {
+  content: "↗";
+  display: inline-block;
+  margin-left: 6px;
+  color: #C2410C;            /* tailwind orange-700 */
+  font-weight: 800;
+  font-size: 12px;
+  transform: translateY(-1px);
+}
+
+.location-row.is-offcampus .location-cat {
+  color: #C2410C;            /* tailwind orange-700 */
+  font-weight: 600;
+}
+
+.location-offcampus-badge {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #FFEDD5;       /* tailwind orange-100 */
+  border: 1px solid #FDBA74; /* tailwind orange-300 */
+  color: #9A3412;            /* tailwind orange-800 */
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+/* When an off-campus row is the active selection the badge
+   needs a darker palette so it stays legible on the dark
+   active-row background. */
+.location-row.is-offcampus.is-active .location-offcampus-badge {
+  background: #C2410C;
+  border-color: #9A3412;
+  color: #FFEDD5;
+}
+.location-row.is-offcampus.is-active .location-cat {
+  color: #FED7AA;            /* tailwind orange-200 */
+}

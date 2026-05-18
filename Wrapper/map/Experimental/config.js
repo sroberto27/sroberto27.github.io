@@ -155,8 +155,24 @@ window.CAMPUS_CONFIG = Object.assign(window.CAMPUS_CONFIG || {}, {
     toursHover: {
       color: "#111111", weight: 2, fillColor: "#6EE7B7", fillOpacity: 0.60
     },
+    /* Off-campus tour stops get a distinct orange/amber treatment so
+       the user can tell at a glance that the shape on the map is a
+       directional indicator (not a real building). The Olar Farm
+       arrow on the highway uses this. */
+    toursOffCampus: {
+      color: "#9A3412", weight: 2, fillColor: "#FB923C", fillOpacity: 0.75,
+      dashArray: "4 3"
+    },
+    toursOffCampusHover: {
+      color: "#7C2D12", weight: 2.5, fillColor: "#F97316", fillOpacity: 0.90,
+      dashArray: "4 3"
+    },
     selected: {
       color: "#111111", weight: 2.5, fillColor: "#86EFAC", fillOpacity: 0.55
+    },
+    selectedOffCampus: {
+      color: "#7C2D12", weight: 3, fillColor: "#EA580C", fillOpacity: 0.85,
+      dashArray: "4 3"
     }
   },
 

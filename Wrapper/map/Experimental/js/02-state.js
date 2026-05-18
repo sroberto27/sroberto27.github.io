@@ -55,6 +55,9 @@ const el = {
   chipsHere:        $("chipsHere"),
   explorableBlock:  $("explorableBlock"),
   subList:          $("subList"),
+  addressBlock:     $("addressBlock"),
+  detailsAddress:   $("detailsAddress"),
+  detailsAddressLinks: $("detailsAddressLinks"),
   detailsImage:     $("detailsImage"),
 
   // Desktop tour nav (inside sidebar footer)
@@ -105,19 +108,47 @@ function isMobile() { return mqMobile.matches; }
 
 /* -----------------------------------------------------------
    5. Styling helpers
+   -----------------------------------------------------------
+   The optional `feature` argument lets us pick a different
+   palette for off-campus tour stops (e.g. the Olar Farm arrow
+   that sits at the campus edge as a directional indicator).
+   Callers that don't have a feature handy (legacy code paths)
+   can omit it — they get the original behavior.
    ----------------------------------------------------------- */
-function styleFor(kind) {
+function isOffCampusFeature(feature) {
+  return !!(feature && feature.properties && feature.properties.off_campus);
+}
+
+function styleFor(kind, feature) {
   const s = config.styles;
   if (kind === "building") return { ...s.buildings };
-  if (kind === "tour")     return { ...s.tours };
+  if (kind === "tour") {
+    if (isOffCampusFeature(feature) && s.toursOffCampus) {
+      return { ...s.toursOffCampus };
+    }
+    return { ...s.tours };
+  }
   return { ...s.buildings };
 }
 
-function hoverStyleFor(kind) {
+function hoverStyleFor(kind, feature) {
   const s = config.styles;
   if (kind === "building") return { ...s.buildingsHover };
-  if (kind === "tour")     return { ...s.toursHover };
+  if (kind === "tour") {
+    if (isOffCampusFeature(feature) && s.toursOffCampusHover) {
+      return { ...s.toursOffCampusHover };
+    }
+    return { ...s.toursHover };
+  }
   return { ...s.buildingsHover };
+}
+
+function selectedStyleFor(feature) {
+  const s = config.styles;
+  if (isOffCampusFeature(feature) && s.selectedOffCampus) {
+    return { ...s.selectedOffCampus };
+  }
+  return { ...s.selected };
 }
 
 /* -----------------------------------------------------------

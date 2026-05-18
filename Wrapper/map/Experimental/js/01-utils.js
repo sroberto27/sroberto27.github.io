@@ -292,6 +292,17 @@ function getExplorable(name) {
   return Array.isArray(list) ? list : [];
 }
 
+/* Look up the physical street address for a location, if any.
+   Returns an empty string when no address is configured. Used
+   by the details panel to render an "Open in Maps" link —
+   primarily for off-campus locations (Olar Farm) but works for
+   any location with a known address. */
+function getAddress(name) {
+  if (!name) return "";
+  const k = name.toLowerCase();
+  return (config.addressMap || {})[k] || "";
+}
+
 /* Look up a Treedis entry by location name (case-insensitive).
    Accepts short-hand string entries as well as full objects, and
    always returns a normalized { sweepId, parentName, transitionTime }

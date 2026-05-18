@@ -43,13 +43,21 @@ function renderLocationsList() {
   tourStops.forEach((stop, i) => {
     const name = cleanName(stop.feature.properties.name);
     const cat = getCategory(name);
+    const props = stop.feature.properties || {};
+    const offCampus = !!props.off_campus;
+    const distance = props.off_campus_distance || "";
+    const offCampusBadge = offCampus && distance
+      ? `<span class="location-offcampus-badge" title="This location is not on the campus map">📍 ${distance}</span>`
+      : "";
+    const rowClass = offCampus ? "location-row is-offcampus" : "location-row";
     rows.push(`
-      <li class="location-row" role="option" data-name="${name.toLowerCase()}">
+      <li class="${rowClass}" role="option" data-name="${name.toLowerCase()}">
         <div>
           <div class="location-name">
             <span class="location-index">${i + 1}.</span>${name}
           </div>
           <div class="location-cat">${cat}</div>
+          ${offCampusBadge}
         </div>
         <span class="location-chev">›</span>
       </li>

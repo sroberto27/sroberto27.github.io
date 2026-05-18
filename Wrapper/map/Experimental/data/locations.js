@@ -27,7 +27,8 @@ window.CAMPUS_CONFIG.categoryMap = {
   "nance hall":                                  "ACADEMICS",
   "s-h-m memorial square":                       "MEMORIAL",
   "oliver c. dawson stadium":                    "ATHLETICS",
-  "kirkland w. green student center":            "STUDENT LIFE"
+  "kirkland w. green student center":            "STUDENT LIFE",
+  "olar farm":                                   "OFF-CAMPUS FACILITY"
 };
 
 /* -- Description overrides --------------------------------
@@ -52,7 +53,16 @@ window.CAMPUS_CONFIG.descriptionMap = {
     "classrooms and resources to support student learning.",
   "oliver c. dawson stadium":
     "Oliver C. Dawson Stadium is a 22,000 seat multi purpose stadium. " +
-    "The Home of SC State Bulldogs football."
+    "The Home of SC State Bulldogs football.",
+  "olar farm":
+    "The Olar Farm is an off-campus agricultural facility operated by " +
+    "South Carolina State University, located approximately 20 miles " +
+    "southwest of the main campus in Olar, SC. It supports the " +
+    "university's 1890 Research & Extension programs in sustainable " +
+    "agriculture and applied research. " +
+    "This location is not part of the main campus map — the arrow on " +
+    "the map points in its general direction. Click \"Explore\" to " +
+    "open the virtual tour of the farm."
 };
 
 /* -- Location images --------------------------------------
@@ -93,7 +103,24 @@ window.CAMPUS_CONFIG.happensHereMap = {
   "oliver c. dawson stadium": [
     "Bulldogs Football",
     "SC State women's soccer team"
+  ],
+  "olar farm": [
+    "1890 Research & Extension",
+    "Sustainable agriculture",
+    "Applied research"
   ]
+};
+
+/* -- Physical addresses -----------------------------------
+   Maps a location name to a real-world mailing/street
+   address. Used to render an "Open in Maps" link in the
+   details panel — useful for off-campus locations like the
+   Olar Farm, but works for any location with a known
+   address. Keys are matched case-insensitively against
+   `name`. Omit a key (or set it to "") to hide the row.
+   --------------------------------------------------------- */
+window.CAMPUS_CONFIG.addressMap = {
+  "olar farm": "1678 Alligator Rd, Olar, SC 29843"
 };
 
 /* -- "Explorable locations" list --------------------------

@@ -145,17 +145,132 @@ function renderExplorable(name) {
   });
 }
 
+/* Render the physical address block and "Open in Maps" links.
+   ----------------------------------------------------------------
+   Pulls the address string from addressMap (via getAddress()). If
+   the location has no address configured the whole block is
+   hidden — there's no placeholder state. When an address IS
+   configured, we render:
+
+     • The address line itself (selectable text so users can copy).
+     • A "Google Maps" link  — works everywhere, opens in a new tab.
+     • An "Apple Maps" link  — shown only on iOS/macOS UAs.
+     • A native "Open in Maps" link using the geo: URI scheme —
+       shown only on Android/iOS where the OS routes geo: through
+       its app chooser, letting users pick whichever map app they
+       prefer (Waze, OsmAnd, Maps.me, etc.).
+
+   The Google Maps link uses the official Maps URL `search` endpoint
+   (api=1 + query=encoded address). Both Apple Maps and the geo:
+   URI accept the same plain-text address. */
+function renderAddress(name) {
+  if (!el.addressBlock || !el.detailsAddress || !el.detailsAddressLinks) return;
+
+  const addr = getAddress(name);
+  if (!addr) {
+    el.addressBlock.hidden = true;
+    el.detailsAddress.textContent = "";
+    el.detailsAddressLinks.innerHTML = "";
+    return;
+  }
+
+  el.addressBlock.hidden = false;
+  el.detailsAddress.textContent = addr;
+
+  const q = encodeURIComponent(addr);
+  const ua = navigator.userAgent || "";
+  const isIOS     = /iPhone|iPad|iPod/.test(ua);
+  const isMacOS   = /Macintosh/.test(ua);
+  const isAndroid = /Android/.test(ua);
+  const isMobile  = isIOS || isAndroid;
+
+  const links = [];
+
+  // Google Maps — universal, works in every browser.
+  links.push(
+    `<a class="address-link address-link-google" ` +
+    `href="https://www.google.com/maps/search/?api=1&query=${q}" ` +
+    `target="_blank" rel="noopener noreferrer" ` +
+    `aria-label="Open ${escapeHTML(addr)} in Google Maps">` +
+    `<span class="address-link-icon" aria-hidden="true">🗺️</span>` +
+    `Google Maps</a>`
+  );
+
+  // Apple Maps — only show on Apple platforms where it actually opens.
+  if (isIOS || isMacOS) {
+    links.push(
+      `<a class="address-link address-link-apple" ` +
+      `href="https://maps.apple.com/?q=${q}" ` +
+      `target="_blank" rel="noopener noreferrer" ` +
+      `aria-label="Open ${escapeHTML(addr)} in Apple Maps">` +
+      `<span class="address-link-icon" aria-hidden="true">🍎</span>` +
+      `Apple Maps</a>`
+    );
+  }
+
+  // geo: URI — Android & iOS both hand this to the OS app chooser
+  // so the user can pick their preferred map app (Waze, OsmAnd,
+  // Maps.me, etc.). Skipped on desktop browsers where it does
+  // nothing useful.
+  if (isMobile) {
+    links.push(
+      `<a class="address-link address-link-native" ` +
+      `href="geo:0,0?q=${q}" ` +
+      `aria-label="Open ${escapeHTML(addr)} in your preferred map app">` +
+      `<span class="address-link-icon" aria-hidden="true">📍</span>` +
+      `Open in Maps</a>`
+    );
+  }
+
+  el.detailsAddressLinks.innerHTML = links.join("");
+}
+
 function renderDetails(feature, kind) {
   const props = (feature && feature.properties) || {};
   const name = cleanName(props.name);
+  const isOffCampus = !!props.off_campus;
+  const offCampusDistance = props.off_campus_distance || "";
 
-  el.detailsTag.textContent = (kind === "tour"
-                                 ? "TOUR STOP"
-                                 : "CAMPUS BUILDING");
+  if (isOffCampus) {
+    el.detailsTag.textContent = "OFF-CAMPUS STOP";
+    el.detailsTag.classList.add("is-offcampus");
+  } else {
+    el.detailsTag.textContent = (kind === "tour"
+                                   ? "TOUR STOP"
+                                   : "CAMPUS BUILDING");
+    el.detailsTag.classList.remove("is-offcampus");
+  }
 
   el.detailsTitle.textContent = name || "—";
   el.detailsSub.textContent   = getCategory(name) || "—";
   el.detailsBody.textContent  = getDescription(name);
+
+  /* Insert (or remove) a small inline notice right above the
+     description so users on the details panel know the site is
+     not represented on the campus map. The notice element is
+     created lazily on demand and lives as a sibling of the
+     description body. */
+  let note = document.getElementById("detailsOffCampusNote");
+  if (isOffCampus) {
+    if (!note && el.detailsBody && el.detailsBody.parentNode) {
+      note = document.createElement("div");
+      note.id = "detailsOffCampusNote";
+      note.className = "details-offcampus-note";
+      el.detailsBody.parentNode.insertBefore(note, el.detailsBody);
+    }
+    if (note) {
+      const distLine = offCampusDistance
+        ? ` Approximately <strong>${offCampusDistance}</strong>.`
+        : "";
+      note.innerHTML =
+        `<span class="offcampus-icon" aria-hidden="true">📍</span>` +
+        `<span><strong>Off-campus location.</strong> ` +
+        `This site isn't shown on the campus map.${distLine} ` +
+        `Use <strong>Explore</strong> to open the virtual tour.</span>`;
+    }
+  } else if (note && note.parentNode) {
+    note.parentNode.removeChild(note);
+  }
 
   // Stash the parent name so the explorable list's click handlers
   // know which building they belong to.
@@ -163,6 +278,7 @@ function renderDetails(feature, kind) {
 
   renderHappensHere(name);
   renderExplorable(name);
+  renderAddress(name);
   renderImage(name);
 
   // Annotate the Explore CTA with the current location so the
@@ -199,7 +315,7 @@ function renderDetails(feature, kind) {
    ----------------------------------------------------------- */
 function resetLayerStyle(layer, kind) {
   if (!layer || typeof layer.setStyle !== "function") return;
-  layer.setStyle(styleFor(kind));
+  layer.setStyle(styleFor(kind, layer.feature));
 }
 
 /* Compute the padding to use when flying to a selected feature.
@@ -230,8 +346,10 @@ function selectFeature(layer, kind, { focus = false } = {}) {
   selectedLayer = layer;
   selectedKind  = kind;
 
+  const isOffCampus = isOffCampusFeature(layer && layer.feature);
+
   if (selectedLayer && typeof selectedLayer.setStyle === "function") {
-    selectedLayer.setStyle({ ...config.styles.selected });
+    selectedLayer.setStyle(selectedStyleFor(layer && layer.feature));
     if (selectedLayer.bringToFront) selectedLayer.bringToFront();
   }
 
@@ -239,7 +357,13 @@ function selectFeature(layer, kind, { focus = false } = {}) {
   openDetails();
   if (layer.openTooltip) layer.openTooltip();
 
-  if (focus && layer.getBounds) {
+  /* Off-campus tour stops (e.g. Olar Farm) carry a placeholder
+     polygon at the campus edge as a directional indicator only.
+     Flying to it would zoom past every real building on the way
+     and confuse the user, so we skip the map fly entirely. The
+     details panel still opens and the user can click Explore
+     to jump straight into the Treedis sweep. */
+  if (focus && layer.getBounds && !isOffCampus) {
     const fitOpts = {
       ...focusPaddingFor(layer),
       maxZoom: config.tour.focusZoom,

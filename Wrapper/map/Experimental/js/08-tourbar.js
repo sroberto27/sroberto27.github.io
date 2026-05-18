@@ -19,12 +19,30 @@ function updateTourbar() {
     if (el.tourNext)       el.tourNext.disabled       = nextDisabled;
     if (el.tourPrevMobile) el.tourPrevMobile.disabled = prevDisabled;
     if (el.tourNextMobile) el.tourNextMobile.disabled = nextDisabled;
+    if (el.tourName)       el.tourName.classList.remove("is-offcampus");
+    if (el.tourNameMobile) el.tourNameMobile.classList.remove("is-offcampus");
     return;
   }
   const stop = tourStops[tourIndex];
   const name = cleanName(stop.feature.properties.name);
-  setText(el.tourName,       name);
-  setText(el.tourNameMobile, name);
+  const offCampus = !!(stop.feature.properties && stop.feature.properties.off_campus);
+  /* Add a small ↗ arrow after the name on off-campus stops so the
+     tourbar itself signals that the next/current stop sits beyond
+     the campus map. Tooltip explains in long form. */
+  const labelText = offCampus ? `${name} ↗` : name;
+  const titleText = offCampus
+    ? `${name} — off-campus location (not on this map)`
+    : name;
+  setText(el.tourName,       labelText);
+  setText(el.tourNameMobile, labelText);
+  if (el.tourName) {
+    el.tourName.title = titleText;
+    el.tourName.classList.toggle("is-offcampus", offCampus);
+  }
+  if (el.tourNameMobile) {
+    el.tourNameMobile.title = titleText;
+    el.tourNameMobile.classList.toggle("is-offcampus", offCampus);
+  }
   setText(el.tourCurrent,       tourIndex + 1);
   setText(el.tourCurrentMobile, tourIndex + 1);
 

@@ -20,7 +20,7 @@ function bindEvents(feature, layer, kind) {
     mouseover: () => {
       if (selectedLayer === layer) return;
       if (!config.ui.enableHoverPreview) return;
-      layer.setStyle(hoverStyleFor(kind));
+      layer.setStyle(hoverStyleFor(kind, feature));
       if (layer.bringToFront) layer.bringToFront();
     },
     mouseout: () => {
@@ -38,7 +38,7 @@ function bindEvents(feature, layer, kind) {
 function buildLayer(data, kind, paneName) {
   return L.geoJSON(data, {
     pane: paneName,
-    style: () => styleFor(kind),
+    style: (feature) => styleFor(kind, feature),
     onEachFeature: (f, l) => bindEvents(f, l, kind)
   });
 }
@@ -103,11 +103,20 @@ function buildTourPins() {
     try { center = layer.getBounds().getCenter(); }
     catch (e) { return; }
 
+    // Off-campus tour stops (e.g. Olar Farm) get a distinct
+    // amber pin with a small arrow glyph so the user can see
+    // at a glance that the shape on the map is a directional
+    // indicator rather than a real building footprint.
+    const offCampus = !!props.off_campus;
     const icon = L.divIcon({
-      className: "tour-pin-wrap",
-      html: `<div class="tour-pin" data-order="${order}">${order}</div>`,
-      iconSize: [26, 26],
-      iconAnchor: [13, 13]
+      className: offCampus ? "tour-pin-wrap is-offcampus" : "tour-pin-wrap",
+      html: offCampus
+        ? `<div class="tour-pin is-offcampus" data-order="${order}" ` +
+          `title="Off-campus location — click for details">` +
+          `${order}<span class="tour-pin-arrow" aria-hidden="true">↗</span></div>`
+        : `<div class="tour-pin" data-order="${order}">${order}</div>`,
+      iconSize: offCampus ? [34, 26] : [26, 26],
+      iconAnchor: offCampus ? [17, 13] : [13, 13]
     });
 
     const marker = L.marker(center, {

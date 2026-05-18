@@ -518,3 +518,126 @@ a.vr-link:active { transform: translateY(1px); }
   border-top: var(--border-light);
 }
 
+
+/* -----------------------------------------------------------
+   Off-campus details panel treatment
+   -----------------------------------------------------------
+   When the user opens the details panel for an off-campus
+   tour stop (Olar Farm), the kicker tag reads OFF-CAMPUS STOP
+   in amber instead of the usual TOUR STOP, and a distance
+   chip sits next to the title so it's unambiguous that the
+   site is not visible on the campus map.
+   ----------------------------------------------------------- */
+.details-tag.is-offcampus {
+  color: #C2410C;            /* tailwind orange-700 */
+  background: #FFEDD5;       /* tailwind orange-100 */
+  border: 1px solid #FDBA74; /* tailwind orange-300 */
+  padding: 3px 8px;
+  border-radius: 999px;
+  letter-spacing: .14em;
+}
+
+.details-offcampus-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 12px;
+  padding: 10px 12px;
+  background: #FFF7ED;       /* tailwind orange-50 */
+  border: 1px solid #FDBA74; /* tailwind orange-300 */
+  border-left-width: 4px;
+  border-radius: 6px;
+  color: #7C2D12;            /* tailwind orange-900 */
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.details-offcampus-note .offcampus-icon {
+  font-size: 18px;
+  line-height: 1;
+  flex: 0 0 auto;
+}
+
+.details-offcampus-note strong {
+  color: #9A3412;
+  font-weight: 700;
+}
+
+/* Off-campus highlight on the tour bar — gives the current stop
+   name a subtle amber tint and trailing ↗ glyph (added in JS)
+   when the active stop is off-campus (Olar Farm). */
+.tour-name.is-offcampus {
+  color: #C2410C;            /* tailwind orange-700 */
+}
+
+/* -----------------------------------------------------------
+   Address block + "Open in Maps" links
+   -----------------------------------------------------------
+   Shown in the details panel for any location with an entry in
+   addressMap (locations.js). Used primarily for off-campus
+   locations like Olar Farm so users can launch the address in
+   their preferred map app (Google Maps everywhere, Apple Maps
+   on iOS/macOS, and a geo: URI on mobile to invoke the OS app
+   picker for Waze/OsmAnd/etc.).
+   ----------------------------------------------------------- */
+.details-address {
+  font-size: 13.5px;
+  color: var(--on-dark);
+  line-height: 1.5;
+  margin: 4px 0 10px;
+  /* Use the address font as user-selectable so copy-paste works.
+     The rest of the panel inherits its default selection behavior. */
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.details-address-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.address-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: var(--paper, #f7f4ef);
+  border: 1px solid var(--line, #2b2b2b);
+  color: var(--ink, #111);
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform .12s ease, background .12s ease,
+              box-shadow .12s ease;
+  white-space: nowrap;
+}
+
+.address-link:hover {
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0,0,0,.12);
+  transform: translateY(-1px);
+}
+
+.address-link:active {
+  transform: translateY(0);
+}
+
+.address-link:focus-visible {
+  outline: 2px solid var(--brand-red, #B22222);
+  outline-offset: 2px;
+}
+
+.address-link-icon {
+  font-size: 14px;
+  line-height: 1;
+}
+
+/* Subtle per-provider tint on the left border — keeps the row
+   readable while still telegraphing which app will open. */
+.address-link-google { border-left: 3px solid #4285F4; }
+.address-link-apple  { border-left: 3px solid #0071E3; }
+.address-link-native { border-left: 3px solid #C2410C; }

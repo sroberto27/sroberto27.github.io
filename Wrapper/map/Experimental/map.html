@@ -445,6 +445,18 @@
               <ul class="sub-list" id="subList"></ul>
             </div>
 
+            <!-- Physical address + "Open in Maps" link.
+                 Shown only when a location has an address configured
+                 in addressMap (locations.js). Primarily used for
+                 off-campus locations like Olar Farm so users can
+                 navigate there in their preferred map app. -->
+            <div class="details-block details-address-block"
+                 id="addressBlock" hidden>
+              <div class="details-block-h">ADDRESS</div>
+              <div class="details-address" id="detailsAddress"></div>
+              <div class="details-address-links" id="detailsAddressLinks"></div>
+            </div>
+
             <!-- Inline VR-Enabled indicator — shown on MOBILE only.
                  The persistent footer below carries the desktop/iPad
                  version. Both link to the same Quest deep-link URL. -->
