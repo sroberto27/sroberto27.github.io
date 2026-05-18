@@ -16,17 +16,26 @@ function bindEvents(feature, layer, kind) {
     });
   }
 
+  let isHovered = false;
+
   layer.on({
     mouseover: () => {
+      isHovered = true;
       if (selectedLayer === layer) return;
       if (!config.ui.enableHoverPreview) return;
       layer.setStyle(hoverStyleFor(kind, feature));
       if (layer.bringToFront) layer.bringToFront();
     },
     mouseout: () => {
+      isHovered = false;
       if (selectedLayer === layer) return;
       resetLayerStyle(layer, kind);
       if (layer.closeTooltip) layer.closeTooltip();
+    },
+    // Safety net: if Leaflet opens the tooltip AFTER the cursor
+    // has already left (fast-hover race), close it immediately.
+    tooltipopen: () => {
+      if (!isHovered && layer.closeTooltip) layer.closeTooltip();
     },
     click: (e) => {
       L.DomEvent.stopPropagation(e);
@@ -146,4 +155,3 @@ function highlightActivePin() {
   const node = stop.marker.getElement()?.querySelector(".tour-pin");
   if (node) node.classList.add("is-active");
 }
-
