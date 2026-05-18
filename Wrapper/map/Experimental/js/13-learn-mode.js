@@ -53,6 +53,41 @@
     return;
   }
 
+  /* ---- Quest / XR detection (local to Learn mode) ----
+     Explore mode has its own UA + WebXR detection in 01-utils.js,
+     but that file's helpers are not exported by name and we want
+     Learn mode to stay self-contained. So we inline a small UA-only
+     check here. Same tokens as `isXRUserAgent()` in 01-utils.js:
+     OculusBrowser appears in every Meta Quest Browser UA (mobile
+     or desktop mode), and `Pico` catches Pico headsets.
+
+     We deliberately don't await navigator.xr.isSessionSupported()
+     here — that's an async signal, and the Begin Course click
+     handler must call window.open() synchronously inside the
+     user-gesture frame or popup blockers will kill the new tab.
+     The UA check is enough to route Quest browsers correctly. */
+  function isQuestUA() {
+    try {
+      const ua = (navigator.userAgent || "").toString();
+      return /OculusBrowser|Quest\s|Quest\)| VR |Mobile VR|Pico/i.test(ua);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /* ---- Pick the right EON launch URL for the current device ----
+     Quest → vrUrl when present, else fall back to desktopUrl so
+     headset users still get *something* useful. Desktop / tablet
+     / phone → desktopUrl always.
+     Returns null if the course has no EON target at all, which
+     is how callers know to disable the button. */
+  function pickEonUrl(course) {
+    const eon = course && course.eon;
+    if (!eon) return null;
+    if (isQuestUA() && eon.vrUrl) return eon.vrUrl;
+    return eon.desktopUrl || eon.vrUrl || null;
+  }
+
   let activeCourseId = null;
 
   /* ---- Render: course list ---- */
@@ -167,28 +202,53 @@
       });
     }
 
-    // VR-Enabled chip + tooltip
-    const imm = course.immersive;
-    if (imm && L.vr) {
-      L.vr.hidden = false;
-      if (L.vrNote) L.vrNote.textContent = imm.note || "";
-    } else if (L.vr) {
-      L.vr.hidden = true;
-      hideVrTooltip();
+    // VR-Enabled chip + tooltip.
+    // The chip shows when either:
+    //   • the course has an EON VR launch URL (`eon.vrUrl`), OR
+    //   • the course has an explicit `immersive` block.
+    // The tooltip prose comes from `immersive.note` when present,
+    // falling back to a generic line so courses with only an EON
+    // VR URL still get a sensible tooltip.
+    const imm        = course.immersive;
+    const hasEonVr   = !!(course.eon && course.eon.vrUrl);
+    const isImmersive = hasEonVr || !!imm;
+    if (L.vr) {
+      if (isImmersive) {
+        L.vr.hidden = false;
+        if (L.vrNote) {
+          L.vrNote.textContent =
+            (imm && imm.note) ||
+            "Sign in to EON Reality in your headset to enter the " +
+            "immersive version of this course.";
+        }
+      } else {
+        L.vr.hidden = true;
+        hideVrTooltip();
+      }
     }
 
-    // Begin Course CTA — open VR URL if immersive, otherwise
-    // just log for now (placeholder behavior until real course
-    // launch routes are wired up).
+    // Begin Course CTA — hand off to EON Reality's login page.
+    // EON's login wall will catch the user and redirect them to
+    // the course after auth. Quest UA → vrUrl (if defined),
+    // everything else → desktopUrl. No EON target on the course
+    // at all → button is disabled with an explanatory title.
     if (L.beginBtn) {
+      const targetUrl = pickEonUrl(course);
+      const canLaunch = !!targetUrl;
+
+      L.beginBtn.disabled = !canLaunch;
+      L.beginBtn.setAttribute("aria-disabled", canLaunch ? "false" : "true");
+      L.beginBtn.title = canLaunch
+        ? "Sign in to EON Reality to begin this course"
+        : "Course launch coming soon";
+
       L.beginBtn.onclick = () => {
-        if (imm && imm.vrUrl && imm.vrUrl !== "https://www.#") {
-          window.open(imm.vrUrl, "_blank", "noopener");
-        } else {
-          // Soft-noop on placeholder URLs so a stray click
-          // doesn't navigate the page somewhere unhelpful.
-          console.info("[learn] begin course:", course.id);
-        }
+        if (!canLaunch) return;
+        // window.open MUST run synchronously inside the click
+        // handler — any await/setTimeout in front of it will get
+        // the popup blocked. The Quest-vs-desktop URL is already
+        // resolved above, so this stays a one-liner.
+        window.open(targetUrl, "_blank", "noopener");
       };
     }
   }

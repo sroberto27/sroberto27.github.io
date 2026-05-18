@@ -511,6 +511,25 @@ body.mode-learn .details               { display: none; }
 .course-cta:hover  { background: var(--brand-red-2); }
 .course-cta:active { transform: translateY(1px); }
 
+/* Disabled state — shown when the course has no EON Reality
+   launch target yet. The button stays visible (so the page
+   layout doesn't shift) but signals it can't be acted on. */
+.course-cta:disabled,
+.course-cta[aria-disabled="true"] {
+  background: var(--cell-bg);
+  color: var(--on-dark-muted);
+  cursor: not-allowed;
+  opacity: .65;
+}
+.course-cta:disabled:hover,
+.course-cta[aria-disabled="true"]:hover {
+  background: var(--cell-bg);
+}
+.course-cta:disabled:active,
+.course-cta[aria-disabled="true"]:active {
+  transform: none;
+}
+
 /* VR-Enabled label + tooltip popover (THIS COURSE IS IMMERSIVE) */
 .course-vr {
   position: relative;
