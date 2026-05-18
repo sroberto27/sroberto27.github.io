@@ -360,9 +360,17 @@ function selectFeature(layer, kind, { focus = false } = {}) {
   /* Off-campus tour stops (e.g. Olar Farm) carry a placeholder
      polygon at the campus edge as a directional indicator only.
      Flying to it would zoom past every real building on the way
-     and confuse the user, so we skip the map fly entirely. The
-     details panel still opens and the user can click Explore
-     to jump straight into the Treedis sweep. */
+     and confuse the user, so we skip the per-feature fly. Instead,
+     we reset to the full campus view so the user sees the whole
+     campus plus the directional arrow pointing toward the real
+     site — visual confirmation that the location isn't on the
+     map. The details panel still opens and the user can click
+     Explore to jump straight into the Treedis sweep.
+
+     We skip the reset when the user is already inside the street
+     view (streetViewActive) — there's no visible map to refresh,
+     and snapping it underneath would just spend an animation the
+     user can't see. */
   if (focus && layer.getBounds && !isOffCampus) {
     const fitOpts = {
       ...focusPaddingFor(layer),
@@ -379,6 +387,19 @@ function selectFeature(layer, kind, { focus = false } = {}) {
       requestAnimationFrame(() => requestAnimationFrame(fly));
     } else {
       requestAnimationFrame(fly);
+    }
+  } else if (focus && isOffCampus && !streetViewActive && imageBounds) {
+    // Off-campus path: animate the map back to the full campus
+    // view. Uses the same RAF settle pattern as the normal fly so
+    // Leaflet measures the post-panel-open shell width correctly.
+    const reset = () => {
+      refreshMapConstraints({ recenterIfNeeded: false });
+      resetCampusView(true);
+    };
+    if (isMobile()) {
+      requestAnimationFrame(() => requestAnimationFrame(reset));
+    } else {
+      requestAnimationFrame(reset);
     }
   }
 
@@ -417,4 +438,3 @@ function clearSelection() {
   highlightActivePin();
   syncLocationsList();
 }
-
