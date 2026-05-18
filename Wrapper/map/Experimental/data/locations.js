@@ -74,7 +74,7 @@ window.CAMPUS_CONFIG.imageMap = {
   "kirkland w. green student center":  "assets/locations/kirkland-green.webp",
   "s-h-m memorial square":             "assets/locations/shm-memorial.webp",
   "nance hall":                        "assets/locations/nance-hall.webp",
-  "oliver c. dawson stadium":          "assets/locations/dawson-stadium.webp"
+  "oliver c. dawson stadium":          "assets/locations/dawson-stadium.webp",
   "olar farm":                         "assets/locations/olar-farm.webp"
 };
 
