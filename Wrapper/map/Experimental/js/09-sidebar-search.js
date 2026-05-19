@@ -430,42 +430,55 @@ refreshSearchClear();
 /* -----------------------------------------------------------
    15. Search
    ----------------------------------------------------------- */
-function renderSearch(q) {
-  const term = q.trim().toLowerCase();
-  if (!term) { el.searchResults.hidden = true; el.searchResults.innerHTML = ""; return; }
+   function renderSearch(q) {
+     const term = q.trim().toLowerCase();
+     if (!term) { el.searchResults.hidden = true; el.searchResults.innerHTML = ""; return; }
 
-  const matches = allFeatures
-    .filter((x) => {
-      const n = cleanName(x.props.name).toLowerCase();
-      return n && n.includes(term);
-    })
-    .slice(0, 12);
+     const filtered = allFeatures.filter((x) => {
+       const n = cleanName(x.props.name).toLowerCase();
+       return n && n.includes(term);
+     });
 
-  if (!matches.length) {
-    el.searchResults.hidden = false;
-    el.searchResults.innerHTML =
-      `<div class="search-empty">No matches for "${q}".</div>`;
-    return;
-  }
+     const byName = new Map();
+     for (const m of filtered) {
+       const key = cleanName(m.props.name).toLowerCase();
+       const existing = byName.get(key);
+       if (!existing) {
+         byName.set(key, m);
+         continue;
+       }
+       // Tour beats building when names collide.
+       if (existing.kind !== "tour" && m.kind === "tour") {
+         byName.set(key, m);
+       }
+     }
 
-  el.searchResults.hidden = false;
-  el.searchResults.innerHTML = matches.map((m, i) => `
-    <div class="search-result" data-i="${i}" role="option">
-      <span>${cleanName(m.props.name)}</span>
-      <span class="tag ${m.kind}">${m.kind}</span>
-    </div>
-  `).join("");
+     const matches = Array.from(byName.values()).slice(0, 12);
 
-  el.searchResults.querySelectorAll(".search-result").forEach((node) => {
-    node.addEventListener("click", () => {
-      const m = matches[Number(node.dataset.i)];
-      if (!m) return;
-      selectFeature(m.layer, m.kind, { focus: true });
-      el.searchInput.value = cleanName(m.props.name);
-      el.searchResults.hidden = true;
-      // On mobile, tucking the search away after a pick feels right
-      if (isMobile()) closeSearchPanel();
-    });
-  });
-}
+     if (!matches.length) {
+       el.searchResults.hidden = false;
+       el.searchResults.innerHTML =
+         `<div class="search-empty">No matches for "${q}".</div>`;
+       return;
+     }
 
+     el.searchResults.hidden = false;
+     el.searchResults.innerHTML = matches.map((m, i) => `
+       <div class="search-result" data-i="${i}" role="option">
+         <span>${cleanName(m.props.name)}</span>
+         <span class="tag ${m.kind}">${m.kind}</span>
+       </div>
+     `).join("");
+
+     el.searchResults.querySelectorAll(".search-result").forEach((node) => {
+       node.addEventListener("click", () => {
+         const m = matches[Number(node.dataset.i)];
+         if (!m) return;
+         selectFeature(m.layer, m.kind, { focus: true });
+         el.searchInput.value = cleanName(m.props.name);
+         el.searchResults.hidden = true;
+         // On mobile, tucking the search away after a pick feels right
+         if (isMobile()) closeSearchPanel();
+       });
+     });
+   }
