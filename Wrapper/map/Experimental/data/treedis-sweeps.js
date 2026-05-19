@@ -161,10 +161,9 @@ const TREEDIS_MAP_DESKTOP = {
   },
 
   "facilities management & operations": {
-    // TODO: not in current spreadsheet — confirm whether this
-    //        sub-location still applies in the new model.
-    sweepId: null,
-    parentName: "Crawford-Zimmerman"
+    sweepId: "w71ztkwx17guq5zwx8yk60ctb",
+    parentName: "Crawford-Zimmerman",
+    rotation: { x: -13.846676418385572, y: -88.2009725696489 }
   },
 
   "admissions & financial aid": {
