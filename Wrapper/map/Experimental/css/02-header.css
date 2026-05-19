@@ -103,7 +103,7 @@
   align-items: center;
   gap: 4px;
   padding: 4px;
-  background: rgba(255,255,255,.06);
+  background: var(--header-bg);
   border-radius: 999px;
   /* Width is content-driven; flex children control individual size */
 }
@@ -239,4 +239,3 @@
 .burger-link:hover  { background: rgba(255,255,255,.04); }
 .burger-link:active { background: rgba(255,255,255,.08); }
 .burger-chev        { color: var(--on-dark-muted); font-size: 18px; line-height: 1; }
-
