@@ -23,11 +23,11 @@ window.CAMPUS_CONFIG = window.CAMPUS_CONFIG || {};
    Keys are matched case-insensitively against `name`.
    --------------------------------------------------------- */
 window.CAMPUS_CONFIG.categoryMap = {
-  "crawford zimmerman":                          "STUDENT SERVICES",
+  "crawford zimmerman":                          "ADMINISTRATIVE",
   "nance hall":                                  "ACADEMICS",
   "s-h-m memorial square":                       "MEMORIAL",
   "oliver c. dawson stadium":                    "ATHLETICS",
-  "kirkland w. green student center":            "STUDENT LIFE",
+  "kirkland w. green student center":            "ADMINISTRATIVE",
   "olar farm":                                   "OFF-CAMPUS FACILITY",
 
   /* Academic buildings */
@@ -264,13 +264,15 @@ window.CAMPUS_CONFIG.imageMap = {
    --------------------------------------------------------- */
 window.CAMPUS_CONFIG.happensHereMap = {
   "crawford zimmerman": [
-    "Student services",
-    "Warehouse",
+    "Campus Administration",
+    "Admissions Offices",
     "Campus Bookstore"
   ],
   "kirkland w. green student center": [
+    "Student Union",
+    "Washington Dining Hall",
     "Dining (\"The Pitt\")",
-    "Campus Hub"
+    "Student Activities"
   ],
   "s-h-m memorial square": [
     "Memorial bronze busts",
@@ -278,12 +280,16 @@ window.CAMPUS_CONFIG.happensHereMap = {
     "Historical marker"
   ],
   "nance hall": [
-    "Classrooms",
-    "General lecture room"
+    "Faculty offices",
+    "NRM Labs",
+    "USDA Research"
   ],
   "oliver c. dawson stadium": [
-    "Bulldogs Football",
-    "SC State women's soccer team"
+    "Football",
+    "Soccer",
+    "MEAC Championships",
+    " Marching 101",
+    "Homecoming"
   ],
   "olar farm": [
     "1890 Research & Extension",
