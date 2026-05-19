@@ -305,20 +305,27 @@ function getAddress(name) {
 
 /* Look up a Treedis entry by location name (case-insensitive).
    Accepts short-hand string entries as well as full objects, and
-   always returns a normalized { sweepId, parentName, transitionTime }
-   object — or null if the name has no mapping. */
+   always returns a normalized
+     { sweepId, parentName, transitionTime, rotation }
+   object — or null if the name has no mapping.
+
+   `rotation`, when present, is forwarded to TourBridge.navigateToSweep
+   so the camera lands at the sweep facing a specific direction. */
 function getTreedisEntry(name) {
   if (!name) return null;
   const map = config.treedisMap || {};
   const raw = map[String(name).toLowerCase().trim()];
   if (raw == null) return null;
   if (typeof raw === "string") {
-    return { sweepId: raw, parentName: null, transitionTime: null };
+    return {
+      sweepId: raw, parentName: null, transitionTime: null, rotation: null
+    };
   }
   return {
     sweepId:        raw.sweepId || null,
     parentName:     raw.parentName || null,
-    transitionTime: raw.transitionTime || null
+    transitionTime: raw.transitionTime || null,
+    rotation:       raw.rotation || null
   };
 }
 

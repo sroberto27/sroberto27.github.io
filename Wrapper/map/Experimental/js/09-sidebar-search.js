@@ -103,7 +103,10 @@ function renderLocationsList() {
         const entry = getTreedisEntry(locationName);
         const sweepId = entry && entry.sweepId;
         if (sweepId) {
-          openStreetView(sweepId, locationName, getCategory(locationName));
+          openStreetView(sweepId, locationName, getCategory(locationName), {
+            rotation:       (entry && entry.rotation)       || null,
+            transitionTime: (entry && entry.transitionTime) || null
+          });
         } else {
           // No sweep mapped — fall back to selecting on the map
           // and closing street view so the user isn't stranded.

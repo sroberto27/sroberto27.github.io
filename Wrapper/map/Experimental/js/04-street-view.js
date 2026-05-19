@@ -73,18 +73,30 @@ function syncWrapperToSweep(sweepId) {
    `sub` are display-only (they populate the small header pill
    in the top-left of the overlay).
 
+   `options` is forwarded to TourBridge.navigateToSweep:
+     • rotation       — { x, y } in degrees; camera lands facing this way
+     • transitionTime — ms; per-entry override of the global default
+   Both are optional — omit to let Treedis / config defaults apply.
+
    Two paths:
      (a) Treedis is ready → fire Navigate immediately as before.
      (b) Treedis is NOT ready → show the loading veil and queue
          the sweep in pendingSweep. _flushPendingSweep() runs
          when TourReady fires and finishes the job. */
-function openStreetView(sweepId, title, sub) {
+function openStreetView(sweepId, title, sub, options) {
   if (!sweepId) {
     console.warn("[streetview] open request ignored — no sweep id for", title);
     // Tiny visual nudge — still open the overlay so the user sees
     // the tour, just without a targeted navigate. This way
     // placeholder rows at least don't feel broken.
   }
+
+  // Normalize options so the rest of the function (and the queued
+  // path) never has to deal with undefined.
+  const navOpts = {
+    rotation:       (options && options.rotation)       || null,
+    transitionTime: (options && options.transitionTime) || null
+  };
 
   // Cancel any in-flight warm-up so it can't clobber this Navigate.
   warmupCancelled = true;
@@ -101,7 +113,9 @@ function openStreetView(sweepId, title, sub) {
   if (sweepId) {
     if (TourBridge.isReady) {
       // Happy path — Treedis is ready, fire the Navigate now.
-      TourBridge.navigateToSweep(sweepId);
+      // `_buildNavOptions` strips nulls so TourBridge applies its
+      // own defaults for anything we don't specify.
+      TourBridge.navigateToSweep(sweepId, _buildNavOptions(navOpts));
       lastStreetViewSweepId = sweepId;
       _hideStreetViewLoading();
       pendingSweep = null;
@@ -109,9 +123,14 @@ function openStreetView(sweepId, title, sub) {
       // Treedis hasn't reported TourReady yet (cold load, or the
       // user clicked Explore unusually fast). Show our loading
       // veil and queue the target — _flushPendingSweep() will
-      // send the Navigate the moment TourReady arrives.
+      // send the Navigate (with these same options) the moment
+      // TourReady arrives.
       console.info("[streetview] queueing sweep until TourReady:", sweepId);
-      pendingSweep = { sweepId, title, sub };
+      pendingSweep = {
+        sweepId, title, sub,
+        rotation:       navOpts.rotation,
+        transitionTime: navOpts.transitionTime
+      };
       _showStreetViewLoading();
     }
   } else {
@@ -142,6 +161,16 @@ function openStreetView(sweepId, title, sub) {
     // Close any open mobile drawer too.
     if (drawerOpen) closeMobileLocations({ silent: true });
   }
+}
+
+/* Build the options object for TourBridge.navigateToSweep, omitting
+   any nulls so the bridge's own defaults apply (e.g. the configured
+   defaultTransitionTime) instead of being overridden by null. */
+function _buildNavOptions(navOpts) {
+  const out = {};
+  if (navOpts && navOpts.rotation)       out.rotation       = navOpts.rotation;
+  if (navOpts && navOpts.transitionTime) out.transitionTime = navOpts.transitionTime;
+  return out;
 }
 
 function closeStreetView() {
@@ -256,7 +285,13 @@ function _flushPendingSweep() {
       `[streetview] firing queued Navigate (attempt ${attempt}/${maxAttempts}):`,
       targetSweepId
     );
-    TourBridge.navigateToSweep(targetSweepId);
+    // Pull through whatever rotation / transitionTime was stashed
+    // when the sweep got queued. _buildNavOptions strips nulls so
+    // TourBridge defaults apply when those weren't specified.
+    TourBridge.navigateToSweep(targetSweepId, _buildNavOptions({
+      rotation:       pendingSweep && pendingSweep.rotation,
+      transitionTime: pendingSweep && pendingSweep.transitionTime
+    }));
     lastStreetViewSweepId = targetSweepId;
 
     setTimeout(() => {
@@ -321,13 +356,24 @@ function navigateStreetViewToLayer(layer) {
   if (!TourBridge.isReady) {
     // Still booting — re-queue. _flushPendingSweep() will fire
     // this target when TourReady arrives. Loading veil stays up.
-    pendingSweep = { sweepId: entry.sweepId, title: name, sub: getCategory(name) };
+    pendingSweep = {
+      sweepId: entry.sweepId,
+      title: name,
+      sub: getCategory(name),
+      rotation:       entry.rotation       || null,
+      transitionTime: entry.transitionTime || null
+    };
     _showStreetViewLoading();
     return;
   }
 
   if (entry.sweepId !== lastStreetViewSweepId) {
-    TourBridge.navigateToSweep(entry.sweepId);
+    // Forward the per-entry rotation / transitionTime so the camera
+    // lands at the configured heading. _buildNavOptions strips nulls.
+    TourBridge.navigateToSweep(entry.sweepId, _buildNavOptions({
+      rotation:       entry.rotation,
+      transitionTime: entry.transitionTime
+    }));
     lastStreetViewSweepId = entry.sweepId;
   }
 }
@@ -352,8 +398,18 @@ function openSubLocationInStreetView(parentName, subLocationName) {
 
   // Always reveal the viewer, even when the sweep is a placeholder,
   // so users can see the parent's current view while the data is
-  // being filled in.
-  openStreetView(sweepId, displayParent || subLocationName, subLocationName);
+  // being filled in. Forward the entry's rotation / transitionTime
+  // so the camera lands facing the configured direction when
+  // present.
+  openStreetView(
+    sweepId,
+    displayParent || subLocationName,
+    subLocationName,
+    {
+      rotation:       (entry && entry.rotation)       || null,
+      transitionTime: (entry && entry.transitionTime) || null
+    }
+  );
   setStreetViewCaption(displayParent || subLocationName, subLocationName);
 }
 

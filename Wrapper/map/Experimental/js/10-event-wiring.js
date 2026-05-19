@@ -151,10 +151,15 @@ function handleExploreClick(e) {
   const sweepId = (btn && btn.dataset.sweepId)       || "";
 
   // Pull the latest entry in case config changed since render.
+  // `fresh` is also where we read the per-entry rotation /
+  // transitionTime — the dataset only carries the sweep id.
   const fresh = getTreedisEntry(name);
   const effectiveSweep = sweepId || (fresh && fresh.sweepId) || null;
 
-  openStreetView(effectiveSweep, name, getCategory(name));
+  openStreetView(effectiveSweep, name, getCategory(name), {
+    rotation:       (fresh && fresh.rotation)       || null,
+    transitionTime: (fresh && fresh.transitionTime) || null
+  });
 }
 if (el.exploreCta) el.exploreCta.addEventListener("click", handleExploreClick);
 
