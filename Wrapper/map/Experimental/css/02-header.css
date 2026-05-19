@@ -103,7 +103,7 @@
   align-items: center;
   gap: 4px;
   padding: 4px;
-  background: var(--header-bg);
+  background: rgba(255,255,255,.12);
   border-radius: 999px;
   /* Width is content-driven; flex children control individual size */
 }
