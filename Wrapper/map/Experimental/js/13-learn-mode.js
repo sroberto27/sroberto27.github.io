@@ -248,7 +248,8 @@
         // handler — any await/setTimeout in front of it will get
         // the popup blocked. The Quest-vs-desktop URL is already
         // resolved above, so this stays a one-liner.
-        window.open(targetUrl, "_blank", "noopener");
+        //window.open(targetUrl, "_blank", "noopener");
+        window.location.href = targetUrl;
       };
     }
   }

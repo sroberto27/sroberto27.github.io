@@ -74,30 +74,35 @@ window.CAMPUS_CONFIG.categoryMap = {
    --------------------------------------------------------- */
 window.CAMPUS_CONFIG.descriptionMap = {
   "crawford zimmerman":
-    "Crawford-Zimmerman Building is a key administrative and operations " +
-    "facility located on campus. It houses several departments, including " +
-    "Procurement & Compliance, and serves as a hub for student services, " +
-    "such as the SCSU Bookstore.",
+    "The Crawford-Zimmerman Service Complex houses Facilities Management " +
+    "operations as well as the Enrollment Management suite, including Admissions," +
+    "Financial Aid, and Title III Programs. It also serves as the administrative " +
+    "address for Residence Life & Housing.",
   "kirkland w. green student center":
-    "The Kirkland W. Green Student Center is the central hub for campus " +
-    "life offering dining, social, and recreational spaces for students.",
+    "The primary hub for student life on campus, the Green Student Center houses " +
+    "Washington Dining Hall, 'The Pitt' dining area, and a variety of student services" +
+    "Originally built in 1954 with a major addition in 1970. Currently undergoing" +
+    " a $4.2 million renovation.",
   "s-h-m memorial square":
     "The Smith-Hammond-Middleton Legacy Plaza at South Carolina State " +
     "University, dedicated in 2022, honors the three victims of the 1968 " +
     "Orangeburg Massacre.",
   "nance hall":
-    "Nance Hall serves as a hub for academic activities offering modern " +
-    "classrooms and resources to support student learning.",
+    "Home to the College of Agriculture and the Mathematics & Science departments" +
+    "Nance Hall hosts several of the USDA-aligned laboratory" +
+    "spaces used in the NRM curriculum.",
   "oliver c. dawson stadium":
-    "Oliver C. Dawson Stadium is a 22,000 seat multi purpose stadium. " +
-    "The Home of SC State Bulldogs football.",
+    "Home of the SC State Bulldogs football and women's soccer teams. " +
+    "Built in 1955 on Buckley Street, named in 1984 for coach and AD Oliver" +
+    "Cromwell Dawson. Capacity raised to 22,000 in 1994 via a $4.5M renovation." +
+    "Synthetic turf and a new scoreboard installed in 2006.",
   "olar farm":
     "The Olar Farm is an off-campus agricultural facility operated by " +
-    "South Carolina State University, located approximately 20 miles " +
+    "South Carolina State University, located approximately 30 miles " +
     "southwest of the main campus in Olar, SC. It supports the " +
     "university's 1890 Research & Extension programs in sustainable " +
     "agriculture and applied research. " +
-    "This location is not part of the main campus map — the arrow on " +
+    "This location is not part of the main campus map, te point on " +
     "the map points in its general direction. Click \"Explore\" to " +
     "open the virtual tour of the farm.",
 
