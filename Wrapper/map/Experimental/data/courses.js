@@ -84,8 +84,8 @@ window.SCSU_DATA.courses = [
     // /login redirect param sends the user back to the course
     // after auth — EON's standard pattern.
     eon: {
-      desktopUrl: "https://login.eonreality.com/?redirect=/courses/nrm-342",
-      vrUrl:      "https://login.eonreality.com/vr?redirect=/courses/nrm-342"
+      desktopUrl: "https://customvirtualcampus.eon-xr.com/i/936/courses/341-11599",
+      vrUrl:      "https://customvirtualcampus.eon-xr.com/i/936/courses/341-11599"
     },
     immersive: {
       note:
@@ -137,8 +137,8 @@ window.SCSU_DATA.courses = [
     // a Quest user clicking Begin Course will fall back to the
     // desktop URL (still opens in the Quest browser, no VR scene).
     eon: {
-      desktopUrl: "https://login.eonreality.com/?redirect=/courses/nrm-431",
-      vrUrl:      "https://login.eonreality.com/vr?redirect=/courses/nrm-431"
+      desktopUrl: "https://customvirtualcampus.eon-xr.com/i/936/courses/325-11396",
+      vrUrl:      "https://customvirtualcampus.eon-xr.com/i/936/courses/325-11396"
     },
     immersive: {
       note:
