@@ -74,7 +74,7 @@ const TREEDIS_MAP_DESKTOP = {
 
   "oliver c. dawson stadium": {
     sweepId: "a69zbymdc8gnx3nzhy7nm3rna",
-    rotation: { x: 22.734823718541545, y: -89.50120756964095 }
+    rotation: { x: 0.0, y: -89.50120756964095 }
   },
 
   "s-h-m memorial square": {
