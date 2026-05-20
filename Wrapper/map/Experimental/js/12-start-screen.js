@@ -56,6 +56,12 @@
   const navGotItBtn        = document.getElementById("navInstructionsGotIt");
   const navSuppressCheckbox = document.getElementById("navInstructionsSuppress");
   const navInstructionsSwitch = document.getElementById("burgerShowNavInstructions");
+  // Image wrapper inside the nav modal. Has data-mode="desktop"
+  // by default; we flip it to "xr" when the user is on a VR
+  // headset browser (detected via WebXR / user-agent) so the
+  // VR-specific instruction graphic is shown instead of the
+  // mouse-and-keyboard one.
+  const navInstructionsImage = document.getElementById("navInstructionsImage");
 
   if (!startScreen || !overlay || !card) {
     console.warn("[onboarding] required nodes missing — disabled");
@@ -660,11 +666,87 @@
      opted out. Single "Got it" button + "Don't show again"
      checkbox. -------------------------------------------- */
 
+  /* -- XR / VR detection ------------------------------------
+     Returns true when we have any reason to believe the
+     current browser is running on (or has access to) a VR
+     headset. We check two signals:
+
+       1. WebXR's navigator.xr.isSessionSupported('immersive-vr')
+          — the authoritative API, supported by the Meta Quest
+          Browser, Wolvic, Pico Browser, and Vision Pro Safari.
+       2. User-agent sniff for known headset browsers — a
+          fallback for cases where the page is loaded inside an
+          XR shell that hasn't promised the immersive-vr session
+          type (e.g. some Quest builds when no permission has
+          been granted yet).
+
+     The result is cached on first call. The detection is fully
+     async because isSessionSupported returns a Promise; the
+     cache is filled the first time showNavInstructions is
+     awaited or whenever detectXR() resolves at boot.
+     --------------------------------------------------------- */
+  let xrModeCached = null; // null = unknown, true/false = decided
+
+  function uaLooksLikeXR() {
+    try {
+      const ua = (navigator.userAgent || "") + " " +
+                 (navigator.platform || "");
+      // Quest Browser, Wolvic, Pico, Vive, Vision Pro identifiers.
+      return /OculusBrowser|Quest|Wolvic|Pico|HTC.*VR|VisionOS|XR/i
+        .test(ua);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function detectXR() {
+    if (xrModeCached !== null) return xrModeCached;
+    let isXR = false;
+    try {
+      if (navigator.xr &&
+          typeof navigator.xr.isSessionSupported === "function") {
+        // Wrap in Promise.resolve so a thrown sync error or a
+        // rejected promise both fall through to the UA fallback.
+        isXR = await Promise.resolve(
+          navigator.xr.isSessionSupported("immersive-vr")
+        ).catch(() => false);
+      }
+    } catch (_) { /* ignore — fall through to UA check */ }
+    if (!isXR) isXR = uaLooksLikeXR();
+    xrModeCached = !!isXR;
+    return xrModeCached;
+  }
+
+  // Kick off detection early so the result is usually cached
+  // before the user ever clicks Explore. If it's not ready in
+  // time, showNavInstructions still works — the image just
+  // updates a frame later when the promise resolves.
+  detectXR().then((isXR) => {
+    applyNavInstructionsMode(isXR);
+  });
+
+  function applyNavInstructionsMode(isXR) {
+    if (!navInstructionsImage) return;
+    navInstructionsImage.setAttribute(
+      "data-mode", isXR ? "xr" : "desktop"
+    );
+  }
+
   function showNavInstructions(opts) {
     if (!navModal) return false;
 
     const force = !!(opts && opts.force);
     if (!force && !readShowNavInstructions()) return false;
+
+    // Make sure the right image variant is shown. If detection
+    // hasn't finished yet, use whatever's currently cached
+    // (defaulting to desktop) and update once the promise
+    // resolves — the modal stays open, so the swap is seamless.
+    if (xrModeCached !== null) {
+      applyNavInstructionsMode(xrModeCached);
+    } else {
+      detectXR().then(applyNavInstructionsMode);
+    }
 
     syncPrefControls();
     navModal.setAttribute("aria-hidden", "false");
@@ -839,4 +921,3 @@ boot().catch((err) => {
     "Failed to initialise the map:<br><br><code>" +
     String(err && err.message || err) + "</code></div>";
 });
-
