@@ -80,13 +80,15 @@
 }
 
 /* Two-variant image swap. The .nav-instructions-image wrapper
-   holds both a desktop/mouse <img> and an XR/VR <img>; the JS
-   layer flips data-mode between "desktop" and "xr" based on
-   WebXR support detected at boot time. Only the matching
-   variant is rendered. */
-.nav-instructions-image .nav-instructions-img-xr      { display: none; }
-.nav-instructions-image[data-mode="xr"] .nav-instructions-img-desktop { display: none; }
-.nav-instructions-image[data-mode="xr"] .nav-instructions-img-xr      { display: block; }
+   holds both a desktop/mouse <img> and an XR/VR <img>. Which
+   one is shown is driven by the global `body.xr-mode` class set
+   by applyTreedisProfile() in 01-utils.js at boot — the same
+   signal the rest of the app uses to switch into VR mode. To
+   manually flip variants for testing on a regular browser, run
+   `document.body.classList.toggle('xr-mode')` in the console. */
+.nav-instructions-image .nav-instructions-img-xr { display: none; }
+body.xr-mode .nav-instructions-image .nav-instructions-img-desktop { display: none; }
+body.xr-mode .nav-instructions-image .nav-instructions-img-xr      { display: block; }
 .nav-instructions-fallback {
   font-family: var(--sans);
   font-size: 16px;

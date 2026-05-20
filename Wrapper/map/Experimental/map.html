@@ -892,10 +892,9 @@
          • assets/Icons/nav-instructions-xr.png (XR / VR headset)
        Both images already have white text on a transparent
        background — the dark #333333 modal background gives the
-       contrast. The JS layer (12-start-screen.js) sets
-       data-mode="xr" on the .nav-instructions-image wrapper when
-       it detects WebXR support or a VR headset user-agent, and
-       the CSS swaps which <img> is visible accordingly.
+       contrast. Which one is shown is driven by the existing
+       `body.xr-mode` class (set by applyTreedisProfile() in
+       01-utils.js at boot); see 10-nav-instructions.css.
        ============================================================ -->
   <div id="navInstructions" class="nav-instructions" role="dialog"
        aria-modal="true" aria-labelledby="navInstructionsTitle"
@@ -905,14 +904,13 @@
         Instructions for Navigating in 3D
       </h2>
 
-      <div class="nav-instructions-image" id="navInstructionsImage"
-           data-mode="desktop">
+      <div class="nav-instructions-image">
         <!-- Desktop / mouse version (default) -->
         <img class="nav-instructions-img nav-instructions-img-desktop"
              src="assets/Icons/nav-instructions.png"
              alt="Navigation instructions for 360° tour using a mouse and keyboard"
              onerror="this.style.display='none'; this.parentElement.querySelector('.nav-instructions-fallback').style.display='block';" />
-        <!-- XR / VR headset version (shown when data-mode="xr") -->
+        <!-- XR / VR headset version (shown when body.xr-mode is set) -->
         <img class="nav-instructions-img nav-instructions-img-xr"
              src="assets/Icons/nav-instructions-xr.png"
              alt="Navigation instructions for 360° tour using a VR headset"
