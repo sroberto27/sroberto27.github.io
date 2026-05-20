@@ -206,6 +206,25 @@
   display: none;
 }
 
+/* Toggle applied by renderDetails() in 06-details-panel.js when
+   the currently-selected building has no Treedis sweep configured.
+   Hides the Explore CTA (mobile inline + desktop footer), the
+   mobile inline VR-Enabled row, and the entire desktop/iPad
+   persistent footer bar — so buildings like Staley Hall and Davis
+   Hall render as info-only cards (tag, title, description, image)
+   without advertising an immersive view that doesn't exist.
+
+   `!important` is required because several of these elements
+   have explicit `display: flex` / `display: inline-flex` rules
+   elsewhere in this file and in the responsive overrides
+   (05-leaflet-responsive.css). Plain `display: none` without
+   `!important` would lose the specificity battle to those rules,
+   especially the mobile media query that re-enables the inline
+   variants. */
+.is-hidden-no-sweep {
+  display: none !important;
+}
+
 .details-tag {
   display: inline-block;
   font-size: 10px;

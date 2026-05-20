@@ -303,20 +303,26 @@ function renderDetails(feature, kind) {
   //                        an empty 85px black strip)
   const sweepAvailable = hasSweep(name);
 
+  // We use a dedicated CSS class (`.is-hidden-no-sweep`) rather
+  // than the HTML `hidden` attribute because several of these
+  // elements have explicit `display: flex` / `display: inline-flex`
+  // CSS rules that outrank `hidden`'s implicit `display: none`.
+  // The class carries `!important` to win that battle cleanly —
+  // see the matching rules in 04-map-details.css.
   if (el.exploreCta) {
     const entry = getTreedisEntry(name);
     el.exploreCta.dataset.locationName = name || "";
     el.exploreCta.dataset.sweepId = (entry && entry.sweepId) || "";
-    el.exploreCta.hidden = !sweepAvailable;
+    el.exploreCta.classList.toggle("is-hidden-no-sweep", !sweepAvailable);
   }
   if (el.exploreCtaFooter) {
-    el.exploreCtaFooter.hidden = !sweepAvailable;
+    el.exploreCtaFooter.classList.toggle("is-hidden-no-sweep", !sweepAvailable);
   }
   if (el.vrInline) {
-    el.vrInline.hidden = !sweepAvailable;
+    el.vrInline.classList.toggle("is-hidden-no-sweep", !sweepAvailable);
   }
   if (el.detailsFooter) {
-    el.detailsFooter.hidden = !sweepAvailable;
+    el.detailsFooter.classList.toggle("is-hidden-no-sweep", !sweepAvailable);
   }
   if (el.vrBtn) {
     const entry = getTreedisEntry(name);
