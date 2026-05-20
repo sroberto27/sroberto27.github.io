@@ -79,8 +79,8 @@ const TREEDIS_MAP_DESKTOP = {
 
   "s-h-m memorial square": {
     // Sheet calls the building-level sweep "Historical Plaza".
-    sweepId: "nhyxqi32uey2ix9sp3zhxwm4c",
-    rotation: { x: -5.7041985820700125, y: -74.48094044330865 }
+    sweepId: "pfx40p9qnu4ibcpk6zkt2xdta",
+    rotation: { x: -10.066993209030864, y: -60.01572577915264 }
   },
 
   "olar demo farm": {
@@ -253,8 +253,8 @@ const TREEDIS_MAP_VR = {
 
   "s-h-m memorial square": {
     // Sheet calls the building-level sweep "Historical Plaza".
-    sweepId: "nhyxqi32uey2ix9sp3zhxwm4c",
-    rotation: { x: -5.478315845629449, y: -78.43629994638431 }
+    sweepId: "pfx40p9qnu4ibcpk6zkt2xdta",
+    rotation: { x: -6.13003803406695, y: -61.000306844200416 }
   },
 
   "olar demo farm": {
