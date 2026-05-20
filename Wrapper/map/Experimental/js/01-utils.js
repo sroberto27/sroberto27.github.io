@@ -329,6 +329,17 @@ function getTreedisEntry(name) {
   };
 }
 
+/* True when the location has a usable Treedis sweep configured.
+   Drives whether the details panel shows the Explore CTA and
+   VR-Enabled controls — locations without a sweep have no
+   immersive view to launch, so those controls would mislead.
+   Buildings without a sweep get a quiet info-only details
+   panel (tag, title, description, image) instead. */
+function hasSweep(name) {
+  const entry = getTreedisEntry(name);
+  return !!(entry && entry.sweepId);
+}
+
 function escapeHTML(str) {
   return String(str)
     .replace(/&/g, "&amp;")
@@ -337,4 +348,3 @@ function escapeHTML(str) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
-

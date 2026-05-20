@@ -90,9 +90,18 @@ const el = {
 
 
   /* Explore CTA inside the metadata panel — used to launch
-     the street view for the currently-selected location.    */
+     the street view for the currently-selected location.
+     `exploreCta`       — mobile inline button (inside scroll flow)
+     `exploreCtaFooter` — desktop/iPad persistent footer button
+     `vrInline`         — mobile inline VR-Enabled row
+     `detailsFooter`    — desktop/iPad persistent footer wrapper
+                          (collapses entirely when the building
+                          has no Treedis sweep configured)
+     `vrBtn`            — legacy hidden button JS still binds to */
   exploreCta:        $("exploreCta"),
   exploreCtaFooter:  $("exploreCtaFooter"),
+  detailsFooter:     document.querySelector(".details-footer"),
+  vrInline:          document.querySelector(".details-vr-inline"),
   vrBtn:             $("vrBtn"),
 
   metabarSearch:   $("metabarSearch"),
@@ -223,4 +232,3 @@ function saveAlign(a) {
   try { localStorage.setItem(ALIGN_KEY, JSON.stringify(a)); } catch (_) {}
 }
 let align = loadAlign();
-

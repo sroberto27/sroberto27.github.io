@@ -284,24 +284,39 @@ function renderDetails(feature, kind) {
   // Annotate the Explore CTA with the current location so the
   // single button click handler (wired once, further down) knows
   // where to navigate.
+  //
+  // Visibility rule: both the Explore CTA and the VR-Enabled
+  // controls are shown ONLY when this location has a real Treedis
+  // sweep configured (see hasSweep() / treedis-sweeps.js).
+  // Buildings without a sweep (e.g. Staley Hall, most academic
+  // halls that haven't been captured yet) shouldn't advertise an
+  // immersive view that doesn't exist — the panel quietly drops
+  // both the red CTA and the VR row, becoming an info-only card.
+  //
+  // We toggle four elements so both layouts (mobile inline +
+  // desktop/iPad persistent footer) stay in sync:
+  //   #exploreCta        — mobile inline Explore button
+  //   #exploreCtaFooter  — desktop/iPad footer Explore button
+  //   .details-vr-inline — mobile inline VR-Enabled row
+  //   .details-footer    — entire desktop/iPad footer bar
+  //                        (collapses cleanly instead of leaving
+  //                        an empty 85px black strip)
+  const sweepAvailable = hasSweep(name);
+
   if (el.exploreCta) {
     const entry = getTreedisEntry(name);
     el.exploreCta.dataset.locationName = name || "";
     el.exploreCta.dataset.sweepId = (entry && entry.sweepId) || "";
-    // Keep the button enabled even without a sweep so users can
-    // still open the viewer at its current position; the handler
-    // logs a warning for missing data.
-    el.exploreCta.classList.toggle(
-      "is-pending", !(entry && entry.sweepId)
-    );
-    // Mirror the pending-state visual onto the desktop/iPad
-    // persistent footer button so it stays in sync with the
-    // canonical #exploreCta inside the scrolling content area.
-    if (el.exploreCtaFooter) {
-      el.exploreCtaFooter.classList.toggle(
-        "is-pending", !(entry && entry.sweepId)
-      );
-    }
+    el.exploreCta.hidden = !sweepAvailable;
+  }
+  if (el.exploreCtaFooter) {
+    el.exploreCtaFooter.hidden = !sweepAvailable;
+  }
+  if (el.vrInline) {
+    el.vrInline.hidden = !sweepAvailable;
+  }
+  if (el.detailsFooter) {
+    el.detailsFooter.hidden = !sweepAvailable;
   }
   if (el.vrBtn) {
     const entry = getTreedisEntry(name);
