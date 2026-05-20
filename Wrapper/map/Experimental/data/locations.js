@@ -88,8 +88,8 @@ window.CAMPUS_CONFIG.descriptionMap = {
     "University, dedicated in 2022, honors the three victims of the 1968 " +
     "Orangeburg Massacre.",
   "nance hall":
-    "Home to the College of Agriculture and the Mathematics & Science departments" +
-    "Nance Hall hosts several of the USDA-aligned laboratory" +
+    "Home to the College of Agriculture and the Mathematics & Science departments " +
+    "Nance Hall hosts several of the USDA-aligned laboratory " +
     "spaces used in the NRM curriculum.",
   "oliver c. dawson stadium":
     "Home of the SC State Bulldogs football and women's soccer teams. " +
