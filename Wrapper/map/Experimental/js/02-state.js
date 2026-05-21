@@ -42,6 +42,10 @@ const el = {
   locationsToggle:    $("locationsToggle"),
   locationsBackdrop:  $("locationsBackdrop"),
 
+  // All-tab sort control (Alphabetical / Department)
+  locSortAlpha:       $("locSortAlpha"),
+  locSortDept:        $("locSortDept"),
+
   details:         $("details"),
   detailsHandle:   $("detailsHandle"),
   detailsClose:    $("detailsClose"),

@@ -262,6 +262,23 @@
           <span id="locationsCount">0</span> locations to explore.
         </div>
 
+        <!-- Sort control — visible only when the All tab is active.
+             Pure-CSS toggle using radio inputs in the same pattern
+             as the Featured/All tabs above. The JS listens for
+             `change` on these inputs to re-render the All list
+             in the chosen order. -->
+        <div class="loc-sort" id="locSort" role="radiogroup"
+             aria-label="Sort all locations by">
+          <input type="radio" name="locSort" id="locSortAlpha"
+                 class="loc-sort-input" checked />
+          <input type="radio" name="locSort" id="locSortDept"
+                 class="loc-sort-input" />
+          <span class="loc-sort-label">Sort results by:</span>
+          <label for="locSortAlpha" class="loc-sort-opt">Alphabetical</label>
+          <span class="loc-sort-dot" aria-hidden="true">•</span>
+          <label for="locSortDept" class="loc-sort-opt">Department</label>
+        </div>
+
         <!-- Featured list (tour stops). The existing JS owns this. -->
         <ul class="locations-list locations-list-featured"
             id="locationsList" role="listbox"

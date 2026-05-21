@@ -276,6 +276,87 @@
   flex-shrink: 0;
 }
 
+/* ---- All-tab sort control ----------------------------------
+   "Sort results by: Alphabetical • Department" row that sits
+   between the search field and the All list. Pure-CSS active
+   state, matching the Featured/All tab pattern above: the
+   selected option is white + 600 weight, the other is muted.
+   Hidden by default — only shown while the All tab is active.
+
+   The JS in 09-sidebar-search.js listens on the inputs to
+   re-render #allLocationsList in the chosen order.            */
+.loc-sort {
+  display: none;                 /* shown only on the All tab */
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0 var(--gutter) 12px;
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--on-dark-muted);
+  letter-spacing: .02em;
+}
+
+/* Show the sort row only when the All tab is checked. We use
+   the same :has() pattern that powers the list visibility
+   toggle, with a non-:has() fallback for old browsers below. */
+.locations:has(#locTabAll:checked) .loc-sort { display: flex; }
+
+.loc-sort-input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+}
+
+.loc-sort-label {
+  color: var(--on-dark-muted);
+  white-space: nowrap;
+}
+
+.loc-sort-opt {
+  color: var(--on-dark-muted);
+  cursor: pointer;
+  font-weight: 500;
+  transition: color .14s;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+.loc-sort-opt:hover { color: var(--on-dark); }
+
+/* Active option — white + slightly heavier weight, matching
+   the "Alphabetical" treatment in the Figma reference. */
+#locSortAlpha:checked ~ .loc-sort-opt[for="locSortAlpha"],
+#locSortDept:checked  ~ .loc-sort-opt[for="locSortDept"] {
+  color: var(--on-dark);
+  font-weight: 600;
+}
+
+.loc-sort-dot {
+  color: var(--on-dark-faint, var(--on-dark-muted));
+  font-size: 10px;
+  line-height: 1;
+}
+
+/* Department-mode section headers inside the All list — small
+   uppercase captions above each group of buildings (e.g.
+   "ADMINISTRATION", "COLLEGE OF AGRICULTURE"). Designed to
+   read at the same weight as `.locations-meta` so the visual
+   rhythm of the sidebar stays consistent. */
+.locations-group-h {
+  list-style: none;
+  font-size: 11px;
+  letter-spacing: .14em;
+  font-weight: 600;
+  color: var(--on-dark-muted);
+  text-transform: uppercase;
+  padding: 10px 0 6px;
+  margin: 0;
+}
+.locations-group-h:first-child { padding-top: 0; }
+
 /* ---- Location lists ---- */
 .locations-list {
   list-style: none;

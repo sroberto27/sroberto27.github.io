@@ -242,7 +242,19 @@ function renderDetails(feature, kind) {
   }
 
   el.detailsTitle.textContent = name || "—";
-  el.detailsSub.textContent   = getCategory(name) || "—";
+
+  /* Subtitle under the building name shows the department(s)
+     occupying the location — per the Figma metadata panel (e.g.
+     "Mathematics & Science; College of Agriculture"). When the
+     location has no departments configured (open spaces,
+     historic shells), we fall back to the category so the row
+     never reads as an empty line. The category itself still
+     appears in the kicker tag above the title. */
+  const depts = getDepartments(name);
+  el.detailsSub.textContent = depts.length
+    ? depts.join("; ")
+    : (getCategory(name) || "—");
+
   el.detailsBody.textContent  = getDescription(name);
 
   /* Insert (or remove) a small inline notice right above the

@@ -155,19 +155,26 @@ function renderAllLocationsList() {
     seen.set(key, { name, layer });
   });
 
-  // Sort alphabetically for the All list — the Featured tab is
-  // intentionally ordered by tour sequence, but "All" reads
-  // better as an alphabetical reference.
-  const items = Array.from(seen.values())
-                     .sort((a, b) => a.name.localeCompare(b.name));
-
-  if (!items.length) {
+  if (!seen.size) {
     el.allLocationsList.innerHTML =
       `<li class="locations-empty">No buildings loaded.</li>`;
     return;
   }
 
-  const rows = items.map((it) => {
+  // Which sort mode is currently active? Defaults to alphabetical
+  // — matches the radio's `checked` default in map.html and
+  // mirrors the Figma reference where Alphabetical is the active
+  // option on first paint.
+  const byDept = !!(el.locSortDept && el.locSortDept.checked);
+
+  // Alphabetical: a single flat list, A→Z by name. The Featured
+  // tab is intentionally ordered by tour sequence; "All" reads
+  // better as a reference index here.
+  const items = Array.from(seen.values())
+                     .sort((a, b) => a.name.localeCompare(b.name));
+
+  // Shared row template — used by both sort modes.
+  const rowHTML = (it) => {
     const cat = getCategory(it.name);
     return `
       <li class="location-row" role="option"
@@ -179,9 +186,57 @@ function renderAllLocationsList() {
         <span class="location-chev">›</span>
       </li>
     `;
-  });
+  };
 
-  el.allLocationsList.innerHTML = rows.join("");
+  let html;
+
+  if (!byDept) {
+    html = items.map(rowHTML).join("");
+  } else {
+    // Department mode: group each building under every
+    // department it belongs to. A building with N departments
+    // appears in N groups (e.g. Nance Hall under both
+    // "Mathematics & Science" and "College of Agriculture") —
+    // this matches user expectation when scanning by program.
+    //
+    // Buildings with NO departments configured are bucketed
+    // under "OTHER" at the bottom so they remain reachable from
+    // this view rather than disappearing entirely.
+    const groups = new Map();           // groupName -> [items]
+    const ensure = (g) => {
+      if (!groups.has(g)) groups.set(g, []);
+      return groups.get(g);
+    };
+
+    items.forEach((it) => {
+      const depts = getDepartments(it.name);
+      if (!depts.length) {
+        ensure("Other").push(it);
+      } else {
+        depts.forEach((d) => ensure(d).push(it));
+      }
+    });
+
+    // Sort group names alphabetically, then pin "Other" last so
+    // department groups read in a predictable order.
+    const groupNames = Array.from(groups.keys()).sort((a, b) => {
+      if (a === "Other") return  1;
+      if (b === "Other") return -1;
+      return a.localeCompare(b);
+    });
+
+    html = groupNames.map((g) => {
+      const headerHTML =
+        `<li class="locations-group-h" role="presentation">` +
+        `${g.toUpperCase()}</li>`;
+      const rows = groups.get(g)
+                         .sort((a, b) => a.name.localeCompare(b.name))
+                         .map(rowHTML).join("");
+      return headerHTML + rows;
+    }).join("");
+  }
+
+  el.allLocationsList.innerHTML = html;
 
   el.allLocationsList.querySelectorAll(".location-row").forEach((row) => {
     row.addEventListener("click", () => {
@@ -199,6 +254,17 @@ function renderAllLocationsList() {
       selectFeature(item.layer, "building", { focus: true });
     });
   });
+}
+
+/* Re-render the All list when the user toggles the sort radio.
+   Bound once at module load — the inputs may not exist on very
+   old saved DOM but the optional-chaining guard keeps this
+   harmless if so. */
+if (el.locSortAlpha) {
+  el.locSortAlpha.addEventListener("change", renderAllLocationsList);
+}
+if (el.locSortDept) {
+  el.locSortDept.addEventListener("change", renderAllLocationsList);
 }
 
 /* -----------------------------------------------------------
