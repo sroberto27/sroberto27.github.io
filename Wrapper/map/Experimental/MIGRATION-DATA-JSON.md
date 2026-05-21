@@ -1,4 +1,4 @@
-# SCSU Virtual Campus — Data → JSON migration
+# SCSU Virtual Campus — Data → JSON migration 
 
 This migration converts the three editorial-content data files
 from JavaScript shims (`data/locations.js`, `data/treedis-sweeps.js`,
