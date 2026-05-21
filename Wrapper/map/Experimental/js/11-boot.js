@@ -19,13 +19,29 @@ async function tryFetchGeoJSON(url) {
   }
 }
 
-/** Load both datasets. Tries fetch first (works when the
- *  page is served over http/https) and falls back to the
- *  window.SCSU_DATA shim (works when opened from disk). */
+/** Load every dataset the app needs: geometry (GeoJSON) and
+ *  per-location content (locations.json, treedis-sweeps.json,
+ *  courses.json). All four fetches run in parallel; each one
+ *  silently falls back to the corresponding data/*.js shim
+ *  populated at <script> parse time when its fetch fails (404,
+ *  CORS, file:// origin, etc.). loadDataJSON() — defined in
+ *  js/00-data-adapter.js — is responsible for the content
+ *  fetches and for rebuilding the legacy flat maps
+ *  (config.descriptionMap, config.treedisMaps, …) so the rest
+ *  of the app doesn't need to know JSON is involved. */
 async function loadAllData() {
-  const [bFetch, tFetch] = await Promise.all([
+  // Kick off all four fetches in parallel. Geometry stays here
+  // because boot() needs the FeatureCollections to build Leaflet
+  // layers; content lives on window.CAMPUS_CONFIG / SCSU_DATA
+  // so the adapter handles it side-effectfully.
+  const contentP = (typeof loadDataJSON === "function")
+    ? loadDataJSON()
+    : Promise.resolve(null);
+
+  const [bFetch, tFetch, contentReport] = await Promise.all([
     tryFetchGeoJSON(config.dataFiles?.buildings || "data/buildings.geojson"),
-    tryFetchGeoJSON(config.dataFiles?.tours     || "data/tours.geojson")
+    tryFetchGeoJSON(config.dataFiles?.tours     || "data/tours.geojson"),
+    contentP
   ]);
 
   const fallback = window.SCSU_DATA || {};
@@ -34,11 +50,17 @@ async function loadAllData() {
   const buildings = bFetch || fallback.buildings || empty;
   const tours     = tFetch || fallback.tours     || empty;
 
-  const source =
+  const geomSource =
     (bFetch && tFetch) ? "fetch (.geojson files)"
     : (bFetch || tFetch) ? "mixed (fetch + shim)"
     : "shim (window.SCSU_DATA)";
-  console.info(`[metaversity] data loaded via ${source}`);
+  console.info(`[metaversity] geometry loaded via ${geomSource}`);
+  if (contentReport) {
+    console.info(`[metaversity] content loaded: ` +
+      `locations=${contentReport.locations}, ` +
+      `sweeps=${contentReport.sweeps}, ` +
+      `courses=${contentReport.courses}`);
+  }
 
   return { buildings, tours };
 }

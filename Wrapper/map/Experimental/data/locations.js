@@ -1,6 +1,20 @@
 /* ============================================================
-   SCSU METAVERSITY — Per-location content
+   SCSU METAVERSITY — Per-location content (FALLBACK SHIM)
    ------------------------------------------------------------
+   ⚠️  EDITORS: this file is no longer the source of truth.
+   The canonical data lives in data/locations.json. This shim
+   is kept so the page still works when opened directly from
+   disk (file:// origin), where fetch() can't read JSON files.
+
+   When served over http/https, js/00-data-adapter.js fetches
+   data/locations.json and overwrites whatever this shim set,
+   so any edits made here are silently ignored in production.
+
+   To regenerate this file from the JSON, run:
+       node scripts/extract.js     (JSON → fresh shim)
+
+   --- legacy header continues below ---
+
    Loaded via <script>, like the other data/*.js files. Writes
    onto window.CAMPUS_CONFIG so app.js can keep reading these
    maps from `config.descriptionMap`, `config.imageMap`, etc.

@@ -84,7 +84,14 @@ window.CAMPUS_CONFIG = Object.assign(window.CAMPUS_CONFIG || {}, {
      ------------------------------------------------------- */
   dataFiles: {
     buildings: "data/buildings.geojson",
-    tours:     "data/tours.geojson"
+    tours:     "data/tours.geojson",
+    // Per-location content (CMS-shape JSON). When a CMS lands,
+    // these can be repointed at an API endpoint that returns the
+    // same JSON shape — the adapter in js/00-data-adapter.js is
+    // the only thing that knows what the shape looks like.
+    locations:     "data/locations.json",
+    treedisSweeps: "data/treedis-sweeps.json",
+    courses:       "data/courses.json"
   },
 
   /* -- Tour configuration ---------------------------------- */

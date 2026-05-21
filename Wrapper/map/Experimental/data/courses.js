@@ -1,6 +1,20 @@
 /* ============================================================
-   SCSU METAVERSITY — Course catalog (Learn mode)
+   SCSU METAVERSITY — Course catalog (Learn mode) (FALLBACK SHIM)
    ------------------------------------------------------------
+   ⚠️  EDITORS: this file is no longer the source of truth.
+   The canonical data lives in data/courses.json. This shim is
+   kept so the page still works when opened directly from disk
+   (file:// origin), where fetch() can't read JSON files.
+
+   When served over http/https, js/00-data-adapter.js fetches
+   data/courses.json and overwrites whatever this shim set, so
+   any edits made here are silently ignored in production.
+
+   To regenerate this file from the JSON, run:
+       node scripts/extract.js     (JSON → fresh shim)
+
+   --- legacy header continues below ---
+
    Loaded via <script>, just like data/buildings.js — assigns
    into the global SCSU_DATA namespace so app.js can read it
    without a fetch (works over file:// as well as http://).
