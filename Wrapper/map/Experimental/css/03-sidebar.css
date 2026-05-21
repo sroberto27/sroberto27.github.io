@@ -239,6 +239,26 @@
 .search-result .tag.zone     { color: var(--on-dark); }
 .search-result .tag.building { color: var(--on-dark-muted); }
 
+/* Two-line search-result layout: building name on top, an
+   optional department subtitle underneath when the search hit
+   on departmentMap rather than the building name. The
+   `.search-result-main` block sits in the first grid column;
+   the tag pill stays in the second. */
+.search-result-main {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.search-result-sub {
+  font-size: 10px;
+  letter-spacing: .04em;
+  color: var(--on-dark-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .search-empty {
   padding: 14px;
   color: var(--on-dark-muted);

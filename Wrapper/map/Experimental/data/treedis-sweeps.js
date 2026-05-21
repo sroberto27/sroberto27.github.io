@@ -30,6 +30,15 @@
    Sub-locations (rooms, floors, etc.) use a `parentName`
    so the street view UI can show the right building title.
 
+   `parentName` is matched (case-insensitively) against the
+   tour-stop name in tours.geojson — when a sub-location's
+   sweep becomes active, syncWrapperToSweep() looks up the
+   tour stop whose `cleanName(name).toLowerCase()` equals
+   `parentName.toLowerCase()`. It MUST therefore match the
+   exact tour-stop name (e.g. "Crawford-Zimmerman Building",
+   not "Crawford-Zimmerman"); otherwise the tour bar won't
+   update when the user navigates inside Treedis.
+
    `rotation` is forwarded to Treedis's `Navigate` command as
    `{ x, y }` (x = pitch, y = yaw). The values below were
    sourced from the `&x=…&y=…` parameters in the SCSU_Links
@@ -49,6 +58,13 @@
    desktop profile, so any code path we miss falls back to
    the desktop sweeps rather than erroring. app.js repoints
    the alias to the VR profile at boot when XR is detected.
+
+   ─── v2 GeoJSON name changes ──────────────────────────────
+   The v2 buildings + tours GeoJSON renamed two tour stops:
+     • "Crawford Zimmerman"      → "Crawford-Zimmerman Building"
+     • "S-H-M Memorial Square"   → "SHM Memorial Square"
+   Both the keys below and the `parentName` strings for their
+   sub-locations have been updated to match.
    ============================================================ */
 window.CAMPUS_CONFIG = window.CAMPUS_CONFIG || {};
 
@@ -62,7 +78,7 @@ const TREEDIS_MAP_DESKTOP = {
     rotation: { x: 6.575815542193622, y: -95.18049943080082 }
   },
 
-  "crawford zimmerman": {
+  "crawford-zimmerman building": {
     sweepId: "dpbd0zqf00zr1qg5wqumx6p2c",
     rotation: { x: -3.8674802731657634, y: -114.43023263065089 }
   },
@@ -77,7 +93,7 @@ const TREEDIS_MAP_DESKTOP = {
     rotation: { x: 0.0, y: -89.50120756964095 }
   },
 
-  "s-h-m memorial square": {
+  "shm memorial square": {
     // Sheet calls the building-level sweep "Historical Plaza".
     sweepId: "pfx40p9qnu4ibcpk6zkt2xdta",
     rotation: { x: -10.066993209030864, y: -60.01572577915264 }
@@ -139,9 +155,11 @@ const TREEDIS_MAP_DESKTOP = {
   },
 
   /* ---- Crawford-Zimmerman sub-locations --- */
+  /* parentName must match the v2 tour stop name exactly so
+     syncWrapperToSweep() can find the parent in tourStops. */
   "crawford zimmerman 1st floor": {
     sweepId: "n1xw6qb7rekq3kim4dnsss68c",
-    parentName: "Crawford-Zimmerman",
+    parentName: "Crawford-Zimmerman Building",
     rotation: { x: -19.292573028798614, y: -103.48085806032049 }
   },
 
@@ -150,25 +168,25 @@ const TREEDIS_MAP_DESKTOP = {
     //     labels this sweep "Store". Keeping both keys so either
     //     alias resolves.
     sweepId: "n1xw6qb7rekq3kim4dnsss68c",
-    parentName: "Crawford-Zimmerman",
+    parentName: "Crawford-Zimmerman Building",
     rotation: { x: -19.292573028798614, y: -103.48085806032049 }
   },
 
   "office of student financial services": {
     sweepId: "w71ztkwx17guq5zwx8yk60ctb",
-    parentName: "Crawford-Zimmerman",
+    parentName: "Crawford-Zimmerman Building",
     rotation: { x: -13.846676418385572, y: -88.2009725696489 }
   },
 
   "facilities management & operations": {
     sweepId: "w71ztkwx17guq5zwx8yk60ctb",
-    parentName: "Crawford-Zimmerman",
+    parentName: "Crawford-Zimmerman Building",
     rotation: { x: -13.846676418385572, y: -88.2009725696489 }
   },
 
   "admissions & financial aid": {
     sweepId: "br7rxxkae3inaq9cuuw2cs12a",
-    parentName: "Crawford-Zimmerman",
+    parentName: "Crawford-Zimmerman Building",
     rotation: { x: -12.838917584364898, y: -131.22476860488183 }
   },
 
@@ -189,13 +207,13 @@ const TREEDIS_MAP_DESKTOP = {
     //     'Historical Plaza' sweep doubles as the historical-marker
     //     sub-location.
     sweepId: "nhyxqi32uey2ix9sp3zhxwm4c",
-    parentName: "S-H-M Memorial Square",
+    parentName: "SHM Memorial Square",
     rotation: { x: -5.7041985820700125, y: -74.48094044330865 }
   },
 
   "bronze busts/monuments": {
     sweepId: "mghxr3x2p305y5unaqk6e30ua",
-    parentName: "S-H-M Memorial Square",
+    parentName: "SHM Memorial Square",
     rotation: { x: -4.287741634450163, y: -56.26992221819853 }
   },
 
@@ -236,7 +254,7 @@ const TREEDIS_MAP_VR = {
     rotation: { x: 5.556788914278276, y: -76.99676497350086 }
   },
 
-  "crawford zimmerman": {
+  "crawford-zimmerman building": {
     sweepId: "dpbd0zqf00zr1qg5wqumx6p2c",
     rotation: { x: -0.025693314832779427, y: -106.19951589595766 }
   },
@@ -251,7 +269,7 @@ const TREEDIS_MAP_VR = {
     rotation: { x: 22.621086451514035, y: -89.67573758863338 }
   },
 
-  "s-h-m memorial square": {
+  "shm memorial square": {
     // Sheet calls the building-level sweep "Historical Plaza".
     sweepId: "pfx40p9qnu4ibcpk6zkt2xdta",
     rotation: { x: -6.13003803406695, y: -61.000306844200416 }
@@ -310,30 +328,30 @@ const TREEDIS_MAP_VR = {
   /* ---- Crawford-Zimmerman sub-locations --- */
   "crawford zimmerman 1st floor": {
     sweepId: "n1xw6qb7rekq3kim4dnsss68c",
-    parentName: "Crawford-Zimmerman",
+    parentName: "Crawford-Zimmerman Building",
     rotation: { x: -10.778452827629257, y: -116.97112289300262 }
   },
 
   "campus bookstore": {
     sweepId: "n1xw6qb7rekq3kim4dnsss68c",
-    parentName: "Crawford-Zimmerman",
+    parentName: "Crawford-Zimmerman Building",
     rotation: { x: -10.778452827629257, y: -116.97112289300262 }
   },
 
   "office of student financial services": {
     sweepId: "w71ztkwx17guq5zwx8yk60ctb",
-    parentName: "Crawford-Zimmerman",
+    parentName: "Crawford-Zimmerman Building",
     rotation: { x: -9.543466825753555, y: -71.00390733365607 }
   },
 
   "facilities management & operations": {
     sweepId: null,
-    parentName: "Crawford-Zimmerman"
+    parentName: "Crawford-Zimmerman Building"
   },
 
   "admissions & financial aid": {
     sweepId: "br7rxxkae3inaq9cuuw2cs12a",
-    parentName: "Crawford-Zimmerman",
+    parentName: "Crawford-Zimmerman Building",
     rotation: { x: -9.178350717274991, y: -128.72651147955688 }
   },
 
@@ -352,13 +370,13 @@ const TREEDIS_MAP_VR = {
   "historical marker": {
     // Same sweep as the building-level entry.
     sweepId: "nhyxqi32uey2ix9sp3zhxwm4c",
-    parentName: "S-H-M Memorial Square",
+    parentName: "SHM Memorial Square",
     rotation: { x: -5.478315845629449, y: -78.43629994638431 }
   },
 
   "bronze busts/monuments": {
     sweepId: "mghxr3x2p305y5unaqk6e30ua",
-    parentName: "S-H-M Memorial Square",
+    parentName: "SHM Memorial Square",
     rotation: { x: -2.7516061341687155, y: -57.567059361179396 }
   },
 

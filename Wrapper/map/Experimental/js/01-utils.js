@@ -279,6 +279,19 @@ function getHappensHere(name) {
   return Array.isArray(list) ? list : [];
 }
 
+/* Look up the list of departments occupying a location.
+   Returns an array (possibly empty) so callers can iterate
+   without null-checks. Used by renderSearch() in
+   09-sidebar-search.js to surface buildings whose department
+   list contains the query term — e.g. typing "rotc" finds
+   Soldiers' Hall, "engineering" finds Bethea Hall, etc. */
+function getDepartments(name) {
+  if (!name) return [];
+  const k = name.toLowerCase();
+  const list = (config.departmentMap || {})[k];
+  return Array.isArray(list) ? list : [];
+}
+
 function getImage(name) {
   if (!name) return "";
   const k = name.toLowerCase();

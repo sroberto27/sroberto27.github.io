@@ -437,9 +437,36 @@ refreshSearchClear();
      const term = q.trim().toLowerCase();
      if (!term) { el.searchResults.hidden = true; el.searchResults.innerHTML = ""; return; }
 
-     const filtered = allFeatures.filter((x) => {
+     // Two-pass filter: name matches rank above department matches
+     // so typing "moss" still surfaces Moss Hall before any building
+     // whose department string happens to contain "moss". We record
+     // why each row matched so the result row can show the
+     // department under the building name when that's what hit.
+     const filtered = [];
+     for (const x of allFeatures) {
        const n = cleanName(x.props.name).toLowerCase();
-       return n && n.includes(term);
+       if (!n) continue;
+
+       if (n.includes(term)) {
+         filtered.push({ ...x, matchKind: "name", matchedDept: null });
+         continue;
+       }
+
+       const depts = getDepartments(cleanName(x.props.name));
+       const hit = depts.find((d) => d.toLowerCase().includes(term));
+       if (hit) {
+         filtered.push({ ...x, matchKind: "dept", matchedDept: hit });
+       }
+     }
+
+     // Sort: name matches first, then department matches. Within
+     // each group, preserve the original allFeatures order
+     // (which is buildings-then-tours from boot.js, so featured
+     // tour stops sort beneath the buildings they live in — same
+     // behavior as before for the name-match case).
+     filtered.sort((a, b) => {
+       if (a.matchKind === b.matchKind) return 0;
+       return a.matchKind === "name" ? -1 : 1;
      });
 
      const byName = new Map();
@@ -450,8 +477,14 @@ refreshSearchClear();
          byName.set(key, m);
          continue;
        }
+       // Name match beats dept match for the same building.
+       if (existing.matchKind === "dept" && m.matchKind === "name") {
+         byName.set(key, m);
+         continue;
+       }
        // Tour beats building when names collide.
-       if (existing.kind !== "tour" && m.kind === "tour") {
+       if (existing.kind !== "tour" && m.kind === "tour" &&
+           existing.matchKind === m.matchKind) {
          byName.set(key, m);
        }
      }
@@ -466,12 +499,23 @@ refreshSearchClear();
      }
 
      el.searchResults.hidden = false;
-     el.searchResults.innerHTML = matches.map((m, i) => `
-       <div class="search-result" data-i="${i}" role="option">
-         <span>${cleanName(m.props.name)}</span>
-         <span class="tag ${m.kind}">${m.kind}</span>
-       </div>
-     `).join("");
+     el.searchResults.innerHTML = matches.map((m, i) => {
+       // When the hit was on a department, show that department
+       // under the building name as a small subtitle so the user
+       // sees why this result appeared.
+       const subtitle = m.matchKind === "dept" && m.matchedDept
+         ? `<div class="search-result-sub">${escapeHTML(m.matchedDept)}</div>`
+         : "";
+       return `
+         <div class="search-result" data-i="${i}" role="option">
+           <div class="search-result-main">
+             <span>${cleanName(m.props.name)}</span>
+             ${subtitle}
+           </div>
+           <span class="tag ${m.kind}">${m.kind}</span>
+         </div>
+       `;
+     }).join("");
 
      el.searchResults.querySelectorAll(".search-result").forEach((node) => {
        node.addEventListener("click", () => {
