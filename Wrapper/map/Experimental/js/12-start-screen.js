@@ -133,10 +133,9 @@
         id: "left-sidebar",
         desktop: {
           title: "Locations Sidebar",
-          body: "Browse all campus locations here. Use the search bar to find " +
-                "buildings or courses, switch between Featured and All to filter " +
-                "the list, and follow the Guided Tour at the bottom to step " +
-                "through key stops in order.",
+          body: "Browse all campus locations here. Search for buildings or " +
+                "courses and tap to find out more about them, or simply take " +
+                "a guided tour at bottom left. ",
           getRect: () => {
             const node = document.getElementById("locations");
             return node ? node.getBoundingClientRect() : null;
@@ -145,9 +144,9 @@
         },
         mobile: {
           title: "Locations Menu",
-          body: "Tap the Locations button to open the full list of campus " +
-                "stops. From there you can search, switch between Featured " +
-                "and All, and follow the Guided Tour in order.",
+          body: "Tap the Locations button to open the full list of all campus " +
+                "locations here. Search for buildings orcourses and tap to find " +
+                "out more about them, or simply take a guided tour at bottom left. ",
           getRect: () => {
             const node = document.getElementById("locationsToggle");
             return node ? node.getBoundingClientRect() : null;
@@ -158,12 +157,10 @@
       {
         id: "top-bar",
         desktop: {
-          title: "Top Navigation",
-          body:
-            "Toggle between Explore and Learn modes from the pill at the top " +
-            "of the screen. The menu icon on the right opens shortcuts, " +
-            "including this walkthrough — you can reopen it any time from " +
-            "“How to use”.",
+          title: "Experience Toggle",
+          body:"Choose Explore to discover SCSU or to find something specific; " +
+               "choose Learn to access all immersive coursework available to you.",
+
           getRect: () => {
             const node = document.querySelector(".metabar");
             return node ? node.getBoundingClientRect() : null;
@@ -171,11 +168,9 @@
           placement: "bottom"
         },
         mobile: {
-          title: "Top Navigation",
-          body:
-            "Switch between Explore and Learn from the pill at the top. " +
-            "Tap the menu icon for shortcuts, including this walkthrough " +
-            "(reopen it any time from “How to use”).",
+          title: "Experience Toggle",
+          body:"Choose Explore to discover SCSU or to find something specific; " +
+               "choose Learn to access all immersive coursework available to you.",
           getRect: () => {
             const node = document.querySelector(".metabar");
             return node ? node.getBoundingClientRect() : null;
@@ -187,10 +182,10 @@
         id: "right-panel",
         desktop: {
           title: "Location Details",
-          body: "When you select a building from the map, sidebar, search, or " +
-                "guided tour, its details appear here. Tap Explore to drop into " +
-                "an immersive street view (where available), and use the " +
-                "Explorable Locations list to jump to specific rooms or sub-areas.",
+          body: "Choose any location to see its details here. Tap Explore " +
+                "to drop into an immersive street view (where available). " +
+                "Explorable locations are shortcuts. ",
+
           getRect: () => {
             const node = document.getElementById("details");
             return node ? node.getBoundingClientRect() : null;
@@ -199,9 +194,9 @@
         },
         mobile: {
           title: "Location Details",
-          body: "When you pick a stop, its details slide up from the bottom. " +
-                "Drag the panel up for the full view — including the Explore " +
-                "button for street view and the list of rooms inside.",
+          body: "Choose any location to see its details here. Tap Explore " +
+                "to drop into an immersive street view (where available). " +
+                "Explorable locations are shortcuts. ",
           getRect: () => {
             const node = document.getElementById("details");
             return node ? node.getBoundingClientRect() : null;
