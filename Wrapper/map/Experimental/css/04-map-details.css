@@ -75,7 +75,7 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity .2s;
-  font-family: var(--mono);
+  font-family: var(--sans);
 }
 
 .shell.has-details .details {
@@ -149,7 +149,7 @@
   color: var(--on-dark);
   border: none;
   border-radius: 999px;
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 12.5px;
   font-weight: 600;
   letter-spacing: .05em;
@@ -165,7 +165,7 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 11px;
   color: var(--on-dark-muted);
   text-decoration: none;
@@ -262,7 +262,7 @@
   color: var(--on-dark);
   border: none;
   border-radius: 999px;
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 12.5px;
   font-weight: 600;
   letter-spacing: .05em;
@@ -304,7 +304,7 @@
 
 .details-image figcaption {
   position: relative;
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 11px;
   letter-spacing: .14em;
   font-weight: 600;
@@ -327,7 +327,7 @@
 .details-block { margin-bottom: 20px; }
 
 .details-block-h {
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 11px;
   letter-spacing: .18em;
   font-weight: 600;
@@ -344,7 +344,7 @@
 
 .chip {
   display: inline-block;
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 11px;
   letter-spacing: .06em;
   font-weight: 500;
@@ -402,7 +402,7 @@
   color: var(--on-dark);
   border: 1px solid var(--on-dark-line);
   border-radius: 999px;
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 11px;
   font-weight: 600;
   letter-spacing: .06em;
@@ -417,7 +417,7 @@
 }
 
 .vr-label {
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 11px;
   color: var(--on-dark-muted);
   display: inline-flex;
@@ -483,7 +483,7 @@ a.vr-link:active { transform: translateY(1px); }
 
 .tour-info {
   text-align: center;
-  font-family: var(--mono);
+  font-family: var(--sans);
   min-width: 0;
   color: var(--on-dark);
 }

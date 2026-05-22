@@ -14,7 +14,7 @@
   height: calc(var(--topbar-h) + env(safe-area-inset-top));
   background: var(--header-bg);
   color: var(--on-dark);
-  font-family: var(--mono);
+  font-family: var(--sans);
   position: relative;
   z-index: 1000;
 }
@@ -110,7 +110,7 @@
 
 .mode-btn {
   flex: 0 0 auto;
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: .04em;
@@ -155,7 +155,7 @@
   flex-direction: column;
   padding-top: env(safe-area-inset-top);
   box-shadow: -8px 0 24px rgba(0,0,0,.35);
-  font-family: var(--mono);
+  font-family: var(--sans);
   border-left: var(--border-light);
 }
 

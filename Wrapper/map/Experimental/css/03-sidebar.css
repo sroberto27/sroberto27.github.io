@@ -30,7 +30,7 @@
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
-  font-family: var(--mono);
+  font-family: var(--sans);
 }
 
 .locations-head {
@@ -104,7 +104,7 @@
 
 .loc-tab {
   padding: 8px 0 10px;
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 12px;
   font-weight: 600;
   letter-spacing: .14em;
@@ -169,7 +169,7 @@
   height: 38px;
   border: none;
   background: transparent;
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 12.5px;
   color: var(--on-dark);
   outline: none;
@@ -216,7 +216,7 @@
   gap: 10px;
   align-items: center;
   padding: 10px 12px;
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 12px;
   border-bottom: 1px solid var(--on-dark-line);
   cursor: pointer;
@@ -264,7 +264,7 @@
   color: var(--on-dark-muted);
   font-size: 12px;
   text-align: center;
-  font-family: var(--mono);
+  font-family: var(--sans);
 }
 
 .locations-meta {
@@ -292,7 +292,7 @@
   gap: 8px;
   padding: 0 var(--gutter) 12px;
   flex-shrink: 0;
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 12px;
   color: var(--on-dark-muted);
   letter-spacing: .02em;
@@ -438,7 +438,7 @@
 
 .location-chev {
   color: var(--brand-red);
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 18px;
   font-weight: 600;
   line-height: 1;
@@ -465,7 +465,7 @@
 /* Empty-state placeholder for the All tab while data loads */
 .locations-empty {
   padding: 24px var(--gutter);
-  font-family: var(--mono);
+  font-family: var(--sans);
   font-size: 12px;
   color: var(--on-dark-muted);
   text-align: center;
@@ -492,7 +492,7 @@
 
 .sidebar-tour .tour-info {
   text-align: center;
-  font-family: var(--mono);
+  font-family: var(--sans);
   min-width: 0;
   color: var(--on-dark);
 }

@@ -145,7 +145,7 @@
         mobile: {
           title: "Locations Menu",
           body: "Tap the Locations button to open the full list of all campus " +
-                "locations here. Search for buildings orcourses and tap to find " +
+                "locations here. Search for buildings or courses and tap to find " +
                 "out more about them, or simply take a guided tour at bottom left. ",
           getRect: () => {
             const node = document.getElementById("locationsToggle");
@@ -233,9 +233,12 @@
       return;
     }
 
-    // Inset the cutout slightly so the ring has visual breathing
-    // room without obscuring content beyond the actual target.
-    const pad = 6;
+    // No padding: the cutout hugs the target's actual bounds so
+    // the dim edges align cleanly with each panel (sidebar, top
+    // bar, details panel) rather than spilling onto neighbouring
+    // chrome. The ring itself is now invisible (see 08-start-
+    // coachmark.css) so any spill would have nothing to mask it.
+    const pad = 0;
     const x  = Math.max(0, rect.left   - pad);
     const y  = Math.max(0, rect.top    - pad);
     const w  = Math.min(vw - x, rect.width  + pad * 2);
@@ -377,8 +380,13 @@
 
     const isFirst = stepIndex === 0;
     const isLast  = stepIndex === STEPS.length - 1;
-    prevBtn.hidden = isFirst;
+    // Always show Previous so the "X of 3" counter stays centered
+    // (matches the Figma). On the first step it's disabled rather
+    // than hidden so it still occupies its grid cell.
+    prevBtn.hidden = false;
+    prevBtn.disabled = isFirst;
     nextBtn.hidden = false;
+    nextBtn.disabled = false;
     nextBtn.textContent = isLast ? "Finish" : "Next";
     nextBtn.classList.toggle("coachmark-nav-finish", isLast);
 

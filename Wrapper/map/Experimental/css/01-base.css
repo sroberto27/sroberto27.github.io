@@ -39,8 +39,16 @@
   --on-dark-line:   rgba(255,255,255,.10);
 
   /* ---------- Typography ---------- */
-  --mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace,
-          SFMono-Regular, Menlo, Consolas, monospace;
+  /* `--mono` previously resolved to JetBrains Mono. Per the updated
+     Figma direction, the UI should use Inter throughout — so the
+     token now aliases the same Inter stack as `--sans`. The name is
+     kept so the many existing `font-family: var(--mono)` rules
+     across the codebase don't need touching (anything that still
+     references the token now renders Inter automatically). The
+     JetBrains Mono webfont import has also been removed from
+     map.html so the font is no longer downloaded. */
+  --mono: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, system-ui, sans-serif;
   --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
           Roboto, system-ui, sans-serif;
   /* Minion (self-host via @font-face for production). EB Garamond is
