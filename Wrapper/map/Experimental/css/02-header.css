@@ -5,8 +5,21 @@
    a 4px brand-red flair line. Total chrome height ≈ 80px.
    =========================================================== */
 .metabar {
+  /* Three equal flexible columns so the middle column — which holds
+     the Explore/Learn pill — is mathematically centered in the
+     viewport regardless of how wide the brand block or right-side
+     actions get. The earlier `auto 1fr auto` layout let the brand
+     block consume as much room as it needed and the middle column
+     absorbed whatever was left, which meant the pill drifted to the
+     right whenever the brand was wider than the burger.
+
+     `minmax(0, 1fr)` on every column lets each side shrink past its
+     intrinsic content width if the viewport narrows — without this,
+     a long brand string would push the middle column off-center
+     again. The brand/actions children still hug their respective
+     edges via `min-width: 0` + `justify-self`. */
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: clamp(12px, 2vw, 28px);
   padding: 0 var(--gutter);                       /* 20px L/R per Figma */
