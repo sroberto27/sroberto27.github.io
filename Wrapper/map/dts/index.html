@@ -22,8 +22,11 @@
 
   <!-- ===================== TOP NAV (fixed) ===================== -->
   <header class="topbar" role="banner">
-    <!-- Logo + tagline stay constant throughout (per Figma note) -->
-    <a class="brand" href="#" id="brandHome" aria-label="Digital Twin Studios — home">
+    <!-- Logo + tagline stay constant throughout (per Figma note).
+         The logo is ALSO a menu item: it returns home and is
+         highlighted gold (like the pillars) when home is active. -->
+    <a class="brand" href="#" id="brandHome" data-nav="home"
+       aria-label="Digital Twin Studios — home">
       <span class="brand-mark" aria-hidden="true">
         <svg viewBox="0 0 40 24" width="40" height="24">
           <path d="M2 2 L18 12 L2 22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -67,22 +70,25 @@
           </p>
         </div>
 
-        <!-- Demo experience frame (NOT a static image) -->
-        <div class="demo-frame" id="demoFrame" role="button" tabindex="0"
-             aria-label="Open the digital twin demo experience">
+        <!-- Demo experience frame — the live Treedis experience is
+             embedded inline here at boot (no click required). The
+             "Try a Digital Twin" pill expands it into the full overlay. -->
+        <div class="demo-frame" id="demoFrame"
+             aria-label="Digital twin demo experience">
           <button class="demo-try" id="demoTry" type="button">Try a Digital Twin</button>
-          <div class="demo-stage">
-            <!-- Hidden pre-warm iframe lives here at boot; clicking
-                 expands the experience into the overlay below. -->
-            <div class="demo-placeholder" id="demoPlaceholder">
-              <span class="demo-mark" aria-hidden="true">
-                <svg viewBox="0 0 40 24" width="56" height="34">
-                  <path d="M2 2 L18 12 L2 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M38 2 L22 12 L38 22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </span>
-              <span class="demo-hint">Interactive Treedis demo experience</span>
-              <span class="demo-cta-row">Click to enter the walkthrough →</span>
+          <button class="demo-expand" id="demoExpand" type="button"
+                  aria-label="Expand experience to full screen">
+            <svg viewBox="0 0 24 24" width="18" height="18">
+              <path d="M4 10V4h6M20 14v6h-6M20 4h-6M4 20h6" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div class="demo-stage" id="demoStage">
+            <!-- The live iframe is injected here by script.js at boot.
+                 A loading veil shows until Treedis reports TourReady. -->
+            <div class="demo-loading" id="demoLoading">
+              <div class="spinner" aria-hidden="true"></div>
+              <span class="demo-loading-text" id="demoLoadingText">Loading experience…</span>
             </div>
           </div>
         </div>
@@ -166,9 +172,10 @@
       <svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     </button>
     <div class="overlay-body" id="overlayBody">
-      <!-- Treedis iframe is injected here on first open. Until then,
-           a labelled placeholder makes the connection point obvious. -->
-      <div class="overlay-loading" id="overlayLoading">
+      <!-- The live iframe is MOVED in here from the inline home stage
+           when the user expands — it is already loaded, so this veil
+           stays hidden. -->
+      <div class="overlay-loading is-hidden" id="overlayLoading" aria-hidden="true">
         <div class="spinner" aria-hidden="true"></div>
         <p class="overlay-loading-text" id="overlayLoadingText">Loading experience…</p>
       </div>

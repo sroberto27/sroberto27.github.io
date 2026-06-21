@@ -48,9 +48,15 @@
     });
   }
 
-  function syncPillars() {
+  /* Sync the nav highlight. The logo is a menu item: it takes the
+     gold highlight when home is active. Pillars highlight only when
+     their category view is showing. */
+  function syncNav() {
+    const onHome = state.view === "home";
+    const brand = $("#brandHome");
+    if (brand) brand.classList.toggle("is-active", onHome);
     $$(".pillar").forEach((b) =>
-      b.classList.toggle("is-active", b.dataset.cat === state.category)
+      b.classList.toggle("is-active", !onHome && b.dataset.cat === state.category)
     );
   }
 
@@ -66,16 +72,15 @@
     });
     // Bottom tabs only make sense in a category view.
     $("#dockTabs").hidden = name !== "category";
+    syncNav();
   }
 
   function goHome() {
     showView("home");
-    syncPillars();
   }
 
   function openCategory(id) {
     state.category = id;
-    syncPillars();
     renderCategory(getCategory(id));
     showView("category");
   }
@@ -149,70 +154,88 @@
   }
 
   /* ============================================================
-     DEMO OVERLAY  +  Treedis bridge wiring
+     DEMO EXPERIENCE  +  Treedis bridge wiring
+     ------------------------------------------------------------
+     The live Treedis experience is embedded INLINE in the home
+     demo frame at boot (opens right away — no click needed). The
+     SAME iframe is physically moved into the full overlay when the
+     user expands, and moved back when they close. Moving (rather
+     than recreating) keeps the live Treedis session and the
+     TourBridge handshake intact — no reload, no re-init.
      ============================================================ */
-  let treedisIframe = null;
+    let treedisIframe = null;
 
-  function startTreedis() {
-    if (state.treedisStarted) return;
-    state.treedisStarted = true;
+    function startTreedis() {
+      if (state.treedisStarted) return;
+      state.treedisStarted = true;
 
-    const url = cfg.treedis && cfg.treedis.tourUrl;
-    const body = $("#overlayBody");
+      const url = cfg.treedis && cfg.treedis.tourUrl;
+      const stage = $("#demoStage");
 
-    if (!url) {
-      // No Treedis configured — leave the labelled placeholder so the
-      // connection point is obvious to whoever wires it up.
-      $("#overlayLoadingText").textContent =
-        "Treedis tour URL not set — add cfg.treedis.tourUrl in config.js";
-      return;
+      if (!url) {
+        $("#demoLoadingText").textContent =
+          "Treedis tour URL not set — add cfg.treedis.tourUrl in config.js";
+        return;
+      }
+
+      // Build the live iframe directly in the inline demo stage.
+      treedisIframe = document.createElement("iframe");
+      treedisIframe.id = "treedisFrame";
+      treedisIframe.title = "Digital Twin experience";
+      treedisIframe.allow = "xr-spatial-tracking; fullscreen; vr; gyroscope; accelerometer";
+      treedisIframe.setAttribute("allowfullscreen", "");
+      treedisIframe.src = url;
+      stage.appendChild(treedisIframe);
+
+      // ===== PRESERVED COMMUNICATION PATTERN =====
+      // Same protocol/handshake as the SCSU wrapper (js/03-tour-bridge.js).
+      TourBridge.initialize(treedisIframe, {
+        origin: cfg.treedis.origin,
+        defaultTransitionTime: cfg.treedis.defaultTransitionTime,
+        onReady: function () {
+          // Hide both loading veils once Treedis is live.
+          const dl = $("#demoLoading");
+          const ol = $("#overlayLoading");
+          if (dl) dl.classList.add("is-hidden");
+          if (ol) ol.classList.add("is-hidden");
+          if (cfg.treedis.homeSweepId) {
+            TourBridge.navigateToSweep(cfg.treedis.homeSweepId);
+          }
+        },
+        onPoseChanged: function (sweepId) {
+          // Hook point: sync wrapper UI to where the user walked
+          // inside Treedis (mirrors syncWrapperToSweep in the
+          // original 04-street-view.js).
+          console.info("[dts] pose →", sweepId);
+        }
+      });
     }
 
-    // Build the iframe and hand it to the preserved TourBridge.
-    treedisIframe = document.createElement("iframe");
-    treedisIframe.id = "treedisFrame";
-    treedisIframe.allow = "xr-spatial-tracking; fullscreen; vr; gyroscope; accelerometer";
-    treedisIframe.setAttribute("allowfullscreen", "");
-    treedisIframe.src = url;
-    body.appendChild(treedisIframe);
-
-    // ===== PRESERVED COMMUNICATION PATTERN =====
-    // Same protocol/handshake as the SCSU wrapper (js/03-tour-bridge.js).
-    TourBridge.initialize(treedisIframe, {
-      origin: cfg.treedis.origin,
-      defaultTransitionTime: cfg.treedis.defaultTransitionTime,
-      onReady: function () {
-        $("#overlayLoading").style.display = "none";
-        // Land on the configured home sweep if one is set.
-        if (cfg.treedis.homeSweepId) {
-          TourBridge.navigateToSweep(cfg.treedis.homeSweepId);
-        }
-      },
-      onPoseChanged: function (sweepId) {
-        // Hook point: keep wrapper UI in sync with where the user
-        // walked inside Treedis. (Mirrors syncWrapperToSweep in the
-        // original 04-street-view.js.)
-        console.info("[dts] pose →", sweepId);
+    /* Expand the inline experience into the full overlay. The iframe
+       is relocated into the overlay body; the Treedis session keeps
+       running because the element is moved, not recreated. */
+    function openDemo() {
+      state.demoOpen = true;
+      const ov = $("#demoOverlay");
+      const overlayBody = $("#overlayBody");
+      if (treedisIframe && treedisIframe.parentNode !== overlayBody) {
+        overlayBody.appendChild(treedisIframe);
       }
-    });
-  }
+      ov.classList.add("is-open");
+      ov.setAttribute("aria-hidden", "false");
+    }
 
-  function openDemo() {
-    state.demoOpen = true;
-    startTreedis(); // first open boots the bridge; later opens are no-ops
-    const ov = $("#demoOverlay");
-    ov.classList.add("is-open");
-    ov.setAttribute("aria-hidden", "false");
-  }
-
-  function closeDemo() {
-    state.demoOpen = false;
-    const ov = $("#demoOverlay");
-    ov.classList.remove("is-open");
-    ov.setAttribute("aria-hidden", "true");
-    // We intentionally KEEP the iframe mounted so reopening is instant
-    // and the Treedis session/handshake is preserved.
-  }
+    /* Collapse: move the same iframe back into the inline home stage. */
+    function closeDemo() {
+      state.demoOpen = false;
+      const ov = $("#demoOverlay");
+      const stage = $("#demoStage");
+      if (treedisIframe && stage && treedisIframe.parentNode !== stage) {
+        stage.appendChild(treedisIframe);
+      }
+      ov.classList.remove("is-open");
+      ov.setAttribute("aria-hidden", "true");
+    }
 
   /* ============================================================
      CONTACT OVERLAY
@@ -343,14 +366,10 @@
      WIRING
      ============================================================ */
   function wire() {
-    // Demo open triggers
-    $("#demoFrame").addEventListener("click", (e) => {
-      // Don't double-fire when the inner "Try" button is clicked.
-      if (e.target.id !== "demoTry") openDemo();
-    });
-    $("#demoFrame").addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDemo(); }
-    });
+    // The inline iframe is interactive on its own, so clicking the
+    // frame does NOT open the overlay. Expansion is explicit via the
+    // expand button or the "Try a Digital Twin" pill.
+    $("#demoExpand").addEventListener("click", (e) => { e.stopPropagation(); openDemo(); });
     $("#demoTry").addEventListener("click", (e) => { e.stopPropagation(); openDemo(); });
 
     // Demo close
@@ -401,6 +420,7 @@
     showView("home");
     wire();
     initBackground();
+    startTreedis();              // embed the live experience right away
     cyclePrompt();
     setInterval(cyclePrompt, 3200);
   }
