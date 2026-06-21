@@ -196,6 +196,20 @@
         </div>
       </div>
 
+      <!-- Mobile-only: explicit slide-to-contact control. Shown on phones
+           (the desktop vertical edge-tab is hidden there). Toggles between
+           "Contact & Info →" on the cards panel and "← Back to sector" on
+           the contact panel. -->
+      <button class="contact-bar" id="contactBar" type="button">
+        <span class="contact-bar-label" id="contactBarLabel">Contact &amp; Info</span>
+        <span class="contact-bar-arrow" id="contactBarArrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor"
+                  stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+      </button>
+
       <!-- Mobile sector strip — shows the active sector with the next
            one peeking from the right edge (the swipe affordance). Tap
            the arrows or swipe to move between sectors. Hidden on desktop. -->

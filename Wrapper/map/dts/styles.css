@@ -530,6 +530,24 @@ body{
 }
 .nav-scrim[hidden]{ display:none; }
 
+/* Mobile slide-to-contact bar (desktop-hidden). */
+.contact-bar{
+  display:none;                      /* shown only on phone */
+  appearance:none; cursor:pointer;
+  width:100%; align-items:center; justify-content:center; gap:8px;
+  margin-top:10px;
+  background:linear-gradient(180deg, rgba(214,168,73,.18), rgba(214,168,73,.08));
+  color:var(--gold);
+  border:1px solid rgba(214,168,73,.55);
+  border-radius:10px;
+  padding:13px 16px;
+  font-family:var(--sans); font-weight:700; font-size:13px; letter-spacing:.06em;
+}
+.contact-bar:active{ background:var(--gold); color:#1a1206; }
+.contact-bar-arrow{ display:flex; }
+/* Back state: arrow points left and sits before the label. */
+.contact-bar.is-back .contact-bar-arrow{ order:-1; transform:scaleX(-1); }
+
 /* Mobile sector strip — current sector centered, next sector peeking,
    with explicit prev/next slide arrows. */
 .sector-strip{
@@ -694,6 +712,7 @@ body{
 
   /* Sector strip visible on phone. */
   .sector-strip{ display:flex; }
+  .contact-bar{ display:flex; }
 
   /* Cookie: slim full-width bar that sits ABOVE the dock, not over it. */
   .cookie{

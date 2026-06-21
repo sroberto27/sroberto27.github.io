@@ -54,6 +54,19 @@
   function buildDrawer() {
     const drawer = $("#navDrawer");
     drawer.innerHTML = "";
+
+    // Home — returns to the main page.
+    const home = document.createElement("a");
+    home.href = "#";
+    home.dataset.nav = "home";
+    home.innerHTML =
+      '<span>HOME</span><span class="drawer-sub">Main page</span>';
+    home.addEventListener("click", (e) => {
+      e.preventDefault();
+      goHome();          // already closes the drawer
+    });
+    drawer.appendChild(home);
+
     cfg.categories.forEach((c) => {
       const a = document.createElement("a");
       a.href = "#";
@@ -71,10 +84,15 @@
   }
 
   function syncDrawer() {
-    $$("#navDrawer a").forEach((a) =>
-      a.classList.toggle("is-active",
-        state.view === "category" && a.dataset.cat === state.category)
-    );
+    const onHome = state.view === "home";
+    $$("#navDrawer a").forEach((a) => {
+      if (a.dataset.nav === "home") {
+        a.classList.toggle("is-active", onHome);
+      } else {
+        a.classList.toggle("is-active",
+          !onHome && a.dataset.cat === state.category);
+      }
+    });
   }
 
   function openDrawer() {
@@ -189,6 +207,7 @@
     // Bottom tabs only make sense in a category view.
     $("#dockTabs").hidden = name !== "category";
     syncNav();
+    syncDrawer();
   }
 
   function goHome() {
@@ -207,6 +226,7 @@
     updateNextLabel();
     positionSectorStrip();
     syncDrawer();
+    syncContactBar();
   }
 
   /* ============================================================
@@ -398,12 +418,29 @@
     state.contactOpen = true;
     $("#catTrack").classList.add("show-contact");
     updateNextLabel();
+    syncContactBar();
   }
 
   /* Slide back to the current sector's cards. */
   function slideToCards() {
     state.contactOpen = false;
     $("#catTrack").classList.remove("show-contact");
+    syncContactBar();
+  }
+
+  /* The mobile contact bar doubles as a toggle: it reads "Contact & Info →"
+     on the cards panel and "← Back to sector" on the contact panel. */
+  function syncContactBar() {
+    const bar = $("#contactBar");
+    const lbl = $("#contactBarLabel");
+    if (!bar || !lbl) return;
+    if (state.contactOpen) {
+      bar.classList.add("is-back");
+      lbl.textContent = "Back to sector";
+    } else {
+      bar.classList.remove("is-back");
+      lbl.textContent = "Contact & Info";
+    }
   }
 
   /* Index helpers for sector sequencing. */
@@ -532,6 +569,12 @@
     // Mobile sector-strip arrows (loop through sectors).
     $("#sectorPrev").addEventListener("click", () => openCategory(previousCategory().id));
     $("#sectorNext").addEventListener("click", () => openCategory(nextCategory().id));
+
+    // Mobile slide-to-contact bar toggles cards ⇄ contact.
+    $("#contactBar").addEventListener("click", () => {
+      if (state.contactOpen) slideToCards();
+      else slideToContact();
+    });
     // Top-right portal: ensure a sector is open, then slide to contact.
     $("#accessTwin").addEventListener("click", () => {
       if (state.view !== "category") openCategory(state.category);
