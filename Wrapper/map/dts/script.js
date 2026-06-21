@@ -121,7 +121,7 @@
     const idx = currentCatIndex();
     const track = $("#sectorStripTrack");
     if (!track) return;
-    track.style.transform = "translateX(" + (-idx * 86) + "%)";
+    track.style.transform = "translateX(" + (-idx * 82) + "%)";
     $$("#sectorStripTrack .sector-item").forEach((el, i) =>
       el.classList.toggle("is-peek", i !== idx)
     );
@@ -528,6 +528,10 @@
     $("#contactNext").addEventListener("click", advanceToNextSector);
     // "View projects" surfaces the contact/next-step panel too.
     $("#catProjectsBtn").addEventListener("click", slideToContact);
+
+    // Mobile sector-strip arrows (loop through sectors).
+    $("#sectorPrev").addEventListener("click", () => openCategory(previousCategory().id));
+    $("#sectorNext").addEventListener("click", () => openCategory(nextCategory().id));
     // Top-right portal: ensure a sector is open, then slide to contact.
     $("#accessTwin").addEventListener("click", () => {
       if (state.view !== "category") openCategory(state.category);

@@ -198,11 +198,19 @@
 
       <!-- Mobile sector strip — shows the active sector with the next
            one peeking from the right edge (the swipe affordance). Tap
-           or swipe to move between sectors. Hidden on desktop. -->
+           the arrows or swipe to move between sectors. Hidden on desktop. -->
       <div class="sector-strip" id="sectorStrip" aria-hidden="true">
-        <div class="sector-strip-track" id="sectorStripTrack">
-          <!-- sector items injected by script.js -->
+        <button class="sector-arrow sector-arrow-prev" id="sectorPrev" type="button" aria-label="Previous sector">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="sector-strip-viewport">
+          <div class="sector-strip-track" id="sectorStripTrack">
+            <!-- sector items injected by script.js -->
+          </div>
         </div>
+        <button class="sector-arrow sector-arrow-next" id="sectorNext" type="button" aria-label="Next sector">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
       </div>
 
       <!-- Project evidence + bottom tabs -->
