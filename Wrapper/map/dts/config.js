@@ -132,5 +132,82 @@ window.DTS_CONFIG = {
       { id: "proposal",  stage: "PROPOSE", label: "REQUEST A PROPOSAL",   primary: true  },
       { id: "pilot",     stage: "PILOT",   label: "START A PILOT",        primary: false }
     ]
+  },
+
+  /* ============================================================
+     LEAD CAPTURE  →  emails the owner when a form is submitted.
+     ------------------------------------------------------------
+     Delivery uses Web3Forms (https://web3forms.com) — a free,
+     no-backend service that emails form submissions to a fixed
+     address. Static-site friendly (works on GitHub Pages).
+
+     >>> SETUP (2 minutes) <<<
+       1. Go to https://web3forms.com, enter the owner's email,
+          and copy the "Access Key" they send you.
+       2. Paste it into `accessKey` below.
+       3. Set `ownerEmail` to where leads should land (shown to
+          the user as confirmation; Web3Forms uses the key, not
+          this, to route — but keep them the same).
+
+     Until a key is set, the forms fall back to opening the user's
+     email app (mailto:) pre-filled with all their answers, so the
+     prototype still "sends" without any signup.
+     ============================================================ */
+  lead: {
+    accessKey: "b825431d-56a9-4ee5-9042-72bb7685f8c3",                       // <-- paste Web3Forms key herec00416436@louisiana.edu
+    //ownerEmail: "hello@dtsxr.com",       // <-- owner's destination inbox
+    ownerEmail: "00416436@louisiana.edu",   
+    subjectPrefix: "DTS Website Lead",
+
+    /* Per-button form definitions. Each maps to one CTA id. The
+       `sector` field is auto-filled from the category the user is
+       browsing — they don't have to pick it. */
+    forms: {
+      discovery: {
+        title: "Schedule a Discovery",
+        intro: "A 30-minute conversation about your space and what a twin could do for it. No demo, no pitch.",
+        submitLabel: "Request my discovery call",
+        fields: [
+          { name: "name",    label: "Your name",         type: "text",  required: true },
+          { name: "email",   label: "Work email",        type: "email", required: true },
+          { name: "org",     label: "Organization",      type: "text",  required: true },
+          { name: "role",    label: "Your role",         type: "text",  required: false },
+          { name: "timing",  label: "Ideal timeframe",   type: "select", required: false,
+            options: ["This week", "Next 2 weeks", "This month", "Just exploring"] },
+          { name: "notes",   label: "Anything we should know? (optional)", type: "textarea", required: false }
+        ]
+      },
+      proposal: {
+        title: "Request a Proposal",
+        intro: "Tell us about the space and the outcome you're after. We'll scope a proposal and send it back.",
+        submitLabel: "Send my proposal request",
+        fields: [
+          { name: "name",     label: "Your name",        type: "text",  required: true },
+          { name: "email",    label: "Work email",       type: "email", required: true },
+          { name: "org",      label: "Organization",     type: "text",  required: true },
+          { name: "space",    label: "What space or project?", type: "text", required: true },
+          { name: "budget",   label: "Budget range (optional)", type: "select", required: false,
+            options: ["Not sure yet", "Under $25k", "$25k–$100k", "$100k+"] },
+          { name: "timeline", label: "Target timeline",  type: "select", required: false,
+            options: ["ASAP", "This quarter", "This year", "Planning ahead"] },
+          { name: "notes",    label: "Describe the goal (optional)", type: "textarea", required: false }
+        ]
+      },
+      pilot: {
+        title: "Start a Pilot",
+        /* The pilot explainer doubles as the intro copy. */
+        intro: "A pilot is a scoped, paid engagement — one defined space, a real twin, a clear deliverable. The fee is set during the proposal stage. Tell us what you'd pilot and we'll define the scope with you.",
+        submitLabel: "Start my pilot request",
+        fields: [
+          { name: "name",     label: "Your name",        type: "text",  required: true },
+          { name: "email",    label: "Work email",       type: "email", required: true },
+          { name: "org",      label: "Organization",     type: "text",  required: true },
+          { name: "space",    label: "Space you'd pilot", type: "text", required: true },
+          { name: "outcome",  label: "What does success look like?", type: "textarea", required: false },
+          { name: "timeline", label: "When would you start?", type: "select", required: false,
+            options: ["Immediately", "Within a month", "This quarter", "Still scoping"] }
+        ]
+      }
+    }
   }
 };

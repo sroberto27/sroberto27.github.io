@@ -32,6 +32,23 @@ Navigation is driven by **JS state, not scrolling**.
 - **Client portal** — `accessTwin` button currently opens the contact view; `config.clientPortalUrl` is the placeholder for the real authenticated portal (kept architecturally separate from the marketing site, per the rationale).
 - **Question bar** — `#qbar` submit handler logs the question; connect to a real assistant endpoint there.
 
+## Contact buttons → email the owner (lead capture)
+The three contact CTAs (Schedule a Discovery / Request a Proposal / Start a Pilot)
+each open a **tailored form** that emails the owner all the entered info. The form
+auto-attaches the **sector** the visitor was browsing.
+
+Delivery uses **Web3Forms** (free, no backend, works on GitHub Pages). Until a key
+is set, forms fall back to opening the visitor's mail app pre-filled (`mailto:`), so
+it works with zero setup.
+
+**To make submissions land in the owner's inbox seamlessly (2 min):**
+1. Go to https://web3forms.com, enter the owner's email, and copy the Access Key.
+2. Open `config.js` → `lead.accessKey` and paste the key.
+3. Set `lead.ownerEmail` to the destination inbox.
+
+Edit `lead.forms.{discovery|proposal|pilot}` in `config.js` to change any form's
+title, intro copy, submit label, or fields — no code changes needed.
+
 ## What was preserved from the existing wrapper
 `dts-tour-bridge.js` keeps the SCSU wrapper's exact Treedis protocol — `Ping` /
 `Navigate` / `RequestSweeps` outbound, `TourReady` / `PoseChanged` / `SweepsChanged` /

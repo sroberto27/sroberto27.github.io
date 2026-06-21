@@ -408,9 +408,196 @@
       b.className = "contact-cta" + (cta.primary ? " is-primary" : "");
       b.type = "button";
       b.textContent = cta.label;
-      b.addEventListener("click", () => { flashQuestion(cta.label.toLowerCase()); });
+      b.addEventListener("click", () => openLeadForm(cta.id, cta.stage));
       wrap.appendChild(b);
     });
+  }
+
+  /* ============================================================
+     LEAD FORM  →  emails the owner (Web3Forms, mailto fallback)
+     ============================================================ */
+  let activeFormId = null;
+
+  function openLeadForm(formId, stage) {
+    const def = cfg.lead && cfg.lead.forms && cfg.lead.forms[formId];
+    if (!def) { console.warn("[lead] no form def for", formId); return; }
+    activeFormId = formId;
+
+    // Reset to the form view (in case it was left on success).
+    $("#formView").hidden = false;
+    $("#formSuccess").hidden = true;
+    $("#formError").hidden = true;
+
+    $("#formStage").textContent = stage || "";
+    $("#formTitle").textContent = def.title;
+    $("#formIntro").textContent = def.intro || "";
+    $("#formSubmit").textContent = def.submitLabel || "Send";
+
+    buildFormFields(def.fields);
+
+    const ov = $("#formOverlay");
+    ov.classList.add("is-open");
+    ov.setAttribute("aria-hidden", "false");
+    // Focus the first field for quick entry.
+    const first = $("#formFields input, #formFields select, #formFields textarea");
+    if (first) setTimeout(() => first.focus(), 60);
+  }
+
+  function closeLeadForm() {
+    const ov = $("#formOverlay");
+    ov.classList.remove("is-open");
+    ov.setAttribute("aria-hidden", "true");
+  }
+
+  function buildFormFields(fields) {
+    const wrap = $("#formFields");
+    wrap.innerHTML = "";
+    fields.forEach((f) => {
+      const cell = document.createElement("div");
+      // Textareas and selects span full width; short inputs pair up.
+      cell.className = "form-field" +
+        (f.type === "textarea" || f.type === "select" ? " full" : "");
+      cell.dataset.name = f.name;
+
+      const id = "lf_" + f.name;
+      const reqMark = f.required ? ' <span class="req">*</span>' : "";
+      let control;
+      if (f.type === "textarea") {
+        control = '<textarea id="' + id + '" name="' + f.name + '"' +
+          (f.required ? " required" : "") + '></textarea>';
+      } else if (f.type === "select") {
+        control = '<select id="' + id + '" name="' + f.name + '"' +
+          (f.required ? " required" : "") + '>' +
+          '<option value="" disabled selected>Choose…</option>' +
+          (f.options || []).map((o) =>
+            '<option value="' + o.replace(/"/g, "&quot;") + '">' + o + '</option>'
+          ).join("") +
+          '</select>';
+      } else {
+        control = '<input id="' + id + '" name="' + f.name +
+          '" type="' + (f.type || "text") + '"' +
+          (f.required ? " required" : "") + ' />';
+      }
+      cell.innerHTML =
+        '<label for="' + id + '">' + f.label + reqMark + '</label>' + control;
+      wrap.appendChild(cell);
+    });
+  }
+
+  /* Validate required fields; mark invalid cells. Returns true if OK. */
+  function validateForm() {
+    let ok = true;
+    $$("#formFields .form-field").forEach((cell) => {
+      const ctrl = cell.querySelector("input,select,textarea");
+      cell.classList.remove("invalid");
+      if (ctrl && ctrl.required && !ctrl.value.trim()) {
+        cell.classList.add("invalid");
+        ok = false;
+      }
+      if (ctrl && ctrl.type === "email" && ctrl.value.trim() &&
+          !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(ctrl.value.trim())) {
+        cell.classList.add("invalid");
+        ok = false;
+      }
+    });
+    return ok;
+  }
+
+  /* Collect field values into a flat object, plus context. */
+  function collectFormData() {
+    const data = {};
+    $$("#formFields input, #formFields select, #formFields textarea").forEach((c) => {
+      data[c.name] = c.value.trim();
+    });
+    // Auto-attach the sector the user was browsing + which form this is.
+    const cat = getCategory(state.category);
+    data.sector = cat ? cat.label : "";
+    data.request_type = activeFormId;
+    return data;
+  }
+
+  async function submitLeadForm(e) {
+    e.preventDefault();
+    $("#formError").hidden = true;
+    if (!validateForm()) {
+      $("#formError").textContent = "Please complete the required fields.";
+      $("#formError").hidden = false;
+      return;
+    }
+
+    const data = collectFormData();
+    const def = cfg.lead.forms[activeFormId];
+    const submitBtn = $("#formSubmit");
+    const originalLabel = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = "Sending…";
+
+    const sent = await sendLead(data, def);
+
+    submitBtn.disabled = false;
+    submitBtn.textContent = originalLabel;
+
+    if (sent) {
+      showFormSuccess();
+    } else {
+      // Network/key failure → fall back to the user's mail app.
+      openMailtoFallback(data, def);
+    }
+  }
+
+  /* Try Web3Forms if a key is set; otherwise signal failure so the
+     mailto fallback kicks in. Returns true on a confirmed send. */
+  async function sendLead(data, def) {
+    const lead = cfg.lead || {};
+    if (!lead.accessKey) return false;   // no key → use mailto fallback
+
+    const payload = Object.assign({}, data, {
+      access_key: lead.accessKey,
+      subject: (lead.subjectPrefix || "DTS Lead") + " — " + (def.title || ""),
+      from_name: data.name || "DTS Website",
+      // Web3Forms emails this address-set; the key controls routing.
+      to: lead.ownerEmail || undefined
+    });
+
+    try {
+      const res = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const json = await res.json().catch(() => ({}));
+      return res.ok && json.success !== false;
+    } catch (err) {
+      console.warn("[lead] Web3Forms send failed, using mailto:", err);
+      return false;
+    }
+  }
+
+  /* mailto: fallback — opens the user's mail app pre-filled with all
+     answers, addressed to the owner. Works with zero setup. */
+  function openMailtoFallback(data, def) {
+    const owner = (cfg.lead && cfg.lead.ownerEmail) || "";
+    const subject = (cfg.lead.subjectPrefix || "DTS Lead") + " — " + (def.title || "");
+    const lines = Object.keys(data).map((k) => {
+      const label = k.replace(/_/g, " ").replace(/\b\w/g, (m) => m.toUpperCase());
+      return label + ": " + data[k];
+    });
+    const body = "New " + (def.title || "lead") + " request from the DTS website:\n\n" +
+      lines.join("\n");
+    const href = "mailto:" + encodeURIComponent(owner) +
+      "?subject=" + encodeURIComponent(subject) +
+      "&body=" + encodeURIComponent(body);
+    window.location.href = href;
+    // Show success too — from the user's perspective the message is on its way.
+    showFormSuccess(true);
+  }
+
+  function showFormSuccess(viaMail) {
+    $("#formView").hidden = true;
+    $("#formSuccess").hidden = false;
+    $("#formSuccessBody").textContent = viaMail
+      ? "Your email is ready to send in your mail app — hit send and the DTS team will be in touch."
+      : "The DTS team has your details and will be in touch shortly.";
   }
 
   /* Slide the category track to reveal the inline contact panel. */
@@ -559,6 +746,14 @@
     // Demo close
     $("#overlayClose").addEventListener("click", closeDemo);
 
+    // Lead form modal
+    $("#leadForm").addEventListener("submit", submitLeadForm);
+    $("#formClose").addEventListener("click", closeLeadForm);
+    $("#formSuccessClose").addEventListener("click", closeLeadForm);
+    $$("[data-close-form]").forEach((s) =>
+      s.addEventListener("click", closeLeadForm)
+    );
+
     // Contact slide controls (inline — no overlay)
     $("#contactEdge").addEventListener("click", slideToContact);
     $("#contactBack").addEventListener("click", slideToCards);
@@ -586,10 +781,11 @@
       s.addEventListener("click", () => { closeDemo(); })
     );
 
-    // Escape: close demo overlay, or slide contact back to cards.
+    // Escape: close any modal, or slide contact back to cards.
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         closeDemo();
+        closeLeadForm();
         if (state.contactOpen) slideToCards();
       }
     });

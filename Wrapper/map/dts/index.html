@@ -284,6 +284,48 @@
 </div>
 
 <!-- ============================================================
+     LEAD FORM MODAL
+     Title, intro, and fields are injected per button (Discovery /
+     Proposal / Pilot) by script.js. On submit it emails the owner
+     via Web3Forms (or falls back to the user's mail app).
+     ============================================================ -->
+<div class="overlay overlay-form" id="formOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+  <div class="overlay-scrim" data-close-form></div>
+  <div class="form-window">
+    <button class="overlay-close" id="formClose" type="button" aria-label="Close form">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+
+    <!-- Active form view -->
+    <div class="form-view" id="formView">
+      <span class="form-stage" id="formStage">PROPOSE</span>
+      <h2 class="form-title" id="formTitle">Request a Proposal</h2>
+      <p class="form-intro" id="formIntro"></p>
+      <form id="leadForm" novalidate>
+        <div class="form-fields" id="formFields"><!-- injected --></div>
+        <p class="form-error" id="formError" hidden></p>
+        <button class="form-submit" id="formSubmit" type="submit">Send</button>
+        <p class="form-fineprint">
+          Goes straight to the DTS team. We reply within one business day.
+        </p>
+      </form>
+    </div>
+
+    <!-- Success view (shown after a successful submit) -->
+    <div class="form-success" id="formSuccess" hidden>
+      <div class="form-success-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="40" height="40"><path d="M5 12l5 5 9-11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h2 class="form-success-title">Sent — thank you.</h2>
+      <p class="form-success-body" id="formSuccessBody">
+        The DTS team has your details and will be in touch shortly.
+      </p>
+      <button class="form-submit" id="formSuccessClose" type="button">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
      COOKIE / TRACKING DISCLOSURE
      ============================================================ -->
 <div class="cookie" id="cookie" role="region" aria-label="Cookie and tracking disclosure">
