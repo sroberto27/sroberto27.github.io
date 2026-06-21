@@ -39,6 +39,14 @@
       </span>
     </a>
 
+    <!-- Mobile hamburger — toggles the slide-in nav drawer. Hidden on
+         desktop (the pillar row shows instead). -->
+    <button class="burger" id="burger" type="button" aria-label="Open menu"
+            aria-expanded="false">
+      <span class="burger-lines" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="burger-text">Menu</span>
+    </button>
+
     <!-- Four pillars = primary navigation + identity -->
     <nav class="pillars" id="pillars" role="tablist" aria-label="Sectors">
       <!-- buttons injected by script.js -->
@@ -47,6 +55,12 @@
     <!-- Client portal / access point (architecturally separate) -->
     <button class="access-btn" id="accessTwin" type="button">ACCESS YOUR TWIN</button>
   </header>
+
+  <!-- Mobile nav drawer (slides down from the header on phones) -->
+  <nav class="nav-drawer" id="navDrawer" aria-label="Sections" aria-hidden="true">
+    <!-- sector links injected by script.js -->
+  </nav>
+  <div class="nav-scrim" id="navScrim" hidden></div>
 
   <!-- ===================== STAGE (state-swapped) ===================== -->
   <main class="stage" id="stage">
@@ -179,6 +193,15 @@
             </div>
           </div>
 
+        </div>
+      </div>
+
+      <!-- Mobile sector strip — shows the active sector with the next
+           one peeking from the right edge (the swipe affordance). Tap
+           or swipe to move between sectors. Hidden on desktop. -->
+      <div class="sector-strip" id="sectorStrip" aria-hidden="true">
+        <div class="sector-strip-track" id="sectorStripTrack">
+          <!-- sector items injected by script.js -->
         </div>
       </div>
 

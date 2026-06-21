@@ -483,6 +483,71 @@ body{
 .cookie-btn-ghost{ background:transparent; color:var(--muted); }
 
 /* ============================================================
+   MOBILE-ONLY COMPONENTS (hidden on desktop, shown in phone media)
+   ============================================================ */
+.burger{
+  display:none;                      /* shown only on phone */
+  appearance:none; cursor:pointer;
+  background:transparent; border:0; color:var(--ink);
+  flex-direction:column; align-items:center; gap:3px;
+  padding:4px 6px;
+}
+.burger-lines{ display:flex; flex-direction:column; gap:4px; }
+.burger-lines i{ width:22px; height:2px; background:currentColor; border-radius:2px; transition:transform .2s,opacity .2s; }
+.burger-text{ font-size:9px; letter-spacing:.08em; color:var(--muted); }
+.burger.is-open .burger-lines i:nth-child(1){ transform:translateY(6px) rotate(45deg); }
+.burger.is-open .burger-lines i:nth-child(2){ opacity:0; }
+.burger.is-open .burger-lines i:nth-child(3){ transform:translateY(-6px) rotate(-45deg); }
+
+.nav-drawer{
+  display:none;                      /* shown only on phone, when open */
+  position:fixed; left:0; right:0; z-index:25;
+  top:var(--topbar-h);
+  background:#0c1220; border-bottom:1px solid var(--line);
+  flex-direction:column;
+  transform:translateY(-12px); opacity:0; pointer-events:none;
+  transition:transform .22s ease, opacity .22s ease;
+  box-shadow:0 24px 50px rgba(0,0,0,.5);
+}
+.nav-drawer.is-open{ transform:translateY(0); opacity:1; pointer-events:auto; }
+.nav-drawer a{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 20px; color:var(--ink); text-decoration:none;
+  font-size:15px; font-weight:700; letter-spacing:.08em;
+  border-bottom:1px solid var(--line-soft);
+}
+.nav-drawer a .drawer-sub{ font-size:11px; font-weight:500; color:var(--faint); letter-spacing:.02em; }
+.nav-drawer a.is-active{ color:var(--gold); }
+.nav-scrim{
+  position:fixed; inset:0; z-index:24; background:rgba(3,5,9,.5);
+}
+.nav-scrim[hidden]{ display:none; }
+
+/* Mobile sector strip — current sector centered, next sector peeking. */
+.sector-strip{
+  display:none;                      /* shown only on phone */
+  flex:0 0 auto;
+  margin-top:clamp(10px,1.6vh,16px);
+  overflow:hidden;
+  border-top:1px solid var(--line-soft);
+  border-bottom:1px solid var(--line-soft);
+  background:linear-gradient(180deg, rgba(20,34,58,.55), rgba(10,15,24,.35));
+}
+.sector-strip-track{
+  display:flex;
+  transition:transform .4s cubic-bezier(.65,.02,.25,1);
+}
+.sector-item{
+  flex:0 0 86%;                      /* leaves ~14% peek of the next */
+  text-align:center;
+  padding:18px 8px;
+}
+.sector-item-label{ display:block; font-size:16px; font-weight:800; letter-spacing:.12em; color:var(--ink); }
+.sector-item-sub{ display:block; font-size:11px; color:var(--muted); margin-top:2px; }
+.sector-item.is-peek .sector-item-label,
+.sector-item.is-peek .sector-item-sub{ color:var(--faint); }
+
+/* ============================================================
    RESPONSIVE  (phone → tablet → desktop)
    Pattern mirrors the Experimental base: progressive breakpoints,
    panels stack, chrome scrolls horizontally when cramped.
@@ -513,49 +578,124 @@ body{
 
 /* ----- PHONE (≤ 760px) ----- */
 @media (max-width:760px){
+  /* True full-bleed app sized to the dynamic viewport so mobile
+     browser chrome never forces a scroll. */
+  html,body{ overflow:hidden; height:100%; }
   .app{
-    inset:0; border-radius:0;
-    grid-template-rows:auto 1fr auto;
+    position:fixed; inset:0;
+    width:100%;
+    height:100dvh;                   /* dynamic viewport height */
+    border:0; border-radius:0;
+    grid-template-rows:var(--topbar-h) 1fr auto;
   }
-  /* Top bar: brand + access on row 1, pillars scroll on row 2. */
+
+  /* Header: burger + logo on the left, Access on the right. The
+     pillar row is hidden — navigation moves into the drawer. */
   .topbar{
-    flex-wrap:wrap; align-items:center;
-    padding:8px 14px 0;
-    gap:8px;
+    flex-wrap:nowrap; align-items:center;
+    padding:0 12px; gap:10px;
   }
-  .brand{ padding:6px 2px; order:1; }
-  .brand.is-active::after{ display:none; }    /* underline noisy on phone */
-  .access-btn{ order:2; margin-left:auto; }
-  .pillars{
-    order:3; flex-basis:100%;
-    overflow-x:auto; gap:18px; margin:0;
-    padding:2px 0;
+  .burger{ display:flex; order:0; }
+  .brand{ padding:6px 2px; order:1; gap:8px; }
+  .brand-mark svg{ width:30px; }
+  .brand-name{ font-size:11px; }
+  .brand-studios{ font-size:6.5px; letter-spacing:.32em; }
+  .brand.is-active::after{ display:none; }
+  .pillars{ display:none; }          /* replaced by drawer */
+  .nav-drawer{ display:flex; }
+  .access-btn{ order:2; margin-left:auto; padding:8px 12px; font-size:10px; }
+
+  /* Stage views fill the row; no view should need page scroll. */
+  .view{ padding:16px 14px; overflow:hidden; }
+
+  /* ---------- HOME (no scroll: copy then demo fills the rest) ---------- */
+  .home-grid{
+    grid-template-columns:1fr;
+    grid-template-rows:auto 1fr;
+    gap:14px; align-items:stretch;
+  }
+  .copy-kicker{ font-size:10px; }
+  .home-headline{ font-size:clamp(28px,8.5vw,42px); margin:8px 0; }
+  .home-pills{ gap:14px; margin-bottom:10px; }
+  .home-body{ font-size:13px; line-height:1.5; max-width:none; }
+  .demo-frame{ min-height:0; height:100%; }       /* fills remaining space */
+  .evidence-bar{ display:none; }                    /* not in mobile target */
+
+  /* ---------- CATEGORY (intro → 2×2 cards → sector strip) ---------- */
+  .cat-slider{ min-height:0; }
+  .cat-panel{ overflow:hidden; }
+  .cat-panel-cards{ padding-right:0; }
+  .cat-grid{
+    grid-template-columns:1fr;
+    grid-template-rows:auto 1fr;
+    gap:14px; min-height:0;
+  }
+  .cat-intro{ overflow:hidden; }
+  .cat-kicker{ font-size:11px; }
+  .cat-title{ font-size:clamp(26px,8vw,38px); margin:6px 0; }
+  .cat-sub{ font-size:13px; margin-bottom:10px; }
+  /* Trim the long body on phone so the cards fit without scrolling. */
+  .cat-body{
+    font-size:12.5px; line-height:1.45; max-width:none;
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .cat-projects-btn{ margin-top:12px; padding:10px 14px; }
+
+  /* 2×2 grid that fills the available height (matches the mockup).
+     Scrolls internally only if a very short screen can't fit it. */
+  .cat-cards{
+    grid-template-columns:1fr 1fr;
+    grid-auto-rows:1fr;
+    gap:12px; min-height:0;
+    overflow-y:auto;
     -webkit-overflow-scrolling:touch;
   }
-  .pillar{ padding:12px 2px; }
-  .pillar.is-active::after{ bottom:6px; }
+  .uc-card{ padding:14px; min-height:0; }
+  .uc-card h3{ font-size:12px; margin-bottom:6px; }
+  .uc-card p{ font-size:11.5px; line-height:1.4; }
 
-  .view{ padding:18px 16px; }
-  .home-headline{ font-size:clamp(30px,9vw,46px); }
-  .cat-title{ font-size:clamp(26px,8vw,40px); }
-  .cat-cards{ grid-template-columns:1fr; grid-auto-rows:auto; }
-  .uc-card{ min-height:96px; }
+  /* The right-edge "Contact & Info" tab is replaced on phone by the
+     sector strip + swipe; hide it to keep the layout clean. */
+  .contact-edge{ display:none; }
 
-  .evidence-bar{ font-size:11px; gap:10px; }
-  .cat-footer{ flex-wrap:wrap; gap:12px; }
-  .evidence-filtered{ margin-left:0; }
+  /* Contact panel: vertical, full layout (matches image 2). The side
+     arrow buttons are hidden — Back lives in the sector strip / swipe. */
+  .cat-panel-contact{
+    padding:20px 16px; border:0; border-radius:0;
+    justify-content:flex-start; overflow-y:auto;
+  }
+  .panel-nav{ display:none; }
+  .contact-inner{ width:100%; }
+  .contact-headline{ font-size:clamp(28px,9vw,40px); }
+  .contact-body{ font-size:13px; }
+  /* Stack the three CTAs full-width with their stage label above. */
+  .contact-stages{ display:none; }
+  .contact-ctas{ flex-direction:column; gap:10px; }
+  .contact-cta{ flex:1 1 auto; width:100%; padding:15px; }
 
-  .dockbar{ flex-wrap:wrap; padding:10px 14px; gap:10px; }
-  .qbar{ width:100%; max-width:none; order:1; }
-  .dock-tabs{ order:2; flex-basis:100%; }
+  /* Sector strip visible on phone. */
+  .sector-strip{ display:block; }
 
-  /* Contact slider on phone: compact edge tab + icon-only arrows. */
-  .cat-panel-cards{ padding-right:34px; }
-  .contact-edge{ padding:14px 8px; font-size:11px; gap:4px; }
-  .contact-edge-text{ font-size:10px; }
-  .panel-nav-label{ display:none; }      /* arrows only — save width */
-  .panel-nav{ padding:10px; }
-  .cat-panel-contact{ padding:48px 14px; }
+  /* Footer evidence row is noise on phone — keep only the dock. */
+  .cat-footer{ display:none; }
+
+  /* Dock: question bar full width; tabs scroll under it. */
+  .dockbar{
+    flex-direction:column; align-items:stretch;
+    padding:8px 12px; gap:8px;
+  }
+  .qbar{ width:100%; max-width:none; }
+  .dock-tabs{
+    width:100%; overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+}
+
+/* Slightly larger phones / small tablets keep cards roomier. */
+@media (max-width:760px) and (min-height:740px){
+  .cat-body{ -webkit-line-clamp:5; }
+  .uc-card{ padding:18px; }
 }
 
 /* ----- Very large screens: cap so type doesn't get silly ----- */

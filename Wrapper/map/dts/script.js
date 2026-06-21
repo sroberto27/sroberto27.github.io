@@ -48,6 +48,122 @@
     });
   }
 
+  /* ============================================================
+     MOBILE: nav drawer
+     ============================================================ */
+  function buildDrawer() {
+    const drawer = $("#navDrawer");
+    drawer.innerHTML = "";
+    cfg.categories.forEach((c) => {
+      const a = document.createElement("a");
+      a.href = "#";
+      a.dataset.cat = c.id;
+      a.innerHTML =
+        '<span>' + c.label.toUpperCase() + '</span>' +
+        '<span class="drawer-sub">' + (c.cards[0] ? c.cards[0].title : "") + '</span>';
+      a.addEventListener("click", (e) => {
+        e.preventDefault();
+        openCategory(c.id);
+        closeDrawer();
+      });
+      drawer.appendChild(a);
+    });
+  }
+
+  function syncDrawer() {
+    $$("#navDrawer a").forEach((a) =>
+      a.classList.toggle("is-active",
+        state.view === "category" && a.dataset.cat === state.category)
+    );
+  }
+
+  function openDrawer() {
+    $("#burger").classList.add("is-open");
+    $("#burger").setAttribute("aria-expanded", "true");
+    $("#navDrawer").classList.add("is-open");
+    $("#navDrawer").setAttribute("aria-hidden", "false");
+    $("#navScrim").hidden = false;
+  }
+  function closeDrawer() {
+    $("#burger").classList.remove("is-open");
+    $("#burger").setAttribute("aria-expanded", "false");
+    $("#navDrawer").classList.remove("is-open");
+    $("#navDrawer").setAttribute("aria-hidden", "true");
+    $("#navScrim").hidden = true;
+  }
+  function toggleDrawer() {
+    if ($("#navDrawer").classList.contains("is-open")) closeDrawer();
+    else openDrawer();
+  }
+
+  /* ============================================================
+     MOBILE: sector strip pager (current + peeking next)
+     ============================================================ */
+  function buildSectorStrip() {
+    const track = $("#sectorStripTrack");
+    track.innerHTML = "";
+    cfg.categories.forEach((c) => {
+      const item = document.createElement("div");
+      item.className = "sector-item";
+      item.dataset.cat = c.id;
+      item.innerHTML =
+        '<span class="sector-item-label">' + c.label.toUpperCase() + '</span>' +
+        '<span class="sector-item-sub">' + (c.cards[0] ? c.cards[0].title : "") + '</span>';
+      item.addEventListener("click", () => openCategory(c.id));
+      track.appendChild(item);
+    });
+    positionSectorStrip();
+  }
+
+  /* Shift the strip so the active sector sits flush-left and the next
+     one peeks in from the right edge. */
+  function positionSectorStrip() {
+    const idx = currentCatIndex();
+    const track = $("#sectorStripTrack");
+    if (!track) return;
+    track.style.transform = "translateX(" + (-idx * 86) + "%)";
+    $$("#sectorStripTrack .sector-item").forEach((el, i) =>
+      el.classList.toggle("is-peek", i !== idx)
+    );
+  }
+
+  /* ============================================================
+     MOBILE: swipe gestures on the category stage
+     Swipe LEFT  → cards → contact; contact → next sector's cards.
+     Swipe RIGHT → contact → cards; cards → previous sector's cards.
+     ============================================================ */
+  function previousCategory() {
+    const i = currentCatIndex();
+    return cfg.categories[(i - 1 + cfg.categories.length) % cfg.categories.length];
+  }
+
+  function initSwipe() {
+    const stage = $("#view-category");
+    let x0 = null, y0 = null;
+    const THRESH = 48;
+
+    stage.addEventListener("touchstart", (e) => {
+      const t = e.changedTouches[0];
+      x0 = t.clientX; y0 = t.clientY;
+    }, { passive: true });
+
+    stage.addEventListener("touchend", (e) => {
+      if (x0 === null) return;
+      const t = e.changedTouches[0];
+      const dx = t.clientX - x0;
+      const dy = t.clientY - y0;
+      x0 = null;
+      if (Math.abs(dx) < THRESH || Math.abs(dx) < Math.abs(dy) * 1.4) return;
+      if (dx < 0) {
+        if (state.contactOpen) advanceToNextSector();
+        else slideToContact();
+      } else {
+        if (state.contactOpen) slideToCards();
+        else openCategory(previousCategory().id);
+      }
+    }, { passive: true });
+  }
+
   /* Sync the nav highlight. The logo is a menu item: it takes the
      gold highlight when home is active. Pillars highlight only when
      their category view is showing. */
@@ -77,6 +193,7 @@
 
   function goHome() {
     showView("home");
+    closeDrawer();
   }
 
   function openCategory(id) {
@@ -88,6 +205,8 @@
     state.contactOpen = false;
     showView("category");
     updateNextLabel();
+    positionSectorStrip();
+    syncDrawer();
   }
 
   /* ============================================================
@@ -390,6 +509,10 @@
      WIRING
      ============================================================ */
   function wire() {
+    // Mobile drawer
+    $("#burger").addEventListener("click", toggleDrawer);
+    $("#navScrim").addEventListener("click", closeDrawer);
+
     // The inline iframe is interactive on its own, so clicking the
     // frame does NOT open the overlay. Expansion is explicit via the
     // expand button or the "Try a Digital Twin" pill.
@@ -448,10 +571,13 @@
      ============================================================ */
   function boot() {
     buildPillars();
+    buildDrawer();
+    buildSectorStrip();
     buildContact();
     renderCategory(getCategory(state.category));
     showView("home");
     wire();
+    initSwipe();
     initBackground();
     startTreedis();              // embed the live experience right away
     cyclePrompt();
