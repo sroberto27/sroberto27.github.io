@@ -156,7 +156,7 @@ window.DTS_CONFIG = {
   lead: {
     accessKey: "b825431d-56a9-4ee5-9042-72bb7685f8c3",                       // <-- paste Web3Forms key herec00416436@louisiana.edu
     //ownerEmail: "hello@dtsxr.com",       // <-- owner's destination inbox
-    ownerEmail: "00416436@louisiana.edu",   
+    ownerEmail: "robertoenrique2710@hotmail.com",
     subjectPrefix: "DTS Website Lead",
 
     /* Per-button form definitions. Each maps to one CTA id. The
