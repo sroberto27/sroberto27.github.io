@@ -103,29 +103,84 @@
       </div>
     </section>
 
-    <!-- ---------- VIEW: CATEGORY ---------- -->
+    <!-- ---------- VIEW: CATEGORY ----------
+         Holds a horizontal SLIDER with two panels that occupy the same
+         space: (0) the sector cards, (1) the inline contact panel.
+         Pressing "Contact & Info" slides to panel 1; the contact panel's
+         own arrows slide back or advance to the next sector's cards. -->
     <section class="view view-category" id="view-category" aria-label="Sector detail" hidden>
-      <div class="cat-grid">
-        <div class="cat-intro">
-          <span class="cat-kicker" id="catKicker">— EDUCATION</span>
-          <h2 class="cat-title" id="catTitle">Campus &amp; Schools</h2>
-          <p class="cat-sub" id="catSub">Digital Twin of your campus</p>
-          <p class="cat-body" id="catBody"></p>
-          <button class="cat-projects-btn" id="catProjectsBtn" type="button">
-            VIEW PROJECTS
-          </button>
-        </div>
 
-        <div class="cat-cards" id="catCards">
-          <!-- use-case cards injected by script.js -->
+      <div class="cat-slider" id="catSlider">
+        <div class="cat-track" id="catTrack">
+
+          <!-- PANEL 0 — sector cards -->
+          <div class="cat-panel cat-panel-cards">
+            <div class="cat-grid">
+              <div class="cat-intro">
+                <span class="cat-kicker" id="catKicker">— EDUCATION</span>
+                <h2 class="cat-title" id="catTitle">Campus &amp; Schools</h2>
+                <p class="cat-sub" id="catSub">Digital Twin of your campus</p>
+                <p class="cat-body" id="catBody"></p>
+                <button class="cat-projects-btn" id="catProjectsBtn" type="button">
+                  VIEW PROJECTS
+                </button>
+              </div>
+
+              <div class="cat-cards" id="catCards">
+                <!-- use-case cards injected by script.js -->
+              </div>
+            </div>
+
+            <!-- Clear, labeled control — slides to the contact panel. -->
+            <button class="contact-edge" id="contactEdge" type="button"
+                    aria-label="Slide to contact and information">
+              <span class="contact-edge-text">Contact&nbsp;&amp;&nbsp;Info</span>
+              <span class="contact-edge-arrow" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                  <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </button>
+          </div>
+
+          <!-- PANEL 1 — inline contact / next-step -->
+          <div class="cat-panel cat-panel-contact">
+            <!-- Back: slide to THIS sector's cards -->
+            <button class="panel-nav panel-nav-back" id="contactBack" type="button"
+                    aria-label="Back to sector">
+              <svg viewBox="0 0 24 24" width="22" height="22">
+                <path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span class="panel-nav-label">Back</span>
+            </button>
+
+            <!-- Next: advance to the NEXT sector's cards -->
+            <button class="panel-nav panel-nav-next" id="contactNext" type="button"
+                    aria-label="Next sector">
+              <span class="panel-nav-label" id="contactNextLabel">Industry</span>
+              <svg viewBox="0 0 24 24" width="22" height="22">
+                <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+
+            <div class="contact-inner">
+              <span class="contact-kicker" id="contactKicker">READY TO BEGIN?</span>
+              <h2 class="contact-headline">
+                <span id="contactHeadline">Begin with the right</span><br>
+                <span class="accent" id="contactAccent">first step.</span>
+              </h2>
+              <p class="contact-body" id="contactBody"></p>
+              <div class="contact-stages" id="contactStages"><!-- injected --></div>
+              <div class="contact-ctas" id="contactCtas"><!-- injected --></div>
+              <p class="contact-foot" id="contactFoot"></p>
+            </div>
+          </div>
+
         </div>
       </div>
-
-      <!-- swipe-to-contact hint -->
-      <button class="swipe-hint" id="swipeHint" type="button" aria-label="Go to contact">
-        <span class="swipe-chev" aria-hidden="true">»»</span>
-        <span class="swipe-text">SWIPE TO CONTACT &amp;<br><small>GET INFORMATION</small></span>
-      </button>
 
       <!-- Project evidence + bottom tabs -->
       <div class="cat-footer">
@@ -180,27 +235,6 @@
         <p class="overlay-loading-text" id="overlayLoadingText">Loading experience…</p>
       </div>
     </div>
-  </div>
-</div>
-
-<!-- ============================================================
-     CONTACT / NEXT-STEP OVERLAY  (matches ContactEducation.png)
-     ============================================================ -->
-<div class="overlay overlay-contact" id="contactOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Begin with the right first step">
-  <div class="overlay-scrim" data-close-overlay></div>
-  <div class="contact-window">
-    <button class="overlay-close" id="contactClose" type="button" aria-label="Close">
-      <svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-    </button>
-    <span class="contact-kicker" id="contactKicker">READY TO BEGIN?</span>
-    <h2 class="contact-headline">
-      <span id="contactHeadline">Begin with the right</span><br>
-      <span class="accent" id="contactAccent">first step.</span>
-    </h2>
-    <p class="contact-body" id="contactBody"></p>
-    <div class="contact-stages" id="contactStages"><!-- injected --></div>
-    <div class="contact-ctas" id="contactCtas"><!-- injected --></div>
-    <p class="contact-foot" id="contactFoot"></p>
   </div>
 </div>
 

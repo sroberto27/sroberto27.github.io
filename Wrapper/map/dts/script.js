@@ -82,7 +82,12 @@
   function openCategory(id) {
     state.category = id;
     renderCategory(getCategory(id));
+    // Always land on the cards panel when (re)entering a sector.
+    const track = $("#catTrack");
+    if (track) track.classList.remove("show-contact");
+    state.contactOpen = false;
     showView("category");
+    updateNextLabel();
   }
 
   /* ============================================================
@@ -238,7 +243,7 @@
     }
 
   /* ============================================================
-     CONTACT OVERLAY
+     CONTACT PANEL (inline slide — no overlay)
      ============================================================ */
   function buildContact() {
     const c = cfg.contact;
@@ -264,25 +269,44 @@
       b.className = "contact-cta" + (cta.primary ? " is-primary" : "");
       b.type = "button";
       b.textContent = cta.label;
-      b.addEventListener("click", () => {
-        flashQuestion(cta.label.toLowerCase());
-        closeContact();
-      });
+      b.addEventListener("click", () => { flashQuestion(cta.label.toLowerCase()); });
       wrap.appendChild(b);
     });
   }
 
-  function openContact() {
+  /* Slide the category track to reveal the inline contact panel. */
+  function slideToContact() {
     state.contactOpen = true;
-    const ov = $("#contactOverlay");
-    ov.classList.add("is-open");
-    ov.setAttribute("aria-hidden", "false");
+    $("#catTrack").classList.add("show-contact");
+    updateNextLabel();
   }
-  function closeContact() {
+
+  /* Slide back to the current sector's cards. */
+  function slideToCards() {
     state.contactOpen = false;
-    const ov = $("#contactOverlay");
-    ov.classList.remove("is-open");
-    ov.setAttribute("aria-hidden", "true");
+    $("#catTrack").classList.remove("show-contact");
+  }
+
+  /* Index helpers for sector sequencing. */
+  function currentCatIndex() {
+    return cfg.categories.findIndex((c) => c.id === state.category);
+  }
+  function nextCategory() {
+    const i = currentCatIndex();
+    return cfg.categories[(i + 1) % cfg.categories.length];
+  }
+
+  /* Update the "Next" arrow's label to name the next sector. */
+  function updateNextLabel() {
+    const lbl = $("#contactNextLabel");
+    if (lbl) lbl.textContent = nextCategory().label;
+  }
+
+  /* Next arrow: advance the whole category to the next sector's CARDS
+     view. openCategory() snaps the slider back to cards and syncs the
+     top-nav highlight (Education → Industry → …). */
+  function advanceToNextSector() {
+    openCategory(nextCategory().id);
   }
 
   /* ============================================================
@@ -375,20 +399,29 @@
     // Demo close
     $("#overlayClose").addEventListener("click", closeDemo);
 
-    // Contact open triggers
-    $("#accessTwin").addEventListener("click", openContact);
-    $("#swipeHint").addEventListener("click", openContact);
-    $("#catProjectsBtn").addEventListener("click", openContact);
-    $("#contactClose").addEventListener("click", closeContact);
+    // Contact slide controls (inline — no overlay)
+    $("#contactEdge").addEventListener("click", slideToContact);
+    $("#contactBack").addEventListener("click", slideToCards);
+    $("#contactNext").addEventListener("click", advanceToNextSector);
+    // "View projects" surfaces the contact/next-step panel too.
+    $("#catProjectsBtn").addEventListener("click", slideToContact);
+    // Top-right portal: ensure a sector is open, then slide to contact.
+    $("#accessTwin").addEventListener("click", () => {
+      if (state.view !== "category") openCategory(state.category);
+      slideToContact();
+    });
 
-    // Generic scrim closers
+    // Generic scrim closers (demo overlay only now)
     $$("[data-close-overlay]").forEach((s) =>
-      s.addEventListener("click", () => { closeDemo(); closeContact(); })
+      s.addEventListener("click", () => { closeDemo(); })
     );
 
-    // Escape closes any overlay
+    // Escape: close demo overlay, or slide contact back to cards.
     document.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") { closeDemo(); closeContact(); }
+      if (e.key === "Escape") {
+        closeDemo();
+        if (state.contactOpen) slideToCards();
+      }
     });
 
     // Brand returns home

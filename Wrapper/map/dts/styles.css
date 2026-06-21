@@ -262,15 +262,78 @@ body{
 .uc-card h3{ color:var(--gold); font-size:clamp(12px,1.05vw,16px); font-weight:700; letter-spacing:.06em; margin:0 0 clamp(8px,1vh,14px); }
 .uc-card p{ color:var(--muted); font-size:clamp(12px,1vw,15.5px); line-height:1.55; margin:0; }
 
-/* swipe-to-contact hint */
-.swipe-hint{
-  position:absolute; right:var(--pad-x); top:46%;
-  appearance:none; background:none; border:0; cursor:pointer;
-  display:flex; align-items:center; gap:10px; color:var(--gold); text-align:left;
+/* ---------- CATEGORY: horizontal slider (cards ⇄ contact) ----------
+   The slider occupies the flexible body area of the view. A track
+   holds two full-width panels side by side; translating the track by
+   -50% reveals the contact panel. */
+.cat-slider{
+  flex:1 1 auto; min-height:0;
+  position:relative; overflow:hidden;
 }
-.swipe-chev{ font-size:clamp(16px,1.6vw,22px); font-weight:700; }
-.swipe-text{ font-size:clamp(11px,1vw,14px); font-weight:700; letter-spacing:.04em; line-height:1.25; }
-.swipe-text small{ font-size:clamp(9px,.8vw,11px); color:var(--muted); letter-spacing:.06em; }
+.cat-track{
+  display:flex;
+  width:200%; height:100%;
+  transform:translateX(0);
+  transition:transform .5s cubic-bezier(.65,.02,.25,1);
+}
+.cat-track.show-contact{ transform:translateX(-50%); }
+.cat-panel{
+  width:50%; height:100%; flex:0 0 50%;
+  position:relative;
+  display:flex; flex-direction:column;
+  min-height:0;
+}
+
+/* Cards panel keeps the existing two-column grid. */
+.cat-panel-cards .cat-grid{ flex:1 1 auto; min-height:0; }
+
+/* Clear labeled "Contact & Info" control — anchored to the right edge
+   of the cards panel, reads as "slide right". Replaces the old hand. */
+.contact-edge{
+  position:absolute; right:0; top:50%; transform:translateY(-50%);
+  appearance:none; cursor:pointer;
+  display:flex; align-items:center; gap:10px;
+  background:linear-gradient(180deg, rgba(214,168,73,.16), rgba(214,168,73,.06));
+  color:var(--gold);
+  border:1px solid rgba(214,168,73,.55);
+  border-right:0;
+  border-radius:12px 0 0 12px;
+  padding:clamp(14px,2.4vh,22px) clamp(12px,1.4vw,18px);
+  font-weight:700; font-size:clamp(11px,.95vw,14px); letter-spacing:.06em;
+  transition:background .18s, padding-right .18s;
+}
+.contact-edge:hover{ background:var(--gold); color:#1a1206; padding-right:clamp(18px,2vw,26px); }
+.contact-edge-text{ writing-mode:vertical-rl; transform:rotate(180deg); text-transform:uppercase; }
+.contact-edge-arrow{ display:flex; }
+
+/* Inline contact panel */
+.cat-panel-contact{
+  align-items:center; justify-content:center;
+  text-align:center;
+  background:
+    radial-gradient(900px 500px at 80% 30%, rgba(124,58,92,.18), transparent 60%),
+    radial-gradient(700px 600px at 12% 90%, rgba(20,80,80,.14), transparent 60%);
+  border:1px solid var(--line); border-radius:16px;
+  padding:clamp(20px,3vw,44px);
+}
+.contact-inner{ width:min(760px,92%); }
+
+/* Panel nav arrows (back / next) */
+.panel-nav{
+  position:absolute; top:50%; transform:translateY(-50%);
+  appearance:none; cursor:pointer;
+  display:flex; align-items:center; gap:8px;
+  background:rgba(255,255,255,.06); color:var(--muted);
+  border:1px solid var(--line); border-radius:10px;
+  padding:clamp(10px,1.4vh,14px) clamp(10px,1vw,14px);
+  font-weight:700; font-size:clamp(11px,.92vw,13px); letter-spacing:.04em;
+  transition:background .15s,color .15s,border-color .15s;
+  z-index:3;
+}
+.panel-nav:hover{ background:rgba(255,255,255,.12); color:var(--ink); border-color:var(--gold); }
+.panel-nav-back{ left:clamp(10px,1.4vw,22px); }
+.panel-nav-next{ right:clamp(10px,1.4vw,22px); }
+.panel-nav-label{ white-space:nowrap; }
 
 /* category footer / evidence — fixed strip at bottom of the view. */
 .cat-footer{
@@ -376,15 +439,7 @@ body{
 }
 @keyframes spin{ to{ transform:rotate(360deg); } }
 
-/* ---------- Contact overlay ---------- */
-.contact-window{
-  position:relative; z-index:2;
-  width:min(920px,94vw); max-height:92vh; overflow:auto;
-  padding:clamp(34px,4vw,56px) clamp(24px,3.4vw,52px) clamp(28px,3vw,42px);
-  background:linear-gradient(160deg,#0e1424,#0a0d16);
-  border:1px solid var(--line); border-radius:clamp(14px,1.6vw,22px);
-  text-align:center; box-shadow:0 40px 120px rgba(0,0,0,.6);
-}
+/* ---------- Contact panel (inline) text styles ---------- */
 .contact-kicker{ color:var(--muted); font-size:clamp(11px,.95vw,13px); font-weight:700; letter-spacing:.2em; }
 .contact-headline{ font-size:clamp(28px,3.8vw,52px); font-weight:800; margin:clamp(12px,1.6vh,20px) 0; line-height:1.05; }
 .contact-headline .accent{ color:var(--gold); }
@@ -447,7 +502,8 @@ body{
     grid-template-rows:auto 1fr;
     align-content:start;
   }
-  .swipe-hint{ position:static; margin-top:14px; align-self:flex-start; }
+  /* Keep room on the right so the edge button doesn't cover cards. */
+  .cat-panel-cards{ padding-right:clamp(40px,7vw,72px); }
 }
 
 /* ----- Allow vertical scrolling inside views on shorter screens ----- */
@@ -492,6 +548,14 @@ body{
   .dockbar{ flex-wrap:wrap; padding:10px 14px; gap:10px; }
   .qbar{ width:100%; max-width:none; order:1; }
   .dock-tabs{ order:2; flex-basis:100%; }
+
+  /* Contact slider on phone: compact edge tab + icon-only arrows. */
+  .cat-panel-cards{ padding-right:34px; }
+  .contact-edge{ padding:14px 8px; font-size:11px; gap:4px; }
+  .contact-edge-text{ font-size:10px; }
+  .panel-nav-label{ display:none; }      /* arrows only — save width */
+  .panel-nav{ padding:10px; }
+  .cat-panel-contact{ padding:48px 14px; }
 }
 
 /* ----- Very large screens: cap so type doesn't get silly ----- */
