@@ -204,25 +204,25 @@ body{
 /* Category hexagons — clickable navigation, filled with the droplet image. */
 .hex-cat{
   appearance:none; cursor:pointer;
-  width:clamp(88px,7.2vw,150px); aspect-ratio:1/0.9;
+  width:clamp(62px,5vw,104px); aspect-ratio:1/0.9;
   background-image:url("assets-droplet.png");
   background-size:cover; background-position:center;
   display:flex; align-items:center; justify-content:center;
-  padding:0 10%;
+  padding:0 8%;
   transition:transform .25s ease, filter .25s ease;
   filter:saturate(1) brightness(.92);
 }
 .hex-label{
   color:#fff; font-weight:800; letter-spacing:.04em;
-  font-size:clamp(9px,.76vw,14px); text-transform:uppercase;
+  font-size:clamp(7px,.58vw,11px); text-transform:uppercase;
   text-shadow:0 2px 8px rgba(0,0,0,.9); pointer-events:none;
 }
 
 /* ---------- Constellation placement (Figma-style: small satellites around the large demo hex) ---------- */
-.hex-education { top:76%; left:32%; transform:translate(-50%,-50%); z-index:7; }
-.hex-industry { top:64%; left:42%; transform:translate(-50%,-50%); z-index:7; }
-.hex-government{ top:36%; left:80%; transform:translate(-50%,-50%); z-index:7; }
-.hex-community { top:24%; left:90%; transform:translate(-50%,-50%); z-index:7; }
+.hex-education { top:76.5%; left:32.2%; transform:translate(-50%,-50%); z-index:7; }
+.hex-industry { top:63.5%; left:42.4%; transform:translate(-50%,-50%); z-index:7; }
+.hex-government{ top:34.5%; left:79.6%; transform:translate(-50%,-50%); z-index:7; }
+.hex-community { top:23.5%; left:89.2%; transform:translate(-50%,-50%); z-index:7; }
 .hex-cat:hover,
 .hex-cat:focus-visible{ transform:translate(-50%,-50%) scale(1.05); filter:saturate(1.25) brightness(1.1); outline:none; }
 
