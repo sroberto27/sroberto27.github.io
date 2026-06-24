@@ -22,7 +22,7 @@ window.DTS_CONFIG = {
     /* The SCSU wrapper shipped these. They are kept as a working
        default so the demo frame shows a real tour out of the box.
        Replace with the DTS marketing/demo showcase when ready. */
-    tourUrl: "https://spaces.dtsxr.com/tour/8e4ca3fc",
+    tourUrl: "https://spaces.dtsxr.com/tour/4fb22059",
     origin:  "https://spaces.dtsxr.com",
 
     /* Optional landing sweep — null opens the model default.
@@ -240,7 +240,7 @@ window.DTS_CONFIG = {
         illustrative: false,
         blurb: "A full Matterport + Treedis twin of the SC State campus pairing a 2D map with 360 street-view sweeps. Buildings, tour stops, and a course-linked Learn mode let students walk the campus and drop into immersive VR before they set foot on it."
       },
-      sweepId: "itqbbw5un90s6fubay1sg9wpb",
+      sweepId: null,
       evidence: {
         "Case Studies": "SC State Virtual Campus — recruitment and orientation tool spanning the full campus footprint with deep links into classroom VR.",
         "Awards": "Recognized internally as the reference framework all later DTS spatial-navigation builds adapt from.",
@@ -322,7 +322,7 @@ window.DTS_CONFIG = {
         illustrative: false,
         blurb: "A Matterport Pro2 capture of a solar installation on the Treedis platform — the kind of infrastructure twin used for insurance documentation, compliance records, and remote inspection of energy assets."
       },
-      sweepId: "hnz5p2wkdqr4isd41y1z2e1kc",
+      sweepId: null,
       evidence: {
         "Case Studies": "Solar Farm Sample — infrastructure capture for compliance and insurance documentation.",
         "Awards": "\u2014",

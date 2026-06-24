@@ -17,7 +17,7 @@
       One row per client. Example row:
 
         acme-hotel | 4821 | Acme Hotels | Lobby & Event Twin |
-        https://spaces.dtsxr.com/tour/8e4ca3fc | itqbbw5un90s6fubay1sg9wpb |
+        https://spaces.dtsxr.com/tour/4fb22059 | <sweep-id-or-blank> |
         Renewal due Q3
 
    2. File ▸ Share ▸ Publish to web ▸ choose the sheet/tab ▸
