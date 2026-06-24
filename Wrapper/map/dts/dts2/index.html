@@ -117,6 +117,10 @@
               </svg>
             </button>
             <div class="demo-stage" id="demoStage">
+              <!-- Static spatial preview shown while collapsed; the gate
+                   opening reveals the live iframe behind it and the
+                   preview fades out. -->
+              <div class="demo-preview" aria-hidden="true"></div>
               <!-- The live iframe is injected here at boot. -->
               <div class="demo-loading" id="demoLoading">
                 <div class="spinner" aria-hidden="true"></div>

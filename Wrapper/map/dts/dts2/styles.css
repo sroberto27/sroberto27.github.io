@@ -148,14 +148,17 @@ body{
 .view[hidden]{ display:none; }
 
 /* ---------- HOME ---------- */
+/* The home area is a positioning context: the copy floats on the left,
+   the hexagon constellation spans the whole area so hexagons can sit
+   in the centre and right (matching the reference). */
 .home-grid{
-  flex:1 1 auto; min-height:0;     /* fill remaining height */
-  display:grid;
-  grid-template-columns:minmax(260px,1fr) minmax(0,1.5fr);
-  gap:clamp(24px,3vw,56px);
-  align-items:stretch;             /* demo frame fills full height */
+  flex:1 1 auto; min-height:0;
+  position:relative;
 }
-.home-copy{ min-width:0; align-self:center; }   /* copy stays centered */
+.home-copy{
+  position:absolute; left:0; top:50%; transform:translateY(-50%);
+  width:min(46%, 560px); min-width:0; z-index:8;
+}
 .copy-kicker{ color:var(--gold); font-size:clamp(10px,.9vw,13px); font-weight:700; letter-spacing:.22em; }
 .home-headline{
   font-size:clamp(34px, 5.2vw, 84px); font-weight:800; line-height:1.0;
@@ -175,68 +178,71 @@ body{
    expands to cover the stage, then a centre-out gate opens.
    ============================================================ */
 .hex-stage{
-  position:relative;
-  height:100%; min-height:0; min-width:0;
+  position:absolute; inset:0;
+  z-index:3;
 }
 
-/* Shared hexagon shape + iridescent droplet fill (CSS-only, no asset). */
+/* Shared hexagon shape + iridescent droplet image fill. */
 .hex{
   --hex: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0% 50%);
   position:absolute;
   -webkit-clip-path:var(--hex); clip-path:var(--hex);
-  background:
-    radial-gradient(circle at 30% 25%, rgba(120,200,255,.5), transparent 22%),
-    radial-gradient(circle at 68% 38%, rgba(255,170,120,.45), transparent 20%),
-    radial-gradient(circle at 50% 70%, rgba(180,130,255,.5), transparent 26%),
-    radial-gradient(circle at 80% 78%, rgba(120,255,210,.4), transparent 22%),
-    linear-gradient(150deg, #1b2740, #0c1322 70%);
+  background:#0c1322 center/cover no-repeat;
   border:0;
 }
 
 /* Decorative hexagons — dim, non-interactive, just background depth. */
 .hex-deco{
-  background:linear-gradient(150deg, rgba(40,60,95,.5), rgba(12,19,34,.5));
-  opacity:.5;
+  background:linear-gradient(150deg, rgba(40,60,95,.55), rgba(12,19,34,.55));
+  opacity:.45;
 }
-.hex-deco-1{ width:clamp(70px,7vw,120px); aspect-ratio:1/1.1; top:34%; left:42%; }
-.hex-deco-2{ width:clamp(60px,6vw,100px); aspect-ratio:1/1.1; top:62%; left:34%; }
-.hex-deco-3{ width:clamp(80px,8vw,140px); aspect-ratio:1/1.1; top:12%; left:62%; opacity:.35; }
-.hex-deco-4{ width:clamp(50px,5vw,90px);  aspect-ratio:1/1.1; top:6%;  left:84%; opacity:.4; }
+.hex-deco-1{ width:clamp(54px,5vw,86px);  aspect-ratio:1/1.12; top:40%; left:50%; transform:translate(-50%,-50%); }
+.hex-deco-2{ width:clamp(48px,4.6vw,78px);aspect-ratio:1/1.12; top:66%; left:42%; transform:translate(-50%,-50%); }
+.hex-deco-3{ width:clamp(60px,6vw,104px); aspect-ratio:1/1.12; top:24%; left:66%; transform:translate(-50%,-50%); }
+.hex-deco-4{ width:clamp(40px,4vw,70px);  aspect-ratio:1/1.12; top:14%; left:80%; transform:translate(-50%,-50%); }
 
-/* Category hexagons — clickable navigation. */
+/* Category hexagons — clickable navigation, filled with the droplet image. */
 .hex-cat{
   appearance:none; cursor:pointer;
-  width:clamp(120px,13vw,210px); aspect-ratio:1/1.1;
-  display:flex; align-items:center; justify-content:center;
+  width:clamp(120px,12.5vw,200px); aspect-ratio:1/1.12;
+  background-image:url("assets-droplet.png");
+  background-size:cover; background-position:center;
+  display:flex; align-items:flex-end; justify-content:center;
+  padding-bottom:14%;
   transition:transform .25s ease, filter .25s ease;
   filter:saturate(1) brightness(.92);
 }
-.hex-cat:hover,
-.hex-cat:focus-visible{ transform:scale(1.05); filter:saturate(1.25) brightness(1.08); outline:none; }
 .hex-label{
   color:#fff; font-weight:800; letter-spacing:.04em;
   font-size:clamp(11px,1vw,16px); text-transform:uppercase;
-  text-shadow:0 2px 8px rgba(0,0,0,.7); pointer-events:none;
+  text-shadow:0 2px 8px rgba(0,0,0,.85); pointer-events:none;
 }
-/* Constellation placement (mirrors the reference layout). */
-.hex-education { bottom:6%;  left:24%; }
-.hex-industry { top:46%;    left:14%; }
-.hex-government{ top:24%;    right:22%; }
-.hex-community { top:6%;     right:6%; }
+
+/* ---------- Constellation placement (full-area diagonal cluster) ----------
+   Stair-steps up-and-right across the home area, matching the reference:
+   Education (low, just right of the copy) → Industry → big experience
+   hexagon (centre) → Government → Community (high right). */
+.hex-education { top:62%; left:30%; transform:translate(-50%,-50%); z-index:5; }
+.hex-industry { top:50%; left:42%; transform:translate(-50%,-50%); z-index:5; }
+.hex-government{ top:34%; left:76%; transform:translate(-50%,-50%); z-index:5; }
+.hex-community { top:22%; left:88%; transform:translate(-50%,-50%); z-index:5; }
+.hex-cat:hover,
+.hex-cat:focus-visible{ transform:translate(-50%,-50%) scale(1.05); filter:saturate(1.25) brightness(1.1); outline:none; }
 
 /* ---------- Big experience hexagon ---------- */
 .demo-frame.hex-experience{
   position:absolute;
-  top:50%; left:50%;
-  width:clamp(280px,30vw,520px);
-  height:clamp(320px,52vh,600px);
+  /* Centre of the diagonal cluster, between Industry and Government. */
+  top:48%; left:61%;
+  width:clamp(280px,24vw,440px);
+  height:clamp(320px,44vh,520px);
   transform:translate(-50%,-50%);
   -webkit-clip-path:polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0% 50%);
   clip-path:polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0% 50%);
   border:0; border-radius:0; padding:0;
   background:#0a1018;
   display:flex; flex-direction:column;
-  z-index:5;
+  z-index:6;
   /* The metamorphosis: clip-path + size + position all animate. */
   transition:
     clip-path .55s cubic-bezier(.7,.02,.3,1),
@@ -249,6 +255,15 @@ body{
 }
 .hex-experience:not(.is-expanded){ cursor:pointer; }
 .hex-experience:not(.is-expanded):hover{ filter:brightness(1.06); }
+
+/* Static preview image — shown in the collapsed/hexagon state and while
+   the gates are closed. Fades out as the experience opens. */
+.demo-preview{
+  position:absolute; inset:0; z-index:1;
+  background:url("assets-experience.png") center/cover no-repeat;
+  transition:opacity .4s ease;
+}
+.hex-experience.is-open .demo-preview{ opacity:0; }
 
 /* The "Try a Digital Twin" pill docks above the hexagon. */
 .demo-try{
@@ -280,7 +295,7 @@ body{
   background:radial-gradient(120% 120% at 50% 0%, #16203400, #0a1018);
   display:flex;
 }
-.demo-stage iframe{ width:100%; height:100%; border:0; display:block; }
+.demo-stage iframe{ width:100%; height:100%; border:0; display:block; position:relative; z-index:2; }
 .demo-loading{
   position:absolute; inset:0; display:flex; flex-direction:column;
   align-items:center; justify-content:center; gap:14px; color:var(--muted); text-align:center; padding:24px;

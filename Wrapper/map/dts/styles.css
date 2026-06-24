@@ -648,6 +648,154 @@ body{
 .sector-arrow:active{ background:rgba(214,168,73,.18); }
 .sector-arrow:disabled{ color:var(--faint); opacity:.4; cursor:default; }
 
+
+/* ============================================================
+   EXAMPLE WINDOW  (per sub-vertical) — matches experienceOpenedWindow.png
+   Large rounded dark window: a live experience pane on top, a
+   scrolling content pane (overview + project + evidence) below.
+   ============================================================ */
+.example-window{
+  display:flex; flex-direction:column;
+  background:#0c111c;
+}
+/* Experience pane — the borrowed Treedis iframe fills it. */
+.example-stage{
+  position:relative; flex:0 0 auto;
+  height:clamp(220px, 42%, 460px);
+  background:radial-gradient(120% 120% at 50% 0%, #16203400, #0a1018);
+  border-bottom:1px solid var(--line);
+}
+.example-stage iframe{ width:100%; height:100%; border:0; display:block; }
+.example-loading{
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:14px; color:var(--muted);
+}
+.example-loading.is-hidden{ display:none; }
+.example-loading-text{ font-size:13px; }
+
+/* Content pane — scrolls within the window. */
+.example-content{
+  flex:1 1 auto; min-height:0; overflow-y:auto;
+  padding:clamp(20px,2.4vw,34px) clamp(20px,2.8vw,40px) clamp(24px,3vw,40px);
+}
+.example-kicker{ color:var(--gold); font-size:clamp(11px,.95vw,13px); font-weight:700; letter-spacing:.18em; }
+.example-title{ font-size:clamp(24px,2.8vw,38px); font-weight:800; margin:6px 0 8px; line-height:1.05; }
+.example-tagline{ color:var(--muted); font-size:clamp(13px,1.05vw,16px); margin:0 0 16px; line-height:1.5; max-width:70ch; }
+
+.example-meta{ display:flex; flex-wrap:wrap; gap:8px; margin:0 0 18px; }
+.meta-chip{
+  font-size:11.5px; font-weight:600; letter-spacing:.02em;
+  color:var(--muted); background:rgba(255,255,255,.05);
+  border:1px solid var(--line); border-radius:999px; padding:5px 12px;
+}
+.meta-chip.meta-kind{ color:var(--gold); border-color:rgba(214,168,73,.45); background:rgba(214,168,73,.08); }
+
+.example-overview{ color:var(--muted); font-size:clamp(13px,1.02vw,15.5px); line-height:1.65; max-width:74ch; margin:0 0 22px; }
+
+.example-project{
+  background:linear-gradient(160deg, rgba(18,26,43,.7), rgba(10,15,24,.7));
+  border:1px solid var(--line); border-left:3px solid var(--gold);
+  border-radius:12px; padding:clamp(16px,1.6vw,24px); margin:0 0 22px;
+}
+.example-project-label{ color:var(--gold); font-size:11px; font-weight:700; letter-spacing:.16em; }
+.example-project-name{ font-size:clamp(16px,1.4vw,21px); font-weight:700; margin:8px 0 8px; }
+.example-project-blurb{ color:var(--muted); font-size:clamp(13px,1vw,15px); line-height:1.6; margin:0; max-width:76ch; }
+.example-illustrative{
+  display:inline-block; margin-top:12px;
+  font-size:11px; font-weight:600; letter-spacing:.02em; color:var(--faint);
+  border:1px dashed var(--line); border-radius:6px; padding:4px 10px;
+}
+
+.example-evidence{ margin:0 0 24px; }
+.example-evidence-label{ color:var(--ink); font-size:clamp(11px,.95vw,13px); font-weight:700; letter-spacing:.12em; }
+.example-evidence-tabs{ display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 14px; }
+.example-evidence-tabs button{
+  appearance:none; cursor:pointer; white-space:nowrap;
+  background:transparent; color:var(--muted);
+  border:1px solid var(--line); border-radius:6px;
+  padding:7px 14px; font-family:var(--sans); font-size:12px; font-weight:600; letter-spacing:.03em;
+  transition:border-color .15s,color .15s,background .15s;
+}
+.example-evidence-tabs button:hover{ color:var(--ink); border-color:var(--gold); }
+.example-evidence-tabs button.is-active{ color:#1a1206; background:var(--gold); border-color:var(--gold); }
+.example-evidence-body{ color:var(--muted); font-size:clamp(13px,1vw,15px); line-height:1.6; margin:0; max-width:76ch; min-height:2.6em; }
+
+.example-cta-row{ display:flex; flex-wrap:wrap; gap:12px; }
+.example-cta{
+  appearance:none; cursor:pointer;
+  background:transparent; color:var(--ink);
+  border:1px solid var(--line); border-radius:9px;
+  padding:13px 22px; font-family:var(--sans); font-size:14px; font-weight:700; letter-spacing:.02em;
+  transition:border-color .15s, background .15s, color .15s;
+}
+.example-cta:hover{ border-color:var(--gold); }
+.example-cta-primary{ background:var(--gold); color:#1a1206; border-color:var(--gold); }
+.example-cta-primary:hover{ background:var(--gold-bright); }
+
+/* Sector colour accents for the example window kicker / project rule. */
+.example-window[data-sector="education"]  .example-kicker,
+.example-window[data-sector="education"]  .example-project-label{ color:#6cc6e6; }
+.example-window[data-sector="industry"]   .example-kicker,
+.example-window[data-sector="industry"]   .example-project-label{ color:#e0a23b; }
+.example-window[data-sector="government"] .example-kicker,
+.example-window[data-sector="government"] .example-project-label{ color:#7fd18a; }
+.example-window[data-sector="community"]  .example-kicker,
+.example-window[data-sector="community"]  .example-project-label{ color:#e8bf63; }
+
+/* ============================================================
+   ACCESS YOUR TWIN  (sign-in + dashboard)
+   ============================================================ */
+.access-window{ width:min(520px,94vw); }
+.access-view .form-field{ margin-bottom:14px; }
+.access-dashboard{ text-align:left; }
+
+/* List of the signed-in client's twins, each with its own Open button. */
+.dash-twins{ display:flex; flex-direction:column; gap:10px; margin:14px 0 4px; max-height:46vh; overflow-y:auto; }
+.dash-twin{
+  display:flex; align-items:center; gap:12px;
+  background:rgba(255,255,255,.04); border:1px solid var(--line);
+  border-radius:10px; padding:12px 12px 12px 14px;
+}
+.dash-twin-info{ display:flex; flex-direction:column; gap:3px; min-width:0; flex:1 1 auto; }
+.dash-twin-name{ font-size:clamp(14px,1.2vw,16px); font-weight:700; color:var(--ink); }
+.dash-twin-note{ font-size:12.5px; color:var(--muted); line-height:1.45; }
+.dash-twin-open{
+  flex:0 0 auto; appearance:none; cursor:pointer;
+  background:var(--gold); color:#1a1206; border:0; border-radius:8px;
+  padding:9px 20px; font-family:var(--sans); font-size:13px; font-weight:700; letter-spacing:.02em;
+  transition:background .15s;
+}
+.dash-twin-open:hover{ background:var(--gold-bright); }
+
+.dash-cta-row{ display:flex; gap:12px; margin-top:18px; flex-wrap:wrap; }
+.dash-cta-row .form-submit{ margin-top:0; flex:1 1 160px; }
+.form-submit-ghost{ background:transparent; color:var(--muted); border:1px solid var(--line); }
+.form-submit-ghost:hover{ background:rgba(255,255,255,.06); color:var(--ink); }
+
+/* ============================================================
+   QUESTION-BAR ANSWER POPOVER
+   ============================================================ */
+.qbar-answer{
+  position:absolute; left:0; bottom:calc(100% + 12px);
+  width:min(460px, 86vw);
+  background:#0e1424; color:var(--ink);
+  border:1px solid var(--line); border-radius:14px;
+  padding:16px 38px 16px 16px;
+  box-shadow:0 24px 60px rgba(0,0,0,.55);
+  z-index:8;
+}
+.qbar-answer[hidden]{ display:none; }
+.qbar-answer-close{
+  position:absolute; top:10px; right:10px;
+  appearance:none; cursor:pointer;
+  width:26px; height:26px; border-radius:50%;
+  background:rgba(255,255,255,.08); color:var(--muted); border:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.qbar-answer-close:hover{ background:rgba(255,255,255,.16); color:var(--ink); }
+.qbar-answer-q{ color:var(--gold); font-size:13px; font-weight:700; margin:0 0 6px; }
+.qbar-answer-a{ color:var(--muted); font-size:13px; line-height:1.55; margin:0; }
+
 /* ============================================================
    RESPONSIVE  (phone → tablet → desktop)
    Pattern mirrors the Experimental base: progressive breakpoints,
@@ -822,6 +970,20 @@ body{
   }
   .cookie-actions{ margin-top:0; flex:0 0 auto; gap:8px; }
   .cookie-btn{ padding:7px 14px; font-size:11px; }
+
+  /* Example window: experience pane shrinks; content gets tighter pad. */
+  .example-window{ width:100vw; height:100dvh; border-radius:0; }
+  .example-stage{ height:38vh; }
+  .example-content{ padding:18px 16px 28px; }
+  .example-cta-row .example-cta{ flex:1 1 100%; text-align:center; }
+
+  /* Access window: full-width fields, stacked dashboard CTAs. */
+  .access-window{ width:94vw; }
+  .dash-cta-row{ flex-direction:column; }
+  .dash-cta-row .form-submit{ width:100%; }
+
+  /* Answer popover spans the bar width above the dock. */
+  .qbar-answer{ width:calc(100vw - 24px); left:50%; transform:translateX(-50%); }
 }
 
 /* Slightly larger phones / small tablets keep cards roomier. */

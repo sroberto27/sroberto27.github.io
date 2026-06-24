@@ -238,40 +238,43 @@
     $("#catSub").textContent    = c.sub;
     $("#catBody").textContent   = c.body;
 
-    // use-case cards
+    // use-case cards — clicking one opens that sub-vertical's example window.
     const grid = $("#catCards");
     grid.innerHTML = "";
     c.cards.forEach((card) => {
       const el = document.createElement("div");
       el.className = "uc-card";
       el.tabIndex = 0;
+      el.dataset.card = card.id;
       el.innerHTML =
         '<h3>' + card.title.toUpperCase() + '</h3><p>' + card.text + '</p>';
-      // Clicking a use case opens the demo experience (placeholder hook
-      // for a per-sub-vertical Treedis sweep later).
-      el.addEventListener("click", () => openDemo());
+      el.addEventListener("click", () => openExample(card.id));
       el.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openDemo(); }
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openExample(card.id); }
       });
       grid.appendChild(el);
     });
 
-    // bottom dock tabs: Use Cases + one per card
+    // bottom dock tabs: Use Cases + one per card. "Use Cases" returns to
+    // the cards grid; each sub-vertical tab opens its example window.
     const tabs = $("#dockTabs");
     tabs.innerHTML = "";
-    const useCasesTab = makeTab("usecases", "Use Cases", true);
-    tabs.appendChild(useCasesTab);
+    tabs.appendChild(makeTab("usecases", "Use Cases", true));
     c.cards.forEach((card) => tabs.appendChild(makeTab(card.id, card.title)));
     state.dockTab = "usecases";
 
-    // evidence filters
+    // evidence filters — open this sector's lead example window focused on
+    // the chosen proof type (Case Studies, Awards, …).
     const filters = $("#evidenceFilters");
     filters.innerHTML = "";
     cfg.evidence.forEach((label) => {
       const b = document.createElement("button");
       b.type = "button";
       b.textContent = label;
-      b.addEventListener("click", () => flashQuestion('Show me ' + label.toLowerCase()));
+      b.addEventListener("click", () => {
+        const lead = getCategory(state.category).cards[0];
+        if (lead) openExample(lead.id, label);
+      });
       filters.appendChild(b);
     });
   }
@@ -283,16 +286,16 @@
     b.dataset.tab = id;
     b.textContent = label;
     b.addEventListener("click", () => {
-      state.dockTab = id;
       $$(".dock-tab").forEach((t) =>
         t.classList.toggle("is-active", t.dataset.tab === id)
       );
-      // Highlight the matching card for orientation.
-      const cards = $$(".uc-card");
-      const idx = getCategory(state.category).cards.findIndex((c) => c.id === id);
-      cards.forEach((card, i) => {
-        card.style.outline = i === idx ? "1px solid var(--gold)" : "";
-      });
+      if (id === "usecases") {
+        state.dockTab = "usecases";
+        if (state.contactOpen) slideToCards();
+        $$(".uc-card").forEach((card) => (card.style.outline = ""));
+      } else {
+        openExample(id);
+      }
     });
     return b;
   }
@@ -308,6 +311,7 @@
      TourBridge handshake intact — no reload, no re-init.
      ============================================================ */
     let treedisIframe = null;
+    let pendingExampleSweep = null;   // sweep queued while Treedis is still booting
 
     function startTreedis() {
       if (state.treedisStarted) return;
@@ -337,12 +341,17 @@
         origin: cfg.treedis.origin,
         defaultTransitionTime: cfg.treedis.defaultTransitionTime,
         onReady: function () {
-          // Hide both loading veils once Treedis is live.
-          const dl = $("#demoLoading");
-          const ol = $("#overlayLoading");
-          if (dl) dl.classList.add("is-hidden");
-          if (ol) ol.classList.add("is-hidden");
-          if (cfg.treedis.homeSweepId) {
+          // Hide all loading veils once Treedis is live.
+          ["#demoLoading", "#overlayLoading", "#exampleLoading"].forEach((sel) => {
+            const v = $(sel); if (v) v.classList.add("is-hidden");
+          });
+          // Honour a sweep queued before the bridge was ready (an example
+          // window or a client twin opened during cold boot), else the
+          // configured home sweep.
+          if (pendingExampleSweep) {
+            TourBridge.navigateToSweep(pendingExampleSweep);
+            pendingExampleSweep = null;
+          } else if (cfg.treedis.homeSweepId) {
             TourBridge.navigateToSweep(cfg.treedis.homeSweepId);
           }
         },
@@ -373,13 +382,361 @@
     function closeDemo() {
       state.demoOpen = false;
       const ov = $("#demoOverlay");
+      if (treedisIframe) parkIframe();   // return iframe to the home stage
+      ov.classList.remove("is-open");
+      ov.setAttribute("aria-hidden", "true");
+    }
+
+    /* Move the live Treedis iframe back to its inline home stage. Used
+       whenever an overlay that borrowed it (demo or example) closes. */
+    function parkIframe() {
       const stage = $("#demoStage");
       if (treedisIframe && stage && treedisIframe.parentNode !== stage) {
         stage.appendChild(treedisIframe);
       }
-      ov.classList.remove("is-open");
-      ov.setAttribute("aria-hidden", "true");
     }
+
+  /* ============================================================
+     EXAMPLE WINDOW  (per sub-vertical)
+     ------------------------------------------------------------
+     Opened by a use-case card, a bottom dock tab, or an evidence
+     filter. Populates content from cfg.examples[cardId], borrows
+     the live Treedis iframe into its experience pane, and (when the
+     example specifies a sweepId) navigates the tour to that sweep.
+     ============================================================ */
+  let activeExampleId = null;
+
+  function openExample(cardId, evidenceLabel) {
+    const ex = cfg.examples && cfg.examples[cardId];
+    if (!ex) { console.warn("[dts] no example for", cardId); return; }
+    activeExampleId = cardId;
+
+    const cat = cfg.categories.find((c) => c.id === ex.sector) || getCategory(state.category);
+
+    // Header
+    $("#exKicker").textContent  = "— " + (cat.kicker || cat.label.toUpperCase());
+    $("#exTitle").textContent   = ex.title;
+    $("#exTagline").textContent = ex.tagline || "";
+    $("#exOverview").textContent = ex.overview || "";
+
+    // Capture chip (the solar-farm style "Captured with" line)
+    $("#exCapture").textContent = "Captured with: " + (ex.capturedWith || "Matterport Pro2");
+
+    // Project example
+    $("#exProjectName").textContent  = ex.project.name;
+    $("#exProjectBlurb").textContent = ex.project.blurb;
+    const kindChip = $("#exKind");
+    if (ex.project.kind) { kindChip.hidden = false; kindChip.textContent = ex.project.kind; }
+    else kindChip.hidden = true;
+    $("#exIllustrative").hidden = !ex.project.illustrative;
+
+    // Evidence tabs
+    buildExampleEvidence(ex, evidenceLabel);
+
+    // Tint the example window to the sector colour for orientation.
+    const win = $("#exampleOverlay .example-window");
+    if (win) win.dataset.sector = ex.sector;
+
+    // Borrow the live iframe into the example stage and navigate.
+    const stage = $("#exampleStage");
+    if (treedisIframe && stage && treedisIframe.parentNode !== stage) {
+      stage.appendChild(treedisIframe);
+    }
+    const loading = $("#exampleLoading");
+    if (loading) loading.classList.toggle("is-hidden", TourBridge.isReady);
+    if (TourBridge.isReady) {
+      TourBridge.navigateToSweep(ex.sweepId || cfg.treedis.homeSweepId || undefined);
+    } else if (ex.sweepId) {
+      // Queue the sweep for when Treedis finishes booting.
+      pendingExampleSweep = ex.sweepId;
+    }
+
+    const ov = $("#exampleOverlay");
+    ov.classList.add("is-open");
+    ov.setAttribute("aria-hidden", "false");
+    $("#exampleContent").scrollTop = 0;
+  }
+
+  function buildExampleEvidence(ex, preferredLabel) {
+    const tabsWrap = $("#exEvidenceTabs");
+    const body = $("#exEvidenceBody");
+    tabsWrap.innerHTML = "";
+    const ev = ex.evidence || {};
+    const labels = cfg.evidence.filter((l) => ev[l] !== undefined);
+    const start = (preferredLabel && ev[preferredLabel] !== undefined)
+      ? preferredLabel : labels[0];
+
+    function select(label) {
+      $$("#exEvidenceTabs button").forEach((b) =>
+        b.classList.toggle("is-active", b.dataset.label === label));
+      body.textContent = ev[label] && ev[label] !== "\u2014"
+        ? ev[label]
+        : "No " + label.toLowerCase() + " published for this project yet.";
+    }
+
+    labels.forEach((label) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.dataset.label = label;
+      b.textContent = label;
+      b.addEventListener("click", () => select(label));
+      tabsWrap.appendChild(b);
+    });
+    if (start) select(start);
+  }
+
+  function closeExample() {
+    const ov = $("#exampleOverlay");
+    if (treedisIframe) parkIframe();
+    ov.classList.remove("is-open");
+    ov.setAttribute("aria-hidden", "true");
+    activeExampleId = null;
+  }
+
+  /* ============================================================
+     ACCESS YOUR TWIN  (returning-client sign-in via Google Sheet)
+     ------------------------------------------------------------
+     Reads a published-CSV directory (or the built-in demo
+     directory), matches access_id + access_code, then shows a
+     small dashboard listing every twin that login owns and opens
+     the chosen one in the experience overlay.
+     ============================================================ */
+  const access = { directory: null, loading: null, session: null };
+
+  function openAccess() {
+    // Reset to the sign-in view each open (unless already signed in).
+    $("#accessError").hidden = true;
+    const cfgC = window.DTS_CLIENTS || {};
+    const ui = cfgC.ui || {};
+    $("#accessIntro").textContent     = ui.intro || "";
+    $("#accessIdLabel").textContent   = ui.idLabel || "Access ID";
+    $("#accessCodeLabel").textContent = ui.codeLabel || "Access code";
+    $("#accessSubmit").textContent    = ui.submit || "Open my twin";
+    $("#accessTitle").textContent     = ui.title || "Access Your Twin";
+
+    const offline = !cfgC.sheetCsvUrl;
+    const note = $("#accessOfflineNote");
+    note.hidden = !offline;
+    if (offline) note.textContent = ui.offlineNote || "";
+
+    if (access.session) showDashboard(access.session);
+    else { $("#accessSignin").hidden = false; $("#accessDashboard").hidden = true; }
+
+    const ov = $("#accessOverlay");
+    ov.classList.add("is-open");
+    ov.setAttribute("aria-hidden", "false");
+    if (!access.session) setTimeout(() => $("#accessId").focus(), 60);
+
+    // Warm the directory in the background.
+    loadDirectory().catch(() => {});
+  }
+
+  function closeAccess() {
+    const ov = $("#accessOverlay");
+    ov.classList.remove("is-open");
+    ov.setAttribute("aria-hidden", "true");
+  }
+
+  /* Fetch + parse the published CSV once; cache it. Falls back to the
+     demo directory if no URL is set or the fetch fails. */
+  function loadDirectory() {
+    if (access.directory) return Promise.resolve(access.directory);
+    if (access.loading) return access.loading;
+    const cfgC = window.DTS_CLIENTS || {};
+
+    if (!cfgC.sheetCsvUrl) {
+      access.directory = (cfgC.demoDirectory || []).map(normalizeRow);
+      return Promise.resolve(access.directory);
+    }
+
+    access.loading = fetch(cfgC.sheetCsvUrl, { cache: "no-store" })
+      .then((r) => { if (!r.ok) throw new Error("sheet " + r.status); return r.text(); })
+      .then((text) => {
+        access.directory = parseCSV(text).map(normalizeRow);
+        return access.directory;
+      })
+      .catch((err) => {
+        console.warn("[access] sheet fetch failed, using demo directory:", err);
+        access.directory = (cfgC.demoDirectory || []).map(normalizeRow);
+        return access.directory;
+      });
+    return access.loading;
+  }
+
+  /* Minimal CSV parser: handles quoted fields, commas, and CRLF.
+     Returns an array of row objects keyed by lower-cased header. */
+  function parseCSV(text) {
+    const rows = [];
+    let field = "", row = [], inQuotes = false;
+    for (let i = 0; i < text.length; i++) {
+      const ch = text[i], next = text[i + 1];
+      if (inQuotes) {
+        if (ch === '"' && next === '"') { field += '"'; i++; }
+        else if (ch === '"') inQuotes = false;
+        else field += ch;
+      } else if (ch === '"') inQuotes = true;
+      else if (ch === ",") { row.push(field); field = ""; }
+      else if (ch === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
+      else if (ch === "\r") { /* skip */ }
+      else field += ch;
+    }
+    if (field.length || row.length) { row.push(field); rows.push(row); }
+    if (!rows.length) return [];
+    const headers = rows.shift().map((h) => h.trim().toLowerCase());
+    return rows
+      .filter((r) => r.some((c) => c.trim() !== ""))
+      .map((r) => {
+        const obj = {};
+        headers.forEach((h, i) => (obj[h] = (r[i] || "").trim()));
+        return obj;
+      });
+  }
+
+  function normalizeRow(r) {
+    return {
+      access_id:   (r.access_id   || r.id        || "").trim(),
+      access_code: (r.access_code || r.code      || "").trim(),
+      client:      (r.client      || r.name      || "Your organization").trim(),
+      project:     (r.project     || r.twin      || "Your digital twin").trim(),
+      twin_url:    (r.twin_url    || r.url       || cfg.treedis.tourUrl).trim(),
+      sweep_id:    (r.sweep_id    || r.sweep     || "").trim(),
+      notes:       (r.notes       || "").trim()
+    };
+  }
+
+  /* ── Swap THIS function to plug in a real auth provider later. ──
+     Returns ALL rows matching the login (a client can own several
+     twins, stored as one row per twin sharing the same id + code). */
+  function authenticate(id, code) {
+    const dir = access.directory || [];
+    const wantId = (id || "").trim().toLowerCase();
+    const wantCode = (code || "").trim();
+    return dir.filter((row) =>
+      row.access_id.toLowerCase() === wantId && row.access_code === wantCode
+    );
+  }
+
+  async function submitAccess(e) {
+    e.preventDefault();
+    $("#accessError").hidden = true;
+    const btn = $("#accessSubmit");
+    const label = btn.textContent;
+    btn.disabled = true; btn.textContent = "Checking…";
+
+    await loadDirectory();
+    const matches = authenticate($("#accessId").value, $("#accessCode").value);
+
+    btn.disabled = false; btn.textContent = label;
+
+    if (!matches.length) {
+      const ui = (window.DTS_CLIENTS || {}).ui || {};
+      $("#accessError").textContent = ui.error || "We couldn't find a twin for that ID and code.";
+      $("#accessError").hidden = false;
+      return;
+    }
+    // One login → one client name, one or more twins.
+    access.session = { client: matches[0].client, twins: matches };
+    $("#accessCode").value = "";
+    showDashboard(access.session);
+  }
+
+  /* Dashboard lists every twin this login owns, each with its own
+     "Open" button. A single-twin client simply sees one. */
+  function showDashboard(session) {
+    $("#accessSignin").hidden = true;
+    $("#accessDashboard").hidden = false;
+    $("#dashClient").textContent = session.client;
+
+    const multi = session.twins.length > 1;
+    const greeting = $("#dashGreeting");
+    if (greeting) greeting.textContent = multi
+      ? "WELCOME BACK — " + session.twins.length + " TWINS"
+      : "WELCOME BACK";
+
+    const list = $("#dashTwins");
+    list.innerHTML = "";
+    session.twins.forEach((rec) => {
+      const row = document.createElement("div");
+      row.className = "dash-twin";
+      const info = document.createElement("div");
+      info.className = "dash-twin-info";
+      info.innerHTML =
+        '<span class="dash-twin-name">' + escapeHTML(rec.project) + '</span>' +
+        (rec.notes ? '<span class="dash-twin-note">' + escapeHTML(rec.notes) + '</span>' : '');
+      const open = document.createElement("button");
+      open.type = "button";
+      open.className = "dash-twin-open";
+      open.textContent = "Open";
+      open.addEventListener("click", () => openTwin(rec));
+      row.appendChild(info);
+      row.appendChild(open);
+      list.appendChild(row);
+    });
+  }
+
+  /* Tiny local escaper (the wrapper's escapeHTML lives in another
+     file in the SCSU build; this page is standalone). */
+  function escapeHTML(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  function signOut() {
+    access.session = null;
+    $("#accessDashboard").hidden = true;
+    $("#accessSignin").hidden = false;
+    $("#accessId").value = "";
+    $("#accessCode").value = "";
+    $("#accessError").hidden = true;
+    setTimeout(() => $("#accessId").focus(), 40);
+  }
+
+  /* Open a specific twin record in the experience overlay. If the twin
+     is on the same Treedis origin we reuse the live iframe and just
+     navigate; otherwise we open its URL in a new tab. */
+  function openTwin(rec) {
+    if (!rec) return;
+    closeAccess();
+
+    const sameOrigin = rec.twin_url &&
+      rec.twin_url.indexOf(cfg.treedis.origin) === 0;
+
+    if (sameOrigin && treedisIframe) {
+      openDemo();
+      if (rec.sweep_id && TourBridge.isReady) {
+        TourBridge.navigateToSweep(rec.sweep_id);
+      } else if (rec.sweep_id) {
+        pendingExampleSweep = rec.sweep_id;
+      }
+    } else if (rec.twin_url) {
+      window.open(rec.twin_url, "_blank", "noopener");
+    } else {
+      openDemo();
+    }
+  }
+
+  /* ============================================================
+     QUESTION BAR  →  inline FAQ answers
+     ============================================================ */
+  function answerQuestion(text) {
+    const q = (text || "").trim().toLowerCase();
+    if (!q) return;
+    const hit = (cfg.answers || []).find((entry) =>
+      entry.match.some((m) => q.indexOf(m.toLowerCase()) !== -1)
+    );
+    const panel = $("#qbarAnswer");
+    if (hit) {
+      $("#qbarAnswerQ").textContent = hit.q;
+      $("#qbarAnswerA").textContent = hit.a;
+    } else {
+      $("#qbarAnswerQ").textContent = "Thanks — we'll get you an answer.";
+      $("#qbarAnswerA").textContent =
+        "That one's not in our quick answers yet. Use Contact & Info (or ACCESS YOUR TWIN) and the DTS team will follow up directly.";
+    }
+    panel.hidden = false;
+  }
+  function closeAnswer() { $("#qbarAnswer").hidden = true; }
 
   /* ============================================================
      CONTACT PANEL (inline slide — no overlay)
@@ -746,6 +1103,19 @@
     // Demo close
     $("#overlayClose").addEventListener("click", closeDemo);
 
+    // Example window
+    $("#exampleClose").addEventListener("click", closeExample);
+    $$("[data-close-example]").forEach((s) => s.addEventListener("click", closeExample));
+    // "Enter the twin" expands the example into the full demo overlay.
+    $("#exEnter").addEventListener("click", () => { closeExample(); openDemo(); });
+    // "Talk to DTS about this" routes into the proposal lead form.
+    $("#exContact").addEventListener("click", () => {
+      closeExample();
+      const proposal = (cfg.contact.ctas || []).find((c) => c.id === "proposal")
+        || cfg.contact.ctas[0];
+      if (proposal) openLeadForm(proposal.id, proposal.stage);
+    });
+
     // Lead form modal
     $("#leadForm").addEventListener("submit", submitLeadForm);
     $("#formClose").addEventListener("click", closeLeadForm);
@@ -753,6 +1123,12 @@
     $$("[data-close-form]").forEach((s) =>
       s.addEventListener("click", closeLeadForm)
     );
+
+    // Access Your Twin (returning-client portal)
+    $("#accessForm").addEventListener("submit", submitAccess);
+    $("#accessClose").addEventListener("click", closeAccess);
+    $("#dashSignout").addEventListener("click", signOut);
+    $$("[data-close-access]").forEach((s) => s.addEventListener("click", closeAccess));
 
     // Contact slide controls (inline — no overlay)
     $("#contactEdge").addEventListener("click", slideToContact);
@@ -770,22 +1146,23 @@
       if (state.contactOpen) slideToCards();
       else slideToContact();
     });
-    // Top-right portal: ensure a sector is open, then slide to contact.
-    $("#accessTwin").addEventListener("click", () => {
-      if (state.view !== "category") openCategory(state.category);
-      slideToContact();
-    });
+    // Top-right portal opens the returning-client sign-in (architecturally
+    // separate from the marketing/contact flow per the design rationale).
+    $("#accessTwin").addEventListener("click", openAccess);
 
-    // Generic scrim closers (demo overlay only now)
+    // Generic scrim closer for the demo overlay.
     $$("[data-close-overlay]").forEach((s) =>
       s.addEventListener("click", () => { closeDemo(); })
     );
 
-    // Escape: close any modal, or slide contact back to cards.
+    // Escape: close whatever modal is open, or slide contact back to cards.
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
+        if ($("#exampleOverlay").classList.contains("is-open")) { closeExample(); return; }
+        if ($("#accessOverlay").classList.contains("is-open"))  { closeAccess();  return; }
         closeDemo();
         closeLeadForm();
+        closeAnswer();
         if (state.contactOpen) slideToCards();
       }
     });
@@ -793,16 +1170,16 @@
     // Brand returns home
     $("#brandHome").addEventListener("click", (e) => { e.preventDefault(); goHome(); });
 
-    // Question bar
+    // Question bar — answer the FAQ inline.
     $("#qbar").addEventListener("submit", (e) => {
       e.preventDefault();
       const v = $("#qbarInput").value.trim();
       if (!v) return;
-      console.info("[dts] question:", v);
-      // Placeholder: a real assistant/answer endpoint connects here.
+      answerQuestion(v);
       $("#qbarInput").value = "";
-      $("#qbarInput").placeholder = "Thanks — we'll wire this to an assistant.";
+      $("#qbarInput").blur();
     });
+    $("#qbarAnswerClose").addEventListener("click", closeAnswer);
 
     // Cookie
     $("#cookieAccept").addEventListener("click", dismissCookie);

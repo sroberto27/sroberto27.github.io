@@ -250,6 +250,16 @@
       <input class="qbar-input" id="qbarInput" type="text" aria-label="Ask a question" />
       <span class="qbar-label">Ask a Question</span>
       <button class="qbar-send" id="qbarSend" type="submit" aria-label="Send">↑</button>
+
+      <!-- Inline answer popover — appears above the bar when a question
+           is asked (matches a built-in FAQ answer). -->
+      <div class="qbar-answer" id="qbarAnswer" hidden>
+        <button class="qbar-answer-close" id="qbarAnswerClose" type="button" aria-label="Close answer">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <p class="qbar-answer-q" id="qbarAnswerQ"></p>
+        <p class="qbar-answer-a" id="qbarAnswerA"></p>
+      </div>
     </form>
 
     <!-- Category bottom tabs (shown in category view) -->
@@ -259,6 +269,115 @@
     </div>
   </footer>
 
+</div>
+
+<!-- ============================================================
+     EXAMPLE WINDOW  (per sub-vertical, matches experienceOpenedWindow.png)
+     Opens when a use-case card or a bottom dock tab is clicked.
+     A live experience pane on top; a content pane (overview, the
+     project example, and project-evidence proof) on the bottom,
+     mirroring the Solar Farm Sample layout in the Figma frames.
+     ============================================================ -->
+<div class="overlay" id="exampleOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="exTitle">
+  <div class="overlay-scrim" data-close-example></div>
+  <div class="overlay-window example-window">
+    <button class="overlay-close" id="exampleClose" type="button" aria-label="Close example">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+
+    <!-- Live experience pane — the shared Treedis iframe is moved in
+         here, then navigated to this sub-vertical's sweep (if any). -->
+    <div class="example-stage" id="exampleStage">
+      <div class="example-loading" id="exampleLoading">
+        <div class="spinner" aria-hidden="true"></div>
+        <span class="example-loading-text">Loading experience…</span>
+      </div>
+    </div>
+
+    <!-- Scrolling content pane -->
+    <div class="example-content" id="exampleContent">
+      <span class="example-kicker" id="exKicker">— EDUCATION</span>
+      <h2 class="example-title" id="exTitle">Campus &amp; Schools</h2>
+      <p class="example-tagline" id="exTagline"></p>
+
+      <div class="example-meta">
+        <span class="meta-chip" id="exCapture">Captured with: Matterport Pro2</span>
+        <span class="meta-chip">Platform: Treedis</span>
+        <span class="meta-chip meta-kind" id="exKind" hidden></span>
+      </div>
+
+      <p class="example-overview" id="exOverview"></p>
+
+      <!-- The project example for this sub-vertical -->
+      <div class="example-project" id="exProject">
+        <span class="example-project-label">EXAMPLE PROJECT</span>
+        <h3 class="example-project-name" id="exProjectName"></h3>
+        <p class="example-project-blurb" id="exProjectBlurb"></p>
+        <span class="example-illustrative" id="exIllustrative" hidden>
+          Illustrative example — representative of DTS's work in this space.
+        </span>
+      </div>
+
+      <!-- Project-evidence proof (Case Studies / Awards / etc.) -->
+      <div class="example-evidence">
+        <span class="example-evidence-label">PROJECT EVIDENCE</span>
+        <div class="example-evidence-tabs" id="exEvidenceTabs"><!-- injected --></div>
+        <p class="example-evidence-body" id="exEvidenceBody"></p>
+      </div>
+
+      <!-- Conversion: route into the same lead form as the contact panel -->
+      <div class="example-cta-row">
+        <button class="example-cta" id="exEnter" type="button">Enter the twin</button>
+        <button class="example-cta example-cta-primary" id="exContact" type="button">Talk to DTS about this</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     ACCESS YOUR TWIN  (returning-client sign-in + dashboard)
+     Architecturally separate from the marketing flow per the
+     design rationale — a new prospect never hits a login wall,
+     a returning client never lands on a sales page.
+     ============================================================ -->
+<div class="overlay overlay-form" id="accessOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="accessTitle">
+  <div class="overlay-scrim" data-close-access></div>
+  <div class="form-window access-window">
+    <button class="overlay-close" id="accessClose" type="button" aria-label="Close">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+
+    <!-- Sign-in view -->
+    <div class="access-view" id="accessSignin">
+      <span class="form-stage">CLIENT ACCESS</span>
+      <h2 class="form-title" id="accessTitle">Access Your Twin</h2>
+      <p class="form-intro" id="accessIntro"></p>
+      <form id="accessForm" novalidate>
+        <div class="form-field full">
+          <label for="accessId" id="accessIdLabel">Access ID</label>
+          <input id="accessId" name="access_id" type="text" autocomplete="username" required />
+        </div>
+        <div class="form-field full">
+          <label for="accessCode" id="accessCodeLabel">Access code</label>
+          <input id="accessCode" name="access_code" type="password" autocomplete="current-password" required />
+        </div>
+        <p class="form-error" id="accessError" hidden></p>
+        <button class="form-submit" id="accessSubmit" type="submit">Open my twin</button>
+        <p class="form-fineprint" id="accessOfflineNote" hidden></p>
+      </form>
+    </div>
+
+    <!-- Dashboard view (after a successful sign-in). Lists every twin
+         this login owns; a single-twin client simply sees one. -->
+    <div class="access-dashboard" id="accessDashboard" hidden>
+      <span class="form-stage" id="dashGreeting">WELCOME BACK</span>
+      <h2 class="form-title" id="dashClient">Client</h2>
+      <div class="dash-twins" id="dashTwins"><!-- injected: one row per twin --></div>
+      <div class="dash-cta-row">
+        <button class="form-submit form-submit-ghost" id="dashSignout" type="button">Sign out</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- ============================================================
@@ -342,6 +461,7 @@
 </div>
 
 <script src="config.js"></script>
+<script src="dts-clients.js"></script>
 <script src="dts-tour-bridge.js"></script>
 <script src="script.js"></script>
 </body>
