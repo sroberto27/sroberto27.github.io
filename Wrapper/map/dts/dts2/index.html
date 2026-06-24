@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a0e17" />
+  <title>Digital Twin Studios — The World as Interface</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<!-- ============================================================
+     APP SHELL — fixed designed viewport, NOT a scrolling page.
+     All major section changes happen via JS state, not scroll.
+     ============================================================ -->
+<div class="app" id="app">
+
+  <!-- ===================== TOP NAV (fixed) ===================== -->
+  <header class="topbar" role="banner">
+    <!-- Logo + tagline stay constant throughout (per Figma note).
+         The logo is ALSO a menu item: it returns home and is
+         highlighted gold (like the pillars) when home is active. -->
+    <a class="brand" href="#" id="brandHome" data-nav="home"
+       aria-label="Digital Twin Studios — home">
+      <span class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 40 24" width="40" height="24">
+          <path d="M2 2 L18 12 L2 22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M38 2 L22 12 L38 22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>
+      <span class="brand-text">
+        <span class="brand-name">DIGITAL TWIN</span>
+        <span class="brand-studios">STUDIOS</span>
+      </span>
+    </a>
+
+    <!-- Mobile hamburger — toggles the slide-in nav drawer. Hidden on
+         desktop (the pillar row shows instead). -->
+    <button class="burger" id="burger" type="button" aria-label="Open menu"
+            aria-expanded="false">
+      <span class="burger-lines" aria-hidden="true"><i></i><i></i><i></i></span>
+      <span class="burger-text">Menu</span>
+    </button>
+
+    <!-- Four pillars = primary navigation + identity -->
+    <nav class="pillars" id="pillars" role="tablist" aria-label="Sectors">
+      <!-- buttons injected by script.js -->
+    </nav>
+
+    <!-- Client portal / access point (architecturally separate) -->
+    <button class="access-btn" id="accessTwin" type="button">ACCESS YOUR TWIN</button>
+  </header>
+
+  <!-- Mobile nav drawer (slides down from the header on phones) -->
+  <nav class="nav-drawer" id="navDrawer" aria-label="Sections" aria-hidden="true">
+    <!-- sector links injected by script.js -->
+  </nav>
+  <div class="nav-scrim" id="navScrim" hidden></div>
+
+  <!-- ===================== STAGE (state-swapped) ===================== -->
+  <main class="stage" id="stage">
+
+    <!-- subtle technical/spatial background -->
+    <canvas class="bg-net" id="bgNet" aria-hidden="true"></canvas>
+
+    <!-- ---------- VIEW: HOME ---------- -->
+    <section class="view view-home is-active" id="view-home" aria-label="Home">
+      <div class="home-grid">
+        <div class="home-copy">
+          <span class="copy-kicker">DIGITAL TWIN STUDIOS</span>
+          <h1 class="home-headline">Digital twins<br>for Human&nbsp;Life.</h1>
+          <div class="home-pills">
+            <span>Campus</span><span>Company</span><span>City</span><span>Community</span>
+          </div>
+          <p class="home-body">
+            We build spatial intelligence tools for the places that shape how people
+            learn, work, govern, and live together. Every twin is a living ecosystem —
+            from the first capture to the final engagement.
+          </p>
+        </div>
+
+        <!-- Demo experience frame — the live Treedis experience is
+             embedded inline here at boot (no click required). The
+             "Try a Digital Twin" pill expands it into the full overlay. -->
+        <div class="demo-frame" id="demoFrame"
+             aria-label="Digital twin demo experience">
+          <button class="demo-try" id="demoTry" type="button">Try a Digital Twin</button>
+          <button class="demo-expand" id="demoExpand" type="button"
+                  aria-label="Expand experience to full screen">
+            <svg viewBox="0 0 24 24" width="18" height="18">
+              <path d="M4 10V4h6M20 14v6h-6M20 4h-6M4 20h6" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+          <div class="demo-stage" id="demoStage">
+            <!-- The live iframe is injected here by script.js at boot.
+                 A loading veil shows until Treedis reports TourReady. -->
+            <div class="demo-loading" id="demoLoading">
+              <div class="spinner" aria-hidden="true"></div>
+              <span class="demo-loading-text" id="demoLoadingText">Loading experience…</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Evidence / footnote strip (beach/data layer) -->
+      <div class="evidence-bar">
+        <span class="evidence-dot">●</span> Maslow's Hierarchy of Needs
+        <span class="evidence-dot">●</span> Human Capital Theory — Becker, 1964
+        <span class="evidence-dot">●</span> Bronfenbrenner's Ecological Systems Theory
+        <span class="evidence-dot">●</span> NAICS Industry Classification Framework
+      </div>
+    </section>
+
+    <!-- ---------- VIEW: CATEGORY ----------
+         Holds a horizontal SLIDER with two panels that occupy the same
+         space: (0) the sector cards, (1) the inline contact panel.
+         Pressing "Contact & Info" slides to panel 1; the contact panel's
+         own arrows slide back or advance to the next sector's cards. -->
+    <section class="view view-category" id="view-category" aria-label="Sector detail" hidden>
+
+      <div class="cat-slider" id="catSlider">
+        <div class="cat-track" id="catTrack">
+
+          <!-- PANEL 0 — sector cards -->
+          <div class="cat-panel cat-panel-cards">
+            <div class="cat-grid">
+              <div class="cat-intro">
+                <span class="cat-kicker" id="catKicker">— EDUCATION</span>
+                <h2 class="cat-title" id="catTitle">Campus &amp; Schools</h2>
+                <p class="cat-sub" id="catSub">Digital Twin of your campus</p>
+                <p class="cat-body" id="catBody"></p>
+                <button class="cat-projects-btn" id="catProjectsBtn" type="button">
+                  VIEW PROJECTS
+                </button>
+              </div>
+
+              <div class="cat-cards" id="catCards">
+                <!-- use-case cards injected by script.js -->
+              </div>
+            </div>
+
+            <!-- Clear, labeled control — slides to the contact panel. -->
+            <button class="contact-edge" id="contactEdge" type="button"
+                    aria-label="Slide to contact and information">
+              <span class="contact-edge-text">Contact&nbsp;&amp;&nbsp;Info</span>
+              <span class="contact-edge-arrow" aria-hidden="true">
+                <svg viewBox="0 0 24 24" width="20" height="20">
+                  <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </button>
+          </div>
+
+          <!-- PANEL 1 — inline contact / next-step -->
+          <div class="cat-panel cat-panel-contact">
+            <!-- Back: slide to THIS sector's cards -->
+            <button class="panel-nav panel-nav-back" id="contactBack" type="button"
+                    aria-label="Back to sector">
+              <svg viewBox="0 0 24 24" width="22" height="22">
+                <path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              <span class="panel-nav-label">Back</span>
+            </button>
+
+            <!-- Next: advance to the NEXT sector's cards -->
+            <button class="panel-nav panel-nav-next" id="contactNext" type="button"
+                    aria-label="Next sector">
+              <span class="panel-nav-label" id="contactNextLabel">Industry</span>
+              <svg viewBox="0 0 24 24" width="22" height="22">
+                <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+
+            <div class="contact-inner">
+              <span class="contact-kicker" id="contactKicker">READY TO BEGIN?</span>
+              <h2 class="contact-headline">
+                <span id="contactHeadline">Begin with the right</span><br>
+                <span class="accent" id="contactAccent">first step.</span>
+              </h2>
+              <p class="contact-body" id="contactBody"></p>
+              <div class="contact-stages" id="contactStages"><!-- injected --></div>
+              <div class="contact-ctas" id="contactCtas"><!-- injected --></div>
+              <p class="contact-foot" id="contactFoot"></p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Mobile-only: explicit slide-to-contact control. Shown on phones
+           (the desktop vertical edge-tab is hidden there). Toggles between
+           "Contact & Info →" on the cards panel and "← Back to sector" on
+           the contact panel. -->
+      <button class="contact-bar" id="contactBar" type="button">
+        <span class="contact-bar-label" id="contactBarLabel">Contact &amp; Info</span>
+        <span class="contact-bar-arrow" id="contactBarArrow" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="20" height="20">
+            <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor"
+                  stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+      </button>
+
+      <!-- Mobile sector strip — shows the active sector with the next
+           one peeking from the right edge (the swipe affordance). Tap
+           the arrows or swipe to move between sectors. Hidden on desktop. -->
+      <div class="sector-strip" id="sectorStrip" aria-hidden="true">
+        <button class="sector-arrow sector-arrow-prev" id="sectorPrev" type="button" aria-label="Previous sector">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+        <div class="sector-strip-viewport">
+          <div class="sector-strip-track" id="sectorStripTrack">
+            <!-- sector items injected by script.js -->
+          </div>
+        </div>
+        <button class="sector-arrow sector-arrow-next" id="sectorNext" type="button" aria-label="Next sector">
+          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+
+      <!-- Project evidence + bottom tabs -->
+      <div class="cat-footer">
+        <div class="evidence-block">
+          <span class="evidence-label">PROJECT EVIDENCE</span>
+          <span class="evidence-note">Every data point accounted for</span>
+        </div>
+        <div class="evidence-filters" id="evidenceFilters"><!-- injected --></div>
+        <span class="evidence-filtered">Filtered by<br>active sector</span>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===================== BOTTOM CONTROLS (fixed) ===================== -->
+  <footer class="dockbar" id="dockbar">
+    <!-- Question bar -->
+    <form class="qbar" id="qbar" autocomplete="off">
+      <span class="qbar-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="18" height="18"><rect x="3" y="5" width="18" height="13" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M7 9h10M7 13h6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      </span>
+      <input class="qbar-input" id="qbarInput" type="text" aria-label="Ask a question" />
+      <span class="qbar-label">Ask a Question</span>
+      <button class="qbar-send" id="qbarSend" type="submit" aria-label="Send">↑</button>
+
+      <!-- Inline answer popover — appears above the bar when a question
+           is asked (matches a built-in FAQ answer). -->
+      <div class="qbar-answer" id="qbarAnswer" hidden>
+        <button class="qbar-answer-close" id="qbarAnswerClose" type="button" aria-label="Close answer">
+          <svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
+        <p class="qbar-answer-q" id="qbarAnswerQ"></p>
+        <p class="qbar-answer-a" id="qbarAnswerA"></p>
+      </div>
+    </form>
+
+    <!-- Category bottom tabs (shown in category view) -->
+    <div class="dock-tabs" id="dockTabs" hidden>
+      <button class="dock-tab is-active" data-tab="usecases" type="button">Use Cases</button>
+      <!-- sub-vertical tabs injected by script.js -->
+    </div>
+  </footer>
+
+</div>
+
+<!-- ============================================================
+     EXAMPLE WINDOW  (per sub-vertical, matches experienceOpenedWindow.png)
+     Opens when a use-case card or a bottom dock tab is clicked.
+     A live experience pane on top; a content pane (overview, the
+     project example, and project-evidence proof) on the bottom,
+     mirroring the Solar Farm Sample layout in the Figma frames.
+     ============================================================ -->
+<div class="overlay" id="exampleOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="exTitle">
+  <div class="overlay-scrim" data-close-example></div>
+  <div class="overlay-window example-window">
+    <button class="overlay-close" id="exampleClose" type="button" aria-label="Close example">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+
+    <!-- Live experience pane — the shared Treedis iframe is moved in
+         here, then navigated to this sub-vertical's sweep (if any). -->
+    <div class="example-stage" id="exampleStage">
+      <div class="example-loading" id="exampleLoading">
+        <div class="spinner" aria-hidden="true"></div>
+        <span class="example-loading-text">Loading experience…</span>
+      </div>
+    </div>
+
+    <!-- Scrolling content pane -->
+    <div class="example-content" id="exampleContent">
+      <span class="example-kicker" id="exKicker">— EDUCATION</span>
+      <h2 class="example-title" id="exTitle">Campus &amp; Schools</h2>
+      <p class="example-tagline" id="exTagline"></p>
+
+      <div class="example-meta">
+        <span class="meta-chip" id="exCapture">Captured with: Matterport Pro2</span>
+        <span class="meta-chip">Platform: Treedis</span>
+        <span class="meta-chip meta-kind" id="exKind" hidden></span>
+      </div>
+
+      <p class="example-overview" id="exOverview"></p>
+
+      <!-- The project example for this sub-vertical -->
+      <div class="example-project" id="exProject">
+        <span class="example-project-label">EXAMPLE PROJECT</span>
+        <h3 class="example-project-name" id="exProjectName"></h3>
+        <p class="example-project-blurb" id="exProjectBlurb"></p>
+        <span class="example-illustrative" id="exIllustrative" hidden>
+          Illustrative example — representative of DTS's work in this space.
+        </span>
+      </div>
+
+      <!-- Project-evidence proof (Case Studies / Awards / etc.) -->
+      <div class="example-evidence">
+        <span class="example-evidence-label">PROJECT EVIDENCE</span>
+        <div class="example-evidence-tabs" id="exEvidenceTabs"><!-- injected --></div>
+        <p class="example-evidence-body" id="exEvidenceBody"></p>
+      </div>
+
+      <!-- Conversion: route into the same lead form as the contact panel -->
+      <div class="example-cta-row">
+        <button class="example-cta" id="exEnter" type="button">Enter the twin</button>
+        <button class="example-cta example-cta-primary" id="exContact" type="button">Talk to DTS about this</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     ACCESS YOUR TWIN  (returning-client sign-in + dashboard)
+     Architecturally separate from the marketing flow per the
+     design rationale — a new prospect never hits a login wall,
+     a returning client never lands on a sales page.
+     ============================================================ -->
+<div class="overlay overlay-form" id="accessOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="accessTitle">
+  <div class="overlay-scrim" data-close-access></div>
+  <div class="form-window access-window">
+    <button class="overlay-close" id="accessClose" type="button" aria-label="Close">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+
+    <!-- Sign-in view -->
+    <div class="access-view" id="accessSignin">
+      <span class="form-stage">CLIENT ACCESS</span>
+      <h2 class="form-title" id="accessTitle">Access Your Twin</h2>
+      <p class="form-intro" id="accessIntro"></p>
+      <form id="accessForm" novalidate>
+        <div class="form-field full">
+          <label for="accessId" id="accessIdLabel">Access ID</label>
+          <input id="accessId" name="access_id" type="text" autocomplete="username" required />
+        </div>
+        <div class="form-field full">
+          <label for="accessCode" id="accessCodeLabel">Access code</label>
+          <input id="accessCode" name="access_code" type="password" autocomplete="current-password" required />
+        </div>
+        <p class="form-error" id="accessError" hidden></p>
+        <button class="form-submit" id="accessSubmit" type="submit">Open my twin</button>
+        <p class="form-fineprint" id="accessOfflineNote" hidden></p>
+      </form>
+    </div>
+
+    <!-- Dashboard view (after a successful sign-in) -->
+    <div class="access-dashboard" id="accessDashboard" hidden>
+      <span class="form-stage" id="dashGreeting">WELCOME BACK</span>
+      <h2 class="form-title" id="dashClient">Client</h2>
+      <p class="dash-project" id="dashProject"></p>
+      <p class="dash-notes" id="dashNotes"></p>
+      <div class="dash-cta-row">
+        <button class="form-submit" id="dashOpen" type="button">Open my twin</button>
+        <button class="form-submit form-submit-ghost" id="dashSignout" type="button">Sign out</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     DEMO OVERLAY  (matches experienceOpenedWindow.png)
+     Large centred rounded dark window; app shell visible behind.
+     ============================================================ -->
+<div class="overlay" id="demoOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Digital twin experience">
+  <div class="overlay-scrim" data-close-overlay></div>
+  <div class="overlay-window">
+    <button class="overlay-close" id="overlayClose" type="button" aria-label="Close experience">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+    <div class="overlay-body" id="overlayBody">
+      <!-- The live iframe is MOVED in here from the inline home stage
+           when the user expands — it is already loaded, so this veil
+           stays hidden. -->
+      <div class="overlay-loading is-hidden" id="overlayLoading" aria-hidden="true">
+        <div class="spinner" aria-hidden="true"></div>
+        <p class="overlay-loading-text" id="overlayLoadingText">Loading experience…</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     LEAD FORM MODAL
+     Title, intro, and fields are injected per button (Discovery /
+     Proposal / Pilot) by script.js. On submit it emails the owner
+     via Web3Forms (or falls back to the user's mail app).
+     ============================================================ -->
+<div class="overlay overlay-form" id="formOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+  <div class="overlay-scrim" data-close-form></div>
+  <div class="form-window">
+    <button class="overlay-close" id="formClose" type="button" aria-label="Close form">
+      <svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+
+    <!-- Active form view -->
+    <div class="form-view" id="formView">
+      <span class="form-stage" id="formStage">PROPOSE</span>
+      <h2 class="form-title" id="formTitle">Request a Proposal</h2>
+      <p class="form-intro" id="formIntro"></p>
+      <form id="leadForm" novalidate>
+        <div class="form-fields" id="formFields"><!-- injected --></div>
+        <p class="form-error" id="formError" hidden></p>
+        <button class="form-submit" id="formSubmit" type="submit">Send</button>
+        <p class="form-fineprint">
+          Goes straight to the DTS team. We reply within one business day.
+        </p>
+      </form>
+    </div>
+
+    <!-- Success view (shown after a successful submit) -->
+    <div class="form-success" id="formSuccess" hidden>
+      <div class="form-success-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" width="40" height="40"><path d="M5 12l5 5 9-11" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h2 class="form-success-title">Sent — thank you.</h2>
+      <p class="form-success-body" id="formSuccessBody">
+        The DTS team has your details and will be in touch shortly.
+      </p>
+      <button class="form-submit" id="formSuccessClose" type="button">Done</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     COOKIE / TRACKING DISCLOSURE
+     ============================================================ -->
+<div class="cookie" id="cookie" role="region" aria-label="Cookie and tracking disclosure">
+  <div class="cookie-text">
+    <strong>Help us Improve.</strong>
+    We use cookies and similar technologies to understand how this experience is used,
+    improve spatial performance, and remember your preferences. You can accept all or
+    reject non-essential tracking.
+  </div>
+  <div class="cookie-actions">
+    <button class="cookie-btn" id="cookieAccept" type="button">Accept</button>
+    <button class="cookie-btn cookie-btn-ghost" id="cookieReject" type="button">Reject</button>
+  </div>
+</div>
+
+<script src="config.js"></script>
+<script src="dts-clients.js"></script>
+<script src="dts-tour-bridge.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
