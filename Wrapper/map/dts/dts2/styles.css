@@ -165,41 +165,118 @@ body{
 .home-pills span{ color:var(--gold); font-size:clamp(12px,1vw,16px); font-weight:600; }
 .home-body{ color:var(--muted); font-size:clamp(13px,1.05vw,17px); line-height:1.6; max-width:46ch; }
 
-/* Demo frame — fills its grid cell completely. The live iframe
-   stretches edge-to-edge inside it. */
-.demo-frame{
+/* ============================================================
+   HEXAGON CONSTELLATION (home right side)
+   ------------------------------------------------------------
+   A relative stage holding absolutely-positioned hexagons. Each
+   hexagon is a box clipped to a 6-point polygon. The big
+   experience hexagon morphs to a rectangle (same 6 points, two
+   pairs collapsed to corners → smooth metamorphosis), then
+   expands to cover the stage, then a centre-out gate opens.
+   ============================================================ */
+.hex-stage{
   position:relative;
-  height:100%;
-  border:1px solid var(--line); border-radius:14px;
-  background:linear-gradient(160deg,#0e1626,#080d16);
-  padding:clamp(8px,.7vw,14px);
-  display:flex; flex-direction:column;
-  transition:border-color .2s;
-  /* NOTE: not overflow:hidden — the "Try" pill sits above the top
-     edge. The inner .demo-stage clips the iframe to rounded corners. */
+  height:100%; min-height:0; min-width:0;
 }
-.demo-frame:hover{ border-color:rgba(214,168,73,.40); }
-.demo-try{
-  position:absolute; top:clamp(-13px,-1vh,-10px); left:clamp(14px,1.4vw,22px); z-index:4;
+
+/* Shared hexagon shape + iridescent droplet fill (CSS-only, no asset). */
+.hex{
+  --hex: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0% 50%);
+  position:absolute;
+  -webkit-clip-path:var(--hex); clip-path:var(--hex);
+  background:
+    radial-gradient(circle at 30% 25%, rgba(120,200,255,.5), transparent 22%),
+    radial-gradient(circle at 68% 38%, rgba(255,170,120,.45), transparent 20%),
+    radial-gradient(circle at 50% 70%, rgba(180,130,255,.5), transparent 26%),
+    radial-gradient(circle at 80% 78%, rgba(120,255,210,.4), transparent 22%),
+    linear-gradient(150deg, #1b2740, #0c1322 70%);
+  border:0;
+}
+
+/* Decorative hexagons — dim, non-interactive, just background depth. */
+.hex-deco{
+  background:linear-gradient(150deg, rgba(40,60,95,.5), rgba(12,19,34,.5));
+  opacity:.5;
+}
+.hex-deco-1{ width:clamp(70px,7vw,120px); aspect-ratio:1/1.1; top:34%; left:42%; }
+.hex-deco-2{ width:clamp(60px,6vw,100px); aspect-ratio:1/1.1; top:62%; left:34%; }
+.hex-deco-3{ width:clamp(80px,8vw,140px); aspect-ratio:1/1.1; top:12%; left:62%; opacity:.35; }
+.hex-deco-4{ width:clamp(50px,5vw,90px);  aspect-ratio:1/1.1; top:6%;  left:84%; opacity:.4; }
+
+/* Category hexagons — clickable navigation. */
+.hex-cat{
   appearance:none; cursor:pointer;
+  width:clamp(120px,13vw,210px); aspect-ratio:1/1.1;
+  display:flex; align-items:center; justify-content:center;
+  transition:transform .25s ease, filter .25s ease;
+  filter:saturate(1) brightness(.92);
+}
+.hex-cat:hover,
+.hex-cat:focus-visible{ transform:scale(1.05); filter:saturate(1.25) brightness(1.08); outline:none; }
+.hex-label{
+  color:#fff; font-weight:800; letter-spacing:.04em;
+  font-size:clamp(11px,1vw,16px); text-transform:uppercase;
+  text-shadow:0 2px 8px rgba(0,0,0,.7); pointer-events:none;
+}
+/* Constellation placement (mirrors the reference layout). */
+.hex-education { bottom:6%;  left:24%; }
+.hex-industry { top:46%;    left:14%; }
+.hex-government{ top:24%;    right:22%; }
+.hex-community { top:6%;     right:6%; }
+
+/* ---------- Big experience hexagon ---------- */
+.demo-frame.hex-experience{
+  position:absolute;
+  top:50%; left:50%;
+  width:clamp(280px,30vw,520px);
+  height:clamp(320px,52vh,600px);
+  transform:translate(-50%,-50%);
+  -webkit-clip-path:polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0% 50%);
+  clip-path:polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0% 50%);
+  border:0; border-radius:0; padding:0;
+  background:#0a1018;
+  display:flex; flex-direction:column;
+  z-index:5;
+  /* The metamorphosis: clip-path + size + position all animate. */
+  transition:
+    clip-path .55s cubic-bezier(.7,.02,.3,1),
+    -webkit-clip-path .55s cubic-bezier(.7,.02,.3,1),
+    width .55s cubic-bezier(.7,.02,.3,1),
+    height .55s cubic-bezier(.7,.02,.3,1),
+    top .55s cubic-bezier(.7,.02,.3,1),
+    left .55s cubic-bezier(.7,.02,.3,1),
+    border-radius .55s cubic-bezier(.7,.02,.3,1);
+}
+.hex-experience:not(.is-expanded){ cursor:pointer; }
+.hex-experience:not(.is-expanded):hover{ filter:brightness(1.06); }
+
+/* The "Try a Digital Twin" pill docks above the hexagon. */
+.demo-try{
+  position:absolute; top:clamp(-6px,0.5vh,4px); left:50%; transform:translateX(-50%); z-index:7;
+  appearance:none; cursor:pointer; white-space:nowrap;
   background:#0d1320; color:var(--gold);
   border:1px solid var(--gold); border-radius:7px;
-  padding:clamp(6px,.8vh,9px) clamp(10px,1.1vw,16px); font-family:var(--sans);
+  padding:clamp(6px,.8vh,9px) clamp(12px,1.2vw,18px); font-family:var(--sans);
   font-size:clamp(11px,.9vw,13px); font-weight:700; letter-spacing:.04em;
+  transition:background .15s,color .15s;
 }
 .demo-try:hover{ background:var(--gold); color:#1a1206; }
+
+/* Expand button (top-right) — only visible once expanded. */
 .demo-expand{
-  position:absolute; top:clamp(10px,1vw,16px); right:clamp(10px,1vw,16px); z-index:4;
+  position:absolute; top:clamp(10px,1vw,16px); right:clamp(10px,1vw,16px); z-index:7;
   appearance:none; cursor:pointer;
   width:34px; height:34px; border-radius:8px;
   background:rgba(0,0,0,.5); color:#fff; border:1px solid rgba(255,255,255,.2);
-  display:flex; align-items:center; justify-content:center;
+  display:none; align-items:center; justify-content:center;
   transition:background .15s,border-color .15s;
 }
 .demo-expand:hover{ background:rgba(0,0,0,.75); border-color:var(--gold); color:var(--gold); }
+.hex-experience.is-expanded .demo-expand{ display:flex; }
+
 .demo-stage{
   flex:1 1 auto; min-height:0;
-  position:relative; border-radius:10px; overflow:hidden;
+  position:relative; overflow:hidden;
   background:radial-gradient(120% 120% at 50% 0%, #16203400, #0a1018);
   display:flex;
 }
@@ -207,9 +284,43 @@ body{
 .demo-loading{
   position:absolute; inset:0; display:flex; flex-direction:column;
   align-items:center; justify-content:center; gap:14px; color:var(--muted); text-align:center; padding:24px;
+  z-index:2;
 }
 .demo-loading-text{ font-size:clamp(12px,.95vw,14px); }
 .demo-loading.is-hidden{ display:none; }
+
+/* ---------- Gate panels (centre-out reveal) ---------- */
+.gate{
+  position:absolute; top:0; bottom:0; width:50%;
+  background:linear-gradient(180deg,#10182a,#070b13);
+  z-index:6; pointer-events:none;
+  transition:transform .5s cubic-bezier(.7,.02,.3,1);
+}
+.gate-left { left:0;  transform:translateX(0); border-right:1px solid rgba(214,168,73,.25); }
+.gate-right{ right:0; transform:translateX(0); border-left:1px solid rgba(214,168,73,.25); }
+/* Closed (default, hexagon state): gates cover the experience. */
+.hex-experience:not(.is-open) .gate-left { transform:translateX(0); }
+.hex-experience:not(.is-open) .gate-right{ transform:translateX(0); }
+/* Open: gates slide off to the edges. */
+.hex-experience.is-open .gate-left { transform:translateX(-101%); }
+.hex-experience.is-open .gate-right{ transform:translateX(101%); }
+
+/* ---------- EXPANDED (square, covering the stage) ---------- */
+.hex-experience.is-expanded{
+  top:0; left:0; transform:translate(0,0);
+  width:100%; height:100%;
+  border-radius:14px;
+  -webkit-clip-path:polygon(0 0, 100% 0, 100% 100%, 100% 100%, 0 100%, 0 100%);
+  clip-path:polygon(0 0, 100% 0, 100% 100%, 100% 100%, 0 100%, 0 100%);
+  z-index:20;
+  cursor:default;
+}
+/* When expanded, the other hexagons fade out of the way. */
+.hex-stage.is-experience-open .hex-cat,
+.hex-stage.is-experience-open .hex-deco{
+  opacity:0; pointer-events:none; transition:opacity .35s ease;
+}
+
 
 /* Evidence / footnote strip — fixed strip at the bottom of the view. */
 .evidence-bar{

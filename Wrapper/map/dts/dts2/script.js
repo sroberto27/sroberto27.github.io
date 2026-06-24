@@ -22,6 +22,7 @@
     category: "education", // active pillar id
     dockTab: "usecases",
     demoOpen: false,
+    experienceOpen: false, // in-place hexagon expansion (morph + gate)
     contactOpen: false,
     treedisStarted: false
   };
@@ -198,6 +199,9 @@
      VIEW SWITCHING (state, not scroll)
      ============================================================ */
   function showView(name) {
+    // Leaving home? Snap the experience back to the hexagon menu so it's
+    // reset on return (covers mid-animation states too).
+    if (name !== "home") resetExperience();
     state.view = name;
     $$(".view").forEach((v) => {
       const match = v.id === "view-" + name;
@@ -364,20 +368,6 @@
       });
     }
 
-    /* Expand the inline experience into the full overlay. The iframe
-       is relocated into the overlay body; the Treedis session keeps
-       running because the element is moved, not recreated. */
-    function openDemo() {
-      state.demoOpen = true;
-      const ov = $("#demoOverlay");
-      const overlayBody = $("#overlayBody");
-      if (treedisIframe && treedisIframe.parentNode !== overlayBody) {
-        overlayBody.appendChild(treedisIframe);
-      }
-      ov.classList.add("is-open");
-      ov.setAttribute("aria-hidden", "false");
-    }
-
     /* Collapse: move the same iframe back into the inline home stage. */
     function closeDemo() {
       state.demoOpen = false;
@@ -394,6 +384,95 @@
       if (treedisIframe && stage && treedisIframe.parentNode !== stage) {
         stage.appendChild(treedisIframe);
       }
+    }
+
+  /* ============================================================
+     HEXAGON EXPERIENCE  (in-place morph + gate, then full screen)
+     ------------------------------------------------------------
+     Sequence on activate:
+       1. hexagon morphs to a square AND grows to cover the stage
+          (clip-path + size transition, ~0.55s)
+       2. once the square has formed, the centre-out gate opens
+          (~0.5s) revealing the live experience
+     Reverse on close. The expand (⤢) button hands off to the
+     existing full-screen overlay (openDemo).
+     ============================================================ */
+    let gateTimer = null;
+
+    function expandExperience() {
+      if (state.experienceOpen) return;
+      state.experienceOpen = true;
+      const frame = $("#demoFrame");
+      const stage = $("#hexStage");
+      if (!frame) return;
+
+      // Make sure the iframe is home in the hex stage before we reveal it.
+      parkIframe();
+
+      if (stage) stage.classList.add("is-experience-open");
+      frame.classList.add("is-expanded");          // hex → square + grow
+      // Open the gate only after the square has formed.
+      clearTimeout(gateTimer);
+      gateTimer = setTimeout(() => frame.classList.add("is-open"), 480);
+
+      // Relabel the pill.
+      const tryBtn = $("#demoTry");
+      if (tryBtn) tryBtn.textContent = "Close Experience";
+    }
+
+    function collapseExperience() {
+      if (!state.experienceOpen) return;
+      state.experienceOpen = false;
+      const frame = $("#demoFrame");
+      const stage = $("#hexStage");
+      if (!frame) return;
+
+      // Close the gate first, then morph the square back to a hexagon.
+      frame.classList.remove("is-open");
+      clearTimeout(gateTimer);
+      gateTimer = setTimeout(() => {
+        frame.classList.remove("is-expanded");
+        if (stage) stage.classList.remove("is-experience-open");
+      }, 360);
+
+      const tryBtn = $("#demoTry");
+      if (tryBtn) tryBtn.textContent = "Try a Digital Twin";
+    }
+
+    /* Pill toggles in-place expand/collapse. */
+    function toggleExperience() {
+      if (state.experienceOpen) collapseExperience();
+      else expandExperience();
+    }
+
+    /* Instant reset (no animation) — used when leaving the home view. */
+    function resetExperience() {
+      state.experienceOpen = false;
+      clearTimeout(gateTimer);
+      const frame = $("#demoFrame");
+      const stage = $("#hexStage");
+      if (frame) frame.classList.remove("is-expanded", "is-open");
+      if (stage) stage.classList.remove("is-experience-open");
+      const tryBtn = $("#demoTry");
+      if (tryBtn) tryBtn.textContent = "Try a Digital Twin";
+      parkIframe();
+    }
+
+  /* ============================================================
+     DEMO OVERLAY  (full-screen window, reused by the ⤢ button)
+     ============================================================ */
+    /* Expand the inline experience into the full overlay. The iframe
+       is relocated into the overlay body; the Treedis session keeps
+       running because the element is moved, not recreated. */
+    function openDemo() {
+      state.demoOpen = true;
+      const ov = $("#demoOverlay");
+      const overlayBody = $("#overlayBody");
+      if (treedisIframe && treedisIframe.parentNode !== overlayBody) {
+        overlayBody.appendChild(treedisIframe);
+      }
+      ov.classList.add("is-open");
+      ov.setAttribute("aria-hidden", "false");
     }
 
   /* ============================================================
@@ -1094,11 +1173,26 @@
     $("#burger").addEventListener("click", toggleDrawer);
     $("#navScrim").addEventListener("click", closeDrawer);
 
-    // The inline iframe is interactive on its own, so clicking the
-    // frame does NOT open the overlay. Expansion is explicit via the
-    // expand button or the "Try a Digital Twin" pill.
+    // Big experience hexagon:
+    //  • the "Try a Digital Twin" pill toggles the in-place morph+gate
+    //    (and relabels itself "Close Experience"),
+    //  • clicking the hexagon body (while collapsed) also expands it,
+    //  • the ⤢ button (shown only once expanded) hands off to the
+    //    full-screen overlay.
+    $("#demoTry").addEventListener("click", (e) => { e.stopPropagation(); toggleExperience(); });
     $("#demoExpand").addEventListener("click", (e) => { e.stopPropagation(); openDemo(); });
-    $("#demoTry").addEventListener("click", (e) => { e.stopPropagation(); openDemo(); });
+    $("#demoFrame").addEventListener("click", (e) => {
+      // Only the collapsed hexagon acts as a big "open" button; once
+      // expanded, clicks fall through to the live experience/controls.
+      if (state.experienceOpen) return;
+      if (e.target.closest("#demoTry") || e.target.closest("#demoExpand")) return;
+      expandExperience();
+    });
+
+    // Category hexagons navigate like the top-nav pillars.
+    $$(".hex-cat").forEach((h) =>
+      h.addEventListener("click", () => openCategory(h.dataset.cat))
+    );
 
     // Demo close
     $("#overlayClose").addEventListener("click", closeDemo);
@@ -1160,7 +1254,8 @@
       if (e.key === "Escape") {
         if ($("#exampleOverlay").classList.contains("is-open")) { closeExample(); return; }
         if ($("#accessOverlay").classList.contains("is-open"))  { closeAccess();  return; }
-        closeDemo();
+        if (state.demoOpen) { closeDemo(); return; }
+        if (state.experienceOpen) { collapseExperience(); return; }
         closeLeadForm();
         closeAnswer();
         if (state.contactOpen) slideToCards();

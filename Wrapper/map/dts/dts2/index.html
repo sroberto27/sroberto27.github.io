@@ -84,27 +84,50 @@
           </p>
         </div>
 
-        <!-- Demo experience frame — the live Treedis experience is
-             embedded inline here at boot (no click required). The
-             "Try a Digital Twin" pill expands it into the full overlay. -->
-        <div class="demo-frame" id="demoFrame"
-             aria-label="Digital twin demo experience">
-          <button class="demo-try" id="demoTry" type="button">Try a Digital Twin</button>
-          <button class="demo-expand" id="demoExpand" type="button"
-                  aria-label="Expand experience to full screen">
-            <svg viewBox="0 0 24 24" width="18" height="18">
-              <path d="M4 10V4h6M20 14v6h-6M20 4h-6M4 20h6" fill="none"
-                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
-          <div class="demo-stage" id="demoStage">
-            <!-- The live iframe is injected here by script.js at boot.
-                 A loading veil shows until Treedis reports TourReady. -->
-            <div class="demo-loading" id="demoLoading">
-              <div class="spinner" aria-hidden="true"></div>
-              <span class="demo-loading-text" id="demoLoadingText">Loading experience…</span>
+        <!-- ===== HEXAGON CONSTELLATION =====
+             Four clickable category hexagons + decorative hexagons,
+             arranged around the big central experience hexagon. The
+             big hexagon holds the live Treedis iframe; clicking it (or
+             "Try a Digital Twin") morphs it hex→square, expands it to
+             cover the stage, then opens a centre-out gate. -->
+        <div class="hex-stage" id="hexStage" aria-label="Explore Digital Twin Studios">
+
+          <!-- Decorative (non-interactive) hexagons -->
+          <span class="hex hex-deco hex-deco-1" aria-hidden="true"></span>
+          <span class="hex hex-deco hex-deco-2" aria-hidden="true"></span>
+          <span class="hex hex-deco hex-deco-3" aria-hidden="true"></span>
+          <span class="hex hex-deco hex-deco-4" aria-hidden="true"></span>
+
+          <!-- Category hexagons (navigate like the top pillars) -->
+          <button class="hex hex-cat hex-education"  type="button" data-cat="education"><span class="hex-label">Education</span></button>
+          <button class="hex hex-cat hex-industry"   type="button" data-cat="industry"><span class="hex-label">Industry</span></button>
+          <button class="hex hex-cat hex-government"  type="button" data-cat="government"><span class="hex-label">Government</span></button>
+          <button class="hex hex-cat hex-community"   type="button" data-cat="community"><span class="hex-label">Community</span></button>
+
+          <!-- Big experience hexagon (morphs to square, then full-screen).
+               #demoFrame keeps its id so the existing iframe plumbing
+               (startTreedis / parkIframe) is unchanged. -->
+          <div class="demo-frame hex-experience" id="demoFrame" aria-label="Digital twin demo experience">
+            <button class="demo-try" id="demoTry" type="button">Try a Digital Twin</button>
+            <button class="demo-expand" id="demoExpand" type="button"
+                    aria-label="Expand experience to full screen">
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path d="M4 10V4h6M20 14v6h-6M20 4h-6M4 20h6" fill="none"
+                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+            <div class="demo-stage" id="demoStage">
+              <!-- The live iframe is injected here at boot. -->
+              <div class="demo-loading" id="demoLoading">
+                <div class="spinner" aria-hidden="true"></div>
+                <span class="demo-loading-text" id="demoLoadingText">Loading experience…</span>
+              </div>
+              <!-- Gate panels: slide apart from centre on activation. -->
+              <div class="gate gate-left"  aria-hidden="true"></div>
+              <div class="gate gate-right" aria-hidden="true"></div>
             </div>
           </div>
+
         </div>
       </div>
 
