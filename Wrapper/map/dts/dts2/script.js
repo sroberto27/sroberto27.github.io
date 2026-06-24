@@ -498,9 +498,10 @@
      ------------------------------------------------------------
      Reads a published-CSV directory (or the built-in demo
      directory), matches access_id + access_code, then shows a
-     small dashboard and opens the client's twin in the overlay.
+     small dashboard listing every twin that login owns and opens
+     the chosen one in the experience overlay.
      ============================================================ */
-  const access = { directory: null, loading: null, signedIn: null };
+  const access = { directory: null, loading: null, session: null };
 
   function openAccess() {
     // Reset to the sign-in view each open (unless already signed in).
@@ -518,13 +519,13 @@
     note.hidden = !offline;
     if (offline) note.textContent = ui.offlineNote || "";
 
-    if (access.signedIn) showDashboard(access.signedIn);
+    if (access.session) showDashboard(access.session);
     else { $("#accessSignin").hidden = false; $("#accessDashboard").hidden = true; }
 
     const ov = $("#accessOverlay");
     ov.classList.add("is-open");
     ov.setAttribute("aria-hidden", "false");
-    if (!access.signedIn) setTimeout(() => $("#accessId").focus(), 60);
+    if (!access.session) setTimeout(() => $("#accessId").focus(), 60);
 
     // Warm the directory in the background.
     loadDirectory().catch(() => {});
@@ -603,14 +604,16 @@
     };
   }
 
-  /* ── Swap THIS function to plug in a real auth provider later. ── */
+  /* ── Swap THIS function to plug in a real auth provider later. ──
+     Returns ALL rows matching the login (a client can own several
+     twins, stored as one row per twin sharing the same id + code). */
   function authenticate(id, code) {
     const dir = access.directory || [];
     const wantId = (id || "").trim().toLowerCase();
     const wantCode = (code || "").trim();
-    return dir.find((row) =>
+    return dir.filter((row) =>
       row.access_id.toLowerCase() === wantId && row.access_code === wantCode
-    ) || null;
+    );
   }
 
   async function submitAccess(e) {
@@ -621,32 +624,66 @@
     btn.disabled = true; btn.textContent = "Checking…";
 
     await loadDirectory();
-    const match = authenticate($("#accessId").value, $("#accessCode").value);
+    const matches = authenticate($("#accessId").value, $("#accessCode").value);
 
     btn.disabled = false; btn.textContent = label;
 
-    if (!match) {
+    if (!matches.length) {
       const ui = (window.DTS_CLIENTS || {}).ui || {};
       $("#accessError").textContent = ui.error || "We couldn't find a twin for that ID and code.";
       $("#accessError").hidden = false;
       return;
     }
-    access.signedIn = match;
+    // One login → one client name, one or more twins.
+    access.session = { client: matches[0].client, twins: matches };
     $("#accessCode").value = "";
-    showDashboard(match);
+    showDashboard(access.session);
   }
 
-  function showDashboard(rec) {
+  /* Dashboard lists every twin this login owns, each with its own
+     "Open" button. A single-twin client simply sees one. */
+  function showDashboard(session) {
     $("#accessSignin").hidden = true;
     $("#accessDashboard").hidden = false;
-    $("#dashClient").textContent  = rec.client;
-    $("#dashProject").textContent = rec.project;
-    $("#dashNotes").textContent   = rec.notes || "";
-    $("#dashNotes").hidden = !rec.notes;
+    $("#dashClient").textContent = session.client;
+
+    const multi = session.twins.length > 1;
+    const greeting = $("#dashGreeting");
+    if (greeting) greeting.textContent = multi
+      ? "WELCOME BACK — " + session.twins.length + " TWINS"
+      : "WELCOME BACK";
+
+    const list = $("#dashTwins");
+    list.innerHTML = "";
+    session.twins.forEach((rec) => {
+      const row = document.createElement("div");
+      row.className = "dash-twin";
+      const info = document.createElement("div");
+      info.className = "dash-twin-info";
+      info.innerHTML =
+        '<span class="dash-twin-name">' + escapeHTML(rec.project) + '</span>' +
+        (rec.notes ? '<span class="dash-twin-note">' + escapeHTML(rec.notes) + '</span>' : '');
+      const open = document.createElement("button");
+      open.type = "button";
+      open.className = "dash-twin-open";
+      open.textContent = "Open";
+      open.addEventListener("click", () => openTwin(rec));
+      row.appendChild(info);
+      row.appendChild(open);
+      list.appendChild(row);
+    });
+  }
+
+  /* Tiny local escaper (the wrapper's escapeHTML lives in another
+     file in the SCSU build; this page is standalone). */
+  function escapeHTML(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
   function signOut() {
-    access.signedIn = null;
+    access.session = null;
     $("#accessDashboard").hidden = true;
     $("#accessSignin").hidden = false;
     $("#accessId").value = "";
@@ -655,11 +692,10 @@
     setTimeout(() => $("#accessId").focus(), 40);
   }
 
-  /* Open the signed-in client's twin in the experience overlay. If the
-     twin is on the same Treedis origin we can reuse the live iframe and
-     just navigate; otherwise we load their URL into a fresh frame. */
-  function openMyTwin() {
-    const rec = access.signedIn;
+  /* Open a specific twin record in the experience overlay. If the twin
+     is on the same Treedis origin we reuse the live iframe and just
+     navigate; otherwise we open its URL in a new tab. */
+  function openTwin(rec) {
     if (!rec) return;
     closeAccess();
 
@@ -674,8 +710,6 @@
         pendingExampleSweep = rec.sweep_id;
       }
     } else if (rec.twin_url) {
-      // Different host: open their twin URL directly in a new tab so we
-      // never break the live demo session.
       window.open(rec.twin_url, "_blank", "noopener");
     } else {
       openDemo();
@@ -1093,7 +1127,6 @@
     // Access Your Twin (returning-client portal)
     $("#accessForm").addEventListener("submit", submitAccess);
     $("#accessClose").addEventListener("click", closeAccess);
-    $("#dashOpen").addEventListener("click", openMyTwin);
     $("#dashSignout").addEventListener("click", signOut);
     $$("[data-close-access]").forEach((s) => s.addEventListener("click", closeAccess));
 

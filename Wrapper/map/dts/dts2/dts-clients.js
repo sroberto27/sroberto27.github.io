@@ -30,6 +30,18 @@
    That's it. To add or remove a client, edit the sheet. To rotate
    a code, change the cell. No code change, no redeploy.
 
+   >>> A CLIENT WITH MULTIPLE TWINS <<<
+   Give them ONE login and add one row per twin, all sharing the
+   same access_id + access_code. Example:
+
+        acme-hotel | 4821 | Acme Hotels | Downtown Lobby | …/aaa | s1 |
+        acme-hotel | 4821 | Acme Hotels | Airport        | …/bbb | s2 |
+        acme-hotel | 4821 | Acme Hotels | Rooftop Venue  | …/ccc |    |
+
+   On sign-in, all of that client's twins appear on the dashboard,
+   each with its own "Open" button. A client with a single row just
+   sees one twin. Keep the `client` name identical across their rows.
+
    >>> AN HONEST NOTE ON SECURITY (read this) <<<
    A published sheet is PUBLICLY READABLE by anyone who has the
    CSV link. The access_code column is therefore NOT a secret and
@@ -49,7 +61,7 @@
 window.DTS_CLIENTS = {
   /* Paste your published-CSV URL here. Leave "" to use the demo
      directory below (useful for local testing / first demo). */
-  sheetCsvUrl: "",
+  sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSGRuZefJU28qXSgyLWSmLWUh2akMcZiV16fCN_89aKpTmpg4GdHZTouhenlt3stjPDCLp99v4_fTVV/pub?gid=602775609&single=true&output=csv",
 
   /* Shown on the sign-in window. */
   ui: {
@@ -64,25 +76,11 @@ window.DTS_CLIENTS = {
 
   /* Built-in fallback directory used ONLY when sheetCsvUrl is "".
      Lets you demo the entire returning-client flow with no setup.
-     These map onto the same real Treedis showcase the demo uses. */
-  demoDirectory: [
-    {
-      access_id: "demo",
-      access_code: "1234",
-      client: "Demo Client",
-      project: "Solar Farm Sample",
-      twin_url: "https://spaces.dtsxr.com/tour/8e4ca3fc",
-      sweep_id: "hnz5p2wkdqr4isd41y1z2e1kc",
-      notes: "Sample returning-client record. ID: demo · Code: 1234"
-    },
-    {
-      access_id: "scsu",
-      access_code: "2026",
-      client: "SC State University",
-      project: "Virtual Campus",
-      twin_url: "https://spaces.dtsxr.com/tour/8e4ca3fc",
-      sweep_id: "itqbbw5un90s6fubay1sg9wpb",
-      notes: "Campus twin — Student Center landing sweep."
-    }
-  ]
+     These map onto the same real Treedis showcase the demo uses.
+
+     A client with MORE THAN ONE twin is just several rows that share
+     the same access_id + access_code (see "acme-hotel" below). On
+     sign-in they all appear on the dashboard, each with its own Open
+     button. A single-twin client (one row) opens straight in. */
+  demoDirectory: []
 };

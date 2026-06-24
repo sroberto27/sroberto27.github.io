@@ -367,14 +367,13 @@
       </form>
     </div>
 
-    <!-- Dashboard view (after a successful sign-in) -->
+    <!-- Dashboard view (after a successful sign-in). Lists every twin
+         this login owns; a single-twin client simply sees one. -->
     <div class="access-dashboard" id="accessDashboard" hidden>
       <span class="form-stage" id="dashGreeting">WELCOME BACK</span>
       <h2 class="form-title" id="dashClient">Client</h2>
-      <p class="dash-project" id="dashProject"></p>
-      <p class="dash-notes" id="dashNotes"></p>
+      <div class="dash-twins" id="dashTwins"><!-- injected: one row per twin --></div>
       <div class="dash-cta-row">
-        <button class="form-submit" id="dashOpen" type="button">Open my twin</button>
         <button class="form-submit form-submit-ghost" id="dashSignout" type="button">Sign out</button>
       </div>
     </div>
