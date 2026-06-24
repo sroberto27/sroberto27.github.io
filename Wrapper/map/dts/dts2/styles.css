@@ -182,11 +182,9 @@ body{
   z-index:3;
 }
 
-/* Shared hexagon shape + iridescent droplet image fill.
-   Flat-top regular hexagon: flat edges top & bottom, points left & right.
-   A regular flat-top hex has width:height ratio of 1 : 0.866. */
+/* Shared hexagon shape + iridescent droplet image fill. */
 .hex{
-  --hex: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  --hex: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0% 50%);
   position:absolute;
   -webkit-clip-path:var(--hex); clip-path:var(--hex);
   background:#0c1322 center/cover no-repeat;
@@ -198,55 +196,52 @@ body{
   background:linear-gradient(150deg, rgba(40,60,95,.55), rgba(12,19,34,.55));
   opacity:.45;
 }
-.hex-deco-1{ width:clamp(60px,5.5vw,96px);  aspect-ratio:1/0.9; top:38%; left:58%; transform:translate(-50%,-50%); }
-.hex-deco-2{ width:clamp(54px,5vw,84px);    aspect-ratio:1/0.9; top:72%; left:55%; transform:translate(-50%,-50%); }
-.hex-deco-3{ width:clamp(64px,6vw,108px);   aspect-ratio:1/0.9; top:22%; left:74%; transform:translate(-50%,-50%); }
-.hex-deco-4{ width:clamp(46px,4.2vw,74px);  aspect-ratio:1/0.9; top:14%; left:96%; transform:translate(-50%,-50%); }
+.hex-deco-1{ width:clamp(54px,5vw,86px);  aspect-ratio:1/1.12; top:40%; left:50%; transform:translate(-50%,-50%); }
+.hex-deco-2{ width:clamp(48px,4.6vw,78px);aspect-ratio:1/1.12; top:66%; left:42%; transform:translate(-50%,-50%); }
+.hex-deco-3{ width:clamp(60px,6vw,104px); aspect-ratio:1/1.12; top:24%; left:66%; transform:translate(-50%,-50%); }
+.hex-deco-4{ width:clamp(40px,4vw,70px);  aspect-ratio:1/1.12; top:14%; left:80%; transform:translate(-50%,-50%); }
 
 /* Category hexagons — clickable navigation, filled with the droplet image. */
 .hex-cat{
   appearance:none; cursor:pointer;
-  width:clamp(150px,15vw,236px); aspect-ratio:1/0.9;
+  width:clamp(118px,10.8vw,176px); aspect-ratio:1.14/1;
   background-image:url("assets-droplet.png");
   background-size:cover; background-position:center;
   display:flex; align-items:center; justify-content:center;
+  padding:0 12%;
   transition:transform .25s ease, filter .25s ease;
-  filter:saturate(1) brightness(.95);
+  filter:saturate(1) brightness(.92);
 }
 .hex-label{
-  color:#fff; font-weight:800; letter-spacing:.03em;
-  font-size:clamp(10px,.92vw,15px); text-transform:uppercase;
-  text-shadow:0 2px 8px rgba(0,0,0,.95); pointer-events:none;
-  white-space:nowrap;
-  padding:3px 8px; border-radius:5px;
-  background:rgba(8,12,20,.34);
+  color:#fff; font-weight:800; letter-spacing:.04em;
+  font-size:clamp(11px,1vw,16px); text-transform:uppercase;
+  text-shadow:0 2px 8px rgba(0,0,0,.85); pointer-events:none;
 }
 
-/* ---------- Constellation placement (tight interlocking diagonal) ----------
-   Hexagons stair-step up-and-right, clear of the headline copy on the left.
-   Education (low) → Industry → big experience hexagon (centre) →
-   Government → Community (high). */
-.hex-education { top:72%; left:45%; transform:translate(-50%,-50%); z-index:5; }
-.hex-industry { top:55%; left:54%; transform:translate(-50%,-50%); z-index:6; }
-.hex-government{ top:38%; left:82%; transform:translate(-50%,-50%); z-index:5; }
-.hex-community { top:24%; left:92%; transform:translate(-50%,-50%); z-index:6; }
+/* ---------- Constellation placement (full-area diagonal cluster) ----------
+   Compact stair-step from the lower-left menu hexes through the central
+   demo and up to the right-side menu hexes. */
+.hex-education { top:70%; left:31%; transform:translate(-50%,-50%); z-index:5; }
+.hex-industry { top:58%; left:42.5%; transform:translate(-50%,-50%); z-index:5; }
+.hex-government{ top:30%; left:76%; transform:translate(-50%,-50%); z-index:5; }
+.hex-community { top:18%; left:87%; transform:translate(-50%,-50%); z-index:5; }
 .hex-cat:hover,
-.hex-cat:focus-visible{ transform:translate(-50%,-50%) scale(1.06); filter:saturate(1.3) brightness(1.12); outline:none; }
+.hex-cat:focus-visible{ transform:translate(-50%,-50%) scale(1.05); filter:saturate(1.25) brightness(1.1); outline:none; }
 
 /* ---------- Big experience hexagon ---------- */
 .demo-frame.hex-experience{
   position:absolute;
   /* Centre of the diagonal cluster, between Industry and Government. */
-  top:46%; left:67%;
-  width:clamp(260px,22vw,400px);
-  height:clamp(270px,38vh,440px);
+  top:43%; left:61%;
+  width:clamp(290px,25vw,465px);
+  height:clamp(260px,38vh,420px);
   transform:translate(-50%,-50%);
-  -webkit-clip-path:polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
-  clip-path:polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  -webkit-clip-path:polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0% 50%);
+  clip-path:polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0% 50%);
   border:0; border-radius:0; padding:0;
   background:#0a1018;
   display:flex; flex-direction:column;
-  z-index:7;
+  z-index:6;
   /* The metamorphosis: clip-path + size + position all animate. */
   transition:
     clip-path .55s cubic-bezier(.7,.02,.3,1),
@@ -260,7 +255,8 @@ body{
 .hex-experience:not(.is-expanded){ cursor:pointer; }
 .hex-experience:not(.is-expanded):hover{ filter:brightness(1.06); }
 
-/* Static preview layer (kept as a base fill behind the gates). */
+/* Static preview image — shown in the collapsed/hexagon state and while
+   the gates are closed. Fades out as the experience opens. */
 .demo-preview{
   position:absolute; inset:0; z-index:1;
   background:url("assets-experience.png") center/cover no-repeat;
@@ -307,21 +303,19 @@ body{
 .demo-loading-text{ font-size:clamp(12px,.95vw,14px); }
 .demo-loading.is-hidden{ display:none; }
 
-/* ---------- Gate panels (centre-out reveal) ----------
-   The two gates each show HALF of the preview image, so when closed they
-   read as the single spatial preview. Opening slides them apart from the
-   centre, splitting the image away to reveal the live tour behind. */
+/* ---------- Gate panels (centre-out reveal) ---------- */
 .gate{
   position:absolute; top:0; bottom:0; width:50%;
-  background-image:url("assets-experience.png");
-  background-size:200% 100%;        /* image spans both gates */
-  background-repeat:no-repeat;
-  z-index:5; pointer-events:none;
+  background:linear-gradient(180deg,#10182a,#070b13);
+  z-index:6; pointer-events:none;
   transition:transform .5s cubic-bezier(.7,.02,.3,1);
 }
-.gate-left { left:0;  background-position:left center;  transform:translateX(0); }
-.gate-right{ right:0; background-position:right center; transform:translateX(0); }
-/* Open: gates slide off to the edges, revealing the iframe. */
+.gate-left { left:0;  transform:translateX(0); border-right:1px solid rgba(214,168,73,.25); }
+.gate-right{ right:0; transform:translateX(0); border-left:1px solid rgba(214,168,73,.25); }
+/* Closed (default, hexagon state): gates cover the experience. */
+.hex-experience:not(.is-open) .gate-left { transform:translateX(0); }
+.hex-experience:not(.is-open) .gate-right{ transform:translateX(0); }
+/* Open: gates slide off to the edges. */
 .hex-experience.is-open .gate-left { transform:translateX(-101%); }
 .hex-experience.is-open .gate-right{ transform:translateX(101%); }
 
