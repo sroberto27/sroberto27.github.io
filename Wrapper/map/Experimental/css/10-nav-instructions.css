@@ -33,8 +33,8 @@
 .nav-instructions-card {
   width: min(720px, 100%);
   max-height: calc(100vh - 32px);
-  background: #333333;            /* dark backdrop for the white-text image */
-  color: var(--on-dark);
+  background: #fff;              /* was #333333 */
+  color: var(--ink);            /* was var(--on-dark) */
   padding: clamp(28px, 4vw, 40px) clamp(28px, 4vw, 48px);
   display: flex;
   flex-direction: column;
