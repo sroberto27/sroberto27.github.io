@@ -144,7 +144,7 @@ body.xr-mode .nav-instructions-image .nav-instructions-img-xr      { display: bl
 }
 .nav-instructions-checkbox input:focus-visible
 ~ .nav-instructions-checkbox-box {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
@@ -169,7 +169,7 @@ body.xr-mode .nav-instructions-image .nav-instructions-img-xr      { display: bl
   background: var(--brand-red-2);
 }
 .nav-instructions-btn:focus-visible {
-  outline: 2px solid #fff;
+  outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
