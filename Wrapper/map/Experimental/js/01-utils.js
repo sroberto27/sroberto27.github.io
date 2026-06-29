@@ -160,8 +160,12 @@ function isPlausibleHeadsetUA() {
       /Windows NT|Macintosh|Mac OS X(?!.*Mobile)/i.test(ua) ||
       (/X11/.test(ua) && !/Quest|OculusBrowser|Pico/i.test(ua));
     if (looksDesktop) return false;
-    // Headset-platform markers
-    return /OculusBrowser|Quest|Pico|Android|Mobile VR| VR /i.test(ua);
+    // Headset-platform markers. Bare "Android" is NOT one — every
+    // Samsung/Pixel phone reports Android and (via Cardboard) also
+    // claims immersive-vr support, which would falsely upgrade phones
+    // to the VR profile. Real standalone Android headsets always carry
+    // an additional token (Quest / Pico / OculusBrowser / Mobile VR).
+    return /OculusBrowser|Quest|Pico|Mobile VR| VR /i.test(ua);
   } catch (_) {
     return false;
   }
