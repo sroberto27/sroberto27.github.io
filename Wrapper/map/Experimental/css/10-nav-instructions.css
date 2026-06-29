@@ -2,14 +2,13 @@
 /* ===========================================================
    NAVIGATION INSTRUCTIONS MODAL (3D street view onboarding)
    -----------------------------------------------------------
-   Same modal pattern as the start screen. Uses a white card
-   so it matches the start-screen look; the instructional
-   images now have dark text on a transparent background, so
-   they read correctly on white. Single "Got it" CTA +
-   "Don't show again" checkbox. Sits at z-index 1750 — above
-   the start screen (1700) so if both are ever queued, this
-   one wins. In practice they never overlap because street
-   view can only be opened after the start screen is dismissed.
+   Same modal pattern as the start screen, but with a dark
+   #333333 card so the white-text instructional image reads
+   correctly. Single "Got it" CTA + "Don't show again"
+   checkbox. Sits at z-index 1750 — above the start screen
+   (1700) so if both are ever queued, this one wins. In
+   practice they never overlap because street view can only
+   be opened after the start screen is dismissed.
    =========================================================== */
 .nav-instructions {
   position: fixed;
@@ -57,13 +56,14 @@
   margin: 0;
   font-size: clamp(20px, 2.2vw, 26px);
   font-weight: 700;
-  color: var(--ink);              /* was var(--on-dark) */
+  color: var(--on-dark);
   letter-spacing: -0.01em;
 }
 
 /* The placeholder image. Stretches to fill the card width
-   and preserves aspect ratio. The image has dark text on a
-   transparent background so it reads on the white card. */
+   and preserves aspect ratio. The image already has white
+   text on a transparent background so the dark card behind
+   it provides contrast. */
 .nav-instructions-image {
   width: 100%;
   display: flex;
@@ -93,11 +93,12 @@ body.xr-mode .nav-instructions-image .nav-instructions-img-xr      { display: bl
   font-family: var(--sans);
   font-size: 16px;
   font-weight: 500;
-  color: rgba(11, 11, 11, .62);   /* was var(--on-dark-muted) */
+  color: var(--on-dark-muted);
   letter-spacing: .04em;
 }
 
-/* Start-screen checkbox styling, tuned to read on the white card. */
+/* Reuse the start-screen checkbox styling, but invert colors
+   so the white check + transparent box read on the dark card. */
 .nav-instructions-checkbox {
   display: inline-flex;
   align-items: center;
@@ -105,7 +106,7 @@ body.xr-mode .nav-instructions-image .nav-instructions-img-xr      { display: bl
   cursor: pointer;
   font-family: var(--sans);
   font-size: 13.5px;
-  color: rgba(11, 11, 11, .62);   /* was var(--muted-ink) — undefined */
+  color: var(--muted-ink);
   user-select: none;
   -webkit-tap-highlight-color: transparent;
 }
@@ -143,7 +144,7 @@ body.xr-mode .nav-instructions-image .nav-instructions-img-xr      { display: bl
 }
 .nav-instructions-checkbox input:focus-visible
 ~ .nav-instructions-checkbox-box {
-  outline: 2px solid var(--ink);  /* was #fff */
+  outline: 2px solid #fff;
   outline-offset: 2px;
 }
 
@@ -168,7 +169,7 @@ body.xr-mode .nav-instructions-image .nav-instructions-img-xr      { display: bl
   background: var(--brand-red-2);
 }
 .nav-instructions-btn:focus-visible {
-  outline: 2px solid var(--ink);  /* was #fff */
+  outline: 2px solid #fff;
   outline-offset: 2px;
 }
 
