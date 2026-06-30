@@ -87,7 +87,17 @@
    manually flip variants for testing on a regular browser, run
    `document.body.classList.toggle('xr-mode')` in the console. */
 .nav-instructions-image .nav-instructions-img-xr { display: none; }
+.nav-instructions-image .nav-instructions-img-touch { display: none; }
+
+/* Touch device (not in VR): show the touch-controls variant
+   instead of the desktop/mouse one. Driven by body.touch-mode,
+   set by applyTreedisProfile() in 01-utils.js at boot. */
+body.touch-mode .nav-instructions-image .nav-instructions-img-desktop { display: none; }
+body.touch-mode .nav-instructions-image .nav-instructions-img-touch   { display: block; }
+
+/* VR always wins, even if the device also reports touch points. */
 body.xr-mode .nav-instructions-image .nav-instructions-img-desktop { display: none; }
+body.xr-mode .nav-instructions-image .nav-instructions-img-touch   { display: none; }
 body.xr-mode .nav-instructions-image .nav-instructions-img-xr      { display: block; }
 .nav-instructions-fallback {
   font-family: var(--sans);

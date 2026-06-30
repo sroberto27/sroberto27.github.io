@@ -42,33 +42,7 @@ const config = window.CAMPUS_CONFIG;
    so the very first call to resolveTreedisProfile() picks the
    right map before the iframe src is set. Re-evaluated as part
    of detectXRAsync() too — never trusted as the sole signal. */
-
-/* Positive phone/tablet detection. When this returns true the app
-   is FORCED onto the desktop (mobile) Treedis profile — a phone is
-   never a VR headset, even though Android browsers report
-   immersive-vr as supported (Cardboard). Real standalone headsets
-   carry an explicit token (Quest / Pico / OculusBrowser / VR), and
-   those are excluded below so a headset is never mistaken for a
-   phone. This is the authoritative "stay on desktop" guard. */
-function isMobilePhone() {
-  try {
-    const ua = (navigator.userAgent || "").toString();
-    // Never treat an actual headset as a phone.
-    if (/OculusBrowser|Quest|Pico|Mobile VR| VR /i.test(ua)) return false;
-    // Phone / tablet platform markers. iPadOS 13+ reports as
-    // "Macintosh" but exposes touch, so we check that separately.
-    if (/Android|iPhone|iPod|iPad|Windows Phone|IEMobile/i.test(ua)) return true;
-    // iPadOS masquerading as desktop Safari.
-    if (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1) return true;
-    return false;
-  } catch (_) {
-    return false;
-  }
-}
-
 function isXRUserAgent() {
-  // A phone is never VR, regardless of any other signal.
-  if (isMobilePhone()) return false;
   try {
     const ua = (navigator.userAgent || "").toString();
     // OculusBrowser appears in every Meta Quest Browser UA,
@@ -133,6 +107,12 @@ function applyTreedisProfile(profileName) {
   // VR-mode streetview rules in mapstyles.css key off this).
   try {
     document.body.classList.toggle("xr-mode", profileName === "vr");
+    // Touch-mode: a touch-capable device that is NOT in VR. Drives
+    // the touch-controls variant of the nav-instructions modal.
+    const isTouch = ("ontouchstart" in window) ||
+                    (navigator.maxTouchPoints > 0);
+    document.body.classList.toggle("touch-mode",
+      profileName !== "vr" && isTouch);
   } catch (_) {
     // <body> not parsed yet on module load — that's fine, the
     // class gets re-applied below when this runs again from boot.
@@ -186,12 +166,8 @@ function isPlausibleHeadsetUA() {
       /Windows NT|Macintosh|Mac OS X(?!.*Mobile)/i.test(ua) ||
       (/X11/.test(ua) && !/Quest|OculusBrowser|Pico/i.test(ua));
     if (looksDesktop) return false;
-    // Headset-platform markers. Bare "Android" is NOT one — every
-    // Samsung/Pixel phone reports Android and (via Cardboard) also
-    // claims immersive-vr support, which would falsely upgrade phones
-    // to the VR profile. Real standalone Android headsets always carry
-    // an additional token (Quest / Pico / OculusBrowser / Mobile VR).
-    return /OculusBrowser|Quest|Pico|Mobile VR| VR /i.test(ua);
+    // Headset-platform markers
+    return /OculusBrowser|Quest|Pico|Android|Mobile VR| VR /i.test(ua);
   } catch (_) {
     return false;
   }
@@ -206,10 +182,6 @@ function isPlausibleHeadsetUA() {
    be inside). */
 async function maybeUpgradeToVRProfile() {
   if (activeTreedisProfile === "vr") return;
-  // Hard stop: a phone/tablet stays on the desktop profile no matter
-  // what WebXR reports. This shadows the isPlausibleHeadsetUA() check
-  // below but is kept explicit as the primary mobile guard.
-  if (isMobilePhone()) return;
   const isXR = await detectXRAsync();
   if (!isXR) return;
   if (!isPlausibleHeadsetUA()) {
