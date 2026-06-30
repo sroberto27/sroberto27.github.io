@@ -95,6 +95,30 @@
 body.touch-mode .nav-instructions-image .nav-instructions-img-desktop { display: none; }
 body.touch-mode .nav-instructions-image .nav-instructions-img-touch   { display: block; }
 
+/* The touch-controls image is tall (portrait). Without this it
+   overflows and slides underneath the checkbox + "Got it" button.
+   Make the image wrapper a flexible, scrollable region so the
+   image scrolls inside the card while the checkbox and button
+   stay pinned and fully visible at the bottom. */
+body.touch-mode .nav-instructions-image {
+  flex: 1 1 auto;
+  min-height: 0;          /* allow the flex item to shrink */
+  overflow-y: auto;
+  align-items: flex-start;
+  -webkit-overflow-scrolling: touch;
+}
+/* Keep the checkbox and actions from being squeezed away. */
+body.touch-mode .nav-instructions-checkbox,
+body.touch-mode .nav-instructions-actions {
+  flex: 0 0 auto;
+}
+/* In touch mode the card itself should clip (the image scrolls
+   internally), rather than the whole card scrolling — that keeps
+   the button locked to the bottom edge. */
+body.touch-mode .nav-instructions-card {
+  overflow: hidden;
+}
+
 /* VR always wins, even if the device also reports touch points. */
 body.xr-mode .nav-instructions-image .nav-instructions-img-desktop { display: none; }
 body.xr-mode .nav-instructions-image .nav-instructions-img-touch   { display: none; }
