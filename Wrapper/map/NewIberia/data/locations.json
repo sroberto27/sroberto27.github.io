@@ -8,8 +8,14 @@
       "name": "New Iberia",
       "category": "CITY",
       "description": "New Iberia, the Queen City of the Teche, is the parish seat of Iberia Parish, Louisiana. Founded in 1779 by Spanish settlers along Bayou Teche, it is known for its historic Main Street district, Shadows-on-the-Teche, and its Cajun and Creole heritage.",
-      "happensHere": ["Historic Main Street", "Bayou Teche", "Shadows-on-the-Teche", "Sugar Cane Festival"],
-      "address": "New Iberia, LA 70560"
+      "happensHere": [
+        "Historic Main Street",
+        "Bayou Teche",
+        "Shadows-on-the-Teche",
+        "Sugar Cane Festival"
+      ],
+      "address": "New Iberia, LA 70560",
+      "image": "https://lh3.googleusercontent.com/place-photos/AJRVUZNuxzcT2COmlKZyEDflNCRjE_HhM28aXVq8TeH77WrebQvL6F7od5YOPFGFMlVruoJOfUqrd74qZIl_YXDle8F4mUx4K6NsY-uoI2v2-ks33G9GSDzwBWfdLac6ZeRYCrtelhohpOMITRSKhA=s4800-w800-h600"
     },
     {
       "id": "cypremort-point-state-park",
@@ -17,8 +23,14 @@
       "name": "Cypremort Point State Park",
       "category": "STATE PARK",
       "description": "Cypremort Point State Park sits on Vermilion Bay and offers one of the few beaches in the region, along with fishing, boating, sailing, and cabins overlooking the Gulf.",
-      "happensHere": ["Beach", "Fishing", "Boating", "Cabins"],
-      "address": "306 Beach Ln, Cypremort Point, LA 70538"
+      "happensHere": [
+        "Beach",
+        "Fishing",
+        "Boating",
+        "Cabins"
+      ],
+      "address": "306 Beach Ln, Cypremort Point, LA 70538",
+      "image": "https://lh3.googleusercontent.com/place-photos/AJRVUZPa1TevxS9WuqGByHItezRsNcWNXDhPNNX9TYF4lN5wUMany3klBtgDAZbRVILMEyF1Dj2Fk7PtDOcI8zRduUqBvBni0l6v2DmicWBKOLUFdY2FWNV1-eleaOKrj9K_jdfPfaDQkjA5qJT39zM=s4800-w800-h600"
     },
     {
       "id": "lake-fausse-pointe-state-park",
@@ -26,8 +38,14 @@
       "name": "Lake Fausse Pointe State Park",
       "category": "STATE PARK",
       "description": "Lake Fausse Pointe State Park lies within the Atchafalaya Basin's cypress-tupelo swamp, offering canoe trails, boardwalks, cabins, and some of the best paddling and wildlife viewing in south Louisiana.",
-      "happensHere": ["Canoe Trails", "Camping", "Cabins", "Wildlife Viewing"],
-      "address": "5400 Levee Rd, St. Martinville, LA 70582"
+      "happensHere": [
+        "Canoe Trails",
+        "Camping",
+        "Cabins",
+        "Wildlife Viewing"
+      ],
+      "address": "5400 Levee Rd, St. Martinville, LA 70582",
+      "image": "https://lh3.googleusercontent.com/place-photos/AJRVUZPzaeGbg0pVjmeBQi2nY2pyjwQQCQ1UVtPsCylUzkc4uCQc2s8bDk84ZQFgZzBguKJbRF7bss6AZsUd6-3VFGQV4x_83_mH67DEEtnaoACD5tBPNJfbVqAmU1bOalmSIKvfwLPuRit5W_5rsYmF-dqK9w=s4800-w800-h600"
     }
   ]
 }
