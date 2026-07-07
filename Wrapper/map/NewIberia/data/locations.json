@@ -1,0 +1,33 @@
+{
+  "$schema": "scsu-locations-v1",
+  "generatedAt": "2026-07-07",
+  "locations": [
+    {
+      "id": "new-iberia",
+      "key": "new iberia",
+      "name": "New Iberia",
+      "category": "CITY",
+      "description": "New Iberia, the Queen City of the Teche, is the parish seat of Iberia Parish, Louisiana. Founded in 1779 by Spanish settlers along Bayou Teche, it is known for its historic Main Street district, Shadows-on-the-Teche, and its Cajun and Creole heritage.",
+      "happensHere": ["Historic Main Street", "Bayou Teche", "Shadows-on-the-Teche", "Sugar Cane Festival"],
+      "address": "New Iberia, LA 70560"
+    },
+    {
+      "id": "cypremort-point-state-park",
+      "key": "cypremort point state park",
+      "name": "Cypremort Point State Park",
+      "category": "STATE PARK",
+      "description": "Cypremort Point State Park sits on Vermilion Bay and offers one of the few beaches in the region, along with fishing, boating, sailing, and cabins overlooking the Gulf.",
+      "happensHere": ["Beach", "Fishing", "Boating", "Cabins"],
+      "address": "306 Beach Ln, Cypremort Point, LA 70538"
+    },
+    {
+      "id": "lake-fausse-pointe-state-park",
+      "key": "lake fausse pointe state park",
+      "name": "Lake Fausse Pointe State Park",
+      "category": "STATE PARK",
+      "description": "Lake Fausse Pointe State Park lies within the Atchafalaya Basin's cypress-tupelo swamp, offering canoe trails, boardwalks, cabins, and some of the best paddling and wildlife viewing in south Louisiana.",
+      "happensHere": ["Canoe Trails", "Camping", "Cabins", "Wildlife Viewing"],
+      "address": "5400 Levee Rd, St. Martinville, LA 70582"
+    }
+  ]
+}
