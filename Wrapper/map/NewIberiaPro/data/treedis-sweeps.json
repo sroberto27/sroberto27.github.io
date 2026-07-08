@@ -1,0 +1,58 @@
+{
+  "$schema": "scsu-treedis-sweeps-v1",
+  "generatedAt": "2026-07-07",
+  "models": {
+    "desktop": "4fb22059",
+    "vr": "4fb22059"
+  },
+  "sweeps": [
+    {
+      "id": "new-iberia",
+      "key": "new iberia",
+      "name": "New Iberia",
+      "parentName": null,
+      "desktop": {
+        "sweepId": "u81yx7teebucha7t1kpe4w7fc",
+        "transitionTime": null,
+        "rotation": { "x": 1.8215825092711617, "y": 16.702992165743613 }
+      },
+      "vr": {
+        "sweepId": "u81yx7teebucha7t1kpe4w7fc",
+        "transitionTime": null,
+        "rotation": { "x": 1.8215825092711617, "y": 16.702992165743613 }
+      }
+    },
+    {
+      "id": "cypremort-point-state-park",
+      "key": "cypremort point state park",
+      "name": "Cypremort Point State Park",
+      "parentName": null,
+      "desktop": {
+        "sweepId": "u9s8q0au6ws71h7f4p10xdy1a",
+        "transitionTime": null,
+        "rotation": { "x": -12.020010990985478, "y": -161.30181132678788 }
+      },
+      "vr": {
+        "sweepId": "u9s8q0au6ws71h7f4p10xdy1a",
+        "transitionTime": null,
+        "rotation": { "x": -12.020010990985478, "y": -161.30181132678788 }
+      }
+    },
+    {
+      "id": "lake-fausse-pointe-state-park",
+      "key": "lake fausse pointe state park",
+      "name": "Lake Fausse Pointe State Park",
+      "parentName": null,
+      "desktop": {
+        "sweepId": "hx65c61euk09gqnrca05r18ha",
+        "transitionTime": null,
+        "rotation": { "x": -13.396516781444555, "y": 98.89528855632248 }
+      },
+      "vr": {
+        "sweepId": "hx65c61euk09gqnrca05r18ha",
+        "transitionTime": null,
+        "rotation": { "x": -13.396516781444555, "y": 98.89528855632248 }
+      }
+    }
+  ]
+}

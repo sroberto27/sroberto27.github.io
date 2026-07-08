@@ -1,0 +1,326 @@
+/* === New Iberia styles — Part 7: street view overlays === */
+
+.streetview {
+  position: absolute;
+  inset: 0;
+  z-index: 1300;
+  background: #0B1420;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease);
+}
+.streetview.is-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.streetview-frame {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+/* While 3D is open, the rail / sheets / peek / pill hide — only
+   the street-view overlays and (desktop) the tour pill remain. */
+body.streetview-open .rail,
+body.streetview-open .sheet-peek,
+body.streetview-open .locations-toggle,
+body.streetview-open .mobile-menu-btn,
+body.streetview-open .filter-chips-top,
+body.streetview-open .map-controls { visibility: hidden; }
+
+/* Desktop keeps the guided-tour pill floating above the 3D view */
+body.streetview-open .tour-pill {
+  z-index: 1350;
+  bottom: calc(var(--edge) + 58px); /* sits above Enter VR */
+}
+
+/* ---------- "Back to map" pill — top-left ---------- */
+.streetview-close {
+  position: absolute;
+  top: var(--edge);
+  left: var(--edge);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px 0 12px;
+  border: none;
+  border-radius: var(--ni-radius-pill);
+  background: var(--ni-paper);
+  box-shadow: var(--ni-shadow);
+  color: var(--ni-navy);
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 1360;
+}
+.streetview-close svg { width: 16px; height: 16px; }
+.streetview-close:hover { background: var(--ni-cream); }
+
+/* ---------- Place pill — top-center ---------- */
+.streetview-caption {
+  position: absolute;
+  top: var(--edge);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  padding: 0 18px;
+  background: var(--ni-paper);
+  border-radius: var(--ni-radius-pill);
+  box-shadow: var(--ni-shadow);
+  z-index: 1355;
+  max-width: min(70vw, 520px);
+  white-space: nowrap;
+}
+.streetview-caption-kicker { display: none; }
+.streetview-caption-sub {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 10px;
+  border-radius: var(--ni-radius-pill);
+  background: rgba(232,185,60,.22);
+  color: var(--ni-gold-dark);
+  font-size: var(--label-size);
+  letter-spacing: var(--label-ls);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.streetview-caption-sub:empty { display: none; }
+.streetview-caption-title {
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ni-navy);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.streetview-caption-vr {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--label-size);
+  letter-spacing: var(--label-ls);
+  font-weight: 600;
+  color: var(--ni-blue);
+}
+.sv-vr-icon { width: 18px; height: 18px; }
+
+/* ---------- Top-right controls (menu + help) ---------- */
+.sv-topright {
+  position: absolute;
+  top: var(--edge);
+  right: var(--edge);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 1360;
+}
+
+/* ---------- Enter VR — bottom center ---------- */
+.sv-enter-vr {
+  position: absolute;
+  left: 50%;
+  bottom: var(--edge);
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 26px;
+  border-radius: var(--ni-radius-pill);
+  background: var(--ni-navy);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: var(--ni-shadow);
+  z-index: 1355;
+}
+.sv-enter-vr:hover { background: var(--ni-blue); }
+
+/* ---------- Picture-in-picture mini-map — bottom-right ---------- */
+.sv-minimap {
+  position: absolute;
+  right: var(--edge);
+  bottom: var(--edge);
+  width: 250px;
+  height: 180px;
+  background: var(--ni-paper);
+  border-radius: var(--ni-radius-card);
+  box-shadow: var(--ni-shadow);
+  padding: 6px;
+  z-index: 1355;
+  cursor: pointer;
+}
+/* Gold hairline along the mini-map's bottom edge */
+.sv-minimap::after {
+  content: "";
+  position: absolute;
+  left: 6px; right: 6px; bottom: 6px;
+  height: 4px;
+  background: var(--ni-gold);
+  border-radius: 0 0 8px 8px;
+  z-index: 2;
+  pointer-events: none;
+}
+.sv-minimap-canvas {
+  position: absolute;
+  inset: 6px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--ni-cream);
+}
+.sv-minimap-canvas .leaflet-control-attribution { display: none; }
+.sv-minimap-back {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 3;
+  border: none;
+  border-radius: var(--ni-radius-pill);
+  background: var(--ni-paper);
+  box-shadow: var(--ni-shadow);
+  color: var(--ni-navy);
+  font-size: 11px;
+  font-weight: 600;
+  min-height: 26px;
+  padding: 0 10px;
+}
+
+/* ---------- Loading veil ---------- */
+.streetview-loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(11,25,45,.72);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease);
+  z-index: 1370;
+}
+.streetview-loading.is-active { opacity: 1; pointer-events: auto; }
+.streetview-loading-inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  background: var(--ni-paper);
+  border-radius: var(--ni-radius-panel);
+  box-shadow: var(--ni-shadow);
+  padding: 26px 34px;
+}
+.streetview-loading-spinner {
+  width: 22px;
+  height: 22px;
+  border: 3px solid var(--ni-border);
+  border-top-color: var(--ni-gold);
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+.streetview-loading-label {
+  font-size: 13px;
+  color: var(--ni-ink);
+  text-align: center;
+  max-width: 260px;
+}
+.streetview-loading-cancel {
+  border: 1px solid var(--ni-border);
+  background: var(--ni-paper);
+  border-radius: var(--ni-radius-pill);
+  min-height: 36px;
+  padding: 0 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ni-sec);
+}
+.streetview-loading-cancel:hover { color: var(--ni-ink); border-color: var(--ni-muted); }
+
+/* ---------- Touch guard ---------- */
+.streetview-touch-guard {
+  position: absolute;
+  inset: 0;
+  display: none;
+  z-index: 1340;
+}
+.streetview-touch-guard.is-active { display: block; }
+.streetview-touch-guard-prompt {
+  position: absolute;
+  left: 50%;
+  bottom: 90px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ni-paper);
+  color: var(--ni-navy);
+  border-radius: var(--ni-radius-pill);
+  box-shadow: var(--ni-shadow);
+  padding: 10px 18px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* ---------- Mobile street-view docked tour bar ---------- */
+.tourbar { display: none; }
+
+@media (max-width: 880px) {
+  body.streetview-open .tourbar {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    align-items: center;
+    gap: 12px;
+    background: var(--ni-navy);
+    color: #fff;
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    z-index: 1380;
+  }
+  .tourbar .tour-arrow {
+    width: 38px;
+    height: 38px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    background: transparent;
+    border: 1.5px solid rgba(255,255,255,.55);
+    border-radius: 50%;
+    color: #fff;
+  }
+  .tourbar .tour-arrow:disabled { opacity: .4; }
+  .tourbar .tour-arrow svg { width: 18px; height: 18px; }
+  .tourbar .tour-info { flex: 1; text-align: center; min-width: 0; }
+  .tourbar .tour-label { color: var(--ni-gold); }
+  .tourbar .tour-name {
+    font-family: var(--serif);
+    font-size: 16px;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .tourbar .tour-count {
+    font-size: 11px;
+    color: var(--on-dark-muted);
+    margin-top: 2px;
+  }
+
+  /* Mobile 3D chrome adjustments */
+  .streetview-caption {
+    top: calc(var(--edge) + 48px);
+    left: var(--edge);
+    transform: none;
+    max-width: calc(100vw - 32px);
+  }
+  .sv-minimap { display: none; }
+  .sv-enter-vr { bottom: calc(96px + env(safe-area-inset-bottom)); }
+  body.streetview-open .tour-pill { display: none; }
+}
