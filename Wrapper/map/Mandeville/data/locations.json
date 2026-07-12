@@ -1,0 +1,81 @@
+{
+  "$schema": "scsu-locations-v1",
+  "generatedAt": "2026-07-10",
+  "_note": "Fontainebleau State Park accessibility-journey demo. Facts verified against lastateparks.com July 2026. Images intentionally left as local paths — do NOT hotlink Google Places photos; place licensed/park-provided files in assets/img/ (see BUILD-GUIDE.md).",
+  "locations": [
+    {
+      "id": "entrance-parking",
+      "key": "entrance & parking",
+      "name": "Entrance & Parking",
+      "category": "ARRIVAL",
+      "description": "The journey begins at the main entrance off US 190, three miles from downtown Mandeville. Two large parking areas serve the park, and an all-terrain track wheelchair is available for visitor use — ask at the entrance station. Every route in this experience starts here, the way a visitor's real trip does.",
+      "happensHere": [
+        "Accessible Parking",
+        "All-Terrain Track Wheelchair",
+        "Entrance Station",
+        "Trailheads"
+      ],
+      "address": "62883 Highway 1089, Mandeville, LA 70448",
+      "image": "assets/img/fontainebleau-entrance.jpg"
+    },
+    {
+      "id": "accessible-playground",
+      "key": "accessible playground",
+      "name": "Accessible Playground",
+      "category": "PLAY",
+      "description": "Fontainebleau's 7,300-square-foot playground is built for every child: a poured safety surface, accessible ramps, a wheelchair-accessible together glider, tactile roller slide, and inclusive swing seats. It anchors the park's family amenities and sits along the main route from parking to the waterfront.",
+      "happensHere": [
+        "Inclusive Play Equipment",
+        "Accessible Ramps",
+        "Together Glider",
+        "Tactile Roller Slide"
+      ],
+      "address": "Fontainebleau State Park, Mandeville, LA 70448",
+      "image": "assets/img/fontainebleau-playground.jpg"
+    },
+    {
+      "id": "waterfront-cabins",
+      "key": "waterfront cabins",
+      "name": "Waterfront Cabins",
+      "category": "LODGING",
+      "description": "Twelve deluxe cabins overlook Lake Pontchartrain, reopened in late 2024 after a full post-hurricane rebuild — three are ADA compliant, and a larger Lodge sleeps up to ten. The walkway from parking to the cabins is the question every visitor asks first: are there stairs, how wide is the path, can I get there? This experience answers it in first person.",
+      "happensHere": [
+        "12 Deluxe Cabins",
+        "3 ADA-Compliant Cabins",
+        "The Lodge",
+        "Lakefront Walkway"
+      ],
+      "address": "Fontainebleau State Park, Mandeville, LA 70448",
+      "image": "assets/img/fontainebleau-cabins.jpg"
+    },
+    {
+      "id": "beach-splash-pad",
+      "key": "beach & splash pad",
+      "name": "Beach & Splash Pad",
+      "category": "WATERFRONT",
+      "description": "A sandy beach on Lake Pontchartrain, open for swimming year-round, with a seasonal water playground operating Tuesday through Sunday. The route from the parking areas to the sand — surfaces, transitions, and rest points — is captured continuously so visitors can judge their own comfort level before they arrive.",
+      "happensHere": [
+        "Year-Round Beach",
+        "Water Playground",
+        "Lake Pontchartrain Views",
+        "Picnic Areas"
+      ],
+      "address": "Fontainebleau State Park, Mandeville, LA 70448",
+      "image": "assets/img/fontainebleau-beach.jpg"
+    },
+    {
+      "id": "sugar-mill-ruins",
+      "key": "sugar mill ruins",
+      "name": "Sugar Mill Ruins",
+      "category": "HISTORY",
+      "description": "The brick ruins of Bernard de Marigny's 1829 sugar mill stand near the park entrance — the remnant of the plantation that gave Fontainebleau its name, with interpretive history at the nearby visitor center. A short, level detour from the main route adds the park's story to the journey.",
+      "happensHere": [
+        "1829 Sugar Mill Ruins",
+        "Historic Markers",
+        "Visitor Center Exhibits"
+      ],
+      "address": "Fontainebleau State Park, Mandeville, LA 70448",
+      "image": "assets/img/fontainebleau-ruins.jpg"
+    }
+  ]
+}

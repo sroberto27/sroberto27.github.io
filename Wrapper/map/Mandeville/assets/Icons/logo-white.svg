@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img"
+     aria-label="Fontainebleau State Park">
+  <circle cx="120" cy="120" r="112" fill="none" stroke="#FFFFFF" stroke-width="5"/>
+  <circle cx="120" cy="120" r="100" fill="none" stroke="#FFFFFF" stroke-width="2" opacity=".55"/>
+  <path d="M 56 158 q 12 -8 24 0 t 24 0 t 24 0 t 24 0 t 24 0"
+        fill="none" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round"/>
+  <path d="M 68 174 q 12 -7 24 0 t 24 0 t 24 0 t 20 0"
+        fill="none" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" opacity=".7"/>
+  <circle cx="160" cy="84" r="13" fill="#FFFFFF" opacity=".85"/>
+  <path d="M 114 152 L 116 96 L 122 96 L 124 152 L 132 155 L 106 155 Z" fill="#FFFFFF"/>
+  <path d="M 119 44 L 144 80 L 94 80 Z"   fill="#FFFFFF"/>
+  <path d="M 119 60 L 151 100 L 87 100 Z" fill="#FFFFFF" opacity=".85"/>
+  <path d="M 119 76 L 158 118 L 80 118 Z" fill="#FFFFFF"/>
+</svg>

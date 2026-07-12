@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img"
+     aria-label="Fontainebleau State Park">
+  <defs>
+    <path id="arcTop" d="M 34 120 A 86 86 0 0 1 206 120" fill="none"/>
+    <path id="arcBot" d="M 42 120 A 78 78 0 0 0 198 120" fill="none"/>
+  </defs>
+  <!-- outer seal -->
+  <circle cx="120" cy="120" r="116" fill="#1F4D33"/>
+  <circle cx="120" cy="120" r="110" fill="none" stroke="#D9A441" stroke-width="3"/>
+  <circle cx="120" cy="120" r="70"  fill="#F3F1EA"/>
+  <circle cx="120" cy="120" r="70"  fill="none" stroke="#D9A441" stroke-width="2.5"/>
+  <!-- ring text -->
+  <text font-family="Georgia, 'Times New Roman', serif" font-size="19"
+        font-weight="700" letter-spacing="3" fill="#F3F1EA">
+    <textPath href="#arcTop" startOffset="50%" text-anchor="middle">FONTAINEBLEAU</textPath>
+  </text>
+  <text font-family="Georgia, 'Times New Roman', serif" font-size="15"
+        font-weight="700" letter-spacing="4" fill="#D9A441">
+    <textPath href="#arcBot" startOffset="50%" text-anchor="middle">STATE PARK · LOUISIANA</textPath>
+  </text>
+  <!-- bald cypress over Lake Pontchartrain -->
+  <g>
+    <!-- water -->
+    <path d="M 62 150 q 10 -7 20 0 t 20 0 t 20 0 t 20 0 t 16 0"
+          fill="none" stroke="#2E7D4F" stroke-width="4" stroke-linecap="round"/>
+    <path d="M 72 162 q 10 -6 20 0 t 20 0 t 20 0 t 16 0"
+          fill="none" stroke="#D9A441" stroke-width="3.4" stroke-linecap="round"/>
+    <!-- sun -->
+    <circle cx="152" cy="90" r="11" fill="#D9A441"/>
+    <!-- cypress trunk (flared base) -->
+    <path d="M 104 148 L 106 100 L 110 100 L 112 148 L 118 150 L 98 150 Z"
+          fill="#1F4D33"/>
+    <!-- canopy tiers -->
+    <path d="M 108 58 L 128 88 L 88 88 Z"  fill="#2E7D4F"/>
+    <path d="M 108 70 L 134 104 L 82 104 Z" fill="#1F4D33"/>
+    <path d="M 108 84 L 138 118 L 78 118 Z" fill="#2E7D4F"/>
+    <!-- hanging moss -->
+    <path d="M 90 110 q -2 8 1 14 M 126 108 q 3 9 0 15 M 108 118 q -1 7 1 12"
+          fill="none" stroke="#6E5312" stroke-width="2" stroke-linecap="round"/>
+  </g>
+</svg>

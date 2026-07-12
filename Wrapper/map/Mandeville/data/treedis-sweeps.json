@@ -1,0 +1,91 @@
+{
+  "$schema": "scsu-treedis-sweeps-v1",
+  "generatedAt": "2026-07-11",
+  "_note": "PROTOTYPE: no Fontainebleau Treedis capture exists yet, so every stop points into the Lafayette City experience (model 4fb22059) as a stand-in. Only three distinct sweeps are known from the New Iberia build, so two are reused. When the park is captured, replace modelId in config.js and the sweepId/rotation pairs below.",
+  "models": {
+    "desktop": "4fb22059",
+    "vr": "4fb22059"
+  },
+  "sweeps": [
+    {
+      "id": "entrance-parking",
+      "key": "entrance & parking",
+      "name": "Entrance & Parking",
+      "parentName": null,
+      "desktop": {
+        "sweepId": "u81yx7teebucha7t1kpe4w7fc",
+        "transitionTime": null,
+        "rotation": { "x": 1.8215825092711617, "y": 16.702992165743613 }
+      },
+      "vr": {
+        "sweepId": "u81yx7teebucha7t1kpe4w7fc",
+        "transitionTime": null,
+        "rotation": { "x": 1.8215825092711617, "y": 16.702992165743613 }
+      }
+    },
+    {
+      "id": "sugar-mill-ruins",
+      "key": "sugar mill ruins",
+      "name": "Sugar Mill Ruins",
+      "parentName": null,
+      "desktop": {
+        "sweepId": "u9s8q0au6ws71h7f4p10xdy1a",
+        "transitionTime": null,
+        "rotation": { "x": -12.020010990985478, "y": -161.30181132678788 }
+      },
+      "vr": {
+        "sweepId": "u9s8q0au6ws71h7f4p10xdy1a",
+        "transitionTime": null,
+        "rotation": { "x": -12.020010990985478, "y": -161.30181132678788 }
+      }
+    },
+    {
+      "id": "accessible-playground",
+      "key": "accessible playground",
+      "name": "Accessible Playground",
+      "parentName": null,
+      "desktop": {
+        "sweepId": "hx65c61euk09gqnrca05r18ha",
+        "transitionTime": null,
+        "rotation": { "x": -13.396516781444555, "y": 98.89528855632248 }
+      },
+      "vr": {
+        "sweepId": "hx65c61euk09gqnrca05r18ha",
+        "transitionTime": null,
+        "rotation": { "x": -13.396516781444555, "y": 98.89528855632248 }
+      }
+    },
+    {
+      "id": "beach-splash-pad",
+      "key": "beach & splash pad",
+      "name": "Beach & Splash Pad",
+      "parentName": null,
+      "desktop": {
+        "sweepId": "u81yx7teebucha7t1kpe4w7fc",
+        "transitionTime": null,
+        "rotation": { "x": 1.8215825092711617, "y": 16.702992165743613 }
+      },
+      "vr": {
+        "sweepId": "u81yx7teebucha7t1kpe4w7fc",
+        "transitionTime": null,
+        "rotation": { "x": 1.8215825092711617, "y": 16.702992165743613 }
+      }
+    },
+    {
+      "id": "waterfront-cabins",
+      "key": "waterfront cabins",
+      "name": "Waterfront Cabins",
+      "parentName": null,
+      "desktop": {
+        "sweepId": "hx65c61euk09gqnrca05r18ha",
+        "transitionTime": null,
+        "rotation": { "x": -13.396516781444555, "y": 98.89528855632248 }
+      },
+      "vr": {
+        "sweepId": "hx65c61euk09gqnrca05r18ha",
+        "transitionTime": null,
+        "rotation": { "x": -13.396516781444555, "y": 98.89528855632248 }
+      }
+    }
+  ]
+}

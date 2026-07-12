@@ -1,0 +1,163 @@
+/* === Fontainebleau State Park styles — Part 2: legacy header, menu drawer,
+       segmented mode pill, shared pill buttons === */
+
+/* The old dark metabar is gone — brand + mode toggle live in the
+   floating rail now. The element stays in the DOM only to host the
+   hidden utility buttons the JS binds to. */
+.metabar { display: none !important; }
+
+/* ===========================================================
+   SHARED PILL BUTTONS (radius 999, two weights only)
+   =========================================================== */
+.pill-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
+  border-radius: var(--ni-radius-pill);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  line-height: 1;
+  transition: background var(--dur) var(--ease),
+              color var(--dur) var(--ease),
+              border-color var(--dur) var(--ease);
+}
+.pill-btn-primary {
+  background: var(--ni-navy);
+  color: #fff;
+  border: 1px solid var(--ni-navy);
+}
+.pill-btn-primary:hover { background: var(--ni-blue); border-color: var(--ni-blue); }
+.pill-btn-outline {
+  background: var(--ni-paper);
+  color: var(--ni-ink);
+  border: 1px solid var(--ni-border);
+}
+.pill-btn-outline:hover { border-color: var(--ni-blue); color: var(--ni-blue); }
+.pill-btn-wide { width: 100%; }
+.pill-btn:disabled { opacity: .45; cursor: default; }
+
+/* ===========================================================
+   EXPLORE | LEARN — segmented pill inside the rail
+   =========================================================== */
+.mode-toggle {
+  display: flex;
+  background: var(--ni-cream);
+  border-radius: var(--ni-radius-pill);
+  padding: 3px;
+  margin: 12px var(--gutter) 0;
+}
+.mode-btn {
+  flex: 1;
+  border: none;
+  background: transparent;
+  border-radius: var(--ni-radius-pill);
+  min-height: 34px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ni-sec);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+.mode-btn.is-active {
+  background: var(--ni-navy);
+  color: #fff;
+}
+
+/* ===========================================================
+   BURGER MENU — white right-side card (radius 16, 16px inset)
+   =========================================================== */
+.burger-toggle {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.burger-panel {
+  position: fixed;
+  top: var(--edge);
+  right: var(--edge);
+  bottom: var(--edge);
+  width: min(320px, calc(100vw - 32px));
+  background: var(--ni-paper);
+  border-radius: var(--ni-radius-panel);
+  box-shadow: var(--ni-shadow);
+  z-index: 3000;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(calc(100% + var(--edge) + 8px));
+  transition: transform var(--dur) var(--ease);
+}
+.burger-toggle:checked ~ .burger-panel { transform: translateX(0); }
+
+.burger-backdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--ni-dim);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease);
+  z-index: 2900;
+}
+.burger-toggle:checked ~ .burger-backdrop {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.burger-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px var(--gutter) 12px;
+  border-bottom: 1px solid var(--ni-border);
+}
+.burger-panel-kicker {
+  font-size: var(--label-size);
+  letter-spacing: var(--label-ls);
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--ni-muted);
+}
+.burger-panel-close {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: var(--ni-sec);
+  cursor: pointer;
+}
+.burger-panel-close:hover { background: var(--ni-cream); color: var(--ni-ink); }
+.burger-panel-close svg { width: 16px; height: 16px; }
+
+.burger-panel-list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 10px;
+  overflow-y: auto;
+}
+.burger-link {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 10px;
+  border-radius: var(--ni-radius-card);
+  color: var(--ni-ink);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.burger-link:hover { background: var(--ni-cream); }
+
+/* Settings group divider */
+.burger-settings {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ni-border);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
