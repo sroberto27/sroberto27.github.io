@@ -551,4 +551,37 @@
     transform: translateY(0);
     pointer-events: auto;
   }
+
+  /* Both the tour card and the location details are bottom
+     sheets on mobile, so they'd overlap when a tour stop opens
+     its details (e.g. right after "Start guided tour"). While a
+     detail sheet is open the tour sheet yields; it slides back
+     up as soon as the detail is dismissed, because
+     body.tour-rail-open persists for the whole tour. */
+  .shell.has-details .rail-tour,
+  body.tour-rail-open .shell.has-details .rail-tour {
+    transform: translateY(105%);
+    pointer-events: none;
+  }
+
+  /* …and so the tour stays navigable while its stop's details
+     are open, the compact navy tour pill (normally desktop-only)
+     floats just above the half-height sheet: prev · "1 of 5 ·
+     name" · next. Hidden again when the sheet expands to full —
+     the sheet covers that space. Label, dots, and the play
+     toggle are trimmed to keep the pill narrow on phones. */
+  body.tour-rail-open .shell.has-details:not(.details-full) .tour-pill {
+    display: flex;
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: calc(var(--sheet-half) + 12px);
+    z-index: 1160;
+    max-width: calc(100vw - 24px);
+  }
+  body.tour-rail-open .shell.has-details .tour-pill .tour-pill-label,
+  body.tour-rail-open .shell.has-details .tour-pill .tour-pill-dots,
+  body.tour-rail-open .shell.has-details .tour-pill .tour-pill-play {
+    display: none;
+  }
 }

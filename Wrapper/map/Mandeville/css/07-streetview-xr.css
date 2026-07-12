@@ -121,27 +121,9 @@ body.streetview-open .tour-pill {
   z-index: 1360;
 }
 
-/* ---------- Enter VR — bottom center ---------- */
-.sv-enter-vr {
-  position: absolute;
-  left: 50%;
-  bottom: var(--edge);
-  transform: translateX(-50%);
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 42px;
-  padding: 0 26px;
-  border-radius: var(--ni-radius-pill);
-  background: var(--ni-navy);
-  color: #fff;
-  font-size: 13px;
-  font-weight: 600;
-  text-decoration: none;
-  box-shadow: var(--ni-shadow);
-  z-index: 1355;
-}
-.sv-enter-vr:hover { background: var(--ni-blue); }
+/* Enter VR button removed — headset users still reach the tour via
+   the VR-ENABLED links; keep a hard hide in case markup returns. */
+.sv-enter-vr { display: none !important; }
 
 /* ---------- Picture-in-picture mini-map — bottom-right ---------- */
 .sv-minimap {
@@ -321,6 +303,5 @@ body.streetview-open .tour-pill {
     max-width: calc(100vw - 32px);
   }
   .sv-minimap { display: none; }
-  .sv-enter-vr { bottom: calc(96px + env(safe-area-inset-bottom)); }
   body.streetview-open .tour-pill { display: none; }
 }

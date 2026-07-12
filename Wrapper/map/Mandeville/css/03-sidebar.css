@@ -660,3 +660,57 @@ body.tour-rail-open .rail-recenter { opacity: 0; pointer-events: none; }
 
   .sheet-peek-cta { margin: 0 16px; }
 }
+
+/* ===========================================================
+   RAIL COLLAPSE — desktop tab that slides the whole content
+   rail off-screen so the map is fully visible. Toggled by
+   body.rail-collapsed (see js/14-redesign.js).
+   =========================================================== */
+@media (min-width: 881px) {
+  .rail {
+    transition: transform var(--dur) var(--ease);
+  }
+
+  .rail-collapse {
+    position: absolute;
+    top: 50%;
+    left: calc(var(--edge) + var(--rail-w) - 1px);
+    transform: translateY(-50%);
+    width: 24px;
+    height: 64px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--ni-paper);
+    color: var(--ni-sec);
+    border: 1px solid var(--ni-border);
+    border-left: none;
+    border-radius: 0 10px 10px 0;
+    box-shadow: 3px 0 10px rgba(18,54,36,.12);
+    z-index: 899;               /* just under the rail itself */
+    transition: left var(--dur) var(--ease),
+                color var(--dur) var(--ease);
+  }
+  .rail-collapse:hover { color: var(--ni-navy); }
+  .rail-collapse svg {
+    width: 16px;
+    height: 16px;
+    transition: transform var(--dur) var(--ease);
+  }
+
+  /* Collapsed: rail slides fully off the left edge (kept in the
+     DOM so all JS state survives), tab docks to the viewport
+     edge and its chevron flips to point back in. */
+  body.rail-collapsed .rail {
+    transform: translateX(calc(-1 * (var(--rail-w) + var(--edge) + 14px)));
+    pointer-events: none;
+  }
+  body.rail-collapsed .rail-collapse { left: 0; }
+  body.rail-collapsed .rail-collapse svg { transform: rotate(180deg); }
+}
+
+/* Mobile uses the bottom sheet — no collapse tab. */
+@media (max-width: 880px) {
+  .rail-collapse { display: none; }
+}

@@ -444,3 +444,40 @@
     }
   }, 100);
 })();
+
+/* ============================================================
+   RAIL COLLAPSE (desktop) — slides the content rail off-screen
+   so the map can be seen full-width. The rail stays in the DOM,
+   so list/detail/tour state is untouched. Opening a location
+   (map click or search) auto-expands the rail again.
+   ============================================================ */
+(function () {
+  const btn = document.getElementById("railCollapseBtn");
+  if (!btn) return;
+
+  function setCollapsed(collapsed) {
+    document.body.classList.toggle("rail-collapsed", collapsed);
+    btn.setAttribute("aria-expanded", String(!collapsed));
+    const label = collapsed ? "Show panel" : "Hide panel";
+    btn.setAttribute("aria-label", label);
+    btn.title = label;
+  }
+
+  btn.addEventListener("click", () => {
+    setCollapsed(!document.body.classList.contains("rail-collapsed"));
+  });
+
+  /* Auto-expand when a details panel opens while collapsed —
+     otherwise a map-polygon click would render into a hidden
+     rail. Watches the .shell class the details code already
+     toggles, so 06-details-panel.js needs no changes. */
+  const shell = document.querySelector(".shell");
+  if (shell && typeof MutationObserver !== "undefined") {
+    new MutationObserver(() => {
+      if (shell.classList.contains("has-details") &&
+          document.body.classList.contains("rail-collapsed")) {
+        setCollapsed(false);
+      }
+    }).observe(shell, { attributes: true, attributeFilter: ["class"] });
+  }
+})();

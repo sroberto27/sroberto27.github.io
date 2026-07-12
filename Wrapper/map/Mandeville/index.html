@@ -222,12 +222,6 @@
                     aria-label="3D navigation help">?</button>
           </div>
 
-          <!-- Enter VR — bottom center, above the tour pill -->
-          <a class="sv-enter-vr" id="enterVrBtn"
-             href="https://www.oculus.com/open_url/?url=https://sroberto27.github.io/Wrapper/map/Fontainebleau/"
-             target="_blank" rel="noopener noreferrer"
-             aria-label="Open this tour in your VR headset">Enter VR</a>
-
           <!-- Picture-in-picture mini map — bottom-right, desktop -->
           <div class="sv-minimap" id="svMiniMap">
             <button class="sv-minimap-back" id="svMiniMapBack" type="button">
@@ -646,6 +640,19 @@
           <span>Recenter on tour · <span id="railRecenterCount">0</span> stops</span>
         </button>
       </div>
+
+      <!-- Desktop: collapse/expand tab pinned to the rail's right
+           edge — hides the whole content rail so the map is
+           full-screen. Wired in js/14-redesign.js. -->
+      <button class="rail-collapse" id="railCollapseBtn" type="button"
+              aria-label="Hide panel" aria-expanded="true"
+              title="Hide panel">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M14 6l-6 6 6 6" stroke="currentColor"
+                stroke-width="2" fill="none" stroke-linecap="round"
+                stroke-linejoin="round"/>
+        </svg>
+      </button>
 
       <!-- ==== MOBILE PEEK SHEET — horizontal photo cards ====
            Populated by js/14-redesign.js. -->

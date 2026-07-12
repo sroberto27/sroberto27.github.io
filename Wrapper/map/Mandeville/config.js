@@ -78,7 +78,7 @@ window.CAMPUS_CONFIG = Object.assign(window.CAMPUS_CONFIG || {}, {
       [30.5302581787109375, -89.9009170532226563]    // north, east
     ],
 
-    attribution: "© City of New Iberia | Imagery: Iberia CarteBaseMap2025"
+    attribution: "© City of Mandeville | Imagery: Lousiana:Fontainebleau State Park"
   },
 
   /* -- Coordinate system of the GeoJSON data --------------- */
