@@ -235,3 +235,33 @@ img    { user-select: none; -webkit-user-drag: none; }
 
 /* Hidden utility buttons the JS still binds to */
 .hidden-utilities { display: none !important; }
+
+/* ===========================================================
+   NO HORIZONTAL SCROLLBARS INSIDE PANELS
+   -----------------------------------------------------------
+   Several panel scrollers declare only `overflow-y: auto`; per
+   the CSS spec that makes overflow-x compute to `auto` as well,
+   so any child a pixel wider than the panel (long address line,
+   chip row, subpixel rounding) spawns a horizontal scrollbar —
+   always visible on Windows. Vertical scrollers stay vertical;
+   wide content clips instead of sliding.
+   =========================================================== */
+.locations-list,
+.details-content,
+.details-extra,
+.rail-tour,
+.rail-tour-stops,
+.search-results,
+.course-list,
+.course-body,
+.burger-panel {
+  overflow-x: hidden;
+}
+
+/* Long single-line bits wrap instead of pushing the panel wide. */
+.details-address,
+.details-sub,
+.details-body {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
