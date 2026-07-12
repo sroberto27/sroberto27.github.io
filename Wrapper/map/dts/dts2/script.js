@@ -21,8 +21,7 @@
     view: "home",          // "home" | "category"
     category: "education", // active pillar id
     dockTab: "usecases",
-    demoOpen: false,
-    experienceOpen: false, // in-place hexagon expansion (morph + gate)
+    twinOpen: false,       // full-screen Treedis experience (centre-out reveal)
     contactOpen: false,
     treedisStarted: false
   };
@@ -199,7 +198,7 @@
      VIEW SWITCHING (state, not scroll)
      ============================================================ */
   function showView(name) {
-    // Leaving home? Snap the experience back to the hexagon menu so it's
+    // Leaving home? Snap the twin layer closed so the hero is
     // reset on return (covers mid-animation states too).
     if (name !== "home") resetExperience();
     state.view = name;
@@ -208,8 +207,10 @@
       v.hidden = !match;
       v.classList.toggle("is-active", match);
     });
-    // Bottom tabs only make sense in a category view.
+    // Bottom tabs only make sense in a category view; the "Explore
+    // your world below" hint only on home.
     $("#dockTabs").hidden = name !== "category";
+    $("#dockExplore").hidden = name !== "home";
     syncNav();
     syncDrawer();
   }
@@ -237,6 +238,9 @@
      RENDER: category detail
      ============================================================ */
   function renderCategory(c) {
+    // Expose the active sector so CSS can colour the kicker / card
+    // titles with that sector's Figma accent.
+    $("#view-category").dataset.sector = c.id;
     $("#catKicker").textContent = "— " + c.kicker;
     $("#catTitle").textContent  = c.title;
     $("#catSub").textContent    = c.sub;
@@ -267,20 +271,6 @@
     c.cards.forEach((card) => tabs.appendChild(makeTab(card.id, card.title)));
     state.dockTab = "usecases";
 
-    // evidence filters — open this sector's lead example window focused on
-    // the chosen proof type (Case Studies, Awards, …).
-    const filters = $("#evidenceFilters");
-    filters.innerHTML = "";
-    cfg.evidence.forEach((label) => {
-      const b = document.createElement("button");
-      b.type = "button";
-      b.textContent = label;
-      b.addEventListener("click", () => {
-        const lead = getCategory(state.category).cards[0];
-        if (lead) openExample(lead.id, label);
-      });
-      filters.appendChild(b);
-    });
   }
 
   function makeTab(id, label, active) {
@@ -368,17 +358,9 @@
       });
     }
 
-    /* Collapse: move the same iframe back into the inline home stage. */
-    function closeDemo() {
-      state.demoOpen = false;
-      const ov = $("#demoOverlay");
-      if (treedisIframe) parkIframe();   // return iframe to the home stage
-      ov.classList.remove("is-open");
-      ov.setAttribute("aria-hidden", "true");
-    }
-
-    /* Move the live Treedis iframe back to its inline home stage. Used
-       whenever an overlay that borrowed it (demo or example) closes. */
+    /* Move the live Treedis iframe back to its home mount (#demoStage,
+       inside the twin layer). Used whenever an overlay that borrowed it
+       (the example window) closes. */
     function parkIframe() {
       const stage = $("#demoStage");
       if (treedisIframe && stage && treedisIframe.parentNode !== stage) {
@@ -387,92 +369,86 @@
     }
 
   /* ============================================================
-     HEXAGON EXPERIENCE  (in-place morph + gate, then full screen)
+     TWIN EXPERIENCE  (full-screen centre-out reveal)
      ------------------------------------------------------------
-     Sequence on activate:
-       1. hexagon morphs to a square AND grows to cover the stage
-          (clip-path + size transition, ~0.55s)
-       2. once the square has formed, the centre-out gate opens
-          (~0.5s) revealing the live experience
-     Reverse on close. The expand (⤢) button hands off to the
-     existing full-screen overlay (openDemo).
+     Sequence on "Try a Digital Twin" (mockup 4:00 → 12:00):
+       1. the twin layer mounts as a narrow vertical slice in the
+          centre of the viewport, with a bright seam line (4:00)
+       2. the slice expands horizontally until the live Treedis
+          experience fills everything below the fixed header
+          (4:75 → 6:00)
+       3. after a beat, the hero copy fades back in as a dark
+          glass card over the experience (8:00 → 9:00)
+     The Treedis iframe itself was created at boot inside
+     #demoStage and never reloads — the layer only reveals it.
      ============================================================ */
-    let gateTimer = null;
+    let cardTimer = null;
 
-    function expandExperience() {
-      if (state.experienceOpen) return;
-      state.experienceOpen = true;
-      const frame = $("#demoFrame");
-      const stage = $("#hexStage");
-      if (!frame) return;
+    function openExperience() {
+      if (state.twinOpen) return;
+      state.twinOpen = true;
 
-      // Make sure the iframe is home in the hex stage before we reveal it.
+      // Make sure the iframe is home in the twin layer before revealing.
       parkIframe();
 
-      if (stage) stage.classList.add("is-experience-open");
-      frame.classList.add("is-expanded");          // hex → square + grow
-      // Open the gate only after the square has formed.
-      clearTimeout(gateTimer);
-      gateTimer = setTimeout(() => frame.classList.add("is-open"), 480);
+      const layer = $("#twinLayer");
+      layer.setAttribute("aria-hidden", "false");
+      document.body.classList.add("twin-active");
 
-      // Relabel the pill.
-      const tryBtn = $("#demoTry");
-      if (tryBtn) tryBtn.textContent = "Close Experience";
+      // Mount as a centre slice, then expand on the next frame so the
+      // clip-path transition actually runs.
+      layer.classList.add("is-mounted");
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => layer.classList.add("is-open"))
+      );
+
+      // Glass card fades in once the user has had a moment inside
+      // the twin (mockup: reveal ends ~6s, card at ~8s).
+      clearTimeout(cardTimer);
+      cardTimer = setTimeout(showHeroCard, 3200);
     }
 
-    function collapseExperience() {
-      if (!state.experienceOpen) return;
-      state.experienceOpen = false;
-      const frame = $("#demoFrame");
-      const stage = $("#hexStage");
-      if (!frame) return;
-
-      // Close the gate first, then morph the square back to a hexagon.
-      frame.classList.remove("is-open");
-      clearTimeout(gateTimer);
-      gateTimer = setTimeout(() => {
-        frame.classList.remove("is-expanded");
-        if (stage) stage.classList.remove("is-experience-open");
-      }, 360);
-
-      const tryBtn = $("#demoTry");
-      if (tryBtn) tryBtn.textContent = "Try a Digital Twin";
+    function showHeroCard() {
+      const card = $("#twinHeroCard");
+      card.classList.add("is-visible");
+      card.setAttribute("aria-hidden", "false");
     }
 
-    /* Pill toggles in-place expand/collapse. */
-    function toggleExperience() {
-      if (state.experienceOpen) collapseExperience();
-      else expandExperience();
+    function hideHeroCard() {
+      const card = $("#twinHeroCard");
+      card.classList.remove("is-visible");
+      card.setAttribute("aria-hidden", "true");
+    }
+
+    function closeExperience() {
+      if (!state.twinOpen) return;
+      state.twinOpen = false;
+      clearTimeout(cardTimer);
+      hideHeroCard();
+
+      const layer = $("#twinLayer");
+      layer.classList.remove("is-open");           // reverse reveal
+      document.body.classList.remove("twin-active");
+
+      // Unmount once the clip animation has closed back to the seam.
+      setTimeout(() => {
+        if (!state.twinOpen) {
+          layer.classList.remove("is-mounted");
+          layer.setAttribute("aria-hidden", "true");
+        }
+      }, 1200);
     }
 
     /* Instant reset (no animation) — used when leaving the home view. */
     function resetExperience() {
-      state.experienceOpen = false;
-      clearTimeout(gateTimer);
-      const frame = $("#demoFrame");
-      const stage = $("#hexStage");
-      if (frame) frame.classList.remove("is-expanded", "is-open");
-      if (stage) stage.classList.remove("is-experience-open");
-      const tryBtn = $("#demoTry");
-      if (tryBtn) tryBtn.textContent = "Try a Digital Twin";
+      state.twinOpen = false;
+      clearTimeout(cardTimer);
+      hideHeroCard();
+      const layer = $("#twinLayer");
+      layer.classList.remove("is-open", "is-mounted");
+      layer.setAttribute("aria-hidden", "true");
+      document.body.classList.remove("twin-active");
       parkIframe();
-    }
-
-  /* ============================================================
-     DEMO OVERLAY  (full-screen window, reused by the ⤢ button)
-     ============================================================ */
-    /* Expand the inline experience into the full overlay. The iframe
-       is relocated into the overlay body; the Treedis session keeps
-       running because the element is moved, not recreated. */
-    function openDemo() {
-      state.demoOpen = true;
-      const ov = $("#demoOverlay");
-      const overlayBody = $("#overlayBody");
-      if (treedisIframe && treedisIframe.parentNode !== overlayBody) {
-        overlayBody.appendChild(treedisIframe);
-      }
-      ov.classList.add("is-open");
-      ov.setAttribute("aria-hidden", "false");
     }
 
   /* ============================================================
@@ -782,7 +758,8 @@
       rec.twin_url.indexOf(cfg.treedis.origin) === 0;
 
     if (sameOrigin && treedisIframe) {
-      openDemo();
+      goHome();            // the twin layer lives on the home shell
+      openExperience();
       if (rec.sweep_id && TourBridge.isReady) {
         TourBridge.navigateToSweep(rec.sweep_id);
       } else if (rec.sweep_id) {
@@ -791,7 +768,8 @@
     } else if (rec.twin_url) {
       window.open(rec.twin_url, "_blank", "noopener");
     } else {
-      openDemo();
+      goHome();
+      openExperience();
     }
   }
 
@@ -1173,35 +1151,20 @@
     $("#burger").addEventListener("click", toggleDrawer);
     $("#navScrim").addEventListener("click", closeDrawer);
 
-    // Big experience hexagon:
-    //  • the "Try a Digital Twin" pill toggles the in-place morph+gate
-    //    (and relabels itself "Close Experience"),
-    //  • clicking the hexagon body (while collapsed) also expands it,
-    //  • the ⤢ button (shown only once expanded) hands off to the
-    //    full-screen overlay.
-    $("#demoTry").addEventListener("click", (e) => { e.stopPropagation(); toggleExperience(); });
-    $("#demoExpand").addEventListener("click", (e) => { e.stopPropagation(); openDemo(); });
-    $("#demoFrame").addEventListener("click", (e) => {
-      // Only the collapsed hexagon acts as a big "open" button; once
-      // expanded, clicks fall through to the live experience/controls.
-      if (state.experienceOpen) return;
-      if (e.target.closest("#demoTry") || e.target.closest("#demoExpand")) return;
-      expandExperience();
-    });
-
-    // Category hexagons navigate like the top-nav pillars.
-    $$(".hex-cat").forEach((h) =>
-      h.addEventListener("click", () => openCategory(h.dataset.cat))
-    );
-
-    // Demo close
-    $("#overlayClose").addEventListener("click", closeDemo);
+    // Twin experience: the CTA starts the centre-out reveal; the
+    // exit pill (top-left, once open) reverses it back to the hero.
+    $("#twinTry").addEventListener("click", openExperience);
+    $("#twinExit").addEventListener("click", closeExperience);
 
     // Example window
     $("#exampleClose").addEventListener("click", closeExample);
     $$("[data-close-example]").forEach((s) => s.addEventListener("click", closeExample));
-    // "Enter the twin" expands the example into the full demo overlay.
-    $("#exEnter").addEventListener("click", () => { closeExample(); openDemo(); });
+    // "Enter the twin" opens the full-screen experience.
+    $("#exEnter").addEventListener("click", () => {
+      closeExample();
+      goHome();
+      openExperience();
+    });
     // "Talk to DTS about this" routes into the proposal lead form.
     $("#exContact").addEventListener("click", () => {
       closeExample();
@@ -1244,18 +1207,13 @@
     // separate from the marketing/contact flow per the design rationale).
     $("#accessTwin").addEventListener("click", openAccess);
 
-    // Generic scrim closer for the demo overlay.
-    $$("[data-close-overlay]").forEach((s) =>
-      s.addEventListener("click", () => { closeDemo(); })
-    );
 
     // Escape: close whatever modal is open, or slide contact back to cards.
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         if ($("#exampleOverlay").classList.contains("is-open")) { closeExample(); return; }
         if ($("#accessOverlay").classList.contains("is-open"))  { closeAccess();  return; }
-        if (state.demoOpen) { closeDemo(); return; }
-        if (state.experienceOpen) { collapseExperience(); return; }
+        if (state.twinOpen) { closeExperience(); return; }
         closeLeadForm();
         closeAnswer();
         if (state.contactOpen) slideToCards();

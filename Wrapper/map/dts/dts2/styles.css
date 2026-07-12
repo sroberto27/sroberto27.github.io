@@ -10,13 +10,14 @@
    no dead space.
    ============================================================ */
 :root{
-  --bg:           #0a0e17;
-  --bg-2:         #0d1320;
-  --bg-3:         #121a2b;
+  --bg:           #080c18;
+  --bg-2:         #0d1423;
+  --bg-3:         #101827;
   --line:         rgba(255,255,255,.10);
   --line-soft:    rgba(255,255,255,.06);
-  --gold:         #d6a849;
-  --gold-bright:  #e8bf63;
+  --gold:         #d0a33a;
+  --gold-bright:  #e3b855;
+  --glass:        rgba(10,10,10,.62);
   --ink:          #ffffff;
   --muted:        rgba(255,255,255,.66);
   --faint:        rgba(255,255,255,.40);
@@ -63,8 +64,10 @@ body{
    wide child (nav row, dock tabs) forces the whole grid wider than the
    app and clips on the right. */
 .app > .topbar,
-.app > .stage,
-.app > .dockbar{ min-width:0; max-width:100%; overflow:hidden; }
+.app > .stage{ min-width:0; max-width:100%; overflow:hidden; }
+/* The dock must NOT clip — the question-bar answer popover opens
+   above it. (Its own children manage their overflow.) */
+.app > .dockbar{ min-width:0; max-width:100%; overflow:visible; }
 
 /* ===================== TOP NAV ===================== */
 .topbar{
@@ -83,13 +86,11 @@ body{
   color:var(--ink); text-decoration:none; flex:0 0 auto;
   position:relative; padding:clamp(14px,2vh,22px) 2px;
 }
-.brand-mark{ color:var(--ink); display:flex; }
-.brand-mark svg{ width:clamp(30px,2.6vw,44px); height:auto; }
-.brand-text{ display:flex; flex-direction:column; line-height:1; }
-.brand-name{ font-size:clamp(12px,1.05vw,16px); font-weight:700; letter-spacing:.14em; }
-.brand-studios{ font-size:clamp(7px,.6vw,9px); font-weight:600; letter-spacing:.42em; color:var(--faint); margin-top:3px; }
+.brand-logo{
+  display:block; width:auto;
+  height:clamp(34px,4.6vh,52px);
+}
 /* Gold highlight when home is the active "menu item". */
-.brand.is-active .brand-mark{ color:var(--gold); }
 .brand.is-active::after{
   content:""; position:absolute; left:2px; right:2px;
   bottom:clamp(10px,1.4vh,16px); height:2px;
@@ -103,18 +104,28 @@ body{
 }
 .pillar{
   appearance:none; background:none; border:0; cursor:pointer;
-  color:var(--muted); font-family:var(--sans);
+  color:#9f9f9f;                        /* Figma idle state */
+  font-family:var(--sans);
   font-size:clamp(11px, 1.05vw, 15px); font-weight:600; letter-spacing:.12em;
   padding:clamp(16px,2.6vh,24px) 2px; position:relative; transition:color .18s;
   white-space:nowrap;
+  --cat-line:var(--gold);               /* per-category indicator colour */
 }
+/* Figma sector colours for the line indicator. */
+.pillar[data-cat="education"] { --cat-line:#e9b44c; }
+.pillar[data-cat="industry"]  { --cat-line:#4a7df0; }
+.pillar[data-cat="government"]{ --cat-line:#5f6fa8; }
+.pillar[data-cat="community"] { --cat-line:#d98e73; }
+/* Hover: text turns white and the coloured line indicator appears. */
 .pillar:hover{ color:var(--ink); }
 .pillar.is-active{ color:var(--ink); }
+.pillar:hover::after,
 .pillar.is-active::after{
   content:""; position:absolute; left:0; right:0;
   bottom:clamp(10px,1.4vh,16px); height:2px;
-  background:var(--gold); border-radius:2px;
+  background:var(--cat-line); border-radius:2px;
 }
+
 
 .access-btn{
   margin-left:auto;
@@ -133,6 +144,22 @@ body{
 /* ===================== STAGE ===================== */
 .stage{ position:relative; overflow:hidden; min-width:0; min-height:0; }
 .bg-net{ position:absolute; inset:0; width:100%; height:100%; opacity:.5; pointer-events:none; }
+
+/* Vimeo dot-network loop — sized to COVER the stage (16:9 letterbox
+   math), muted/looping via URL params, never interactive. */
+.bg-video{
+  position:absolute; inset:0;
+  overflow:hidden; pointer-events:none;
+  opacity:.6;
+  z-index:0;
+}
+.bg-video iframe{
+  position:absolute; top:50%; left:50%;
+  width:100vw; height:56.25vw;      /* 16:9 of viewport width  */
+  min-height:100%; min-width:177.78vh;  /* …or of viewport height */
+  transform:translate(-50%,-50%);
+  border:0; pointer-events:none;
+}
 
 /* Each view is a flex column that fills the stage: a flexible body
    region (home-grid / cat-grid) plus a fixed-height footer strip. */
@@ -159,7 +186,11 @@ body{
   position:absolute; left:0; top:50%; transform:translateY(-50%);
   width:min(46%, 560px); min-width:0; z-index:8;
 }
-.copy-kicker{ color:var(--gold); font-size:clamp(10px,.9vw,13px); font-weight:700; letter-spacing:.22em; }
+.copy-kicker{
+  display:inline-flex; align-items:center; gap:10px;
+  color:var(--gold); font-size:clamp(10px,.9vw,13px); font-weight:700; letter-spacing:.22em;
+}
+.copy-kicker::before{ content:""; width:clamp(24px,2.6vw,44px); height:2px; background:var(--gold); border-radius:2px; }
 .home-headline{
   font-size:clamp(34px, 5.2vw, 84px); font-weight:800; line-height:1.0;
   margin:clamp(10px,1.4vh,18px) 0;
@@ -169,128 +200,137 @@ body{
 .home-body{ color:var(--muted); font-size:clamp(13px,1.05vw,17px); line-height:1.6; max-width:46ch; }
 
 /* ============================================================
-   HEXAGON CONSTELLATION (home right side)
+   DECORATIVE HEX CLUSTER  (initial hero state only)
    ------------------------------------------------------------
-   A relative stage holding absolutely-positioned hexagons. Each
-   hexagon is a box clipped to a 6-point polygon. The big
-   experience hexagon morphs to a rectangle (same 6 points, two
-   pairs collapsed to corners → smooth metamorphosis), then
-   expands to cover the stage, then a centre-out gate opens.
+   A diagonal run of white hexagons on the right of the hero,
+   matching the video mockup. Purely decorative — the Treedis
+   experience is NOT inside them (that layout was removed).
    ============================================================ */
-.hex-stage{
+.hex-cluster{
   position:absolute; inset:0;
-  z-index:3;
+  z-index:3; pointer-events:none;
+  transition:opacity .45s ease;
 }
-
-/* Shared hexagon shape + iridescent droplet image fill. */
 .hex{
-  --hex: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0% 50%);
+  /* Flat-top hexagon (points left/right), as in the Figma frames. */
+  --hexp: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
   position:absolute;
-  -webkit-clip-path:var(--hex); clip-path:var(--hex);
-  background:#0c1322 center/cover no-repeat;
-  border:0;
+  aspect-ratio:1/0.88;
+  -webkit-clip-path:var(--hexp); clip-path:var(--hexp);
 }
-
-/* Decorative hexagons — dim, non-interactive, just background depth. */
-.hex-deco{
-  background:linear-gradient(150deg, rgba(40,60,95,.55), rgba(12,19,34,.55));
-  opacity:.45;
-}
-.hex-deco-1{ width:clamp(48px,4.4vw,78px); aspect-ratio:1/0.9; top:39%; left:48%; transform:translate(-50%,-50%); }
-.hex-deco-2{ width:clamp(44px,4vw,70px);   aspect-ratio:1/0.9; top:73%; left:39%; transform:translate(-50%,-50%); }
-.hex-deco-3{ width:clamp(54px,5vw,92px);   aspect-ratio:1/0.9; top:24%; left:72%; transform:translate(-50%,-50%); }
-.hex-deco-4{ width:clamp(38px,3.6vw,64px); aspect-ratio:1/0.9; top:17%; left:95%; transform:translate(-50%,-50%); }
-
-/* Category hexagons — clickable navigation, filled with the droplet image. */
-.hex-cat{
-  appearance:none; cursor:pointer;
-  width:clamp(62px,5vw,104px); aspect-ratio:1/0.9;
-  background-image:url("assets-droplet.png");
+/* Photo-filled hexes (droplets / data-wave example imagery). */
+.hex-img{
+  background-color:#0c1322;
   background-size:cover; background-position:center;
-  display:flex; align-items:center; justify-content:center;
-  padding:0 8%;
-  transition:transform .25s ease, filter .25s ease;
-  filter:saturate(1) brightness(.92);
+  filter:saturate(1.08);
 }
-.hex-label{
-  color:#fff; font-weight:800; letter-spacing:.04em;
-  font-size:clamp(7px,.58vw,11px); text-transform:uppercase;
-  text-shadow:0 2px 8px rgba(0,0,0,.9); pointer-events:none;
+/* Solid white hexes. */
+.hex-white{
+  background:linear-gradient(160deg, #ffffff 0%, #f2f4f8 60%, #e6eaf2 100%);
+  box-shadow:0 18px 50px rgba(0,0,0,.35);
 }
+/* Diagonal run, bottom-left → top-right (Figma):
+   droplets → wave → white → white.
+   Sizing: clamp(min, preferred-vw, max) — the vw value makes each hex
+   scale with the viewport; min/max stop it getting too small or silly.
+   Centres are ~7.5% apart horizontally and ~9.5% vertically, so at the
+   preferred size the hexes nearly touch, like the Figma cluster. */
+.hex-1{ width:clamp(88px, 9.4vw, 182px); top:57.5%; left:66.5%; transform:translate(-50%,-50%); }
+.hex-2{ width:clamp(92px, 9.8vw, 190px); top:47%;   left:74.8%; transform:translate(-50%,-50%); }
+.hex-3{ width:clamp(96px,10.2vw, 198px); top:36.5%; left:83.1%; transform:translate(-50%,-50%); }
+.hex-4{ width:clamp(102px,10.8vw,208px); top:26%;   left:91.4%; transform:translate(-50%,-50%); }
+/* Faint dark satellite hexes for depth (very low contrast). */
+.hex-ghost{
+  background:linear-gradient(150deg, rgba(48,66,98,.5), rgba(16,24,42,.5));
+  opacity:.5;
+}
+.hex-g1{ width:clamp(46px,5vw,92px);   top:40%;   left:66.5%; transform:translate(-50%,-50%); }
+.hex-g2{ width:clamp(40px,4.4vw,80px); top:56.5%; left:81%;   transform:translate(-50%,-50%); }
+.hex-g3{ width:clamp(52px,5.6vw,102px);top:69%;   left:70%;   transform:translate(-50%,-50%); }
+.hex-g4{ width:clamp(36px,4vw,72px);   top:17%;   left:96.5%; transform:translate(-50%,-50%); }
 
-/* ---------- Constellation placement (Figma-style: small satellites around the large demo hex) ---------- */
-.hex-education { top:76.5%; left:32.2%; transform:translate(-50%,-50%); z-index:7; }
-.hex-industry { top:63.5%; left:42.4%; transform:translate(-50%,-50%); z-index:7; }
-.hex-government{ top:34.5%; left:79.6%; transform:translate(-50%,-50%); z-index:7; }
-.hex-community { top:23.5%; left:89.2%; transform:translate(-50%,-50%); z-index:7; }
-.hex-cat:hover,
-.hex-cat:focus-visible{ transform:translate(-50%,-50%) scale(1.05); filter:saturate(1.25) brightness(1.1); outline:none; }
-
-/* ---------- Big experience hexagon ---------- */
-.demo-frame.hex-experience{
-  position:absolute;
-  /* Large main experience hex, intentionally much bigger than the four category hexes. */
-  top:50%; left:62%;
-  width:clamp(460px,35vw,760px);
-  height:clamp(360px,55vh,620px);
+/* ---------- Primary CTA (standalone — no longer docked to a hexagon) ----------
+   Figma: a transparent pill with a gold outline, sitting on the blue
+   arrow-burst graphic. Fills gold on hover / while pressed. */
+.twin-cta-wrap{
+  position:absolute; left:50%; top:66%;
   transform:translate(-50%,-50%);
-  -webkit-clip-path:polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0% 50%);
-  clip-path:polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0% 50%);
-  border:0; border-radius:0; padding:0;
-  background:#0a1018;
-  display:flex; flex-direction:column;
-  z-index:10;
-  /* The metamorphosis: clip-path + size + position all animate. */
-  transition:
-    clip-path .55s cubic-bezier(.7,.02,.3,1),
-    -webkit-clip-path .55s cubic-bezier(.7,.02,.3,1),
-    width .55s cubic-bezier(.7,.02,.3,1),
-    height .55s cubic-bezier(.7,.02,.3,1),
-    top .55s cubic-bezier(.7,.02,.3,1),
-    left .55s cubic-bezier(.7,.02,.3,1),
-    border-radius .55s cubic-bezier(.7,.02,.3,1);
+  z-index:9;
+  display:flex; align-items:center; justify-content:center;
 }
-.hex-experience:not(.is-expanded){ cursor:pointer; }
-.hex-experience:not(.is-expanded):hover{ filter:brightness(1.06); }
-
-/* Static preview image — shown in the collapsed/hexagon state and while
-   the gates are closed. Fades out as the experience opens. */
-.demo-preview{
-  position:absolute; inset:0; z-index:1;
-  background:url("assets-experience.png") center/cover no-repeat;
-  transition:opacity .4s ease;
+.twin-cta-fx{
+  position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%);
+  width:clamp(170px,17vw,280px); height:auto;
+  pointer-events:none;
+  filter:drop-shadow(0 6px 24px rgba(40,110,220,.35));
 }
-.hex-experience.is-open .demo-preview{ opacity:0; }
-
-/* The "Try a Digital Twin" pill docks above the hexagon. */
-.demo-try{
-  position:absolute; top:clamp(-6px,0.5vh,4px); left:50%; transform:translateX(-50%); z-index:7;
+.twin-cta{
+  position:relative; z-index:1;
   appearance:none; cursor:pointer; white-space:nowrap;
-  background:#0d1320; color:var(--gold);
-  border:1px solid var(--gold); border-radius:7px;
-  padding:clamp(6px,.8vh,9px) clamp(12px,1.2vw,18px); font-family:var(--sans);
-  font-size:clamp(11px,.9vw,13px); font-weight:700; letter-spacing:.04em;
-  transition:background .15s,color .15s;
+  background:rgba(8,12,24,.42); color:var(--gold);
+  border:1px solid var(--gold); border-radius:8px;
+  padding:clamp(9px,1.2vh,13px) clamp(16px,1.6vw,26px);
+  font-family:var(--sans);
+  font-size:clamp(13px,1.05vw,16px); font-weight:700; letter-spacing:.02em;
+  backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);
+  transition:background .18s, color .18s, box-shadow .18s;
 }
-.demo-try:hover{ background:var(--gold); color:#1a1206; }
-
-/* Expand button (top-right) — only visible once expanded. */
-.demo-expand{
-  position:absolute; top:clamp(10px,1vw,16px); right:clamp(10px,1vw,16px); z-index:7;
-  appearance:none; cursor:pointer;
-  width:34px; height:34px; border-radius:8px;
-  background:rgba(0,0,0,.5); color:#fff; border:1px solid rgba(255,255,255,.2);
-  display:none; align-items:center; justify-content:center;
-  transition:background .15s,border-color .15s;
+.twin-cta:hover{
+  background:var(--gold); color:#1a1206;
+  box-shadow:0 10px 34px rgba(208,163,58,.35);
 }
-.demo-expand:hover{ background:rgba(0,0,0,.75); border-color:var(--gold); color:var(--gold); }
-.hex-experience.is-expanded .demo-expand{ display:flex; }
+.twin-cta:focus-visible{ outline:2px solid var(--gold-bright); outline-offset:3px; }
 
+/* ============================================================
+   TWIN LAYER  (full-screen Treedis experience + reveal)
+   ------------------------------------------------------------
+   States (classes on #twinLayer, driven by script.js):
+     (none)      hidden — iframe still boots in the background
+     .is-mounted visible as a narrow centre slice + seam line
+     .is-open    slice expands to fill the layer (mockup 4:00→6:00)
+   .twin-hero-card.is-visible fades the glass card in (8:00→9:00).
+   ============================================================ */
+.twin-layer{
+  position:absolute;
+  top:var(--topbar-h); left:0; right:0; bottom:0;
+  z-index:18;                      /* above stage + dock, below modals (z:40) */
+  visibility:hidden;
+  background:transparent;
+}
+.twin-layer.is-mounted{ visibility:visible; }
+
+/* The clipped window that grows from the centre. */
+.twin-reveal{
+  position:absolute; inset:0;
+  -webkit-clip-path:inset(0 49.85% 0 49.85%);
+  clip-path:inset(0 49.85% 0 49.85%);
+  transition:clip-path 1.15s cubic-bezier(.72,.02,.26,1),
+             -webkit-clip-path 1.15s cubic-bezier(.72,.02,.26,1);
+  background:#0a1018;
+}
+.twin-layer.is-open .twin-reveal{
+  -webkit-clip-path:inset(0 0 0 0);
+  clip-path:inset(0 0 0 0);
+}
+
+/* Thin vertical seam the reveal appears to grow out of. */
+.twin-seam{
+  position:absolute; top:0; bottom:0; left:50%; width:2px;
+  transform:translateX(-50%);
+  background:rgba(255,255,255,.85);
+  opacity:0; pointer-events:none;
+  transition:opacity .3s ease;
+}
+.twin-layer.is-mounted:not(.is-open) .twin-seam{ opacity:1; }
+.twin-layer.is-open .twin-seam{ opacity:0; transition:opacity .5s ease .25s; }
+
+/* Iframe mount — same ids as before so startTreedis()/parkIframe()
+   and the loading veil work unchanged. */
 .demo-stage{
-  flex:1 1 auto; min-height:0;
-  position:relative; overflow:hidden;
+  position:absolute; inset:0;
+  overflow:hidden;
   background:radial-gradient(120% 120% at 50% 0%, #16203400, #0a1018);
-  display:flex;
 }
 .demo-stage iframe{ width:100%; height:100%; border:0; display:block; position:relative; z-index:2; }
 .demo-loading{
@@ -301,40 +341,58 @@ body{
 .demo-loading-text{ font-size:clamp(12px,.95vw,14px); }
 .demo-loading.is-hidden{ display:none; }
 
-/* ---------- Gate panels (centre-out reveal) ----------
-   The two gates each show half of the preview image, so when closed they
-   read as the single spatial preview. Opening slides them apart from the
-   centre, splitting the image away to reveal the live tour behind. */
-.gate{
-  position:absolute; top:0; bottom:0; width:50%;
-  background-image:url("assets-experience.png");
-  background-size:200% 100%;
-  background-repeat:no-repeat;
-  z-index:5; pointer-events:none;
-  transition:transform .5s cubic-bezier(.7,.02,.3,1);
+/* ---------- Final glass card (mockup 9:00 / 12:00) ---------- */
+.twin-hero-card{
+  position:absolute; left:clamp(20px,3.4vw,64px); top:50%;
+  transform:translateY(calc(-50% + 14px));
+  width:min(42%, 460px);
+  padding:clamp(18px,2.2vw,30px) clamp(20px,2.4vw,34px);
+  background:var(--glass);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:16px;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  box-shadow:0 24px 70px rgba(0,0,0,.45);
+  opacity:0; pointer-events:none;
+  transition:opacity .9s ease, transform .9s ease;
+  z-index:4;
 }
-.gate-left { left:0;  background-position:left center;  transform:translateX(0); }
-.gate-right{ right:0; background-position:right center; transform:translateX(0); }
-/* Open: gates slide off to the edges, revealing the iframe. */
-.hex-experience.is-open .gate-left { transform:translateX(-101%); }
-.hex-experience.is-open .gate-right{ transform:translateX(101%); }
+.twin-hero-card.is-visible{
+  opacity:1; pointer-events:auto;
+  transform:translateY(-50%);
+}
+.twin-card-headline{
+  font-size:clamp(26px,3vw,44px); font-weight:800; line-height:1.05;
+  margin:clamp(8px,1vh,14px) 0;
+  text-shadow:0 2px 14px rgba(0,0,0,.55);
+}
+.twin-card-body{
+  color:var(--muted); font-size:clamp(12px,.95vw,15px); line-height:1.6; margin:0;
+}
+.twin-hero-card .home-pills{ margin-bottom:clamp(10px,1.2vh,16px); }
 
-/* ---------- EXPANDED (square, covering the stage) ---------- */
-.hex-experience.is-expanded{
-  top:0; left:0; transform:translate(0,0);
-  width:100%; height:100%;
-  border-radius:14px;
-  -webkit-clip-path:polygon(0 0, 100% 0, 100% 100%, 100% 100%, 0 100%, 0 100%);
-  clip-path:polygon(0 0, 100% 0, 100% 100%, 100% 100%, 0 100%, 0 100%);
-  z-index:20;
-  cursor:default;
+/* ---------- Exit pill (top-left, clear of Treedis' own controls) ---------- */
+.twin-exit{
+  position:absolute; top:clamp(12px,1.6vh,20px); left:clamp(14px,1.8vw,26px);
+  z-index:5;
+  display:inline-flex; align-items:center; gap:8px;
+  appearance:none; cursor:pointer;
+  background:rgba(8,12,24,.72); color:var(--ink);
+  border:1px solid rgba(255,255,255,.18); border-radius:999px;
+  padding:8px 16px;
+  font-family:var(--sans); font-size:12.5px; font-weight:600; letter-spacing:.03em;
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  opacity:0; pointer-events:none;
+  transition:opacity .4s ease .9s, background .18s, border-color .18s;
 }
-/* When expanded, the other hexagons fade out of the way. */
-.hex-stage.is-experience-open .hex-cat,
-.hex-stage.is-experience-open .hex-deco{
-  opacity:0; pointer-events:none; transition:opacity .35s ease;
-}
+.twin-layer.is-open .twin-exit{ opacity:1; pointer-events:auto; }
+.twin-exit:hover{ background:rgba(8,12,24,.9); border-color:var(--gold); color:var(--gold-bright); }
 
+/* ---------- Shell state while the twin is active ---------- */
+/* The layer covers the dock; also silence it for keyboard/AT users
+   and hide the fixed cookie card so the experience is unobstructed. */
+body.twin-active .dockbar{ visibility:hidden; }
+body.twin-active .cookie{ opacity:0; pointer-events:none; transition:opacity .4s ease; }
 
 /* Evidence / footnote strip — fixed strip at the bottom of the view. */
 .evidence-bar{
@@ -347,6 +405,19 @@ body{
 .evidence-dot{ color:var(--gold); margin-right:4px; font-size:8px; vertical-align:middle; }
 
 /* ---------- CATEGORY ---------- */
+/* Blurred data-wave imagery behind the sector content (Figma).
+   Children get z-index:1 so the image always sits underneath. */
+.view-category::before{
+  content:"";
+  position:absolute; inset:-24px;              /* hide blur edge bleed */
+  background:
+    linear-gradient(180deg, rgba(8,12,24,.78) 0%, rgba(8,12,24,.55) 45%, rgba(8,12,24,.42) 100%),
+    url("assets-category-bg.jpg") center bottom / cover no-repeat;
+  filter:blur(7px) saturate(1.05);
+  z-index:0; pointer-events:none;
+}
+.view-category > *{ position:relative; z-index:1; }
+
 .cat-grid{
   flex:1 1 auto; min-height:0;
   display:grid;
@@ -354,8 +425,14 @@ body{
   gap:clamp(22px,2.6vw,48px);
   align-content:stretch;
 }
+/* Per-sector accent (Figma): drives the kicker and card titles. */
+#view-category{ --sector:#e9b44c; }                    /* education default */
+#view-category[data-sector="industry"]  { --sector:#4a7df0; }
+#view-category[data-sector="government"]{ --sector:#5f6fa8; }
+#view-category[data-sector="community"] { --sector:#d98e73; }
+
 .cat-intro{ display:flex; flex-direction:column; min-width:0; justify-content:flex-start; }
-.cat-kicker{ color:var(--gold); font-size:clamp(11px,.95vw,14px); font-weight:700; letter-spacing:.16em; }
+.cat-kicker{ color:var(--sector); font-size:clamp(11px,.95vw,14px); font-weight:700; letter-spacing:.16em; }
 .cat-title{ font-size:clamp(30px,4vw,60px); font-weight:800; margin:clamp(8px,1.2vh,14px) 0 clamp(6px,.8vh,10px); line-height:1.02; }
 .cat-sub{ font-weight:700; font-size:clamp(13px,1.05vw,17px); margin:0 0 clamp(12px,1.8vh,22px); }
 .cat-body{ color:var(--muted); font-size:clamp(13px,1.02vw,17px); line-height:1.62; max-width:44ch; }
@@ -391,7 +468,7 @@ body{
   transform:translateY(-3px);
   background:linear-gradient(160deg, rgba(26,34,54,.95), rgba(14,20,32,.95));
 }
-.uc-card h3{ color:var(--gold); font-size:clamp(12px,1.05vw,16px); font-weight:700; letter-spacing:.06em; margin:0 0 clamp(8px,1vh,14px); }
+.uc-card h3{ color:var(--sector); font-size:clamp(12px,1.05vw,16px); font-weight:700; letter-spacing:.06em; margin:0 0 clamp(8px,1vh,14px); }
 .uc-card p{ color:var(--muted); font-size:clamp(12px,1vw,15.5px); line-height:1.55; margin:0; }
 
 /* ---------- CATEGORY: horizontal slider (cards ⇄ contact) ----------
@@ -467,35 +544,15 @@ body{
 .panel-nav-next{ right:clamp(10px,1.4vw,22px); }
 .panel-nav-label{ white-space:nowrap; }
 
-/* category footer / evidence — fixed strip at bottom of the view. */
-.cat-footer{
-  flex:0 0 auto;
-  display:flex; align-items:center; gap:clamp(14px,1.8vw,26px);
-  border-top:1px solid var(--line-soft);
-  margin-top:clamp(14px,2vh,22px); padding-top:clamp(10px,1.4vh,16px);
-}
-.evidence-block{ display:flex; flex-direction:column; flex:0 0 auto; }
-.evidence-label{ font-size:clamp(11px,.95vw,14px); font-weight:700; letter-spacing:.08em; }
-.evidence-note{ font-size:clamp(10px,.8vw,12px); color:var(--faint); }
-.evidence-filters{ display:flex; gap:clamp(8px,.9vw,14px); flex-wrap:wrap; }
-.evidence-filters button{
-  appearance:none; cursor:pointer;
-  background:transparent; color:var(--muted);
-  border:1px solid var(--line); border-radius:6px;
-  padding:clamp(7px,.9vh,11px) clamp(10px,1vw,16px);
-  font-family:var(--sans); font-size:clamp(10px,.85vw,12px); font-weight:600; letter-spacing:.04em;
-  transition:border-color .15s,color .15s;
-}
-.evidence-filters button:hover{ color:var(--ink); border-color:var(--gold); }
-.evidence-filtered{ margin-left:auto; font-size:clamp(10px,.8vw,12px); color:var(--faint); text-align:right; }
 
 /* ===================== DOCK BAR ===================== */
 .dockbar{
+  position:relative;
   display:flex; align-items:center; gap:clamp(10px,1.4vw,20px);
   padding:0 clamp(14px,2vw,26px);
   border-top:1px solid var(--line-soft);
   background:linear-gradient(0deg, rgba(13,20,35,.92), rgba(13,20,35,.55));
-  z-index:6;
+  z-index:10;   /* above stage content so the qbar answer popover isn't overlapped */
 }
 .qbar{
   display:flex; align-items:center; gap:10px;
@@ -518,17 +575,43 @@ body{
 }
 .qbar-send:hover{ background:var(--gold); color:#1a1206; }
 
-.dock-tabs{ display:flex; align-items:center; gap:clamp(2px,.5vw,8px); overflow-x:auto; min-width:0; }
+/* "Explore your world below" — home-state hint, bottom centre. */
+.dock-explore{
+  position:absolute; left:50%; transform:translateX(-50%);
+  display:flex; align-items:center; gap:clamp(10px,1.2vw,18px);
+  color:var(--ink); font-size:clamp(11px,.9vw,13px); font-weight:700;
+  white-space:nowrap; pointer-events:none;
+}
+.dock-explore-line{
+  width:clamp(28px,3.2vw,54px); height:3px; border-radius:3px;
+  background:var(--gold);
+}
+.dock-explore[hidden]{ display:none; }
+
+/* Figma: the tab group is an outlined pill next to the question bar,
+   with the active segment ("Use Cases") filled and the sub-vertical
+   labels uppercase inside it. */
+.dock-tabs{
+  display:flex; align-items:center; gap:clamp(2px,.4vw,6px);
+  overflow-x:auto; min-width:0;
+  border:1px solid rgba(255,255,255,.55);
+  border-radius:12px;
+  background:rgba(8,12,24,.35);
+  padding:3px;
+}
+/* display:flex above would override the hidden attribute the JS sets on
+   the home view — force it, so the tabs exist ONLY in the category view. */
+.dock-tabs[hidden]{ display:none; }
 .dock-tab{
   appearance:none; cursor:pointer; white-space:nowrap;
-  background:transparent; color:var(--muted);
-  border:0; border-radius:8px;
-  padding:clamp(7px,1vh,11px) clamp(10px,1.2vw,18px);
-  font-family:var(--sans); font-size:clamp(11px,.92vw,14px); font-weight:600; letter-spacing:.04em;
-  transition:background .15s,color .15s;
+  background:transparent; color:var(--ink);
+  border:0; border-radius:9px;
+  padding:clamp(6px,.9vh,10px) clamp(10px,1.2vw,18px);
+  font-family:var(--sans); font-size:clamp(10px,.82vw,12.5px); font-weight:600;
+  letter-spacing:.06em; text-transform:uppercase;
 }
-.dock-tab:hover{ color:var(--ink); }
-.dock-tab.is-active{ background:rgba(255,255,255,.10); color:var(--ink); }
+.dock-tab:hover{ background:rgba(255,255,255,.10); }
+.dock-tab.is-active{ background:#454d5c; color:#fff; }
 
 /* ===================== OVERLAYS ===================== */
 .overlay{
@@ -859,13 +942,13 @@ body{
 
 /* Sector colour accents for the example window kicker / project rule. */
 .example-window[data-sector="education"]  .example-kicker,
-.example-window[data-sector="education"]  .example-project-label{ color:#6cc6e6; }
+.example-window[data-sector="education"]  .example-project-label{ color:#e9b44c; }
 .example-window[data-sector="industry"]   .example-kicker,
-.example-window[data-sector="industry"]   .example-project-label{ color:#e0a23b; }
+.example-window[data-sector="industry"]   .example-project-label{ color:#4a7df0; }
 .example-window[data-sector="government"] .example-kicker,
-.example-window[data-sector="government"] .example-project-label{ color:#7fd18a; }
+.example-window[data-sector="government"] .example-project-label{ color:#5f6fa8; }
 .example-window[data-sector="community"]  .example-kicker,
-.example-window[data-sector="community"]  .example-project-label{ color:#e8bf63; }
+.example-window[data-sector="community"]  .example-project-label{ color:#d98e73; }
 
 /* ============================================================
    ACCESS YOUR TWIN  (sign-in + dashboard)
@@ -935,12 +1018,17 @@ body{
     align-items:start;
     gap:clamp(16px,2.4vh,28px);
   }
-  .demo-frame{ min-height:clamp(260px,38vh,440px); }
   .cat-grid{
     grid-template-columns:1fr;
     grid-template-rows:auto 1fr;
     align-content:start;
   }
+  /* Simplify the decorative cluster before the hero text shrinks. */
+  .hex-ghost{ display:none; }
+  .twin-cta-wrap{ top:72%; }
+  .twin-cta-fx{ width:clamp(150px,20vw,220px); }
+  .twin-hero-card{ width:min(60%, 440px); }
+
   /* Keep room on the right so the edge button doesn't cover cards. */
   .cat-panel-cards{ padding-right:clamp(40px,7vw,72px); }
 }
@@ -971,9 +1059,7 @@ body{
   }
   .burger{ display:flex; order:0; }
   .brand{ padding:6px 2px; order:1; gap:8px; }
-  .brand-mark svg{ width:30px; }
-  .brand-name{ font-size:11px; }
-  .brand-studios{ font-size:6.5px; letter-spacing:.32em; }
+  .brand-logo{ height:30px; }
   .brand.is-active::after{ display:none; }
   .pillars{ display:none; }          /* replaced by drawer */
   .nav-drawer{ display:flex; }
@@ -988,12 +1074,26 @@ body{
     grid-template-rows:auto 1fr;
     gap:14px; align-items:stretch;
   }
+  .home-copy{ position:static; transform:none; width:auto; }
   .copy-kicker{ font-size:10px; }
   .home-headline{ font-size:clamp(28px,8.5vw,42px); margin:8px 0; }
   .home-pills{ gap:14px; margin-bottom:10px; }
   .home-body{ font-size:13px; line-height:1.5; max-width:none; }
-  .demo-frame{ min-height:0; height:100%; }       /* fills remaining space */
   .evidence-bar{ display:none; }                    /* not in mobile target */
+  .hex-cluster{ display:none; }                     /* decorative only — drop on phone */
+  .dock-explore{ display:none; }
+  .twin-cta-wrap{
+    position:static; transform:none; margin-top:18px;
+    justify-self:center; align-self:start;
+  }
+  .twin-cta-fx{ width:150px; }
+  .bg-video{ display:none; }        /* save phone bandwidth; canvas fallback shows */
+  .twin-hero-card{
+    left:12px; right:12px; width:auto; top:auto; bottom:14px;
+    transform:translateY(10px);
+  }
+  .twin-hero-card.is-visible{ transform:translateY(0); }
+  .twin-exit{ top:10px; left:10px; padding:7px 13px; font-size:11.5px; }
 
   /* ---------- CATEGORY (intro → 2×2 cards → sector strip) ---------- */
   .cat-slider{ min-height:0; }
@@ -1067,8 +1167,7 @@ body{
   .cookie-btn{ padding:6px 12px; font-size:11px; }
 
   /* Footer evidence row is noise on phone — keep only the dock. */
-  .cat-footer{ display:none; }
-
+  
   /* Dock: question bar full width; tabs scroll under it. */
   .dockbar{
     flex-direction:column; align-items:stretch;

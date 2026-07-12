@@ -27,16 +27,8 @@
          highlighted gold (like the pillars) when home is active. -->
     <a class="brand" href="#" id="brandHome" data-nav="home"
        aria-label="Digital Twin Studios — home">
-      <span class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 40 24" width="40" height="24">
-          <path d="M2 2 L18 12 L2 22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M38 2 L22 12 L38 22" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </span>
-      <span class="brand-text">
-        <span class="brand-name">DIGITAL TWIN</span>
-        <span class="brand-studios">STUDIOS</span>
-      </span>
+      <img class="brand-logo" src="assets-logo.png"
+           alt="Digital Twin Studios — Grounded in human experience." />
     </a>
 
     <!-- Mobile hamburger — toggles the slide-in nav drawer. Hidden on
@@ -68,6 +60,14 @@
     <!-- subtle technical/spatial background -->
     <canvas class="bg-net" id="bgNet" aria-hidden="true"></canvas>
 
+    <!-- Animated dot-network background (Vimeo, muted loop). The canvas
+         above stays as a graceful fallback while the video loads or if
+         the embed is blocked. -->
+    <div class="bg-video" aria-hidden="true">
+      <iframe src="https://player.vimeo.com/video/1201869618?h=a2fecf162b&background=1&autoplay=1&loop=1&muted=1&autopause=0&dnt=1"
+              title="" frameborder="0" allow="autoplay; fullscreen" tabindex="-1"></iframe>
+    </div>
+
     <!-- ---------- VIEW: HOME ---------- -->
     <section class="view view-home is-active" id="view-home" aria-label="Home">
       <div class="home-grid">
@@ -84,54 +84,30 @@
           </p>
         </div>
 
-        <!-- ===== HEXAGON CONSTELLATION =====
-             Four clickable category hexagons + decorative hexagons,
-             arranged around the big central experience hexagon. The
-             big hexagon holds the live Treedis iframe; clicking it (or
-             "Try a Digital Twin") morphs it hex→square, expands it to
-             cover the stage, then opens a centre-out gate. -->
-        <div class="hex-stage" id="hexStage" aria-label="Explore Digital Twin Studios">
+        <!-- ===== DECORATIVE HEXAGON CLUSTER =====
+             Purely decorative — visible only in the initial hero state.
+             The Treedis experience NO LONGER lives inside a hexagon; it
+             is revealed full-screen in the #twinLayer below when the
+             user presses "Try a Digital Twin". -->
+        <div class="hex-cluster" aria-hidden="true">
+          <!-- Figma order, bottom-left → top-right:
+               droplets photo → data-wave photo → two white hexes,
+               with faint dark satellite hexes for depth. -->
+          <span class="hex hex-img hex-1" style="background-image:url('assets-droplet.jpg')"></span>
+          <span class="hex hex-img hex-2" style="background-image:url('assets-wave.jpg')"></span>
+          <span class="hex hex-white hex-3"></span>
+          <span class="hex hex-white hex-4"></span>
+          <span class="hex hex-ghost hex-g1"></span>
+          <span class="hex hex-ghost hex-g2"></span>
+          <span class="hex hex-ghost hex-g3"></span>
+          <span class="hex hex-ghost hex-g4"></span>
+        </div>
 
-          <!-- Decorative (non-interactive) hexagons -->
-          <span class="hex hex-deco hex-deco-1" aria-hidden="true"></span>
-          <span class="hex hex-deco hex-deco-2" aria-hidden="true"></span>
-          <span class="hex hex-deco hex-deco-3" aria-hidden="true"></span>
-          <span class="hex hex-deco hex-deco-4" aria-hidden="true"></span>
-
-          <!-- Category hexagons (navigate like the top pillars) -->
-          <button class="hex hex-cat hex-education"  type="button" data-cat="education"><span class="hex-label">Education</span></button>
-          <button class="hex hex-cat hex-industry"   type="button" data-cat="industry"><span class="hex-label">Industry</span></button>
-          <button class="hex hex-cat hex-government"  type="button" data-cat="government"><span class="hex-label">Government</span></button>
-          <button class="hex hex-cat hex-community"   type="button" data-cat="community"><span class="hex-label">Community</span></button>
-
-          <!-- Big experience hexagon (morphs to square, then full-screen).
-               #demoFrame keeps its id so the existing iframe plumbing
-               (startTreedis / parkIframe) is unchanged. -->
-          <div class="demo-frame hex-experience" id="demoFrame" aria-label="Digital twin demo experience">
-            <button class="demo-try" id="demoTry" type="button">Try a Digital Twin</button>
-            <button class="demo-expand" id="demoExpand" type="button"
-                    aria-label="Expand experience to full screen">
-              <svg viewBox="0 0 24 24" width="18" height="18">
-                <path d="M4 10V4h6M20 14v6h-6M20 4h-6M4 20h6" fill="none"
-                      stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </button>
-            <div class="demo-stage" id="demoStage">
-              <!-- Static spatial preview shown while collapsed; the gate
-                   opening reveals the live iframe behind it and the
-                   preview fades out. -->
-              <div class="demo-preview" aria-hidden="true"></div>
-              <!-- The live iframe is injected here at boot. -->
-              <div class="demo-loading" id="demoLoading">
-                <div class="spinner" aria-hidden="true"></div>
-                <span class="demo-loading-text" id="demoLoadingText">Loading experience…</span>
-              </div>
-              <!-- Gate panels: slide apart from centre on activation. -->
-              <div class="gate gate-left"  aria-hidden="true"></div>
-              <div class="gate gate-right" aria-hidden="true"></div>
-            </div>
-          </div>
-
+        <!-- Primary CTA — outlined gold pill over the arrow-burst
+             graphic (Figma), starts the centre-out reveal into the twin. -->
+        <div class="twin-cta-wrap">
+          <img class="twin-cta-fx" src="assets-cta-arrow.png" alt="" aria-hidden="true" />
+          <button class="twin-cta" id="twinTry" type="button">Try a Digital Twin</button>
         </div>
       </div>
 
@@ -254,15 +230,6 @@
         </button>
       </div>
 
-      <!-- Project evidence + bottom tabs -->
-      <div class="cat-footer">
-        <div class="evidence-block">
-          <span class="evidence-label">PROJECT EVIDENCE</span>
-          <span class="evidence-note">Every data point accounted for</span>
-        </div>
-        <div class="evidence-filters" id="evidenceFilters"><!-- injected --></div>
-        <span class="evidence-filtered">Filtered by<br>active sector</span>
-      </div>
     </section>
 
   </main>
@@ -289,12 +256,67 @@
       </div>
     </form>
 
+    <!-- Home-state hint (mockup: bottom-centre, gold dashes) -->
+    <div class="dock-explore" id="dockExplore">
+      <span class="dock-explore-line" aria-hidden="true"></span>
+      Explore your world below
+      <span class="dock-explore-line" aria-hidden="true"></span>
+    </div>
+
     <!-- Category bottom tabs (shown in category view) -->
     <div class="dock-tabs" id="dockTabs" hidden>
       <button class="dock-tab is-active" data-tab="usecases" type="button">Use Cases</button>
       <!-- sub-vertical tabs injected by script.js -->
     </div>
   </footer>
+
+  <!-- ============================================================
+       TWIN LAYER — the full-screen Treedis experience.
+       Sits under the fixed header (top: var(--topbar-h)) and covers
+       the stage + dock. The live iframe is injected into #demoStage
+       at boot (id preserved so startTreedis()/parkIframe() and the
+       TourBridge handshake are completely unchanged) and revealed
+       with a centre-out clip animation on "Try a Digital Twin".
+       ============================================================ -->
+  <div class="twin-layer" id="twinLayer" aria-hidden="true">
+    <div class="twin-reveal" id="twinReveal">
+      <div class="demo-stage" id="demoStage">
+        <!-- The live Treedis iframe is injected here at boot. -->
+        <div class="demo-loading" id="demoLoading">
+          <div class="spinner" aria-hidden="true"></div>
+          <span class="demo-loading-text" id="demoLoadingText">Loading experience…</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Centre seam — the thin vertical line the reveal grows from. -->
+    <span class="twin-seam" aria-hidden="true"></span>
+
+    <!-- Final-state glass card (mockup 8s–12s): hero copy reintroduced
+         as a translucent panel over the live experience. -->
+    <aside class="twin-hero-card" id="twinHeroCard" aria-hidden="true">
+      <span class="copy-kicker">DIGITAL TWIN STUDIOS</span>
+      <h2 class="twin-card-headline">Digital twins<br>for Human&nbsp;Life.</h2>
+      <div class="home-pills">
+        <span>Campus</span><span>Company</span><span>City</span><span>Community</span>
+      </div>
+      <p class="twin-card-body">
+        We build spatial intelligence tools for the places that shape how people
+        learn, work, govern, and live together. Every twin is a living ecosystem —
+        from the first capture to the final engagement.
+      </p>
+    </aside>
+
+    <!-- Exit — returns to the hero (reverse reveal). Kept top-left so it
+         never collides with Treedis' own top-right menu controls. -->
+    <button class="twin-exit" id="twinExit" type="button">
+      <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
+        <path d="M19 12H5M11 6l-6 6 6 6" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      Exit experience
+    </button>
+  </div>
 
 </div>
 
@@ -402,28 +424,6 @@
       <div class="dash-twins" id="dashTwins"><!-- injected: one row per twin --></div>
       <div class="dash-cta-row">
         <button class="form-submit form-submit-ghost" id="dashSignout" type="button">Sign out</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- ============================================================
-     DEMO OVERLAY  (matches experienceOpenedWindow.png)
-     Large centred rounded dark window; app shell visible behind.
-     ============================================================ -->
-<div class="overlay" id="demoOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Digital twin experience">
-  <div class="overlay-scrim" data-close-overlay></div>
-  <div class="overlay-window">
-    <button class="overlay-close" id="overlayClose" type="button" aria-label="Close experience">
-      <svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-    </button>
-    <div class="overlay-body" id="overlayBody">
-      <!-- The live iframe is MOVED in here from the inline home stage
-           when the user expands — it is already loaded, so this veil
-           stays hidden. -->
-      <div class="overlay-loading is-hidden" id="overlayLoading" aria-hidden="true">
-        <div class="spinner" aria-hidden="true"></div>
-        <p class="overlay-loading-text" id="overlayLoadingText">Loading experience…</p>
       </div>
     </div>
   </div>
