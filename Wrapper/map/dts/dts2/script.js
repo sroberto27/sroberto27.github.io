@@ -52,28 +52,19 @@
      MOBILE: nav drawer
      ============================================================ */
   function buildDrawer() {
+    /* Figma mobile menu (frames clip13–clip16): a left slide-in panel
+       listing ONLY the four sectors in caps; the active sector is a
+       full-width bar in that sector's accent colour. Home is reached
+       via the brand logo, matching the board. */
     const drawer = $("#navDrawer");
     drawer.innerHTML = "";
-
-    // Home — returns to the main page.
-    const home = document.createElement("a");
-    home.href = "#";
-    home.dataset.nav = "home";
-    home.innerHTML =
-      '<span>HOME</span><span class="drawer-sub">Main page</span>';
-    home.addEventListener("click", (e) => {
-      e.preventDefault();
-      goHome();          // already closes the drawer
-    });
-    drawer.appendChild(home);
 
     cfg.categories.forEach((c) => {
       const a = document.createElement("a");
       a.href = "#";
       a.dataset.cat = c.id;
-      a.innerHTML =
-        '<span>' + c.label.toUpperCase() + '</span>' +
-        '<span class="drawer-sub">' + (c.cards[0] ? c.cards[0].title : "") + '</span>';
+      a.style.setProperty("--item-accent", c.accent || "#E9B44C");
+      a.innerHTML = '<span>' + c.kicker + '</span>';
       a.addEventListener("click", (e) => {
         e.preventDefault();
         openCategory(c.id);
@@ -124,9 +115,13 @@
       const item = document.createElement("div");
       item.className = "sector-item";
       item.dataset.cat = c.id;
+      item.style.setProperty("--item-accent", c.accent || "#E9B44C");
+      /* Figma clip17: accent-coloured sector name over a short white
+         sub-label (the first word of the sector title, e.g. "Campus"). */
+      const shortSub = (c.title || "").split(/[\s&]+/)[0] || c.label;
       item.innerHTML =
-        '<span class="sector-item-label">' + c.label.toUpperCase() + '</span>' +
-        '<span class="sector-item-sub">' + (c.cards[0] ? c.cards[0].title : "") + '</span>';
+        '<span class="sector-item-label">' + c.kicker + '</span>' +
+        '<span class="sector-item-sub">' + shortSub + '</span>';
       item.addEventListener("click", () => openCategory(c.id));
       track.appendChild(item);
     });
@@ -139,10 +134,13 @@
     const idx = currentCatIndex();
     const track = $("#sectorStripTrack");
     if (!track) return;
-    track.style.transform = "translateX(" + (-idx * 82) + "%)";
-    $$("#sectorStripTrack .sector-item").forEach((el, i) =>
-      el.classList.toggle("is-peek", i !== idx)
-    );
+    const items = $$("#sectorStripTrack .sector-item");
+    // Shift by the real offset of the active item so the strip stays
+    // correct whatever flex-basis the breakpoint gives the panels.
+    const target = items[idx];
+    const px = target ? target.offsetLeft : 0;
+    track.style.transform = "translateX(" + (-px) + "px)";
+    items.forEach((el, i) => el.classList.toggle("is-peek", i !== idx));
   }
 
   /* ============================================================
@@ -241,10 +239,15 @@
     // Expose the active sector so CSS can colour the kicker / card
     // titles with that sector's Figma accent.
     $("#view-category").dataset.sector = c.id;
+    /* Expose the sector accent globally — the drawer bar, sector strip,
+       divider line, contact tab, and projects button all take it. */
+    document.documentElement.style.setProperty("--sector-accent", c.accent || "#E9B44C");
     $("#catKicker").textContent = "— " + c.kicker;
     $("#catTitle").textContent  = c.title;
     $("#catSub").textContent    = c.sub;
     $("#catBody").textContent   = c.body;
+    /* Figma clip17/31/32/33: the button names the sector. */
+    $("#catProjectsBtn").textContent = "VIEW " + c.kicker + " PROJECTS";
 
     // use-case cards — clicking one opens that sub-vertical's example window.
     const grid = $("#catCards");
@@ -563,24 +566,33 @@
     $("#accessError").hidden = true;
     const cfgC = window.DTS_CLIENTS || {};
     const ui = cfgC.ui || {};
-    $("#accessIntro").textContent     = ui.intro || "";
-    $("#accessIdLabel").textContent   = ui.idLabel || "Access ID";
-    $("#accessCodeLabel").textContent = ui.codeLabel || "Access code";
-    $("#accessSubmit").textContent    = ui.submit || "Open my twin";
-    $("#accessTitle").textContent     = ui.title || "Access Your Twin";
+    /* The sign-in card follows the Figma mobile login (frame clip1):
+       "Welcome Back!", Email + Password, gold "Login In". The Email
+       field maps onto the directory's access ID. */
+    $("#accessIntro").textContent = ui.intro || "";
 
     const offline = !cfgC.sheetCsvUrl;
     const note = $("#accessOfflineNote");
     note.hidden = !offline;
     if (offline) note.textContent = ui.offlineNote || "";
 
-    if (access.session) showDashboard(access.session);
-    else { $("#accessSignin").hidden = false; $("#accessDashboard").hidden = true; }
+    /* Remember me — prefill the last used ID if the user opted in. */
+    try {
+      const remembered = localStorage.getItem("dts_access_id");
+      if (remembered && !$("#accessId").value) {
+        $("#accessId").value = remembered;
+        $("#accessRemember").checked = true;
+      }
+    } catch (_) { /* storage unavailable — fine */ }
+
+    // A signed-in client goes straight back to their portal.
+    if (access.session) { openPortal(access.session); return; }
+    $("#accessSignin").hidden = false;
 
     const ov = $("#accessOverlay");
     ov.classList.add("is-open");
     ov.setAttribute("aria-hidden", "false");
-    if (!access.session) setTimeout(() => $("#accessId").focus(), 60);
+    setTimeout(() => $("#accessId").focus(), 60);
 
     // Warm the directory in the background.
     loadDirectory().catch(() => {});
@@ -691,42 +703,120 @@
     }
     // One login → one client name, one or more twins.
     access.session = { client: matches[0].client, twins: matches };
+    try {
+      if ($("#accessRemember").checked) {
+        localStorage.setItem("dts_access_id", $("#accessId").value.trim());
+      } else {
+        localStorage.removeItem("dts_access_id");
+      }
+    } catch (_) { /* storage unavailable — fine */ }
     $("#accessCode").value = "";
-    showDashboard(access.session);
+    openPortal(access.session);
   }
 
-  /* Dashboard lists every twin this login owns, each with its own
-     "Open" button. A single-twin client simply sees one. */
-  function showDashboard(session) {
-    $("#accessSignin").hidden = true;
-    $("#accessDashboard").hidden = false;
-    $("#dashClient").textContent = session.client;
+  /* ============================================================
+     CLIENT PORTAL  (post-login — Figma mobile frames clip4/5/6)
+     Full-screen layer: MENU / client-logo / Sign out header, a HOME
+     tile view, an "All APPS" list built from the client's twins, and
+     a tile menu overlay. Replaces the old inline dashboard.
+     ============================================================ */
+  function openPortal(session) {
+    closeAccess();
+    $("#portalClientName").textContent = session.client;
 
-    const multi = session.twins.length > 1;
-    const greeting = $("#dashGreeting");
-    if (greeting) greeting.textContent = multi
-      ? "WELCOME BACK — " + session.twins.length + " TWINS"
-      : "WELCOME BACK";
+    /* HOME — the clip4 wireframe blocks, made real: the primary twin
+       as the big tile plus shortcuts into the other portal views. */
+    const tiles = $("#portalHomeTiles");
+    tiles.innerHTML = "";
+    const primary = session.twins[0];
+    const big = document.createElement("button");
+    big.type = "button";
+    big.className = "portal-tile portal-tile-primary";
+    big.innerHTML =
+      '<span class="portal-tile-kicker">YOUR TWIN</span>' +
+      '<span class="portal-tile-title">' + escapeHTML(primary.project) + '</span>' +
+      '<span class="portal-tile-cta">Open the twin</span>';
+    big.addEventListener("click", () => { closePortal(false); openTwin(primary); });
+    tiles.appendChild(big);
 
-    const list = $("#dashTwins");
+    const apps = document.createElement("button");
+    apps.type = "button";
+    apps.className = "portal-tile portal-tile-small";
+    apps.innerHTML =
+      '<span class="portal-tile-title">All Apps</span>' +
+      '<span class="portal-tile-sub">' + session.twins.length +
+      (session.twins.length === 1 ? " app" : " apps") + '</span>';
+    apps.addEventListener("click", () => showPortalView("apps"));
+    tiles.appendChild(apps);
+
+    const support = document.createElement("button");
+    support.type = "button";
+    support.className = "portal-tile portal-tile-small";
+    support.innerHTML =
+      '<span class="portal-tile-title">Support</span>' +
+      '<span class="portal-tile-sub">We reply within a day</span>';
+    support.addEventListener("click", () => showPortalView("support"));
+    tiles.appendChild(support);
+
+    /* ALL APPS — clip5: one card per twin, image area with a duration
+       hint bottom-right and the title captioned below. */
+    const list = $("#portalAppsList");
     list.innerHTML = "";
     session.twins.forEach((rec) => {
-      const row = document.createElement("div");
-      row.className = "dash-twin";
-      const info = document.createElement("div");
-      info.className = "dash-twin-info";
-      info.innerHTML =
-        '<span class="dash-twin-name">' + escapeHTML(rec.project) + '</span>' +
-        (rec.notes ? '<span class="dash-twin-note">' + escapeHTML(rec.notes) + '</span>' : '');
-      const open = document.createElement("button");
-      open.type = "button";
-      open.className = "dash-twin-open";
-      open.textContent = "Open";
-      open.addEventListener("click", () => openTwin(rec));
-      row.appendChild(info);
-      row.appendChild(open);
-      list.appendChild(row);
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "portal-app";
+      card.innerHTML =
+        '<span class="portal-app-media">' +
+          '<span class="portal-app-media-label">' + escapeHTML(rec.client) + '</span>' +
+          '<span class="portal-app-duration">Live twin</span>' +
+        '</span>' +
+        '<span class="portal-app-title">' + escapeHTML(rec.project) + '</span>' +
+        (rec.notes ? '<span class="portal-app-note">' + escapeHTML(rec.notes) + '</span>' : '');
+      card.addEventListener("click", () => { closePortal(false); openTwin(rec); });
+      list.appendChild(card);
     });
+
+    showPortalView("home");
+    closePortalMenu();
+    const layer = $("#portalLayer");
+    layer.classList.add("is-open");
+    layer.setAttribute("aria-hidden", "false");
+    document.body.classList.add("portal-open");
+  }
+
+  function closePortal(clearSession) {
+    const layer = $("#portalLayer");
+    layer.classList.remove("is-open");
+    layer.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("portal-open");
+    if (clearSession) access.session = null;
+  }
+
+  function showPortalView(name) {
+    ["home", "apps", "manage", "support"].forEach((v) => {
+      const el = $("#portal" + v[0].toUpperCase() + v.slice(1));
+      if (el) {
+        el.hidden = v !== name;
+        el.classList.toggle("is-active", v === name);
+      }
+    });
+    closePortalMenu();
+  }
+
+  function openPortalMenu() {
+    $("#portalMenu").hidden = false;
+    $("#portalMenuBtn").setAttribute("aria-expanded", "true");
+    $("#portalLayer").classList.add("menu-open");
+  }
+  function closePortalMenu() {
+    $("#portalMenu").hidden = true;
+    $("#portalMenuBtn").setAttribute("aria-expanded", "false");
+    $("#portalLayer").classList.remove("menu-open");
+  }
+  function togglePortalMenu() {
+    if ($("#portalMenu").hidden) openPortalMenu();
+    else closePortalMenu();
   }
 
   /* Tiny local escaper (the wrapper's escapeHTML lives in another
@@ -738,13 +828,11 @@
   }
 
   function signOut() {
-    access.session = null;
-    $("#accessDashboard").hidden = true;
+    closePortal(true);
     $("#accessSignin").hidden = false;
     $("#accessId").value = "";
     $("#accessCode").value = "";
     $("#accessError").hidden = true;
-    setTimeout(() => $("#accessId").focus(), 40);
   }
 
   /* Open a specific twin record in the experience overlay. If the twin
@@ -796,6 +884,56 @@
   function closeAnswer() { $("#qbarAnswer").hidden = true; }
 
   /* ============================================================
+     SECTOR PROJECTS WINDOW  (Figma frame clip28)
+     Opened by "VIEW {SECTOR} PROJECTS": a full-screen dark sheet
+     titled "{SECTOR} BASED PROJECTS" with a stacked card per
+     sub-vertical project, each carrying the capture / platform
+     chips. Tapping a card opens that project's example window.
+     ============================================================ */
+  function openProjects() {
+    const c = getCategory(state.category);
+    $("#projectsTitle").textContent = c.kicker + " BASED PROJECTS";
+
+    const list = $("#projectsList");
+    list.innerHTML = "";
+    c.cards.forEach((card) => {
+      const ex = (cfg.examples || {})[card.id];
+      const proj = ex && ex.project;
+      const el = document.createElement("button");
+      el.type = "button";
+      el.className = "project-card";
+      el.innerHTML =
+        '<span class="project-card-media">' +
+          '<span class="project-card-name">' +
+            escapeHTML(proj ? proj.name : card.title) + '</span>' +
+          (proj ? '<span class="project-card-blurb">' + escapeHTML(proj.blurb) + '</span>' : '') +
+        '</span>' +
+        '<span class="project-card-chips">' +
+          '<span class="project-chip-label">Captured with:</span>' +
+          '<span class="project-chip">Matterport Pro2</span>' +
+          '<span class="project-chip-label">Platform:</span>' +
+          '<span class="project-chip">Treedis</span>' +
+        '</span>';
+      el.addEventListener("click", () => {
+        closeProjects();
+        openExample(card.id);
+      });
+      list.appendChild(el);
+    });
+
+    const ov = $("#projectsOverlay");
+    ov.classList.add("is-open");
+    ov.setAttribute("aria-hidden", "false");
+    setTimeout(() => $("#projectsClose").focus(), 60);
+  }
+
+  function closeProjects() {
+    const ov = $("#projectsOverlay");
+    ov.classList.remove("is-open");
+    ov.setAttribute("aria-hidden", "true");
+  }
+
+  /* ============================================================
      CONTACT PANEL (inline slide — no overlay)
      ============================================================ */
   function buildContact() {
@@ -806,24 +944,38 @@
     $("#contactBody").textContent     = c.body;
     $("#contactFoot").textContent     = c.footnote;
 
+    /* Figma clip18: each CTA is a centred step — its stage label
+       (PLAN / PROPOSE / PILOT) above the button, with a thin
+       decorative connector line running off to the right. The old
+       separate stages row is retired. */
     const stages = $("#contactStages");
     stages.innerHTML = "";
-    c.ctas.forEach((cta) => {
-      const s = document.createElement("span");
-      s.textContent = cta.stage;
-      if (cta.primary) s.classList.add("is-primary");
-      stages.appendChild(s);
-    });
+    stages.hidden = true;
 
     const wrap = $("#contactCtas");
     wrap.innerHTML = "";
     c.ctas.forEach((cta) => {
+      const step = document.createElement("div");
+      step.className = "contact-step" + (cta.primary ? " is-primary" : "");
+
+      const label = document.createElement("span");
+      label.className = "contact-step-label";
+      label.textContent = cta.stage;
+
       const b = document.createElement("button");
       b.className = "contact-cta" + (cta.primary ? " is-primary" : "");
       b.type = "button";
       b.textContent = cta.label;
       b.addEventListener("click", () => openLeadForm(cta.id, cta.stage));
-      wrap.appendChild(b);
+
+      const line = document.createElement("span");
+      line.className = "contact-step-line";
+      line.setAttribute("aria-hidden", "true");
+
+      step.appendChild(label);
+      step.appendChild(b);
+      step.appendChild(line);
+      wrap.appendChild(step);
     });
   }
 
@@ -840,6 +992,7 @@
     // Reset to the form view (in case it was left on success).
     $("#formView").hidden = false;
     $("#formSuccess").hidden = true;
+    document.querySelector("#formOverlay .form-window").classList.remove("is-success");
     $("#formError").hidden = true;
 
     $("#formStage").textContent = stage || "";
@@ -868,16 +1021,22 @@
     wrap.innerHTML = "";
     fields.forEach((f) => {
       const cell = document.createElement("div");
-      // Textareas and selects span full width; short inputs pair up.
-      cell.className = "form-field" +
-        (f.type === "textarea" || f.type === "select" ? " full" : "");
+      /* Figma modals (clip19/21/25) pair the short fields two-up —
+         including the selects — and give textareas the full row.
+         `half: true` in config opts a field into the pair layout. */
+      const full = f.type === "textarea" || !f.half;
+      cell.className = "form-field" + (full ? " full" : "");
       cell.dataset.name = f.name;
 
       const id = "lf_" + f.name;
       const reqMark = f.required ? ' <span class="req">*</span>' : "";
+      const optMark = f.optional ? ' <span class="opt">(optional)</span>' : "";
+      const ph = f.placeholder
+        ? ' placeholder="' + f.placeholder.replace(/"/g, "&quot;") + '"'
+        : "";
       let control;
       if (f.type === "textarea") {
-        control = '<textarea id="' + id + '" name="' + f.name + '"' +
+        control = '<textarea id="' + id + '" name="' + f.name + '"' + ph +
           (f.required ? " required" : "") + '></textarea>';
       } else if (f.type === "select") {
         control = '<select id="' + id + '" name="' + f.name + '"' +
@@ -889,11 +1048,11 @@
           '</select>';
       } else {
         control = '<input id="' + id + '" name="' + f.name +
-          '" type="' + (f.type || "text") + '"' +
+          '" type="' + (f.type || "text") + '"' + ph +
           (f.required ? " required" : "") + ' />';
       }
       cell.innerHTML =
-        '<label for="' + id + '">' + f.label + reqMark + '</label>' + control;
+        '<label for="' + id + '">' + f.label + reqMark + optMark + '</label>' + control;
       wrap.appendChild(cell);
     });
   }
@@ -1007,11 +1166,14 @@
   }
 
   function showFormSuccess(viaMail) {
+    /* Figma clip23: "REQUEST SENT / Thanks for contacting us!" toast. */
     $("#formView").hidden = true;
     $("#formSuccess").hidden = false;
-    $("#formSuccessBody").textContent = viaMail
+    document.querySelector("#formOverlay .form-window").classList.add("is-success");
+    $("#formSuccessBody").innerHTML = viaMail
       ? "Your email is ready to send in your mail app — hit send and the DTS team will be in touch."
-      : "The DTS team has your details and will be in touch shortly.";
+      : "We appreciate that you’ve taken the time to write to us.<br>We’ll get back to you as soon as we can.";
+    setTimeout(() => $("#formSuccessClose").focus(), 60);
   }
 
   /* Slide the category track to reveal the inline contact panel. */
@@ -1093,6 +1255,7 @@
   function initBackground() {
     const canvas = $("#bgNet");
     const ctx = canvas.getContext("2d");
+    if (!ctx) return;                 // headless / unsupported — skip decor
     let w, h, pts, raf;
 
     function resize() {
@@ -1184,15 +1347,41 @@
     // Access Your Twin (returning-client portal)
     $("#accessForm").addEventListener("submit", submitAccess);
     $("#accessClose").addEventListener("click", closeAccess);
-    $("#dashSignout").addEventListener("click", signOut);
     $$("[data-close-access]").forEach((s) => s.addEventListener("click", closeAccess));
 
     // Contact slide controls (inline — no overlay)
     $("#contactEdge").addEventListener("click", slideToContact);
     $("#contactBack").addEventListener("click", slideToCards);
     $("#contactNext").addEventListener("click", advanceToNextSector);
-    // "View projects" surfaces the contact/next-step panel too.
-    $("#catProjectsBtn").addEventListener("click", slideToContact);
+    // "VIEW {SECTOR} PROJECTS" opens the sector projects window (clip28).
+    $("#catProjectsBtn").addEventListener("click", openProjects);
+    $("#projectsClose").addEventListener("click", closeProjects);
+    $$("[data-close-projects]").forEach((s) => s.addEventListener("click", closeProjects));
+
+    // Client portal (post-login)
+    $("#portalMenuBtn").addEventListener("click", togglePortalMenu);
+    $("#portalSignout").addEventListener("click", signOut);
+    $$("#portalMenu .portal-menu-tile").forEach((t) =>
+      t.addEventListener("click", () => showPortalView(t.dataset.portalView))
+    );
+    // Tapping the dimmed area below the tiles closes the portal menu.
+    $("#portalMenu").addEventListener("click", (e) => {
+      if (e.target === e.currentTarget) closePortalMenu();
+    });
+
+    // Sign-in extras (Figma clip1)
+    $("#accessForgot").addEventListener("click", () => {
+      const err = $("#accessError");
+      err.textContent =
+        "Contact your DTS project lead and we'll reset your access right away.";
+      err.hidden = false;
+    });
+    $("#accessContact").addEventListener("click", () => {
+      closeAccess();
+      const discovery = (cfg.contact.ctas || []).find((c) => c.id === "discovery")
+        || cfg.contact.ctas[0];
+      if (discovery) openLeadForm(discovery.id, discovery.stage);
+    });
 
     // Mobile sector-strip arrows (loop through sectors).
     $("#sectorPrev").addEventListener("click", () => openCategory(previousCategory().id));
@@ -1211,6 +1400,9 @@
     // Escape: close whatever modal is open, or slide contact back to cards.
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
+        if (!$("#portalMenu").hidden) { closePortalMenu(); return; }
+        if ($("#portalLayer").classList.contains("is-open")) { closePortal(false); return; }
+        if ($("#projectsOverlay").classList.contains("is-open")) { closeProjects(); return; }
         if ($("#exampleOverlay").classList.contains("is-open")) { closeExample(); return; }
         if ($("#accessOverlay").classList.contains("is-open"))  { closeAccess();  return; }
         if (state.twinOpen) { closeExperience(); return; }

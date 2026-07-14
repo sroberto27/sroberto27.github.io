@@ -61,3 +61,59 @@ A headless test (boot + every interaction) passes 29/29 checks with zero
 runtime errors: all 4 sectors render, all 16 example windows open and populate
 from cards and dock tabs, the FAQ answers, and the access flow logs in, shows
 the dashboard, signs out, and rejects bad codes.
+
+---
+
+# Mobile audit pass — `Mobile Web.svg` (27 frames @ 360×780)
+
+The Figma mobile board exports each frame at 1440×3120 SVG units =
+exactly **4× a 360×780 CSS viewport** (Android-class phone; the 26px
+status bar and 46px nav bar in the frames are phone chrome, leaving a
+360×708 page area). All mobile work targets 360 and holds 320–480.
+
+## What changed
+- **Sector accents** unified to the board: education `#E9B44C`,
+  industry `#2E8BFF`, government `#34598F`, community `#D27049`
+  (kicker, dash, card titles, VIEW-PROJECTS button, drawer bar,
+  sector strip, divider line, contact tab).
+- **Nav drawer** (clips 13–16): left slide-in panel listing only the
+  four sectors; active item is a full-width accent bar.
+- **Home hero** (clips 8/9): hexagon cluster and the four evidence
+  bullets are now shown on phones (they were hidden), question-bar
+  restyled to the light pill with quoted rotating placeholder.
+- **Cookie disclosure** (clip 0): light rounded card above the dock
+  with grey Accept / Reject.
+- **Category screens** (clips 17/31/32/33): sector-named
+  "VIEW {SECTOR} PROJECTS" button, right-edge accent
+  "Contact & Info / Click here" tab, dock-tab rail styling, and the
+  redesigned sector strip (accent sector name + short sub, SWIPE
+  diamond, next-sector peek, accent hairline).
+- **NEW sector projects window** (clip 28): "{SECTOR} BASED PROJECTS"
+  sheet, one card per sub-vertical project with Captured-with /
+  Platform chips; each card opens that example window.
+- **Contact panel** (clip 18): centred PLAN / PROPOSE / PILOT steps —
+  stage label above each button, thin connector lines, gold primary.
+- **Lead-form modals** (clips 19/21/25): field sets rebuilt to the
+  board (Full Name + Phone, Email + Company, Country + time-frame
+  selects two-up, textarea, uppercase gold submits: SCHEDULE A
+  DISCOVERY / REQUEST A PROPOSAL / START MY PILOT REQUEST) with the
+  board's placeholders; success state is now the REQUEST SENT /
+  "Thanks for contacting us!" toast (clip 23).
+- **Access Your Twin** (clip 1): rebuilt as the "Welcome Back!"
+  login — Email + Password over light inputs, Remember me, Forgot
+  password?, gold "Login In", "Don't have an account · Contact Us".
+  The Email field maps onto the directory's access ID; the demo
+  directory was empty and has been repopulated (demo / 1234).
+- **NEW client portal** (clips 4/5/6): post-login full-screen layer —
+  MENU / client-logo / Sign out header, HOME tile view, "All APPS"
+  cards (one per twin), and the HOME/APPS/Manage/Support tile menu.
+- **Twin experience** (clip 12): the glass hero card now sits
+  top-left over the live view on phones.
+
+## Verified
+Headless jsdom harness: 74/74 checks, zero runtime errors — boot, the
+drawer, all four category screens, projects window, contact steps,
+all three form modals (labels, placeholders, pairing, submits),
+success toast, the full sign-in → portal → sign-out flow, and misc
+copy. Pixel screenshots could not be captured in this environment
+(no browser binary); layout was verified structurally.

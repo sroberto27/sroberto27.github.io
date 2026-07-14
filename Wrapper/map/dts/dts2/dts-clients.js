@@ -63,24 +63,36 @@ window.DTS_CLIENTS = {
      directory below (useful for local testing / first demo). */
   sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSGRuZefJU28qXSgyLWSmLWUh2akMcZiV16fCN_89aKpTmpg4GdHZTouhenlt3stjPDCLp99v4_fTVV/pub?gid=602775609&single=true&output=csv",
 
-  /* Shown on the sign-in window. */
+  /* Shown on the sign-in window (Figma "Welcome Back!" login). */
   ui: {
-    title: "Access Your Twin",
-    intro: "Returning client? Sign in with the access ID and code from your DTS welcome email to jump straight into your live digital twin.",
-    idLabel: "Access ID",
-    codeLabel: "Access code",
-    submit: "Open my twin",
-    error: "We couldn't find a twin for that ID and code. Check your welcome email, or contact the DTS team.",
+    title: "Welcome Back!",
+    intro: "",
+    idLabel: "Email",
+    codeLabel: "Password",
+    submit: "Login In",
+    error: "We couldn't find a twin for that email and password. Check your welcome email, or contact the DTS team.",
     offlineNote: "Demo directory in use — connect a Google Sheet in dts-clients.js to manage real clients."
   },
 
-  /* Built-in fallback directory used ONLY when sheetCsvUrl is "".
-     Lets you demo the entire returning-client flow with no setup.
-     These map onto the same real Treedis showcase the demo uses.
+  /* Built-in fallback directory used when the sheet is unset or
+     unreachable. Lets you demo the entire returning-client flow with
+     no setup (try demo / 1234).
 
      A client with MORE THAN ONE twin is just several rows that share
      the same access_id + access_code (see "acme-hotel" below). On
-     sign-in they all appear on the dashboard, each with its own Open
-     button. A single-twin client (one row) opens straight in. */
-  demoDirectory: []
+     sign-in they all appear in the portal, each with its own card. */
+  demoDirectory: [
+    { access_id: "demo", access_code: "1234",
+      client: "Demo Client", project: "Showcase Twin",
+      twin_url: "https://spaces.dtsxr.com/tour/4fb22059", sweep_id: "",
+      notes: "Sample twin for demonstrations." },
+    { access_id: "acme-hotel", access_code: "4821",
+      client: "Acme Hotels", project: "Downtown Lobby",
+      twin_url: "https://spaces.dtsxr.com/tour/4fb22059", sweep_id: "",
+      notes: "Lobby & event-space twin." },
+    { access_id: "acme-hotel", access_code: "4821",
+      client: "Acme Hotels", project: "Rooftop Venue",
+      twin_url: "https://spaces.dtsxr.com/tour/4fb22059", sweep_id: "",
+      notes: "Rooftop capture." }
+  ]
 };

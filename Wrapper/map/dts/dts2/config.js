@@ -47,6 +47,7 @@ window.DTS_CONFIG = {
       label: "Education",
       blurb: "Education develops people.",
       active: true,                      // most complete category for v0
+      accent: "#E9B44C",                 // Figma mobile board sector accent
       kicker: "EDUCATION",
       title: "Campus & Schools",
       sub: "Digital Twin of your campus",
@@ -63,6 +64,7 @@ window.DTS_CONFIG = {
       label: "Industry",
       blurb: "Industry creates economic value.",
       active: false,
+      accent: "#2E8BFF",
       kicker: "INDUSTRY",
       title: "Operations & Trade",
       sub: "Digital Twin of your operation",
@@ -79,6 +81,7 @@ window.DTS_CONFIG = {
       label: "Government",
       blurb: "Government provides structure and oversight.",
       active: false,
+      accent: "#34598F",
       kicker: "GOVERNMENT",
       title: "Agencies & Cities",
       sub: "Digital Twin of public infrastructure",
@@ -95,6 +98,7 @@ window.DTS_CONFIG = {
       label: "Community",
       blurb: "Community represents the lived outcomes of those systems.",
       active: false,
+      accent: "#D27049",
       kicker: "COMMUNITY",
       title: "Civic & Cultural",
       sub: "Digital Twin of shared places",
@@ -163,49 +167,58 @@ window.DTS_CONFIG = {
        `sector` field is auto-filled from the category the user is
        browsing — they don't have to pick it. */
     forms: {
+      /* Field sets mirror the Figma mobile modals (frames clip19 /
+         clip25 / clip21): paired Full Name + Phone, Email + Company,
+         Country + time-frame selects, then the free-text area(s),
+         then a full-width gold submit. */
       discovery: {
         title: "Schedule a Discovery",
-        intro: "A 30-minute conversation about your space and what a twin could do for it. No demo, no pitch.",
-        submitLabel: "Request my discovery call",
+        intro: "Schedule a 30-minute conversation with one of our team members about your space and what a digital twin could do for you.",
+        submitLabel: "SCHEDULE A DISCOVERY",
         fields: [
-          { name: "name",    label: "Your name",         type: "text",  required: true },
-          { name: "email",   label: "Work email",        type: "email", required: true },
-          { name: "org",     label: "Organization",      type: "text",  required: true },
-          { name: "role",    label: "Your role",         type: "text",  required: false },
-          { name: "timing",  label: "Ideal timeframe",   type: "select", required: false,
+          { name: "name",    label: "Full Name",    type: "text",  required: true,  placeholder: "First and Last Name", half: true },
+          { name: "phone",   label: "Phone number", type: "tel",   required: true,  placeholder: "(###) ### - ####",    half: true },
+          { name: "email",   label: "Email",        type: "email", required: true,  placeholder: "address@email.com",   half: true },
+          { name: "org",     label: "Company Name", type: "text",  required: true,  half: true },
+          { name: "country", label: "Country",      type: "select", required: false, half: true,
+            options: ["United States", "Canada", "United Kingdom", "European Union", "Other"] },
+          { name: "timing",  label: "Ideal time frame", type: "select", required: false, half: true,
             options: ["This week", "Next 2 weeks", "This month", "Just exploring"] },
-          { name: "notes",   label: "Anything we should know? (optional)", type: "textarea", required: false }
+          { name: "notes",   label: "Anything we should know?", optional: true, type: "textarea", required: false }
         ]
       },
       proposal: {
         title: "Request a Proposal",
         intro: "Tell us about the space and the outcome you're after. We'll scope a proposal and send it back.",
-        submitLabel: "Send my proposal request",
+        submitLabel: "REQUEST A PROPOSAL",
         fields: [
-          { name: "name",     label: "Your name",        type: "text",  required: true },
-          { name: "email",    label: "Work email",       type: "email", required: true },
-          { name: "org",      label: "Organization",     type: "text",  required: true },
-          { name: "space",    label: "What space or project?", type: "text", required: true },
-          { name: "budget",   label: "Budget range (optional)", type: "select", required: false,
-            options: ["Not sure yet", "Under $25k", "$25k–$100k", "$100k+"] },
-          { name: "timeline", label: "Target timeline",  type: "select", required: false,
+          { name: "name",     label: "Full Name",    type: "text",  required: true,  placeholder: "First and Last Name", half: true },
+          { name: "phone",    label: "Phone number", type: "tel",   required: true,  placeholder: "(###) ### - ####",    half: true },
+          { name: "email",    label: "Email",        type: "email", required: true,  placeholder: "address@email.com",   half: true },
+          { name: "org",      label: "Company Name", type: "text",  required: true,  half: true },
+          { name: "country",  label: "Country",      type: "select", required: false, half: true,
+            options: ["United States", "Canada", "United Kingdom", "European Union", "Other"] },
+          { name: "timeline", label: "Target timeline", type: "select", required: false, half: true,
             options: ["ASAP", "This quarter", "This year", "Planning ahead"] },
-          { name: "notes",    label: "Describe the goal (optional)", type: "textarea", required: false }
+          { name: "notes",    label: "Describe the goal", optional: true, type: "textarea", required: false }
         ]
       },
       pilot: {
         title: "Start a Pilot",
         /* The pilot explainer doubles as the intro copy. */
-        intro: "A pilot is a scoped, paid engagement — one defined space, a real twin, a clear deliverable. The fee is set during the proposal stage. Tell us what you'd pilot and we'll define the scope with you.",
-        submitLabel: "Start my pilot request",
+        intro: "A pilot is a scoped, paid engagement \u2014 one defined space, a digital twin, a clear deliverable. The fee is set during the proposal stage. Tell us what you'd pilot and we'll define the scope with you.",
+        submitLabel: "START MY PILOT REQUEST",
         fields: [
-          { name: "name",     label: "Your name",        type: "text",  required: true },
-          { name: "email",    label: "Work email",       type: "email", required: true },
-          { name: "org",      label: "Organization",     type: "text",  required: true },
+          { name: "name",     label: "Full Name",    type: "text",  required: true,  placeholder: "First and Last Name", half: true },
+          { name: "phone",    label: "Phone number", type: "tel",   required: true,  placeholder: "(###) ### - ####",    half: true },
+          { name: "email",    label: "Email",        type: "email", required: true,  placeholder: "address@email.com",   half: true },
+          { name: "org",      label: "Company Name", type: "text",  required: true,  half: true },
+          { name: "country",  label: "Country",      type: "select", required: false, half: true,
+            options: ["United States", "Canada", "United Kingdom", "European Union", "Other"] },
+          { name: "timeline", label: "Time-frame",   type: "select", required: false, half: true,
+            options: ["Immediately", "Within a month", "This quarter", "Still scoping"] },
           { name: "space",    label: "Space you'd pilot", type: "text", required: true },
-          { name: "outcome",  label: "What does success look like?", type: "textarea", required: false },
-          { name: "timeline", label: "When would you start?", type: "select", required: false,
-            options: ["Immediately", "Within a month", "This quarter", "Still scoping"] }
+          { name: "outcome",  label: "What does success look like?", type: "textarea", required: false }
         ]
       }
     }
