@@ -10,12 +10,12 @@
    no dead space.
    ============================================================ */
 :root{
-  --bg:           #080c18;
-  --bg-2:         #0d1423;
+  --bg:           #070e18;   /* desktop board stage (#070E18) */
+  --bg-2:         #0a1525;   /* desktop board header (#0A1525) */
   --bg-3:         #101827;
   --line:         rgba(255,255,255,.10);
   --line-soft:    rgba(255,255,255,.06);
-  --gold:         #d0a33a;
+  --gold:         #c49a2a;   /* desktop board gold (#C49A2A) */
   --gold-bright:  #e3b855;
   --glass:        rgba(10,10,10,.62);
   --ink:          #ffffff;
@@ -1084,7 +1084,7 @@ body.twin-active .cookie{ opacity:0; pointer-events:none; transition:opacity .4s
   .hex-cluster{ display:none; }                     /* decorative only — drop on phone */
   .dock-explore{ display:none; }
   .twin-cta-wrap{
-    position:static; transform:none; margin-top:18px;
+    position:relative; inset:auto; transform:none; margin-top:18px;
     justify-self:center; align-self:start;
   }
   .twin-cta-fx{ width:150px; }
@@ -1168,7 +1168,7 @@ body.twin-active .cookie{ opacity:0; pointer-events:none; transition:opacity .4s
   .cookie-btn{ padding:6px 12px; font-size:11px; }
 
   /* Footer evidence row is noise on phone — keep only the dock. */
-  
+
   /* Dock: question bar full width; tabs scroll under it. */
   .dockbar{
     flex-direction:column; align-items:stretch;
@@ -1578,21 +1578,23 @@ body.portal-open{ overflow:hidden; }
   .home-grid{ grid-template-rows:auto 1fr auto; }
   .hex-cluster{
     display:block; position:relative;
-    width:100%; min-height:180px;
+    width:100%; min-height:240px;
     inset:auto; transform:none;
+    overflow:visible;
   }
   .hex-cluster .hex{ position:absolute; }
   /* clip9 arrangement: droplet + wave lower-left, two white hexes
-     upper-right, ghost satellites for depth. */
+     upper-right, ghost satellites for depth. All tops are positive so
+     the cluster never rides up into the copy above it. */
   .hex{ width:88px; height:100px; }
-  .hex-1{ left:12%;  top:52%;  width:84px; height:96px; }   /* droplets */
-  .hex-2{ left:32%;  top:30%;  width:82px; height:94px; }   /* data wave */
-  .hex-3{ left:52%;  top:8%;   width:86px; height:98px; }   /* white */
-  .hex-4{ left:72%;  top:-12%; width:90px; height:102px; }  /* white */
-  .hex-g1{ left:24%; top:8%;   width:56px; height:64px; }
-  .hex-g2{ left:2%;  top:28%;  width:52px; height:60px; }
-  .hex-g3{ left:52%; top:62%;  width:52px; height:60px; }
-  .hex-g4{ left:84%; top:34%;  width:56px; height:64px; }
+  .hex-1{ left:10%;  top:56%;  width:84px; height:96px; }   /* droplets */
+  .hex-2{ left:29%;  top:38%;  width:82px; height:94px; }   /* data wave */
+  .hex-3{ left:48%;  top:20%;  width:86px; height:98px; }   /* white */
+  .hex-4{ left:65%;  top:2%;   width:90px; height:102px; }  /* white */
+  .hex-g1{ left:32%; top:6%;   width:56px; height:64px; }
+  .hex-g2{ left:4%;  top:30%;  width:52px; height:60px; }
+  .hex-g3{ left:54%; top:64%;  width:52px; height:60px; }
+  .hex-g4{ left:86%; top:40%;  width:56px; height:64px; }
   .evidence-bar{
     display:grid; grid-template-columns:1fr 1fr;
     gap:8px 14px; align-items:start;
@@ -1654,20 +1656,21 @@ body.portal-open{ overflow:hidden; }
   .contact-bar{ display:none; }
   .contact-edge{
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:4px;
-    position:absolute; right:0; top:38%;
-    width:52px; padding:18px 6px;
+    gap:8px;
+    position:absolute; right:0; top:34%;
+    width:44px; padding:16px 4px;
     background:var(--sector, var(--sector-accent));
     color:#141414;
     border:0; border-radius:14px 0 0 14px;
-    font-size:11.5px; font-weight:800; line-height:1.25; text-align:center;
+    font-size:11px; font-weight:800; line-height:1.2; text-align:center;
     box-shadow:-8px 10px 26px rgba(0,0,0,.4);
     z-index:5;
   }
-  .contact-edge-text{ writing-mode:horizontal-tb; transform:none; text-transform:none; }
-  .contact-edge-hint{ display:block; font-size:10px; font-weight:700; }
-  .contact-edge-arrow{ display:none; }
-  .contact-edge:hover{ padding-right:6px; }
+  /* Vertical label on phones too (stakeholder review) — compact tab. */
+  .contact-edge-text{ writing-mode:vertical-rl; transform:rotate(180deg); text-transform:uppercase; letter-spacing:.06em; }
+  .contact-edge-hint{ display:none; }
+  .contact-edge-arrow{ display:flex; }
+  .contact-edge:hover{ padding-right:4px; }
 
   /* Dock tabs (clip17): one rounded rail, active pill highlighted. */
   .dock-tabs{
@@ -1819,13 +1822,19 @@ body.portal-open{ overflow:hidden; }
    stack (copy → hexes → CTA → evidence). */
 @media (max-width:760px) and (max-height:660px){
   .view-home{ overflow-y:auto; -webkit-overflow-scrolling:touch; }
-  .hex-cluster{ min-height:140px; }
+  .hex-cluster{ min-height:200px; }
   .hex{ transform:scale(.85); transform-origin:top left; }
 }
 
 /* ============================================================
    APPLE VISION PRO — SPATIAL WEB CTA
+   Shown ONLY in Safari (stakeholder review): the spatial website
+   environment is a Safari feature, so every other browser — and
+   therefore the emulated/mobile Chrome hero — hides the button.
+   script.js adds body.is-safari after UA detection; the feature
+   itself (vision-pro-spatial.js) is untouched.
    ============================================================ */
+body:not(.is-safari) .vision-spatial-cta{ display:none; }
 .vision-spatial-cta{
   margin-top:clamp(16px,2vh,24px);
   display:flex;
@@ -1936,4 +1945,320 @@ body.spatial-environment-active .vision-spatial-btn{
     font-size:12px;
   }
   .vision-spatial-status{ max-width:none; }
+}
+
+/* ============================================================
+   DESKTOP-BOARD ADDITIONS  (Desktop Web.svg — 20 frames @ 1920×1080)
+   ------------------------------------------------------------
+   The Figma desktop board exports each frame at 7680×4320 SVG
+   units = exactly 4× a 1920×1080 CSS viewport (16:9 desktop).
+   Everything below implements or corrects the desktop design;
+   phone rules (≤760px) are untouched and win where they overlap.
+   ============================================================ */
+
+/* ---------- Home hero ----------
+   Kept as originally shipped per stakeholder review: the hexagon
+   cluster and the blue arrow-burst behind "Try a Digital Twin" stay
+   (they respond via the existing clamp() sizing on all viewports).
+   Only the evidence row takes the board treatment. */
+@media (min-width:761px){
+  /* Evidence bullets: a single spread row above the dock, no rule line. */
+  .evidence-bar{
+    border-top:0; padding-top:0;
+    justify-content:space-between;
+    color:rgba(255,255,255,.85);
+    font-size:clamp(11px,.9vw,14px);
+  }
+  .evidence-dot{ color:#ff9d00; }
+}
+
+/* ---------- Question bar (board: light pill, bold label, quoted hint) ---------- */
+.qbar{ background:#d6d6d6; }
+.qbar-icon{ color:#1c1c1c; }
+.qbar-label{ color:#111; font-weight:700; }
+.qbar-input{ color:#1c1c1c; }
+.qbar-input::placeholder{ color:#7c7c7c; font-style:italic; }
+.qbar-send{ background:#9c9c9c; color:#f4f4f4; }
+
+/* ---------- Cookie disclosure (clip7: light card, grey pill buttons) ---------- */
+.cookie{
+  background:#d6d6d6; border:0;
+  border-radius:18px;
+  width:min(760px,86vw);
+  display:flex; align-items:flex-end; gap:14px;
+}
+.cookie-text{ color:#2b2b2b; }
+.cookie-text strong{
+  display:block; color:#555; font-size:clamp(15px,1.2vw,20px);
+  font-weight:600; margin-bottom:4px;
+}
+.cookie-actions{ margin-top:0; flex:0 0 auto; }
+.cookie-btn{
+  background:#696969; color:#fff; border:0;
+  border-radius:999px; padding:9px 22px;
+  font-size:clamp(12px,1vw,15px);
+}
+.cookie-btn:hover{ background:#585858; }
+.cookie-btn-ghost{ background:#696969; color:#fff; }
+
+/* ---------- Dock tabs (board: "Use Cases" filled grey, rest uppercase) ---------- */
+.dock-tab.is-active{ background:#474a50; }
+.dock-tab[data-tab="usecases"]{ text-transform:none; letter-spacing:.02em; font-size:clamp(11px,.9vw,14px); }
+
+/* ---------- Contact panel (clip38): plain centred layout ---------- */
+@media (min-width:761px){
+  .cat-panel-contact{
+    background:none; border:0; border-radius:0;
+  }
+  .contact-kicker{ color:#cfd4db; letter-spacing:.12em; }
+  .contact-headline{ font-weight:600; }
+  .contact-stages span{ color:var(--ink); }
+  .contact-cta{
+    background:#0a0f18; border:1.5px solid rgba(255,255,255,.75);
+    border-radius:10px; font-size:clamp(14px,1.2vw,19px); font-weight:600;
+    letter-spacing:.02em; text-transform:uppercase;
+  }
+  .contact-cta.is-primary{ background:var(--gold); border-color:var(--gold); color:#101010; }
+}
+
+/* ---------- Access Your Twin (clip33): desktop charcoal popup ---------- */
+@media (min-width:761px){
+  .access-window{
+    width:min(1060px,90vw); min-height:min(700px,84vh);
+    background:#252525;
+    border:0; border-radius:26px;
+    display:grid; grid-template-columns:1.05fr 1fr;
+    align-items:center;
+    padding:clamp(28px,4vh,48px) clamp(28px,3vw,56px);
+    column-gap:clamp(24px,3vw,48px);
+  }
+  /* Left half: brand block (empty in the board frame — the DTS brand
+     block from the mobile login is reused; documented interpretation). */
+  .access-view{ display:contents; }
+  .access-brand{ align-self:center; justify-self:center; align-items:center; }
+  .access-brand-logo{ height:96px; }
+  .access-brand-tag{ font-size:12px; }
+  .access-form-col{
+    background:#303030; border-radius:18px;
+    padding:clamp(26px,4vh,44px) clamp(22px,2.4vw,40px);
+  }
+  .access-welcome{ margin-top:0; }
+  .access-field label{ font-size:12px; }
+  .access-field input{ background:#d8d8d8; border:0; }
+  .access-submit{ background:#ffba00; border:0; color:#141414; }
+  .access-submit:hover{ background:#ffcb3d; }
+}
+
+/* ---------- Example window (clip2–clip6) ---------- */
+.example-window{ border-radius:26px; }
+@media (min-width:761px){
+  .overlay-window.example-window{
+    width:min(1860px,97.5vw); height:min(1040px,96vh);
+    background:#070e18;
+  }
+  .example-stage{ height:clamp(340px, 66%, 720px); border-bottom:0; }
+  .example-stage .example-loading{ background:#a8a8a8; color:#333; }
+  .example-stage .example-loading .spinner{ border-color:rgba(0,0,0,.15); border-top-color:#555; }
+}
+/* Gold circular close (board) */
+#exampleOverlay .overlay-close{
+  background:var(--gold); color:#141414; border:0;
+  width:40px; height:40px; font-weight:800;
+}
+#exampleOverlay .overlay-close:hover{ background:var(--gold-bright); }
+
+.example-head{
+  display:flex; align-items:flex-start; justify-content:space-between;
+  gap:clamp(14px,2vw,28px); flex-wrap:wrap;
+  margin-bottom:clamp(10px,1.4vh,16px);
+}
+.example-head-copy{ min-width:0; }
+.example-title{ font-weight:500; font-size:clamp(24px,2vw,34px); }
+.example-meta{ flex-direction:column; align-items:flex-start; gap:6px; margin:10px 0 0; }
+.example-meta-row{ display:flex; align-items:center; gap:8px; }
+.example-meta-label{ color:rgba(255,255,255,.85); font-size:12.5px; }
+.meta-chip{ background:#d9d9d9; color:#1c1c1c; border:0; font-weight:600; }
+.example-cta-row{ flex:0 0 auto; align-items:flex-start; margin-top:6px; }
+.example-cta{
+  background:var(--gold); color:#141414; border:0; border-radius:10px;
+  font-weight:700; font-size:clamp(12px,1vw,15px); padding:12px 18px;
+}
+.example-cta:hover{ background:var(--gold-bright); }
+.example-cta-icon{ padding:12px 14px; display:flex; align-items:center; }
+
+/* PROJECT EVIDENCE band (clip3/clip4) */
+.example-evidence{ margin:clamp(18px,2.4vh,28px) 0; }
+.example-evidence-band{
+  display:flex; align-items:center; gap:clamp(14px,2vw,30px);
+  background:rgba(255,255,255,.07);
+  margin:0 calc(-1 * clamp(20px,2.8vw,40px));
+  padding:clamp(14px,2vh,22px) clamp(20px,2.8vw,40px);
+}
+.example-evidence-lede{ display:flex; flex-direction:column; gap:4px; flex:0 0 auto; }
+.example-evidence-sub,
+.example-evidence-note{ color:rgba(255,255,255,.85); font-size:12.5px; line-height:1.4; }
+.example-evidence-note{ margin-left:auto; flex:0 0 auto; text-align:left; }
+.example-evidence-tabs{ margin:0; flex:1 1 auto; flex-wrap:wrap; }
+.example-evidence-tabs button{
+  border:1px solid rgba(255,255,255,.65); border-radius:6px;
+  color:#eaeaea; letter-spacing:.06em; text-transform:uppercase;
+  padding:8px 16px; background:transparent;
+}
+.example-evidence-tabs button.is-active{
+  background:#686868; border-color:#686868; color:#fff;
+}
+.example-evidence-body{ margin:14px 0 0; }
+
+/* Placeholder tiles (evidence cards + media mosaic, board grey #4a4a4a) */
+.example-evidence-tiles{
+  display:grid; grid-template-columns:repeat(3, 1fr);
+  gap:clamp(14px,1.6vw,24px); margin-top:clamp(14px,2vh,22px);
+}
+.example-tile{
+  display:block; background:#4a4a4a; border-radius:14px; min-height:150px;
+}
+.example-section-title{
+  font-weight:500; font-size:clamp(19px,1.5vw,26px);
+  margin:clamp(20px,3vh,32px) 0 clamp(12px,1.8vh,18px);
+}
+.example-media-grid{
+  display:grid; gap:clamp(14px,1.6vw,24px);
+  grid-template-columns:1.3fr 1fr 1.3fr;
+  grid-template-rows:repeat(2, minmax(140px,1fr));
+  grid-template-areas:"a b d" "a c d";
+}
+.example-media-grid .example-tile:nth-child(1){ grid-area:a; }
+.example-media-grid .example-tile:nth-child(2){ grid-area:b; }
+.example-media-grid .example-tile:nth-child(3){ grid-area:c; }
+.example-media-grid .example-tile:nth-child(4){ grid-area:d; }
+.example-tile-tall{ min-height:100%; }
+
+/* More from {Sector} (clip6) */
+.example-more{ margin-bottom:clamp(24px,4vh,40px); }
+.example-more-grid{
+  display:grid; grid-template-columns:repeat(3, 1fr);
+  gap:clamp(14px,1.6vw,24px);
+}
+.example-more-card{
+  appearance:none; cursor:pointer; text-align:left;
+  background:#4a4a4a; color:#fff; border:0; border-radius:14px;
+  min-height:170px; padding:18px;
+  display:flex; flex-direction:column; gap:8px; justify-content:flex-end;
+  font-family:var(--sans);
+  transition:background .15s, transform .15s;
+}
+.example-more-card:hover{ background:#565656; transform:translateY(-2px); }
+.example-more-card:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+.example-more-name{ font-size:15px; font-weight:700; }
+.example-more-text{ font-size:12px; color:rgba(255,255,255,.8); line-height:1.45; }
+
+/* Gold FAB (clip5/clip6) */
+.example-fab{
+  position:absolute; right:clamp(18px,2vw,34px); bottom:clamp(18px,3vh,34px);
+  z-index:6;
+  appearance:none; cursor:pointer;
+  width:clamp(48px,4vw,64px); height:clamp(48px,4vw,64px);
+  border:0; border-radius:16px;
+  background:var(--gold); color:#141414;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 14px 34px rgba(0,0,0,.4);
+}
+.example-fab:hover{ background:var(--gold-bright); }
+@media (max-width:760px){ .example-fab{ display:none; } }
+
+/* ---------- Sector projects window (clip1): full-screen mosaic ---------- */
+@media (min-width:761px){
+  .projects-window{
+    width:min(1860px,97.5vw); height:min(1040px,96vh); max-height:96vh;
+    background:#070e18;
+  }
+  .projects-brand{
+    background:transparent; border-bottom:0;
+    padding:14px 16px 0;
+  }
+  .projects-brand-logo{ height:34px; }
+  .projects-title{
+    font-size:clamp(24px,1.8vw,34px); letter-spacing:.02em;
+    margin:clamp(14px,2.4vh,26px) 16px clamp(10px,1.6vh,18px);
+  }
+  /* Board mosaic: tall / two stacked / tall. */
+  .projects-list{
+    display:grid;
+    grid-template-columns:1.25fr 1fr 1.3fr;
+    grid-template-rows:repeat(2, minmax(180px, 1fr));
+    grid-template-areas:"a b d" "a c d";
+    gap:clamp(16px,1.8vw,28px);
+    padding:0 clamp(40px,8vw,160px) clamp(60px,9vh,110px);
+  }
+  .projects-list .project-card:nth-child(1){ grid-area:a; }
+  .projects-list .project-card:nth-child(2){ grid-area:b; }
+  .projects-list .project-card:nth-child(3){ grid-area:c; }
+  .projects-list .project-card:nth-child(4){ grid-area:d; }
+  .project-card{ background:#4a4a4a; border-radius:18px; min-height:0; }
+}
+
+/* ---------- Client portal (clip36 / clip37): desktop layout ---------- */
+.portal-nav{ display:none; }
+@media (min-width:761px){
+  .portal{ background:#1d202e; }
+  .portal-topbar{ padding:12px 22px; gap:22px; }
+  /* Board: horizontal HOME / APPS / Manage / Support links in the light
+     bar; the burger + tile-menu overlay stay a phone affordance. */
+  .portal-burger{ display:none; }
+  .portal-menu{ display:none; }
+  .portal-nav{ display:flex; align-items:center; gap:clamp(14px,1.8vw,30px); }
+  .portal-nav-link{
+    appearance:none; cursor:pointer; background:none; border:0;
+    font-family:var(--sans); font-size:clamp(13px,1vw,16px); font-weight:700;
+    color:#1c1c1c; padding:6px 2px; border-bottom:2px solid transparent;
+  }
+  .portal-nav-link:hover{ color:#000; }
+  .portal-nav-link.is-active{ border-bottom-color:#1c1c1c; }
+  .portal-clientlogo{
+    flex:0 1 auto; margin:0 auto;
+    background:#5a5a5a;
+    min-width:min(300px,26vw);
+  }
+  /* HOME — asymmetric wireframe tile grid (clip36). */
+  .portal-main{ padding:clamp(24px,4vh,44px) clamp(28px,5vw,90px); }
+  .portal-tiles{
+    max-width:none;
+    grid-template-columns:0.9fr 1.5fr 0.9fr;
+    grid-template-rows:minmax(120px,.8fr) minmax(180px,1.2fr);
+    grid-template-areas:"apps main support" "manage main support";
+    gap:clamp(16px,1.8vw,28px);
+  }
+  .portal-tile-primary{ grid-area:main; grid-column:auto; min-height:0; }
+  .portal-tiles .portal-tile:nth-child(2){ grid-area:apps; }
+  .portal-tiles .portal-tile:nth-child(3){ grid-area:support; }
+  .portal-tile-manage{ grid-area:manage; }
+  /* APPS — 3-up card grid (clip37). */
+  .portal-apps-title{ max-width:none; margin:2px 0 22px; }
+  .portal-apps-list{
+    max-width:none;
+    display:grid; grid-template-columns:repeat(3, minmax(0,1fr));
+    gap:clamp(18px,2vw,32px);
+    align-items:start;
+  }
+  .portal-app{ text-align:left; margin-bottom:0; }
+  .portal-app-media{ background:#565656; min-height:150px; width:100%; }
+  .portal-app-title{ font-size:17px; }
+}
+
+/* Example-window board additions on phones: stack the header, keep the
+   evidence band inside the pane, single-column tiles. */
+@media (max-width:760px){
+  .example-head{ flex-direction:column; }
+  .example-evidence-band{
+    flex-wrap:wrap; margin:0; border-radius:12px;
+    padding:14px 16px;
+  }
+  .example-evidence-note{ margin-left:0; }
+  .example-evidence-tiles,
+  .example-more-grid{ grid-template-columns:1fr; }
+  .example-media-grid{
+    grid-template-columns:1fr; grid-template-rows:none;
+    grid-template-areas:"a" "b" "c" "d";
+  }
+  .example-tile{ min-height:120px; }
 }

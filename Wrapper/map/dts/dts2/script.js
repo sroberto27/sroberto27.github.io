@@ -271,7 +271,7 @@
     const tabs = $("#dockTabs");
     tabs.innerHTML = "";
     tabs.appendChild(makeTab("usecases", "Use Cases", true));
-    c.cards.forEach((card) => tabs.appendChild(makeTab(card.id, card.title)));
+    c.cards.forEach((card) => tabs.appendChild(makeTab(card.id, card.short || card.title)));
     state.dockTab = "usecases";
 
   }
@@ -471,14 +471,15 @@
 
     const cat = cfg.categories.find((c) => c.id === ex.sector) || getCategory(state.category);
 
-    // Header
-    $("#exKicker").textContent  = "— " + (cat.kicker || cat.label.toUpperCase());
-    $("#exTitle").textContent   = ex.title;
+    // Header — the desktop board (clip2, "Solar Farm Sample") titles the
+    // window with the PROJECT name; the sub-vertical rides in the kicker.
+    $("#exKicker").textContent  = "— " + (cat.kicker || cat.label.toUpperCase()) + " · " + ex.title;
+    $("#exTitle").textContent   = ex.project.name;
     $("#exTagline").textContent = ex.tagline || "";
     $("#exOverview").textContent = ex.overview || "";
 
-    // Capture chip (the solar-farm style "Captured with" line)
-    $("#exCapture").textContent = "Captured with: " + (ex.capturedWith || "Matterport Pro2");
+    // Capture chips — board layout: "Captured with: [chip]" / "Platform: [chip]".
+    $("#exCapture").textContent = ex.capturedWith || "Matterport Pro2";
 
     // Project example
     $("#exProjectName").textContent  = ex.project.name;
@@ -490,6 +491,24 @@
 
     // Evidence tabs
     buildExampleEvidence(ex, evidenceLabel);
+
+    // "More from {Sector}" (board clip6): the sector's other sub-verticals.
+    const moreTitle = $("#exMoreTitle");
+    const moreGrid  = $("#exMoreGrid");
+    if (moreTitle && moreGrid) {
+      moreTitle.textContent = "More from " + cat.label;
+      moreGrid.innerHTML = "";
+      (cat.cards || []).filter((cd) => cd.id !== cardId).slice(0, 3).forEach((cd) => {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "example-more-card";
+        b.innerHTML =
+          '<span class="example-more-name">' + escapeHTML(cd.title) + '</span>' +
+          '<span class="example-more-text">' + escapeHTML(cd.text) + '</span>';
+        b.addEventListener("click", () => openExample(cd.id));
+        moreGrid.appendChild(b);
+      });
+    }
 
     // Tint the example window to the sector colour for orientation.
     const win = $("#exampleOverlay .example-window");
@@ -758,6 +777,18 @@
     support.addEventListener("click", () => showPortalView("support"));
     tiles.appendChild(support);
 
+    /* Desktop board clip36 shows a wider tile dashboard — add the
+       Manage shortcut so the four portal sections are all reachable
+       from HOME. */
+    const manage = document.createElement("button");
+    manage.type = "button";
+    manage.className = "portal-tile portal-tile-small portal-tile-manage";
+    manage.innerHTML =
+      '<span class="portal-tile-title">Manage</span>' +
+      '<span class="portal-tile-sub">Twin management with your DTS lead</span>';
+    manage.addEventListener("click", () => showPortalView("manage"));
+    tiles.appendChild(manage);
+
     /* ALL APPS — clip5: one card per twin, image area with a duration
        hint bottom-right and the title captioned below. */
     const list = $("#portalAppsList");
@@ -801,6 +832,9 @@
         el.classList.toggle("is-active", v === name);
       }
     });
+    $$("#portalNav .portal-nav-link").forEach((b) =>
+      b.classList.toggle("is-active", b.dataset.portalView === name)
+    );
     closePortalMenu();
   }
 
@@ -1328,13 +1362,29 @@
       goHome();
       openExperience();
     });
-    // "Talk to DTS about this" routes into the proposal lead form.
+    // "Contact Us about this" routes into the proposal lead form.
     $("#exContact").addEventListener("click", () => {
       closeExample();
       const proposal = (cfg.contact.ctas || []).find((c) => c.id === "proposal")
         || cfg.contact.ctas[0];
       if (proposal) openLeadForm(proposal.id, proposal.stage);
     });
+    // Small gold square (board clip2/clip3) — opens the live tour in a
+    // new tab. (The board shows the button without a label; this is the
+    // documented interpretation.)
+    const exOpenTab = $("#exOpenTab");
+    if (exOpenTab) exOpenTab.addEventListener("click", () => {
+      window.open(cfg.treedis.tourUrl, "_blank", "noopener");
+    });
+    // Back-to-top FAB inside the window (board clip5/clip6).
+    const exFab = $("#exampleFab");
+    if (exFab) exFab.addEventListener("click", () => {
+      $("#exampleContent").scrollTo({ top: 0, behavior: "smooth" });
+    });
+    // Desktop portal nav links (board clip36/clip37).
+    $$("#portalNav .portal-nav-link").forEach((b) =>
+      b.addEventListener("click", () => showPortalView(b.dataset.portalView))
+    );
 
     // Lead form modal
     $("#leadForm").addEventListener("submit", submitLeadForm);
@@ -1434,7 +1484,21 @@
   /* ============================================================
      BOOT
      ============================================================ */
+  /* The Vision Pro spatial-website CTA is a Safari feature — show it
+     only when the site is actually opened in Safari (stakeholder
+     review). Chrome/Edge/Opera/Firefox (including their iOS shells)
+     and Android browsers all include extra tokens alongside "Safari",
+     so requiring Safari-without-those identifies real Safari (macOS,
+     iOS/iPadOS, and visionOS). */
+  function detectSafari() {
+    const ua = navigator.userAgent || "";
+    const isSafari = /Safari\//.test(ua) &&
+      !/Chrome|Chromium|CriOS|FxiOS|EdgiOS|Edg\/|OPR\/|OPiOS|Android|SamsungBrowser/.test(ua);
+    document.body.classList.toggle("is-safari", isSafari);
+  }
+
   function boot() {
+    detectSafari();
     buildPillars();
     buildDrawer();
     buildSectorStrip();

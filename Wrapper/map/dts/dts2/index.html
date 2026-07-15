@@ -285,7 +285,7 @@
     </form>
 
     <!-- Home-state hint (mockup: bottom-centre, gold dashes) -->
-    <div class="dock-explore" id="dockExplore">
+    <div class="dock-explore" id="dockExplore" hidden>
       <span class="dock-explore-line" aria-hidden="true"></span>
       Explore your world below
       <span class="dock-explore-line" aria-hidden="true"></span>
@@ -371,43 +371,92 @@
       </div>
     </div>
 
-    <!-- Scrolling content pane -->
+    <!-- Scrolling content pane — desktop board frames clip2–clip6:
+         title row with gold CTAs, "Captured with / Platform" chip rows,
+         overview, the PROJECT EVIDENCE band with filter chips and
+         evidence tiles, a "Photos and Video" gallery, and a
+         "More from {Sector}" related row. -->
     <div class="example-content" id="exampleContent">
-      <span class="example-kicker" id="exKicker">— EDUCATION</span>
-      <h2 class="example-title" id="exTitle">Campus &amp; Schools</h2>
-      <p class="example-tagline" id="exTagline"></p>
-
-      <div class="example-meta">
-        <span class="meta-chip" id="exCapture">Captured with: Matterport Pro2</span>
-        <span class="meta-chip">Platform: Treedis</span>
-        <span class="meta-chip meta-kind" id="exKind" hidden></span>
+      <div class="example-head">
+        <div class="example-head-copy">
+          <span class="example-kicker" id="exKicker">— EDUCATION</span>
+          <h2 class="example-title" id="exTitle">Solar Farm Sample</h2>
+          <div class="example-meta">
+            <span class="example-meta-row">
+              <span class="example-meta-label">Captured with:</span>
+              <span class="meta-chip" id="exCapture">Matterport Pro2</span>
+            </span>
+            <span class="example-meta-row">
+              <span class="example-meta-label">Platform:</span>
+              <span class="meta-chip">Treedis</span>
+            </span>
+            <span class="meta-chip meta-kind" id="exKind" hidden></span>
+          </div>
+        </div>
+        <!-- Conversion CTAs (design: gold buttons top-right of the pane) -->
+        <div class="example-cta-row">
+          <button class="example-cta" id="exEnter" type="button">Enter Twin</button>
+          <button class="example-cta" id="exContact" type="button">Contact Us about this</button>
+          <button class="example-cta example-cta-icon" id="exOpenTab" type="button"
+                  aria-label="Open this twin in a new tab" title="Open in a new tab">
+            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M10 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
       </div>
 
+      <p class="example-tagline" id="exTagline"></p>
       <p class="example-overview" id="exOverview"></p>
+      <span class="example-illustrative" id="exIllustrative" hidden>
+        Illustrative example — representative of DTS's work in this space.
+      </span>
 
       <!-- The project example for this sub-vertical -->
       <div class="example-project" id="exProject">
         <span class="example-project-label">EXAMPLE PROJECT</span>
         <h3 class="example-project-name" id="exProjectName"></h3>
         <p class="example-project-blurb" id="exProjectBlurb"></p>
-        <span class="example-illustrative" id="exIllustrative" hidden>
-          Illustrative example — representative of DTS's work in this space.
-        </span>
       </div>
 
-      <!-- Project-evidence proof (Case Studies / Awards / etc.) -->
+      <!-- PROJECT EVIDENCE band (Case Studies / Awards / …) -->
       <div class="example-evidence">
-        <span class="example-evidence-label">PROJECT EVIDENCE</span>
-        <div class="example-evidence-tabs" id="exEvidenceTabs"><!-- injected --></div>
+        <div class="example-evidence-band">
+          <div class="example-evidence-lede">
+            <span class="example-evidence-label">PROJECT EVIDENCE</span>
+            <span class="example-evidence-sub">Every data point<br>accounted for</span>
+          </div>
+          <div class="example-evidence-tabs" id="exEvidenceTabs"><!-- injected --></div>
+          <span class="example-evidence-note">Filtered by<br>active sector</span>
+        </div>
         <p class="example-evidence-body" id="exEvidenceBody"></p>
+        <div class="example-evidence-tiles" aria-hidden="true">
+          <span class="example-tile"></span>
+          <span class="example-tile"></span>
+          <span class="example-tile"></span>
+        </div>
       </div>
 
-      <!-- Conversion: route into the same lead form as the contact panel -->
-      <div class="example-cta-row">
-        <button class="example-cta" id="exEnter" type="button">Enter the twin</button>
-        <button class="example-cta example-cta-primary" id="exContact" type="button">Talk to DTS about this</button>
-      </div>
+      <!-- Photos and Video (design clip3/clip5: placeholder media mosaic) -->
+      <section class="example-media" aria-label="Photos and video">
+        <h3 class="example-section-title">Photos and Video</h3>
+        <div class="example-media-grid" aria-hidden="true">
+          <span class="example-tile example-tile-tall"></span>
+          <span class="example-tile"></span>
+          <span class="example-tile"></span>
+          <span class="example-tile example-tile-tall"></span>
+        </div>
+      </section>
+
+      <!-- More from {Sector} (design clip6): the sector's other sub-verticals -->
+      <section class="example-more" aria-label="More from this sector">
+        <h3 class="example-section-title" id="exMoreTitle">More from Education</h3>
+        <div class="example-more-grid" id="exMoreGrid"><!-- injected --></div>
+      </section>
     </div>
+
+    <!-- Back-to-top FAB (design: gold rounded square, bottom-right) -->
+    <button class="example-fab" id="exampleFab" type="button" aria-label="Back to top">
+      <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
   </div>
 </div>
 
@@ -435,6 +484,7 @@
         <img src="assets-logo.png" alt="" class="access-brand-logo" />
         <span class="access-brand-tag">Grounded in Human Experience.</span>
       </div>
+      <div class="access-form-col">
       <h2 class="access-welcome" id="accessTitle">Welcome Back!</h2>
       <p class="form-intro access-intro" id="accessIntro"></p>
       <form id="accessForm" novalidate>
@@ -461,6 +511,7 @@
         </p>
         <p class="form-fineprint" id="accessOfflineNote" hidden></p>
       </form>
+      </div>
     </div>
 
     <!-- (Legacy dashboard container — kept for state handling; the
@@ -484,6 +535,12 @@
       <span class="portal-burger-lines" aria-hidden="true"><i></i><i></i><i></i></span>
       <span class="portal-burger-text">MENU</span>
     </button>
+    <nav class="portal-nav" id="portalNav" aria-label="Portal sections">
+      <button class="portal-nav-link is-active" data-portal-view="home" type="button">HOME</button>
+      <button class="portal-nav-link" data-portal-view="apps" type="button">APPS</button>
+      <button class="portal-nav-link" data-portal-view="manage" type="button">Manage</button>
+      <button class="portal-nav-link" data-portal-view="support" type="button">Support</button>
+    </nav>
     <span class="portal-clientlogo" id="portalClientName">Client</span>
     <button class="portal-signout" id="portalSignout" type="button">Sign out</button>
   </header>

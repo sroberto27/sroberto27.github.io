@@ -45,13 +45,14 @@ window.DTS_CONFIG = {
     {
       id: "education",
       label: "Education",
+      navSub: "Campus",                  // desktop board pillar sublabel
       blurb: "Education develops people.",
       active: true,                      // most complete category for v0
-      accent: "#E9B44C",                 // Figma mobile board sector accent
+      accent: "#E9B44C",                 // Figma board sector accent
       kicker: "EDUCATION",
       title: "Campus & Schools",
       sub: "Digital Twin of your campus",
-      body: "Where human potential is built. DTS creates living spatial ecosystems for learning environments — from recruitment through graduation. One twin. Every stage of the student and faculty relationship with your institution.",
+      body: "Where human potential is built. DTS creates living spatial ecosystems for learning environments \u2014 from recruitment through graduation. One twin. Every stage of the student and faculty relationship with your institution.",
       cards: [
         { id: "campus",     title: "Campus & Schools",     text: "Spatial navigation, orientation, LMS gateway, K-12 through university." },
         { id: "workforce",  title: "Workforce & Trade",    text: "Skills labs, certification, DOL-funded programs, economic mobility." },
@@ -62,52 +63,55 @@ window.DTS_CONFIG = {
     {
       id: "industry",
       label: "Industry",
+      navSub: "Company",
       blurb: "Industry creates economic value.",
       active: false,
       accent: "#2E8BFF",
       kicker: "INDUSTRY",
-      title: "Operations & Trade",
-      sub: "Digital Twin of your operation",
-      body: "Where capability creates value. DTS builds twins of the environments where educated people produce economic value — energy, manufacturing, automotive, hospitality, and creative production.",
+      title: "Commercial & Industrial",
+      sub: "Digital Twin of your company",
+      body: "Where capability creates economic value. Manufacturing holds 30%+ of the digital twin market. Automotive holds 22%+. Healthcare is the fastest-growing segment. DTS has active or adjacent work across all four commercial verticals.",
       cards: [
-        { id: "energy",       title: "Energy & Utilities",      text: "Compliance documentation, FEMA obligations, infrastructure twins." },
-        { id: "manufacturing",title: "Manufacturing & Ops",     text: "Industrial forensics and production environment capture." },
-        { id: "automotive",   title: "Automotive & Retail",     text: "Showroom and vehicle twins that serve the sales process directly." },
-        { id: "hospitality",  title: "Hospitality & Tourism",   text: "Destination marketing and the Virgin Hotels model." }
+        { id: "energy",     title: "Energy & Manufacturing",       text: "Oil/gas, solar, utilities, industrial ops, FEMA PA documentation." },
+        { id: "automotive", title: "Automotive & Transportation",  short: "Automotive", text: "Showrooms, vehicle twins, EV facilities, franchise audits." },
+        { id: "healthfac",  title: "Healthcare Facilities",        text: "Hospital systems, clinical environments, pharmaceutical facilities." },
+        { id: "properties", title: "Properties & Places",          text: "Commercial, residential, hospitality, tourism, film locations." }
       ]
     },
     {
       id: "government",
       label: "Government",
+      navSub: "City",
       blurb: "Government provides structure and oversight.",
       active: false,
       accent: "#34598F",
       kicker: "GOVERNMENT",
-      title: "Agencies & Cities",
-      sub: "Digital Twin of public infrastructure",
-      body: "Where society is structured. Government has its own procurement, budget authority, and compliance timelines. DTS twins serve federal, state, municipal, and emergency-management buyers on their terms.",
+      title: "Public & Civic",
+      sub: "Digital Twin of your city",
+      body: "Where collective output becomes public infrastructure. Government has a fundamentally different procurement process, budget authority, and decision timeline. DTS is SAM.gov qualified. Organized by function \u2014 not agency level.",
       cards: [
-        { id: "federal",   title: "Federal & State Agencies", text: "SAM.gov-registered, RFP-driven engagements." },
-        { id: "emergency", title: "Emergency Management",     text: "GOHSEP relationships and FEMA PA documentation." },
-        { id: "municipal", title: "Municipal & Smart Cities", text: "The fastest-growing government digital-twin segment." },
-        { id: "foodsafety",title: "Food Safety & Regulatory", text: "Inspection-authority procurement, regulatory not operational." }
+        { id: "municipal",  title: "Infrastructure & Cities",   text: "Municipal twins, transportation, utility grids, urban planning." },
+        { id: "emergency",  title: "Safety & Emergency",        text: "GOHSEP, FEMA PA documentation, disaster response twins." },
+        { id: "foodsafety", title: "Regulatory & Compliance",   text: "Food safety, environmental compliance, inspection training." },
+        { id: "civic",      title: "Civic Services",            text: "Libraries, transit, parks, civic engagement, accessibility." }
       ]
     },
     {
       id: "community",
       label: "Community",
+      navSub: "Community",
       blurb: "Community represents the lived outcomes of those systems.",
       active: false,
       accent: "#D27049",
       kicker: "COMMUNITY",
-      title: "Civic & Cultural",
-      sub: "Digital Twin of shared places",
-      body: "Where it all comes together. Community is the proof that education, industry, and government have done their work — economic development, nonprofits, sustainability, and heritage preservation.",
+      title: "Civic & Social",
+      sub: "Digital Twin of your community",
+      body: "Where all systems converge into human flourishing. The community twin accumulates \u2014 each project adds to a growing spatial record, building by building, until the community itself is spatially documented and interconnected.",
       cards: [
-        { id: "economic",   title: "Economic Development",   text: "Downtown showcases and commercial corridor documentation." },
-        { id: "nonprofit",  title: "Nonprofits & NGOs",      text: "Community impact narratives alongside commercial work." },
-        { id: "sustain",    title: "Sustainability & Civic", text: "ESG documentation and green infrastructure." },
-        { id: "heritage",   title: "Cultural & Heritage",    text: "Historic tax credit and Section 106 compliance capture." }
+        { id: "economic",   title: "Economic Development",         text: "Downtown BIDs, chambers, EDCs, commercial corridors." },
+        { id: "nonprofit",  title: "Nonprofit & Social Impact",    text: "NGOs, foundations, DIG, faith communities, social services." },
+        { id: "sustain",    title: "Sustainability & Environment", short: "Sustainability", text: "Green infrastructure, ESG twins, environmental monitoring." },
+        { id: "heritage",   title: "Cultural & Heritage",          text: "Historic preservation, Section 106, museums, heritage tourism." }
       ]
     }
   ],
@@ -326,8 +330,8 @@ window.DTS_CONFIG = {
     /* ---------------- INDUSTRY ---------------- */
     energy: {
       sector: "industry",
-      title: "Energy & Utilities",
-      tagline: "Compliance documentation, FEMA obligations, infrastructure twins.",
+      title: "Energy & Manufacturing",
+      tagline: "Oil/gas, solar, utilities, industrial ops, FEMA PA documentation.",
       overview: "The compliance-mandated market — oil/gas, solar, and utility infrastructure buyers driven by regulatory pressure, insurance requirements, and FEMA documentation obligations. The fastest path to a closed contract.",
       project: {
         name: "Solar Farm Sample",
@@ -344,30 +348,30 @@ window.DTS_CONFIG = {
         "Project Data": "Captured with Matterport Pro2 · Platform: Treedis."
       }
     },
-    manufacturing: {
+    healthfac: {
       sector: "industry",
-      title: "Manufacturing & Operations",
-      tagline: "Industrial forensics and production-environment capture.",
-      overview: "Twins of production floors and industrial environments for forensic documentation, process review, and operations training — capturing the state of a facility precisely as it was at a moment in time.",
+      title: "Healthcare Facilities",
+      tagline: "Hospital systems, clinical environments, pharmaceutical facilities.",
+      overview: "The fastest-growing commercial digital-twin segment: hospital systems, clinical environments, and pharmaceutical facilities documented spatially for planning, compliance, and operations.",
       project: {
-        name: "Production-Floor Forensic Capture",
+        name: "Hospital-System Facility Twin",
         kind: "Illustrative example",
         illustrative: true,
-        blurb: "A manufacturing-floor twin used to document equipment placement and process flow for a pre-loss insurance assessment and operations review — the industrial-forensic work that anchors this sub-vertical."
+        blurb: "A twin of a clinical facility used by the operations team for space planning, compliance documentation, and remote facility review \u2014 representative of DTS's healthcare-facilities work."
       },
       sweepId: null,
       evidence: {
-        "Case Studies": "Forensic capture preserves the exact state of a production line for later review.",
+        "Case Studies": "Facility twin used for clinical space planning and compliance review.",
         "Awards": "\u2014",
-        "Client Feedback": "\u201cThe record is the floor, exactly as it was.\u201d",
-        "Press & Research": "Industrial twins shorten incident investigation and insurance cycles.",
-        "Project Data": "Millimetre-accurate spatial record of the production environment."
+        "Client Feedback": "\u201cWe review the facility without walking it.\u201d",
+        "Press & Research": "Healthcare is the fastest-growing digital-twin segment.",
+        "Project Data": "Clinical environments documented to compliance standards."
       }
     },
     automotive: {
       sector: "industry",
-      title: "Automotive & Retail",
-      tagline: "Showroom and vehicle twins that serve the sales process directly.",
+      title: "Automotive & Transportation",
+      tagline: "Showrooms, vehicle twins, EV facilities, franchise audits.",
       overview: "Showroom and vehicle twins that plug straight into the sales process — letting buyers explore inventory and configurations spatially, anchored by the BMW Lafayette proof point.",
       project: {
         name: "BMW Lafayette — Showroom Twin",
@@ -384,10 +388,10 @@ window.DTS_CONFIG = {
         "Project Data": "Showroom + vehicle-level capture tied to the sales funnel."
       }
     },
-    hospitality: {
+    properties: {
       sector: "industry",
-      title: "Hospitality & Tourism",
-      tagline: "Destination marketing and the Virgin Hotels model.",
+      title: "Properties & Places",
+      tagline: "Commercial, residential, hospitality, tourism, film locations.",
       overview: "Twins for hotels, venues, and destination-marketing organizations — letting guests and event planners experience a property before booking. Modeled on the Virgin Hotels approach.",
       project: {
         name: "Virgin Hotels — Property Twin",
@@ -406,30 +410,30 @@ window.DTS_CONFIG = {
     },
 
     /* ---------------- GOVERNMENT ---------------- */
-    federal: {
+    civic: {
       sector: "government",
-      title: "Federal & State Agencies",
-      tagline: "SAM.gov-registered, RFP-driven engagements.",
-      overview: "The RFP-driven public-sector market — work won through SAM.gov registration and formal procurement. Government has its own budget authority and compliance timelines, which is why it is its own category.",
+      title: "Civic Services",
+      tagline: "Libraries, transit, parks, civic engagement, accessibility.",
+      overview: "Public-facing civic spaces \u2014 libraries, transit, and parks \u2014 twinned so residents can navigate, plan visits, and engage with public services accessibly from anywhere.",
       project: {
-        name: "LDH / OTS / ConnectLA",
-        kind: "Agency relationships",
-        illustrative: false,
-        blurb: "RFP-driven engagements with state agencies (LDH, OTS, ConnectLA) where the twin serves documentation, public-records, and program-delivery requirements under formal government procurement."
+        name: "Public Library & Transit Twin",
+        kind: "Illustrative example",
+        illustrative: true,
+        blurb: "A twin of a civic facility that lets residents preview accessibility routes, meeting spaces, and services online \u2014 representative of DTS's civic-services work for public institutions."
       },
       sweepId: null,
       evidence: {
-        "Case Studies": "Agency engagement delivered under formal RFP and SAM.gov procurement.",
+        "Case Studies": "Civic facility twin used for public wayfinding and accessibility preview.",
         "Awards": "\u2014",
-        "Client Feedback": "\u201cIt fits how we actually buy.\u201d",
-        "Press & Research": "Government procurement differs fundamentally from commercial buying.",
-        "Project Data": "Delivered to federal/state documentation and compliance standards."
+        "Client Feedback": "\u201cResidents arrive already knowing the building.\u201d",
+        "Press & Research": "Civic engagement improves when public space is visible online.",
+        "Project Data": "Accessibility routes and public services spatially documented."
       }
     },
     emergency: {
       sector: "government",
-      title: "Emergency Management",
-      tagline: "GOHSEP relationships and FEMA PA documentation.",
+      title: "Safety & Emergency",
+      tagline: "GOHSEP, FEMA PA documentation, disaster response twins.",
       overview: "Time-sensitive, compliance-driven work: GOHSEP relationships and FEMA Public Assistance documentation, accessible through a specific intermediary on a short timeline. A twin is the authoritative record of conditions before and after an event.",
       project: {
         name: "GOHSEP / FEMA PA Documentation",
@@ -448,8 +452,8 @@ window.DTS_CONFIG = {
     },
     municipal: {
       sector: "government",
-      title: "Municipal & Smart Cities",
-      tagline: "The fastest-growing government digital-twin segment globally.",
+      title: "Infrastructure & Cities",
+      tagline: "Municipal twins, transportation, utility grids, urban planning.",
       overview: "City-scale twins — the fastest-growing government segment worldwide — anchored by the New Orleans convention-center work with Miles Partnership. Infrastructure, venues, and public spaces as a living municipal record.",
       project: {
         name: "New Orleans Convention Center",
@@ -468,8 +472,8 @@ window.DTS_CONFIG = {
     },
     foodsafety: {
       sector: "government",
-      title: "Food Safety & Regulatory",
-      tagline: "Inspection-authority procurement — regulatory, not operational.",
+      title: "Regulatory & Compliance",
+      tagline: "Food safety, environmental compliance, inspection training.",
       overview: "Sits in Government because the AFDO buyer is a federal inspection authority, not a commercial food company. The procurement is regulatory: twins support inspection, training, and standards enforcement.",
       project: {
         name: "AFDO — Inspection & Standards",
@@ -491,7 +495,7 @@ window.DTS_CONFIG = {
     economic: {
       sector: "community",
       title: "Economic Development",
-      tagline: "Downtown showcases and commercial-corridor documentation.",
+      tagline: "Downtown BIDs, chambers, EDCs, commercial corridors.",
       overview: "Twins that showcase a downtown or commercial corridor to attract investment and tenants — proof that a place is worth building in. Anchored by New Orleans business-district documentation.",
       project: {
         name: "New Orleans Business District",
@@ -510,8 +514,8 @@ window.DTS_CONFIG = {
     },
     nonprofit: {
       sector: "community",
-      title: "Nonprofits & NGOs",
-      tagline: "Community-impact narratives alongside commercial work.",
+      title: "Nonprofit & Social Impact",
+      tagline: "NGOs, foundations, DIG, faith communities, social services.",
       overview: "Mission-driven twins that give an organization a credible, sharable impact narrative — anchored by the Do It Greener Foundation, which pairs DTS's commercial work with genuine community impact.",
       project: {
         name: "Do It Greener Foundation",
@@ -530,8 +534,8 @@ window.DTS_CONFIG = {
     },
     sustain: {
       sector: "community",
-      title: "Sustainability & Civic",
-      tagline: "ESG documentation and green-infrastructure capture.",
+      title: "Sustainability & Environment",
+      tagline: "Green infrastructure, ESG twins, environmental monitoring.",
       overview: "Twins that document green infrastructure and civic-sustainability projects for ESG reporting — a growing market where the spatial record is the evidence of environmental commitments delivered.",
       project: {
         name: "Green-Infrastructure ESG Record",
@@ -550,8 +554,8 @@ window.DTS_CONFIG = {
     },
     heritage: {
       sector: "community",
-      title: "Cultural & Heritage Preservation",
-      tagline: "Historic tax-credit and Section 106 compliance capture.",
+      title: "Cultural & Heritage",
+      tagline: "Historic preservation, Section 106, museums, heritage tourism.",
       overview: "Documentation-driven, compliance-mandated work that is underserved by existing digital-twin vendors: historic tax-credit and Section 106 review capture that preserves cultural and heritage sites precisely.",
       project: {
         name: "Historic Tax-Credit / Section 106 Capture",
