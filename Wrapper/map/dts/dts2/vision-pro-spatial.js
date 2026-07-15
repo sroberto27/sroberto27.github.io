@@ -1,138 +1,67 @@
 /* ============================================================
-   DTS — Apple Vision Pro immersive website environment
+   DTS — visionOS 26.5 website-environment helper
    ------------------------------------------------------------
-   Uses Safari's Immersive API with the hidden HTML <model> in
-   index.html. The USDZ contains both the animated DTScube and the
-   inverse movement of the Backrooms environment.
+   IMPORTANT:
+   visionOS 26.5 uses the developer-preview <link
+   rel="spatial-backdrop"> API declared in index.html.
+
+   Safari, not webpage JavaScript, opens that environment. The
+   visitor must use Safari's Page Menu and choose
+   "Open Website Environment". This script makes the webpage
+   button explain those steps; it does not pretend to launch the
+   environment directly.
    ============================================================ */
 (function () {
   "use strict";
 
-  function initializeSpatialEnvironment() {
+  function initializeVisionOS26Guide() {
     const button = document.getElementById("visionSpatialTry");
     const label = button && button.querySelector(".vision-spatial-label");
     const status = document.getElementById("visionSpatialStatus");
-    const model = document.getElementById("dtsSpatialEnvironment");
 
-    if (!button || !label || !status || !model) return;
+    if (!button || !label || !status) return;
 
-    const defaultLabel = "Enter the Spatial Web on Vision Pro";
-    const restartLabel = "Restart the Spatial Journey";
-    const exitLabel = "Exit the Spatial Environment";
+    const defaultLabel = "Try the Spatial Website on Vision Pro";
+    const closeLabel = "Hide Vision Pro Instructions";
+    let instructionsVisible = false;
 
-    function isSupported() {
-      return document.immersiveEnabled === true &&
-        typeof model.requestImmersive === "function";
+    function showInstructions() {
+      instructionsVisible = true;
+      button.classList.add("is-active");
+      button.setAttribute("aria-expanded", "true");
+      label.textContent = closeLabel;
+
+      status.innerHTML =
+        "<strong>On visionOS 26.5:</strong><br>" +
+        "1. Enable <strong>Website Environments</strong> in " +
+        "Settings → Apps → Safari → Advanced → Feature Flags.<br>" +
+        "2. Return to this page in Safari and reload it.<br>" +
+        "3. Tap Safari’s <strong>Page Menu</strong> beside the address bar.<br>" +
+        "4. Choose <strong>Open Website Environment</strong>.<br>" +
+        "5. Use the Digital Crown to increase or reduce immersion.";
     }
 
-    function isActive() {
-      return document.immersiveElement === model;
+    function hideInstructions() {
+      instructionsVisible = false;
+      button.classList.remove("is-active");
+      button.setAttribute("aria-expanded", "false");
+      label.textContent = defaultLabel;
+      status.textContent = "";
     }
 
-    function setBusy(busy, message) {
-      button.disabled = busy;
-      button.classList.toggle("is-loading", busy);
-      if (message !== undefined) status.textContent = message;
-    }
+    button.setAttribute("aria-expanded", "false");
+    button.title =
+      "visionOS 26.5 opens website environments from Safari’s Page Menu";
 
-    async function restartAnimation() {
-      try {
-        await model.ready;
-        if (typeof model.pause === "function") model.pause();
-        model.currentTime = 0;
-        model.playbackRate = 1;
-        if (typeof model.play === "function") model.play();
-        status.textContent = "The spatial journey is playing.";
-      } catch (error) {
-        console.error("[DTS spatial] Model playback failed:", error);
-        status.textContent = "The environment opened, but its animation could not start.";
-      }
-    }
-
-    async function enterImmersive() {
-      if (!isSupported()) {
-        status.textContent =
-          "This experience requires Safari on Apple Vision Pro with immersive website environments enabled.";
-        return;
-      }
-
-      setBusy(true, "Loading the spatial environment…");
-
-      try {
-        await model.requestImmersive();
-        await restartAnimation();
-      } catch (error) {
-        console.error("[DTS spatial] Immersive request failed:", error);
-        status.textContent =
-          "The spatial environment could not open. Confirm the USDZ path, hosting, and Vision Pro Safari version.";
-      } finally {
-        setBusy(false);
-        updateInterface();
-      }
-    }
-
-    async function exitImmersive() {
-      if (typeof document.exitImmersive !== "function") {
-        status.textContent = "Use the Digital Crown to leave the spatial environment.";
-        return;
-      }
-
-      setBusy(true, "Closing the spatial environment…");
-      try {
-        await document.exitImmersive();
-      } catch (error) {
-        console.error("[DTS spatial] Exit failed:", error);
-        status.textContent = "Use the Digital Crown to leave the spatial environment.";
-      } finally {
-        setBusy(false);
-        updateInterface();
-      }
-    }
-
-    function updateInterface() {
-      const active = isActive();
-      document.body.classList.toggle("spatial-environment-active", active);
-      button.classList.toggle("is-active", active);
-      button.setAttribute("aria-pressed", String(active));
-      label.textContent = active ? exitLabel : defaultLabel;
-
-      if (!active && status.textContent === "The spatial journey is playing.") {
-        status.textContent = "";
-      }
-    }
-
-    button.addEventListener("click", async function () {
-      if (isActive()) {
-        await exitImmersive();
-      } else {
-        await enterImmersive();
-      }
+    button.addEventListener("click", function () {
+      if (instructionsVisible) hideInstructions();
+      else showInstructions();
     });
-
-    model.addEventListener("immersivechange", function () {
-      if (!isActive() && typeof model.pause === "function") model.pause();
-      updateInterface();
-    });
-
-    model.addEventListener("immersiveerror", function (event) {
-      console.error("[DTS spatial] Immersive error:", event);
-      status.textContent = "The spatial environment stopped because of an error.";
-      updateInterface();
-    });
-
-    // Keep the CTA visible on every browser. Unsupported visitors get
-    // a clear compatibility message instead of a button that disappears.
-    if (!isSupported()) {
-      button.classList.add("is-unsupported");
-      button.title = "Requires Safari on Apple Vision Pro";
-    }
-
-    updateInterface();
   }
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", initializeSpatialEnvironment);
+    document.addEventListener("DOMContentLoaded", initializeVisionOS26Guide);
   } else {
-    initializeSpatialEnvironment();
+    initializeVisionOS26Guide();
   }
 })();
