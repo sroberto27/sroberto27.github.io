@@ -231,23 +231,53 @@ body{
 }
 /* Diagonal run, bottom-left → top-right (Figma):
    droplets → wave → white → white.
-   Sizing: clamp(min, preferred-vw, max) — the vw value makes each hex
-   scale with the viewport; min/max stop it getting too small or silly.
-   Centres are ~7.5% apart horizontally and ~9.5% vertically, so at the
-   preferred size the hexes nearly touch, like the Figma cluster. */
-.hex-1{ width:clamp(88px, 9.4vw, 182px); top:57.5%; left:66.5%; transform:translate(-50%,-50%); }
-.hex-2{ width:clamp(92px, 9.8vw, 190px); top:47%;   left:74.8%; transform:translate(-50%,-50%); }
-.hex-3{ width:clamp(96px,10.2vw, 198px); top:36.5%; left:83.1%; transform:translate(-50%,-50%); }
-.hex-4{ width:clamp(102px,10.8vw,208px); top:26%;   left:91.4%; transform:translate(-50%,-50%); }
-/* Faint dark satellite hexes for depth (very low contrast). */
+
+   SELF-ALIGNING GEOMETRY:
+   Every hex is placed relative to ONE anchor point (--hex-ax/--hex-ay)
+   using offsets measured in a single shared unit (--hexu, the base hex
+   width). Because size AND spacing come from the same unit, the hexes
+   keep exactly the same tight, touching arrangement at every viewport
+   width — no more drifting apart on large screens.
+
+   For flat-top hexes of width u (height .88u), edge-touching diagonal
+   neighbours sit 0.75u apart horizontally and 0.44u vertically; we use
+   0.78u / 0.46u for a hairline breathing gap, exactly like the Figma. */
+.hex-cluster{
+  --hexu: clamp(120px, 11vw, 320px);  /* base hex width — bigger + capped */
+  --hex-ax: 78%;                      /* anchor: midpoint of the diagonal */
+  --hex-ay: 41%;
+}
+.hex-1{ width:calc(var(--hexu)*.92); left:calc(var(--hex-ax) - 1.17*var(--hexu)); top:calc(var(--hex-ay) + .69*var(--hexu)); transform:translate(-50%,-50%); }
+.hex-2{ width:calc(var(--hexu)*.96); left:calc(var(--hex-ax) - .39*var(--hexu));  top:calc(var(--hex-ay) + .23*var(--hexu)); transform:translate(-50%,-50%); }
+.hex-3{ width:var(--hexu);           left:calc(var(--hex-ax) + .39*var(--hexu));  top:calc(var(--hex-ay) - .23*var(--hexu)); transform:translate(-50%,-50%); }
+.hex-4{ width:calc(var(--hexu)*1.06);left:calc(var(--hex-ax) + 1.17*var(--hexu)); top:calc(var(--hex-ay) - .69*var(--hexu)); transform:translate(-50%,-50%); }
+/* Faint dark satellite hexes for depth (very low contrast) — anchored
+   to the same point so they travel with the run. */
 .hex-ghost{
   background:linear-gradient(150deg, rgba(48,66,98,.5), rgba(16,24,42,.5));
   opacity:.5;
+  /* Continuous ambient pulse. The keyframes restate the centring
+     translate(-50%,-50%) so animating scale never knocks the ghosts
+     off their anchored positions. Durations/delays are staggered per
+     ghost so the cluster breathes organically instead of in lockstep. */
+  animation:hexGhostPulse 4.2s ease-in-out infinite;
+  will-change:transform,opacity;
 }
-.hex-g1{ width:clamp(46px,5vw,92px);   top:40%;   left:66.5%; transform:translate(-50%,-50%); }
-.hex-g2{ width:clamp(40px,4.4vw,80px); top:56.5%; left:81%;   transform:translate(-50%,-50%); }
-.hex-g3{ width:clamp(52px,5.6vw,102px);top:69%;   left:70%;   transform:translate(-50%,-50%); }
-.hex-g4{ width:clamp(36px,4vw,72px);   top:17%;   left:96.5%; transform:translate(-50%,-50%); }
+.hex-g1{ animation-duration:3.8s; animation-delay:0s;    }
+.hex-g2{ animation-duration:4.6s; animation-delay:-1.2s; }
+.hex-g3{ animation-duration:4.1s; animation-delay:-2.3s; }
+.hex-g4{ animation-duration:5.0s; animation-delay:-3.1s; }
+@keyframes hexGhostPulse{
+  0%,100%{ transform:translate(-50%,-50%) scale(1);    opacity:.32; }
+  50%    { transform:translate(-50%,-50%) scale(1.14); opacity:.62; }
+}
+@media (prefers-reduced-motion:reduce){
+  .hex-ghost{ animation:none; opacity:.5; }
+}
+.hex-g1{ width:calc(var(--hexu)*.44); left:calc(var(--hex-ax) - 1.05*var(--hexu)); top:calc(var(--hex-ay) - .30*var(--hexu)); transform:translate(-50%,-50%); }
+.hex-g2{ width:calc(var(--hexu)*.40); left:calc(var(--hex-ax) + .30*var(--hexu));  top:calc(var(--hex-ay) + .80*var(--hexu)); transform:translate(-50%,-50%); }
+.hex-g3{ width:calc(var(--hexu)*.50); left:calc(var(--hex-ax) - .60*var(--hexu));  top:calc(var(--hex-ay) + 1.25*var(--hexu)); transform:translate(-50%,-50%); }
+.hex-g4{ width:calc(var(--hexu)*.38); left:calc(var(--hex-ax) + 1.75*var(--hexu)); top:calc(var(--hex-ay) - 1.05*var(--hexu)); transform:translate(-50%,-50%); }
 
 /* ---------- Primary CTA (standalone — no longer docked to a hexagon) ----------
    Figma: a transparent pill with a gold outline, sitting on the blue
@@ -402,6 +432,7 @@ body.twin-active .cookie{ opacity:0; pointer-events:none; transition:opacity .4s
   border-top:1px solid var(--line-soft);
   margin-top:clamp(14px,2vh,22px); padding-top:clamp(10px,1.4vh,16px);
 }
+.evidence-item{ display:inline-flex; align-items:baseline; gap:5px; white-space:nowrap; }
 .evidence-dot{ color:var(--gold); margin-right:4px; font-size:8px; vertical-align:middle; }
 
 /* ---------- CATEGORY ---------- */
@@ -1024,8 +1055,11 @@ body.twin-active .cookie{ opacity:0; pointer-events:none; transition:opacity .4s
     grid-template-rows:auto 1fr;
     align-content:start;
   }
-  /* Simplify the decorative cluster before the hero text shrinks. */
+  /* Simplify the decorative cluster before the hero text shrinks.
+     Alignment is preserved automatically (same unit-based anchor);
+     we only pull the unit down so the run clears the copy column. */
   .hex-ghost{ display:none; }
+  .hex-cluster{ --hexu: clamp(96px, 13vw, 170px); --hex-ax:76%; --hex-ay:38%; }
   .twin-cta-wrap{ top:72%; }
   .twin-cta-fx{ width:clamp(150px,20vw,220px); }
   .twin-hero-card{ width:min(60%, 440px); }
@@ -1220,6 +1254,9 @@ body.twin-active .cookie{ opacity:0; pointer-events:none; transition:opacity .4s
 /* ----- Very large screens: cap so type doesn't get silly ----- */
 @media (min-width:1900px){
   .app{ inset:clamp(14px,1.2vw,28px); }
+  /* Ultra-wide monitors: lift the cap so the cluster keeps roughly the
+     same visual weight (~10vw) instead of shrinking relative to the page. */
+  .hex-cluster{ --hexu: clamp(240px, 10.5vw, 420px); }
 }
 
 /* ============================================================
@@ -1583,25 +1620,44 @@ body.portal-open{ overflow:hidden; }
     overflow:visible;
   }
   .hex-cluster .hex{ position:absolute; }
-  /* clip9 arrangement: droplet + wave lower-left, two white hexes
-     upper-right, ghost satellites for depth. All tops are positive so
-     the cluster never rides up into the copy above it. */
-  .hex{ width:88px; height:100px; }
-  .hex-1{ left:10%;  top:56%;  width:84px; height:96px; }   /* droplets */
-  .hex-2{ left:29%;  top:38%;  width:82px; height:94px; }   /* data wave */
-  .hex-3{ left:48%;  top:20%;  width:86px; height:98px; }   /* white */
-  .hex-4{ left:65%;  top:2%;   width:90px; height:102px; }  /* white */
-  .hex-g1{ left:32%; top:6%;   width:56px; height:64px; }
-  .hex-g2{ left:4%;  top:30%;  width:52px; height:60px; }
-  .hex-g3{ left:54%; top:64%;  width:52px; height:60px; }
-  .hex-g4{ left:86%; top:40%;  width:56px; height:64px; }
+  /* MobileFigmaView arrangement: a tight touching diagonal —
+     droplets (lower-left) → data-wave → white → white (upper-right) —
+     centred in the band between the copy and the CTA. Same unit-based
+     anchor geometry as desktop, so it never mis-aligns; heights come
+     from the base aspect-ratio (no hard-coded px heights). */
+  .hex-cluster{
+    --hexu: clamp(92px, 26vw, 124px);
+    --hex-ax: 50%;
+    --hex-ay: 50%;
+    min-height: calc(2.35 * var(--hexu));
+  }
+  .hex{ width:var(--hexu); height:auto; }
+  .hex-1{ width:calc(var(--hexu)*.92); left:calc(50% - 1.17*var(--hexu)); top:calc(50% + .69*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-2{ width:calc(var(--hexu)*.96); left:calc(50% - .39*var(--hexu));  top:calc(50% + .23*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-3{ width:var(--hexu);           left:calc(50% + .39*var(--hexu));  top:calc(50% - .23*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-4{ width:calc(var(--hexu)*1.06);left:calc(50% + 1.17*var(--hexu)); top:calc(50% - .69*var(--hexu)); transform:translate(-50%,-50%); }
+  /* Small dark satellites around the run (present in the mobile Figma). */
+  .hex-ghost{ display:block; }
+  .hex-g1{ width:calc(var(--hexu)*.42); left:calc(50% - .70*var(--hexu)); top:calc(50% - .55*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-g2{ width:calc(var(--hexu)*.38); left:calc(50% - 1.55*var(--hexu)); top:calc(50% + .05*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-g3{ width:calc(var(--hexu)*.40); left:calc(50% + .55*var(--hexu));  top:calc(50% + .75*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-g4{ width:calc(var(--hexu)*.40); left:calc(50% + 1.60*var(--hexu)); top:calc(50% + .10*var(--hexu)); transform:translate(-50%,-50%); }
   .evidence-bar{
     display:grid; grid-template-columns:1fr 1fr;
-    gap:8px 14px; align-items:start;
+    gap:10px 16px; align-items:start;
     position:static; margin-top:10px; padding:0 2px;
+    border-top:0;
     font-size:11px; line-height:1.35; color:var(--ink);
   }
-  .evidence-bar .evidence-dot{ color:var(--gold); margin-right:4px; }
+  /* Each bullet is one grid cell: gold dot hanging left, label wraps
+     under itself (MobileFigmaView). Reordered to match the Figma rows:
+     Maslow | NAICS  /  Bronfenbrenner | Human Capital. */
+  .evidence-item{ display:flex; gap:6px; align-items:flex-start; white-space:normal; }
+  .evidence-item:nth-child(1){ order:1; }  /* Maslow */
+  .evidence-item:nth-child(4){ order:2; }  /* NAICS */
+  .evidence-item:nth-child(3){ order:3; }  /* Bronfenbrenner */
+  .evidence-item:nth-child(2){ order:4; }  /* Human Capital */
+  .evidence-bar .evidence-dot{ color:var(--gold); margin-right:0; flex:0 0 auto; line-height:1.35; }
   .twin-cta-wrap{ margin-top:6px; }
 
   /* ----- Question bar (all frames): light pill, dark icon + label,
@@ -1652,25 +1708,47 @@ body.portal-open{ overflow:hidden; }
   }
   .uc-card{ border-radius:8px; background:rgba(7,14,24,.44); }
 
-  /* Right-edge Contact & Info tab (clip17) replaces the bottom bar. */
+  /* Right-edge Contact & Info tab (clip17) replaces the bottom bar.
+     Figma spec: taller rounded tab aligned with the intro copy, muted
+     TRANSLUCENT sector tint, WHITE horizontal stacked label
+     ("Contact & Info" + "Click here"), no arrow glyph, flush with the
+     right edge of the screen.
+
+     Flush-edge trick: .view has 14px side padding and .cat-slider is
+     overflow:hidden, so a simple negative offset on the tab would be
+     clipped. Instead the slider itself bleeds 14px to the right
+     (margin-right:-14px), the cards panel takes that 14px back as
+     padding so the grid/copy don't shift, and the tab is pulled to the
+     panel's true border edge = the viewport edge. */
+  .cat-slider{ margin-right:-14px; }
+  .cat-panel-cards{ padding-right:14px; }
+
   .contact-bar{ display:none; }
   .contact-edge{
     display:flex; flex-direction:column; align-items:center; justify-content:center;
-    gap:8px;
-    position:absolute; right:0; top:34%;
-    width:44px; padding:16px 4px;
-    background:var(--sector, var(--sector-accent));
-    color:#141414;
-    border:0; border-radius:14px 0 0 14px;
-    font-size:11px; font-weight:800; line-height:1.2; text-align:center;
-    box-shadow:-8px 10px 26px rgba(0,0,0,.4);
+    gap:6px;
+    position:absolute; right:-5px; top:18%;
+    width:66px; min-height:140px; padding:22px 8px;
+    /* Translucent sector tint (Figma), not a solid fill. */
+    background:color-mix(in srgb, var(--sector, var(--sector-accent)) 27%, transparent);
+    color:#fff;
+    border:0; border-radius:16px 0 0 16px;
+    font-size:10px; font-weight:700; line-height:1.35; text-align:center;
+    box-shadow:-8px 10px 26px rgba(0,0,0,.28);
     z-index:5;
   }
-  /* Vertical label on phones too (stakeholder review) — compact tab. */
-  .contact-edge-text{ writing-mode:vertical-rl; transform:rotate(180deg); text-transform:uppercase; letter-spacing:.06em; }
-  .contact-edge-hint{ display:none; }
-  .contact-edge-arrow{ display:flex; }
-  .contact-edge:hover{ padding-right:4px; }
+  /* Keep the intro paragraph clear of the tab (Figma: copy wraps
+     before the tab, no overlap). Tab intrudes ~52px into the panel. */
+  .cat-panel-cards .cat-body{ padding-right:60px; }
+  /* Horizontal stacked label per Figma (was vertical). */
+  .contact-edge-text{
+    writing-mode:horizontal-tb; transform:none;
+    text-transform:none; letter-spacing:0;
+    white-space:normal; overflow-wrap:anywhere;
+  }
+  .contact-edge-hint{ display:block; font-weight:600; }
+  .contact-edge-arrow{ display:none; }
+  .contact-edge:hover{ padding-right:8px; }
 
   /* Dock tabs (clip17): one rounded rail, active pill highlighted. */
   .dock-tabs{
@@ -1822,8 +1900,9 @@ body.portal-open{ overflow:hidden; }
    stack (copy → hexes → CTA → evidence). */
 @media (max-width:760px) and (max-height:660px){
   .view-home{ overflow-y:auto; -webkit-overflow-scrolling:touch; }
-  .hex-cluster{ min-height:200px; }
-  .hex{ transform:scale(.85); transform-origin:top left; }
+  /* Shrink via the shared unit — the hexes keep their translate(-50%,-50%)
+     centring transform, so scaling must not overwrite it. */
+  .hex-cluster{ --hexu: clamp(80px, 22vw, 104px); }
 }
 
 /* ============================================================
