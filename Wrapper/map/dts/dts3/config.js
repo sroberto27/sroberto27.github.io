@@ -295,8 +295,8 @@ window.DTS_CONFIG = {
         illustrative: false,
         blurb: "A real industrial workspace laser-scanned and integrated into VR, where trainees rehearse trade skills in a dimensionally accurate copy of the floor they'll work on. Companion builds include the Metal Shark shipbuilding demo and AR equipment overviews with hands-on interaction."
       },
-      capturedWith: "Laser scan + Matterport",
-      platform: "VR / AR (Unity)",
+      capturedWith: "Laser scan + XR tools for Unity",
+      platform: "VR / AR",
       media: {
         type: "vimeo",
         label: "Laser Scanned Environment Integrated into VR — Demo",
@@ -328,7 +328,7 @@ window.DTS_CONFIG = {
         illustrative: false,
         blurb: "A biomedical training simulation in which clinical learners run a stroke-scale assessment on a virtual patient — rehearsing a time-critical diagnostic protocol with unlimited repetition and zero patient risk. Part of a healthcare-training line that includes hospital walkthrough demos and heart-hospital orientation builds."
       },
-      capturedWith: "Unity simulation",
+      capturedWith: "3D modeling & XR tools for Unity",
       platform: "PC / VR",
       media: {
         type: "vimeo",
@@ -361,8 +361,8 @@ window.DTS_CONFIG = {
         illustrative: false,
         blurb: "Workplace-learning modules built for the Louisiana Department of Health's WIC program, sitting alongside soft-skills builds (Components of Communication) and safety modules (Electrical Safety) — the reusable training layer that turns one build into every new hire's onboarding."
       },
-      capturedWith: "Unity + EON Reality",
-      platform: "PC / VR",
+      capturedWith: "3D modeling & XR tools for Unity",
+      platform: "EON Reality \u00b7 PC / VR",
       media: {
         type: "vimeo",
         label: "LDH WIC Demo",
@@ -430,7 +430,7 @@ window.DTS_CONFIG = {
         illustrative: false,
         blurb: "A healthcare facility's CAD data integrated seamlessly into Unity and rendered as an immersive flythrough — letting operations teams and stakeholders review a clinical environment spatially before and after it is built."
       },
-      capturedWith: "CAD integration",
+      capturedWith: "CAD data + 3D modeling",
       platform: "Unity",
       media: {
         type: "vimeo",
@@ -536,8 +536,8 @@ window.DTS_CONFIG = {
         illustrative: false,
         blurb: "A proof of concept developed with LSU exploring immersive technology for design and performance innovation — evidence of how quickly DTS moves (two weeks) from concept to working experience with flagship institutions. Alongside it: the State Park Experience Demo built for Miles Partnership and the Louisiana Office of Tourism, with aerial context, accessibility-first navigation, and place-based storytelling.",
       },
-      capturedWith: "Matterport + aerial capture",
-      platform: "Unity / Treedis",
+      capturedWith: "3D modeling & XR tools for Unity",
+      platform: "PC / VR",
       media: {
         type: "vimeo",
         label: "Watch the LSU POC",
@@ -572,8 +572,8 @@ window.DTS_CONFIG = {
         illustrative: false,
         blurb: "Emergency-management documentation tied to GOHSEP and FEMA Public Assistance: a spatial record captured on a short, compliance-driven timeline that stands as the authoritative account of site conditions."
       },
-      capturedWith: "Matterport Pro3",
-      platform: "Treedis",
+      capturedWith: "On-site reality capture",
+      platform: "FEMA PA documentation",
       sweepId: null,
       evidence: {
         "Case Studies": "FEMA PA documentation capture delivered inside a compliance deadline.",
@@ -594,8 +594,8 @@ window.DTS_CONFIG = {
         illustrative: false,
         blurb: "A city-scale digital-twin initiative for Lafayette, Louisiana — documenting the city's infrastructure and urban core as a navigable municipal record, extended by the Silicon Bayou technology-corridor work and city fly-over captures."
       },
-      capturedWith: "Matterport + aerial capture",
-      platform: "Treedis",
+      capturedWith: "Aerial capture + 3D modeling",
+      platform: "Unity",
       media: {
         type: "vimeo",
         label: "Lafayette Digital Twin Initiative",
@@ -627,7 +627,7 @@ window.DTS_CONFIG = {
         illustrative: false,
         blurb: "Virtual training simulations for Louisiana's retail food-safety inspectors on PC and Meta Quest, built modular so the state's investment keeps extending. Winner of the Unity \u201cBest Public Health Solution\u201d Award (I/ITSEC) and showcased at the Association of Food & Drug Officials Conference 2026."
       },
-      capturedWith: "Unity simulation",
+      capturedWith: "3D modeling & XR tools for Unity",
       platform: "PC + Meta Quest",
       media: {
         type: "vimeo",
@@ -665,7 +665,7 @@ window.DTS_CONFIG = {
         illustrative: false,
         blurb: "A parish-scale economic-development twin piloted with LSU for Iberia Parish, published live on Treedis — paired with a growing series of downtown business captures (Keller's Bakery, Rock'n'Bowl, Carpe Diem, Pop's, Borden's, Spoonbill) that document a commercial corridor one storefront at a time."
       },
-      capturedWith: "Matterport Pro3 + aerial",
+      capturedWith: "Matterport Pro3 + Insta360 Pro 2",
       platform: "Treedis",
       media: {
         type: "treedis",
@@ -702,7 +702,7 @@ window.DTS_CONFIG = {
         illustrative: false,
         blurb: "An interactive sample experience built with the Do It Greener Foundation — letting a mission-driven organization show, spatially, the places and outcomes its coastal and community work touches, so donors and partners can see exactly where support lands."
       },
-      capturedWith: "Matterport + Unity",
+      capturedWith: "3D modeling & XR tools for Unity",
       platform: "Interactive experience",
       media: {
         type: "vimeo",
@@ -732,8 +732,8 @@ window.DTS_CONFIG = {
         illustrative: false,
         blurb: "A digital twin of the University of Louisiana at Lafayette's Energy Efficiency & Sustainable Energy Center — green infrastructure and applied-sustainability research documented spatially, the evidence layer behind the institution's environmental commitments."
       },
-      capturedWith: "Matterport Pro3",
-      platform: "Treedis",
+      capturedWith: "Aerial capture + 3D modeling",
+      platform: "Video walkthrough",
       media: {
         type: "vimeo",
         label: "ULL Energy Efficiency & Sustainable Energy Center",
@@ -765,8 +765,8 @@ window.DTS_CONFIG = {
         illustrative: true,
         blurb: "Heritage-preservation capture for historic tax-credit and Section 106 compliance: a precise spatial record of a historic structure — a documentation-mandated market existing twin vendors largely overlook."
       },
-      capturedWith: "Matterport Pro3",
-      platform: "Treedis",
+      capturedWith: "Preservation-grade reality capture",
+      platform: "Spatial documentation",
       sweepId: null,
       evidence: {
         "Case Studies": "Historic-structure twin used for tax-credit and Section 106 review.",
@@ -797,7 +797,7 @@ window.DTS_CONFIG = {
       a: "Treedis is the platform DTS uses to publish and share interactive 3D spatial experiences. A space captured with Matterport is hosted on Treedis, where you can walk through it in 360\u00b0, add tags and hotspots, and embed it on the web \u2014 like the experience running on this page." },
     { match: ["matterport", "capture"],
       q: "What is a Matterport capture like?",
-      a: "A Matterport capture is a scan of a real place using a 3D camera (like the Matterport Pro2). The camera takes overlapping 360\u00b0 photos and depth data from many points in a space, which are stitched into a navigable, dimensionally-accurate digital twin you can move through online." },
+      a: "A Matterport capture is a scan of a real place using a 3D camera (like the Matterport Pro3). The camera takes overlapping 360\u00b0 photos and depth data from many points in a space, which are stitched into a navigable, dimensionally-accurate digital twin you can move through online." },
     { match: ["digital twin", "what is a digital"],
       q: "What is a Digital Twin?",
       a: "A digital twin is a precise, navigable virtual copy of a real place. DTS builds twins for the systems that shape human life \u2014 campuses, operations, public infrastructure, and community spaces \u2014 so you can explore, document, train, and make decisions about a space without being physically there." },

@@ -418,6 +418,7 @@
       const card = $("#twinHeroCard");
       card.classList.add("is-visible");
       card.setAttribute("aria-hidden", "false");
+      hideRestoreChip();               // card open ⇒ chip away
     }
 
     function hideHeroCard() {
@@ -426,11 +427,29 @@
       card.setAttribute("aria-hidden", "true");
     }
 
+    /* Minimize — collapse the glass card into the small DTS chip
+       parked bottom-left, just above Treedis' own circular buttons.
+       Clicking the chip (wired in wire()) calls showHeroCard() to
+       restore the card to its normal position. */
+    function minimizeHeroCard() {
+      hideHeroCard();
+      const chip = $("#twinCardRestore");
+      chip.classList.add("is-visible");
+      chip.setAttribute("aria-hidden", "false");
+    }
+
+    function hideRestoreChip() {
+      const chip = $("#twinCardRestore");
+      chip.classList.remove("is-visible");
+      chip.setAttribute("aria-hidden", "true");
+    }
+
     function closeExperience() {
       if (!state.twinOpen) return;
       state.twinOpen = false;
       clearTimeout(cardTimer);
       hideHeroCard();
+      hideRestoreChip();
 
       const layer = $("#twinLayer");
       layer.classList.remove("is-open");           // reverse reveal
@@ -450,6 +469,7 @@
       state.twinOpen = false;
       clearTimeout(cardTimer);
       hideHeroCard();
+      hideRestoreChip();
       const layer = $("#twinLayer");
       layer.classList.remove("is-open", "is-mounted");
       layer.setAttribute("aria-hidden", "true");
@@ -1484,6 +1504,10 @@
     // exit pill (top-left, once open) reverses it back to the hero.
     $("#twinTry").addEventListener("click", openExperience);
     $("#twinExit").addEventListener("click", closeExperience);
+
+    // Glass hero card: minimize to the small DTS chip and restore.
+    $("#twinCardMin").addEventListener("click", minimizeHeroCard);
+    $("#twinCardRestore").addEventListener("click", showHeroCard);
 
     // Example window
     $("#exampleClose").addEventListener("click", closeExample);

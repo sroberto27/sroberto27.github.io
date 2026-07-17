@@ -411,6 +411,41 @@ body{
 }
 .twin-hero-card .home-pills{ margin-bottom:clamp(10px,1.2vh,16px); }
 
+/* ---------- Card minimize control (top-right of the glass card) ---------- */
+.twin-card-min{
+  position:absolute; top:10px; right:10px; z-index:2;
+  appearance:none; cursor:pointer;
+  width:26px; height:26px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.10); color:var(--ink);
+  border:1px solid rgba(255,255,255,.22);
+  transition:background .18s, color .18s, border-color .18s;
+}
+.twin-card-min:hover{ background:var(--gold); border-color:var(--gold); color:#1a1206; }
+.twin-card-min:focus-visible{ outline:2px solid var(--gold-bright); outline-offset:2px; }
+
+/* ---------- Minimized DTS chip ----------
+   Small pill parked bottom-left of the layer, JUST ABOVE Treedis'
+   own circular controls (their bottom bar ≈40px + round buttons
+   ≈55px ⇒ anchor at ~102px). Same anchor on desktop and phone —
+   only the maximized card position differs per device. */
+.twin-card-restore{
+  position:absolute; left:clamp(12px,1.6vw,24px); bottom:102px;
+  z-index:5;
+  appearance:none; cursor:pointer;
+  display:inline-flex; align-items:center; gap:6px;
+  background:rgba(8,12,24,.78); color:var(--gold);
+  border:1px solid var(--gold); border-radius:999px;
+  padding:7px 14px;
+  font-family:var(--sans); font-size:12px; font-weight:800; letter-spacing:.08em;
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  opacity:0; pointer-events:none; transform:translateY(6px);
+  transition:opacity .3s ease, transform .3s ease, background .18s, color .18s;
+}
+.twin-card-restore.is-visible{ opacity:1; pointer-events:auto; transform:translateY(0); }
+.twin-card-restore:hover{ background:var(--gold); color:#1a1206; }
+.twin-card-restore:focus-visible{ outline:2px solid var(--gold-bright); outline-offset:2px; }
+
 /* ---------- Exit pill (top-left, clear of Treedis' own controls) ---------- */
 .twin-exit{
   position:absolute; top:clamp(12px,1.6vh,20px); left:clamp(14px,1.8vw,26px);
@@ -1693,7 +1728,11 @@ body.portal-open{ overflow:hidden; }
 
   /* ----- HOME hero (clip8/9): hexagon cluster + evidence bullets are
          part of the mobile design — show them. ----- */
-  .view-home{ position:relative; overflow:hidden; }
+  /* position:relative (needed as the hero's own anchor) pulls the view
+     out of the base absolute/inset:0 sizing, so it must be told to fill
+     the stage — otherwise it shrinks to content height and the
+     evidence strip's margin-top:auto has no free space to absorb. */
+  .view-home{ position:relative; overflow:hidden; height:100%; min-height:100%; }
   .home-grid{ grid-template-rows:auto 1fr auto; }
   .hex-cluster{
     display:block; position:relative;
@@ -1728,10 +1767,15 @@ body.portal-open{ overflow:hidden; }
   .hex-g2{ width:calc(var(--hexu)*.38); left:calc(50% - 1.65*var(--hexu)); top:calc(50% + .05*var(--hexu)); transform:translate(-50%,-50%); }
   .hex-g3{ width:calc(var(--hexu)*.40); left:calc(50% + .60*var(--hexu));  top:calc(50% + .80*var(--hexu)); transform:translate(-50%,-50%); }
   .hex-g4{ width:calc(var(--hexu)*.40); left:calc(50% + 1.72*var(--hexu)); top:calc(50% + .10*var(--hexu)); transform:translate(-50%,-50%); }
+  /* Pinned to the BOTTOM of the home view, directly above the
+     Ask-a-Question bar: the view is a flex column, so margin-top:auto
+     absorbs all free space above the strip; home-grid stops growing
+     so the gap actually lands here instead of inside the grid. */
+  .home-grid{ flex:0 1 auto; }
   .evidence-bar{
     display:grid; grid-template-columns:1fr 1fr;
     gap:10px 16px; align-items:start;
-    position:static; margin-top:10px; padding:0 2px;
+    position:static; margin-top:auto; padding:10px 2px 2px;
     border-top:0;
     font-size:11px; line-height:1.35; color:var(--ink);
   }
@@ -1919,16 +1963,21 @@ body.portal-open{ overflow:hidden; }
   .projects-title{ font-size:21px; }
   .project-card{ min-height:210px; }
 
-  /* ----- Twin experience (clip12): glass card sits top-left over
-         the live view. ----- */
+  /* ----- Twin experience: on phones the glass card docks to the
+         BOTTOM of the live view, just above Treedis' row of circular
+         buttons (bottom bar ≈40px + round buttons ≈55px ⇒ 102px).
+         Desktop keeps the original left/centred position. ----- */
   .twin-hero-card{
-    top:calc(var(--topbar-h) + 76px); bottom:auto;
-    left:14px; right:64px;
+    top:auto; bottom:102px;
+    left:12px; right:12px;
+    width:auto;
     padding:14px 16px;
     border-radius:14px;
-    transform:translateY(-8px);
+    transform:translateY(8px);
   }
   .twin-hero-card.is-visible{ transform:translateY(0); }
+  /* Minimized DTS chip: same anchor, above the two left round buttons. */
+  .twin-card-restore{ left:12px; bottom:102px; }
   .twin-hero-card .home-pills{ gap:10px; margin-bottom:8px; }
   .twin-hero-card .twin-card-headline{ font-size:22px; }
   .twin-hero-card .twin-card-body{ font-size:12px; line-height:1.5; }
