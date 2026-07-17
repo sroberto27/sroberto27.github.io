@@ -236,27 +236,6 @@
         </span>
       </button>
 
-      <!-- Mobile sector strip — shows the active sector with the next
-           one peeking from the right edge (the swipe affordance). Tap
-           the arrows or swipe to move between sectors. Hidden on desktop. -->
-      <div class="sector-strip" id="sectorStrip" aria-hidden="true">
-        <button class="sector-arrow sector-arrow-prev" id="sectorPrev" type="button" aria-label="Previous sector">
-          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <div class="sector-strip-viewport">
-          <div class="sector-strip-track" id="sectorStripTrack">
-            <!-- sector items injected by script.js -->
-          </div>
-          <!-- Figma clip17: diamond "SWIPE" affordance centred on the strip -->
-          <span class="sector-swipe" aria-hidden="true">
-            <span class="sector-swipe-diamond"></span>
-            <span class="sector-swipe-label">‹&nbsp;SWIPE&nbsp;›</span>
-          </span>
-        </div>
-        <button class="sector-arrow sector-arrow-next" id="sectorNext" type="button" aria-label="Next sector">
-          <svg viewBox="0 0 24 24" width="20" height="20"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-      </div>
 
     </section>
 
@@ -295,6 +274,26 @@
     <div class="dock-tabs" id="dockTabs" hidden>
       <button class="dock-tab is-active" data-tab="usecases" type="button">Use Cases</button>
       <!-- sub-vertical tabs injected by script.js -->
+    </div>
+
+    <!-- Mobile sector pager — ‹ SECTOR › with one dot per sector.
+         Arrows step through sectors, dots jump directly, and swiping
+         the cards area still works. Lives in the dock so the Use Cases rail sits ABOVE it (Figma order:
+         cards, Use Cases, sector pager, question bar). Hidden on desktop
+         and outside the category view. -->
+    <div class="sector-pager" id="sectorPager" hidden>
+      <button class="sector-arrow sector-arrow-prev" id="sectorPrev" type="button" aria-label="Previous sector">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="sector-pager-center">
+        <span class="sector-pager-label" id="sectorPagerLabel"></span>
+        <div class="sector-pager-dots" id="sectorPagerDots" aria-hidden="true">
+          <!-- dots injected by script.js -->
+        </div>
+      </div>
+      <button class="sector-arrow sector-arrow-next" id="sectorNext" type="button" aria-label="Next sector">
+        <svg viewBox="0 0 24 24" width="20" height="20"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </div>
   </footer>
 

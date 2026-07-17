@@ -64,6 +64,9 @@
       a.href = "#";
       a.dataset.cat = c.id;
       a.style.setProperty("--item-accent", c.accent || "#E9B44C");
+      /* data-label feeds the oversized ghost echo shown behind the
+         active item (see .nav-drawer a.is-active::before). */
+      a.dataset.label = c.kicker;
       a.innerHTML = '<span>' + c.kicker + '</span>';
       a.addEventListener("click", (e) => {
         e.preventDefault();
@@ -106,41 +109,40 @@
   }
 
   /* ============================================================
-     MOBILE: sector strip pager (current + peeking next)
+     MOBILE: sector dots pager — ‹ SECTOR › with one dot per sector.
+     Arrows step through sectors (looping), dots jump directly.
+     Sync is a class/text toggle only, so it can't fall out of step.
      ============================================================ */
-  function buildSectorStrip() {
-    const track = $("#sectorStripTrack");
-    track.innerHTML = "";
+  function buildSectorPager() {
+    const dots = $("#sectorPagerDots");
+    if (!dots) return;
+    dots.innerHTML = "";
     cfg.categories.forEach((c) => {
-      const item = document.createElement("div");
-      item.className = "sector-item";
-      item.dataset.cat = c.id;
-      item.style.setProperty("--item-accent", c.accent || "#E9B44C");
-      /* Figma clip17: accent-coloured sector name over a short white
-         sub-label (the first word of the sector title, e.g. "Campus"). */
-      const shortSub = (c.title || "").split(/[\s&]+/)[0] || c.label;
-      item.innerHTML =
-        '<span class="sector-item-label">' + c.kicker + '</span>' +
-        '<span class="sector-item-sub">' + shortSub + '</span>';
-      item.addEventListener("click", () => openCategory(c.id));
-      track.appendChild(item);
+      const d = document.createElement("button");
+      d.type = "button";
+      d.className = "sector-dot";
+      d.dataset.cat = c.id;
+      d.setAttribute("aria-label", c.kicker);
+      d.style.setProperty("--item-accent", c.accent || "#E9B44C");
+      d.addEventListener("click", () => openCategory(c.id));
+      dots.appendChild(d);
     });
-    positionSectorStrip();
+    $("#sectorPrev").addEventListener("click", () => openCategory(previousCategory().id));
+    $("#sectorNext").addEventListener("click", () => openCategory(nextCategory().id));
+    syncSectorPager();
   }
 
-  /* Shift the strip so the active sector sits flush-left and the next
-     one peeks in from the right edge. */
-  function positionSectorStrip() {
+  /* Update the centred label (text + accent) and the active dot. */
+  function syncSectorPager() {
     const idx = currentCatIndex();
-    const track = $("#sectorStripTrack");
-    if (!track) return;
-    const items = $$("#sectorStripTrack .sector-item");
-    // Shift by the real offset of the active item so the strip stays
-    // correct whatever flex-basis the breakpoint gives the panels.
-    const target = items[idx];
-    const px = target ? target.offsetLeft : 0;
-    track.style.transform = "translateX(" + (-px) + "px)";
-    items.forEach((el, i) => el.classList.toggle("is-peek", i !== idx));
+    const c = cfg.categories[idx];
+    const label = $("#sectorPagerLabel");
+    if (!label || !c) return;
+    label.textContent = c.kicker;
+    label.style.color = c.accent || "#E9B44C";
+    $$("#sectorPagerDots .sector-dot").forEach((el, i) => {
+      el.classList.toggle("is-active", i === idx);
+    });
   }
 
   /* ============================================================
@@ -208,6 +210,7 @@
     // Bottom tabs only make sense in a category view; the "Explore
     // your world below" hint only on home.
     $("#dockTabs").hidden = name !== "category";
+    $("#sectorPager").hidden = name !== "category";
     $("#dockExplore").hidden = name !== "home";
     syncNav();
     syncDrawer();
@@ -227,7 +230,7 @@
     state.contactOpen = false;
     showView("category");
     updateNextLabel();
-    positionSectorStrip();
+    syncSectorPager();
     syncDrawer();
     syncContactBar();
   }
@@ -869,6 +872,12 @@
     $("#accessError").hidden = true;
   }
 
+  /* Compare tour URLs ignoring cosmetic differences (trailing slash,
+     hash) so we only reload the iframe when the tour truly changes. */
+  function normalizeTourUrl(u) {
+    return (u || "").trim().split("#")[0].replace(/\/+$/, "");
+  }
+
   /* Open a specific twin record in the experience overlay. If the twin
      is on the same Treedis origin we reuse the live iframe and just
      navigate; otherwise we open its URL in a new tab. */
@@ -882,10 +891,18 @@
     if (sameOrigin && treedisIframe) {
       goHome();            // the twin layer lives on the home shell
       openExperience();
-      if (rec.sweep_id && TourBridge.isReady) {
-        TourBridge.navigateToSweep(rec.sweep_id);
-      } else if (rec.sweep_id) {
-        pendingExampleSweep = rec.sweep_id;
+      /* Load THIS record's tour into the live iframe if it differs
+         from what's currently loaded. (Fix: previously every
+         same-origin twin reused the boot tour, so all portal apps
+         opened the same experience regardless of their twin_url.) */
+      if (rec.twin_url &&
+          normalizeTourUrl(treedisIframe.src) !== normalizeTourUrl(rec.twin_url)) {
+        if (typeof TourBridge.reset === "function") TourBridge.reset();
+        treedisIframe.src = rec.twin_url;
+      }
+      if (rec.sweep_id) {
+        if (TourBridge.isReady) TourBridge.navigateToSweep(rec.sweep_id);
+        else pendingExampleSweep = rec.sweep_id;  // fires on TourReady
       }
     } else if (rec.twin_url) {
       window.open(rec.twin_url, "_blank", "noopener");
@@ -1433,10 +1450,6 @@
       if (discovery) openLeadForm(discovery.id, discovery.stage);
     });
 
-    // Mobile sector-strip arrows (loop through sectors).
-    $("#sectorPrev").addEventListener("click", () => openCategory(previousCategory().id));
-    $("#sectorNext").addEventListener("click", () => openCategory(nextCategory().id));
-
     // Mobile slide-to-contact bar toggles cards ⇄ contact.
     $("#contactBar").addEventListener("click", () => {
       if (state.contactOpen) slideToCards();
@@ -1501,7 +1514,7 @@
     detectSafari();
     buildPillars();
     buildDrawer();
-    buildSectorStrip();
+    buildSectorPager();
     buildContact();
     renderCategory(getCategory(state.category));
     showView("home");

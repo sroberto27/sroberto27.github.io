@@ -57,6 +57,23 @@ const TourBridge = {
     }, 2000);
   },
 
+  /* Re-arm the bridge after the host navigates the iframe to a
+     different tour (src change). Clears the stale ready state and
+     restarts the TourReady ping loop for the new document. */
+  reset() {
+    this._ready = false;
+    this._currentSweepId = null;
+    if (this._pingInterval) { clearInterval(this._pingInterval); this._pingInterval = null; }
+    this._pingInterval = setInterval(() => {
+      if (this._ready) {
+        clearInterval(this._pingInterval);
+        this._pingInterval = null;
+      } else {
+        this.ping();
+      }
+    }, 2000);
+  },
+
   get isReady() { return this._ready; },
 
   _onMessage(event) {
