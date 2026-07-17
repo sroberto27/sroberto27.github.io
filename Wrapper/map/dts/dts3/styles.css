@@ -215,7 +215,10 @@ body{
   /* Flat-top hexagon (points left/right), as in the Figma frames. */
   --hexp: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
   position:absolute;
-  aspect-ratio:1/0.88;
+  /* True regular flat-top hexagon: height = width × √3/2. The old
+     1/0.88 ratio skewed the diagonal edges off 60°, so neighbours
+     could never sit perfectly flush. */
+  aspect-ratio:1/0.8660254;
   -webkit-clip-path:var(--hexp); clip-path:var(--hexp);
 }
 /* Photo-filled hexes (droplets / data-wave example imagery). */
@@ -232,25 +235,32 @@ body{
 /* Diagonal run, bottom-left → top-right (Figma):
    droplets → wave → white → white.
 
-   SELF-ALIGNING GEOMETRY:
+   SELF-ALIGNING GEOMETRY (exact):
    Every hex is placed relative to ONE anchor point (--hex-ax/--hex-ay)
    using offsets measured in a single shared unit (--hexu, the base hex
-   width). Because size AND spacing come from the same unit, the hexes
-   keep exactly the same tight, touching arrangement at every viewport
-   width — no more drifting apart on large screens.
+   width). Because size AND spacing come from the same unit, the run
+   keeps the same arrangement at every viewport width.
 
-   For flat-top hexes of width u (height .88u), edge-touching diagonal
-   neighbours sit 0.75u apart horizontally and 0.44u vertically; we use
-   0.78u / 0.46u for a hairline breathing gap, exactly like the Figma. */
+   PERFECT EDGE CONTACT — the hexes have DIFFERENT widths
+   (.92u / .96u / 1u / 1.06u), so a uniform step can't make every
+   joint flush. For two regular flat-top hexes of widths wA (lower
+   left) and wB (upper right) touching along their shared 60° edge,
+   the centre offset is
+       Δx = 0.375·(wA+wB)      Δy = −(√3/8)·(wA+wB) = −0.2165·(wA+wB)
+   Cumulative offsets from the 2↔3 contact midpoint (the anchor):
+       pair 1↔2: Δ = (.7050, −.4072)u
+       pair 2↔3: Δ = (.7350, −.4246)u
+       pair 3↔4: Δ = (.7725, −.4462)u */
 .hex-cluster{
-  --hexu: clamp(120px, 11vw, 320px);  /* base hex width — bigger + capped */
-  --hex-ax: 78%;                      /* anchor: midpoint of the diagonal */
+  --hexu: clamp(132px, 12.5vw, 360px);
+  --hexgap: calc(var(--hexu) * 0.04);   /* ← the spacing knob */
+  --hex-ax: 78%;
   --hex-ay: 41%;
 }
-.hex-1{ width:calc(var(--hexu)*.92); left:calc(var(--hex-ax) - 1.17*var(--hexu)); top:calc(var(--hex-ay) + .69*var(--hexu)); transform:translate(-50%,-50%); }
-.hex-2{ width:calc(var(--hexu)*.96); left:calc(var(--hex-ax) - .39*var(--hexu));  top:calc(var(--hex-ay) + .23*var(--hexu)); transform:translate(-50%,-50%); }
-.hex-3{ width:var(--hexu);           left:calc(var(--hex-ax) + .39*var(--hexu));  top:calc(var(--hex-ay) - .23*var(--hexu)); transform:translate(-50%,-50%); }
-.hex-4{ width:calc(var(--hexu)*1.06);left:calc(var(--hex-ax) + 1.17*var(--hexu)); top:calc(var(--hex-ay) - .69*var(--hexu)); transform:translate(-50%,-50%); }
+.hex-1{ width:calc(var(--hexu)*.92); left:calc(var(--hex-ax) - 1.0725*var(--hexu) - 1.299*var(--hexgap)); top:calc(var(--hex-ay) + .6195*var(--hexu) + .75*var(--hexgap)); transform:translate(-50%,-50%); }
+.hex-2{ width:calc(var(--hexu)*.96); left:calc(var(--hex-ax) - .3675*var(--hexu) - .433*var(--hexgap));  top:calc(var(--hex-ay) + .2123*var(--hexu) + .25*var(--hexgap)); transform:translate(-50%,-50%); }
+.hex-3{ width:var(--hexu);           left:calc(var(--hex-ax) + .3675*var(--hexu) + .433*var(--hexgap));  top:calc(var(--hex-ay) - .2123*var(--hexu) - .25*var(--hexgap)); transform:translate(-50%,-50%); }
+.hex-4{ width:calc(var(--hexu)*1.06);left:calc(var(--hex-ax) + 1.1400*var(--hexu) + 1.299*var(--hexgap)); top:calc(var(--hex-ay) - .6585*var(--hexu) - .75*var(--hexgap)); transform:translate(-50%,-50%); }
 /* Faint dark satellite hexes for depth (very low contrast) — anchored
    to the same point so they travel with the run. */
 .hex-ghost{
@@ -1095,7 +1105,7 @@ body:has(#view-home.is-active) .bg-video{
      Alignment is preserved automatically (same unit-based anchor);
      we only pull the unit down so the run clears the copy column. */
   .hex-ghost{ display:none; }
-  .hex-cluster{ --hexu: clamp(96px, 13vw, 170px); --hex-ax:76%; --hex-ay:38%; }
+  .hex-cluster{ --hexu: clamp(104px, 14.5vw, 190px); --hex-ax:76%; --hex-ay:38%; }
   .twin-cta-wrap{ top:72%; }
   .twin-cta-fx{ width:clamp(150px,20vw,220px); }
   .twin-hero-card{ width:min(60%, 440px); }
@@ -1692,28 +1702,32 @@ body.portal-open{ overflow:hidden; }
     overflow:visible;
   }
   .hex-cluster .hex{ position:absolute; }
-  /* MobileFigmaView arrangement: a tight touching diagonal —
+  /* MobileFigmaView arrangement: the same diagonal —
      droplets (lower-left) → data-wave → white → white (upper-right) —
-     centred in the band between the copy and the CTA. Same unit-based
-     anchor geometry as desktop, so it never mis-aligns; heights come
-     from the base aspect-ratio (no hard-coded px heights). */
+     centred in the band between the copy and the CTA. SAME exact
+     edge-contact geometry as desktop (Δ per pair = 0.375·(wA+wB),
+     −0.2165·(wA+wB), plus the --hexgap knob along the contact normal),
+     so phones get the identical flush alignment. --hexgap is inherited
+     from the base rule and recomputes against this block's --hexu, so
+     the spacing scales down proportionally on its own. */
   .hex-cluster{
-    --hexu: clamp(92px, 26vw, 124px);
+    --hexu: clamp(96px, 26.5vw, 132px);  /* a bit bigger, like desktop */
     --hex-ax: 50%;
     --hex-ay: 50%;
-    min-height: calc(2.35 * var(--hexu));
+    min-height: calc(2.4 * var(--hexu));
   }
   .hex{ width:var(--hexu); height:auto; }
-  .hex-1{ width:calc(var(--hexu)*.92); left:calc(50% - 1.17*var(--hexu)); top:calc(50% + .69*var(--hexu)); transform:translate(-50%,-50%); }
-  .hex-2{ width:calc(var(--hexu)*.96); left:calc(50% - .39*var(--hexu));  top:calc(50% + .23*var(--hexu)); transform:translate(-50%,-50%); }
-  .hex-3{ width:var(--hexu);           left:calc(50% + .39*var(--hexu));  top:calc(50% - .23*var(--hexu)); transform:translate(-50%,-50%); }
-  .hex-4{ width:calc(var(--hexu)*1.06);left:calc(50% + 1.17*var(--hexu)); top:calc(50% - .69*var(--hexu)); transform:translate(-50%,-50%); }
-  /* Small dark satellites around the run (present in the mobile Figma). */
+  .hex-1{ width:calc(var(--hexu)*.92); left:calc(50% - 1.0725*var(--hexu) - 1.299*var(--hexgap)); top:calc(50% + .6195*var(--hexu) + .75*var(--hexgap)); transform:translate(-50%,-50%); }
+  .hex-2{ width:calc(var(--hexu)*.96); left:calc(50% - .3675*var(--hexu) - .433*var(--hexgap));  top:calc(50% + .2123*var(--hexu) + .25*var(--hexgap)); transform:translate(-50%,-50%); }
+  .hex-3{ width:var(--hexu);           left:calc(50% + .3675*var(--hexu) + .433*var(--hexgap));  top:calc(50% - .2123*var(--hexu) - .25*var(--hexgap)); transform:translate(-50%,-50%); }
+  .hex-4{ width:calc(var(--hexu)*1.06);left:calc(50% + 1.1400*var(--hexu) + 1.299*var(--hexgap)); top:calc(50% - .6585*var(--hexu) - .75*var(--hexgap)); transform:translate(-50%,-50%); }
+  /* Small dark satellites around the run (present in the mobile Figma) —
+     nudged slightly outward so the wider run stays clear of them. */
   .hex-ghost{ display:block; }
-  .hex-g1{ width:calc(var(--hexu)*.42); left:calc(50% - .70*var(--hexu)); top:calc(50% - .55*var(--hexu)); transform:translate(-50%,-50%); }
-  .hex-g2{ width:calc(var(--hexu)*.38); left:calc(50% - 1.55*var(--hexu)); top:calc(50% + .05*var(--hexu)); transform:translate(-50%,-50%); }
-  .hex-g3{ width:calc(var(--hexu)*.40); left:calc(50% + .55*var(--hexu));  top:calc(50% + .75*var(--hexu)); transform:translate(-50%,-50%); }
-  .hex-g4{ width:calc(var(--hexu)*.40); left:calc(50% + 1.60*var(--hexu)); top:calc(50% + .10*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-g1{ width:calc(var(--hexu)*.42); left:calc(50% - .70*var(--hexu)); top:calc(50% - .60*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-g2{ width:calc(var(--hexu)*.38); left:calc(50% - 1.65*var(--hexu)); top:calc(50% + .05*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-g3{ width:calc(var(--hexu)*.40); left:calc(50% + .60*var(--hexu));  top:calc(50% + .80*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-g4{ width:calc(var(--hexu)*.40); left:calc(50% + 1.72*var(--hexu)); top:calc(50% + .10*var(--hexu)); transform:translate(-50%,-50%); }
   .evidence-bar{
     display:grid; grid-template-columns:1fr 1fr;
     gap:10px 16px; align-items:start;

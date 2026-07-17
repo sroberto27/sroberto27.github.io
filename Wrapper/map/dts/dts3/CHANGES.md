@@ -1,3 +1,16 @@
+# Hex-cluster fix — perfect alignment + slightly larger
+
+- `.hex` aspect ratio corrected from `1/0.88` to `1/0.8660254` (true regular
+  flat-top hexagon), so the diagonal edges sit at exactly 60°.
+- Positions recomputed for exact edge contact between DIFFERENT-width
+  neighbours: centre offset per pair is Δx=0.375·(wA+wB),
+  Δy=−0.2165·(wA+wB). Verified numerically: residual joint gap ≤0.0002u
+  (sub-pixel).
+- Base unit enlarged: `--hexu` clamp(120px,11vw,320px) → clamp(132px,12.5vw,360px)
+  (tablet breakpoint scaled to match). Ghost hexes ride the same unit, unchanged.
+
+---
+
 # Content pass — real projects, live experiences & videos (from the link inventory)
 
 Populated all 16 sub-vertical example windows from `InventoryOfLinksWebsite.xlsx`
