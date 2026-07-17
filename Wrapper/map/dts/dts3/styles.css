@@ -1,0 +1,2411 @@
+/* ============================================================
+   DTS — Styles
+   Dark navy/black app shell · gold accent · fixed viewport.
+   App-like layout (no long-scroll marketing page).
+
+   Sizing philosophy: everything scales with the viewport via
+   clamp(min, vw-based, max) so the UI is "as large as possible"
+   on big screens and stays usable on phones. Major regions use
+   fr-based grids and flex:1 so areas always FILL the screen with
+   no dead space.
+   ============================================================ */
+:root{
+  --bg:           #070e18;   /* desktop board stage (#070E18) */
+  --bg-2:         #0a1525;   /* desktop board header (#0A1525) */
+  --bg-3:         #101827;
+  --line:         rgba(255,255,255,.10);
+  --line-soft:    rgba(255,255,255,.06);
+  --gold:         #c49a2a;   /* desktop board gold (#C49A2A) */
+  --gold-bright:  #e3b855;
+  --glass:        rgba(10,10,10,.62);
+  --ink:          #ffffff;
+  --muted:        rgba(255,255,255,.66);
+  --faint:        rgba(255,255,255,.40);
+  --radius:       18px;
+
+  /* Fluid chrome heights — grow a little on big screens. */
+  --topbar-h:     clamp(58px, 5.2vh, 80px);
+  --dock-h:       clamp(56px, 5vh,  74px);
+
+  /* Fluid horizontal padding for the stage. */
+  --pad-x:        clamp(20px, 3.4vw, 64px);
+  --pad-y:        clamp(20px, 3vh, 40px);
+
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+}
+
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  font-family:var(--sans);
+  color:var(--ink);
+  background:#05070c;
+  overflow:hidden;                 /* app shell, not a scrolling site */
+}
+
+/* ---------- App container ---------- */
+.app{
+  position:fixed;
+  inset:clamp(0px, 1vw, 14px);     /* hug edges on small screens */
+  display:grid;
+  grid-template-columns:minmax(0, 1fr);   /* single column, never wider than app */
+  grid-template-rows:var(--topbar-h) 1fr var(--dock-h);
+  background:
+    radial-gradient(1200px 600px at 78% 18%, rgba(124,58,92,.18), transparent 60%),
+    radial-gradient(900px 700px at 10% 90%, rgba(20,80,80,.16), transparent 60%),
+    linear-gradient(180deg, #0b1322 0%, var(--bg) 60%, #070b13 100%);
+  border:1px solid var(--line);
+  border-radius:clamp(0px, 1.4vw, var(--radius));
+  overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,.55);
+}
+/* Grid children must be allowed to shrink below content width, or a
+   wide child (nav row, dock tabs) forces the whole grid wider than the
+   app and clips on the right. */
+.app > .topbar,
+.app > .stage{ min-width:0; max-width:100%; overflow:hidden; }
+/* The dock must NOT clip — the question-bar answer popover opens
+   above it. (Its own children manage their overflow.) */
+.app > .dockbar{ min-width:0; max-width:100%; overflow:visible; }
+
+/* ===================== TOP NAV ===================== */
+.topbar{
+  display:flex; align-items:center;
+  gap:clamp(12px, 1.8vw, 28px);
+  padding:0 clamp(14px, 2vw, 26px);
+  border-bottom:1px solid var(--line-soft);
+  background:linear-gradient(180deg, rgba(13,20,35,.92), rgba(13,20,35,.55));
+  backdrop-filter:blur(6px);
+  z-index:6;
+}
+
+/* Logo is also a menu item — it can take the gold highlight. */
+.brand{
+  display:flex; align-items:center; gap:clamp(8px,.8vw,12px);
+  color:var(--ink); text-decoration:none; flex:0 0 auto;
+  position:relative; padding:clamp(14px,2vh,22px) 2px;
+}
+.brand-logo{
+  display:block; width:auto;
+  height:clamp(34px,4.6vh,52px);
+}
+/* Gold highlight when home is the active "menu item". */
+.brand.is-active::after{
+  content:""; position:absolute; left:2px; right:2px;
+  bottom:clamp(10px,1.4vh,16px); height:2px;
+  background:var(--gold); border-radius:2px;
+}
+
+.pillars{
+  display:flex; align-items:center;
+  gap:clamp(16px, 2.4vw, 40px);
+  margin-left:clamp(6px,1vw,16px);
+}
+.pillar{
+  appearance:none; background:none; border:0; cursor:pointer;
+  color:#9f9f9f;                        /* Figma idle state */
+  font-family:var(--sans);
+  font-size:clamp(11px, 1.05vw, 15px); font-weight:600; letter-spacing:.12em;
+  padding:clamp(16px,2.6vh,24px) 2px; position:relative; transition:color .18s;
+  white-space:nowrap;
+  --cat-line:var(--gold);               /* per-category indicator colour */
+}
+/* Figma sector colours for the line indicator. */
+.pillar[data-cat="education"] { --cat-line:#e9b44c; }
+.pillar[data-cat="industry"]  { --cat-line:#4a7df0; }
+.pillar[data-cat="government"]{ --cat-line:#5f6fa8; }
+.pillar[data-cat="community"] { --cat-line:#d98e73; }
+/* Hover: text turns white and the coloured line indicator appears. */
+.pillar:hover{ color:var(--ink); }
+.pillar.is-active{ color:var(--ink); }
+.pillar:hover::after,
+.pillar.is-active::after{
+  content:""; position:absolute; left:0; right:0;
+  bottom:clamp(10px,1.4vh,16px); height:2px;
+  background:var(--cat-line); border-radius:2px;
+}
+
+
+.access-btn{
+  margin-left:auto;
+  appearance:none; cursor:pointer;
+  background:transparent; color:var(--gold);
+  border:1px solid var(--gold);
+  border-radius:8px;
+  padding:clamp(8px,1.1vh,12px) clamp(12px,1.4vw,22px);
+  font-family:var(--sans);
+  font-size:clamp(10px,.92vw,13px); font-weight:700; letter-spacing:.1em;
+  white-space:nowrap;
+  transition:background .18s,color .18s;
+}
+.access-btn:hover{ background:var(--gold); color:#1a1206; }
+
+/* ===================== STAGE ===================== */
+.stage{ position:relative; overflow:hidden; min-width:0; min-height:0; }
+.bg-net{ position:absolute; inset:0; width:100%; height:100%; opacity:.5; pointer-events:none; }
+
+/* Vimeo dot-network loop — sized to COVER the stage (16:9 letterbox
+   math), muted/looping via URL params, never interactive. */
+.bg-video{
+  position:absolute; inset:0;
+  overflow:hidden; pointer-events:none;
+  opacity:.6;
+  z-index:0;
+}
+.bg-video iframe{
+  position:absolute; top:50%; left:50%;
+  width:100vw; height:56.25vw;      /* 16:9 of viewport width  */
+  min-height:100%; min-width:177.78vh;  /* …or of viewport height */
+  transform:translate(-50%,-50%);
+  border:0; pointer-events:none;
+}
+
+/* Each view is a flex column that fills the stage: a flexible body
+   region (home-grid / cat-grid) plus a fixed-height footer strip. */
+.view{
+  position:absolute; inset:0;
+  padding:var(--pad-y) var(--pad-x);
+  display:flex; flex-direction:column;
+  opacity:0; visibility:hidden;
+  transition:opacity .35s ease;
+  overflow:hidden;
+}
+.view.is-active{ opacity:1; visibility:visible; }
+.view[hidden]{ display:none; }
+
+/* ---------- HOME ---------- */
+/* The home area is a positioning context: the copy floats on the left,
+   the hexagon constellation spans the whole area so hexagons can sit
+   in the centre and right (matching the reference). */
+.home-grid{
+  flex:1 1 auto; min-height:0;
+  position:relative;
+}
+.home-copy{
+  position:absolute; left:0; top:50%; transform:translateY(-50%);
+  width:min(46%, 560px); min-width:0; z-index:8;
+}
+.copy-kicker{
+  display:inline-flex; align-items:center; gap:10px;
+  color:var(--gold); font-size:clamp(10px,.9vw,13px); font-weight:700; letter-spacing:.22em;
+}
+.copy-kicker::before{ content:""; width:clamp(24px,2.6vw,44px); height:2px; background:var(--gold); border-radius:2px; }
+.home-headline{
+  font-size:clamp(34px, 5.2vw, 84px); font-weight:800; line-height:1.0;
+  margin:clamp(10px,1.4vh,18px) 0;
+}
+.home-pills{ display:flex; gap:clamp(12px,1.4vw,22px); flex-wrap:wrap; margin-bottom:clamp(12px,1.6vh,20px); }
+.home-pills span{ color:var(--gold); font-size:clamp(12px,1vw,16px); font-weight:600; }
+.home-body{ color:var(--muted); font-size:clamp(13px,1.05vw,17px); line-height:1.6; max-width:46ch; }
+
+/* ============================================================
+   DECORATIVE HEX CLUSTER  (initial hero state only)
+   ------------------------------------------------------------
+   A diagonal run of white hexagons on the right of the hero,
+   matching the video mockup. Purely decorative — the Treedis
+   experience is NOT inside them (that layout was removed).
+   ============================================================ */
+.hex-cluster{
+  position:absolute; inset:0;
+  z-index:3; pointer-events:none;
+  transition:opacity .45s ease;
+}
+.hex{
+  /* Flat-top hexagon (points left/right), as in the Figma frames. */
+  --hexp: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  position:absolute;
+  aspect-ratio:1/0.88;
+  -webkit-clip-path:var(--hexp); clip-path:var(--hexp);
+}
+/* Photo-filled hexes (droplets / data-wave example imagery). */
+.hex-img{
+  background-color:#0c1322;
+  background-size:cover; background-position:center;
+  filter:saturate(1.08);
+}
+/* Solid white hexes. */
+.hex-white{
+  background:linear-gradient(160deg, #ffffff 0%, #f2f4f8 60%, #e6eaf2 100%);
+  box-shadow:0 18px 50px rgba(0,0,0,.35);
+}
+/* Diagonal run, bottom-left → top-right (Figma):
+   droplets → wave → white → white.
+
+   SELF-ALIGNING GEOMETRY:
+   Every hex is placed relative to ONE anchor point (--hex-ax/--hex-ay)
+   using offsets measured in a single shared unit (--hexu, the base hex
+   width). Because size AND spacing come from the same unit, the hexes
+   keep exactly the same tight, touching arrangement at every viewport
+   width — no more drifting apart on large screens.
+
+   For flat-top hexes of width u (height .88u), edge-touching diagonal
+   neighbours sit 0.75u apart horizontally and 0.44u vertically; we use
+   0.78u / 0.46u for a hairline breathing gap, exactly like the Figma. */
+.hex-cluster{
+  --hexu: clamp(120px, 11vw, 320px);  /* base hex width — bigger + capped */
+  --hex-ax: 78%;                      /* anchor: midpoint of the diagonal */
+  --hex-ay: 41%;
+}
+.hex-1{ width:calc(var(--hexu)*.92); left:calc(var(--hex-ax) - 1.17*var(--hexu)); top:calc(var(--hex-ay) + .69*var(--hexu)); transform:translate(-50%,-50%); }
+.hex-2{ width:calc(var(--hexu)*.96); left:calc(var(--hex-ax) - .39*var(--hexu));  top:calc(var(--hex-ay) + .23*var(--hexu)); transform:translate(-50%,-50%); }
+.hex-3{ width:var(--hexu);           left:calc(var(--hex-ax) + .39*var(--hexu));  top:calc(var(--hex-ay) - .23*var(--hexu)); transform:translate(-50%,-50%); }
+.hex-4{ width:calc(var(--hexu)*1.06);left:calc(var(--hex-ax) + 1.17*var(--hexu)); top:calc(var(--hex-ay) - .69*var(--hexu)); transform:translate(-50%,-50%); }
+/* Faint dark satellite hexes for depth (very low contrast) — anchored
+   to the same point so they travel with the run. */
+.hex-ghost{
+  background:linear-gradient(150deg, rgba(48,66,98,.5), rgba(16,24,42,.5));
+  opacity:.5;
+  /* Continuous ambient pulse. The keyframes restate the centring
+     translate(-50%,-50%) so animating scale never knocks the ghosts
+     off their anchored positions. Durations/delays are staggered per
+     ghost so the cluster breathes organically instead of in lockstep. */
+  animation:hexGhostPulse 4.2s ease-in-out infinite;
+  will-change:transform,opacity;
+}
+.hex-g1{ animation-duration:3.8s; animation-delay:0s;    }
+.hex-g2{ animation-duration:4.6s; animation-delay:-1.2s; }
+.hex-g3{ animation-duration:4.1s; animation-delay:-2.3s; }
+.hex-g4{ animation-duration:5.0s; animation-delay:-3.1s; }
+@keyframes hexGhostPulse{
+  0%,100%{ transform:translate(-50%,-50%) scale(1);    opacity:.32; }
+  50%    { transform:translate(-50%,-50%) scale(1.14); opacity:.62; }
+}
+@media (prefers-reduced-motion:reduce){
+  .hex-ghost{ animation:none; opacity:.5; }
+}
+.hex-g1{ width:calc(var(--hexu)*.44); left:calc(var(--hex-ax) - 1.05*var(--hexu)); top:calc(var(--hex-ay) - .30*var(--hexu)); transform:translate(-50%,-50%); }
+.hex-g2{ width:calc(var(--hexu)*.40); left:calc(var(--hex-ax) + .30*var(--hexu));  top:calc(var(--hex-ay) + .80*var(--hexu)); transform:translate(-50%,-50%); }
+.hex-g3{ width:calc(var(--hexu)*.50); left:calc(var(--hex-ax) - .60*var(--hexu));  top:calc(var(--hex-ay) + 1.25*var(--hexu)); transform:translate(-50%,-50%); }
+.hex-g4{ width:calc(var(--hexu)*.38); left:calc(var(--hex-ax) + 1.75*var(--hexu)); top:calc(var(--hex-ay) - 1.05*var(--hexu)); transform:translate(-50%,-50%); }
+
+/* ---------- Primary CTA (standalone — no longer docked to a hexagon) ----------
+   Figma: a transparent pill with a gold outline, sitting on the blue
+   arrow-burst graphic. Fills gold on hover / while pressed. */
+.twin-cta-wrap{
+  position:absolute; left:50%; top:66%;
+  transform:translate(-50%,-50%);
+  z-index:9;
+  display:flex; align-items:center; justify-content:center;
+}
+.twin-cta-fx{
+  position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%);
+  width:clamp(170px,17vw,280px); height:auto;
+  pointer-events:none;
+  filter:drop-shadow(0 6px 24px rgba(40,110,220,.35));
+}
+.twin-cta{
+  position:relative; z-index:1;
+  appearance:none; cursor:pointer; white-space:nowrap;
+  background:rgba(8,12,24,.42); color:var(--gold);
+  border:1px solid var(--gold); border-radius:8px;
+  padding:clamp(9px,1.2vh,13px) clamp(16px,1.6vw,26px);
+  font-family:var(--sans);
+  font-size:clamp(13px,1.05vw,16px); font-weight:700; letter-spacing:.02em;
+  backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);
+  transition:background .18s, color .18s, box-shadow .18s;
+}
+.twin-cta:hover{
+  background:var(--gold); color:#1a1206;
+  box-shadow:0 10px 34px rgba(208,163,58,.35);
+}
+.twin-cta:focus-visible{ outline:2px solid var(--gold-bright); outline-offset:3px; }
+
+/* ============================================================
+   TWIN LAYER  (full-screen Treedis experience + reveal)
+   ------------------------------------------------------------
+   States (classes on #twinLayer, driven by script.js):
+     (none)      hidden — iframe still boots in the background
+     .is-mounted visible as a narrow centre slice + seam line
+     .is-open    slice expands to fill the layer (mockup 4:00→6:00)
+   .twin-hero-card.is-visible fades the glass card in (8:00→9:00).
+   ============================================================ */
+.twin-layer{
+  position:absolute;
+  top:var(--topbar-h); left:0; right:0; bottom:0;
+  z-index:18;                      /* above stage + dock, below modals (z:40) */
+  visibility:hidden;
+  background:transparent;
+}
+.twin-layer.is-mounted{ visibility:visible; }
+
+/* The clipped window that grows from the centre. */
+.twin-reveal{
+  position:absolute; inset:0;
+  -webkit-clip-path:inset(0 49.85% 0 49.85%);
+  clip-path:inset(0 49.85% 0 49.85%);
+  transition:clip-path 1.15s cubic-bezier(.72,.02,.26,1),
+             -webkit-clip-path 1.15s cubic-bezier(.72,.02,.26,1);
+  background:#0a1018;
+}
+.twin-layer.is-open .twin-reveal{
+  -webkit-clip-path:inset(0 0 0 0);
+  clip-path:inset(0 0 0 0);
+}
+
+/* Thin vertical seam the reveal appears to grow out of. */
+.twin-seam{
+  position:absolute; top:0; bottom:0; left:50%; width:2px;
+  transform:translateX(-50%);
+  background:rgba(255,255,255,.85);
+  opacity:0; pointer-events:none;
+  transition:opacity .3s ease;
+}
+.twin-layer.is-mounted:not(.is-open) .twin-seam{ opacity:1; }
+.twin-layer.is-open .twin-seam{ opacity:0; transition:opacity .5s ease .25s; }
+
+/* Iframe mount — same ids as before so startTreedis()/parkIframe()
+   and the loading veil work unchanged. */
+.demo-stage{
+  position:absolute; inset:0;
+  overflow:hidden;
+  background:radial-gradient(120% 120% at 50% 0%, #16203400, #0a1018);
+}
+.demo-stage iframe{ width:100%; height:100%; border:0; display:block; position:relative; z-index:2; }
+.demo-loading{
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:14px; color:var(--muted); text-align:center; padding:24px;
+  z-index:2;
+}
+.demo-loading-text{ font-size:clamp(12px,.95vw,14px); }
+.demo-loading.is-hidden{ display:none; }
+
+/* ---------- Final glass card (mockup 9:00 / 12:00) ---------- */
+.twin-hero-card{
+  position:absolute; left:clamp(20px,3.4vw,64px); top:50%;
+  transform:translateY(calc(-50% + 14px));
+  width:min(42%, 460px);
+  padding:clamp(18px,2.2vw,30px) clamp(20px,2.4vw,34px);
+  background:var(--glass);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:16px;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  box-shadow:0 24px 70px rgba(0,0,0,.45);
+  opacity:0; pointer-events:none;
+  transition:opacity .9s ease, transform .9s ease;
+  z-index:4;
+}
+.twin-hero-card.is-visible{
+  opacity:1; pointer-events:auto;
+  transform:translateY(-50%);
+}
+.twin-card-headline{
+  font-size:clamp(26px,3vw,44px); font-weight:800; line-height:1.05;
+  margin:clamp(8px,1vh,14px) 0;
+  text-shadow:0 2px 14px rgba(0,0,0,.55);
+}
+.twin-card-body{
+  color:var(--muted); font-size:clamp(12px,.95vw,15px); line-height:1.6; margin:0;
+}
+.twin-hero-card .home-pills{ margin-bottom:clamp(10px,1.2vh,16px); }
+
+/* ---------- Exit pill (top-left, clear of Treedis' own controls) ---------- */
+.twin-exit{
+  position:absolute; top:clamp(12px,1.6vh,20px); left:clamp(14px,1.8vw,26px);
+  z-index:5;
+  display:inline-flex; align-items:center; gap:8px;
+  appearance:none; cursor:pointer;
+  background:rgba(8,12,24,.72); color:var(--ink);
+  border:1px solid rgba(255,255,255,.18); border-radius:999px;
+  padding:8px 16px;
+  font-family:var(--sans); font-size:12.5px; font-weight:600; letter-spacing:.03em;
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  opacity:0; pointer-events:none;
+  transition:opacity .4s ease .9s, background .18s, border-color .18s;
+}
+.twin-layer.is-open .twin-exit{ opacity:1; pointer-events:auto; }
+.twin-exit:hover{ background:rgba(8,12,24,.9); border-color:var(--gold); color:var(--gold-bright); }
+
+/* ---------- Shell state while the twin is active ---------- */
+/* The layer covers the dock; also silence it for keyboard/AT users
+   and hide the fixed cookie card so the experience is unobstructed. */
+body.twin-active .dockbar{ visibility:hidden; }
+body.twin-active .cookie{ opacity:0; pointer-events:none; transition:opacity .4s ease; }
+
+/* Evidence / footnote strip — fixed strip at the bottom of the view. */
+.evidence-bar{
+  flex:0 0 auto;
+  display:flex; flex-wrap:wrap; gap:clamp(12px,1.4vw,22px);
+  font-size:clamp(10px,.85vw,13px); color:var(--faint);
+  border-top:1px solid var(--line-soft);
+  margin-top:clamp(14px,2vh,22px); padding-top:clamp(10px,1.4vh,16px);
+}
+.evidence-item{ display:inline-flex; align-items:baseline; gap:5px; white-space:nowrap; }
+.evidence-dot{ color:var(--gold); margin-right:4px; font-size:8px; vertical-align:middle; }
+
+/* ---------- CATEGORY ---------- */
+/* Blurred data-wave imagery behind the sector content (Figma).
+   Children get z-index:1 so the image always sits underneath. */
+.view-category::before{
+  content:"";
+  position:absolute; inset:-24px;              /* hide blur edge bleed */
+  background:
+    linear-gradient(180deg, rgba(8,12,24,.78) 0%, rgba(8,12,24,.55) 45%, rgba(8,12,24,.42) 100%),
+    url("assets-category-bg.jpg") center bottom / cover no-repeat;
+  filter:blur(7px) saturate(1.05);
+  z-index:0; pointer-events:none;
+}
+.view-category > *{ position:relative; z-index:1; }
+
+.cat-grid{
+  flex:1 1 auto; min-height:0;
+  display:grid;
+  grid-template-columns:minmax(240px,.82fr) minmax(0,1.6fr);
+  gap:clamp(22px,2.6vw,48px);
+  align-content:stretch;
+}
+/* Per-sector accent (Figma): drives the kicker and card titles. */
+#view-category{ --sector:#e9b44c; }                    /* education default */
+#view-category[data-sector="education"] { --sector:#e9b44c; }
+#view-category[data-sector="industry"]  { --sector:#2e8bff; }
+#view-category[data-sector="government"]{ --sector:#34598f; }
+#view-category[data-sector="community"] { --sector:#d27049; }
+
+.cat-intro{ display:flex; flex-direction:column; min-width:0; justify-content:flex-start; }
+.cat-kicker{ color:var(--sector); font-size:clamp(11px,.95vw,14px); font-weight:700; letter-spacing:.16em; }
+.cat-title{ font-size:clamp(30px,4vw,60px); font-weight:800; margin:clamp(8px,1.2vh,14px) 0 clamp(6px,.8vh,10px); line-height:1.02; }
+.cat-sub{ font-weight:700; font-size:clamp(13px,1.05vw,17px); margin:0 0 clamp(12px,1.8vh,22px); }
+.cat-body{ color:var(--muted); font-size:clamp(13px,1.02vw,17px); line-height:1.62; max-width:44ch; }
+.cat-projects-btn{
+  margin-top:clamp(18px,2.6vh,30px); align-self:flex-start;
+  appearance:none; cursor:pointer;
+  background:transparent; color:var(--gold);
+  border:1px solid var(--gold); border-radius:8px;
+  padding:clamp(10px,1.3vh,15px) clamp(14px,1.5vw,22px);
+  font-weight:700; font-size:clamp(11px,.92vw,13px); letter-spacing:.08em;
+}
+.cat-projects-btn:hover{ background:var(--gold); color:#1a1206; }
+
+/* Cards fill the column: a 2x2 grid whose rows stretch to consume
+   all vertical space, so there is no empty area below them. */
+.cat-cards{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  grid-auto-rows:1fr;
+  gap:clamp(14px,1.4vw,22px);
+  min-height:0;
+}
+.uc-card{
+  background:linear-gradient(160deg, rgba(18,26,43,.9), rgba(10,15,24,.9));
+  border:1px solid var(--line); border-radius:12px;
+  padding:clamp(18px,1.8vw,30px);
+  cursor:pointer;
+  display:flex; flex-direction:column;
+  transition:border-color .18s, transform .18s, background .18s;
+}
+.uc-card:hover{
+  border-color:rgba(214,168,73,.55);
+  transform:translateY(-3px);
+  background:linear-gradient(160deg, rgba(26,34,54,.95), rgba(14,20,32,.95));
+}
+.uc-card h3{ color:var(--sector); font-size:clamp(12px,1.05vw,16px); font-weight:700; letter-spacing:.06em; margin:0 0 clamp(8px,1vh,14px); }
+.uc-card p{ color:var(--muted); font-size:clamp(12px,1vw,15.5px); line-height:1.55; margin:0; }
+
+/* ---------- CATEGORY: horizontal slider (cards ⇄ contact) ----------
+   The slider occupies the flexible body area of the view. A track
+   holds two full-width panels side by side; translating the track by
+   -50% reveals the contact panel. */
+.cat-slider{
+  flex:1 1 auto; min-height:0;
+  position:relative; overflow:hidden;
+}
+.cat-track{
+  display:flex;
+  width:200%; height:100%;
+  transform:translateX(0);
+  transition:transform .5s cubic-bezier(.65,.02,.25,1);
+}
+.cat-track.show-contact{ transform:translateX(-50%); }
+.cat-panel{
+  width:50%; height:100%; flex:0 0 50%;
+  position:relative;
+  display:flex; flex-direction:column;
+  min-height:0;
+}
+
+/* Cards panel keeps the existing two-column grid. */
+.cat-panel-cards .cat-grid{ flex:1 1 auto; min-height:0; }
+
+/* Clear labeled "Contact & Info" control — anchored to the right edge
+   of the cards panel, reads as "slide right". Replaces the old hand. */
+.contact-edge{
+  position:absolute; right:0; top:50%; transform:translateY(-50%);
+  appearance:none; cursor:pointer;
+  display:flex; align-items:center; gap:10px;
+  background:linear-gradient(180deg, rgba(214,168,73,.16), rgba(214,168,73,.06));
+  color:var(--gold);
+  border:1px solid rgba(214,168,73,.55);
+  border-right:0;
+  border-radius:12px 0 0 12px;
+  padding:clamp(14px,2.4vh,22px) clamp(12px,1.4vw,18px);
+  font-weight:700; font-size:clamp(11px,.95vw,14px); letter-spacing:.06em;
+  transition:background .18s, padding-right .18s;
+}
+.contact-edge:hover{ background:var(--gold); color:#1a1206; padding-right:clamp(18px,2vw,26px); }
+.contact-edge-text{ writing-mode:vertical-rl; transform:rotate(180deg); text-transform:uppercase; }
+.contact-edge-arrow{ display:flex; }
+
+/* Inline contact panel */
+.cat-panel-contact{
+  align-items:center; justify-content:center;
+  text-align:center;
+  background:
+    radial-gradient(900px 500px at 80% 30%, rgba(124,58,92,.18), transparent 60%),
+    radial-gradient(700px 600px at 12% 90%, rgba(20,80,80,.14), transparent 60%);
+  border:1px solid var(--line); border-radius:16px;
+  padding:clamp(20px,3vw,44px);
+}
+.contact-inner{ width:min(760px,92%); }
+
+/* Panel nav arrows (back / next) */
+.panel-nav{
+  position:absolute; top:50%; transform:translateY(-50%);
+  appearance:none; cursor:pointer;
+  display:flex; align-items:center; gap:8px;
+  background:rgba(255,255,255,.06); color:var(--muted);
+  border:1px solid var(--line); border-radius:10px;
+  padding:clamp(10px,1.4vh,14px) clamp(10px,1vw,14px);
+  font-weight:700; font-size:clamp(11px,.92vw,13px); letter-spacing:.04em;
+  transition:background .15s,color .15s,border-color .15s;
+  z-index:3;
+}
+.panel-nav:hover{ background:rgba(255,255,255,.12); color:var(--ink); border-color:var(--gold); }
+.panel-nav-back{ left:clamp(10px,1.4vw,22px); }
+.panel-nav-next{ right:clamp(10px,1.4vw,22px); }
+.panel-nav-label{ white-space:nowrap; }
+
+
+/* ===================== DOCK BAR ===================== */
+.dockbar{
+  position:relative;
+  display:flex; align-items:center; gap:clamp(10px,1.4vw,20px);
+  padding:0 clamp(14px,2vw,26px);
+  border-top:1px solid var(--line-soft);
+  background:linear-gradient(0deg, rgba(13,20,35,.92), rgba(13,20,35,.55));
+  z-index:10;   /* above stage content so the qbar answer popover isn't overlapped */
+}
+
+/* ---------- HOME: floating dock ----------
+   On the home view only, the dock loses its backing so the question
+   bar floats, and the stage's background layers (canvas + Vimeo loop)
+   are allowed to extend down behind the dock row so the animation
+   covers the strip. The layout itself is untouched — nothing inside
+   the home view moves. Category and other views keep the backed dock.
+   Uses :has(), supported by all current browsers. */
+body:has(#view-home.is-active) .dockbar{
+  border-top:0;
+  background:transparent;
+}
+/* Let the background layers escape the stage's bottom edge… */
+body:has(#view-home.is-active) .app > .stage{ overflow:visible; }
+/* …and reach under the dock (the .app frame still clips at its own
+   rounded border, so nothing leaks outside the page). */
+body:has(#view-home.is-active) .bg-net,
+body:has(#view-home.is-active) .bg-video{
+  bottom:calc(-1 * var(--dock-h));
+}
+.qbar{
+  display:flex; align-items:center; gap:10px;
+  background:#e9e9ea; color:#222; border-radius:24px;
+  padding:8px 8px 8px 14px;
+  width:clamp(240px, 30vw, 460px);
+  position:relative; flex:0 0 auto;
+}
+.qbar-icon{ display:flex; color:#444; }
+.qbar-label{ position:absolute; left:42px; color:#333; font-weight:600; font-size:clamp(12px,1vw,15px); pointer-events:none; }
+.qbar-input{
+  flex:1; border:0; background:transparent; outline:none;
+  font-family:var(--sans); font-size:clamp(12px,.95vw,14px); color:#222; padding-left:96px;
+}
+.qbar-input::placeholder{ color:#888; }
+.qbar-send{
+  appearance:none; cursor:pointer; border:0;
+  width:30px; height:30px; border-radius:50%;
+  background:#bdbdbd; color:#222; font-size:16px; line-height:1; flex:0 0 auto;
+}
+.qbar-send:hover{ background:var(--gold); color:#1a1206; }
+
+
+
+/* Figma: the tab group is an outlined pill next to the question bar,
+   with the active segment ("Use Cases") filled and the sub-vertical
+   labels uppercase inside it. */
+.dock-tabs{
+  display:flex; align-items:center; gap:clamp(2px,.4vw,6px);
+  overflow-x:auto; min-width:0;
+  border:1px solid rgba(255,255,255,.55);
+  border-radius:12px;
+  background:rgba(8,12,24,.35);
+  padding:3px;
+}
+/* display:flex above would override the hidden attribute the JS sets on
+   the home view — force it, so the tabs exist ONLY in the category view. */
+.dock-tabs[hidden]{ display:none; }
+.dock-tab{
+  appearance:none; cursor:pointer; white-space:nowrap;
+  background:transparent; color:var(--ink);
+  border:0; border-radius:9px;
+  padding:clamp(6px,.9vh,10px) clamp(10px,1.2vw,18px);
+  font-family:var(--sans); font-size:clamp(10px,.82vw,12.5px); font-weight:600;
+  letter-spacing:.06em; text-transform:uppercase;
+}
+.dock-tab:hover{ background:rgba(255,255,255,.10); }
+.dock-tab.is-active{ background:#454d5c; color:#fff; }
+
+/* ===================== OVERLAYS ===================== */
+.overlay{
+  position:fixed; inset:0; z-index:40;
+  display:flex; align-items:center; justify-content:center;
+  opacity:0; visibility:hidden; transition:opacity .28s;
+}
+.overlay.is-open{ opacity:1; visibility:visible; }
+.overlay-scrim{ position:absolute; inset:0; background:rgba(3,5,9,.6); backdrop-filter:blur(2px); }
+
+.overlay-window{
+  position:relative; z-index:2;
+  width:min(1320px,94vw); height:min(840px,90vh);
+  background:#2b2b2b;
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:clamp(12px,1.4vw,22px);
+  box-shadow:0 40px 120px rgba(0,0,0,.6);
+  overflow:hidden;
+}
+.overlay-close{
+  position:absolute; top:14px; right:14px; z-index:5;
+  appearance:none; cursor:pointer;
+  width:38px; height:38px; border-radius:50%;
+  background:rgba(0,0,0,.45); color:#fff; border:1px solid rgba(255,255,255,.18);
+  display:flex; align-items:center; justify-content:center;
+}
+.overlay-close:hover{ background:rgba(0,0,0,.7); }
+.overlay-body{ width:100%; height:100%; position:relative; background:#1f1f1f; }
+.overlay-body iframe{ width:100%; height:100%; border:0; display:block; }
+.overlay-loading{
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:16px; color:var(--muted);
+}
+.overlay-loading.is-hidden{ display:none; }
+.overlay-loading-text{ font-size:13px; }
+.spinner{
+  width:34px; height:34px; border-radius:50%;
+  border:3px solid rgba(255,255,255,.15); border-top-color:var(--gold);
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+/* ---------- Contact panel (inline) text styles ---------- */
+.contact-kicker{ color:var(--muted); font-size:clamp(11px,.95vw,13px); font-weight:700; letter-spacing:.2em; }
+.contact-headline{ font-size:clamp(28px,3.8vw,52px); font-weight:800; margin:clamp(12px,1.6vh,20px) 0; line-height:1.05; }
+.contact-headline .accent{ color:var(--gold); }
+.contact-body{ color:var(--muted); font-size:clamp(13px,1.05vw,16px); line-height:1.6; max-width:60ch; margin:0 auto clamp(22px,3vh,32px); }
+.contact-stages{ display:flex; justify-content:space-between; max-width:680px; margin:0 auto 8px; padding:0 6px; }
+.contact-stages span{ font-size:clamp(11px,.92vw,13px); font-weight:700; letter-spacing:.1em; color:var(--faint); }
+.contact-stages span.is-primary{ color:var(--gold); }
+.contact-ctas{ display:flex; gap:clamp(10px,1.2vw,16px); justify-content:center; flex-wrap:wrap; max-width:720px; margin:0 auto; }
+.contact-cta{
+  flex:1 1 200px; appearance:none; cursor:pointer;
+  background:transparent; color:var(--ink);
+  border:1px solid var(--line); border-radius:8px;
+  padding:clamp(14px,1.8vh,20px) clamp(12px,1.4vw,18px);
+  font-family:var(--sans); font-size:clamp(13px,1.1vw,16px); font-weight:700; letter-spacing:.02em;
+  /* Uniform shape: same min-height for all, content centred. */
+  min-height:56px;
+  display:flex; align-items:center; justify-content:center; text-align:center;
+  transition:border-color .18s ease, background .18s ease, color .18s ease,
+             transform .18s ease, box-shadow .18s ease;
+  will-change:transform;
+}
+/* Hover: slightly brighter + lifts up; eases back down on leave. */
+.contact-cta:hover{
+  border-color:rgba(255,255,255,.65);
+  background:rgba(255,255,255,.10);
+  transform:translateY(-4px);
+  box-shadow:0 8px 18px rgba(0,0,0,.35);
+}
+.contact-cta.is-primary{ background:var(--gold); color:#1a1206; border-color:var(--gold); }
+.contact-cta.is-primary:hover{
+  background:var(--gold-bright); border-color:var(--gold-bright);
+  transform:translateY(-4px);
+  box-shadow:0 8px 18px rgba(0,0,0,.35);
+}
+.contact-foot{ color:var(--faint); font-size:clamp(11px,.9vw,13px); margin-top:clamp(18px,2.6vh,28px); }
+
+/* ===================== LEAD FORM MODAL ===================== */
+.form-window{
+  position:relative; z-index:2;
+  width:min(620px,94vw); max-height:92vh; overflow-y:auto;
+  padding:clamp(28px,3.4vw,44px) clamp(22px,3vw,40px) clamp(24px,3vw,36px);
+  background:linear-gradient(160deg,#0e1424,#0a0d16);
+  border:1px solid var(--line); border-radius:clamp(14px,1.6vw,20px);
+  box-shadow:0 40px 120px rgba(0,0,0,.6);
+}
+.form-stage{ color:var(--gold); font-size:11px; font-weight:700; letter-spacing:.2em; }
+.form-title{ font-size:clamp(24px,2.8vw,34px); font-weight:800; margin:8px 0 10px; line-height:1.1; }
+.form-intro{ color:var(--muted); font-size:clamp(13px,1.05vw,15px); line-height:1.55; margin:0 0 22px; }
+
+.form-fields{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+.form-field{ display:flex; flex-direction:column; gap:6px; }
+.form-field.full{ grid-column:1 / -1; }
+.form-field label{ font-size:12px; font-weight:600; color:var(--muted); letter-spacing:.02em; }
+.form-field label .req{ color:var(--gold); }
+.form-field input,
+.form-field select,
+.form-field textarea{
+  appearance:none; width:100%;
+  background:rgba(255,255,255,.05); color:var(--ink);
+  border:1px solid var(--line); border-radius:8px;
+  padding:11px 12px; font-family:var(--sans); font-size:14px;
+  transition:border-color .15s, background .15s;
+}
+.form-field textarea{ min-height:84px; resize:vertical; }
+.form-field select{ cursor:pointer; }
+.form-field option{ background:#0e1424; color:var(--ink); }
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus{
+  outline:none; border-color:var(--gold); background:rgba(255,255,255,.08);
+}
+.form-field.invalid input,
+.form-field.invalid select,
+.form-field.invalid textarea{ border-color:#e0594f; }
+
+.form-error{ color:#f0857c; font-size:13px; margin:14px 0 0; }
+.form-submit{
+  width:100%; margin-top:20px;
+  appearance:none; cursor:pointer;
+  background:var(--gold); color:#1a1206;
+  border:0; border-radius:9px;
+  padding:15px 18px; font-family:var(--sans);
+  font-size:15px; font-weight:700; letter-spacing:.02em;
+  transition:background .15s, opacity .15s;
+}
+.form-submit:hover{ background:var(--gold-bright); }
+.form-submit:disabled{ opacity:.6; cursor:default; }
+.form-fineprint{ color:var(--faint); font-size:11.5px; text-align:center; margin:14px 0 0; }
+
+/* Success state */
+.form-success{ text-align:center; padding:18px 6px 6px; }
+.form-success-mark{
+  width:72px; height:72px; margin:0 auto 18px;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:50%; color:var(--gold);
+  background:rgba(214,168,73,.12); border:1px solid rgba(214,168,73,.5);
+}
+.form-success-title{ font-size:clamp(22px,2.6vw,30px); font-weight:800; margin:0 0 10px; }
+.form-success-body{ color:var(--muted); font-size:14px; line-height:1.55; margin:0 auto 8px; max-width:42ch; }
+.form-success .form-submit{ max-width:240px; margin:22px auto 0; }
+
+/* ===================== COOKIE ===================== */
+.cookie{
+  position:fixed; right:clamp(14px,2vw,26px); bottom:clamp(14px,2vh,26px); z-index:30;
+  width:min(420px,82vw);
+  background:rgba(18,24,38,.96); border:1px solid var(--line);
+  border-radius:12px; padding:16px 16px 14px;
+  box-shadow:0 18px 50px rgba(0,0,0,.5);
+}
+.cookie.is-hidden{ display:none; }
+.cookie-text{ font-size:clamp(11px,.9vw,13px); color:var(--muted); line-height:1.5; }
+.cookie-text strong{ color:var(--ink); }
+.cookie-actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:12px; }
+.cookie-btn{
+  appearance:none; cursor:pointer;
+  background:rgba(255,255,255,.10); color:var(--ink);
+  border:1px solid var(--line); border-radius:18px;
+  padding:7px 18px; font-family:var(--sans); font-size:12px; font-weight:600;
+}
+.cookie-btn:hover{ background:rgba(255,255,255,.18); }
+.cookie-btn-ghost{ background:transparent; color:var(--muted); }
+
+/* ============================================================
+   MOBILE-ONLY COMPONENTS (hidden on desktop, shown in phone media)
+   ============================================================ */
+.burger{
+  display:none;                      /* shown only on phone */
+  appearance:none; cursor:pointer;
+  background:transparent; border:0; color:var(--ink);
+  flex-direction:column; align-items:center; gap:3px;
+  padding:4px 6px;
+}
+.burger-lines{ display:flex; flex-direction:column; gap:4px; }
+.burger-lines i{ width:22px; height:2px; background:currentColor; border-radius:2px; transition:transform .2s,opacity .2s; }
+.burger-text{ font-size:9px; letter-spacing:.08em; color:var(--muted); }
+.burger.is-open .burger-lines i:nth-child(1){ transform:translateY(6px) rotate(45deg); }
+.burger.is-open .burger-lines i:nth-child(2){ opacity:0; }
+.burger.is-open .burger-lines i:nth-child(3){ transform:translateY(-6px) rotate(-45deg); }
+
+.nav-drawer{
+  display:none;                      /* shown only on phone, when open */
+  position:fixed; left:0; right:0; z-index:25;
+  top:var(--topbar-h);
+  background:#0c1220; border-bottom:1px solid var(--line);
+  flex-direction:column;
+  transform:translateY(-12px); opacity:0; pointer-events:none;
+  transition:transform .22s ease, opacity .22s ease;
+  box-shadow:0 24px 50px rgba(0,0,0,.5);
+}
+.nav-drawer.is-open{ transform:translateY(0); opacity:1; pointer-events:auto; }
+.nav-drawer a{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:16px 20px; color:var(--ink); text-decoration:none;
+  font-size:15px; font-weight:700; letter-spacing:.08em;
+  border-bottom:1px solid var(--line-soft);
+}
+.nav-drawer a .drawer-sub{ font-size:11px; font-weight:500; color:var(--faint); letter-spacing:.02em; }
+.nav-drawer a.is-active{ color:var(--gold); }
+.nav-scrim{
+  position:fixed; inset:0; z-index:24; background:rgba(3,5,9,.5);
+}
+.nav-scrim[hidden]{ display:none; }
+
+/* Mobile slide-to-contact bar (desktop-hidden). */
+.contact-bar{
+  display:none;                      /* shown only on phone */
+  appearance:none; cursor:pointer;
+  width:100%; align-items:center; justify-content:center; gap:8px;
+  margin-top:10px;
+  background:linear-gradient(180deg, rgba(214,168,73,.18), rgba(214,168,73,.08));
+  color:var(--gold);
+  border:1px solid rgba(214,168,73,.55);
+  border-radius:10px;
+  padding:13px 16px;
+  font-family:var(--sans); font-weight:700; font-size:13px; letter-spacing:.06em;
+}
+.contact-bar:active{ background:var(--gold); color:#1a1206; }
+.contact-bar-arrow{ display:flex; }
+/* Back state: arrow points left and sits before the label. */
+.contact-bar.is-back .contact-bar-arrow{ order:-1; transform:scaleX(-1); }
+
+/* Mobile sector dots pager — ‹ SECTOR › centred label in the sector
+   accent with one dot per sector underneath. Arrows step, dots jump.
+   Deterministic (text/class toggle only — no transform math). */
+.sector-pager{
+  display:none;                      /* shown only on phone */
+  flex:0 0 auto;
+  align-items:stretch;
+  margin-top:clamp(8px,1.4vh,14px);
+  border-top:1px solid var(--line-soft);
+  border-bottom:1px solid var(--line-soft);
+  background:linear-gradient(180deg, rgba(20,34,58,.55), rgba(10,15,24,.35));
+}
+.sector-pager-center{
+  flex:1 1 auto; min-width:0;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:7px; padding:11px 8px 10px;
+}
+.sector-pager-label{
+  font-size:15px; font-weight:800; letter-spacing:.12em;
+  color:var(--sector-accent);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
+  transition:color .2s;
+}
+.sector-pager-dots{ display:flex; gap:8px; }
+.sector-dot{
+  appearance:none; cursor:pointer; border:0; padding:0;
+  width:7px; height:7px; border-radius:50%;
+  background:rgba(255,255,255,.28);
+  transition:background .2s, transform .2s;
+}
+.sector-dot.is-active{
+  background:var(--item-accent, var(--sector-accent));
+  transform:scale(1.3);
+}
+.sector-arrow{
+  flex:0 0 auto; appearance:none; cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+  width:44px; background:rgba(255,255,255,.04);
+  border:0; color:var(--gold);
+}
+.sector-arrow-prev{ border-right:1px solid var(--line-soft); }
+.sector-arrow-next{ border-left:1px solid var(--line-soft); }
+.sector-arrow:active{ background:rgba(214,168,73,.18); }
+/* Respect the hidden attribute (JS hides the pager outside the
+   category view) even where a breakpoint sets display:flex. */
+.sector-pager[hidden]{ display:none !important; }
+
+
+/* ============================================================
+   EXAMPLE WINDOW  (per sub-vertical) — matches experienceOpenedWindow.png
+   Large rounded dark window: a live experience pane on top, a
+   scrolling content pane (overview + project + evidence) below.
+   ============================================================ */
+.example-window{
+  display:flex; flex-direction:column;
+  background:#0c111c;
+}
+/* Experience pane — the borrowed Treedis iframe fills it. */
+.example-stage{
+  position:relative; flex:0 0 auto;
+  height:clamp(220px, 42%, 460px);
+  background:radial-gradient(120% 120% at 50% 0%, #16203400, #0a1018);
+  border-bottom:1px solid var(--line);
+}
+.example-stage iframe{ width:100%; height:100%; border:0; display:block; }
+.example-loading{
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:14px; color:var(--muted);
+}
+.example-loading.is-hidden{ display:none; }
+.example-loading-text{ font-size:13px; }
+
+/* Content pane — scrolls within the window. */
+.example-content{
+  flex:1 1 auto; min-height:0; overflow-y:auto;
+  padding:clamp(20px,2.4vw,34px) clamp(20px,2.8vw,40px) clamp(24px,3vw,40px);
+}
+.example-kicker{ color:var(--gold); font-size:clamp(11px,.95vw,13px); font-weight:700; letter-spacing:.18em; }
+.example-title{ font-size:clamp(24px,2.8vw,38px); font-weight:800; margin:6px 0 8px; line-height:1.05; }
+.example-tagline{ color:var(--muted); font-size:clamp(13px,1.05vw,16px); margin:0 0 16px; line-height:1.5; max-width:70ch; }
+
+.example-meta{ display:flex; flex-wrap:wrap; gap:8px; margin:0 0 18px; }
+.meta-chip{
+  font-size:11.5px; font-weight:600; letter-spacing:.02em;
+  color:var(--muted); background:rgba(255,255,255,.05);
+  border:1px solid var(--line); border-radius:999px; padding:5px 12px;
+}
+.meta-chip.meta-kind{ color:var(--gold); border-color:rgba(214,168,73,.45); background:rgba(214,168,73,.08); }
+
+.example-overview{ color:var(--muted); font-size:clamp(13px,1.02vw,15.5px); line-height:1.65; max-width:74ch; margin:0 0 22px; }
+
+.example-project{
+  background:linear-gradient(160deg, rgba(18,26,43,.7), rgba(10,15,24,.7));
+  border:1px solid var(--line); border-left:3px solid var(--gold);
+  border-radius:12px; padding:clamp(16px,1.6vw,24px); margin:0 0 22px;
+}
+.example-project-label{ color:var(--gold); font-size:11px; font-weight:700; letter-spacing:.16em; }
+.example-project-name{ font-size:clamp(16px,1.4vw,21px); font-weight:700; margin:8px 0 8px; }
+.example-project-blurb{ color:var(--muted); font-size:clamp(13px,1vw,15px); line-height:1.6; margin:0; max-width:76ch; }
+.example-illustrative{
+  display:inline-block; margin-top:12px;
+  font-size:11px; font-weight:600; letter-spacing:.02em; color:var(--faint);
+  border:1px dashed var(--line); border-radius:6px; padding:4px 10px;
+}
+
+.example-evidence{ margin:0 0 24px; }
+.example-evidence-label{ color:var(--ink); font-size:clamp(11px,.95vw,13px); font-weight:700; letter-spacing:.12em; }
+.example-evidence-tabs{ display:flex; flex-wrap:wrap; gap:8px; margin:12px 0 14px; }
+.example-evidence-tabs button{
+  appearance:none; cursor:pointer; white-space:nowrap;
+  background:transparent; color:var(--muted);
+  border:1px solid var(--line); border-radius:6px;
+  padding:7px 14px; font-family:var(--sans); font-size:12px; font-weight:600; letter-spacing:.03em;
+  transition:border-color .15s,color .15s,background .15s;
+}
+.example-evidence-tabs button:hover{ color:var(--ink); border-color:var(--gold); }
+.example-evidence-tabs button.is-active{ color:#1a1206; background:var(--gold); border-color:var(--gold); }
+.example-evidence-body{ color:var(--muted); font-size:clamp(13px,1vw,15px); line-height:1.6; margin:0; max-width:76ch; min-height:2.6em; }
+
+.example-cta-row{ display:flex; flex-wrap:wrap; gap:12px; }
+.example-cta{
+  appearance:none; cursor:pointer;
+  background:transparent; color:var(--ink);
+  border:1px solid var(--line); border-radius:9px;
+  padding:13px 22px; font-family:var(--sans); font-size:14px; font-weight:700; letter-spacing:.02em;
+  transition:border-color .15s, background .15s, color .15s;
+}
+.example-cta:hover{ border-color:var(--gold); }
+.example-cta-primary{ background:var(--gold); color:#1a1206; border-color:var(--gold); }
+.example-cta-primary:hover{ background:var(--gold-bright); }
+
+/* Sector colour accents for the example window kicker / project rule. */
+.example-window[data-sector="education"]  .example-kicker,
+.example-window[data-sector="education"]  .example-project-label{ color:#e9b44c; }
+.example-window[data-sector="industry"]   .example-kicker,
+.example-window[data-sector="industry"]   .example-project-label{ color:#2e8bff; }
+.example-window[data-sector="government"] .example-kicker,
+.example-window[data-sector="government"] .example-project-label{ color:#34598f; }
+.example-window[data-sector="community"]  .example-kicker,
+.example-window[data-sector="community"]  .example-project-label{ color:#d27049; }
+
+/* ============================================================
+   ACCESS YOUR TWIN  (sign-in + dashboard)
+   ============================================================ */
+.access-window{ width:min(520px,94vw); }
+.access-view .form-field{ margin-bottom:14px; }
+.access-dashboard{ text-align:left; }
+
+/* List of the signed-in client's twins, each with its own Open button. */
+.dash-twins{ display:flex; flex-direction:column; gap:10px; margin:14px 0 4px; max-height:46vh; overflow-y:auto; }
+.dash-twin{
+  display:flex; align-items:center; gap:12px;
+  background:rgba(255,255,255,.04); border:1px solid var(--line);
+  border-radius:10px; padding:12px 12px 12px 14px;
+}
+.dash-twin-info{ display:flex; flex-direction:column; gap:3px; min-width:0; flex:1 1 auto; }
+.dash-twin-name{ font-size:clamp(14px,1.2vw,16px); font-weight:700; color:var(--ink); }
+.dash-twin-note{ font-size:12.5px; color:var(--muted); line-height:1.45; }
+.dash-twin-open{
+  flex:0 0 auto; appearance:none; cursor:pointer;
+  background:var(--gold); color:#1a1206; border:0; border-radius:8px;
+  padding:9px 20px; font-family:var(--sans); font-size:13px; font-weight:700; letter-spacing:.02em;
+  transition:background .15s;
+}
+.dash-twin-open:hover{ background:var(--gold-bright); }
+
+.dash-cta-row{ display:flex; gap:12px; margin-top:18px; flex-wrap:wrap; }
+.dash-cta-row .form-submit{ margin-top:0; flex:1 1 160px; }
+.form-submit-ghost{ background:transparent; color:var(--muted); border:1px solid var(--line); }
+.form-submit-ghost:hover{ background:rgba(255,255,255,.06); color:var(--ink); }
+
+/* ============================================================
+   QUESTION-BAR ANSWER POPOVER
+   ============================================================ */
+.qbar-answer{
+  position:absolute; left:0; bottom:calc(100% + 12px);
+  width:min(460px, 86vw);
+  background:#0e1424; color:var(--ink);
+  border:1px solid var(--line); border-radius:14px;
+  padding:16px 38px 16px 16px;
+  box-shadow:0 24px 60px rgba(0,0,0,.55);
+  z-index:8;
+}
+.qbar-answer[hidden]{ display:none; }
+.qbar-answer-close{
+  position:absolute; top:10px; right:10px;
+  appearance:none; cursor:pointer;
+  width:26px; height:26px; border-radius:50%;
+  background:rgba(255,255,255,.08); color:var(--muted); border:0;
+  display:flex; align-items:center; justify-content:center;
+}
+.qbar-answer-close:hover{ background:rgba(255,255,255,.16); color:var(--ink); }
+.qbar-answer-q{ color:var(--gold); font-size:13px; font-weight:700; margin:0 0 6px; }
+.qbar-answer-a{ color:var(--muted); font-size:13px; line-height:1.55; margin:0; }
+
+/* ============================================================
+   RESPONSIVE  (phone → tablet → desktop)
+   Pattern mirrors the Experimental base: progressive breakpoints,
+   panels stack, chrome scrolls horizontally when cramped.
+   ============================================================ */
+
+/* ----- TABLET / small laptop (≤ 1100px) ----- */
+@media (max-width:1100px){
+  .home-grid{
+    grid-template-columns:1fr;
+    grid-template-rows:auto 1fr;        /* copy on top, demo fills rest */
+    align-items:start;
+    gap:clamp(16px,2.4vh,28px);
+  }
+  .cat-grid{
+    grid-template-columns:1fr;
+    grid-template-rows:auto 1fr;
+    align-content:start;
+  }
+  /* Simplify the decorative cluster before the hero text shrinks.
+     Alignment is preserved automatically (same unit-based anchor);
+     we only pull the unit down so the run clears the copy column. */
+  .hex-ghost{ display:none; }
+  .hex-cluster{ --hexu: clamp(96px, 13vw, 170px); --hex-ax:76%; --hex-ay:38%; }
+  .twin-cta-wrap{ top:72%; }
+  .twin-cta-fx{ width:clamp(150px,20vw,220px); }
+  .twin-hero-card{ width:min(60%, 440px); }
+
+  /* Keep room on the right so the edge button doesn't cover cards. */
+  .cat-panel-cards{ padding-right:clamp(40px,7vw,72px); }
+}
+
+/* ----- Allow vertical scrolling inside views on shorter screens ----- */
+@media (max-height:680px), (max-width:1100px){
+  .view{ overflow-y:auto; }
+}
+
+/* ----- PHONE (≤ 760px) ----- */
+@media (max-width:760px){
+  /* True full-bleed app sized to the dynamic viewport so mobile
+     browser chrome never forces a scroll. */
+  html,body{ overflow:hidden; height:100%; }
+  .app{
+    position:fixed; inset:0;
+    width:100%;
+    height:100dvh;                   /* dynamic viewport height */
+    border:0; border-radius:0;
+    grid-template-rows:var(--topbar-h) 1fr auto;
+  }
+
+  /* Header: burger + logo on the left, Access on the right. The
+     pillar row is hidden — navigation moves into the drawer. */
+  .topbar{
+    flex-wrap:nowrap; align-items:center;
+    padding:0 12px; gap:10px;
+  }
+  .burger{ display:flex; order:0; }
+  .brand{ padding:6px 2px; order:1; gap:8px; }
+  .brand-logo{ height:30px; }
+  .brand.is-active::after{ display:none; }
+  .pillars{ display:none; }          /* replaced by drawer */
+  .nav-drawer{ display:flex; }
+  .access-btn{ order:2; margin-left:auto; padding:8px 12px; font-size:10px; }
+
+  /* Stage views fill the row; no view should need page scroll. */
+  .view{ padding:16px 14px; overflow:hidden; }
+
+  /* ---------- HOME (no scroll: copy then demo fills the rest) ---------- */
+  .home-grid{
+    grid-template-columns:1fr;
+    grid-template-rows:auto 1fr;
+    gap:14px; align-items:stretch;
+  }
+  .home-copy{ position:static; transform:none; width:auto; }
+  .copy-kicker{ font-size:10px; }
+  .home-headline{ font-size:clamp(28px,8.5vw,42px); margin:8px 0; }
+  .home-pills{ gap:14px; margin-bottom:10px; }
+  .home-body{ font-size:13px; line-height:1.5; max-width:none; }
+  .evidence-bar{ display:none; }                    /* not in mobile target */
+  .hex-cluster{ display:none; }                     /* decorative only — drop on phone */
+  .dock-explore{ display:none; }
+  .twin-cta-wrap{
+    position:relative; inset:auto; transform:none; margin-top:18px;
+    justify-self:center; align-self:start;
+  }
+  .twin-cta-fx{ width:150px; }
+  .bg-video{ display:none; }        /* save phone bandwidth; canvas fallback shows */
+  .twin-hero-card{
+    left:12px; right:12px; width:auto; top:auto; bottom:14px;
+    transform:translateY(10px);
+  }
+  .twin-hero-card.is-visible{ transform:translateY(0); }
+  .twin-exit{ top:10px; left:10px; padding:7px 13px; font-size:11.5px; }
+
+  /* ---------- CATEGORY (intro → 2×2 cards → sector strip) ---------- */
+  .cat-slider{ min-height:0; }
+  .cat-panel{ overflow:hidden; }
+  .cat-panel-cards{ padding-right:0; }
+  .cat-grid{
+    grid-template-columns:1fr;
+    grid-template-rows:auto 1fr;
+    gap:14px; min-height:0;
+  }
+  .cat-intro{ overflow:hidden; }
+  .cat-kicker{ font-size:11px; }
+  .cat-title{ font-size:clamp(26px,8vw,38px); margin:6px 0; }
+  .cat-sub{ font-size:13px; margin-bottom:10px; }
+  /* Trim the long body on phone so the cards fit without scrolling. */
+  .cat-body{
+    font-size:12.5px; line-height:1.45; max-width:none;
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .cat-projects-btn{ margin-top:12px; padding:10px 14px; }
+
+  /* 2×2 grid that fills the available height (matches the mockup).
+     Scrolls internally only if a very short screen can't fit it. */
+  .cat-cards{
+    grid-template-columns:1fr 1fr;
+    grid-auto-rows:1fr;
+    gap:12px; min-height:0;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .uc-card{ padding:14px; min-height:0; }
+  .uc-card h3{ font-size:12px; margin-bottom:6px; }
+  .uc-card p{ font-size:11.5px; line-height:1.4; }
+
+  /* The right-edge "Contact & Info" tab is replaced on phone by the
+     sector strip + swipe; hide it to keep the layout clean. */
+  .contact-edge{ display:none; }
+
+  /* Contact panel: vertical, full layout (matches image 2). The side
+     arrow buttons are hidden — Back lives in the sector strip / swipe. */
+  .cat-panel-contact{
+    padding:20px 16px; border:0; border-radius:0;
+    justify-content:flex-start; overflow-y:auto;
+  }
+  .panel-nav{ display:none; }
+  .contact-inner{ width:100%; }
+  .contact-headline{ font-size:clamp(28px,9vw,40px); }
+  .contact-body{ font-size:13px; }
+  /* Stack the three CTAs full-width with their stage label above. */
+  .contact-stages{ display:none; }
+  .contact-ctas{ flex-direction:column; gap:10px; }
+  .contact-cta{ flex:1 1 auto; width:100%; padding:15px; }
+
+  /* Sector strip visible on phone. */
+  .sector-pager{ display:flex; }
+  .contact-bar{ display:flex; }
+
+  /* Lead form: single column on phone. */
+  .form-fields{ grid-template-columns:1fr; }
+
+  /* Cookie: slim full-width bar that sits ABOVE the dock, not over it. */
+  .cookie{
+    left:8px; right:8px; bottom:calc(env(safe-area-inset-bottom, 0px) + 8px);
+    width:auto; padding:10px 12px; border-radius:10px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .cookie-text{ font-size:11px; flex:1; line-height:1.35;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .cookie-actions{ margin-top:0; flex:0 0 auto; }
+  .cookie-btn{ padding:6px 12px; font-size:11px; }
+
+  /* Footer evidence row is noise on phone — keep only the dock. */
+
+  /* Dock: question bar full width; tabs scroll under it. */
+  .dockbar{
+    flex-direction:column; align-items:stretch;
+    padding:8px 12px; gap:8px;
+  }
+  /* Figma stack order inside the dock: Use Cases rail on top, sector
+     pager in the middle, question bar at the bottom. */
+  .dock-tabs{
+    order:1; width:100%; overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .sector-pager{ order:2; margin-top:0; }
+  .qbar{ order:3; width:100%; max-width:none; }
+
+  /* Cookie: slim bar at the very bottom. It's a first-load overlay;
+     kept short so dismissing it immediately reveals the dock + strip. */
+  .cookie{
+    left:0; right:0; bottom:0; width:auto;
+    border-radius:0; border-left:0; border-right:0; border-bottom:0;
+    padding:10px 12px;
+    display:flex; align-items:center; gap:10px;
+    background:rgba(10,14,23,.98);
+  }
+  .cookie-text{
+    flex:1; font-size:10.5px; line-height:1.35;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .cookie-actions{ margin-top:0; flex:0 0 auto; gap:8px; }
+  .cookie-btn{ padding:7px 14px; font-size:11px; }
+
+  /* Example window: experience pane shrinks; content gets tighter pad. */
+  .example-window{ width:100vw; height:100dvh; border-radius:0; }
+  .example-stage{ height:38vh; }
+  .example-content{ padding:18px 16px 28px; }
+  .example-cta-row .example-cta{ flex:1 1 100%; text-align:center; }
+
+  /* Access window: full-width fields, stacked dashboard CTAs. */
+  .access-window{ width:94vw; }
+  .dash-cta-row{ flex-direction:column; }
+  .dash-cta-row .form-submit{ width:100%; }
+
+  /* Answer popover spans the bar width above the dock. */
+  .qbar-answer{ width:calc(100vw - 24px); left:50%; transform:translateX(-50%); }
+}
+
+/* Slightly larger phones / small tablets keep cards roomier. */
+@media (max-width:760px) and (min-height:740px){
+  .cat-body{ -webkit-line-clamp:5; }
+  .uc-card{ padding:18px; }
+}
+
+/* ----- Very large screens: cap so type doesn't get silly ----- */
+@media (min-width:1900px){
+  .app{ inset:clamp(14px,1.2vw,28px); }
+  /* Ultra-wide monitors: lift the cap so the cluster keeps roughly the
+     same visual weight (~10vw) instead of shrinking relative to the page. */
+  .hex-cluster{ --hexu: clamp(240px, 10.5vw, 420px); }
+}
+
+/* ============================================================
+   MOBILE-BOARD ADDITIONS  (Mobile Web.svg — 27 frames @ 360×780)
+   ------------------------------------------------------------
+   Components introduced or restyled to match the Figma mobile
+   board: contact steps (clip18), REQUEST SENT toast (clip23),
+   Welcome Back sign-in (clip1), sector projects window (clip28),
+   client portal (clip4/5/6), sector strip + swipe (clip17),
+   contact edge tab, and the ≤760px fidelity overrides.
+   ============================================================ */
+:root{ --sector-accent:#e9b44c; }
+
+/* ---------- Contact steps (clip18) ---------- */
+.contact-ctas{ align-items:stretch; }
+.contact-step{
+  position:relative;
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  flex:1 1 200px; min-width:0;
+}
+.contact-step-label{
+  font-size:clamp(12px,1vw,15px); font-weight:700; letter-spacing:.14em;
+  color:var(--ink);
+}
+.contact-step.is-primary .contact-step-label{ color:var(--gold); }
+.contact-step .contact-cta{ width:100%; flex:1 1 auto; }
+/* Decorative connector line (visible on phone, where the board shows it). */
+.contact-step-line{ display:none; }
+
+/* ---------- REQUEST SENT toast (clip23) ---------- */
+.form-window.is-success{
+  background:rgba(16,23,38,.92);
+  border-radius:26px;
+  padding:clamp(26px,4vw,40px) clamp(22px,3vw,40px);
+}
+/* The success view brings its own gold circular close — hide the
+   modal's generic white X so only one close button shows. */
+.form-window.is-success .overlay-close{ display:none; }
+.form-success{ position:relative; text-align:center; padding:6px 4px; }
+.form-success-kicker{
+  position:absolute; top:2px; left:0;
+  color:var(--gold); font-size:13px; font-weight:800; letter-spacing:.08em;
+}
+.form-success-title{
+  font-size:clamp(21px,2.6vw,28px); font-weight:800; margin:34px 0 12px;
+}
+.form-success-body{ color:var(--ink); font-weight:600; font-size:13.5px; line-height:1.6; margin:0 auto; max-width:46ch; }
+.form-success-x{
+  position:absolute; top:-6px; right:-4px;
+  appearance:none; cursor:pointer;
+  width:30px; height:30px; border-radius:50%;
+  background:var(--gold); color:#141414; border:0;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800;
+}
+.form-success-x:hover{ background:var(--gold-bright); }
+
+/* ---------- Welcome Back sign-in (clip1) ----------
+   Backed by the teal→purple gradient artwork (logBackground.png) with
+   the CubeLogo + wordmark brand block; the form sits in a translucent
+   dark glass card (Figma desktop + mobile login frames). */
+.access-window{
+  background:#0b1626 url("logBackground.png") center / cover no-repeat;
+  border-radius:22px;
+}
+.access-brand{ display:flex; flex-direction:column; align-items:flex-start; margin-bottom:6px; }
+.access-brand-cube{ height:72px; width:auto; object-fit:contain; margin-bottom:8px; }
+.access-brand-word{
+  color:#fff; font-weight:700; font-size:19px; letter-spacing:.3em;
+  line-height:1;
+}
+.access-brand-studios{
+  color:#fff; font-weight:600; font-size:10px; letter-spacing:.58em;
+  margin-top:5px; line-height:1;
+}
+.access-brand-tag{ font-size:10px; color:var(--gold); letter-spacing:.03em; margin-top:7px; }
+/* Glass card wrapping the whole form (both breakpoints). */
+.access-form-col{
+  background:rgba(10,15,26,.34);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:22px;
+  padding:clamp(22px,4vh,34px) clamp(18px,2.4vw,30px);
+  backdrop-filter:blur(9px);
+  -webkit-backdrop-filter:blur(9px);
+  box-shadow:0 18px 44px rgba(0,0,0,.35);
+}
+.access-welcome{
+  text-align:center; font-size:clamp(26px,3vw,32px); font-weight:800;
+  margin:14px 0 18px;
+}
+.access-intro{ text-align:center; margin-bottom:14px; }
+.access-intro:empty{ display:none; }
+.access-field{ max-width:400px; margin:0 auto 14px; }
+.access-field label{ color:var(--ink); font-weight:700; }
+.access-field input{
+  background:#e7e7e7; color:#111;
+  border:1.5px solid rgba(0,0,0,.45); border-radius:7px;
+}
+.access-field input:focus{ background:#fff; border-color:var(--gold); }
+.access-row{
+  display:flex; align-items:center; justify-content:space-between;
+  max-width:400px; margin:2px auto 14px; gap:12px;
+}
+.access-remember{
+  display:flex; align-items:center; gap:8px;
+  font-size:12.5px; font-weight:700; color:var(--ink); cursor:pointer;
+}
+.access-remember input{ width:15px; height:15px; accent-color:var(--gold); }
+.access-forgot{
+  appearance:none; background:none; border:0; cursor:pointer; padding:0;
+  color:var(--ink); font-family:var(--sans); font-size:12.5px; font-weight:600;
+}
+.access-forgot:hover{ color:var(--gold); }
+.access-submit{
+  display:block; max-width:400px; margin:6px auto 0;
+  background:#f7b50c; color:#123;
+  font-size:17px; font-weight:700; border-radius:7px;
+  border:1.5px solid rgba(0,0,0,.4);
+}
+.access-submit:hover{ background:var(--gold-bright); }
+.access-signup{
+  text-align:center; margin:14px 0 0;
+  color:var(--ink); font-size:13px; font-weight:700;
+}
+.access-contact-link{
+  appearance:none; background:none; border:0; cursor:pointer;
+  color:var(--gold); font-family:var(--sans); font-size:13px; font-weight:800;
+  text-decoration:underline; padding:0 0 0 6px;
+}
+.access-contact-link:hover{ color:var(--gold-bright); }
+
+/* ---------- Sector projects window (clip28) ---------- */
+.projects-window{
+  position:relative; z-index:2;
+  width:min(560px,94vw); max-height:92vh;
+  display:flex; flex-direction:column;
+  background:#070e18;
+  border:1px solid var(--line); border-radius:18px;
+  box-shadow:0 40px 120px rgba(0,0,0,.65);
+  overflow:hidden;
+}
+.projects-close{
+  background:var(--gold); color:#141414; border:0;
+  width:34px; height:34px;
+}
+.projects-close:hover{ background:var(--gold-bright); }
+.projects-brand{
+  flex:0 0 auto;
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  padding:18px 16px 12px;
+  background:#0a1525; border-bottom:1px solid var(--line-soft);
+}
+.projects-brand-logo{ height:44px; width:auto; object-fit:contain; }
+.projects-brand-tag{ font-size:10px; color:rgba(255,255,255,.75); }
+.projects-title{
+  flex:0 0 auto; text-align:center;
+  font-size:clamp(19px,2.2vw,24px); font-weight:800; letter-spacing:.04em;
+  margin:22px 16px 6px;
+}
+.projects-list{
+  flex:1 1 auto; min-height:0; overflow-y:auto;
+  display:flex; flex-direction:column; gap:18px;
+  padding:18px 18px 26px;
+}
+.project-card{
+  appearance:none; cursor:pointer; text-align:left;
+  display:flex; flex-direction:column;
+  background:#565656; color:var(--ink);
+  border:0; border-radius:12px; overflow:hidden;
+  min-height:180px;
+  font-family:var(--sans);
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+.project-card:hover{ transform:translateY(-2px); box-shadow:0 14px 34px rgba(0,0,0,.45); }
+.project-card:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+.project-card-media{
+  flex:1 1 auto; display:flex; flex-direction:column; gap:8px;
+  padding:16px 16px 8px;
+}
+.project-card-name{ font-size:15px; font-weight:800; }
+.project-card-blurb{
+  font-size:12px; line-height:1.5; color:rgba(255,255,255,.85);
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+}
+.project-card-chips{
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end;
+  gap:6px; padding:0 14px 12px;
+  font-size:12px; color:#f2f2f2;
+}
+.project-chip-label{ font-weight:600; }
+.project-chip{
+  background:#d9d9d9; color:#1c1c1c;
+  border-radius:999px; padding:2px 10px; font-weight:700;
+}
+
+/* ---------- Client portal (clip4 / clip5 / clip6) ---------- */
+.portal{
+  position:fixed; inset:0; z-index:60;
+  display:flex; flex-direction:column;
+  background:#1a2436;
+  opacity:0; visibility:hidden; transition:opacity .25s ease;
+}
+.portal.is-open{ opacity:1; visibility:visible; }
+.portal-topbar{
+  flex:0 0 auto; display:flex; align-items:center; gap:14px;
+  padding:10px 14px;
+  background:#d9d9d9; color:#222;
+}
+.portal-burger{
+  appearance:none; cursor:pointer; background:none; border:0; padding:2px;
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  font-family:var(--sans);
+}
+.portal-burger-lines{ display:flex; flex-direction:column; gap:4px; }
+.portal-burger-lines i{
+  width:34px; height:8px; border-radius:6px; background:#9c5a55;
+}
+.portal-burger-text{
+  font-size:10px; font-weight:800; letter-spacing:.04em; color:#fff;
+  background:#9c5a55; border-radius:6px; padding:1px 8px; margin-top:-14px;
+}
+.portal-clientlogo{
+  flex:1 1 auto; text-align:center;
+  background:#666; color:#fff;
+  font-size:clamp(20px,4vw,28px); font-weight:800;
+  padding:10px 14px; border-radius:4px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.portal-signout{
+  flex:0 0 auto; appearance:none; cursor:pointer;
+  background:#5a5a5a; color:#fff; border:0; border-radius:999px;
+  font-family:var(--sans); font-size:12.5px; font-weight:700;
+  padding:8px 14px;
+}
+.portal-signout:hover{ background:#444; }
+.portal-main{ flex:1 1 auto; min-height:0; overflow-y:auto; padding:18px 16px 28px; }
+.portal-view[hidden]{ display:none; }
+
+.portal-tiles{
+  display:grid; grid-template-columns:1fr 1fr; gap:16px;
+  max-width:720px; margin:0 auto;
+}
+.portal-tile{
+  appearance:none; cursor:pointer; text-align:left;
+  background:#d9d9d9; color:#1c1c1c; border:0; border-radius:16px;
+  font-family:var(--sans);
+  display:flex; flex-direction:column; justify-content:flex-end; gap:6px;
+  padding:16px; min-height:150px;
+  transition:transform .15s ease;
+}
+.portal-tile:hover{ transform:translateY(-2px); }
+.portal-tile:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+.portal-tile-primary{ grid-column:1 / -1; min-height:220px; }
+.portal-tile-kicker{ font-size:11px; font-weight:800; letter-spacing:.14em; color:#6b6b6b; }
+.portal-tile-title{ font-size:clamp(17px,2vw,22px); font-weight:800; }
+.portal-tile-sub{ font-size:12.5px; color:#555; }
+.portal-tile-cta{
+  align-self:flex-start; margin-top:8px;
+  background:#1a2436; color:#fff; border-radius:999px;
+  font-size:12.5px; font-weight:700; padding:8px 16px;
+}
+.portal-apps-title{
+  max-width:720px; margin:2px auto 16px;
+  font-size:clamp(24px,3vw,30px); font-weight:800; color:#fff;
+}
+.portal-apps-list{
+  display:flex; flex-direction:column; gap:8px;
+  max-width:720px; margin:0 auto;
+}
+.portal-app{
+  appearance:none; cursor:pointer; border:0; background:none; padding:0;
+  display:flex; flex-direction:column; gap:6px;
+  font-family:var(--sans); color:#fff; text-align:center;
+  margin-bottom:14px;
+}
+.portal-app-media{
+  position:relative; display:flex; align-items:center; justify-content:center;
+  min-height:190px; border-radius:14px; background:#666;
+  font-size:15px; font-weight:800; color:#eee;
+}
+.portal-app-media-label{ padding:0 18px; }
+.portal-app-duration{
+  position:absolute; right:12px; bottom:10px;
+  font-size:12.5px; font-weight:700; color:#f4f4f4;
+}
+.portal-app-title{ font-size:16px; font-weight:800; }
+.portal-app-note{ font-size:12px; color:rgba(255,255,255,.65); }
+.portal-app:hover .portal-app-media{ background:#747474; }
+.portal-app:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; border-radius:14px; }
+.portal-simple-body{
+  max-width:720px; margin:0 auto; color:rgba(255,255,255,.8);
+  font-size:14px; line-height:1.6;
+}
+
+/* Portal tile menu (clip6): dim the page, float the four tiles. */
+.portal-menu{
+  position:absolute; inset:0; z-index:4;
+  background:rgba(7,10,20,.72);
+  display:flex; align-items:flex-start; justify-content:center;
+  padding:34px 20px;
+}
+.portal-menu[hidden]{ display:none; }
+.portal.menu-open .portal-topbar,
+.portal.menu-open .portal-main{ filter:brightness(.55); }
+.portal-menu-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:26px;
+  width:min(430px,100%);
+}
+.portal-menu-tile{
+  appearance:none; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  background:#333; color:#fff; border:0; border-radius:18px;
+  min-height:120px; padding:14px;
+  font-family:var(--sans); font-size:clamp(18px,2.4vw,24px); font-weight:800;
+  box-shadow:0 16px 34px rgba(0,0,0,.5);
+  transition:transform .12s ease, background .12s ease;
+}
+.portal-menu-tile:hover{ background:#3d3d3d; transform:translateY(-2px); }
+.portal-menu-tile:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+body.portal-open{ overflow:hidden; }
+
+/* ---------- Contact edge tab hint / sector swipe (base) ---------- */
+.contact-edge-hint{ display:none; }
+
+/* ============================================================
+   ≤760px — Figma mobile-board fidelity overrides
+   (Placed after the earlier phone block so these win the cascade.)
+   ============================================================ */
+@media (max-width:760px){
+
+  /* ----- Top bar (clip8/9/17): gold Menu stack left, brand beside,
+         ACCESS YOUR TWIN outlined right. ----- */
+  .burger{
+    flex-direction:column; gap:2px; padding:4px 2px;
+    color:var(--gold);
+  }
+  .burger-lines{ gap:3px; }
+  .burger-lines i{ width:26px; height:5px; border-radius:4px; background:var(--gold); }
+  .burger-text{
+    font-size:8.5px; font-weight:800; letter-spacing:.05em; color:var(--gold);
+  }
+  .burger.is-open .burger-lines i:nth-child(1){ transform:none; }
+  .burger.is-open .burger-lines i:nth-child(2){ opacity:1; }
+  .burger.is-open .burger-lines i:nth-child(3){ transform:none; }
+  .access-btn{ border-radius:6px; letter-spacing:.06em; }
+
+  /* ----- Nav drawer (clip13–16): left slide-in panel, sectors only,
+         active bar in the sector accent. ----- */
+  .nav-drawer{
+    top:var(--topbar-h); bottom:0; left:0; right:auto;
+    width:min(72vw, 300px);
+    background:#383838;
+    border-bottom:0; border-right:1px solid rgba(0,0,0,.4);
+    padding:6px 0 20px;
+    transform:translateX(-102%); opacity:1;
+    transition:transform .26s ease;
+    overflow-y:auto;
+  }
+  .nav-drawer.is-open{ transform:translateX(0); }
+  .nav-drawer a{
+    border-bottom:0;
+    padding:20px 22px;
+    font-size:19px; font-weight:800; letter-spacing:.04em;
+    color:#9c9c9c;
+    justify-content:flex-start;
+  }
+  .nav-drawer a.is-active{
+    color:#fff;
+    background:var(--item-accent, var(--sector-accent));
+    box-shadow:0 6px 16px rgba(0,0,0,.45);
+    position:relative; overflow:hidden;
+    border-radius:6px;
+  }
+  /* Oversized ghost echo of the sector name behind the active item
+     (Figma menu): a darker, semi-transparent repeat of the label,
+     bleeding past the bar edges and clipped by it. */
+  .nav-drawer a.is-active::before{
+    content:attr(data-label);
+    position:absolute; left:-10px; top:50%; transform:translateY(-50%);
+    font-size:56px; font-weight:800; letter-spacing:.02em;
+    color:rgba(0,0,0,.22);
+    white-space:nowrap; pointer-events:none; user-select:none;
+  }
+  .nav-drawer a.is-active span{ position:relative; z-index:1; }
+
+  /* ----- HOME hero (clip8/9): hexagon cluster + evidence bullets are
+         part of the mobile design — show them. ----- */
+  .view-home{ position:relative; overflow:hidden; }
+  .home-grid{ grid-template-rows:auto 1fr auto; }
+  .hex-cluster{
+    display:block; position:relative;
+    width:100%; min-height:240px;
+    inset:auto; transform:none;
+    overflow:visible;
+  }
+  .hex-cluster .hex{ position:absolute; }
+  /* MobileFigmaView arrangement: a tight touching diagonal —
+     droplets (lower-left) → data-wave → white → white (upper-right) —
+     centred in the band between the copy and the CTA. Same unit-based
+     anchor geometry as desktop, so it never mis-aligns; heights come
+     from the base aspect-ratio (no hard-coded px heights). */
+  .hex-cluster{
+    --hexu: clamp(92px, 26vw, 124px);
+    --hex-ax: 50%;
+    --hex-ay: 50%;
+    min-height: calc(2.35 * var(--hexu));
+  }
+  .hex{ width:var(--hexu); height:auto; }
+  .hex-1{ width:calc(var(--hexu)*.92); left:calc(50% - 1.17*var(--hexu)); top:calc(50% + .69*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-2{ width:calc(var(--hexu)*.96); left:calc(50% - .39*var(--hexu));  top:calc(50% + .23*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-3{ width:var(--hexu);           left:calc(50% + .39*var(--hexu));  top:calc(50% - .23*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-4{ width:calc(var(--hexu)*1.06);left:calc(50% + 1.17*var(--hexu)); top:calc(50% - .69*var(--hexu)); transform:translate(-50%,-50%); }
+  /* Small dark satellites around the run (present in the mobile Figma). */
+  .hex-ghost{ display:block; }
+  .hex-g1{ width:calc(var(--hexu)*.42); left:calc(50% - .70*var(--hexu)); top:calc(50% - .55*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-g2{ width:calc(var(--hexu)*.38); left:calc(50% - 1.55*var(--hexu)); top:calc(50% + .05*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-g3{ width:calc(var(--hexu)*.40); left:calc(50% + .55*var(--hexu));  top:calc(50% + .75*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-g4{ width:calc(var(--hexu)*.40); left:calc(50% + 1.60*var(--hexu)); top:calc(50% + .10*var(--hexu)); transform:translate(-50%,-50%); }
+  .evidence-bar{
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:10px 16px; align-items:start;
+    position:static; margin-top:10px; padding:0 2px;
+    border-top:0;
+    font-size:11px; line-height:1.35; color:var(--ink);
+  }
+  /* Each bullet is one grid cell: gold dot hanging left, label wraps
+     under itself (MobileFigmaView). Reordered to match the Figma rows:
+     Maslow | NAICS  /  Bronfenbrenner | Human Capital. */
+  .evidence-item{ display:flex; gap:6px; align-items:flex-start; white-space:normal; }
+  .evidence-item:nth-child(1){ order:1; }  /* Maslow */
+  .evidence-item:nth-child(4){ order:2; }  /* NAICS */
+  .evidence-item:nth-child(3){ order:3; }  /* Bronfenbrenner */
+  .evidence-item:nth-child(2){ order:4; }  /* Human Capital */
+  .evidence-bar .evidence-dot{ color:var(--gold); margin-right:0; flex:0 0 auto; line-height:1.35; }
+  .twin-cta-wrap{ margin-top:6px; }
+
+  /* ----- Question bar (all frames): light pill, dark icon + label,
+         quoted rotating placeholder, grey send arrow. ----- */
+  .qbar{
+    background:#d9d9d9; border:0; border-radius:999px;
+    padding:9px 12px;
+  }
+  .qbar-icon{ color:#333; }
+  .qbar-label{ color:#111; font-weight:800; }
+  .qbar-input{ color:#222; }
+  .qbar-input::placeholder{ color:#8b8b8b; font-style:italic; }
+  .qbar-send{
+    background:transparent; color:#9c9c9c; border:0;
+    font-size:18px; font-weight:800;
+  }
+  .qbar-send:hover{ background:transparent; color:#555; }
+
+  /* ----- Cookie disclosure (clip0): light rounded card above the
+         dock, dark text, grey Accept / Reject. ----- */
+  .cookie{
+    left:14px; right:14px; bottom:calc(var(--dock-h) + 18px);
+    width:auto; border:0; border-radius:16px;
+    background:rgba(214,214,214,.96); color:#222;
+    padding:16px 16px 14px;
+    display:block;
+    box-shadow:0 18px 44px rgba(0,0,0,.5);
+  }
+  .cookie-text{
+    color:#333; font-size:12px; line-height:1.5;
+    display:block; -webkit-line-clamp:unset; overflow:visible;
+  }
+  .cookie-text strong{
+    display:block; color:#555; font-size:19px; font-weight:600; margin-bottom:8px;
+  }
+  .cookie-actions{ margin-top:14px; justify-content:space-between; }
+  .cookie-btn{
+    background:#6e6e6e; color:#fff; border:0; border-radius:8px;
+    font-size:15px; font-weight:600; padding:8px 22px;
+  }
+  .cookie-btn:hover{ background:#5a5a5a; }
+  .cookie-btn-ghost{ background:#6e6e6e; color:#fff; }
+
+  /* ----- Category screen (clip17/31/32/33) ----- */
+  .cat-projects-btn{
+    border-color:var(--sector); color:var(--sector);
+    border-radius:8px; font-size:11.5px; letter-spacing:.06em;
+  }
+  .uc-card{ border-radius:8px; background:rgba(7,14,24,.44); }
+
+  /* Right-edge Contact & Info tab (clip17) replaces the bottom bar.
+     Figma spec: taller rounded tab aligned with the intro copy, muted
+     TRANSLUCENT sector tint, WHITE horizontal stacked label
+     ("Contact & Info" + "Click here"), no arrow glyph, flush with the
+     right edge of the screen.
+
+     Flush-edge trick: .view has 14px side padding and .cat-slider is
+     overflow:hidden, so a simple negative offset on the tab would be
+     clipped. Instead the slider itself bleeds 14px to the right
+     (margin-right:-14px), the cards panel takes that 14px back as
+     padding so the grid/copy don't shift, and the tab is pulled to the
+     panel's true border edge = the viewport edge. */
+  .cat-slider{ margin-right:-14px; }
+  .cat-panel-cards{ padding-right:14px; }
+
+  .contact-bar{ display:none; }
+  .contact-edge{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:6px;
+    position:absolute; right:-5px; top:18%;
+    width:66px; min-height:140px; padding:22px 8px;
+    /* Translucent sector tint (Figma), not a solid fill. */
+    background:color-mix(in srgb, var(--sector, var(--sector-accent)) 27%, transparent);
+    color:#fff;
+    border:0; border-radius:16px 0 0 16px;
+    font-size:10px; font-weight:700; line-height:1.35; text-align:center;
+    box-shadow:-8px 10px 26px rgba(0,0,0,.28);
+    z-index:5;
+  }
+  /* Keep the intro paragraph clear of the tab (Figma: copy wraps
+     before the tab, no overlap). Tab intrudes ~52px into the panel. */
+  .cat-panel-cards .cat-body{ padding-right:60px; }
+  /* Horizontal stacked label per Figma (was vertical). */
+  .contact-edge-text{
+    writing-mode:horizontal-tb; transform:none;
+    text-transform:none; letter-spacing:0;
+    white-space:normal; overflow-wrap:anywhere;
+  }
+  .contact-edge-hint{ display:block; font-weight:600; }
+  .contact-edge-arrow{ display:none; }
+  .contact-edge:hover{ padding-right:8px; }
+
+  /* Dock tabs (clip17): one rounded rail, active pill highlighted. */
+  .dock-tabs{
+    border:1px solid var(--line); border-radius:12px;
+    background:rgba(7,14,24,.9);
+    padding:3px; gap:2px;
+    display:flex; align-items:center;
+  }
+  .dock-tab{
+    border:0; border-radius:9px;
+    font-size:9.5px; letter-spacing:.05em; text-transform:uppercase;
+    padding:7px 9px; white-space:nowrap;
+  }
+  .dock-tab.is-active{ background:#474a50; }
+
+  /* Sector dots pager (replaces the clip17 swipe strip): dark panel,
+     accent underline in the active sector colour, accent arrows. */
+  .sector-pager{
+    border-top:0; border-bottom:2px solid var(--sector, var(--sector-accent));
+    background:#0d1526; border-radius:10px;
+    margin-top:0;
+  }
+  .sector-arrow{ background:transparent; color:var(--sector, var(--sector-accent)); }
+  .sector-arrow-prev{ border-right:0; }
+  .sector-arrow-next{ border-left:0; }
+
+  /* ----- Contact panel (clip18): centred steps with stage labels and
+         thin connector lines running right. ----- */
+  .cat-panel-contact{ text-align:center; }
+  .contact-kicker{ letter-spacing:.14em; }
+  .contact-ctas{ flex-direction:column; gap:20px; max-width:none; }
+  .contact-step{ flex:0 0 auto; width:100%; }
+  .contact-step-label{ font-size:15px; letter-spacing:.16em; }
+  .contact-step .contact-cta{
+    width:auto; min-width:210px; padding:13px 22px;
+    border-radius:9px; border-width:2px; border-color:#555;
+    background:rgba(10,14,22,.6);
+    font-size:13px; letter-spacing:.04em;
+  }
+  .contact-step .contact-cta.is-primary{
+    background:var(--gold); border-color:var(--gold);
+  }
+  .contact-step-line{ display:none; }
+  .contact-foot{ font-size:12px; }
+
+  /* ----- Lead-form modals (clip19/21/25): two-up fields, rounded
+         dark card, gold submit. ----- */
+  .form-window{
+    background:rgba(17,28,45,.96);
+    border-radius:24px;
+  }
+  .form-fields{ grid-template-columns:1fr 1fr; gap:12px 14px; }
+  .form-field.full{ grid-column:1 / -1; }
+  .form-field label{ color:var(--ink); font-weight:700; font-size:12px; }
+  .form-field label .opt{ font-size:9px; font-weight:700; color:var(--ink); }
+  .form-field input,
+  .form-field select,
+  .form-field textarea{
+    background:rgba(22,36,57,.9);
+    border-color:rgba(255,255,255,.14);
+    border-radius:8px;
+    font-size:13px; padding:10px 11px;
+  }
+  .form-submit{ border-radius:10px; font-size:15px; letter-spacing:.04em; text-transform:uppercase; }
+  .form-fineprint{ display:none; }        /* not present in the board's modals */
+  .form-window.is-success .form-fineprint{ display:none; }
+
+  /* ----- Access sign-in (clip1): near-full-height sheet. ----- */
+  .access-window{
+    width:calc(100vw - 24px); max-height:92dvh; overflow-y:auto;
+    border-radius:20px;
+    background:#0b1626 url("logBackground.png") center / cover no-repeat;
+  }
+  .access-brand-cube{ height:54px; }
+  .access-brand-word{ font-size:15px; }
+  .access-welcome{ margin-top:10px; }
+
+  /* ----- Projects window (clip28): full-screen sheet. ----- */
+  .projects-window{
+    width:100vw; height:100dvh; max-height:none; border-radius:0;
+  }
+  .projects-title{ font-size:21px; }
+  .project-card{ min-height:210px; }
+
+  /* ----- Twin experience (clip12): glass card sits top-left over
+         the live view. ----- */
+  .twin-hero-card{
+    top:calc(var(--topbar-h) + 76px); bottom:auto;
+    left:14px; right:64px;
+    padding:14px 16px;
+    border-radius:14px;
+    transform:translateY(-8px);
+  }
+  .twin-hero-card.is-visible{ transform:translateY(0); }
+  .twin-hero-card .home-pills{ gap:10px; margin-bottom:8px; }
+  .twin-hero-card .twin-card-headline{ font-size:22px; }
+  .twin-hero-card .twin-card-body{ font-size:12px; line-height:1.5; }
+
+  /* ----- Portal fidelity at phone width ----- */
+  .portal-clientlogo{ font-size:20px; padding:9px 10px; }
+  .portal-menu{ padding-top:24px; }
+}
+
+/* Very narrow phones: keep the sector strip panels readable. */
+@media (max-width:340px){
+  .sector-pager-label{ font-size:13px; letter-spacing:.1em; }
+  .sector-arrow{ width:38px; }
+  .contact-step-line{ display:none; }
+}
+
+/* Short phones: let the home view scroll rather than clip the hero
+   stack (copy → hexes → CTA → evidence). */
+@media (max-width:760px) and (max-height:660px){
+  .view-home{ overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  /* Shrink via the shared unit — the hexes keep their translate(-50%,-50%)
+     centring transform, so scaling must not overwrite it. */
+  .hex-cluster{ --hexu: clamp(80px, 22vw, 104px); }
+}
+
+/* ============================================================
+   APPLE VISION PRO — SPATIAL WEB CTA
+   Shown ONLY in Safari (stakeholder review): the spatial website
+   environment is a Safari feature, so every other browser — and
+   therefore the emulated/mobile Chrome hero — hides the button.
+   script.js adds body.is-safari after UA detection; the feature
+   itself (vision-pro-spatial.js) is untouched.
+   ============================================================ */
+body:not(.is-safari) .vision-spatial-cta{ display:none; }
+.vision-spatial-cta{
+  margin-top:clamp(16px,2vh,24px);
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:8px;
+}
+.vision-spatial-btn{
+  appearance:none;
+  cursor:pointer;
+  min-height:46px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding:9px 17px 9px 10px;
+  color:#fff;
+  border:1px solid rgba(227,184,85,.9);
+  border-radius:9px;
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.10),rgba(255,255,255,.025)),
+    rgba(8,12,24,.58);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.035),
+    0 9px 30px rgba(0,0,0,.22);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  font-family:var(--sans);
+  font-size:clamp(11px,.92vw,14px);
+  font-weight:700;
+  letter-spacing:.025em;
+  white-space:nowrap;
+  transition:transform .18s ease,background .18s ease,
+             border-color .18s ease,box-shadow .18s ease,color .18s ease;
+}
+.vision-spatial-btn:hover{
+  transform:translateY(-1px);
+  color:#10131a;
+  border-color:#fff;
+  background:linear-gradient(135deg,#fff,#dce7f8);
+  box-shadow:0 12px 36px rgba(130,178,255,.22),
+             0 0 24px rgba(227,184,85,.18);
+}
+.vision-spatial-btn:focus-visible{
+  outline:2px solid var(--gold-bright);
+  outline-offset:3px;
+}
+.vision-spatial-btn:disabled{
+  cursor:wait;
+  opacity:.68;
+  transform:none;
+}
+.vision-spatial-icon{
+  width:28px;
+  height:28px;
+  flex:0 0 28px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  color:#11141b;
+  background:linear-gradient(145deg,#fff,#d8e2f1);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.75),
+             0 3px 12px rgba(0,0,0,.25);
+}
+.vision-spatial-icon svg{
+  width:17px;
+  height:17px;
+  fill:currentColor;
+}
+.vision-spatial-btn:hover .vision-spatial-icon{
+  color:#fff;
+  background:linear-gradient(145deg,#151c2b,#080b12);
+}
+.vision-spatial-btn.is-active{
+  border-color:#fff;
+  background:rgba(255,255,255,.13);
+}
+.vision-spatial-btn.is-loading .vision-spatial-icon{
+  animation:visionSpatialPulse 1s ease-in-out infinite alternate;
+}
+.vision-spatial-status{
+  min-height:1.25em;
+  max-width:46ch;
+  margin:0;
+  color:var(--faint);
+  font-size:clamp(10px,.76vw,12px);
+  line-height:1.4;
+}
+@keyframes visionSpatialPulse{
+  from{ transform:scale(.90); opacity:.62; }
+  to{ transform:scale(1.05); opacity:1; }
+}
+
+/* Safari keeps the webpage visible while the environment surrounds it. */
+body.spatial-environment-active .vision-spatial-btn{
+  color:#fff;
+  background:rgba(8,12,24,.80);
+  border-color:#fff;
+}
+
+@media (max-width:760px){
+  .vision-spatial-cta{ margin-top:14px; align-items:stretch; }
+  .vision-spatial-btn{
+    width:100%;
+    justify-content:flex-start;
+    white-space:normal;
+    text-align:left;
+    font-size:12px;
+  }
+  .vision-spatial-status{ max-width:none; }
+}
+
+/* ============================================================
+   DESKTOP-BOARD ADDITIONS  (Desktop Web.svg — 20 frames @ 1920×1080)
+   ------------------------------------------------------------
+   The Figma desktop board exports each frame at 7680×4320 SVG
+   units = exactly 4× a 1920×1080 CSS viewport (16:9 desktop).
+   Everything below implements or corrects the desktop design;
+   phone rules (≤760px) are untouched and win where they overlap.
+   ============================================================ */
+
+/* ---------- Home hero ----------
+   Kept as originally shipped per stakeholder review: the hexagon
+   cluster and the blue arrow-burst behind "Try a Digital Twin" stay
+   (they respond via the existing clamp() sizing on all viewports).
+   Only the evidence row takes the board treatment. */
+@media (min-width:761px){
+  /* Evidence bullets: a single spread row above the dock, no rule line. */
+  .evidence-bar{
+    border-top:0; padding-top:0;
+    justify-content:space-between;
+    color:rgba(255,255,255,.85);
+    font-size:clamp(11px,.9vw,14px);
+  }
+  .evidence-dot{ color:#ff9d00; }
+}
+
+/* ---------- Question bar (board: light pill, bold label, quoted hint) ---------- */
+.qbar{ background:#d6d6d6; }
+.qbar-icon{ color:#1c1c1c; }
+.qbar-label{ color:#111; font-weight:700; }
+.qbar-input{ color:#1c1c1c; }
+.qbar-input::placeholder{ color:#7c7c7c; font-style:italic; }
+.qbar-send{ background:#9c9c9c; color:#f4f4f4; }
+
+/* ---------- Cookie disclosure (clip7: light card, grey pill buttons) ---------- */
+.cookie{
+  background:#d6d6d6; border:0;
+  border-radius:18px;
+  width:min(760px,86vw);
+  display:flex; align-items:flex-end; gap:14px;
+}
+.cookie-text{ color:#2b2b2b; }
+.cookie-text strong{
+  display:block; color:#555; font-size:clamp(15px,1.2vw,20px);
+  font-weight:600; margin-bottom:4px;
+}
+.cookie-actions{ margin-top:0; flex:0 0 auto; }
+.cookie-btn{
+  background:#696969; color:#fff; border:0;
+  border-radius:999px; padding:9px 22px;
+  font-size:clamp(12px,1vw,15px);
+}
+.cookie-btn:hover{ background:#585858; }
+.cookie-btn-ghost{ background:#696969; color:#fff; }
+
+/* ---------- Dock tabs (board: "Use Cases" filled grey, rest uppercase) ---------- */
+.dock-tab.is-active{ background:#474a50; }
+.dock-tab[data-tab="usecases"]{ text-transform:none; letter-spacing:.02em; font-size:clamp(11px,.9vw,14px); }
+
+/* ---------- Contact panel (clip38): plain centred layout ---------- */
+@media (min-width:761px){
+  .cat-panel-contact{
+    background:none; border:0; border-radius:0;
+  }
+  .contact-kicker{ color:#cfd4db; letter-spacing:.12em; }
+  .contact-headline{ font-weight:600; }
+  .contact-stages span{ color:var(--ink); }
+  .contact-cta{
+    background:#0a0f18; border:1.5px solid rgba(255,255,255,.75);
+    border-radius:10px; font-size:clamp(14px,1.2vw,19px); font-weight:600;
+    letter-spacing:.02em; text-transform:uppercase;
+  }
+  .contact-cta.is-primary{ background:var(--gold); border-color:var(--gold); color:#101010; }
+}
+
+/* ---------- Access Your Twin (clip33): desktop charcoal popup ---------- */
+@media (min-width:761px){
+  .access-window{
+    width:min(1060px,90vw); min-height:min(660px,84vh);
+    background:#0b1626 url("logBackground.png") center / cover no-repeat;
+    border:0; border-radius:26px;
+    display:grid; grid-template-columns:1.05fr 1fr;
+    align-items:center;
+    padding:clamp(28px,4vh,48px) clamp(28px,3vw,56px);
+    column-gap:clamp(24px,3vw,48px);
+  }
+  /* Left half: CubeLogo + wordmark centred over the teal side of the
+     artwork (Figma desktop login). */
+  .access-view{ display:contents; }
+  .access-brand{ align-self:center; justify-self:center; align-items:center; }
+  .access-brand-cube{ height:110px; }
+  .access-brand-word{ font-size:26px; }
+  .access-brand-studios{ font-size:12px; }
+  .access-brand-tag{ font-size:12px; }
+  .access-form-col{
+    align-self:stretch; display:flex; flex-direction:column; justify-content:center;
+    padding:clamp(26px,4vh,44px) clamp(22px,2.4vw,40px);
+  }
+  .access-welcome{ margin-top:0; }
+  .access-field label{ font-size:12px; }
+  .access-field input{ background:#d8d8d8; border:0; }
+  .access-submit{ background:#ffba00; border:0; color:#141414; }
+  .access-submit:hover{ background:#ffcb3d; }
+}
+
+/* ---------- Example window (clip2–clip6) ---------- */
+.example-window{ border-radius:26px; }
+@media (min-width:761px){
+  .overlay-window.example-window{
+    width:min(1860px,97.5vw); height:min(1040px,96vh);
+    background:#070e18;
+  }
+  .example-stage{ height:clamp(340px, 66%, 720px); border-bottom:0; }
+  .example-stage .example-loading{ background:#a8a8a8; color:#333; }
+  .example-stage .example-loading .spinner{ border-color:rgba(0,0,0,.15); border-top-color:#555; }
+}
+/* Gold circular close (board) */
+#exampleOverlay .overlay-close{
+  background:var(--gold); color:#141414; border:0;
+  width:40px; height:40px; font-weight:800;
+}
+#exampleOverlay .overlay-close:hover{ background:var(--gold-bright); }
+
+.example-head{
+  display:flex; align-items:flex-start; justify-content:space-between;
+  gap:clamp(14px,2vw,28px); flex-wrap:wrap;
+  margin-bottom:clamp(10px,1.4vh,16px);
+}
+.example-head-copy{ min-width:0; }
+.example-title{ font-weight:500; font-size:clamp(24px,2vw,34px); }
+.example-meta{ flex-direction:column; align-items:flex-start; gap:6px; margin:10px 0 0; }
+.example-meta-row{ display:flex; align-items:center; gap:8px; }
+.example-meta-label{ color:rgba(255,255,255,.85); font-size:12.5px; }
+.meta-chip{ background:#d9d9d9; color:#1c1c1c; border:0; font-weight:600; }
+.example-cta-row{ flex:0 0 auto; align-items:flex-start; margin-top:6px; }
+.example-cta{
+  background:var(--gold); color:#141414; border:0; border-radius:10px;
+  font-weight:700; font-size:clamp(12px,1vw,15px); padding:12px 18px;
+}
+.example-cta:hover{ background:var(--gold-bright); }
+.example-cta-icon{ padding:12px 14px; display:flex; align-items:center; }
+
+/* PROJECT EVIDENCE band (clip3/clip4) */
+.example-evidence{ margin:clamp(18px,2.4vh,28px) 0; }
+.example-evidence-band{
+  display:flex; align-items:center; gap:clamp(14px,2vw,30px);
+  background:rgba(255,255,255,.07);
+  margin:0 calc(-1 * clamp(20px,2.8vw,40px));
+  padding:clamp(14px,2vh,22px) clamp(20px,2.8vw,40px);
+}
+.example-evidence-lede{ display:flex; flex-direction:column; gap:4px; flex:0 0 auto; }
+.example-evidence-sub,
+.example-evidence-note{ color:rgba(255,255,255,.85); font-size:12.5px; line-height:1.4; }
+.example-evidence-note{ margin-left:auto; flex:0 0 auto; text-align:left; }
+.example-evidence-tabs{ margin:0; flex:1 1 auto; flex-wrap:wrap; }
+.example-evidence-tabs button{
+  border:1px solid rgba(255,255,255,.65); border-radius:6px;
+  color:#eaeaea; letter-spacing:.06em; text-transform:uppercase;
+  padding:8px 16px; background:transparent;
+}
+.example-evidence-tabs button.is-active{
+  background:#686868; border-color:#686868; color:#fff;
+}
+.example-evidence-body{ margin:14px 0 0; }
+
+/* Placeholder tiles (evidence cards + media mosaic, board grey #4a4a4a) */
+.example-evidence-tiles{
+  display:grid; grid-template-columns:repeat(3, 1fr);
+  gap:clamp(14px,1.6vw,24px); margin-top:clamp(14px,2vh,22px);
+}
+.example-tile{
+  display:block; background:#4a4a4a; border-radius:14px; min-height:150px;
+}
+.example-section-title{
+  font-weight:500; font-size:clamp(19px,1.5vw,26px);
+  margin:clamp(20px,3vh,32px) 0 clamp(12px,1.8vh,18px);
+}
+.example-media-grid{
+  display:grid; gap:clamp(14px,1.6vw,24px);
+  grid-template-columns:1.3fr 1fr 1.3fr;
+  grid-template-rows:repeat(2, minmax(140px,1fr));
+  grid-template-areas:"a b d" "a c d";
+}
+.example-media-grid .example-tile:nth-child(1){ grid-area:a; }
+.example-media-grid .example-tile:nth-child(2){ grid-area:b; }
+.example-media-grid .example-tile:nth-child(3){ grid-area:c; }
+.example-media-grid .example-tile:nth-child(4){ grid-area:d; }
+.example-tile-tall{ min-height:100%; }
+
+/* Real project imagery (portfolio extractions) in the media mosaic. */
+img.example-tile-photo{
+  width:100%; height:100%; min-height:150px;
+  object-fit:cover; border-radius:14px;
+}
+
+/* Related live experiences & videos (link inventory) */
+.example-links{
+  display:flex; flex-wrap:wrap; align-items:center;
+  gap:10px; margin-top:clamp(12px,1.8vh,18px);
+}
+.example-links-label{
+  flex-basis:100%;
+  font-size:12px; letter-spacing:.14em; text-transform:uppercase;
+  color:rgba(255,255,255,.55);
+}
+.example-link-chip{
+  display:inline-flex; align-items:center; gap:7px;
+  padding:8px 14px; border-radius:999px;
+  border:1px solid rgba(255,255,255,.25);
+  background:rgba(255,255,255,.06);
+  color:#fff; text-decoration:none;
+  font-size:13px; line-height:1.2;
+  transition:background .18s ease, border-color .18s ease;
+}
+.example-link-chip:hover{
+  background:rgba(255,255,255,.14);
+  border-color:rgba(255,255,255,.5);
+}
+.example-link-chip svg{ flex:none; opacity:.75; }
+
+/* More from {Sector} (clip6) */
+.example-more{ margin-bottom:clamp(24px,4vh,40px); }
+.example-more-grid{
+  display:grid; grid-template-columns:repeat(3, 1fr);
+  gap:clamp(14px,1.6vw,24px);
+}
+.example-more-card{
+  appearance:none; cursor:pointer; text-align:left;
+  background:#4a4a4a; color:#fff; border:0; border-radius:14px;
+  min-height:170px; padding:18px;
+  display:flex; flex-direction:column; gap:8px; justify-content:flex-end;
+  font-family:var(--sans);
+  transition:background .15s, transform .15s;
+}
+.example-more-card:hover{ background:#565656; transform:translateY(-2px); }
+.example-more-card:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+.example-more-name{ font-size:15px; font-weight:700; }
+.example-more-text{ font-size:12px; color:rgba(255,255,255,.8); line-height:1.45; }
+
+/* Gold FAB (clip5/clip6) */
+.example-fab{
+  position:absolute; right:clamp(18px,2vw,34px); bottom:clamp(18px,3vh,34px);
+  z-index:6;
+  appearance:none; cursor:pointer;
+  width:clamp(48px,4vw,64px); height:clamp(48px,4vw,64px);
+  border:0; border-radius:16px;
+  background:var(--gold); color:#141414;
+  display:flex; align-items:center; justify-content:center;
+  box-shadow:0 14px 34px rgba(0,0,0,.4);
+}
+.example-fab:hover{ background:var(--gold-bright); }
+@media (max-width:760px){ .example-fab{ display:none; } }
+
+/* ---------- Sector projects window (clip1): full-screen mosaic ---------- */
+@media (min-width:761px){
+  .projects-window{
+    width:min(1860px,97.5vw); height:min(1040px,96vh); max-height:96vh;
+    background:#070e18;
+  }
+  .projects-brand{
+    background:transparent; border-bottom:0;
+    padding:14px 16px 0;
+  }
+  .projects-brand-logo{ height:34px; }
+  .projects-title{
+    font-size:clamp(24px,1.8vw,34px); letter-spacing:.02em;
+    margin:clamp(14px,2.4vh,26px) 16px clamp(10px,1.6vh,18px);
+  }
+  /* Board mosaic: tall / two stacked / tall. */
+  .projects-list{
+    display:grid;
+    grid-template-columns:1.25fr 1fr 1.3fr;
+    grid-template-rows:repeat(2, minmax(180px, 1fr));
+    grid-template-areas:"a b d" "a c d";
+    gap:clamp(16px,1.8vw,28px);
+    padding:0 clamp(40px,8vw,160px) clamp(60px,9vh,110px);
+  }
+  .projects-list .project-card:nth-child(1){ grid-area:a; }
+  .projects-list .project-card:nth-child(2){ grid-area:b; }
+  .projects-list .project-card:nth-child(3){ grid-area:c; }
+  .projects-list .project-card:nth-child(4){ grid-area:d; }
+  .project-card{ background:#4a4a4a; border-radius:18px; min-height:0; }
+}
+
+/* ---------- Client portal (clip36 / clip37): desktop layout ---------- */
+.portal-nav{ display:none; }
+@media (min-width:761px){
+  .portal{ background:#1d202e; }
+  .portal-topbar{ padding:12px 22px; gap:22px; }
+  /* Board: horizontal HOME / APPS / Manage / Support links in the light
+     bar; the burger + tile-menu overlay stay a phone affordance. */
+  .portal-burger{ display:none; }
+  .portal-menu{ display:none; }
+  .portal-nav{ display:flex; align-items:center; gap:clamp(14px,1.8vw,30px); }
+  .portal-nav-link{
+    appearance:none; cursor:pointer; background:none; border:0;
+    font-family:var(--sans); font-size:clamp(13px,1vw,16px); font-weight:700;
+    color:#1c1c1c; padding:6px 2px; border-bottom:2px solid transparent;
+  }
+  .portal-nav-link:hover{ color:#000; }
+  .portal-nav-link.is-active{ border-bottom-color:#1c1c1c; }
+  .portal-clientlogo{
+    flex:0 1 auto; margin:0 auto;
+    background:#5a5a5a;
+    min-width:min(300px,26vw);
+  }
+  /* HOME — asymmetric wireframe tile grid (clip36). */
+  .portal-main{ padding:clamp(24px,4vh,44px) clamp(28px,5vw,90px); }
+  .portal-tiles{
+    max-width:none;
+    grid-template-columns:0.9fr 1.5fr 0.9fr;
+    grid-template-rows:minmax(120px,.8fr) minmax(180px,1.2fr);
+    grid-template-areas:"apps main support" "manage main support";
+    gap:clamp(16px,1.8vw,28px);
+  }
+  .portal-tile-primary{ grid-area:main; grid-column:auto; min-height:0; }
+  .portal-tiles .portal-tile:nth-child(2){ grid-area:apps; }
+  .portal-tiles .portal-tile:nth-child(3){ grid-area:support; }
+  .portal-tile-manage{ grid-area:manage; }
+  /* APPS — 3-up card grid (clip37). */
+  .portal-apps-title{ max-width:none; margin:2px 0 22px; }
+  .portal-apps-list{
+    max-width:none;
+    display:grid; grid-template-columns:repeat(3, minmax(0,1fr));
+    gap:clamp(18px,2vw,32px);
+    align-items:start;
+  }
+  .portal-app{ text-align:left; margin-bottom:0; }
+  .portal-app-media{ background:#565656; min-height:150px; width:100%; }
+  .portal-app-title{ font-size:17px; }
+}
+
+/* Example-window board additions on phones: stack the header, keep the
+   evidence band inside the pane, single-column tiles. */
+@media (max-width:760px){
+  .example-head{ flex-direction:column; }
+  .example-evidence-band{
+    flex-wrap:wrap; margin:0; border-radius:12px;
+    padding:14px 16px;
+  }
+  .example-evidence-note{ margin-left:0; }
+  .example-evidence-tiles,
+  .example-more-grid{ grid-template-columns:1fr; }
+  .example-media-grid{
+    grid-template-columns:1fr; grid-template-rows:none;
+    grid-template-areas:"a" "b" "c" "d";
+  }
+  .example-tile{ min-height:120px; }
+}
