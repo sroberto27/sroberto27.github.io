@@ -211,7 +211,7 @@
     // your world below" hint only on home.
     $("#dockTabs").hidden = name !== "category";
     $("#sectorPager").hidden = name !== "category";
-    $("#dockExplore").hidden = name !== "home";
+
     syncNav();
     syncDrawer();
   }

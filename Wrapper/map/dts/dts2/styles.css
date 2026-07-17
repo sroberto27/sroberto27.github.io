@@ -586,6 +586,26 @@ body.twin-active .cookie{ opacity:0; pointer-events:none; transition:opacity .4s
   background:linear-gradient(0deg, rgba(13,20,35,.92), rgba(13,20,35,.55));
   z-index:10;   /* above stage content so the qbar answer popover isn't overlapped */
 }
+
+/* ---------- HOME: floating dock ----------
+   On the home view only, the dock loses its backing so the question
+   bar floats, and the stage's background layers (canvas + Vimeo loop)
+   are allowed to extend down behind the dock row so the animation
+   covers the strip. The layout itself is untouched — nothing inside
+   the home view moves. Category and other views keep the backed dock.
+   Uses :has(), supported by all current browsers. */
+body:has(#view-home.is-active) .dockbar{
+  border-top:0;
+  background:transparent;
+}
+/* Let the background layers escape the stage's bottom edge… */
+body:has(#view-home.is-active) .app > .stage{ overflow:visible; }
+/* …and reach under the dock (the .app frame still clips at its own
+   rounded border, so nothing leaks outside the page). */
+body:has(#view-home.is-active) .bg-net,
+body:has(#view-home.is-active) .bg-video{
+  bottom:calc(-1 * var(--dock-h));
+}
 .qbar{
   display:flex; align-items:center; gap:10px;
   background:#e9e9ea; color:#222; border-radius:24px;
@@ -607,18 +627,7 @@ body.twin-active .cookie{ opacity:0; pointer-events:none; transition:opacity .4s
 }
 .qbar-send:hover{ background:var(--gold); color:#1a1206; }
 
-/* "Explore your world below" — home-state hint, bottom centre. */
-.dock-explore{
-  position:absolute; left:50%; transform:translateX(-50%);
-  display:flex; align-items:center; gap:clamp(10px,1.2vw,18px);
-  color:var(--ink); font-size:clamp(11px,.9vw,13px); font-weight:700;
-  white-space:nowrap; pointer-events:none;
-}
-.dock-explore-line{
-  width:clamp(28px,3.2vw,54px); height:3px; border-radius:3px;
-  background:var(--gold);
-}
-.dock-explore[hidden]{ display:none; }
+
 
 /* Figma: the tab group is an outlined pill next to the question bar,
    with the active segment ("Use Cases") filled and the sub-vertical
@@ -1344,17 +1353,35 @@ body.twin-active .cookie{ opacity:0; pointer-events:none; transition:opacity .4s
 }
 .form-success-x:hover{ background:var(--gold-bright); }
 
-/* ---------- Welcome Back sign-in (clip1) ---------- */
+/* ---------- Welcome Back sign-in (clip1) ----------
+   Backed by the teal→purple gradient artwork (logBackground.png) with
+   the CubeLogo + wordmark brand block; the form sits in a translucent
+   dark glass card (Figma desktop + mobile login frames). */
 .access-window{
-  background:
-    radial-gradient(90% 70% at 88% 42%, rgba(126,53,168,.55), transparent 70%),
-    radial-gradient(70% 60% at 6% 90%, rgba(9,102,96,.45), transparent 70%),
-    linear-gradient(150deg,#0b1626 0%, #201338 55%, #351a4d 100%);
+  background:#0b1626 url("logBackground.png") center / cover no-repeat;
   border-radius:22px;
 }
-.access-brand{ display:flex; flex-direction:column; align-items:flex-start; gap:2px; margin-bottom:6px; }
-.access-brand-logo{ height:64px; width:auto; object-fit:contain; }
-.access-brand-tag{ font-size:10px; color:var(--gold); letter-spacing:.03em; }
+.access-brand{ display:flex; flex-direction:column; align-items:flex-start; margin-bottom:6px; }
+.access-brand-cube{ height:72px; width:auto; object-fit:contain; margin-bottom:8px; }
+.access-brand-word{
+  color:#fff; font-weight:700; font-size:19px; letter-spacing:.3em;
+  line-height:1;
+}
+.access-brand-studios{
+  color:#fff; font-weight:600; font-size:10px; letter-spacing:.58em;
+  margin-top:5px; line-height:1;
+}
+.access-brand-tag{ font-size:10px; color:var(--gold); letter-spacing:.03em; margin-top:7px; }
+/* Glass card wrapping the whole form (both breakpoints). */
+.access-form-col{
+  background:rgba(10,15,26,.34);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:22px;
+  padding:clamp(22px,4vh,34px) clamp(18px,2.4vw,30px);
+  backdrop-filter:blur(9px);
+  -webkit-backdrop-filter:blur(9px);
+  box-shadow:0 18px 44px rgba(0,0,0,.35);
+}
 .access-welcome{
   text-align:center; font-size:clamp(26px,3vw,32px); font-weight:800;
   margin:14px 0 18px;
@@ -1865,9 +1892,11 @@ body.portal-open{ overflow:hidden; }
   .access-window{
     width:calc(100vw - 24px); max-height:92dvh; overflow-y:auto;
     border-radius:20px;
+    background:#0b1626 url("logBackground.png") center / cover no-repeat;
   }
-  .access-brand-logo{ height:56px; }
-  .access-welcome{ margin-top:24px; }
+  .access-brand-cube{ height:54px; }
+  .access-brand-word{ font-size:15px; }
+  .access-welcome{ margin-top:10px; }
 
   /* ----- Projects window (clip28): full-screen sheet. ----- */
   .projects-window{
@@ -2109,22 +2138,24 @@ body.spatial-environment-active .vision-spatial-btn{
 /* ---------- Access Your Twin (clip33): desktop charcoal popup ---------- */
 @media (min-width:761px){
   .access-window{
-    width:min(1060px,90vw); min-height:min(700px,84vh);
-    background:#252525;
+    width:min(1060px,90vw); min-height:min(660px,84vh);
+    background:#0b1626 url("logBackground.png") center / cover no-repeat;
     border:0; border-radius:26px;
     display:grid; grid-template-columns:1.05fr 1fr;
     align-items:center;
     padding:clamp(28px,4vh,48px) clamp(28px,3vw,56px);
     column-gap:clamp(24px,3vw,48px);
   }
-  /* Left half: brand block (empty in the board frame — the DTS brand
-     block from the mobile login is reused; documented interpretation). */
+  /* Left half: CubeLogo + wordmark centred over the teal side of the
+     artwork (Figma desktop login). */
   .access-view{ display:contents; }
   .access-brand{ align-self:center; justify-self:center; align-items:center; }
-  .access-brand-logo{ height:96px; }
+  .access-brand-cube{ height:110px; }
+  .access-brand-word{ font-size:26px; }
+  .access-brand-studios{ font-size:12px; }
   .access-brand-tag{ font-size:12px; }
   .access-form-col{
-    background:#303030; border-radius:18px;
+    align-self:stretch; display:flex; flex-direction:column; justify-content:center;
     padding:clamp(26px,4vh,44px) clamp(22px,2.4vw,40px);
   }
   .access-welcome{ margin-top:0; }
