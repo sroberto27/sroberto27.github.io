@@ -1,23 +1,18 @@
 /* ============================================================
-   DTS — Treedis SDK Bridge
+   Treedis SDK bridge
    ------------------------------------------------------------
-   ADAPTED VERBATIM (protocol-wise) from the existing SCSU wrapper
-   file js/03-tour-bridge.js. The postMessage protocol and the
-   ping/ready handshake are preserved EXACTLY so this prototype
-   keeps talking to the same Treedis showcase the campus wrapper
-   used. Only the surrounding plumbing (config source, optional
-   sync callback) was generalised so the bridge can live in a
-   standalone DTS page.
+   postMessage bridge between the site and the embedded Treedis
+   showcase iframe.
 
    DO NOT change the message `type` strings or the ping cadence —
    they are the contract Treedis expects.
 
-   Protocol (subset, unchanged from the wrapper):
-     Outbound (us → Treedis):
+   Protocol (subset):
+     Outbound (site → Treedis):
        { type: "Ping" }
        { type: "Navigate", sweepId, transitionTime?, rotation? }
        { type: "RequestSweeps" }
-     Inbound  (Treedis → us):
+     Inbound  (Treedis → site):
        { type: "TourReady" }
        { type: "PoseChanged", ... }
        { type: "SweepsChanged", sweeps: [...] }
@@ -30,8 +25,8 @@ const TourBridge = {
   _currentSweepId: null,
   _origin: null,
   _defaultTransitionTime: 1500,
-  _onReady: null,        // optional callback fired once on TourReady
-  _onPoseChanged: null,  // optional callback(newSweepId)
+  _onReady: null,        // fired once on TourReady
+  _onPoseChanged: null,  // fired with the new sweep id on movement
 
   /* opts: { origin, defaultTransitionTime, onReady, onPoseChanged } */
   initialize(iframeEl, opts = {}) {
@@ -45,8 +40,7 @@ const TourBridge = {
 
     window.addEventListener("message", this._onMessage.bind(this));
 
-    // Keep pinging until we get a TourReady, then stop. (Same cadence
-    // as the wrapper — 2s — so a cold Treedis boot is handled.)
+    // Ping every 2s until TourReady arrives (covers a cold Treedis boot).
     this._pingInterval = setInterval(() => {
       if (this._ready) {
         clearInterval(this._pingInterval);
@@ -57,9 +51,8 @@ const TourBridge = {
     }, 2000);
   },
 
-  /* Re-arm the bridge after the host navigates the iframe to a
-     different tour (src change). Clears the stale ready state and
-     restarts the TourReady ping loop for the new document. */
+  /* Re-arm the bridge after the iframe src changes to a different tour:
+     clears the stale ready state and restarts the ping loop. */
   reset() {
     this._ready = false;
     this._currentSweepId = null;
@@ -77,8 +70,7 @@ const TourBridge = {
   get isReady() { return this._ready; },
 
   _onMessage(event) {
-    // Validate origin when configured. Treedis posts from the same
-    // origin the iframe was loaded from.
+    // Validate origin when configured. Treedis posts from the iframe's origin.
     const expected = this._origin;
     if (expected && event.origin && event.origin !== expected) return;
 
@@ -89,9 +81,8 @@ const TourBridge = {
       case "TourReady":
         this._ready = true;
         console.info("[treedis] TourReady");
-        // Defer the ready callback slightly — TourReady fires when the
-        // bridge is up, but the showcase SDK takes another moment to
-        // act on Navigate. (Mirrors the 600ms defer in the wrapper.)
+        // Defer slightly — the showcase SDK needs a moment after
+        // TourReady before it acts on Navigate.
         setTimeout(() => {
           try { if (this._onReady) this._onReady(); } catch (_) {}
         }, 600);
@@ -135,7 +126,7 @@ const TourBridge = {
   requestSweeps() { this._post({ type: "RequestSweeps" }); },
   ping()          { this._post({ type: "Ping" }); },
 
-  /* Silent pre-warm: Navigate with transitionTime: 0 so the hidden
+  /* Silent pre-warm: Navigate with transitionTime 0 so a hidden
      iframe jumps instantly instead of animating. */
   warmSweep(sweepId) {
     if (!sweepId) return;
@@ -144,9 +135,8 @@ const TourBridge = {
 
   _post(cmd) {
     if (!this._iframe || !this._iframe.contentWindow) return;
-    // "*" targetOrigin: the iframe src is set to the configured origin
-    // and inbound messages are origin-validated above. (Same rationale
-    // as the wrapper.)
+    // "*" targetOrigin is acceptable here: the iframe src is set to the
+    // configured origin and inbound messages are origin-validated above.
     this._iframe.contentWindow.postMessage(cmd, "*");
   }
 };

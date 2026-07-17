@@ -1,0 +1,60 @@
+/* ============================================================
+   HOME POINTER PARTICLES + DEPTH-SMOKE
+   ------------------------------------------------------------
+   Two transparent canvases surround the decorative hexagons in
+   the stacking order. Particles cross-fade between those canvases
+   according to their simulated depth, so the stream can pass both
+   behind and in front of the four project hexagons.
+   ============================================================ */
+.view-home{
+  isolation:isolate;
+}
+
+.smoke-canvas{
+  position:absolute;
+  inset:0;
+  display:block;
+  width:100%;
+  height:100%;
+  pointer-events:none;
+  user-select:none;
+  background:transparent;
+  /* Normal alpha blending preserves the original background values.
+     Additive/screen blending caused pale colours to accumulate into a
+     full-page veil on bright or high-DPI displays. */
+  mix-blend-mode:normal;
+  filter:saturate(.88);
+  contain:strict;
+  -webkit-mask-image:radial-gradient(ellipse 88% 92% at 61% 48%, #000 0 58%, rgba(0,0,0,.82) 76%, transparent 100%);
+  mask-image:radial-gradient(ellipse 88% 92% at 61% 48%, #000 0 58%, rgba(0,0,0,.82) 76%, transparent 100%);
+}
+
+/* Existing background video/network: z-index 0. */
+.smoke-canvas-back{
+  z-index:2;
+  opacity:.66;
+}
+
+/* Existing .hex-cluster remains between the two layers at z-index 3.
+   The foreground is intentionally lighter: it provides occasional
+   depth crossings without covering the project imagery. */
+.smoke-canvas-front{
+  z-index:4;
+  opacity:.42;
+}
+
+/* Keep the functional hero UI clearly above the effect. */
+.home-copy{ z-index:8; }
+.twin-cta-wrap{ z-index:9; }
+
+/* Do not dim the website's original animated background. Its existing
+   .bg-video (.6) and .bg-net (.5) values remain the visual foundation. */
+
+@media (max-width:900px){
+  .smoke-canvas-back{ opacity:.54; }
+  .smoke-canvas-front{ opacity:.32; }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .smoke-canvas{ display:none; }
+}

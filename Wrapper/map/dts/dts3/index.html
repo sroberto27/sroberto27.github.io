@@ -10,9 +10,21 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet" href="styles.css" />
+  <!-- Stylesheets load in numeric order; later files override earlier ones. -->
+  <link rel="stylesheet" href="css/01-base.css" />
+  <link rel="stylesheet" href="css/02-home.css" />
+  <link rel="stylesheet" href="css/03-category.css" />
+  <link rel="stylesheet" href="css/04-overlays.css" />
+  <link rel="stylesheet" href="css/05-mobile-nav.css" />
+  <link rel="stylesheet" href="css/06-example-window.css" />
+  <link rel="stylesheet" href="css/07-access.css" />
+  <link rel="stylesheet" href="css/08-responsive.css" />
+  <link rel="stylesheet" href="css/09-mobile.css" />
+  <link rel="stylesheet" href="css/10-vision-pro.css" />
+  <link rel="stylesheet" href="css/11-desktop.css" />
+  <link rel="stylesheet" href="css/12-smoke.css" />
 
-  <!-- visionOS 26.5 developer-preview website environment.
+  <!-- visionOS 26.5 spatial website environment (developer preview).
        Visitors activate it from Safari's Page Menu, not through JavaScript. -->
   <link
     rel="spatial-backdrop"
@@ -29,12 +41,12 @@
 
   <!-- ===================== TOP NAV (fixed) ===================== -->
   <header class="topbar" role="banner">
-    <!-- Logo + tagline stay constant throughout (per Figma note).
-         The logo is ALSO a menu item: it returns home and is
-         highlighted gold (like the pillars) when home is active. -->
+    <!-- Logo + tagline stay constant throughout. The logo is also a
+         menu item: it returns home and is highlighted gold when home
+         is active. -->
     <a class="brand" href="#" id="brandHome" data-nav="home"
        aria-label="Digital Twin Studios — home">
-      <img class="brand-logo" src="assets-logo.png"
+      <img class="brand-logo" src="assets/assets-logo.png"
            alt="Digital Twin Studios — Grounded in human experience." />
     </a>
 
@@ -48,7 +60,7 @@
 
     <!-- Four pillars = primary navigation + identity -->
     <nav class="pillars" id="pillars" role="tablist" aria-label="Sectors">
-      <!-- buttons injected by script.js -->
+      <!-- buttons injected by js/app.js -->
     </nav>
 
     <!-- Client portal / access point (architecturally separate) -->
@@ -57,7 +69,7 @@
 
   <!-- Mobile nav drawer (slides down from the header on phones) -->
   <nav class="nav-drawer" id="navDrawer" aria-label="Sections" aria-hidden="true">
-    <!-- sector links injected by script.js -->
+    <!-- sector links injected by js/app.js -->
   </nav>
   <div class="nav-scrim" id="navScrim" hidden></div>
 
@@ -115,21 +127,17 @@
 
         <!-- ===== DECORATIVE HEXAGON CLUSTER =====
              Purely decorative — visible only in the initial hero state.
-             The Treedis experience NO LONGER lives inside a hexagon; it
-             is revealed full-screen in the #twinLayer below when the
-             user presses "Try a Digital Twin". -->
+             The Treedis experience is revealed full-screen in #twinLayer
+             below when the user presses "Try a Digital Twin". -->
         <div class="hex-cluster" aria-hidden="true">
-          <!-- Diagonal run, bottom-left → top-right — real project
-               imagery in every hexagon:
-               Downtown street capture → immersive park-tour map →
-               Virgin Hotels VR → digital-twin cities render.
-               Files live next to index.html; to reorder, just swap the
-               url() values between the hex-1…hex-4 spans (positions and
-               sizes stay put — they're keyed to the hex-N class). -->
-               <span class="hex hex-img hex-1" style="background-image:url('InteractiveCities.png')"></span>
-               <span class="hex hex-img hex-2" style="background-image:url('assets-droplet.jpg')"></span>
-               <span class="hex hex-img hex-3" style="background-image:url('VirginHotel.png')"></span>
-               <span class="hex hex-img hex-4" style="background-image:url('assets-wave.jpg')"></span>
+          <!-- Diagonal run, bottom-left → top-right, with project imagery
+               in every hexagon. To reorder, swap the url() values between
+               the hex-1…hex-4 spans; positions and sizes stay put (they're
+               keyed to the hex-N class). -->
+               <span class="hex hex-img hex-1" style="background-image:url('assets/InteractiveCities.png')"></span>
+               <span class="hex hex-img hex-2" style="background-image:url('assets/assets-droplet.jpg')"></span>
+               <span class="hex hex-img hex-3" style="background-image:url('assets/VirginHotel.png')"></span>
+               <span class="hex hex-img hex-4" style="background-image:url('assets/assets-wave.jpg')"></span>
           <span class="hex hex-ghost hex-g1"></span>
           <span class="hex hex-ghost hex-g2"></span>
           <span class="hex hex-ghost hex-g3"></span>
@@ -137,9 +145,9 @@
         </div>
 
         <!-- Primary CTA — outlined gold pill over the arrow-burst
-             graphic (Figma), starts the centre-out reveal into the twin. -->
+             graphic; starts the centre-out reveal into the twin. -->
         <div class="twin-cta-wrap">
-          <img class="twin-cta-fx" src="assets-cta-arrow.png" alt="" aria-hidden="true" />
+          <img class="twin-cta-fx" src="assets/assets-cta-arrow.png" alt="" aria-hidden="true" />
           <button class="twin-cta" id="twinTry" type="button">Try a Digital Twin</button>
         </div>
       </div>
@@ -154,10 +162,10 @@
     </section>
 
     <!-- ---------- VIEW: CATEGORY ----------
-         Holds a horizontal SLIDER with two panels that occupy the same
-         space: (0) the sector cards, (1) the inline contact panel.
-         Pressing "Contact & Info" slides to panel 1; the contact panel's
-         own arrows slide back or advance to the next sector's cards. -->
+         A horizontal slider with two panels occupying the same space:
+         (0) the sector cards, (1) the inline contact panel. "Contact &
+         Info" slides to panel 1; the contact panel's arrows slide back
+         or advance to the next sector's cards. -->
     <section class="view view-category" id="view-category" aria-label="Sector detail" hidden>
 
       <div class="cat-slider" id="catSlider">
@@ -177,7 +185,7 @@
               </div>
 
               <div class="cat-cards" id="catCards">
-                <!-- use-case cards injected by script.js -->
+                <!-- use-case cards injected by js/app.js -->
               </div>
             </div>
 
@@ -279,14 +287,13 @@
     <!-- Category bottom tabs (shown in category view) -->
     <div class="dock-tabs" id="dockTabs" hidden>
       <button class="dock-tab is-active" data-tab="usecases" type="button">Use Cases</button>
-      <!-- sub-vertical tabs injected by script.js -->
+      <!-- sub-vertical tabs injected by js/app.js -->
     </div>
 
     <!-- Mobile sector pager — ‹ SECTOR › with one dot per sector.
-         Arrows step through sectors, dots jump directly, and swiping
-         the cards area still works. Lives in the dock so the Use Cases rail sits ABOVE it (Figma order:
-         cards, Use Cases, sector pager, question bar). Hidden on desktop
-         and outside the category view. -->
+         Arrows step through sectors, dots jump directly, and swiping the
+         cards area still works. Lives in the dock so the Use Cases rail
+         sits above it. Hidden on desktop and outside the category view. -->
     <div class="sector-pager" id="sectorPager" hidden>
       <button class="sector-arrow sector-arrow-prev" id="sectorPrev" type="button" aria-label="Previous sector">
         <svg viewBox="0 0 24 24" width="20" height="20"><path d="M15 6l-6 6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -294,7 +301,7 @@
       <div class="sector-pager-center">
         <span class="sector-pager-label" id="sectorPagerLabel"></span>
         <div class="sector-pager-dots" id="sectorPagerDots" aria-hidden="true">
-          <!-- dots injected by script.js -->
+          <!-- dots injected by js/app.js -->
         </div>
       </div>
       <button class="sector-arrow sector-arrow-next" id="sectorNext" type="button" aria-label="Next sector">
@@ -305,10 +312,8 @@
 
   <!-- ============================================================
        TWIN LAYER — the full-screen Treedis experience.
-       Sits under the fixed header (top: var(--topbar-h)) and covers
-       the stage + dock. The live iframe is injected into #demoStage
-       at boot (id preserved so startTreedis()/parkIframe() and the
-       TourBridge handshake are completely unchanged) and revealed
+       Sits under the fixed header and covers the stage + dock. The
+       live iframe is injected into #demoStage at boot and revealed
        with a centre-out clip animation on "Try a Digital Twin".
        ============================================================ -->
   <div class="twin-layer" id="twinLayer" aria-hidden="true">
@@ -325,11 +330,11 @@
     <!-- Centre seam — the thin vertical line the reveal grows from. -->
     <span class="twin-seam" aria-hidden="true"></span>
 
-    <!-- Final-state glass card (mockup 8s–12s): hero copy reintroduced
-         as a translucent panel over the live experience. -->
+    <!-- Final-state glass card: hero copy reintroduced as a
+         translucent panel over the live experience. -->
     <aside class="twin-hero-card" id="twinHeroCard" aria-hidden="true">
       <!-- Minimize — collapses the card into the small DTS chip
-           parked just above Treedis' own circular controls. -->
+           parked above Treedis' own circular controls. -->
       <button class="twin-card-min" id="twinCardMin" type="button"
               aria-label="Minimize info panel" title="Minimize">
         <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">
@@ -350,8 +355,7 @@
     </aside>
 
     <!-- Minimized state of the glass card: a small DTS chip parked
-         bottom-left, just above Treedis' own circular buttons.
-         Clicking it restores the card (mobile AND desktop). -->
+         bottom-left. Clicking it restores the card. -->
     <button class="twin-card-restore" id="twinCardRestore" type="button"
             aria-label="Show info panel" aria-hidden="true">
       <svg viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
@@ -376,11 +380,10 @@
 </div>
 
 <!-- ============================================================
-     EXAMPLE WINDOW  (per sub-vertical, matches experienceOpenedWindow.png)
+     EXAMPLE WINDOW  (per sub-vertical)
      Opens when a use-case card or a bottom dock tab is clicked.
      A live experience pane on top; a content pane (overview, the
-     project example, and project-evidence proof) on the bottom,
-     mirroring the Solar Farm Sample layout in the Figma frames.
+     project example, and project evidence) below.
      ============================================================ -->
 <div class="overlay" id="exampleOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="exTitle">
   <div class="overlay-scrim" data-close-example></div>
@@ -398,11 +401,10 @@
       </div>
     </div>
 
-    <!-- Scrolling content pane — desktop board frames clip2–clip6:
-         title row with gold CTAs, "Captured with / Platform" chip rows,
-         overview, the PROJECT EVIDENCE band with filter chips and
-         evidence tiles, a "Photos and Video" gallery, and a
-         "More from {Sector}" related row. -->
+    <!-- Scrolling content pane: title row with gold CTAs,
+         "Captured with / Platform" chip rows, overview, the PROJECT
+         EVIDENCE band with filter chips and evidence tiles, a
+         "Photos and Video" gallery, and a "More from {Sector}" row. -->
     <div class="example-content" id="exampleContent">
       <div class="example-head">
         <div class="example-head-copy">
@@ -420,7 +422,7 @@
             <span class="meta-chip meta-kind" id="exKind" hidden></span>
           </div>
         </div>
-        <!-- Conversion CTAs (design: gold buttons top-right of the pane) -->
+        <!-- Conversion CTAs — gold buttons top-right of the pane -->
         <div class="example-cta-row">
           <button class="example-cta" id="exEnter" type="button">Enter Twin</button>
           <button class="example-cta" id="exContact" type="button">Contact Us about this</button>
@@ -463,8 +465,8 @@
       </div>
 
       <!-- Photos and Video — populated from cfg.examples[id].gallery when
-           real project imagery exists (extracted from the DTS portfolio);
-           otherwise falls back to the decorative placeholder mosaic. -->
+           real project imagery exists; otherwise falls back to the
+           decorative placeholder mosaic. -->
       <section class="example-media" aria-label="Photos and video">
         <h3 class="example-section-title">Photos and Video</h3>
         <div class="example-media-grid" id="exMediaGrid">
@@ -473,19 +475,19 @@
           <span class="example-tile"></span>
           <span class="example-tile example-tile-tall"></span>
         </div>
-        <!-- Related live experiences & videos for this project (from the
-             link inventory). Injected by script.js; hidden when empty. -->
+        <!-- Related live experiences & videos for this project.
+             Injected by js/app.js; hidden when empty. -->
         <div class="example-links" id="exMediaLinks" hidden></div>
       </section>
 
-      <!-- More from {Sector} (design clip6): the sector's other sub-verticals -->
+      <!-- More from {Sector}: the sector's other sub-verticals -->
       <section class="example-more" aria-label="More from this sector">
         <h3 class="example-section-title" id="exMoreTitle">More from Education</h3>
         <div class="example-more-grid" id="exMoreGrid"><!-- injected --></div>
       </section>
     </div>
 
-    <!-- Back-to-top FAB (design: gold rounded square, bottom-right) -->
+    <!-- Back-to-top FAB — gold rounded square, bottom-right -->
     <button class="example-fab" id="exampleFab" type="button" aria-label="Back to top">
       <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M12 19V5M6 11l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
     </button>
@@ -493,10 +495,10 @@
 </div>
 
 <!-- ============================================================
-     ACCESS YOUR TWIN  (returning-client sign-in + dashboard)
-     Architecturally separate from the marketing flow per the
-     design rationale — a new prospect never hits a login wall,
-     a returning client never lands on a sales page.
+     ACCESS YOUR TWIN  (returning-client sign-in)
+     Kept separate from the marketing flow: a new prospect never
+     hits a login wall, a returning client never lands on a sales
+     page.
      ============================================================ -->
 <div class="overlay overlay-form" id="accessOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="accessTitle">
   <div class="overlay-scrim" data-close-access></div>
@@ -505,15 +507,14 @@
       <svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     </button>
 
-    <!-- Sign-in view — matches the Figma mobile "Welcome Back!" login
-         (frame clip1): brand block top-left, centred title, Email +
-         Password over light inputs, Remember me / Forgot password?,
-         gold "Login In", and a Contact Us line for new clients.
-         The Email field maps onto the directory's access ID and the
-         password onto its access code (see dts-clients.js). -->
+    <!-- Sign-in view: brand block, Email + Password, Remember me /
+         Forgot password?, gold "Login In", and a Contact Us line for
+         new clients. The Email field maps onto the directory's
+         access_id and the password onto its access_code
+         (see js/clients.js). -->
     <div class="access-view" id="accessSignin">
       <div class="access-brand" aria-hidden="true">
-        <img src="CubeLogo.png" alt="" class="access-brand-cube" />
+        <img src="assets/CubeLogo.png" alt="" class="access-brand-cube" />
         <span class="access-brand-word">DIGITAL&nbsp;TWIN</span>
         <span class="access-brand-studios">STUDIOS</span>
         <span class="access-brand-tag">Grounded in Human Experience.</span>
@@ -548,19 +549,18 @@
       </div>
     </div>
 
-    <!-- (Legacy dashboard container — kept for state handling; the
-         signed-in experience now opens the full-screen client portal
-         below, per the Figma mobile frames clip4 / clip5 / clip6.) -->
+    <!-- Legacy dashboard container — kept for state handling; the
+         signed-in experience opens the full-screen client portal below. -->
     <div class="access-dashboard" id="accessDashboard" hidden></div>
   </div>
 </div>
 
 <!-- ============================================================
-     CLIENT PORTAL  (post-login, Figma frames clip4 / clip5 / clip6)
-     Full-screen layer: light header with MENU, the client's logo /
-     name block, and Sign out; a HOME tile view; an "All APPS" list
-     (one card per twin); and a tile menu overlay (Home / Apps /
-     Manage / Support).
+     CLIENT PORTAL  (post-login)
+     Full-screen layer: light header with MENU, the client's name,
+     and Sign out; a HOME tile view; an "All APPS" list (one card
+     per twin); and a tile menu overlay (Home / Apps / Manage /
+     Support).
      ============================================================ -->
 <div class="portal" id="portalLayer" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Client portal">
   <header class="portal-topbar">
@@ -580,20 +580,18 @@
   </header>
 
   <main class="portal-main" id="portalMain">
-    <!-- HOME — tile layout mirroring the wireframe blocks of clip4 -->
+    <!-- HOME — tile layout -->
     <section class="portal-view portal-home is-active" id="portalHome" aria-label="Portal home">
       <div class="portal-tiles" id="portalHomeTiles"><!-- injected --></div>
     </section>
 
-    <!-- ALL APPS — stacked app cards of clip5 -->
+    <!-- ALL APPS — stacked app cards -->
     <section class="portal-view portal-apps" id="portalApps" aria-label="All apps" hidden>
       <h2 class="portal-apps-title">All APPS</h2>
       <div class="portal-apps-list" id="portalAppsList"><!-- injected --></div>
     </section>
 
-    <!-- MANAGE / SUPPORT — named in the clip6 menu; no dedicated
-         frame exists in the mobile board, so these are minimal
-         placeholder panels (documented uncertainty). -->
+    <!-- MANAGE / SUPPORT — minimal placeholder panels. -->
     <section class="portal-view portal-simple" id="portalManage" aria-label="Manage" hidden>
       <h2 class="portal-apps-title">Manage</h2>
       <p class="portal-simple-body">Twin management tools are handled with your DTS project lead. Reach out any time and we’ll take care of it.</p>
@@ -604,7 +602,7 @@
     </section>
   </main>
 
-  <!-- Tile menu overlay (clip6): HOME / APPS / Manage / Support -->
+  <!-- Tile menu overlay: HOME / APPS / Manage / Support -->
   <div class="portal-menu" id="portalMenu" hidden>
     <div class="portal-menu-grid">
       <button class="portal-menu-tile" data-portal-view="home" type="button">
@@ -619,11 +617,10 @@
 </div>
 
 <!-- ============================================================
-     SECTOR PROJECTS WINDOW  (Figma frame clip28)
+     SECTOR PROJECTS WINDOW
      Opened by "VIEW {SECTOR} PROJECTS": full-screen dark sheet with
-     the DTS brand block, a gold circular close, the sector title,
-     and stacked project cards, each carrying the capture-platform
-     chips. Tapping a card opens that project's example window.
+     the DTS brand block, the sector title, and stacked project
+     cards. Tapping a card opens that project's example window.
      ============================================================ -->
 <div class="overlay" id="projectsOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="projectsTitle">
   <div class="overlay-scrim" data-close-projects></div>
@@ -632,7 +629,7 @@
       <svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
     </button>
     <div class="projects-brand" aria-hidden="true">
-      <img src="assets-logo.png" alt="" class="projects-brand-logo" />
+      <img src="assets/assets-logo.png" alt="" class="projects-brand-logo" />
       <span class="projects-brand-tag">Grounded in human experience.</span>
     </div>
     <h2 class="projects-title" id="projectsTitle">EDUCATION BASED PROJECTS</h2>
@@ -643,7 +640,7 @@
 <!-- ============================================================
      LEAD FORM MODAL
      Title, intro, and fields are injected per button (Discovery /
-     Proposal / Pilot) by script.js. On submit it emails the owner
+     Proposal / Pilot) by js/app.js. On submit it emails the owner
      via Web3Forms (or falls back to the user's mail app).
      ============================================================ -->
 <div class="overlay overlay-form" id="formOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="formTitle">
@@ -668,10 +665,8 @@
       </form>
     </div>
 
-    <!-- Success view (shown after a successful submit).
-         Matches the Figma mobile "REQUEST SENT" toast (frame clip23):
-         gold kicker, bold thanks line, two-line reassurance, and a
-         gold circular close. -->
+    <!-- Success view, shown after a successful submit: gold kicker,
+         bold thanks line, two-line reassurance, and a close button. -->
     <div class="form-success" id="formSuccess" hidden>
       <button class="form-success-x" id="formSuccessClose" type="button" aria-label="Close">
         <svg viewBox="0 0 24 24" width="15" height="15"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
@@ -704,11 +699,13 @@
 
 
 
-<script src="config.js"></script>
-<script src="dts-clients.js"></script>
-<script src="dts-tour-bridge.js"></script>
-<script src="script.js"></script>
-<script src="smoke-depth.js"></script>
-<script src="vision-pro-spatial.js"></script>
+<!-- Scripts load in dependency order: config + client directory first,
+     then the Treedis bridge, then the app, then the decorative extras. -->
+<script src="js/config.js"></script>
+<script src="js/clients.js"></script>
+<script src="js/tour-bridge.js"></script>
+<script src="js/app.js"></script>
+<script src="js/smoke-depth.js"></script>
+<script src="js/vision-pro-spatial.js"></script>
 </body>
 </html>

@@ -1,13 +1,19 @@
 /* ============================================================
-   DTS — App logic
+   Main application logic
    ------------------------------------------------------------
-   App-shell state machine. Major sections are swapped via JS
-   state (home / category) — NOT scroll. Modals (demo, contact)
-   layer over the shell.
+   App-shell state machine: views are swapped via JS state
+   (home / category), not scroll. Overlays (example window,
+   forms, sign-in, portal) layer over the shell.
 
-   Treedis: the demo overlay reuses the preserved TourBridge
-   (dts-tour-bridge.js), which carries the exact postMessage
-   protocol from the SCSU wrapper.
+   Contents:
+     - App state + nav (pillars, drawer, sector pager, swipe)
+     - View switching + category rendering
+     - Treedis embed + TourBridge wiring (js/tour-bridge.js)
+     - Twin experience (full-screen reveal)
+     - Example window
+     - Access Your Twin (sign-in) + client portal
+     - Question bar, projects window, contact panel, lead forms
+     - Background canvas, event wiring, boot
    ============================================================ */
 (function () {
   "use strict";
@@ -52,10 +58,9 @@
      MOBILE: nav drawer
      ============================================================ */
   function buildDrawer() {
-    /* Figma mobile menu (frames clip13–clip16): a left slide-in panel
-       listing ONLY the four sectors in caps; the active sector is a
-       full-width bar in that sector's accent colour. Home is reached
-       via the brand logo, matching the board. */
+    /* Left slide-in panel listing the four sectors; the active sector
+       gets a full-width bar in its accent colour. Home is reached via
+       the brand logo. */
     const drawer = $("#navDrawer");
     drawer.innerHTML = "";
 
@@ -64,8 +69,8 @@
       a.href = "#";
       a.dataset.cat = c.id;
       a.style.setProperty("--item-accent", c.accent || "#E9B44C");
-      /* data-label feeds the oversized ghost echo shown behind the
-         active item (see .nav-drawer a.is-active::before). */
+      /* data-label feeds the ghost echo behind the active item
+         (see .nav-drawer a.is-active::before). */
       a.dataset.label = c.kicker;
       a.innerHTML = '<span>' + c.kicker + '</span>';
       a.addEventListener("click", (e) => {
@@ -249,7 +254,7 @@
     $("#catTitle").textContent  = c.title;
     $("#catSub").textContent    = c.sub;
     $("#catBody").textContent   = c.body;
-    /* Figma clip17/31/32/33: the button names the sector. */
+    /* The button names the active sector. */
     $("#catProjectsBtn").textContent = "VIEW " + c.kicker + " PROJECTS";
 
     // use-case cards — clicking one opens that sub-vertical's example window.
@@ -301,14 +306,12 @@
   }
 
   /* ============================================================
-     DEMO EXPERIENCE  +  Treedis bridge wiring
+     TREEDIS EMBED + bridge wiring
      ------------------------------------------------------------
-     The live Treedis experience is embedded INLINE in the home
-     demo frame at boot (opens right away — no click needed). The
-     SAME iframe is physically moved into the full overlay when the
-     user expands, and moved back when they close. Moving (rather
-     than recreating) keeps the live Treedis session and the
-     TourBridge handshake intact — no reload, no re-init.
+     The live Treedis iframe is created once at boot inside
+     #demoStage. Overlays borrow the same iframe by moving it in
+     the DOM and return it on close — moving (not recreating)
+     keeps the session and the TourBridge handshake intact.
      ============================================================ */
     let treedisIframe = null;
     let pendingExampleSweep = null;   // sweep queued while Treedis is still booting
@@ -335,8 +338,7 @@
       treedisIframe.src = url;
       stage.appendChild(treedisIframe);
 
-      // ===== PRESERVED COMMUNICATION PATTERN =====
-      // Same protocol/handshake as the SCSU wrapper (js/03-tour-bridge.js).
+      // Bridge handshake — protocol lives in js/tour-bridge.js.
       TourBridge.initialize(treedisIframe, {
         origin: cfg.treedis.origin,
         defaultTransitionTime: cfg.treedis.defaultTransitionTime,
@@ -356,9 +358,7 @@
           }
         },
         onPoseChanged: function (sweepId) {
-          // Hook point: sync wrapper UI to where the user walked
-          // inside Treedis (mirrors syncWrapperToSweep in the
-          // original 04-street-view.js).
+          // Hook point: react to where the user walked inside Treedis.
           console.info("[dts] pose →", sweepId);
         }
       });
@@ -377,16 +377,14 @@
   /* ============================================================
      TWIN EXPERIENCE  (full-screen centre-out reveal)
      ------------------------------------------------------------
-     Sequence on "Try a Digital Twin" (mockup 4:00 → 12:00):
-       1. the twin layer mounts as a narrow vertical slice in the
-          centre of the viewport, with a bright seam line (4:00)
-       2. the slice expands horizontally until the live Treedis
-          experience fills everything below the fixed header
-          (4:75 → 6:00)
-       3. after a beat, the hero copy fades back in as a dark
-          glass card over the experience (8:00 → 9:00)
-     The Treedis iframe itself was created at boot inside
-     #demoStage and never reloads — the layer only reveals it.
+     On "Try a Digital Twin":
+       1. the twin layer mounts as a narrow centre slice with a
+          bright seam line
+       2. the slice expands until the live experience fills
+          everything below the fixed header
+       3. after a beat, the hero copy fades back in as a glass
+          card over the experience
+     The Treedis iframe never reloads — the layer only reveals it.
      ============================================================ */
     let cardTimer = null;
 
@@ -408,8 +406,7 @@
         requestAnimationFrame(() => layer.classList.add("is-open"))
       );
 
-      // Glass card fades in once the user has had a moment inside
-      // the twin (mockup: reveal ends ~6s, card at ~8s).
+      // Glass card fades in once the user has had a moment inside the twin.
       clearTimeout(cardTimer);
       cardTimer = setTimeout(showHeroCard, 3200);
     }
@@ -494,14 +491,14 @@
 
     const cat = cfg.categories.find((c) => c.id === ex.sector) || getCategory(state.category);
 
-    // Header — the desktop board (clip2, "Solar Farm Sample") titles the
-    // window with the PROJECT name; the sub-vertical rides in the kicker.
+    // Header — the window is titled with the project name; the
+    // sub-vertical rides in the kicker.
     $("#exKicker").textContent  = "— " + (cat.kicker || cat.label.toUpperCase()) + " · " + ex.title;
     $("#exTitle").textContent   = ex.project.name;
     $("#exTagline").textContent = ex.tagline || "";
     $("#exOverview").textContent = ex.overview || "";
 
-    // Capture chips — board layout: "Captured with: [chip]" / "Platform: [chip]".
+    // Capture / platform chips.
     $("#exCapture").textContent = ex.capturedWith || "Matterport Pro3";
     const platChip = $("#exPlatform");
     if (platChip) platChip.textContent = ex.platform || "Treedis";
@@ -517,7 +514,7 @@
     // Evidence tabs
     buildExampleEvidence(ex, evidenceLabel);
 
-    // "More from {Sector}" (board clip6): the sector's other sub-verticals.
+    // "More from {Sector}" — the sector's other sub-verticals.
     const moreTitle = $("#exMoreTitle");
     const moreGrid  = $("#exMoreGrid");
     if (moreTitle && moreGrid) {
@@ -616,8 +613,8 @@
     return null;
   }
 
-  /* Real project imagery (extracted from the DTS portfolio) when the
-     example carries a gallery; decorative mosaic otherwise. */
+  /* Real project imagery when the example has a gallery;
+     decorative placeholder mosaic otherwise. */
   function buildExampleGallery(ex) {
     const grid = $("#exMediaGrid");
     if (!grid) return;
@@ -723,9 +720,8 @@
     $("#accessError").hidden = true;
     const cfgC = window.DTS_CLIENTS || {};
     const ui = cfgC.ui || {};
-    /* The sign-in card follows the Figma mobile login (frame clip1):
-       "Welcome Back!", Email + Password, gold "Login In". The Email
-       field maps onto the directory's access ID. */
+    /* The Email field maps onto the directory's access_id and the
+       Password onto its access_code (see js/clients.js). */
     $("#accessIntro").textContent = ui.intro || "";
 
     const offline = !cfgC.sheetCsvUrl;
@@ -872,17 +868,17 @@
   }
 
   /* ============================================================
-     CLIENT PORTAL  (post-login — Figma mobile frames clip4/5/6)
-     Full-screen layer: MENU / client-logo / Sign out header, a HOME
-     tile view, an "All APPS" list built from the client's twins, and
-     a tile menu overlay. Replaces the old inline dashboard.
+     CLIENT PORTAL  (post-login)
+     Full-screen layer: MENU / client name / Sign out header, a
+     HOME tile view, an "All APPS" list built from the client's
+     twins, and a tile menu overlay.
      ============================================================ */
   function openPortal(session) {
     closeAccess();
     $("#portalClientName").textContent = session.client;
 
-    /* HOME — the clip4 wireframe blocks, made real: the primary twin
-       as the big tile plus shortcuts into the other portal views. */
+    /* HOME — the primary twin as the big tile plus shortcuts into
+       the other portal views. */
     const tiles = $("#portalHomeTiles");
     tiles.innerHTML = "";
     const primary = session.twins[0];
@@ -915,8 +911,7 @@
     support.addEventListener("click", () => showPortalView("support"));
     tiles.appendChild(support);
 
-    /* Desktop board clip36 shows a wider tile dashboard — add the
-       Manage shortcut so the four portal sections are all reachable
+    /* Manage shortcut so all four portal sections are reachable
        from HOME. */
     const manage = document.createElement("button");
     manage.type = "button";
@@ -927,8 +922,7 @@
     manage.addEventListener("click", () => showPortalView("manage"));
     tiles.appendChild(manage);
 
-    /* ALL APPS — clip5: one card per twin, image area with a duration
-       hint bottom-right and the title captioned below. */
+    /* ALL APPS — one card per twin. */
     const list = $("#portalAppsList");
     list.innerHTML = "";
     session.twins.forEach((rec) => {
@@ -991,8 +985,7 @@
     else closePortalMenu();
   }
 
-  /* Tiny local escaper (the wrapper's escapeHTML lives in another
-     file in the SCSU build; this page is standalone). */
+  /* Minimal HTML escaper for user-provided strings. */
   function escapeHTML(s) {
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
@@ -1026,10 +1019,8 @@
     if (sameOrigin && treedisIframe) {
       goHome();            // the twin layer lives on the home shell
       openExperience();
-      /* Load THIS record's tour into the live iframe if it differs
-         from what's currently loaded. (Fix: previously every
-         same-origin twin reused the boot tour, so all portal apps
-         opened the same experience regardless of their twin_url.) */
+      /* Load this record's tour into the live iframe only if it
+         differs from what's currently loaded. */
       if (rec.twin_url &&
           normalizeTourUrl(treedisIframe.src) !== normalizeTourUrl(rec.twin_url)) {
         if (typeof TourBridge.reset === "function") TourBridge.reset();
@@ -1070,11 +1061,10 @@
   function closeAnswer() { $("#qbarAnswer").hidden = true; }
 
   /* ============================================================
-     SECTOR PROJECTS WINDOW  (Figma frame clip28)
-     Opened by "VIEW {SECTOR} PROJECTS": a full-screen dark sheet
-     titled "{SECTOR} BASED PROJECTS" with a stacked card per
-     sub-vertical project, each carrying the capture / platform
-     chips. Tapping a card opens that project's example window.
+     SECTOR PROJECTS WINDOW
+     Opened by "VIEW {SECTOR} PROJECTS": a full-screen sheet with
+     one card per sub-vertical project. Tapping a card opens that
+     project's example window.
      ============================================================ */
   function openProjects() {
     const c = getCategory(state.category);
@@ -1130,10 +1120,9 @@
     $("#contactBody").textContent     = c.body;
     $("#contactFoot").textContent     = c.footnote;
 
-    /* Figma clip18: each CTA is a centred step — its stage label
-       (PLAN / PROPOSE / PILOT) above the button, with a thin
-       decorative connector line running off to the right. The old
-       separate stages row is retired. */
+    /* Each CTA is a centred step: its stage label (PLAN / PROPOSE /
+       PILOT) above the button, with a decorative connector line.
+       The separate stages row is unused and stays hidden. */
     const stages = $("#contactStages");
     stages.innerHTML = "";
     stages.hidden = true;
@@ -1207,8 +1196,7 @@
     wrap.innerHTML = "";
     fields.forEach((f) => {
       const cell = document.createElement("div");
-      /* Figma modals (clip19/21/25) pair the short fields two-up —
-         including the selects — and give textareas the full row.
+      /* Short fields pair two-up; textareas span the full row.
          `half: true` in config opts a field into the pair layout. */
       const full = f.type === "textarea" || !f.half;
       cell.className = "form-field" + (full ? " full" : "");
@@ -1352,7 +1340,7 @@
   }
 
   function showFormSuccess(viaMail) {
-    /* Figma clip23: "REQUEST SENT / Thanks for contacting us!" toast. */
+    /* "REQUEST SENT" success toast. */
     $("#formView").hidden = true;
     $("#formSuccess").hidden = false;
     document.querySelector("#formOverlay .form-window").classList.add("is-success");
@@ -1512,9 +1500,8 @@
     // Example window
     $("#exampleClose").addEventListener("click", closeExample);
     $$("[data-close-example]").forEach((s) => s.addEventListener("click", closeExample));
-    // "Enter the twin" — if the active example has its OWN experience
-    // (its Treedis tour or project video), open that full-size in a new
-    // tab; otherwise fall back to the shared full-screen showcase.
+    // "Enter Twin" — if the active example has its own experience,
+    // open it in a new tab; otherwise open the shared showcase.
     $("#exEnter").addEventListener("click", () => {
       const ex = cfg.examples && cfg.examples[activeExampleId];
       const own = exampleOpenUrl(ex);
@@ -1530,20 +1517,18 @@
         || cfg.contact.ctas[0];
       if (proposal) openLeadForm(proposal.id, proposal.stage);
     });
-    // Small gold square (board clip2/clip3) — opens the live tour in a
-    // new tab. (The board shows the button without a label; this is the
-    // documented interpretation.)
+    // Open-in-new-tab square beside the CTAs.
     const exOpenTab = $("#exOpenTab");
     if (exOpenTab) exOpenTab.addEventListener("click", () => {
       const ex = cfg.examples && cfg.examples[activeExampleId];
       window.open(exampleOpenUrl(ex) || cfg.treedis.tourUrl, "_blank", "noopener");
     });
-    // Back-to-top FAB inside the window (board clip5/clip6).
+    // Back-to-top FAB inside the window.
     const exFab = $("#exampleFab");
     if (exFab) exFab.addEventListener("click", () => {
       $("#exampleContent").scrollTo({ top: 0, behavior: "smooth" });
     });
-    // Desktop portal nav links (board clip36/clip37).
+    // Desktop portal nav links.
     $$("#portalNav .portal-nav-link").forEach((b) =>
       b.addEventListener("click", () => showPortalView(b.dataset.portalView))
     );
@@ -1565,7 +1550,7 @@
     $("#contactEdge").addEventListener("click", slideToContact);
     $("#contactBack").addEventListener("click", slideToCards);
     $("#contactNext").addEventListener("click", advanceToNextSector);
-    // "VIEW {SECTOR} PROJECTS" opens the sector projects window (clip28).
+    // "VIEW {SECTOR} PROJECTS" opens the sector projects window.
     $("#catProjectsBtn").addEventListener("click", openProjects);
     $("#projectsClose").addEventListener("click", closeProjects);
     $$("[data-close-projects]").forEach((s) => s.addEventListener("click", closeProjects));
@@ -1581,7 +1566,7 @@
       if (e.target === e.currentTarget) closePortalMenu();
     });
 
-    // Sign-in extras (Figma clip1)
+    // Sign-in extras
     $("#accessForgot").addEventListener("click", () => {
       const err = $("#accessError");
       err.textContent =
@@ -1600,8 +1585,7 @@
       if (state.contactOpen) slideToCards();
       else slideToContact();
     });
-    // Top-right portal opens the returning-client sign-in (architecturally
-    // separate from the marketing/contact flow per the design rationale).
+    // Top-right button opens the returning-client sign-in.
     $("#accessTwin").addEventListener("click", openAccess);
 
 
@@ -1642,12 +1626,10 @@
   /* ============================================================
      BOOT
      ============================================================ */
-  /* The Vision Pro spatial-website CTA is a Safari feature — show it
-     only when the site is actually opened in Safari (stakeholder
-     review). Chrome/Edge/Opera/Firefox (including their iOS shells)
-     and Android browsers all include extra tokens alongside "Safari",
-     so requiring Safari-without-those identifies real Safari (macOS,
-     iOS/iPadOS, and visionOS). */
+  /* The Vision Pro spatial-website CTA is a Safari feature, so it's
+     shown only in real Safari. Other browsers (including iOS shells)
+     add extra UA tokens alongside "Safari"; requiring Safari without
+     those identifies genuine Safari on macOS, iOS/iPadOS, visionOS. */
   function detectSafari() {
     const ua = navigator.userAgent || "";
     const isSafari = /Safari\//.test(ua) &&

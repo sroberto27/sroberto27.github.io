@@ -1,0 +1,658 @@
+/* ============================================================
+   MOBILE COMPONENTS
+   ------------------------------------------------------------
+   Components introduced or restyled for the mobile design:
+   contact steps, REQUEST SENT toast, Welcome Back sign-in,
+   sector projects window, client portal, sector strip + swipe,
+   contact edge tab, and the ≤760px fidelity overrides.
+   ============================================================ */
+:root{ --sector-accent:#e9b44c; }
+
+/* ---------- Contact steps ---------- */
+.contact-ctas{ align-items:stretch; }
+.contact-step{
+  position:relative;
+  display:flex; flex-direction:column; align-items:center; gap:10px;
+  flex:1 1 200px; min-width:0;
+}
+.contact-step-label{
+  font-size:clamp(12px,1vw,15px); font-weight:700; letter-spacing:.14em;
+  color:var(--ink);
+}
+.contact-step.is-primary .contact-step-label{ color:var(--gold); }
+.contact-step .contact-cta{ width:100%; flex:1 1 auto; }
+/* Decorative connector line (shown on phone only). */
+.contact-step-line{ display:none; }
+
+/* ---------- REQUEST SENT toast ---------- */
+.form-window.is-success{
+  background:rgba(16,23,38,.92);
+  border-radius:26px;
+  padding:clamp(26px,4vw,40px) clamp(22px,3vw,40px);
+}
+/* The success view brings its own gold circular close — hide the
+   modal's generic white X so only one close button shows. */
+.form-window.is-success .overlay-close{ display:none; }
+.form-success{ position:relative; text-align:center; padding:6px 4px; }
+.form-success-kicker{
+  position:absolute; top:2px; left:0;
+  color:var(--gold); font-size:13px; font-weight:800; letter-spacing:.08em;
+}
+.form-success-title{
+  font-size:clamp(21px,2.6vw,28px); font-weight:800; margin:34px 0 12px;
+}
+.form-success-body{ color:var(--ink); font-weight:600; font-size:13.5px; line-height:1.6; margin:0 auto; max-width:46ch; }
+.form-success-x{
+  position:absolute; top:-6px; right:-4px;
+  appearance:none; cursor:pointer;
+  width:30px; height:30px; border-radius:50%;
+  background:var(--gold); color:#141414; border:0;
+  display:flex; align-items:center; justify-content:center;
+  font-weight:800;
+}
+.form-success-x:hover{ background:var(--gold-bright); }
+
+/* ---------- Welcome Back sign-in ----------
+   Backed by the teal→purple gradient artwork (logBackground.png)
+   with the CubeLogo + wordmark brand block; the form sits in a
+   translucent dark glass card. */
+.access-window{
+  background:#0b1626 url("../assets/logBackground.png") center / cover no-repeat;
+  border-radius:22px;
+}
+.access-brand{ display:flex; flex-direction:column; align-items:flex-start; margin-bottom:6px; }
+.access-brand-cube{ height:72px; width:auto; object-fit:contain; margin-bottom:8px; }
+.access-brand-word{
+  color:#fff; font-weight:700; font-size:19px; letter-spacing:.3em;
+  line-height:1;
+}
+.access-brand-studios{
+  color:#fff; font-weight:600; font-size:10px; letter-spacing:.58em;
+  margin-top:5px; line-height:1;
+}
+.access-brand-tag{ font-size:10px; color:var(--gold); letter-spacing:.03em; margin-top:7px; }
+/* Glass card wrapping the whole form (both breakpoints). */
+.access-form-col{
+  background:rgba(10,15,26,.34);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:22px;
+  padding:clamp(22px,4vh,34px) clamp(18px,2.4vw,30px);
+  backdrop-filter:blur(9px);
+  -webkit-backdrop-filter:blur(9px);
+  box-shadow:0 18px 44px rgba(0,0,0,.35);
+}
+.access-welcome{
+  text-align:center; font-size:clamp(26px,3vw,32px); font-weight:800;
+  margin:14px 0 18px;
+}
+.access-intro{ text-align:center; margin-bottom:14px; }
+.access-intro:empty{ display:none; }
+.access-field{ max-width:400px; margin:0 auto 14px; }
+.access-field label{ color:var(--ink); font-weight:700; }
+.access-field input{
+  background:#e7e7e7; color:#111;
+  border:1.5px solid rgba(0,0,0,.45); border-radius:7px;
+}
+.access-field input:focus{ background:#fff; border-color:var(--gold); }
+.access-row{
+  display:flex; align-items:center; justify-content:space-between;
+  max-width:400px; margin:2px auto 14px; gap:12px;
+}
+.access-remember{
+  display:flex; align-items:center; gap:8px;
+  font-size:12.5px; font-weight:700; color:var(--ink); cursor:pointer;
+}
+.access-remember input{ width:15px; height:15px; accent-color:var(--gold); }
+.access-forgot{
+  appearance:none; background:none; border:0; cursor:pointer; padding:0;
+  color:var(--ink); font-family:var(--sans); font-size:12.5px; font-weight:600;
+}
+.access-forgot:hover{ color:var(--gold); }
+.access-submit{
+  display:block; max-width:400px; margin:6px auto 0;
+  background:#f7b50c; color:#123;
+  font-size:17px; font-weight:700; border-radius:7px;
+  border:1.5px solid rgba(0,0,0,.4);
+}
+.access-submit:hover{ background:var(--gold-bright); }
+.access-signup{
+  text-align:center; margin:14px 0 0;
+  color:var(--ink); font-size:13px; font-weight:700;
+}
+.access-contact-link{
+  appearance:none; background:none; border:0; cursor:pointer;
+  color:var(--gold); font-family:var(--sans); font-size:13px; font-weight:800;
+  text-decoration:underline; padding:0 0 0 6px;
+}
+.access-contact-link:hover{ color:var(--gold-bright); }
+
+/* ---------- Sector projects window ---------- */
+.projects-window{
+  position:relative; z-index:2;
+  width:min(560px,94vw); max-height:92vh;
+  display:flex; flex-direction:column;
+  background:#070e18;
+  border:1px solid var(--line); border-radius:18px;
+  box-shadow:0 40px 120px rgba(0,0,0,.65);
+  overflow:hidden;
+}
+.projects-close{
+  background:var(--gold); color:#141414; border:0;
+  width:34px; height:34px;
+}
+.projects-close:hover{ background:var(--gold-bright); }
+.projects-brand{
+  flex:0 0 auto;
+  display:flex; flex-direction:column; align-items:center; gap:2px;
+  padding:18px 16px 12px;
+  background:#0a1525; border-bottom:1px solid var(--line-soft);
+}
+.projects-brand-logo{ height:44px; width:auto; object-fit:contain; }
+.projects-brand-tag{ font-size:10px; color:rgba(255,255,255,.75); }
+.projects-title{
+  flex:0 0 auto; text-align:center;
+  font-size:clamp(19px,2.2vw,24px); font-weight:800; letter-spacing:.04em;
+  margin:22px 16px 6px;
+}
+.projects-list{
+  flex:1 1 auto; min-height:0; overflow-y:auto;
+  display:flex; flex-direction:column; gap:18px;
+  padding:18px 18px 26px;
+}
+.project-card{
+  appearance:none; cursor:pointer; text-align:left;
+  display:flex; flex-direction:column;
+  background:#565656; color:var(--ink);
+  border:0; border-radius:12px; overflow:hidden;
+  min-height:180px;
+  font-family:var(--sans);
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+.project-card:hover{ transform:translateY(-2px); box-shadow:0 14px 34px rgba(0,0,0,.45); }
+.project-card:focus-visible{ outline:2px solid var(--gold); outline-offset:2px; }
+.project-card-media{
+  flex:1 1 auto; display:flex; flex-direction:column; gap:8px;
+  padding:16px 16px 8px;
+}
+.project-card-name{ font-size:15px; font-weight:800; }
+.project-card-blurb{
+  font-size:12px; line-height:1.5; color:rgba(255,255,255,.85);
+  display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;
+}
+.project-card-chips{
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:flex-end;
+  gap:6px; padding:0 14px 12px;
+  font-size:12px; color:#f2f2f2;
+}
+.project-chip-label{ font-weight:600; }
+.project-chip{
+  background:#d9d9d9; color:#1c1c1c;
+  border-radius:999px; padding:2px 10px; font-weight:700;
+}
+
+/* ---------- Client portal ---------- */
+.portal{
+  position:fixed; inset:0; z-index:60;
+  display:flex; flex-direction:column;
+  background:#1a2436;
+  opacity:0; visibility:hidden; transition:opacity .25s ease;
+}
+.portal.is-open{ opacity:1; visibility:visible; }
+.portal-topbar{
+  flex:0 0 auto; display:flex; align-items:center; gap:14px;
+  padding:10px 14px;
+  background:#d9d9d9; color:#222;
+}
+.portal-burger{
+  appearance:none; cursor:pointer; background:none; border:0; padding:2px;
+  display:flex; flex-direction:column; align-items:center; gap:3px;
+  font-family:var(--sans);
+}
+.portal-burger-lines{ display:flex; flex-direction:column; gap:4px; }
+.portal-burger-lines i{
+  width:34px; height:8px; border-radius:6px; background:#9c5a55;
+}
+.portal-burger-text{
+  font-size:10px; font-weight:800; letter-spacing:.04em; color:#fff;
+  background:#9c5a55; border-radius:6px; padding:1px 8px; margin-top:-14px;
+}
+.portal-clientlogo{
+  flex:1 1 auto; text-align:center;
+  background:#666; color:#fff;
+  font-size:clamp(20px,4vw,28px); font-weight:800;
+  padding:10px 14px; border-radius:4px;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.portal-signout{
+  flex:0 0 auto; appearance:none; cursor:pointer;
+  background:#5a5a5a; color:#fff; border:0; border-radius:999px;
+  font-family:var(--sans); font-size:12.5px; font-weight:700;
+  padding:8px 14px;
+}
+.portal-signout:hover{ background:#444; }
+.portal-main{ flex:1 1 auto; min-height:0; overflow-y:auto; padding:18px 16px 28px; }
+.portal-view[hidden]{ display:none; }
+
+.portal-tiles{
+  display:grid; grid-template-columns:1fr 1fr; gap:16px;
+  max-width:720px; margin:0 auto;
+}
+.portal-tile{
+  appearance:none; cursor:pointer; text-align:left;
+  background:#d9d9d9; color:#1c1c1c; border:0; border-radius:16px;
+  font-family:var(--sans);
+  display:flex; flex-direction:column; justify-content:flex-end; gap:6px;
+  padding:16px; min-height:150px;
+  transition:transform .15s ease;
+}
+.portal-tile:hover{ transform:translateY(-2px); }
+.portal-tile:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+.portal-tile-primary{ grid-column:1 / -1; min-height:220px; }
+.portal-tile-kicker{ font-size:11px; font-weight:800; letter-spacing:.14em; color:#6b6b6b; }
+.portal-tile-title{ font-size:clamp(17px,2vw,22px); font-weight:800; }
+.portal-tile-sub{ font-size:12.5px; color:#555; }
+.portal-tile-cta{
+  align-self:flex-start; margin-top:8px;
+  background:#1a2436; color:#fff; border-radius:999px;
+  font-size:12.5px; font-weight:700; padding:8px 16px;
+}
+.portal-apps-title{
+  max-width:720px; margin:2px auto 16px;
+  font-size:clamp(24px,3vw,30px); font-weight:800; color:#fff;
+}
+.portal-apps-list{
+  display:flex; flex-direction:column; gap:8px;
+  max-width:720px; margin:0 auto;
+}
+.portal-app{
+  appearance:none; cursor:pointer; border:0; background:none; padding:0;
+  display:flex; flex-direction:column; gap:6px;
+  font-family:var(--sans); color:#fff; text-align:center;
+  margin-bottom:14px;
+}
+.portal-app-media{
+  position:relative; display:flex; align-items:center; justify-content:center;
+  min-height:190px; border-radius:14px; background:#666;
+  font-size:15px; font-weight:800; color:#eee;
+}
+.portal-app-media-label{ padding:0 18px; }
+.portal-app-duration{
+  position:absolute; right:12px; bottom:10px;
+  font-size:12.5px; font-weight:700; color:#f4f4f4;
+}
+.portal-app-title{ font-size:16px; font-weight:800; }
+.portal-app-note{ font-size:12px; color:rgba(255,255,255,.65); }
+.portal-app:hover .portal-app-media{ background:#747474; }
+.portal-app:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; border-radius:14px; }
+.portal-simple-body{
+  max-width:720px; margin:0 auto; color:rgba(255,255,255,.8);
+  font-size:14px; line-height:1.6;
+}
+
+/* Portal tile menu: dim the page, float the four tiles. */
+.portal-menu{
+  position:absolute; inset:0; z-index:4;
+  background:rgba(7,10,20,.72);
+  display:flex; align-items:flex-start; justify-content:center;
+  padding:34px 20px;
+}
+.portal-menu[hidden]{ display:none; }
+.portal.menu-open .portal-topbar,
+.portal.menu-open .portal-main{ filter:brightness(.55); }
+.portal-menu-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:26px;
+  width:min(430px,100%);
+}
+.portal-menu-tile{
+  appearance:none; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;
+  background:#333; color:#fff; border:0; border-radius:18px;
+  min-height:120px; padding:14px;
+  font-family:var(--sans); font-size:clamp(18px,2.4vw,24px); font-weight:800;
+  box-shadow:0 16px 34px rgba(0,0,0,.5);
+  transition:transform .12s ease, background .12s ease;
+}
+.portal-menu-tile:hover{ background:#3d3d3d; transform:translateY(-2px); }
+.portal-menu-tile:focus-visible{ outline:3px solid var(--gold); outline-offset:2px; }
+body.portal-open{ overflow:hidden; }
+
+/* ---------- Contact edge tab hint / sector swipe (base) ---------- */
+.contact-edge-hint{ display:none; }
+
+/* ============================================================
+   ≤760px — mobile fidelity overrides
+   (Placed after the earlier phone block so these win the cascade.)
+   ============================================================ */
+@media (max-width:760px){
+
+  /* ----- Top bar: gold Menu stack left, brand beside,
+         ACCESS YOUR TWIN outlined right. ----- */
+  .burger{
+    flex-direction:column; gap:2px; padding:4px 2px;
+    color:var(--gold);
+  }
+  .burger-lines{ gap:3px; }
+  .burger-lines i{ width:26px; height:5px; border-radius:4px; background:var(--gold); }
+  .burger-text{
+    font-size:8.5px; font-weight:800; letter-spacing:.05em; color:var(--gold);
+  }
+  .burger.is-open .burger-lines i:nth-child(1){ transform:none; }
+  .burger.is-open .burger-lines i:nth-child(2){ opacity:1; }
+  .burger.is-open .burger-lines i:nth-child(3){ transform:none; }
+  .access-btn{ border-radius:6px; letter-spacing:.06em; }
+
+  /* ----- Nav drawer: left slide-in panel, sectors only,
+         active bar in the sector accent. ----- */
+  .nav-drawer{
+    top:var(--topbar-h); bottom:0; left:0; right:auto;
+    width:min(72vw, 300px);
+    background:#383838;
+    border-bottom:0; border-right:1px solid rgba(0,0,0,.4);
+    padding:6px 0 20px;
+    transform:translateX(-102%); opacity:1;
+    transition:transform .26s ease;
+    overflow-y:auto;
+  }
+  .nav-drawer.is-open{ transform:translateX(0); }
+  .nav-drawer a{
+    border-bottom:0;
+    padding:20px 22px;
+    font-size:19px; font-weight:800; letter-spacing:.04em;
+    color:#9c9c9c;
+    justify-content:flex-start;
+  }
+  .nav-drawer a.is-active{
+    color:#fff;
+    background:var(--item-accent, var(--sector-accent));
+    box-shadow:0 6px 16px rgba(0,0,0,.45);
+    position:relative; overflow:hidden;
+    border-radius:6px;
+  }
+  /* Oversized ghost echo of the sector name behind the active item
+     — a darker, semi-transparent repeat of the label,
+     bleeding past the bar edges and clipped by it. */
+  .nav-drawer a.is-active::before{
+    content:attr(data-label);
+    position:absolute; left:-10px; top:50%; transform:translateY(-50%);
+    font-size:56px; font-weight:800; letter-spacing:.02em;
+    color:rgba(0,0,0,.22);
+    white-space:nowrap; pointer-events:none; user-select:none;
+  }
+  .nav-drawer a.is-active span{ position:relative; z-index:1; }
+
+  /* ----- HOME hero: hexagon cluster + evidence bullets are
+         part of the mobile design — show them. ----- */
+  /* position:relative (needed as the hero's own anchor) pulls the view
+     out of the base absolute/inset:0 sizing, so it must be told to fill
+     the stage — otherwise it shrinks to content height and the
+     evidence strip's margin-top:auto has no free space to absorb. */
+  .view-home{ position:relative; overflow:hidden; height:100%; min-height:100%; }
+  .home-grid{ grid-template-rows:auto 1fr auto; }
+  .hex-cluster{
+    display:block; position:relative;
+    width:100%; min-height:240px;
+    inset:auto; transform:none;
+    overflow:visible;
+  }
+  .hex-cluster .hex{ position:absolute; }
+  /* Mobile arrangement: the same diagonal —
+     droplets (lower-left) → data-wave → white → white (upper-right) —
+     centred in the band between the copy and the CTA. SAME exact
+     edge-contact geometry as desktop (Δ per pair = 0.375·(wA+wB),
+     −0.2165·(wA+wB), plus the --hexgap knob along the contact normal),
+     so phones get the identical flush alignment. --hexgap is inherited
+     from the base rule and recomputes against this block's --hexu, so
+     the spacing scales down proportionally on its own. */
+  .hex-cluster{
+    --hexu: clamp(96px, 26.5vw, 132px);  /* a bit bigger, like desktop */
+    --hex-ax: 50%;
+    --hex-ay: 50%;
+    min-height: calc(2.4 * var(--hexu));
+  }
+  .hex{ width:var(--hexu); height:auto; }
+  .hex-1{ width:calc(var(--hexu)*.92); left:calc(50% - 1.0725*var(--hexu) - 1.299*var(--hexgap)); top:calc(50% + .6195*var(--hexu) + .75*var(--hexgap)); transform:translate(-50%,-50%); }
+  .hex-2{ width:calc(var(--hexu)*.96); left:calc(50% - .3675*var(--hexu) - .433*var(--hexgap));  top:calc(50% + .2123*var(--hexu) + .25*var(--hexgap)); transform:translate(-50%,-50%); }
+  .hex-3{ width:var(--hexu);           left:calc(50% + .3675*var(--hexu) + .433*var(--hexgap));  top:calc(50% - .2123*var(--hexu) - .25*var(--hexgap)); transform:translate(-50%,-50%); }
+  .hex-4{ width:calc(var(--hexu)*1.06);left:calc(50% + 1.1400*var(--hexu) + 1.299*var(--hexgap)); top:calc(50% - .6585*var(--hexu) - .75*var(--hexgap)); transform:translate(-50%,-50%); }
+  /* Small dark satellites around the run —
+     nudged slightly outward so the wider run stays clear of them. */
+  .hex-ghost{ display:block; }
+  .hex-g1{ width:calc(var(--hexu)*.42); left:calc(50% - .70*var(--hexu)); top:calc(50% - .60*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-g2{ width:calc(var(--hexu)*.38); left:calc(50% - 1.65*var(--hexu)); top:calc(50% + .05*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-g3{ width:calc(var(--hexu)*.40); left:calc(50% + .60*var(--hexu));  top:calc(50% + .80*var(--hexu)); transform:translate(-50%,-50%); }
+  .hex-g4{ width:calc(var(--hexu)*.40); left:calc(50% + 1.72*var(--hexu)); top:calc(50% + .10*var(--hexu)); transform:translate(-50%,-50%); }
+  /* Pinned to the BOTTOM of the home view, directly above the
+     Ask-a-Question bar: the view is a flex column, so margin-top:auto
+     absorbs all free space above the strip; home-grid stops growing
+     so the gap actually lands here instead of inside the grid. */
+  .home-grid{ flex:0 1 auto; }
+  .evidence-bar{
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:10px 16px; align-items:start;
+    position:static; margin-top:auto; padding:10px 2px 2px;
+    border-top:0;
+    font-size:11px; line-height:1.35; color:var(--ink);
+  }
+  /* Each bullet is one grid cell: gold dot hanging left, label wraps
+     under itself. Row order:
+     Maslow | NAICS  /  Bronfenbrenner | Human Capital. */
+  .evidence-item{ display:flex; gap:6px; align-items:flex-start; white-space:normal; }
+  .evidence-item:nth-child(1){ order:1; }  /* Maslow */
+  .evidence-item:nth-child(4){ order:2; }  /* NAICS */
+  .evidence-item:nth-child(3){ order:3; }  /* Bronfenbrenner */
+  .evidence-item:nth-child(2){ order:4; }  /* Human Capital */
+  .evidence-bar .evidence-dot{ color:var(--gold); margin-right:0; flex:0 0 auto; line-height:1.35; }
+  .twin-cta-wrap{ margin-top:6px; }
+
+  /* ----- Question bar: light pill, dark icon + label,
+         quoted rotating placeholder, grey send arrow. ----- */
+  .qbar{
+    background:#d9d9d9; border:0; border-radius:999px;
+    padding:9px 12px;
+  }
+  .qbar-icon{ color:#333; }
+  .qbar-label{ color:#111; font-weight:800; }
+  .qbar-input{ color:#222; }
+  .qbar-input::placeholder{ color:#8b8b8b; font-style:italic; }
+  .qbar-send{
+    background:transparent; color:#9c9c9c; border:0;
+    font-size:18px; font-weight:800;
+  }
+  .qbar-send:hover{ background:transparent; color:#555; }
+
+  /* ----- Cookie disclosure: light rounded card above the
+         dock, dark text, grey Accept / Reject. ----- */
+  .cookie{
+    left:14px; right:14px; bottom:calc(var(--dock-h) + 18px);
+    width:auto; border:0; border-radius:16px;
+    background:rgba(214,214,214,.96); color:#222;
+    padding:16px 16px 14px;
+    display:block;
+    box-shadow:0 18px 44px rgba(0,0,0,.5);
+  }
+  .cookie-text{
+    color:#333; font-size:12px; line-height:1.5;
+    display:block; -webkit-line-clamp:unset; overflow:visible;
+  }
+  .cookie-text strong{
+    display:block; color:#555; font-size:19px; font-weight:600; margin-bottom:8px;
+  }
+  .cookie-actions{ margin-top:14px; justify-content:space-between; }
+  .cookie-btn{
+    background:#6e6e6e; color:#fff; border:0; border-radius:8px;
+    font-size:15px; font-weight:600; padding:8px 22px;
+  }
+  .cookie-btn:hover{ background:#5a5a5a; }
+  .cookie-btn-ghost{ background:#6e6e6e; color:#fff; }
+
+  /* ----- Category screen ----- */
+  .cat-projects-btn{
+    border-color:var(--sector); color:var(--sector);
+    border-radius:8px; font-size:11.5px; letter-spacing:.06em;
+  }
+  .uc-card{ border-radius:8px; background:rgba(7,14,24,.44); }
+
+  /* Right-edge Contact & Info tab replaces the bottom bar:
+     taller rounded tab aligned with the intro copy, muted
+     TRANSLUCENT sector tint, WHITE horizontal stacked label
+     ("Contact & Info" + "Click here"), no arrow glyph, flush with the
+     right edge of the screen.
+
+     Flush-edge trick: .view has 14px side padding and .cat-slider is
+     overflow:hidden, so a simple negative offset on the tab would be
+     clipped. Instead the slider itself bleeds 14px to the right
+     (margin-right:-14px), the cards panel takes that 14px back as
+     padding so the grid/copy don't shift, and the tab is pulled to the
+     panel's true border edge = the viewport edge. */
+  .cat-slider{ margin-right:-14px; }
+  .cat-panel-cards{ padding-right:14px; }
+
+  .contact-bar{ display:none; }
+  .contact-edge{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:6px;
+    position:absolute; right:-5px; top:18%;
+    width:66px; min-height:140px; padding:22px 8px;
+    /* Translucent sector tint, not a solid fill. */
+    background:color-mix(in srgb, var(--sector, var(--sector-accent)) 27%, transparent);
+    color:#fff;
+    border:0; border-radius:16px 0 0 16px;
+    font-size:10px; font-weight:700; line-height:1.35; text-align:center;
+    box-shadow:-8px 10px 26px rgba(0,0,0,.28);
+    z-index:5;
+  }
+  /* Keep the intro paragraph clear of the tab (copy wraps
+     before the tab, no overlap). Tab intrudes ~52px into the panel. */
+  .cat-panel-cards .cat-body{ padding-right:60px; }
+  /* Horizontal stacked label (was vertical). */
+  .contact-edge-text{
+    writing-mode:horizontal-tb; transform:none;
+    text-transform:none; letter-spacing:0;
+    white-space:normal; overflow-wrap:anywhere;
+  }
+  .contact-edge-hint{ display:block; font-weight:600; }
+  .contact-edge-arrow{ display:none; }
+  .contact-edge:hover{ padding-right:8px; }
+
+  /* Dock tabs: one rounded rail, active pill highlighted. */
+  .dock-tabs{
+    border:1px solid var(--line); border-radius:12px;
+    background:rgba(7,14,24,.9);
+    padding:3px; gap:2px;
+    display:flex; align-items:center;
+  }
+  .dock-tab{
+    border:0; border-radius:9px;
+    font-size:9.5px; letter-spacing:.05em; text-transform:uppercase;
+    padding:7px 9px; white-space:nowrap;
+  }
+  .dock-tab.is-active{ background:#474a50; }
+
+  /* Sector dots pager (replaces the swipe strip): dark panel,
+     accent underline in the active sector colour, accent arrows. */
+  .sector-pager{
+    border-top:0; border-bottom:2px solid var(--sector, var(--sector-accent));
+    background:#0d1526; border-radius:10px;
+    margin-top:0;
+  }
+  .sector-arrow{ background:transparent; color:var(--sector, var(--sector-accent)); }
+  .sector-arrow-prev{ border-right:0; }
+  .sector-arrow-next{ border-left:0; }
+
+  /* ----- Contact panel: centred steps with stage labels and
+         thin connector lines running right. ----- */
+  .cat-panel-contact{ text-align:center; }
+  .contact-kicker{ letter-spacing:.14em; }
+  .contact-ctas{ flex-direction:column; gap:20px; max-width:none; }
+  .contact-step{ flex:0 0 auto; width:100%; }
+  .contact-step-label{ font-size:15px; letter-spacing:.16em; }
+  .contact-step .contact-cta{
+    width:auto; min-width:210px; padding:13px 22px;
+    border-radius:9px; border-width:2px; border-color:#555;
+    background:rgba(10,14,22,.6);
+    font-size:13px; letter-spacing:.04em;
+  }
+  .contact-step .contact-cta.is-primary{
+    background:var(--gold); border-color:var(--gold);
+  }
+  .contact-step-line{ display:none; }
+  .contact-foot{ font-size:12px; }
+
+  /* ----- Lead-form modals: two-up fields, rounded
+         dark card, gold submit. ----- */
+  .form-window{
+    background:rgba(17,28,45,.96);
+    border-radius:24px;
+  }
+  .form-fields{ grid-template-columns:1fr 1fr; gap:12px 14px; }
+  .form-field.full{ grid-column:1 / -1; }
+  .form-field label{ color:var(--ink); font-weight:700; font-size:12px; }
+  .form-field label .opt{ font-size:9px; font-weight:700; color:var(--ink); }
+  .form-field input,
+  .form-field select,
+  .form-field textarea{
+    background:rgba(22,36,57,.9);
+    border-color:rgba(255,255,255,.14);
+    border-radius:8px;
+    font-size:13px; padding:10px 11px;
+  }
+  .form-submit{ border-radius:10px; font-size:15px; letter-spacing:.04em; text-transform:uppercase; }
+  .form-fineprint{ display:none; }        /* hidden on phone */
+  .form-window.is-success .form-fineprint{ display:none; }
+
+  /* ----- Access sign-in: near-full-height sheet. ----- */
+  .access-window{
+    width:calc(100vw - 24px); max-height:92dvh; overflow-y:auto;
+    border-radius:20px;
+    background:#0b1626 url("../assets/logBackground.png") center / cover no-repeat;
+  }
+  .access-brand-cube{ height:54px; }
+  .access-brand-word{ font-size:15px; }
+  .access-welcome{ margin-top:10px; }
+
+  /* ----- Projects window: full-screen sheet. ----- */
+  .projects-window{
+    width:100vw; height:100dvh; max-height:none; border-radius:0;
+  }
+  .projects-title{ font-size:21px; }
+  .project-card{ min-height:210px; }
+
+  /* ----- Twin experience: on phones the glass card docks to the
+         BOTTOM of the live view, just above Treedis' row of circular
+         buttons (bottom bar ≈40px + round buttons ≈55px ⇒ 102px).
+         Desktop keeps the original left/centred position. ----- */
+  .twin-hero-card{
+    top:auto; bottom:102px;
+    left:12px; right:12px;
+    width:auto;
+    padding:14px 16px;
+    border-radius:14px;
+    transform:translateY(8px);
+  }
+  .twin-hero-card.is-visible{ transform:translateY(0); }
+  /* Minimized DTS chip: same anchor, above the two left round buttons. */
+  .twin-card-restore{ left:12px; bottom:102px; }
+  .twin-hero-card .home-pills{ gap:10px; margin-bottom:8px; }
+  .twin-hero-card .twin-card-headline{ font-size:22px; }
+  .twin-hero-card .twin-card-body{ font-size:12px; line-height:1.5; }
+
+  /* ----- Portal fidelity at phone width ----- */
+  .portal-clientlogo{ font-size:20px; padding:9px 10px; }
+  .portal-menu{ padding-top:24px; }
+}
+
+/* Very narrow phones: keep the sector strip panels readable. */
+@media (max-width:340px){
+  .sector-pager-label{ font-size:13px; letter-spacing:.1em; }
+  .sector-arrow{ width:38px; }
+  .contact-step-line{ display:none; }
+}
+
+/* Short phones: let the home view scroll rather than clip the hero
+   stack (copy → hexes → CTA → evidence). */
+@media (max-width:760px) and (max-height:660px){
+  .view-home{ overflow-y:auto; -webkit-overflow-scrolling:touch; }
+  /* Shrink via the shared unit — the hexes keep their translate(-50%,-50%)
+     centring transform, so scaling must not overwrite it. */
+  .hex-cluster{ --hexu: clamp(80px, 22vw, 104px); }
+}

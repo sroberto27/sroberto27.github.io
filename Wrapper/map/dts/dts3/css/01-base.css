@@ -1,0 +1,203 @@
+/* ============================================================
+   Global styles — base tokens, shell, top nav, stage, home
+   ------------------------------------------------------------
+   Dark navy/black app shell · gold accent · fixed viewport.
+   App-like layout (no long-scroll marketing page).
+
+   Sizing: everything scales with the viewport via
+   clamp(min, vw-based, max) so the UI grows on big screens and
+   stays usable on phones. Major regions use fr-based grids and
+   flex:1 so areas always fill the screen with no dead space.
+
+   The stylesheet is split into numbered files loaded in order by
+   index.html; later files intentionally override earlier ones.
+   ============================================================ */
+:root{
+  --bg:           #070e18;   /* app background */
+  --bg-2:         #0a1525;   /* header background */
+  --bg-3:         #101827;
+  --line:         rgba(255,255,255,.10);
+  --line-soft:    rgba(255,255,255,.06);
+  --gold:         #c49a2a;   /* primary gold accent */
+  --gold-bright:  #e3b855;
+  --glass:        rgba(10,10,10,.62);
+  --ink:          #ffffff;
+  --muted:        rgba(255,255,255,.66);
+  --faint:        rgba(255,255,255,.40);
+  --radius:       18px;
+
+  /* Fluid chrome heights — grow a little on big screens. */
+  --topbar-h:     clamp(58px, 5.2vh, 80px);
+  --dock-h:       clamp(56px, 5vh,  74px);
+
+  /* Fluid horizontal padding for the stage. */
+  --pad-x:        clamp(20px, 3.4vw, 64px);
+  --pad-y:        clamp(20px, 3vh, 40px);
+
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+}
+
+*{ box-sizing:border-box; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  font-family:var(--sans);
+  color:var(--ink);
+  background:#05070c;
+  overflow:hidden;                 /* app shell, not a scrolling site */
+}
+
+/* ---------- App container ---------- */
+.app{
+  position:fixed;
+  inset:clamp(0px, 1vw, 14px);     /* hug edges on small screens */
+  display:grid;
+  grid-template-columns:minmax(0, 1fr);   /* single column, never wider than app */
+  grid-template-rows:var(--topbar-h) 1fr var(--dock-h);
+  background:
+    radial-gradient(1200px 600px at 78% 18%, rgba(124,58,92,.18), transparent 60%),
+    radial-gradient(900px 700px at 10% 90%, rgba(20,80,80,.16), transparent 60%),
+    linear-gradient(180deg, #0b1322 0%, var(--bg) 60%, #070b13 100%);
+  border:1px solid var(--line);
+  border-radius:clamp(0px, 1.4vw, var(--radius));
+  overflow:hidden;
+  box-shadow:0 30px 80px rgba(0,0,0,.55);
+}
+/* Grid children must be allowed to shrink below content width, or a
+   wide child (nav row, dock tabs) forces the whole grid wider than the
+   app and clips on the right. */
+.app > .topbar,
+.app > .stage{ min-width:0; max-width:100%; overflow:hidden; }
+/* The dock must NOT clip — the question-bar answer popover opens
+   above it. (Its own children manage their overflow.) */
+.app > .dockbar{ min-width:0; max-width:100%; overflow:visible; }
+
+/* ===================== TOP NAV ===================== */
+.topbar{
+  display:flex; align-items:center;
+  gap:clamp(12px, 1.8vw, 28px);
+  padding:0 clamp(14px, 2vw, 26px);
+  border-bottom:1px solid var(--line-soft);
+  background:linear-gradient(180deg, rgba(13,20,35,.92), rgba(13,20,35,.55));
+  backdrop-filter:blur(6px);
+  z-index:6;
+}
+
+/* Logo is also a menu item — it can take the gold highlight. */
+.brand{
+  display:flex; align-items:center; gap:clamp(8px,.8vw,12px);
+  color:var(--ink); text-decoration:none; flex:0 0 auto;
+  position:relative; padding:clamp(14px,2vh,22px) 2px;
+}
+.brand-logo{
+  display:block; width:auto;
+  height:clamp(34px,4.6vh,52px);
+}
+/* Gold highlight when home is the active "menu item". */
+.brand.is-active::after{
+  content:""; position:absolute; left:2px; right:2px;
+  bottom:clamp(10px,1.4vh,16px); height:2px;
+  background:var(--gold); border-radius:2px;
+}
+
+.pillars{
+  display:flex; align-items:center;
+  gap:clamp(16px, 2.4vw, 40px);
+  margin-left:clamp(6px,1vw,16px);
+}
+.pillar{
+  appearance:none; background:none; border:0; cursor:pointer;
+  color:#9f9f9f;                        /* idle state */
+  font-family:var(--sans);
+  font-size:clamp(11px, 1.05vw, 15px); font-weight:600; letter-spacing:.12em;
+  padding:clamp(16px,2.6vh,24px) 2px; position:relative; transition:color .18s;
+  white-space:nowrap;
+  --cat-line:var(--gold);               /* per-category indicator colour */
+}
+/* Sector colours for the line indicator. */
+.pillar[data-cat="education"] { --cat-line:#e9b44c; }
+.pillar[data-cat="industry"]  { --cat-line:#4a7df0; }
+.pillar[data-cat="government"]{ --cat-line:#5f6fa8; }
+.pillar[data-cat="community"] { --cat-line:#d98e73; }
+/* Hover: text turns white and the coloured line indicator appears. */
+.pillar:hover{ color:var(--ink); }
+.pillar.is-active{ color:var(--ink); }
+.pillar:hover::after,
+.pillar.is-active::after{
+  content:""; position:absolute; left:0; right:0;
+  bottom:clamp(10px,1.4vh,16px); height:2px;
+  background:var(--cat-line); border-radius:2px;
+}
+
+
+.access-btn{
+  margin-left:auto;
+  appearance:none; cursor:pointer;
+  background:transparent; color:var(--gold);
+  border:1px solid var(--gold);
+  border-radius:8px;
+  padding:clamp(8px,1.1vh,12px) clamp(12px,1.4vw,22px);
+  font-family:var(--sans);
+  font-size:clamp(10px,.92vw,13px); font-weight:700; letter-spacing:.1em;
+  white-space:nowrap;
+  transition:background .18s,color .18s;
+}
+.access-btn:hover{ background:var(--gold); color:#1a1206; }
+
+/* ===================== STAGE ===================== */
+.stage{ position:relative; overflow:hidden; min-width:0; min-height:0; }
+.bg-net{ position:absolute; inset:0; width:100%; height:100%; opacity:.5; pointer-events:none; }
+
+/* Vimeo dot-network loop — sized to COVER the stage (16:9 letterbox
+   math), muted/looping via URL params, never interactive. */
+.bg-video{
+  position:absolute; inset:0;
+  overflow:hidden; pointer-events:none;
+  opacity:.6;
+  z-index:0;
+}
+.bg-video iframe{
+  position:absolute; top:50%; left:50%;
+  width:100vw; height:56.25vw;      /* 16:9 of viewport width  */
+  min-height:100%; min-width:177.78vh;  /* …or of viewport height */
+  transform:translate(-50%,-50%);
+  border:0; pointer-events:none;
+}
+
+/* Each view is a flex column that fills the stage: a flexible body
+   region (home-grid / cat-grid) plus a fixed-height footer strip. */
+.view{
+  position:absolute; inset:0;
+  padding:var(--pad-y) var(--pad-x);
+  display:flex; flex-direction:column;
+  opacity:0; visibility:hidden;
+  transition:opacity .35s ease;
+  overflow:hidden;
+}
+.view.is-active{ opacity:1; visibility:visible; }
+.view[hidden]{ display:none; }
+
+/* ---------- HOME ---------- */
+/* The home area is a positioning context: the copy floats on the left,
+   the hexagon constellation spans the whole area so hexagons can sit
+   in the centre and right (matching the reference). */
+.home-grid{
+  flex:1 1 auto; min-height:0;
+  position:relative;
+}
+.home-copy{
+  position:absolute; left:0; top:50%; transform:translateY(-50%);
+  width:min(46%, 560px); min-width:0; z-index:8;
+}
+.copy-kicker{
+  display:inline-flex; align-items:center; gap:10px;
+  color:var(--gold); font-size:clamp(10px,.9vw,13px); font-weight:700; letter-spacing:.22em;
+}
+.copy-kicker::before{ content:""; width:clamp(24px,2.6vw,44px); height:2px; background:var(--gold); border-radius:2px; }
+.home-headline{
+  font-size:clamp(34px, 5.2vw, 84px); font-weight:800; line-height:1.0;
+  margin:clamp(10px,1.4vh,18px) 0;
+}
+.home-pills{ display:flex; gap:clamp(12px,1.4vw,22px); flex-wrap:wrap; margin-bottom:clamp(12px,1.6vh,20px); }
+.home-pills span{ color:var(--gold); font-size:clamp(12px,1vw,16px); font-weight:600; }
+.home-body{ color:var(--muted); font-size:clamp(13px,1.05vw,17px); line-height:1.6; max-width:46ch; }

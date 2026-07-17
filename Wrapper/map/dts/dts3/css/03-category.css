@@ -1,0 +1,218 @@
+/* ---------- CATEGORY ---------- */
+/* Blurred data-wave imagery behind the sector content. Children
+   get z-index:1 so the image always sits underneath. */
+.view-category::before{
+  content:"";
+  position:absolute; inset:-24px;              /* hide blur edge bleed */
+  background:
+    linear-gradient(180deg, rgba(8,12,24,.78) 0%, rgba(8,12,24,.55) 45%, rgba(8,12,24,.42) 100%),
+    url("../assets/assets-category-bg.jpg") center bottom / cover no-repeat;
+  filter:blur(7px) saturate(1.05);
+  z-index:0; pointer-events:none;
+}
+.view-category > *{ position:relative; z-index:1; }
+
+.cat-grid{
+  flex:1 1 auto; min-height:0;
+  display:grid;
+  grid-template-columns:minmax(240px,.82fr) minmax(0,1.6fr);
+  gap:clamp(22px,2.6vw,48px);
+  align-content:stretch;
+}
+/* Per-sector accent: drives the kicker and card titles. */
+#view-category{ --sector:#e9b44c; }                    /* education default */
+#view-category[data-sector="education"] { --sector:#e9b44c; }
+#view-category[data-sector="industry"]  { --sector:#2e8bff; }
+#view-category[data-sector="government"]{ --sector:#34598f; }
+#view-category[data-sector="community"] { --sector:#d27049; }
+
+.cat-intro{ display:flex; flex-direction:column; min-width:0; justify-content:flex-start; }
+.cat-kicker{ color:var(--sector); font-size:clamp(11px,.95vw,14px); font-weight:700; letter-spacing:.16em; }
+.cat-title{ font-size:clamp(30px,4vw,60px); font-weight:800; margin:clamp(8px,1.2vh,14px) 0 clamp(6px,.8vh,10px); line-height:1.02; }
+.cat-sub{ font-weight:700; font-size:clamp(13px,1.05vw,17px); margin:0 0 clamp(12px,1.8vh,22px); }
+.cat-body{ color:var(--muted); font-size:clamp(13px,1.02vw,17px); line-height:1.62; max-width:44ch; }
+.cat-projects-btn{
+  margin-top:clamp(18px,2.6vh,30px); align-self:flex-start;
+  appearance:none; cursor:pointer;
+  background:transparent; color:var(--gold);
+  border:1px solid var(--gold); border-radius:8px;
+  padding:clamp(10px,1.3vh,15px) clamp(14px,1.5vw,22px);
+  font-weight:700; font-size:clamp(11px,.92vw,13px); letter-spacing:.08em;
+}
+.cat-projects-btn:hover{ background:var(--gold); color:#1a1206; }
+
+/* Cards fill the column: a 2x2 grid whose rows stretch to consume
+   all vertical space, so there is no empty area below them. */
+.cat-cards{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  grid-auto-rows:1fr;
+  gap:clamp(14px,1.4vw,22px);
+  min-height:0;
+}
+.uc-card{
+  background:linear-gradient(160deg, rgba(18,26,43,.9), rgba(10,15,24,.9));
+  border:1px solid var(--line); border-radius:12px;
+  padding:clamp(18px,1.8vw,30px);
+  cursor:pointer;
+  display:flex; flex-direction:column;
+  transition:border-color .18s, transform .18s, background .18s;
+}
+.uc-card:hover{
+  border-color:rgba(214,168,73,.55);
+  transform:translateY(-3px);
+  background:linear-gradient(160deg, rgba(26,34,54,.95), rgba(14,20,32,.95));
+}
+.uc-card h3{ color:var(--sector); font-size:clamp(12px,1.05vw,16px); font-weight:700; letter-spacing:.06em; margin:0 0 clamp(8px,1vh,14px); }
+.uc-card p{ color:var(--muted); font-size:clamp(12px,1vw,15.5px); line-height:1.55; margin:0; }
+
+/* ---------- CATEGORY: horizontal slider (cards ⇄ contact) ----------
+   The slider occupies the flexible body area of the view. A track
+   holds two full-width panels side by side; translating the track by
+   -50% reveals the contact panel. */
+.cat-slider{
+  flex:1 1 auto; min-height:0;
+  position:relative; overflow:hidden;
+}
+.cat-track{
+  display:flex;
+  width:200%; height:100%;
+  transform:translateX(0);
+  transition:transform .5s cubic-bezier(.65,.02,.25,1);
+}
+.cat-track.show-contact{ transform:translateX(-50%); }
+.cat-panel{
+  width:50%; height:100%; flex:0 0 50%;
+  position:relative;
+  display:flex; flex-direction:column;
+  min-height:0;
+}
+
+/* Cards panel keeps the existing two-column grid. */
+.cat-panel-cards .cat-grid{ flex:1 1 auto; min-height:0; }
+
+/* Clear labeled "Contact & Info" control — anchored to the right edge
+   of the cards panel, reads as "slide right". Replaces the old hand. */
+.contact-edge{
+  position:absolute; right:0; top:50%; transform:translateY(-50%);
+  appearance:none; cursor:pointer;
+  display:flex; align-items:center; gap:10px;
+  background:linear-gradient(180deg, rgba(214,168,73,.16), rgba(214,168,73,.06));
+  color:var(--gold);
+  border:1px solid rgba(214,168,73,.55);
+  border-right:0;
+  border-radius:12px 0 0 12px;
+  padding:clamp(14px,2.4vh,22px) clamp(12px,1.4vw,18px);
+  font-weight:700; font-size:clamp(11px,.95vw,14px); letter-spacing:.06em;
+  transition:background .18s, padding-right .18s;
+}
+.contact-edge:hover{ background:var(--gold); color:#1a1206; padding-right:clamp(18px,2vw,26px); }
+.contact-edge-text{ writing-mode:vertical-rl; transform:rotate(180deg); text-transform:uppercase; }
+.contact-edge-arrow{ display:flex; }
+
+/* Inline contact panel */
+.cat-panel-contact{
+  align-items:center; justify-content:center;
+  text-align:center;
+  background:
+    radial-gradient(900px 500px at 80% 30%, rgba(124,58,92,.18), transparent 60%),
+    radial-gradient(700px 600px at 12% 90%, rgba(20,80,80,.14), transparent 60%);
+  border:1px solid var(--line); border-radius:16px;
+  padding:clamp(20px,3vw,44px);
+}
+.contact-inner{ width:min(760px,92%); }
+
+/* Panel nav arrows (back / next) */
+.panel-nav{
+  position:absolute; top:50%; transform:translateY(-50%);
+  appearance:none; cursor:pointer;
+  display:flex; align-items:center; gap:8px;
+  background:rgba(255,255,255,.06); color:var(--muted);
+  border:1px solid var(--line); border-radius:10px;
+  padding:clamp(10px,1.4vh,14px) clamp(10px,1vw,14px);
+  font-weight:700; font-size:clamp(11px,.92vw,13px); letter-spacing:.04em;
+  transition:background .15s,color .15s,border-color .15s;
+  z-index:3;
+}
+.panel-nav:hover{ background:rgba(255,255,255,.12); color:var(--ink); border-color:var(--gold); }
+.panel-nav-back{ left:clamp(10px,1.4vw,22px); }
+.panel-nav-next{ right:clamp(10px,1.4vw,22px); }
+.panel-nav-label{ white-space:nowrap; }
+
+
+/* ===================== DOCK BAR ===================== */
+.dockbar{
+  position:relative;
+  display:flex; align-items:center; gap:clamp(10px,1.4vw,20px);
+  padding:0 clamp(14px,2vw,26px);
+  border-top:1px solid var(--line-soft);
+  background:linear-gradient(0deg, rgba(13,20,35,.92), rgba(13,20,35,.55));
+  z-index:10;   /* above stage content so the qbar answer popover isn't overlapped */
+}
+
+/* ---------- HOME: floating dock ----------
+   On the home view only, the dock loses its backing so the question
+   bar floats, and the stage's background layers (canvas + Vimeo loop)
+   are allowed to extend down behind the dock row so the animation
+   covers the strip. The layout itself is untouched — nothing inside
+   the home view moves. Category and other views keep the backed dock.
+   Uses :has(), supported by all current browsers. */
+body:has(#view-home.is-active) .dockbar{
+  border-top:0;
+  background:transparent;
+}
+/* Let the background layers escape the stage's bottom edge… */
+body:has(#view-home.is-active) .app > .stage{ overflow:visible; }
+/* …and reach under the dock (the .app frame still clips at its own
+   rounded border, so nothing leaks outside the page). */
+body:has(#view-home.is-active) .bg-net,
+body:has(#view-home.is-active) .bg-video{
+  bottom:calc(-1 * var(--dock-h));
+}
+.qbar{
+  display:flex; align-items:center; gap:10px;
+  background:#e9e9ea; color:#222; border-radius:24px;
+  padding:8px 8px 8px 14px;
+  width:clamp(240px, 30vw, 460px);
+  position:relative; flex:0 0 auto;
+}
+.qbar-icon{ display:flex; color:#444; }
+.qbar-label{ position:absolute; left:42px; color:#333; font-weight:600; font-size:clamp(12px,1vw,15px); pointer-events:none; }
+.qbar-input{
+  flex:1; border:0; background:transparent; outline:none;
+  font-family:var(--sans); font-size:clamp(12px,.95vw,14px); color:#222; padding-left:96px;
+}
+.qbar-input::placeholder{ color:#888; }
+.qbar-send{
+  appearance:none; cursor:pointer; border:0;
+  width:30px; height:30px; border-radius:50%;
+  background:#bdbdbd; color:#222; font-size:16px; line-height:1; flex:0 0 auto;
+}
+.qbar-send:hover{ background:var(--gold); color:#1a1206; }
+
+
+
+/* The tab group is an outlined pill next to the question bar, with
+   the active segment ("Use Cases") filled and the sub-vertical
+   labels uppercase inside it. */
+.dock-tabs{
+  display:flex; align-items:center; gap:clamp(2px,.4vw,6px);
+  overflow-x:auto; min-width:0;
+  border:1px solid rgba(255,255,255,.55);
+  border-radius:12px;
+  background:rgba(8,12,24,.35);
+  padding:3px;
+}
+/* display:flex above would override the hidden attribute the JS sets on
+   the home view — force it, so the tabs exist ONLY in the category view. */
+.dock-tabs[hidden]{ display:none; }
+.dock-tab{
+  appearance:none; cursor:pointer; white-space:nowrap;
+  background:transparent; color:var(--ink);
+  border:0; border-radius:9px;
+  padding:clamp(6px,.9vh,10px) clamp(10px,1.2vw,18px);
+  font-family:var(--sans); font-size:clamp(10px,.82vw,12.5px); font-weight:600;
+  letter-spacing:.06em; text-transform:uppercase;
+}
+.dock-tab:hover{ background:rgba(255,255,255,.10); }
+.dock-tab.is-active{ background:#454d5c; color:#fff; }

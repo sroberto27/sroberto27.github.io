@@ -1,9 +1,7 @@
 /* ============================================================
-   DTS — Pointer Particle / Depth-Smoke Field
+   Pointer particle / depth-smoke field (home hero)
    ------------------------------------------------------------
-   No external libraries are required.
-
-   The effect uses:
+   No external libraries required. The effect uses:
      • pointer-following particles with velocity-sensitive emission
      • a low-resolution feedback buffer that preserves, diffuses, and
        slowly fades each trail into smoke
@@ -19,8 +17,7 @@
   "use strict";
 
   const SETTINGS = {
-    /* Slightly smokier than the subtle-v2 build, while retaining the
-       original website background as the dominant visual layer. */
+    /* Particle counts per breakpoint. */
     desktopParticles: 560,
     tabletParticles: 390,
     mobileParticles: 200,
@@ -29,9 +26,8 @@
     feedbackScaleMobile: 0.34,
     maximumPixelRatio: 1.25,
 
-    /* A little more persistence and plume density than subtle-v2.
-       Feedback drift is multiplied by cursor activity, so the smoke
-       stops evolving once the pointer becomes still. */
+    /* Feedback drift scales with cursor activity, so the smoke
+       stops evolving once the pointer is still. */
     decayBack: 0.936,
     decayFront: 0.900,
     diffusion: 1.00065,

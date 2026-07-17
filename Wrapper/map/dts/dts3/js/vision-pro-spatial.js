@@ -1,15 +1,11 @@
 /* ============================================================
-   DTS — visionOS 26.5 website-environment helper
+   visionOS website-environment helper
    ------------------------------------------------------------
-   IMPORTANT:
-   visionOS 26.5 uses the developer-preview <link
-   rel="spatial-backdrop"> API declared in index.html.
-
-   Safari, not webpage JavaScript, opens that environment. The
-   visitor must use Safari's Page Menu and choose
-   "Open Website Environment". This script makes the webpage
-   button explain those steps; it does not pretend to launch the
-   environment directly.
+   The spatial backdrop is declared in index.html via
+   <link rel="spatial-backdrop"> (visionOS 26.5 developer preview).
+   Safari opens the environment from its Page Menu — a webpage
+   cannot launch it. This script makes the hero button toggle
+   step-by-step instructions instead.
    ============================================================ */
 (function () {
   "use strict";

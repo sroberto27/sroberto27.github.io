@@ -1,14 +1,9 @@
 /* ============================================================
-   DTS — Configuration
+   Site configuration and content
    ------------------------------------------------------------
-   Structural settings + content for the prototype. Treedis
-   plumbing keeps the same shape as the SCSU wrapper's config.js
-   so the real model IDs drop straight in.
-
-   >>> CONNECT REAL TREEDIS HERE <<<
-   Set treedis.tourUrl to the live showcase embed URL and
-   treedis.origin to its origin. The demo frame's "Try a Digital
-   Twin" button calls TourBridge against these values.
+   All copy, navigation, forms, and example-window content live
+   here. To point the site at a different Treedis showcase, set
+   treedis.tourUrl and treedis.origin below.
    ============================================================ */
 window.DTS_CONFIG = {
   brand: {
@@ -20,36 +15,31 @@ window.DTS_CONFIG = {
   },
 
   treedis: {
-    /* The SCSU wrapper shipped these. They are kept as a working
-       default so the demo frame shows a real tour out of the box.
-       Replace with the DTS marketing/demo showcase when ready. */
+    /* Default showcase shown by "Try a Digital Twin". */
     tourUrl: "https://spaces.dtsxr.com/tour/4fb22059",
     origin:  "https://spaces.dtsxr.com",
 
-    /* Optional landing sweep — null opens the model default.
-       Set to a real sweep id to land users somewhere specific. */
+    /* Optional landing sweep — null opens the model default. */
     homeSweepId: null,
 
-    /* ms used when Treedis moves sweep. */
+    /* Transition time (ms) when Treedis moves between sweeps. */
     defaultTransitionTime: 1500
   },
 
-  /* Top-right client portal — kept architecturally separate from
-     the marketing experience per the design rationale. Placeholder
-     URL; wire to the real authenticated portal at launch. */
+  /* Client portal entry point — kept separate from the marketing
+     flow. Placeholder until a real authenticated portal exists. */
   clientPortalUrl: "#access-your-twin",
 
-  /* The four pillars ARE the navigation + identity. Order is the
-     human-lifecycle sequence from the rationale:
+  /* The four sector pillars are the primary navigation. Order:
      Education → Industry → Government → Community. */
   categories: [
     {
       id: "education",
       label: "Education",
-      navSub: "Campus",                  // desktop board pillar sublabel
+      navSub: "Campus",                  // pillar sublabel
       blurb: "Education develops people.",
-      active: true,                      // most complete category for v0
-      accent: "#E9B44C",                 // Figma board sector accent
+      active: true,
+      accent: "#E9B44C",                 // sector accent color
       kicker: "EDUCATION",
       title: "Campus & Schools",
       sub: "Digital Twin of your campus",
@@ -117,7 +107,7 @@ window.DTS_CONFIG = {
     }
   ],
 
-  /* Project-evidence filters (beach / data layer from the rationale). */
+  /* Project-evidence filter labels used by the example windows. */
   evidence: ["Case Studies", "Awards", "Client Feedback", "Press & Research", "Project Data"],
 
   /* Rotating placeholder prompts for the question bar. */
@@ -145,38 +135,25 @@ window.DTS_CONFIG = {
   },
 
   /* ============================================================
-     LEAD CAPTURE  →  emails the owner when a form is submitted.
+     LEAD CAPTURE — emails the owner on form submit
      ------------------------------------------------------------
-     Delivery uses Web3Forms (https://web3forms.com) — a free,
-     no-backend service that emails form submissions to a fixed
-     address. Static-site friendly (works on GitHub Pages).
-
-     >>> SETUP (2 minutes) <<<
-       1. Go to https://web3forms.com, enter the owner's email,
-          and copy the "Access Key" they send you.
-       2. Paste it into `accessKey` below.
-       3. Set `ownerEmail` to where leads should land (shown to
-          the user as confirmation; Web3Forms uses the key, not
-          this, to route — but keep them the same).
-
-     Until a key is set, the forms fall back to opening the user's
-     email app (mailto:) pre-filled with all their answers, so the
-     prototype still "sends" without any signup.
+     Delivery uses Web3Forms (https://web3forms.com), which emails
+     submissions to a fixed address with no backend. Setup:
+       1. Register the owner's email at web3forms.com and copy the
+          access key.
+       2. Paste it into `accessKey` and set `ownerEmail` to match.
+     Without a key, forms fall back to a pre-filled mailto: link.
      ============================================================ */
   lead: {
-    accessKey: "b825431d-56a9-4ee5-9042-72bb7685f8c3",                       // <-- paste Web3Forms key herec00416436@louisiana.edu
-    //ownerEmail: "hello@dtsxr.com",       // <-- owner's destination inbox
+    accessKey: "b825431d-56a9-4ee5-9042-72bb7685f8c3",   // Web3Forms access key
+    /* Destination inbox for leads (production: hello@dtsxr.com). */
     ownerEmail: "robertoenrique2710@hotmail.com",
     subjectPrefix: "DTS Website Lead",
 
-    /* Per-button form definitions. Each maps to one CTA id. The
-       `sector` field is auto-filled from the category the user is
-       browsing — they don't have to pick it. */
+    /* One form definition per contact CTA. The `sector` field is
+       auto-filled from the category the user is browsing. */
     forms: {
-      /* Field sets mirror the Figma mobile modals (frames clip19 /
-         clip25 / clip21): paired Full Name + Phone, Email + Company,
-         Country + time-frame selects, then the free-text area(s),
-         then a full-width gold submit. */
+      /* `half: true` pairs a field two-up; textareas span the row. */
       discovery: {
         title: "Schedule a Discovery",
         intro: "Schedule a 30-minute conversation with one of our team members about your space and what a digital twin could do for you.",
@@ -211,7 +188,6 @@ window.DTS_CONFIG = {
       },
       pilot: {
         title: "Start a Pilot",
-        /* The pilot explainer doubles as the intro copy. */
         intro: "A pilot is a scoped, paid engagement \u2014 one defined space, a digital twin, a clear deliverable. The fee is set during the proposal stage. Tell us what you'd pilot and we'll define the scope with you.",
         submitLabel: "START MY PILOT REQUEST",
         fields: [
@@ -232,19 +208,16 @@ window.DTS_CONFIG = {
 ,
 
   /* ============================================================
-     SUB-VERTICAL EXAMPLES  (the windows that open on card / tab click)
+     SUB-VERTICAL EXAMPLES — windows opened by card / tab clicks
      ------------------------------------------------------------
-     Keyed by the card `id` used in categories[].cards. Each entry
-     populates the example window styled after experienceOpenedWindow.png.
-
-     `project` examples are drawn from the design rationale (section 05).
-     Where the rationale named no concrete client for a sub-vertical, a
-     plausible illustrative example is provided and flagged
-     `illustrative: true` so it can be swapped for a real one later.
-
-     `sweepId` (optional) — when present, the window's "Enter the twin"
-     button drops the live Treedis experience to that sweep. When null,
-     it opens the default demo showcase.
+     Keyed by the card `id` in categories[].cards. Fields:
+       media    — main experience pane: a Treedis tour or a Vimeo
+                  embed; omit to reuse the shared showcase iframe.
+       links    — related tours/videos shown as chips.
+       gallery  — real project imagery (assets/portfolio/).
+       sweepId  — optional sweep for the shared showcase fallback.
+       illustrative: true flags placeholder projects to be swapped
+                  for real ones later.
      ============================================================ */
   examples: {
     /* ---------------- EDUCATION ---------------- */
@@ -781,9 +754,8 @@ window.DTS_CONFIG = {
   /* ============================================================
      QUESTION-BAR ANSWERS
      ------------------------------------------------------------
-     Inline answers for the rotating FAQ prompts. Keys are matched
-     case-insensitively against the question text (substring match),
-     so a visitor can also type a close variant.
+     Inline FAQ answers. `match` entries are case-insensitive
+     substrings tested against the visitor's question.
      ============================================================ */
   answers: [
     { match: ["what does digital twin studios", "what does dts", "who is dts", "who are you", "about dts"],

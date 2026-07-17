@@ -1,0 +1,119 @@
+/* ============================================================
+   APPLE VISION PRO — SPATIAL WEB CTA
+   Shown only in Safari: the spatial website environment is a
+   Safari feature, so every other browser hides the button.
+   js/app.js adds body.is-safari after UA detection; the toggle
+   behaviour lives in js/vision-pro-spatial.js.
+   ============================================================ */
+body:not(.is-safari) .vision-spatial-cta{ display:none; }
+.vision-spatial-cta{
+  margin-top:clamp(16px,2vh,24px);
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:8px;
+}
+.vision-spatial-btn{
+  appearance:none;
+  cursor:pointer;
+  min-height:46px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  padding:9px 17px 9px 10px;
+  color:#fff;
+  border:1px solid rgba(227,184,85,.9);
+  border-radius:9px;
+  background:
+    linear-gradient(135deg,rgba(255,255,255,.10),rgba(255,255,255,.025)),
+    rgba(8,12,24,.58);
+  box-shadow:
+    inset 0 0 0 1px rgba(255,255,255,.035),
+    0 9px 30px rgba(0,0,0,.22);
+  backdrop-filter:blur(8px);
+  -webkit-backdrop-filter:blur(8px);
+  font-family:var(--sans);
+  font-size:clamp(11px,.92vw,14px);
+  font-weight:700;
+  letter-spacing:.025em;
+  white-space:nowrap;
+  transition:transform .18s ease,background .18s ease,
+             border-color .18s ease,box-shadow .18s ease,color .18s ease;
+}
+.vision-spatial-btn:hover{
+  transform:translateY(-1px);
+  color:#10131a;
+  border-color:#fff;
+  background:linear-gradient(135deg,#fff,#dce7f8);
+  box-shadow:0 12px 36px rgba(130,178,255,.22),
+             0 0 24px rgba(227,184,85,.18);
+}
+.vision-spatial-btn:focus-visible{
+  outline:2px solid var(--gold-bright);
+  outline-offset:3px;
+}
+.vision-spatial-btn:disabled{
+  cursor:wait;
+  opacity:.68;
+  transform:none;
+}
+.vision-spatial-icon{
+  width:28px;
+  height:28px;
+  flex:0 0 28px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  color:#11141b;
+  background:linear-gradient(145deg,#fff,#d8e2f1);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.75),
+             0 3px 12px rgba(0,0,0,.25);
+}
+.vision-spatial-icon svg{
+  width:17px;
+  height:17px;
+  fill:currentColor;
+}
+.vision-spatial-btn:hover .vision-spatial-icon{
+  color:#fff;
+  background:linear-gradient(145deg,#151c2b,#080b12);
+}
+.vision-spatial-btn.is-active{
+  border-color:#fff;
+  background:rgba(255,255,255,.13);
+}
+.vision-spatial-btn.is-loading .vision-spatial-icon{
+  animation:visionSpatialPulse 1s ease-in-out infinite alternate;
+}
+.vision-spatial-status{
+  min-height:1.25em;
+  max-width:46ch;
+  margin:0;
+  color:var(--faint);
+  font-size:clamp(10px,.76vw,12px);
+  line-height:1.4;
+}
+@keyframes visionSpatialPulse{
+  from{ transform:scale(.90); opacity:.62; }
+  to{ transform:scale(1.05); opacity:1; }
+}
+
+/* Safari keeps the webpage visible while the environment surrounds it. */
+body.spatial-environment-active .vision-spatial-btn{
+  color:#fff;
+  background:rgba(8,12,24,.80);
+  border-color:#fff;
+}
+
+@media (max-width:760px){
+  .vision-spatial-cta{ margin-top:14px; align-items:stretch; }
+  .vision-spatial-btn{
+    width:100%;
+    justify-content:flex-start;
+    white-space:normal;
+    text-align:left;
+    font-size:12px;
+  }
+  .vision-spatial-status{ max-width:none; }
+}

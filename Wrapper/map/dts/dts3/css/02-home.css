@@ -1,0 +1,278 @@
+/* ============================================================
+   DECORATIVE HEX CLUSTER  (initial hero state only)
+   ------------------------------------------------------------
+   A diagonal run of hexagons on the right of the hero. Purely
+   decorative — the Treedis experience is not inside them.
+   ============================================================ */
+.hex-cluster{
+  position:absolute; inset:0;
+  z-index:3; pointer-events:none;
+  transition:opacity .45s ease;
+}
+.hex{
+  /* Flat-top hexagon (points left/right). */
+  --hexp: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  position:absolute;
+  /* Regular flat-top hexagon: height = width × √3/2, so diagonal
+     edges sit at exactly 60° and neighbours meet flush. */
+  aspect-ratio:1/0.8660254;
+  -webkit-clip-path:var(--hexp); clip-path:var(--hexp);
+}
+/* Photo-filled hexes (droplets / data-wave example imagery). */
+.hex-img{
+  background-color:#0c1322;
+  background-size:cover; background-position:center;
+  filter:saturate(1.08);
+}
+/* Solid white hexes. */
+.hex-white{
+  background:linear-gradient(160deg, #ffffff 0%, #f2f4f8 60%, #e6eaf2 100%);
+  box-shadow:0 18px 50px rgba(0,0,0,.35);
+}
+/* Diagonal run, bottom-left → top-right:
+   droplets → wave → white → white.
+
+   SELF-ALIGNING GEOMETRY (exact):
+   Every hex is placed relative to ONE anchor point (--hex-ax/--hex-ay)
+   using offsets measured in a single shared unit (--hexu, the base hex
+   width). Because size AND spacing come from the same unit, the run
+   keeps the same arrangement at every viewport width.
+
+   PERFECT EDGE CONTACT — the hexes have DIFFERENT widths
+   (.92u / .96u / 1u / 1.06u), so a uniform step can't make every
+   joint flush. For two regular flat-top hexes of widths wA (lower
+   left) and wB (upper right) touching along their shared 60° edge,
+   the centre offset is
+       Δx = 0.375·(wA+wB)      Δy = −(√3/8)·(wA+wB) = −0.2165·(wA+wB)
+   Cumulative offsets from the 2↔3 contact midpoint (the anchor):
+       pair 1↔2: Δ = (.7050, −.4072)u
+       pair 2↔3: Δ = (.7350, −.4246)u
+       pair 3↔4: Δ = (.7725, −.4462)u */
+.hex-cluster{
+  --hexu: clamp(132px, 12.5vw, 360px);
+  --hexgap: calc(var(--hexu) * 0.04);   /* ← the spacing knob */
+  --hex-ax: 78%;
+  --hex-ay: 41%;
+}
+.hex-1{ width:calc(var(--hexu)*.92); left:calc(var(--hex-ax) - 1.0725*var(--hexu) - 1.299*var(--hexgap)); top:calc(var(--hex-ay) + .6195*var(--hexu) + .75*var(--hexgap)); transform:translate(-50%,-50%); }
+.hex-2{ width:calc(var(--hexu)*.96); left:calc(var(--hex-ax) - .3675*var(--hexu) - .433*var(--hexgap));  top:calc(var(--hex-ay) + .2123*var(--hexu) + .25*var(--hexgap)); transform:translate(-50%,-50%); }
+.hex-3{ width:var(--hexu);           left:calc(var(--hex-ax) + .3675*var(--hexu) + .433*var(--hexgap));  top:calc(var(--hex-ay) - .2123*var(--hexu) - .25*var(--hexgap)); transform:translate(-50%,-50%); }
+.hex-4{ width:calc(var(--hexu)*1.06);left:calc(var(--hex-ax) + 1.1400*var(--hexu) + 1.299*var(--hexgap)); top:calc(var(--hex-ay) - .6585*var(--hexu) - .75*var(--hexgap)); transform:translate(-50%,-50%); }
+/* Faint dark satellite hexes for depth (very low contrast) — anchored
+   to the same point so they travel with the run. */
+.hex-ghost{
+  background:linear-gradient(150deg, rgba(48,66,98,.5), rgba(16,24,42,.5));
+  opacity:.5;
+  /* Continuous ambient pulse. The keyframes restate the centring
+     translate(-50%,-50%) so animating scale never knocks the ghosts
+     off their anchored positions. Durations/delays are staggered per
+     ghost so the cluster breathes organically instead of in lockstep. */
+  animation:hexGhostPulse 4.2s ease-in-out infinite;
+  will-change:transform,opacity;
+}
+.hex-g1{ animation-duration:3.8s; animation-delay:0s;    }
+.hex-g2{ animation-duration:4.6s; animation-delay:-1.2s; }
+.hex-g3{ animation-duration:4.1s; animation-delay:-2.3s; }
+.hex-g4{ animation-duration:5.0s; animation-delay:-3.1s; }
+@keyframes hexGhostPulse{
+  0%,100%{ transform:translate(-50%,-50%) scale(1);    opacity:.32; }
+  50%    { transform:translate(-50%,-50%) scale(1.14); opacity:.62; }
+}
+@media (prefers-reduced-motion:reduce){
+  .hex-ghost{ animation:none; opacity:.5; }
+}
+.hex-g1{ width:calc(var(--hexu)*.44); left:calc(var(--hex-ax) - 1.05*var(--hexu)); top:calc(var(--hex-ay) - .30*var(--hexu)); transform:translate(-50%,-50%); }
+.hex-g2{ width:calc(var(--hexu)*.40); left:calc(var(--hex-ax) + .30*var(--hexu));  top:calc(var(--hex-ay) + .80*var(--hexu)); transform:translate(-50%,-50%); }
+.hex-g3{ width:calc(var(--hexu)*.50); left:calc(var(--hex-ax) - .60*var(--hexu));  top:calc(var(--hex-ay) + 1.25*var(--hexu)); transform:translate(-50%,-50%); }
+.hex-g4{ width:calc(var(--hexu)*.38); left:calc(var(--hex-ax) + 1.75*var(--hexu)); top:calc(var(--hex-ay) - 1.05*var(--hexu)); transform:translate(-50%,-50%); }
+
+/* ---------- Primary CTA ----------
+   Transparent pill with a gold outline over the blue arrow-burst
+   graphic. Fills gold on hover / while pressed. */
+.twin-cta-wrap{
+  position:absolute; left:50%; top:66%;
+  transform:translate(-50%,-50%);
+  z-index:9;
+  display:flex; align-items:center; justify-content:center;
+}
+.twin-cta-fx{
+  position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%);
+  width:clamp(170px,17vw,280px); height:auto;
+  pointer-events:none;
+  filter:drop-shadow(0 6px 24px rgba(40,110,220,.35));
+}
+.twin-cta{
+  position:relative; z-index:1;
+  appearance:none; cursor:pointer; white-space:nowrap;
+  background:rgba(8,12,24,.42); color:var(--gold);
+  border:1px solid var(--gold); border-radius:8px;
+  padding:clamp(9px,1.2vh,13px) clamp(16px,1.6vw,26px);
+  font-family:var(--sans);
+  font-size:clamp(13px,1.05vw,16px); font-weight:700; letter-spacing:.02em;
+  backdrop-filter:blur(3px); -webkit-backdrop-filter:blur(3px);
+  transition:background .18s, color .18s, box-shadow .18s;
+}
+.twin-cta:hover{
+  background:var(--gold); color:#1a1206;
+  box-shadow:0 10px 34px rgba(208,163,58,.35);
+}
+.twin-cta:focus-visible{ outline:2px solid var(--gold-bright); outline-offset:3px; }
+
+/* ============================================================
+   TWIN LAYER  (full-screen Treedis experience + reveal)
+   ------------------------------------------------------------
+   States (classes on #twinLayer, driven by js/app.js):
+     (none)      hidden — iframe still boots in the background
+     .is-mounted visible as a narrow centre slice + seam line
+     .is-open    slice expands to fill the layer
+   .twin-hero-card.is-visible fades the glass card in.
+   ============================================================ */
+.twin-layer{
+  position:absolute;
+  top:var(--topbar-h); left:0; right:0; bottom:0;
+  z-index:18;                      /* above stage + dock, below modals (z:40) */
+  visibility:hidden;
+  background:transparent;
+}
+.twin-layer.is-mounted{ visibility:visible; }
+
+/* The clipped window that grows from the centre. */
+.twin-reveal{
+  position:absolute; inset:0;
+  -webkit-clip-path:inset(0 49.85% 0 49.85%);
+  clip-path:inset(0 49.85% 0 49.85%);
+  transition:clip-path 1.15s cubic-bezier(.72,.02,.26,1),
+             -webkit-clip-path 1.15s cubic-bezier(.72,.02,.26,1);
+  background:#0a1018;
+}
+.twin-layer.is-open .twin-reveal{
+  -webkit-clip-path:inset(0 0 0 0);
+  clip-path:inset(0 0 0 0);
+}
+
+/* Thin vertical seam the reveal appears to grow out of. */
+.twin-seam{
+  position:absolute; top:0; bottom:0; left:50%; width:2px;
+  transform:translateX(-50%);
+  background:rgba(255,255,255,.85);
+  opacity:0; pointer-events:none;
+  transition:opacity .3s ease;
+}
+.twin-layer.is-mounted:not(.is-open) .twin-seam{ opacity:1; }
+.twin-layer.is-open .twin-seam{ opacity:0; transition:opacity .5s ease .25s; }
+
+/* Iframe mount — same ids as before so startTreedis()/parkIframe()
+   and the loading veil work unchanged. */
+.demo-stage{
+  position:absolute; inset:0;
+  overflow:hidden;
+  background:radial-gradient(120% 120% at 50% 0%, #16203400, #0a1018);
+}
+.demo-stage iframe{ width:100%; height:100%; border:0; display:block; position:relative; z-index:2; }
+.demo-loading{
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:14px; color:var(--muted); text-align:center; padding:24px;
+  z-index:2;
+}
+.demo-loading-text{ font-size:clamp(12px,.95vw,14px); }
+.demo-loading.is-hidden{ display:none; }
+
+/* ---------- Final glass card ---------- */
+.twin-hero-card{
+  position:absolute; left:clamp(20px,3.4vw,64px); top:50%;
+  transform:translateY(calc(-50% + 14px));
+  width:min(42%, 460px);
+  padding:clamp(18px,2.2vw,30px) clamp(20px,2.4vw,34px);
+  background:var(--glass);
+  border:1px solid rgba(255,255,255,.10);
+  border-radius:16px;
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+  box-shadow:0 24px 70px rgba(0,0,0,.45);
+  opacity:0; pointer-events:none;
+  transition:opacity .9s ease, transform .9s ease;
+  z-index:4;
+}
+.twin-hero-card.is-visible{
+  opacity:1; pointer-events:auto;
+  transform:translateY(-50%);
+}
+.twin-card-headline{
+  font-size:clamp(26px,3vw,44px); font-weight:800; line-height:1.05;
+  margin:clamp(8px,1vh,14px) 0;
+  text-shadow:0 2px 14px rgba(0,0,0,.55);
+}
+.twin-card-body{
+  color:var(--muted); font-size:clamp(12px,.95vw,15px); line-height:1.6; margin:0;
+}
+.twin-hero-card .home-pills{ margin-bottom:clamp(10px,1.2vh,16px); }
+
+/* ---------- Card minimize control (top-right of the glass card) ---------- */
+.twin-card-min{
+  position:absolute; top:10px; right:10px; z-index:2;
+  appearance:none; cursor:pointer;
+  width:26px; height:26px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.10); color:var(--ink);
+  border:1px solid rgba(255,255,255,.22);
+  transition:background .18s, color .18s, border-color .18s;
+}
+.twin-card-min:hover{ background:var(--gold); border-color:var(--gold); color:#1a1206; }
+.twin-card-min:focus-visible{ outline:2px solid var(--gold-bright); outline-offset:2px; }
+
+/* ---------- Minimized DTS chip ----------
+   Small pill parked bottom-left of the layer, JUST ABOVE Treedis'
+   own circular controls (their bottom bar ≈40px + round buttons
+   ≈55px ⇒ anchor at ~102px). Same anchor on desktop and phone —
+   only the maximized card position differs per device. */
+.twin-card-restore{
+  position:absolute; left:clamp(12px,1.6vw,24px); bottom:102px;
+  z-index:5;
+  appearance:none; cursor:pointer;
+  display:inline-flex; align-items:center; gap:6px;
+  background:rgba(8,12,24,.78); color:var(--gold);
+  border:1px solid var(--gold); border-radius:999px;
+  padding:7px 14px;
+  font-family:var(--sans); font-size:12px; font-weight:800; letter-spacing:.08em;
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  opacity:0; pointer-events:none; transform:translateY(6px);
+  transition:opacity .3s ease, transform .3s ease, background .18s, color .18s;
+}
+.twin-card-restore.is-visible{ opacity:1; pointer-events:auto; transform:translateY(0); }
+.twin-card-restore:hover{ background:var(--gold); color:#1a1206; }
+.twin-card-restore:focus-visible{ outline:2px solid var(--gold-bright); outline-offset:2px; }
+
+/* ---------- Exit pill (top-left, clear of Treedis' own controls) ---------- */
+.twin-exit{
+  position:absolute; top:clamp(12px,1.6vh,20px); left:clamp(14px,1.8vw,26px);
+  z-index:5;
+  display:inline-flex; align-items:center; gap:8px;
+  appearance:none; cursor:pointer;
+  background:rgba(8,12,24,.72); color:var(--ink);
+  border:1px solid rgba(255,255,255,.18); border-radius:999px;
+  padding:8px 16px;
+  font-family:var(--sans); font-size:12.5px; font-weight:600; letter-spacing:.03em;
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+  opacity:0; pointer-events:none;
+  transition:opacity .4s ease .9s, background .18s, border-color .18s;
+}
+.twin-layer.is-open .twin-exit{ opacity:1; pointer-events:auto; }
+.twin-exit:hover{ background:rgba(8,12,24,.9); border-color:var(--gold); color:var(--gold-bright); }
+
+/* ---------- Shell state while the twin is active ---------- */
+/* The layer covers the dock; also silence it for keyboard/AT users
+   and hide the fixed cookie card so the experience is unobstructed. */
+body.twin-active .dockbar{ visibility:hidden; }
+body.twin-active .cookie{ opacity:0; pointer-events:none; transition:opacity .4s ease; }
+
+/* Evidence / footnote strip — fixed strip at the bottom of the view. */
+.evidence-bar{
+  flex:0 0 auto;
+  display:flex; flex-wrap:wrap; gap:clamp(12px,1.4vw,22px);
+  font-size:clamp(10px,.85vw,13px); color:var(--faint);
+  border-top:1px solid var(--line-soft);
+  margin-top:clamp(14px,2vh,22px); padding-top:clamp(10px,1.4vh,16px);
+}
+.evidence-item{ display:inline-flex; align-items:baseline; gap:5px; white-space:nowrap; }
+.evidence-dot{ color:var(--gold); margin-right:4px; font-size:8px; vertical-align:middle; }

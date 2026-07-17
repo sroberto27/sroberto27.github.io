@@ -1,0 +1,225 @@
+/* ============================================================
+   RESPONSIVE  (phone → tablet → desktop)
+   Progressive breakpoints: panels stack, chrome scrolls
+   horizontally when cramped.
+   ============================================================ */
+
+/* ----- TABLET / small laptop (≤ 1100px) ----- */
+@media (max-width:1100px){
+  .home-grid{
+    grid-template-columns:1fr;
+    grid-template-rows:auto 1fr;        /* copy on top, demo fills rest */
+    align-items:start;
+    gap:clamp(16px,2.4vh,28px);
+  }
+  .cat-grid{
+    grid-template-columns:1fr;
+    grid-template-rows:auto 1fr;
+    align-content:start;
+  }
+  /* Simplify the decorative cluster before the hero text shrinks.
+     Alignment is preserved automatically (same unit-based anchor);
+     we only pull the unit down so the run clears the copy column. */
+  .hex-ghost{ display:none; }
+  .hex-cluster{ --hexu: clamp(104px, 14.5vw, 190px); --hex-ax:76%; --hex-ay:38%; }
+  .twin-cta-wrap{ top:72%; }
+  .twin-cta-fx{ width:clamp(150px,20vw,220px); }
+  .twin-hero-card{ width:min(60%, 440px); }
+
+  /* Keep room on the right so the edge button doesn't cover cards. */
+  .cat-panel-cards{ padding-right:clamp(40px,7vw,72px); }
+}
+
+/* ----- Allow vertical scrolling inside views on shorter screens ----- */
+@media (max-height:680px), (max-width:1100px){
+  .view{ overflow-y:auto; }
+}
+
+/* ----- PHONE (≤ 760px) ----- */
+@media (max-width:760px){
+  /* True full-bleed app sized to the dynamic viewport so mobile
+     browser chrome never forces a scroll. */
+  html,body{ overflow:hidden; height:100%; }
+  .app{
+    position:fixed; inset:0;
+    width:100%;
+    height:100dvh;                   /* dynamic viewport height */
+    border:0; border-radius:0;
+    grid-template-rows:var(--topbar-h) 1fr auto;
+  }
+
+  /* Header: burger + logo on the left, Access on the right. The
+     pillar row is hidden — navigation moves into the drawer. */
+  .topbar{
+    flex-wrap:nowrap; align-items:center;
+    padding:0 12px; gap:10px;
+  }
+  .burger{ display:flex; order:0; }
+  .brand{ padding:6px 2px; order:1; gap:8px; }
+  .brand-logo{ height:30px; }
+  .brand.is-active::after{ display:none; }
+  .pillars{ display:none; }          /* replaced by drawer */
+  .nav-drawer{ display:flex; }
+  .access-btn{ order:2; margin-left:auto; padding:8px 12px; font-size:10px; }
+
+  /* Stage views fill the row; no view should need page scroll. */
+  .view{ padding:16px 14px; overflow:hidden; }
+
+  /* ---------- HOME (no scroll: copy then demo fills the rest) ---------- */
+  .home-grid{
+    grid-template-columns:1fr;
+    grid-template-rows:auto 1fr;
+    gap:14px; align-items:stretch;
+  }
+  .home-copy{ position:static; transform:none; width:auto; }
+  .copy-kicker{ font-size:10px; }
+  .home-headline{ font-size:clamp(28px,8.5vw,42px); margin:8px 0; }
+  .home-pills{ gap:14px; margin-bottom:10px; }
+  .home-body{ font-size:13px; line-height:1.5; max-width:none; }
+  .evidence-bar{ display:none; }                    /* not in mobile target */
+  .hex-cluster{ display:none; }                     /* decorative only — drop on phone */
+  .dock-explore{ display:none; }
+  .twin-cta-wrap{
+    position:relative; inset:auto; transform:none; margin-top:18px;
+    justify-self:center; align-self:start;
+  }
+  .twin-cta-fx{ width:150px; }
+  .bg-video{ display:none; }        /* save phone bandwidth; canvas fallback shows */
+  .twin-hero-card{
+    left:12px; right:12px; width:auto; top:auto; bottom:14px;
+    transform:translateY(10px);
+  }
+  .twin-hero-card.is-visible{ transform:translateY(0); }
+  .twin-exit{ top:10px; left:10px; padding:7px 13px; font-size:11.5px; }
+
+  /* ---------- CATEGORY (intro → 2×2 cards → sector strip) ---------- */
+  .cat-slider{ min-height:0; }
+  .cat-panel{ overflow:hidden; }
+  .cat-panel-cards{ padding-right:0; }
+  .cat-grid{
+    grid-template-columns:1fr;
+    grid-template-rows:auto 1fr;
+    gap:14px; min-height:0;
+  }
+  .cat-intro{ overflow:hidden; }
+  .cat-kicker{ font-size:11px; }
+  .cat-title{ font-size:clamp(26px,8vw,38px); margin:6px 0; }
+  .cat-sub{ font-size:13px; margin-bottom:10px; }
+  /* Trim the long body on phone so the cards fit without scrolling. */
+  .cat-body{
+    font-size:12.5px; line-height:1.45; max-width:none;
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
+  .cat-projects-btn{ margin-top:12px; padding:10px 14px; }
+
+  /* 2×2 grid that fills the available height.
+     Scrolls internally only if a very short screen can't fit it. */
+  .cat-cards{
+    grid-template-columns:1fr 1fr;
+    grid-auto-rows:1fr;
+    gap:12px; min-height:0;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .uc-card{ padding:14px; min-height:0; }
+  .uc-card h3{ font-size:12px; margin-bottom:6px; }
+  .uc-card p{ font-size:11.5px; line-height:1.4; }
+
+  /* The right-edge "Contact & Info" tab is replaced on phone by the
+     sector strip + swipe; hide it to keep the layout clean. */
+  .contact-edge{ display:none; }
+
+  /* Contact panel: vertical, full layout (matches image 2). The side
+     arrow buttons are hidden — Back lives in the sector strip / swipe. */
+  .cat-panel-contact{
+    padding:20px 16px; border:0; border-radius:0;
+    justify-content:flex-start; overflow-y:auto;
+  }
+  .panel-nav{ display:none; }
+  .contact-inner{ width:100%; }
+  .contact-headline{ font-size:clamp(28px,9vw,40px); }
+  .contact-body{ font-size:13px; }
+  /* Stack the three CTAs full-width with their stage label above. */
+  .contact-stages{ display:none; }
+  .contact-ctas{ flex-direction:column; gap:10px; }
+  .contact-cta{ flex:1 1 auto; width:100%; padding:15px; }
+
+  /* Sector strip visible on phone. */
+  .sector-pager{ display:flex; }
+  .contact-bar{ display:flex; }
+
+  /* Lead form: single column on phone. */
+  .form-fields{ grid-template-columns:1fr; }
+
+  /* Cookie: slim full-width bar that sits ABOVE the dock, not over it. */
+  .cookie{
+    left:8px; right:8px; bottom:calc(env(safe-area-inset-bottom, 0px) + 8px);
+    width:auto; padding:10px 12px; border-radius:10px;
+    display:flex; align-items:center; gap:10px;
+  }
+  .cookie-text{ font-size:11px; flex:1; line-height:1.35;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  .cookie-actions{ margin-top:0; flex:0 0 auto; }
+  .cookie-btn{ padding:6px 12px; font-size:11px; }
+
+  /* Footer evidence row is noise on phone — keep only the dock. */
+
+  /* Dock: question bar full width; tabs scroll under it. */
+  .dockbar{
+    flex-direction:column; align-items:stretch;
+    padding:8px 12px; gap:8px;
+  }
+  /* Stack order inside the dock: Use Cases rail on top, sector
+     pager in the middle, question bar at the bottom. */
+  .dock-tabs{
+    order:1; width:100%; overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  .sector-pager{ order:2; margin-top:0; }
+  .qbar{ order:3; width:100%; max-width:none; }
+
+  /* Cookie: slim bar at the very bottom. It's a first-load overlay;
+     kept short so dismissing it immediately reveals the dock + strip. */
+  .cookie{
+    left:0; right:0; bottom:0; width:auto;
+    border-radius:0; border-left:0; border-right:0; border-bottom:0;
+    padding:10px 12px;
+    display:flex; align-items:center; gap:10px;
+    background:rgba(10,14,23,.98);
+  }
+  .cookie-text{
+    flex:1; font-size:10.5px; line-height:1.35;
+    display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;
+  }
+  .cookie-actions{ margin-top:0; flex:0 0 auto; gap:8px; }
+  .cookie-btn{ padding:7px 14px; font-size:11px; }
+
+  /* Example window: experience pane shrinks; content gets tighter pad. */
+  .example-window{ width:100vw; height:100dvh; border-radius:0; }
+  .example-stage{ height:38vh; }
+  .example-content{ padding:18px 16px 28px; }
+  .example-cta-row .example-cta{ flex:1 1 100%; text-align:center; }
+
+  /* Access window: full-width fields, stacked dashboard CTAs. */
+  .access-window{ width:94vw; }
+  .dash-cta-row{ flex-direction:column; }
+  .dash-cta-row .form-submit{ width:100%; }
+
+  /* Answer popover spans the bar width above the dock. */
+  .qbar-answer{ width:calc(100vw - 24px); left:50%; transform:translateX(-50%); }
+}
+
+/* Slightly larger phones / small tablets keep cards roomier. */
+@media (max-width:760px) and (min-height:740px){
+  .cat-body{ -webkit-line-clamp:5; }
+  .uc-card{ padding:18px; }
+}
+
+/* ----- Very large screens: cap so type doesn't get silly ----- */
+@media (min-width:1900px){
+  .app{ inset:clamp(14px,1.2vw,28px); }
+  /* Ultra-wide monitors: lift the cap so the cluster keeps roughly the
+     same visual weight (~10vw) instead of shrinking relative to the page. */
+  .hex-cluster{ --hexu: clamp(240px, 10.5vw, 420px); }
+}
