@@ -1,0 +1,70 @@
+{
+  "_id": "project.civic",
+  "_type": "project",
+  "id": "civic",
+  "sectorId": "government",
+  "title": "Civic Services",
+  "tagline": "Libraries, transit, parks, civic engagement, accessibility.",
+  "overview": "Public-facing civic spaces — parks, campuses, and public venues — twinned so residents and visitors can navigate, plan visits, and engage with public services accessibly from anywhere.",
+  "project": {
+    "name": "LSU Performance Innovation POC",
+    "kind": "Proof of concept · 2 weeks",
+    "illustrative": false,
+    "blurb": "A proof of concept developed with LSU exploring immersive technology for design and performance innovation — evidence of how quickly DTS moves (two weeks) from concept to working experience with flagship institutions. Alongside it: the State Park Experience Demo built for Miles Partnership and the Louisiana Office of Tourism, with aerial context, accessibility-first navigation, and place-based storytelling."
+  },
+  "capturedWith": "3D modeling & XR tools for Unity",
+  "platform": "PC / VR",
+  "media": {
+    "_type": "video",
+    "provider": "vimeo",
+    "label": "Watch the LSU POC",
+    "embed": {
+      "kind": "url",
+      "value": "https://player.vimeo.com/video/1171910011?h=0758e149fc"
+    },
+    "watch": {
+      "kind": "url",
+      "value": "https://vimeo.com/1171910011/0758e149fc"
+    }
+  },
+  "links": [
+    {
+      "_type": "link",
+      "label": "State Park Demo — Miles Partnership & LA Office of Tourism",
+      "url": "https://vimeo.com/1209678624/b5ed428562",
+      "kind": "vimeo"
+    },
+    {
+      "_type": "link",
+      "label": "Virtual Park Tour (short)",
+      "url": "https://vimeo.com/1209665275/d14536542c",
+      "kind": "vimeo"
+    }
+  ],
+  "gallery": [
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/portfolio/lsu-performance-poc.jpg"
+      },
+      "alt": "LSU Performance Innovation POC — immersive facilities render"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/portfolio/state-park-demo.jpg"
+      },
+      "alt": "State Park virtual tour demo — aerial context and guided navigation"
+    }
+  ],
+  "evidence": {
+    "Case Studies": "LSU Performance Innovation POC (concept to working experience in two weeks) and the State Park Experience Demo for Miles Partnership & the Louisiana Office of Tourism — accessibility-first navigation and place-based storytelling for one of Louisiana's most visited parks.",
+    "Awards": "—",
+    "Client Feedback": "“Residents arrive already knowing the place.”",
+    "Press & Research": "Built for demonstration with a state tourism office and its agency of record.",
+    "Project Data": "Aerial context · Accessibility-first navigation · Two-week concept-to-demo cycle."
+  },
+  "sweepId": null
+}

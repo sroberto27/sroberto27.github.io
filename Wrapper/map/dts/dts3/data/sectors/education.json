@@ -1,0 +1,37 @@
+{
+  "_id": "sector.education",
+  "_type": "sector",
+  "id": "education",
+  "order": 1,
+  "label": "Education",
+  "navSub": "Campus",
+  "blurb": "Education develops people.",
+  "active": true,
+  "accent": "#E9B44C",
+  "kicker": "EDUCATION",
+  "title": "Campus & Schools",
+  "sub": "Digital Twin of your campus",
+  "body": "Where human potential is built. DTS creates living spatial ecosystems for learning environments — from recruitment through graduation. One twin. Every stage of the student and faculty relationship with your institution.",
+  "cards": [
+    {
+      "projectId": "campus",
+      "title": "Campus & Schools",
+      "text": "Spatial navigation, orientation, LMS gateway, K-12 through university."
+    },
+    {
+      "projectId": "workforce",
+      "title": "Workforce & Trade",
+      "text": "Skills labs, certification, DOL-funded programs, economic mobility."
+    },
+    {
+      "projectId": "healthcare",
+      "title": "Healthcare Training",
+      "text": "Staff orientation, clinical simulation, patient safety environments."
+    },
+    {
+      "projectId": "workplace",
+      "title": "Workplace Learning",
+      "text": "Corporate onboarding, continuing ed, Betaversity, EON Reality."
+    }
+  ]
+}

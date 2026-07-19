@@ -1,0 +1,59 @@
+{
+  "_id": "project.automotive",
+  "_type": "project",
+  "id": "automotive",
+  "sectorId": "industry",
+  "title": "Automotive & Transportation",
+  "tagline": "Showrooms, vehicle twins, EV facilities, franchise audits.",
+  "overview": "Showroom and vehicle twins that plug straight into the sales process — letting buyers explore inventory and configurations spatially, anchored by the BMW Lafayette proof point.",
+  "project": {
+    "name": "BMW Lafayette — Dealership & Vehicle Twins",
+    "kind": "Live Treedis experiences",
+    "illustrative": false,
+    "blurb": "A showroom twin plus vehicle-level captures of the BMW X1, X5, and X7: buyers walk the dealership floor and step inside individual vehicles remotely, turning the twin into a direct extension of the sales process. A Range Rover Sport SVR capture extends the same approach."
+  },
+  "capturedWith": "Matterport Pro3",
+  "platform": "Treedis",
+  "media": {
+    "_type": "treedis",
+    "label": "Walk the Dealership",
+    "tourUrl": "https://spaces.dtsxr.com/tour/fee23e79",
+    "origin": "https://spaces.dtsxr.com",
+    "sweepId": null
+  },
+  "links": [
+    {
+      "_type": "link",
+      "label": "BMW X1 vehicle twin",
+      "url": "https://spaces.dtsxr.com/tour/026593c5",
+      "kind": "treedis"
+    },
+    {
+      "_type": "link",
+      "label": "BMW X5 vehicle twin",
+      "url": "https://spaces.dtsxr.com/tour/352ad07a",
+      "kind": "treedis"
+    },
+    {
+      "_type": "link",
+      "label": "BMW X7 vehicle twin",
+      "url": "https://spaces.dtsxr.com/tour/bfab6d52",
+      "kind": "treedis"
+    },
+    {
+      "_type": "link",
+      "label": "Watch the BMW dealership video",
+      "url": "https://vimeo.com/1187103853",
+      "kind": "vimeo"
+    }
+  ],
+  "evidence": {
+    "Case Studies": "BMW Lafayette — dealership twin plus X1 / X5 / X7 vehicle twins used as an automotive-retail proof point.",
+    "Awards": "—",
+    "Client Feedback": "“Buyers walk the floor before they ever visit.”",
+    "Press & Research": "Automotive is one of four dominant commercial twin verticals through 2030.",
+    "Project Data": "Showroom + per-vehicle capture · Published on Treedis · Tied to the sales funnel."
+  },
+  "gallery": [],
+  "sweepId": null
+}

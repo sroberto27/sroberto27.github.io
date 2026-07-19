@@ -1,0 +1,62 @@
+{
+  "_id": "project.campus",
+  "_type": "project",
+  "id": "campus",
+  "sectorId": "education",
+  "title": "Campus & Schools",
+  "tagline": "Spatial navigation, orientation, an LMS gateway — K-12 through university.",
+  "overview": "A campus twin turns a sprawling, hard-to-navigate institution into a space a prospective student, parent, or new hire can walk before they ever arrive. The world is the interface: wayfinding, recruitment tours, orientation, and an LMS launch point all live in one persistent spatial layer.",
+  "project": {
+    "name": "South Carolina State University — Virtual Campus",
+    "kind": "Active project · USDA-commissioned",
+    "illustrative": false,
+    "blurb": "A campus-scale digital twin of one of America's historically Black universities: full-campus map, guided tours, and VR-enabled immersive locations built on Matterport + Treedis. Students walk the campus and drop into immersive VR before they ever set foot on it. Commissioned by the USDA; currently under development."
+  },
+  "capturedWith": "Matterport Pro3 + Insta360 Pro 2",
+  "platform": "Treedis",
+  "media": {
+    "_type": "treedis",
+    "label": "Explore the Virtual Campus",
+    "tourUrl": "https://spaces.dtsxr.com/tour/8e4ca3fc",
+    "origin": "https://spaces.dtsxr.com",
+    "sweepId": null
+  },
+  "links": [
+    {
+      "_type": "link",
+      "label": "SCSU Campus — VR-enabled tour",
+      "url": "https://spaces.dtsxr.com/tour/scsu-campus-ade0f346",
+      "kind": "treedis"
+    },
+    {
+      "_type": "link",
+      "label": "Watch the SCSU Walkthrough",
+      "url": "https://vimeo.com/1202389953/1e9b4d74aa",
+      "kind": "vimeo"
+    },
+    {
+      "_type": "link",
+      "label": "SCSU Metaversity Course Structure Reel",
+      "url": "https://vimeo.com/1152008581",
+      "kind": "vimeo"
+    }
+  ],
+  "gallery": [
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/portfolio/scsu-virtual-campus.jpg"
+      },
+      "alt": "SCSU Virtual Campus — full-campus map with guided-tour sidebar"
+    }
+  ],
+  "evidence": {
+    "Case Studies": "SC State Virtual Campus — a campus-scale HBCU digital twin with a full-campus map, guided tours, and VR-enabled immersive locations, spanning recruitment through orientation.",
+    "Awards": "Commissioned by the USDA — a federal vote of confidence in campus-scale spatial platforms.",
+    "Client Feedback": "“Students can find Financial Aid before their first day” — campus administration.",
+    "Press & Research": "The SCSU framework is the reference architecture every later DTS spatial-navigation build adapts from — multi-location mapping, guided tours, VR deep-links.",
+    "Project Data": "Campus scale · Matterport + Treedis · Desktop, mobile, and Meta Quest VR profiles."
+  },
+  "sweepId": null
+}

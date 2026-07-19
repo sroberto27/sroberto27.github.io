@@ -1,0 +1,40 @@
+{
+  "_id": "project.nonprofit",
+  "_type": "project",
+  "id": "nonprofit",
+  "sectorId": "community",
+  "title": "Nonprofit & Social Impact",
+  "tagline": "NGOs, foundations, DIG, faith communities, social services.",
+  "overview": "Mission-driven twins that give an organization a credible, sharable impact narrative — anchored by the Do It Greener Foundation, which pairs DTS's commercial work with genuine community impact.",
+  "project": {
+    "name": "Do It Greener Foundation — Sample Experience",
+    "kind": "Anchor relationship",
+    "illustrative": false,
+    "blurb": "An interactive sample experience built with the Do It Greener Foundation — letting a mission-driven organization show, spatially, the places and outcomes its coastal and community work touches, so donors and partners can see exactly where support lands."
+  },
+  "capturedWith": "3D modeling & XR tools for Unity",
+  "platform": "Interactive experience",
+  "media": {
+    "_type": "video",
+    "provider": "vimeo",
+    "label": "Do It Greener Sample Experience",
+    "embed": {
+      "kind": "url",
+      "value": "https://player.vimeo.com/video/1072371346?h=4c1279364c"
+    },
+    "watch": {
+      "kind": "url",
+      "value": "https://vimeo.com/1072371346/4c1279364c"
+    }
+  },
+  "evidence": {
+    "Case Studies": "Do It Greener Foundation sample experience — a spatial impact story for coastal and community work.",
+    "Awards": "—",
+    "Client Feedback": "“Donors can see exactly where their support lands.”",
+    "Press & Research": "Spatial storytelling strengthens nonprofit impact reporting.",
+    "Project Data": "Impact-site documentation for grant and donor reporting."
+  },
+  "links": [],
+  "gallery": [],
+  "sweepId": null
+}

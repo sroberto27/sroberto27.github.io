@@ -1,0 +1,53 @@
+{
+  "_id": "project.municipal",
+  "_type": "project",
+  "id": "municipal",
+  "sectorId": "government",
+  "title": "Infrastructure & Cities",
+  "tagline": "Municipal twins, transportation, utility grids, urban planning.",
+  "overview": "City-scale twins — the fastest-growing government segment worldwide. Infrastructure, venues, and public spaces documented as a living municipal record that planners, agencies, and citizens can all walk.",
+  "project": {
+    "name": "Lafayette Digital Twin Initiative",
+    "kind": "Municipal initiative",
+    "illustrative": false,
+    "blurb": "A city-scale digital-twin initiative for Lafayette, Louisiana — documenting the city's infrastructure and urban core as a navigable municipal record, extended by the Silicon Bayou technology-corridor work and city fly-over captures."
+  },
+  "capturedWith": "Aerial capture + 3D modeling",
+  "platform": "Unity",
+  "media": {
+    "_type": "video",
+    "provider": "vimeo",
+    "label": "Lafayette Digital Twin Initiative",
+    "embed": {
+      "kind": "url",
+      "value": "https://player.vimeo.com/video/959296524"
+    },
+    "watch": {
+      "kind": "url",
+      "value": "https://vimeo.com/959296524"
+    }
+  },
+  "links": [
+    {
+      "_type": "link",
+      "label": "Silicon Bayou Initiative — highlight",
+      "url": "https://vimeo.com/1109358698/e6ce9de564",
+      "kind": "vimeo"
+    },
+    {
+      "_type": "link",
+      "label": "Lafayette fly-over",
+      "url": "https://vimeo.com/1007749997",
+      "kind": "vimeo"
+    }
+  ],
+  "evidence": {
+    "Case Studies": "Lafayette Digital Twin Initiative — a city documenting its own urban core spatially; Silicon Bayou extends the record across the region's technology corridor.",
+    "Awards": "—",
+    "Client Feedback": "“The city can show the venue to the world.”",
+    "Press & Research": "Municipal/smart-city is the fastest-growing government twin segment.",
+    "Project Data": "City-scale capture · Aerial + street-level layers."
+  },
+  "gallery": [],
+  "sweepId": null
+}

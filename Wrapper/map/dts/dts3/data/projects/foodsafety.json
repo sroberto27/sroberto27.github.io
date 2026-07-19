@@ -1,0 +1,68 @@
+{
+  "_id": "project.foodsafety",
+  "_type": "project",
+  "id": "foodsafety",
+  "sectorId": "government",
+  "title": "Regulatory & Compliance",
+  "tagline": "Food safety, environmental compliance, inspection training.",
+  "overview": "Sits in Government because the buyer is a regulatory authority, not a commercial food company. The procurement is regulatory: twins support inspection, training, and standards enforcement — and the state's investment keeps extending because the builds are modular.",
+  "project": {
+    "name": "Sanitarian Training Enhancement — Louisiana Department of Health",
+    "kind": "Award-winning deployment",
+    "illustrative": false,
+    "blurb": "Virtual training simulations for Louisiana's retail food-safety inspectors on PC and Meta Quest, built modular so the state's investment keeps extending. Winner of the Unity “Best Public Health Solution” Award (I/ITSEC) and showcased at the Association of Food & Drug Officials Conference 2026."
+  },
+  "capturedWith": "3D modeling & XR tools for Unity",
+  "platform": "PC + Meta Quest",
+  "media": {
+    "_type": "video",
+    "provider": "vimeo",
+    "label": "LDH Sanitarian Training Demo",
+    "embed": {
+      "kind": "url",
+      "value": "https://player.vimeo.com/video/672407780"
+    },
+    "watch": {
+      "kind": "url",
+      "value": "https://vimeo.com/672407780"
+    }
+  },
+  "links": [
+    {
+      "_type": "link",
+      "label": "Retail Food Safety Inspection — in development",
+      "url": "https://vimeo.com/403092357",
+      "kind": "vimeo"
+    },
+    {
+      "_type": "link",
+      "label": "LDH VR capture (highlight)",
+      "url": "https://vimeo.com/1109426072/0ddb5aa3aa",
+      "kind": "vimeo"
+    },
+    {
+      "_type": "link",
+      "label": "Louisiana Department of Health demo",
+      "url": "https://vimeo.com/390542485",
+      "kind": "vimeo"
+    }
+  ],
+  "gallery": [
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/portfolio/ldh-logo.jpg"
+      },
+      "alt": "Louisiana Department of Health"
+    }
+  ],
+  "evidence": {
+    "Case Studies": "Sanitarian Training Enhancement — virtual retail food-safety inspection training for the Louisiana Department of Health, deployed on PC and Meta Quest. Full case study available upon request.",
+    "Awards": "Unity “Best Public Health Solution” Award · I/ITSEC. Showcased at the Association of Food & Drug Officials Conference 2026.",
+    "Client Feedback": "“Inspectors train on the real layout, remotely.”",
+    "Press & Research": "Presented to the national food-safety regulatory community at AFDO 2026.",
+    "Project Data": "Modular Unity builds · PC + Meta Quest · Built so the state's investment keeps extending."
+  },
+  "sweepId": null
+}

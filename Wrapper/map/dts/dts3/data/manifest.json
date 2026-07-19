@@ -1,0 +1,184 @@
+{
+  "_type": "contentManifest",
+  "schemaVersion": "1.0.0",
+  "generatedFrom": "js/config.js, js/clients.js, index.html (July 2026)",
+  "description": "Index of every content document in /data. The site loader and the future Admin Board (mini CMS) both read this file to discover content. Add a new document = add its file and register it here.",
+  "mediaConvention": {
+    "summary": "Any image, video, or 3D-model reference uses source: {kind, value}. kind='path' means a file inside the website folder structure (relative to site root, e.g. assets/portfolio/x.jpg). kind='url' means an external link (https://...). Renderers must support both.",
+    "types": [
+      "image",
+      "video (provider: vimeo|file|url)",
+      "treedis (interactive tour embed)",
+      "model (usdz etc.)",
+      "link"
+    ]
+  },
+  "documents": {
+    "site": [
+      {
+        "file": "site/settings.json",
+        "type": "siteSettings",
+        "id": "site.settings"
+      },
+      {
+        "file": "site/lead.json",
+        "type": "leadSettings",
+        "id": "site.lead"
+      }
+    ],
+    "pages": [
+      {
+        "file": "pages/home.json",
+        "type": "page",
+        "id": "page.home"
+      },
+      {
+        "file": "pages/contact.json",
+        "type": "page",
+        "id": "page.contact"
+      }
+    ],
+    "sectors": [
+      {
+        "file": "sectors/education.json",
+        "type": "sector",
+        "id": "sector.education"
+      },
+      {
+        "file": "sectors/industry.json",
+        "type": "sector",
+        "id": "sector.industry"
+      },
+      {
+        "file": "sectors/government.json",
+        "type": "sector",
+        "id": "sector.government"
+      },
+      {
+        "file": "sectors/community.json",
+        "type": "sector",
+        "id": "sector.community"
+      }
+    ],
+    "projects": [
+      {
+        "file": "projects/campus.json",
+        "type": "project",
+        "id": "project.campus"
+      },
+      {
+        "file": "projects/workforce.json",
+        "type": "project",
+        "id": "project.workforce"
+      },
+      {
+        "file": "projects/healthcare.json",
+        "type": "project",
+        "id": "project.healthcare"
+      },
+      {
+        "file": "projects/workplace.json",
+        "type": "project",
+        "id": "project.workplace"
+      },
+      {
+        "file": "projects/energy.json",
+        "type": "project",
+        "id": "project.energy"
+      },
+      {
+        "file": "projects/automotive.json",
+        "type": "project",
+        "id": "project.automotive"
+      },
+      {
+        "file": "projects/healthfac.json",
+        "type": "project",
+        "id": "project.healthfac"
+      },
+      {
+        "file": "projects/properties.json",
+        "type": "project",
+        "id": "project.properties"
+      },
+      {
+        "file": "projects/municipal.json",
+        "type": "project",
+        "id": "project.municipal"
+      },
+      {
+        "file": "projects/emergency.json",
+        "type": "project",
+        "id": "project.emergency"
+      },
+      {
+        "file": "projects/foodsafety.json",
+        "type": "project",
+        "id": "project.foodsafety"
+      },
+      {
+        "file": "projects/civic.json",
+        "type": "project",
+        "id": "project.civic"
+      },
+      {
+        "file": "projects/economic.json",
+        "type": "project",
+        "id": "project.economic"
+      },
+      {
+        "file": "projects/nonprofit.json",
+        "type": "project",
+        "id": "project.nonprofit"
+      },
+      {
+        "file": "projects/sustain.json",
+        "type": "project",
+        "id": "project.sustain"
+      },
+      {
+        "file": "projects/heritage.json",
+        "type": "project",
+        "id": "project.heritage"
+      }
+    ],
+    "forms": [
+      {
+        "file": "forms/discovery.json",
+        "type": "leadForm",
+        "id": "form.discovery"
+      },
+      {
+        "file": "forms/proposal.json",
+        "type": "leadForm",
+        "id": "form.proposal"
+      },
+      {
+        "file": "forms/pilot.json",
+        "type": "leadForm",
+        "id": "form.pilot"
+      }
+    ],
+    "faq": [
+      {
+        "file": "faq/answers.json",
+        "type": "faqCollection",
+        "id": "faq.answers"
+      }
+    ],
+    "access": [
+      {
+        "file": "access/access.json",
+        "type": "accessConfig",
+        "id": "access.config"
+      }
+    ],
+    "media": [
+      {
+        "file": "media/library.json",
+        "type": "mediaLibrary",
+        "id": "media.library"
+      }
+    ]
+  }
+}

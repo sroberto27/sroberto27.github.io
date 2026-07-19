@@ -1,0 +1,27 @@
+{
+  "_id": "project.emergency",
+  "_type": "project",
+  "id": "emergency",
+  "sectorId": "government",
+  "title": "Safety & Emergency",
+  "tagline": "GOHSEP, FEMA PA documentation, disaster response twins.",
+  "overview": "Time-sensitive, compliance-driven work: GOHSEP relationships and FEMA Public Assistance documentation, accessible through a specific intermediary on a short timeline. A twin is the authoritative record of conditions before and after an event.",
+  "project": {
+    "name": "GOHSEP / FEMA PA Documentation",
+    "kind": "Compliance engagement",
+    "illustrative": false,
+    "blurb": "Emergency-management documentation tied to GOHSEP and FEMA Public Assistance: a spatial record captured on a short, compliance-driven timeline that stands as the authoritative account of site conditions."
+  },
+  "capturedWith": "On-site reality capture",
+  "platform": "FEMA PA documentation",
+  "evidence": {
+    "Case Studies": "FEMA PA documentation capture delivered inside a compliance deadline.",
+    "Awards": "—",
+    "Client Feedback": "“The twin is the record of record.”",
+    "Press & Research": "Disaster documentation is a time-sensitive, intermediary-driven market.",
+    "Project Data": "Date-stamped spatial record for Public Assistance claims."
+  },
+  "links": [],
+  "gallery": [],
+  "sweepId": null
+}

@@ -1,0 +1,75 @@
+{
+  "_id": "form.proposal",
+  "_type": "leadForm",
+  "id": "proposal",
+  "title": "Request a Proposal",
+  "intro": "Tell us about the space and the outcome you're after. We'll scope a proposal and send it back.",
+  "submitLabel": "REQUEST A PROPOSAL",
+  "fields": [
+    {
+      "name": "name",
+      "label": "Full Name",
+      "type": "text",
+      "required": true,
+      "placeholder": "First and Last Name",
+      "half": true
+    },
+    {
+      "name": "phone",
+      "label": "Phone number",
+      "type": "tel",
+      "required": true,
+      "placeholder": "(###) ### - ####",
+      "half": true
+    },
+    {
+      "name": "email",
+      "label": "Email",
+      "type": "email",
+      "required": true,
+      "placeholder": "address@email.com",
+      "half": true
+    },
+    {
+      "name": "org",
+      "label": "Company Name",
+      "type": "text",
+      "required": true,
+      "half": true
+    },
+    {
+      "name": "country",
+      "label": "Country",
+      "type": "select",
+      "required": false,
+      "half": true,
+      "options": [
+        "United States",
+        "Canada",
+        "United Kingdom",
+        "European Union",
+        "Other"
+      ]
+    },
+    {
+      "name": "timeline",
+      "label": "Target timeline",
+      "type": "select",
+      "required": false,
+      "half": true,
+      "options": [
+        "ASAP",
+        "This quarter",
+        "This year",
+        "Planning ahead"
+      ]
+    },
+    {
+      "name": "notes",
+      "label": "Describe the goal",
+      "optional": true,
+      "type": "textarea",
+      "required": false
+    }
+  ]
+}

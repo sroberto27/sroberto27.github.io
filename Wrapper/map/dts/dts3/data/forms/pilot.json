@@ -1,0 +1,80 @@
+{
+  "_id": "form.pilot",
+  "_type": "leadForm",
+  "id": "pilot",
+  "title": "Start a Pilot",
+  "intro": "A pilot is a scoped, paid engagement — one defined space, a digital twin, a clear deliverable. The fee is set during the proposal stage. Tell us what you'd pilot and we'll define the scope with you.",
+  "submitLabel": "START MY PILOT REQUEST",
+  "fields": [
+    {
+      "name": "name",
+      "label": "Full Name",
+      "type": "text",
+      "required": true,
+      "placeholder": "First and Last Name",
+      "half": true
+    },
+    {
+      "name": "phone",
+      "label": "Phone number",
+      "type": "tel",
+      "required": true,
+      "placeholder": "(###) ### - ####",
+      "half": true
+    },
+    {
+      "name": "email",
+      "label": "Email",
+      "type": "email",
+      "required": true,
+      "placeholder": "address@email.com",
+      "half": true
+    },
+    {
+      "name": "org",
+      "label": "Company Name",
+      "type": "text",
+      "required": true,
+      "half": true
+    },
+    {
+      "name": "country",
+      "label": "Country",
+      "type": "select",
+      "required": false,
+      "half": true,
+      "options": [
+        "United States",
+        "Canada",
+        "United Kingdom",
+        "European Union",
+        "Other"
+      ]
+    },
+    {
+      "name": "timeline",
+      "label": "Time-frame",
+      "type": "select",
+      "required": false,
+      "half": true,
+      "options": [
+        "Immediately",
+        "Within a month",
+        "This quarter",
+        "Still scoping"
+      ]
+    },
+    {
+      "name": "space",
+      "label": "Space you'd pilot",
+      "type": "text",
+      "required": true
+    },
+    {
+      "name": "outcome",
+      "label": "What does success look like?",
+      "type": "textarea",
+      "required": false
+    }
+  ]
+}

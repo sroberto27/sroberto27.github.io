@@ -1,0 +1,160 @@
+{
+  "_id": "media.library",
+  "_type": "mediaLibrary",
+  "note": "Registry of media the site references. Every entry uses the same source convention as inline media: {kind: 'path'|'url', value}. The future Admin Board media picker reads/writes this file; new uploads or external links get registered here.",
+  "assets": [
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/assets-logo.png"
+      },
+      "alt": "Digital Twin Studios logo"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/CubeLogo.png"
+      },
+      "alt": "DTS cube logo"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/assets-cta-arrow.png"
+      },
+      "alt": "CTA arrow burst graphic"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/assets-category-bg.jpg"
+      },
+      "alt": "Category view background"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/assets-droplet.jpg"
+      },
+      "alt": "Droplet macro imagery (hex cluster)"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/assets-droplet.png"
+      },
+      "alt": "Droplet imagery (PNG variant)"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/assets-wave.jpg"
+      },
+      "alt": "Wave imagery (hex cluster)"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/InteractiveCities.png"
+      },
+      "alt": "Interactive cities render (hex cluster)"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/VirginHotel.png"
+      },
+      "alt": "Virgin Hotels experience (hex cluster)"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/DigitalTwinsCities.png"
+      },
+      "alt": "Digital twins of cities render"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/InmersiveMapTour.png"
+      },
+      "alt": "Immersive map tour render"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/logBackground.png"
+      },
+      "alt": "Access Your Twin sign-in background"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/portfolio/scsu-virtual-campus.jpg"
+      },
+      "alt": "SCSU Virtual Campus"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/portfolio/downtown-lafayette.jpg"
+      },
+      "alt": "Downtown Lafayette"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/portfolio/virgin-hotels-vr.jpg"
+      },
+      "alt": "Virgin Hotels VR orientation"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/portfolio/lsu-performance-poc.jpg"
+      },
+      "alt": "LSU Performance Innovation POC"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/portfolio/state-park-demo.jpg"
+      },
+      "alt": "State Park virtual tour demo"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/portfolio/ldh-logo.jpg"
+      },
+      "alt": "Louisiana Department of Health"
+    },
+    {
+      "_type": "model",
+      "format": "usdz",
+      "source": {
+        "kind": "path",
+        "value": "models/DTS_Studio_Interior_VisionPro_V2.1.usdz"
+      },
+      "alt": "Vision Pro spatial backdrop — film studio interior"
+    }
+  ]
+}

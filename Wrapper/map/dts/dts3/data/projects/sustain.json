@@ -1,0 +1,53 @@
+{
+  "_id": "project.sustain",
+  "_type": "project",
+  "id": "sustain",
+  "sectorId": "community",
+  "title": "Sustainability & Environment",
+  "tagline": "Green infrastructure, ESG twins, environmental monitoring.",
+  "overview": "Twins that document green infrastructure and civic-sustainability projects — a growing market where the spatial record is the evidence of environmental commitments delivered.",
+  "project": {
+    "name": "ULL Energy Efficiency & Sustainable Energy Center",
+    "kind": "Deployed capture",
+    "illustrative": false,
+    "blurb": "A digital twin of the University of Louisiana at Lafayette's Energy Efficiency & Sustainable Energy Center — green infrastructure and applied-sustainability research documented spatially, the evidence layer behind the institution's environmental commitments."
+  },
+  "capturedWith": "Aerial capture + 3D modeling",
+  "platform": "Video walkthrough",
+  "media": {
+    "_type": "video",
+    "provider": "vimeo",
+    "label": "ULL Energy Efficiency & Sustainable Energy Center",
+    "embed": {
+      "kind": "url",
+      "value": "https://player.vimeo.com/video/1109361463"
+    },
+    "watch": {
+      "kind": "url",
+      "value": "https://vimeo.com/1109361463"
+    }
+  },
+  "links": [
+    {
+      "_type": "link",
+      "label": "ULL EESEC — full walkthrough",
+      "url": "https://vimeo.com/986869653",
+      "kind": "vimeo"
+    },
+    {
+      "_type": "link",
+      "label": "UL Lafayette Solar Energy Lab fly-over",
+      "url": "https://vimeo.com/1029700958",
+      "kind": "vimeo"
+    }
+  ],
+  "evidence": {
+    "Case Studies": "ULL Energy Efficiency & Sustainable Energy Center — a sustainability facility captured as a navigable spatial record.",
+    "Awards": "—",
+    "Client Feedback": "“The report points at the place, not a paragraph.”",
+    "Press & Research": "ESG documentation is a growing civic-sustainability market.",
+    "Project Data": "Verifiable spatial record of delivered green infrastructure."
+  },
+  "gallery": [],
+  "sweepId": null
+}

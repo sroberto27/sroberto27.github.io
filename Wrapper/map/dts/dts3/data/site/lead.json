@@ -1,0 +1,9 @@
+{
+  "_id": "site.lead",
+  "_type": "leadSettings",
+  "provider": "web3forms",
+  "accessKey": "b825431d-56a9-4ee5-9042-72bb7685f8c3",
+  "ownerEmail": "robertoenrique2710@hotmail.com",
+  "subjectPrefix": "DTS Website Lead",
+  "notes": "Delivery uses Web3Forms (https://web3forms.com). Without a key, forms fall back to a pre-filled mailto: link."
+}

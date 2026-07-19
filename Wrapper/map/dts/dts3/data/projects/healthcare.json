@@ -1,0 +1,53 @@
+{
+  "_id": "project.healthcare",
+  "_type": "project",
+  "id": "healthcare",
+  "sectorId": "education",
+  "title": "Healthcare Training",
+  "tagline": "Staff orientation, clinical simulation, patient-safety environments.",
+  "overview": "Placed in Education because the buyer is an educator or training coordinator — not a clinician. The purchase is instructional: staff orientation, clinical simulation, and patient-safety rehearsal in a true-to-life spatial environment.",
+  "project": {
+    "name": "Immersive Stroke Assessment Diagnostic Experience",
+    "kind": "Deployed simulation",
+    "illustrative": false,
+    "blurb": "A biomedical training simulation in which clinical learners run a stroke-scale assessment on a virtual patient — rehearsing a time-critical diagnostic protocol with unlimited repetition and zero patient risk. Part of a healthcare-training line that includes hospital walkthrough demos and heart-hospital orientation builds."
+  },
+  "capturedWith": "3D modeling & XR tools for Unity",
+  "platform": "PC / VR",
+  "media": {
+    "_type": "video",
+    "provider": "vimeo",
+    "label": "Healthcare Training Demo",
+    "embed": {
+      "kind": "url",
+      "value": "https://player.vimeo.com/video/368534955"
+    },
+    "watch": {
+      "kind": "url",
+      "value": "https://vimeo.com/368534955"
+    }
+  },
+  "links": [
+    {
+      "_type": "link",
+      "label": "Immersive Stroke Assessment Diagnostic Experience",
+      "url": "https://vimeo.com/dtsxr/stroke-scal-assessment",
+      "kind": "vimeo"
+    },
+    {
+      "_type": "link",
+      "label": "Heart hospital orientation demo",
+      "url": "https://vimeo.com/383209930/50ac64b5eb",
+      "kind": "vimeo"
+    }
+  ],
+  "evidence": {
+    "Case Studies": "Immersive stroke-scale assessment — clinical learners rehearse a time-critical diagnostic on a virtual patient, with unlimited repetition and zero ward disruption.",
+    "Awards": "—",
+    "Client Feedback": "“Day-one staff already know where everything is.”",
+    "Press & Research": "Simulation-based clinical training reduces first-week error rates.",
+    "Project Data": "Diagnostic protocol simulation · Hospital walkthrough demos · VR-ready."
+  },
+  "gallery": [],
+  "sweepId": null
+}

@@ -1,0 +1,60 @@
+{
+  "_id": "site.settings",
+  "_type": "siteSettings",
+  "brand": {
+    "name": "Digital Twin Studios",
+    "short": "DTS",
+    "tagline": "Curated Spatial Experiences",
+    "motto": "The World as Interface",
+    "brandTag": "Grounded in human experience.",
+    "domain": "dtsxr.com",
+    "logo": {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/assets-logo.png"
+      },
+      "alt": "Digital Twin Studios — Grounded in human experience."
+    },
+    "cubeLogo": {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/CubeLogo.png"
+      },
+      "alt": "DTS cube logo"
+    }
+  },
+  "treedis": {
+    "tourUrl": "https://spaces.dtsxr.com/tour/4fb22059",
+    "origin": "https://spaces.dtsxr.com",
+    "homeSweepId": null,
+    "defaultTransitionTime": 1500
+  },
+  "clientPortalUrl": "#access-your-twin",
+  "visionPro": {
+    "spatialBackdrop": {
+      "_type": "model",
+      "format": "usdz",
+      "source": {
+        "kind": "path",
+        "value": "models/DTS_Studio_Interior_VisionPro_V2.1.usdz"
+      },
+      "alt": "A film studio interior environment"
+    },
+    "ctaLabel": "Try the Spatial Website on Vision Pro"
+  },
+  "evidenceFilterLabels": [
+    "Case Studies",
+    "Awards",
+    "Client Feedback",
+    "Press & Research",
+    "Project Data"
+  ],
+  "cookie": {
+    "title": "Help us Improve.",
+    "body": "We use cookies and similar technologies to understand how this experience is used, improve spatial performance, and remember your preferences. You can accept all or reject non-essential tracking.",
+    "acceptLabel": "Accept",
+    "rejectLabel": "Reject"
+  }
+}

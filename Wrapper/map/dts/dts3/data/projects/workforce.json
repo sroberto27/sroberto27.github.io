@@ -1,0 +1,53 @@
+{
+  "_id": "project.workforce",
+  "_type": "project",
+  "id": "workforce",
+  "sectorId": "education",
+  "title": "Workforce & Trade",
+  "tagline": "Skills labs, certification, DOL-funded programs, economic mobility.",
+  "overview": "Workforce twins capture skills labs and training floors so learners can rehearse procedures and equipment before touching the real thing — the fastest-growing segment in immersive training, and the one most tied to funded economic-mobility programs.",
+  "project": {
+    "name": "Laser-Scanned VR Training Environment",
+    "kind": "Deployed capability",
+    "illustrative": false,
+    "blurb": "A real industrial workspace laser-scanned and integrated into VR, where trainees rehearse trade skills in a dimensionally accurate copy of the floor they'll work on. Companion builds include the Metal Shark shipbuilding demo and AR equipment overviews with hands-on interaction."
+  },
+  "capturedWith": "Laser scan + XR tools for Unity",
+  "platform": "VR / AR",
+  "media": {
+    "_type": "video",
+    "provider": "vimeo",
+    "label": "Laser Scanned Environment Integrated into VR — Demo",
+    "embed": {
+      "kind": "url",
+      "value": "https://player.vimeo.com/video/293449698"
+    },
+    "watch": {
+      "kind": "url",
+      "value": "https://vimeo.com/293449698"
+    }
+  },
+  "links": [
+    {
+      "_type": "link",
+      "label": "Metal Shark shipbuilding training demo",
+      "url": "https://vimeo.com/522913162/bf51023c68",
+      "kind": "vimeo"
+    },
+    {
+      "_type": "link",
+      "label": "Energy Equipment Overview with AR interaction",
+      "url": "https://vimeo.com/334052078",
+      "kind": "vimeo"
+    }
+  ],
+  "evidence": {
+    "Case Studies": "Laser-scanned VR training floor — trainees rehearse trade procedures in an exact spatial copy of the real workspace; Metal Shark shipbuilding demo extends the same approach to marine manufacturing.",
+    "Awards": "—",
+    "Client Feedback": "“We can pre-train a cohort before they ever queue for a machine.”",
+    "Press & Research": "Immersive training is the fastest-growing segment of the workforce-development market.",
+    "Project Data": "Laser scan + VR integration · AR equipment modules · Reusable across every cohort."
+  },
+  "gallery": [],
+  "sweepId": null
+}

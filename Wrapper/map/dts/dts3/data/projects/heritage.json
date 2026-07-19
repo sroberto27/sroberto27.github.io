@@ -1,0 +1,27 @@
+{
+  "_id": "project.heritage",
+  "_type": "project",
+  "id": "heritage",
+  "sectorId": "community",
+  "title": "Cultural & Heritage",
+  "tagline": "Historic preservation, Section 106, museums, heritage tourism.",
+  "overview": "Documentation-driven, compliance-mandated work that is underserved by existing digital-twin vendors: historic tax-credit and Section 106 review capture that preserves cultural and heritage sites precisely.",
+  "project": {
+    "name": "Historic Tax-Credit / Section 106 Capture",
+    "kind": "Compliance engagement",
+    "illustrative": true,
+    "blurb": "Heritage-preservation capture for historic tax-credit and Section 106 compliance: a precise spatial record of a historic structure — a documentation-mandated market existing twin vendors largely overlook."
+  },
+  "capturedWith": "Preservation-grade reality capture",
+  "platform": "Spatial documentation",
+  "evidence": {
+    "Case Studies": "Historic-structure twin used for tax-credit and Section 106 review.",
+    "Awards": "—",
+    "Client Feedback": "“The building is preserved even as it changes.”",
+    "Press & Research": "Heritage compliance is an underserved digital-twin market.",
+    "Project Data": "Preservation-grade capture of a historic structure."
+  },
+  "links": [],
+  "gallery": [],
+  "sweepId": null
+}

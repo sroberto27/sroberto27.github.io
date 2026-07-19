@@ -1,0 +1,38 @@
+{
+  "_id": "sector.industry",
+  "_type": "sector",
+  "id": "industry",
+  "order": 2,
+  "label": "Industry",
+  "navSub": "Company",
+  "blurb": "Industry creates economic value.",
+  "active": false,
+  "accent": "#2E8BFF",
+  "kicker": "INDUSTRY",
+  "title": "Commercial & Industrial",
+  "sub": "Digital Twin of your company",
+  "body": "Where capability creates economic value. Manufacturing holds 30%+ of the digital twin market. Automotive holds 22%+. Healthcare is the fastest-growing segment. DTS has active or adjacent work across all four commercial verticals.",
+  "cards": [
+    {
+      "projectId": "energy",
+      "title": "Energy & Manufacturing",
+      "text": "Oil/gas, solar, utilities, industrial ops, FEMA PA documentation."
+    },
+    {
+      "projectId": "automotive",
+      "title": "Automotive & Transportation",
+      "short": "Automotive",
+      "text": "Showrooms, vehicle twins, EV facilities, franchise audits."
+    },
+    {
+      "projectId": "healthfac",
+      "title": "Healthcare Facilities",
+      "text": "Hospital systems, clinical environments, pharmaceutical facilities."
+    },
+    {
+      "projectId": "properties",
+      "title": "Properties & Places",
+      "text": "Commercial, residential, hospitality, tourism, film locations."
+    }
+  ]
+}

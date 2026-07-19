@@ -1,0 +1,53 @@
+{
+  "_id": "project.energy",
+  "_type": "project",
+  "id": "energy",
+  "sectorId": "industry",
+  "title": "Energy & Manufacturing",
+  "tagline": "Oil/gas, solar, utilities, industrial ops, FEMA PA documentation.",
+  "overview": "The compliance-mandated market — oil/gas, solar, and utility infrastructure buyers driven by regulatory pressure, insurance requirements, and FEMA documentation obligations. The fastest path to a closed contract.",
+  "project": {
+    "name": "Solar Farm Capture",
+    "kind": "Live Treedis experience",
+    "illustrative": false,
+    "blurb": "A Matterport capture of a working solar installation published on Treedis — the kind of infrastructure twin used for insurance documentation, compliance records, and remote inspection. Sits alongside the UL Lafayette Solar Energy Lab fly-over and a deep oil-and-gas catalog: Central Processing Facility, wellpad, degasser, and saltwater-disposal twins built for Permian Basin operators."
+  },
+  "capturedWith": "Matterport Pro3",
+  "platform": "Treedis",
+  "media": {
+    "_type": "treedis",
+    "label": "Explore the Solar Farm",
+    "tourUrl": "https://spaces.dtsxr.com/tour/ea18f14b",
+    "origin": "https://spaces.dtsxr.com",
+    "sweepId": null
+  },
+  "links": [
+    {
+      "_type": "link",
+      "label": "UL Lafayette Solar Energy Lab — fly-over",
+      "url": "https://vimeo.com/1058364652/f98b84dae1",
+      "kind": "vimeo"
+    },
+    {
+      "_type": "link",
+      "label": "Energy: Central Processing Facility",
+      "url": "https://vimeo.com/376724255",
+      "kind": "vimeo"
+    },
+    {
+      "_type": "link",
+      "label": "Shell demo",
+      "url": "https://vimeo.com/303186440",
+      "kind": "vimeo"
+    }
+  ],
+  "evidence": {
+    "Case Studies": "Solar Farm Capture and the ULL Solar Energy Lab fly-over — infrastructure twins for compliance and insurance documentation; Permian Basin facility twins (CPF, wellpad, degasser, saltwater disposal) for operator training and remote inspection.",
+    "Awards": "—",
+    "Client Feedback": "“We can document the whole site without a truck roll.”",
+    "Press & Research": "Energy is the compliance-driven, fastest-to-close digital-twin vertical.",
+    "Project Data": "Captured with Matterport Pro3 · Published on Treedis · VR variants for facility training."
+  },
+  "gallery": [],
+  "sweepId": null
+}

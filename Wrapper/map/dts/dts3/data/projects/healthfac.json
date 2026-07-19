@@ -1,0 +1,47 @@
+{
+  "_id": "project.healthfac",
+  "_type": "project",
+  "id": "healthfac",
+  "sectorId": "industry",
+  "title": "Healthcare Facilities",
+  "tagline": "Hospital systems, clinical environments, pharmaceutical facilities.",
+  "overview": "The fastest-growing commercial digital-twin segment: hospital systems, clinical environments, and pharmaceutical facilities documented spatially for planning, compliance, and operations.",
+  "project": {
+    "name": "Immersive Facility Flythrough — CAD to Unity",
+    "kind": "Deployed capability",
+    "illustrative": false,
+    "blurb": "A healthcare facility's CAD data integrated seamlessly into Unity and rendered as an immersive flythrough — letting operations teams and stakeholders review a clinical environment spatially before and after it is built."
+  },
+  "capturedWith": "CAD data + 3D modeling",
+  "platform": "Unity",
+  "media": {
+    "_type": "video",
+    "provider": "vimeo",
+    "label": "Immersive Flythrough — Seamless CAD Integration",
+    "embed": {
+      "kind": "url",
+      "value": "https://player.vimeo.com/video/390616842"
+    },
+    "watch": {
+      "kind": "url",
+      "value": "https://vimeo.com/390616842"
+    }
+  },
+  "links": [
+    {
+      "_type": "link",
+      "label": "Immersive Stroke Assessment (clinical simulation)",
+      "url": "https://vimeo.com/dtsxr/stroke-scal-assessment",
+      "kind": "vimeo"
+    }
+  ],
+  "evidence": {
+    "Case Studies": "CAD-to-Unity facility flythrough — clinical space reviewed immersively for planning and operations.",
+    "Awards": "—",
+    "Client Feedback": "“We review the facility without walking it.”",
+    "Press & Research": "Healthcare is the fastest-growing digital-twin segment.",
+    "Project Data": "CAD data pipeline · Unity rendering · Clinical environments to compliance standards."
+  },
+  "gallery": [],
+  "sweepId": null
+}

@@ -1,0 +1,38 @@
+{
+  "_id": "sector.community",
+  "_type": "sector",
+  "id": "community",
+  "order": 4,
+  "label": "Community",
+  "navSub": "Community",
+  "blurb": "Community represents the lived outcomes of those systems.",
+  "active": false,
+  "accent": "#D27049",
+  "kicker": "COMMUNITY",
+  "title": "Civic & Social",
+  "sub": "Digital Twin of your community",
+  "body": "Where all systems converge into human flourishing. The community twin accumulates — each project adds to a growing spatial record, building by building, until the community itself is spatially documented and interconnected.",
+  "cards": [
+    {
+      "projectId": "economic",
+      "title": "Economic Development",
+      "text": "Downtown BIDs, chambers, EDCs, commercial corridors."
+    },
+    {
+      "projectId": "nonprofit",
+      "title": "Nonprofit & Social Impact",
+      "text": "NGOs, foundations, DIG, faith communities, social services."
+    },
+    {
+      "projectId": "sustain",
+      "title": "Sustainability & Environment",
+      "short": "Sustainability",
+      "text": "Green infrastructure, ESG twins, environmental monitoring."
+    },
+    {
+      "projectId": "heritage",
+      "title": "Cultural & Heritage",
+      "text": "Historic preservation, Section 106, museums, heritage tourism."
+    }
+  ]
+}

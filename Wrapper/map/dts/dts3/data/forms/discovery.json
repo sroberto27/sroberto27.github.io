@@ -1,0 +1,75 @@
+{
+  "_id": "form.discovery",
+  "_type": "leadForm",
+  "id": "discovery",
+  "title": "Schedule a Discovery",
+  "intro": "Schedule a 30-minute conversation with one of our team members about your space and what a digital twin could do for you.",
+  "submitLabel": "SCHEDULE A DISCOVERY",
+  "fields": [
+    {
+      "name": "name",
+      "label": "Full Name",
+      "type": "text",
+      "required": true,
+      "placeholder": "First and Last Name",
+      "half": true
+    },
+    {
+      "name": "phone",
+      "label": "Phone number",
+      "type": "tel",
+      "required": true,
+      "placeholder": "(###) ### - ####",
+      "half": true
+    },
+    {
+      "name": "email",
+      "label": "Email",
+      "type": "email",
+      "required": true,
+      "placeholder": "address@email.com",
+      "half": true
+    },
+    {
+      "name": "org",
+      "label": "Company Name",
+      "type": "text",
+      "required": true,
+      "half": true
+    },
+    {
+      "name": "country",
+      "label": "Country",
+      "type": "select",
+      "required": false,
+      "half": true,
+      "options": [
+        "United States",
+        "Canada",
+        "United Kingdom",
+        "European Union",
+        "Other"
+      ]
+    },
+    {
+      "name": "timing",
+      "label": "Ideal time frame",
+      "type": "select",
+      "required": false,
+      "half": true,
+      "options": [
+        "This week",
+        "Next 2 weeks",
+        "This month",
+        "Just exploring"
+      ]
+    },
+    {
+      "name": "notes",
+      "label": "Anything we should know?",
+      "optional": true,
+      "type": "textarea",
+      "required": false
+    }
+  ]
+}

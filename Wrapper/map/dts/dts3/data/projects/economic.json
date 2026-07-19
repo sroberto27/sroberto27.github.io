@@ -1,0 +1,68 @@
+{
+  "_id": "project.economic",
+  "_type": "project",
+  "id": "economic",
+  "sectorId": "community",
+  "title": "Economic Development",
+  "tagline": "Downtown BIDs, chambers, EDCs, commercial corridors.",
+  "overview": "Twins that showcase a downtown, parish, or commercial corridor to attract investment and tenants — proof that a place is worth building in. Each business added becomes another grain of the community's spatial record.",
+  "project": {
+    "name": "LSU Digital Twin — Iberia Parish Pilot",
+    "kind": "Parish-scale pilot",
+    "illustrative": false,
+    "blurb": "A parish-scale economic-development twin piloted with LSU for Iberia Parish, published live on Treedis — paired with a growing series of downtown business captures (Keller's Bakery, Rock'n'Bowl, Carpe Diem, Pop's, Borden's, Spoonbill) that document a commercial corridor one storefront at a time."
+  },
+  "capturedWith": "Matterport Pro3 + Insta360 Pro 2",
+  "platform": "Treedis",
+  "media": {
+    "_type": "treedis",
+    "label": "Explore the Iberia Parish Twin",
+    "tourUrl": "https://spaces.dtsxr.com/tour/56111605",
+    "origin": "https://spaces.dtsxr.com",
+    "sweepId": null
+  },
+  "links": [
+    {
+      "_type": "link",
+      "label": "Watch: LSU Digital Twin — Iberia Parish Pilot",
+      "url": "https://vimeo.com/1132293716",
+      "kind": "vimeo"
+    },
+    {
+      "_type": "link",
+      "label": "Keller's Bakery — downtown business capture",
+      "url": "https://vimeo.com/1176361159/56b48ef2bf",
+      "kind": "vimeo"
+    },
+    {
+      "_type": "link",
+      "label": "Rock'n'Bowl — downtown business capture",
+      "url": "https://vimeo.com/1176361349/a380192055",
+      "kind": "vimeo"
+    },
+    {
+      "_type": "link",
+      "label": "Planning for Development and Growth",
+      "url": "https://vimeo.com/1073705217/dd4b934aa9",
+      "kind": "vimeo"
+    }
+  ],
+  "gallery": [
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/portfolio/downtown-lafayette.jpg"
+      },
+      "alt": "Downtown commercial corridor — living destination capture"
+    }
+  ],
+  "evidence": {
+    "Case Studies": "Iberia Parish pilot with LSU — a parish documented as an investable, navigable place; downtown business series turns a corridor into a spatial showcase, storefront by storefront.",
+    "Awards": "—",
+    "Client Feedback": "“We can tour a prospect down the whole corridor.”",
+    "Press & Research": "Spatial showcases lower the friction of attracting commercial tenants.",
+    "Project Data": "Parish-scale twin on Treedis · Six-plus storefront captures and growing."
+  },
+  "sweepId": null
+}

@@ -1,0 +1,67 @@
+{
+  "_id": "faq.answers",
+  "_type": "faqCollection",
+  "items": [
+    {
+      "match": [
+        "what does digital twin studios",
+        "what does dts",
+        "who is dts",
+        "who are you",
+        "about dts"
+      ],
+      "q": "What does Digital Twin Studios do?",
+      "a": "The world is our interface. DTS doesn't serve industries — it serves the systems that shape human life: education prepares people, industry employs them, government structures their society, and community is what all three build together. We create digital twins — precise, navigable spatial copies of real places — for state agencies, universities, destinations, and global hospitality brands. Built. Deployed. Awarded: from the USDA-commissioned SC State virtual campus to the Unity-award-winning food-safety training for the Louisiana Department of Health. Every experience runs on phone, desktop, or headset — one build, every device."
+    },
+    {
+      "match": [
+        "why four",
+        "why these categories",
+        "education industry government community"
+      ],
+      "q": "Why Education, Industry, Government, Community?",
+      "a": "Because that's the natural sequence of the systems that shape human life: education builds people, industry puts them to work, government structures their society, and community is the proof the other three did their job. You don't browse a menu here — you explore a world, the same way you'd explore one of our twins."
+    },
+    {
+      "match": [
+        "treedis"
+      ],
+      "q": "What is Treedis?",
+      "a": "Treedis is the platform DTS uses to publish and share interactive 3D spatial experiences. A space captured with Matterport is hosted on Treedis, where you can walk through it in 360°, add tags and hotspots, and embed it on the web — like the experience running on this page."
+    },
+    {
+      "match": [
+        "matterport",
+        "capture"
+      ],
+      "q": "What is a Matterport capture like?",
+      "a": "A Matterport capture is a scan of a real place using a 3D camera (like the Matterport Pro3). The camera takes overlapping 360° photos and depth data from many points in a space, which are stitched into a navigable, dimensionally-accurate digital twin you can move through online."
+    },
+    {
+      "match": [
+        "digital twin",
+        "what is a digital"
+      ],
+      "q": "What is a Digital Twin?",
+      "a": "A digital twin is a precise, navigable virtual copy of a real place. DTS builds twins for the systems that shape human life — campuses, operations, public infrastructure, and community spaces — so you can explore, document, train, and make decisions about a space without being physically there."
+    },
+    {
+      "match": [
+        "contact",
+        "get in touch",
+        "reach"
+      ],
+      "q": "How do I get in contact?",
+      "a": "Open any sector and use Contact & Info, or the ACCESS YOUR TWIN button up top. You can Schedule a Discovery (a 30-minute conversation), Request a Proposal, or Start a Pilot — each goes straight to the DTS team."
+    },
+    {
+      "match": [
+        "mobile",
+        "phone",
+        "device"
+      ],
+      "q": "Can I use a mobile device?",
+      "a": "Yes. The experience runs on desktop, tablet, and phone, and on Meta Quest headsets in VR. On a phone, use the menu to move between sectors and tap a use case to open its example experience."
+    }
+  ]
+}

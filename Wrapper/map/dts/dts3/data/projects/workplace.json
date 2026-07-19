@@ -1,0 +1,53 @@
+{
+  "_id": "project.workplace",
+  "_type": "project",
+  "id": "workplace",
+  "sectorId": "education",
+  "title": "Workplace Learning",
+  "tagline": "Corporate onboarding, continuing ed, Betaversity, EON Reality.",
+  "overview": "The platform play. Immersive-learning content — from state-agency staff modules to soft-skills and safety training — that scales corporate onboarding and continuing education across every other category. One immersive layer, reused everywhere.",
+  "project": {
+    "name": "LDH WIC Program — Staff Learning Modules",
+    "kind": "Deployed training",
+    "illustrative": false,
+    "blurb": "Workplace-learning modules built for the Louisiana Department of Health's WIC program, sitting alongside soft-skills builds (Components of Communication) and safety modules (Electrical Safety) — the reusable training layer that turns one build into every new hire's onboarding."
+  },
+  "capturedWith": "3D modeling & XR tools for Unity",
+  "platform": "EON Reality · PC / VR",
+  "media": {
+    "_type": "video",
+    "provider": "vimeo",
+    "label": "LDH WIC Demo",
+    "embed": {
+      "kind": "url",
+      "value": "https://player.vimeo.com/video/373647092"
+    },
+    "watch": {
+      "kind": "url",
+      "value": "https://vimeo.com/373647092"
+    }
+  },
+  "links": [
+    {
+      "_type": "link",
+      "label": "Components of Communication module",
+      "url": "https://vimeo.com/1073705160/a29eee9a63",
+      "kind": "vimeo"
+    },
+    {
+      "_type": "link",
+      "label": "Electrical Safety training module",
+      "url": "https://vimeo.com/522099868/9ac166f67f",
+      "kind": "vimeo"
+    }
+  ],
+  "evidence": {
+    "Case Studies": "LDH WIC staff modules — immersive workplace learning deployed for a state agency, with communication and electrical-safety modules reused across teams.",
+    "Awards": "—",
+    "Client Feedback": "“One build, every new hire.”",
+    "Press & Research": "Platform-scale immersive learning lowers per-trainee cost over time.",
+    "Project Data": "Modular builds · Scales horizontally across sectors and cohorts."
+  },
+  "gallery": [],
+  "sweepId": null
+}

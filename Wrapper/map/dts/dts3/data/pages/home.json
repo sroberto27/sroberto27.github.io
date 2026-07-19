@@ -1,0 +1,98 @@
+{
+  "_id": "page.home",
+  "_type": "page",
+  "slug": "home",
+  "hero": {
+    "kicker": "DIGITAL TWIN STUDIOS",
+    "headline": "Digital twins\nfor Human Life.",
+    "pills": [
+      "Campus",
+      "Company",
+      "City",
+      "Community"
+    ],
+    "body": "We build spatial intelligence tools for the places that shape how people learn, work, govern, and live together. Every twin is a living ecosystem — from the first capture to the final engagement."
+  },
+  "hexCluster": [
+    {
+      "slot": "hex-1",
+      "image": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/InteractiveCities.png"
+        },
+        "alt": "Interactive cities render"
+      }
+    },
+    {
+      "slot": "hex-2",
+      "image": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/assets-droplet.jpg"
+        },
+        "alt": "Droplet macro imagery"
+      }
+    },
+    {
+      "slot": "hex-3",
+      "image": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/VirginHotel.png"
+        },
+        "alt": "Virgin Hotels experience"
+      }
+    },
+    {
+      "slot": "hex-4",
+      "image": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/assets-wave.jpg"
+        },
+        "alt": "Wave imagery"
+      }
+    }
+  ],
+  "primaryCta": {
+    "label": "Try a Digital Twin",
+    "fxImage": {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/assets-cta-arrow.png"
+      },
+      "alt": ""
+    }
+  },
+  "evidenceBar": [
+    "Maslow's Hierarchy of Needs",
+    "Human Capital Theory — Becker, 1964",
+    "Bronfenbrenner's Ecological Systems Theory",
+    "NAICS Industry Classification Framework"
+  ],
+  "twinRevealCard": {
+    "kicker": "DIGITAL TWIN STUDIOS",
+    "headline": "Digital twins\nfor Human Life.",
+    "pills": [
+      "Campus",
+      "Company",
+      "City",
+      "Community"
+    ],
+    "body": "We build spatial intelligence tools for the places that shape how people learn, work, govern, and live together. Every twin is a living ecosystem — from the first capture to the final engagement."
+  },
+  "questionPrompts": [
+    "What does Digital Twin Studios do?",
+    "What is Treedis?",
+    "What is a Matterport capture like?",
+    "What is a Digital Twin?",
+    "How do I get in contact?",
+    "Can I use a mobile device?"
+  ]
+}

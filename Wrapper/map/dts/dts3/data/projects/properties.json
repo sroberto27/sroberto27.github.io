@@ -1,0 +1,70 @@
+{
+  "_id": "project.properties",
+  "_type": "project",
+  "id": "properties",
+  "sectorId": "industry",
+  "title": "Properties & Places",
+  "tagline": "Commercial, residential, hospitality, tourism, film locations.",
+  "overview": "Twins for downtowns, hotels, venues, and destination-marketing organizations — letting guests, planners, and visitors experience a place before they arrive. One build, every device: phone, desktop, Meta Quest Pro, Apple Vision Pro.",
+  "project": {
+    "name": "Downtown Lafayette — Living Destination Experience",
+    "kind": "Commissioned · Lafayette CVC",
+    "illustrative": false,
+    "blurb": "A living-downtown destination experience connecting visitors to the businesses, culture, and stories of Lafayette's urban core — commissioned by the Lafayette Convention and Visitors Commission. Alongside it: the Virgin Hotels orientation experience, deployed and managed remotely across VR headset fleets for a global hospitality brand, plus Westin and Marriott property captures."
+  },
+  "capturedWith": "Matterport Pro3 + Insta360 Pro 2",
+  "platform": "Treedis",
+  "media": {
+    "_type": "treedis",
+    "label": "Explore Downtown Lafayette",
+    "tourUrl": "https://spaces.dtsxr.com/tour/4fb22059",
+    "origin": "https://spaces.dtsxr.com",
+    "sweepId": null
+  },
+  "links": [
+    {
+      "_type": "link",
+      "label": "Virgin Hotels Orientation Experience",
+      "url": "https://vimeo.com/558259558",
+      "kind": "vimeo"
+    },
+    {
+      "_type": "link",
+      "label": "Virgin Hotels staff-orientation walk-thru",
+      "url": "https://vimeo.com/379311258",
+      "kind": "vimeo"
+    },
+    {
+      "_type": "link",
+      "label": "Westin property twin (Matterport)",
+      "url": "https://my.matterport.com/show/?m=D85w1F2sXiw",
+      "kind": "matterport"
+    }
+  ],
+  "gallery": [
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/portfolio/downtown-lafayette.jpg"
+      },
+      "alt": "Downtown Lafayette urban core — destination experience capture"
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/portfolio/virgin-hotels-vr.jpg"
+      },
+      "alt": "Virgin Hotels orientation experience on a VR headset"
+    }
+  ],
+  "evidence": {
+    "Case Studies": "Downtown Lafayette destination experience (Lafayette CVC) and the Virgin Hotels orientation experience — hospitality twins deployed across remote VR headset fleets to global brand standards.",
+    "Awards": "Virgin Hotels engagement — proof the work meets the brand standards and device logistics of world-class hospitality.",
+    "Client Feedback": "“Planners book the room they already walked.”",
+    "Press & Research": "One build, every device: phone, desktop, Meta Quest Pro, and Apple Vision Pro.",
+    "Project Data": "Downtown-scale + property-scale captures · Westin & Marriott twins in catalog."
+  },
+  "sweepId": null
+}

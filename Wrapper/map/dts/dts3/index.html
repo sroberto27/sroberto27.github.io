@@ -23,6 +23,7 @@
   <link rel="stylesheet" href="css/10-vision-pro.css" />
   <link rel="stylesheet" href="css/11-desktop.css" />
   <link rel="stylesheet" href="css/12-smoke.css" />
+  <link rel="stylesheet" href="css/13-admin.css" />
 
   <!-- visionOS 26.5 spatial website environment (developer preview).
        Visitors activate it from Safari's Page Menu, not through JavaScript. -->
@@ -699,13 +700,14 @@
 
 
 
-<!-- Scripts load in dependency order: config + client directory first,
-     then the Treedis bridge, then the app, then the decorative extras. -->
+<!-- Scripts: config.js + clients.js define fallback globals, then the
+     Treedis bridge, then content-loader.js hydrates DTS_CONFIG from the
+     /data JSON documents (or the Admin Board's draft) and injects
+     app.js, smoke-depth.js, vision-pro-spatial.js, and admin.js once
+     content is ready. Keep this order. -->
 <script src="js/config.js"></script>
 <script src="js/clients.js"></script>
 <script src="js/tour-bridge.js"></script>
-<script src="js/app.js"></script>
-<script src="js/smoke-depth.js"></script>
-<script src="js/vision-pro-spatial.js"></script>
+<script src="js/content-loader.js"></script>
 </body>
 </html>

@@ -1,0 +1,37 @@
+{
+  "_id": "sector.government",
+  "_type": "sector",
+  "id": "government",
+  "order": 3,
+  "label": "Government",
+  "navSub": "City",
+  "blurb": "Government provides structure and oversight.",
+  "active": false,
+  "accent": "#34598F",
+  "kicker": "GOVERNMENT",
+  "title": "Public & Civic",
+  "sub": "Digital Twin of your city",
+  "body": "Where collective output becomes public infrastructure. Government has a fundamentally different procurement process, budget authority, and decision timeline. DTS is SAM.gov qualified. Organized by function — not agency level.",
+  "cards": [
+    {
+      "projectId": "municipal",
+      "title": "Infrastructure & Cities",
+      "text": "Municipal twins, transportation, utility grids, urban planning."
+    },
+    {
+      "projectId": "emergency",
+      "title": "Safety & Emergency",
+      "text": "GOHSEP, FEMA PA documentation, disaster response twins."
+    },
+    {
+      "projectId": "foodsafety",
+      "title": "Regulatory & Compliance",
+      "text": "Food safety, environmental compliance, inspection training."
+    },
+    {
+      "projectId": "civic",
+      "title": "Civic Services",
+      "text": "Libraries, transit, parks, civic engagement, accessibility."
+    }
+  ]
+}

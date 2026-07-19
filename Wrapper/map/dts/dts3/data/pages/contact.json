@@ -1,0 +1,33 @@
+{
+  "_id": "page.contact",
+  "_type": "page",
+  "slug": "contact",
+  "kicker": "READY TO BEGIN?",
+  "headline": "Begin with the right",
+  "headlineAccent": "first step.",
+  "body": "Every DTS engagement starts with a conversation. Not a demo. Not a pitch. A structured discovery of what your space needs and what a twin can do for it.",
+  "footnote": "Pilots are scoped engagements · Fee established during the proposal stage",
+  "ctas": [
+    {
+      "id": "discovery",
+      "stage": "PLAN",
+      "label": "SCHEDULE A DISCOVERY",
+      "primary": false,
+      "formId": "form.discovery"
+    },
+    {
+      "id": "proposal",
+      "stage": "PROPOSE",
+      "label": "REQUEST A PROPOSAL",
+      "primary": true,
+      "formId": "form.proposal"
+    },
+    {
+      "id": "pilot",
+      "stage": "PILOT",
+      "label": "START A PILOT",
+      "primary": false,
+      "formId": "form.pilot"
+    }
+  ]
+}
