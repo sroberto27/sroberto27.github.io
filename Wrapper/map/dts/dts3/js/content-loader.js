@@ -32,65 +32,13 @@
     return files;
   }
 
-  var BACKUP_KEY = "dtsAdminDraftBackup";
-
-  /* Emergency helper — run DTS_ADMIN_RESET() in the browser console to
-     back up the current draft and reload the site from the published
-     data files. Available even if the Admin Board fails to load. */
-  window.DTS_ADMIN_RESET = function () {
-    try {
-      var raw = localStorage.getItem(DRAFT_KEY);
-      if (raw) localStorage.setItem(BACKUP_KEY, raw);
-      localStorage.removeItem(DRAFT_KEY);
-    } catch (_) {}
-    window.location.reload();
-  };
-
-  function validDraft(draft) {
-    if (!draft || !draft.docs || !draft.manifest || !draft.manifest.documents) return false;
-    // Every manifest entry must have a real document with a _type,
-    // and the documents the site can't boot without must be present.
-    var groups = draft.manifest.documents;
-    var ok = Object.keys(groups).every(function (g) {
-      return (groups[g] || []).every(function (e) {
-        var d = draft.docs[e.file];
-        return d && typeof d === "object" && d._type;
-      });
-    });
-    ok = ok && draft.docs["site/settings.json"] && draft.docs["pages/home.json"];
-    // Sectors must exist and every card must point at an existing project.
-    var projIds = {};
-    Object.keys(draft.docs).forEach(function (f) {
-      var d = draft.docs[f];
-      if (d && d._type === "project") projIds[d.id] = true;
-    });
-    ok = ok && Object.keys(draft.docs).some(function (f) {
-      return draft.docs[f] && draft.docs[f]._type === "sector";
-    });
-    Object.keys(draft.docs).forEach(function (f) {
-      var d = draft.docs[f];
-      if (d && d._type === "sector") {
-        (d.cards || []).forEach(function (c) {
-          if (!projIds[c.projectId]) ok = false;
-        });
-      }
-    });
-    return ok;
-  }
-
   function loadDraft() {
     try {
       var raw = localStorage.getItem(DRAFT_KEY);
       if (!raw) return null;
       var draft = JSON.parse(raw);
-      if (validDraft(draft)) return draft;
-      // Broken draft: quarantine it (rescuable from the Admin Board)
-      // and let the site boot from the published files instead.
-      console.warn("[content] draft failed validation — moved to backup; site uses published /data files.");
-      localStorage.setItem(BACKUP_KEY, raw);
-      localStorage.removeItem(DRAFT_KEY);
-      window.DTS_DRAFT_QUARANTINED = true;
-    } catch (e) { console.warn("[content] unreadable draft, ignoring:", e); }
+      if (draft && draft.docs && draft.manifest) return draft;
+    } catch (e) { console.warn("[content] bad draft, ignoring:", e); }
     return null;
   }
 
@@ -302,33 +250,14 @@
     } else { fn(); }
   }
 
-  function useContent(content) {
-    window.DTS_CONTENT = content;                 // raw documents (Admin Board edits these)
-    window.DTS_CONFIG = buildConfig(content);     // legacy shape for app.js
-    whenDOMReady(function () {
-      try { applyHome(content); } catch (e) { console.warn("[content] applyHome:", e); }
-      injectScripts(APP_SCRIPTS);
-    });
-  }
-
   loadContent()
     .then(function (content) {
-      try {
-        useContent(content);
-      } catch (err) {
-        // A draft that parses but still breaks conversion: quarantine
-        // it and retry from the published files so the site stays up.
-        if (content.fromDraft) {
-          console.error("[content] draft broke the build — quarantining and reloading from files:", err);
-          try {
-            localStorage.setItem(BACKUP_KEY, localStorage.getItem(DRAFT_KEY) || "");
-            localStorage.removeItem(DRAFT_KEY);
-          } catch (_) {}
-          window.DTS_DRAFT_QUARANTINED = true;
-          return loadContent().then(useContent);
-        }
-        throw err;
-      }
+      window.DTS_CONTENT = content;                 // raw documents (Admin Board edits these)
+      window.DTS_CONFIG = buildConfig(content);     // legacy shape for app.js
+      whenDOMReady(function () {
+        applyHome(content);
+        injectScripts(APP_SCRIPTS);
+      });
     })
     .catch(function (err) {
       console.warn("[content] /data unavailable, using js/config.js fallback:", err);

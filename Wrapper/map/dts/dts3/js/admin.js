@@ -103,9 +103,9 @@
   // Intercept the Access Your Twin submit BEFORE app.js (capture phase).
   document.addEventListener("submit", function (e) {
     if (!e.target || e.target.id !== "accessForm") return;
-    e.preventDefault();   // never let the browser navigate, even if app.js failed
     var id = ($("#accessId") || {}).value, code = ($("#accessCode") || {}).value;
     if (!isAdminLogin(id, code)) return;   // normal clients fall through to app.js
+    e.preventDefault();
     e.stopImmediatePropagation();
     try { sessionStorage.setItem(SESSION_KEY, "1"); } catch (_) {}
     var ov = $("#accessOverlay");
@@ -489,23 +489,20 @@
     var file = "projects/" + id + ".json";
     if (docs[file]) return alert("A project with that id already exists.");
     var firstSector = docs[sectorFiles()[0]];
-    var evidence = {};
-    var labels = (docs["site/settings.json"] || {}).evidenceFilterLabels || [];
-    labels.forEach(function (l) { evidence[l] = "\u2014"; });
     docs[file] = {
       _id: "project." + id, _type: "project", id: id,
       sectorId: firstSector ? firstSector.id : "education",
-      title: "New Project", tagline: "New use case.", overview: "",
-      project: { name: "New Project", kind: "In development", illustrative: true, blurb: "" },
+      title: "New Project", tagline: "", overview: "",
+      project: { name: "", kind: "", illustrative: true, blurb: "" },
       capturedWith: "", platform: "",
       links: [], gallery: [], sweepId: null,
-      evidence: evidence
+      evidence: {}
     };
     // Register in the manifest so loaders and future tools see it.
     content.manifest.documents.projects.push({ file: file, type: "project", id: "project." + id });
     // Give it a card in its sector so it is reachable on the site.
     if (firstSector) {
-      firstSector.cards.push({ projectId: id, title: "New Project", text: "New use case." });
+      firstSector.cards.push({ projectId: id, title: "New Project", text: "" });
     }
     markDirty(); buildNav(); select("project:" + file);
   }
@@ -589,34 +586,11 @@
      ============================================================ */
   var board = null, navEl = null, paneEl = null, activeKey = "home";
 
-  var BACKUP_KEY = "dtsAdminDraftBackup";
-
-  function maybeOfferBackup() {
-    var raw = null;
-    try { raw = localStorage.getItem(BACKUP_KEY); } catch (_) {}
-    if (!raw) return;
-    var hasDraft = false;
-    try { hasDraft = !!localStorage.getItem(DRAFT_KEY); } catch (_) {}
-    var msg = hasDraft
-      ? "A rescued draft from an earlier session exists. Restore it? (This replaces your current draft.)"
-      : "A rescued draft from an earlier session exists (it was set aside because it couldn't be loaded safely). Try restoring it?";
-    if (confirm(msg)) {
-      try {
-        localStorage.setItem(DRAFT_KEY, raw);
-        localStorage.removeItem(BACKUP_KEY);
-      } catch (_) {}
-      window.location.reload();
-    } else if (confirm("Delete the rescued draft permanently? (Cancel keeps it for later.)")) {
-      try { localStorage.removeItem(BACKUP_KEY); } catch (_) {}
-    }
-  }
-
   function openBoard() {
     if (!board) buildBoard();
     board.classList.add("is-open");
     document.body.classList.add("adm-lock");
     select(activeKey);
-    setTimeout(maybeOfferBackup, 150);
   }
   function closeBoard(signOut) {
     if (dirty && !confirm("You have unsaved changes. Close anyway? (They stay in the editor until you reload.)")) return;
