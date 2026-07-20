@@ -1,29 +1,19 @@
-/* === SCSU app — Part 12: Start screen + coachmark walkthrough === */
-/* ============================================================
-   START SCREEN + COACHMARK WALKTHROUGH
-   ------------------------------------------------------------
+/* === Start screen + coachmark walkthrough ===
    First-run welcome modal with two paths:
+     - "Enter Experience" dismisses the modal.
+     - "How to Use" runs a 3-step coachmark sequence highlighting the
+       sidebar, the top bar, and the details panel.
+   The walkthrough selects the first tour stop so the details panel has
+   real content to point at, and restores the untouched app state when
+   it finishes. It can be reopened anytime from the burger menu.
 
-     • "Enter Experience" — dismisses the modal; the user
-       gets the campus map in its default state.
-     • "How to Use"       — runs a 3-step coachmark sequence
-       that highlights the left sidebar, the top bar, and the
-       right details panel.
-
-   The coachmark sequence starts by selecting the first tour
-   stop (Crawford-Zimmerman) so the right details panel is
-   populated with real content the user can see being pointed
-   to. When the walkthrough finishes (final step's "next" or
-   the X button), we clear that selection and reset the
-   campus view so the app is back to its untouched state.
-
-   The walkthrough is also reachable from the burger menu's
-   "How to use" link at any time after the initial visit.
-   ============================================================ */
+   Also owns the two persisted preferences (welcome screen on startup,
+   3D nav instructions) and the nav-instructions modal that gates the
+   first street-view open of a session. */
 (function setupOnboarding() {
-  // Pull the DOM nodes once. If any are missing we silently
-  // disable the feature rather than throw — the rest of the
-  // app should still work.
+
+  // Resolve all required DOM up front. If anything is missing the
+  // feature disables itself instead of throwing.
   const startScreen   = document.getElementById("startScreen");
   const startEnterBtn = document.getElementById("startEnterBtn");
   const startHowBtn   = document.getElementById("startHowToUseBtn");
@@ -41,17 +31,14 @@
   const burgerHowTo = document.getElementById("burgerHowToUse");
   const burgerCheckbox = document.getElementById("burgerToggle");
 
-  // New: the two mirrored controls for the "show start screen
-  // on startup" preference. The start-screen one is worded
-  // negatively ("Don't show again") so its `checked` state is
-  // INVERTED relative to the underlying preference.
+  // Mirrored controls for "show start screen on startup". The modal
+  // checkbox is worded negatively ("Don't show again"), so its checked
+  // state is inverted relative to the stored preference.
   const suppressCheckbox = document.getElementById("startScreenSuppress");
   const startupSwitch    = document.getElementById("burgerShowStartScreen");
 
-  // Mirrored controls for the "show 3D navigation instructions"
-  // preference. Same pattern: modal checkbox is inverted, burger
-  // switch is direct. Separate localStorage key so the two
-  // settings don't conflict.
+  // Mirrored controls for "show 3D navigation instructions". Same
+  // pattern, separate localStorage key.
   const navModal           = document.getElementById("navInstructions");
   const navGotItBtn        = document.getElementById("navInstructionsGotIt");
   const navSuppressCheckbox = document.getElementById("navInstructionsSuppress");
@@ -63,58 +50,53 @@
   }
 
   /* -- Preferences ------------------------------------------
-     Two independent settings, both stored in localStorage:
-       • scsu:showStartScreen   — welcome window on boot
-       • scsu:showNavInstructions — 3D nav modal on first
-                                    Explore click of a session
-     Both default to "show" (true) when no value is stored.
-     The same read/write helpers handle both, parameterized by
-     storage key. --------------------------------------------- */
+     Two independent localStorage flags, both defaulting to "show"
+     when unset:
+       scsu:showStartScreen      — welcome modal on boot
+       scsu:showNavInstructions  — 3D nav modal on the first street
+                                   view open of a session */
   const PREF_KEY = "scsu:showStartScreen";
   const NAV_PREF_KEY = "scsu:showNavInstructions";
 
   function readPref(key) {
     try {
       const v = localStorage.getItem(key);
-      // Default to true when nothing is stored yet.
+
       return v === null ? true : v === "1";
     } catch (_) {
-      // localStorage can throw in private mode / sandboxed
-      // contexts — fall back to "always show".
+
       return true;
     }
   }
 
+  /* localStorage can throw in private/sandboxed contexts; both helpers
+     fail soft (read: default to show, write: skip persisting). */
   function writePref(key, show) {
     try {
       localStorage.setItem(key, show ? "1" : "0");
     } catch (_) {
-      // Silent — preference just won't persist this session.
+
     }
   }
 
-  // Backwards-compatible aliases so the existing showStartScreen
-  // call sites don't need to change.
   function readShowOnStartup()        { return readPref(PREF_KEY); }
   function writeShowOnStartup(show)   { writePref(PREF_KEY, show); }
   function readShowNavInstructions()  { return readPref(NAV_PREF_KEY); }
   function writeShowNavInstructions(show) { writePref(NAV_PREF_KEY, show); }
 
-  // Push current preferences into all four controls. Called
-  // at init and whenever any control changes so its mirror
-  // stays in sync.
+  /* Push the stored preferences into all four controls so each toggle
+     and its mirror stay in sync. */
   function syncPrefControls() {
     const showStart = readShowOnStartup();
-    if (suppressCheckbox) suppressCheckbox.checked = !showStart; // inverted
+    if (suppressCheckbox) suppressCheckbox.checked = !showStart;
     if (startupSwitch)    startupSwitch.checked    = showStart;
 
     const showNav = readShowNavInstructions();
-    if (navSuppressCheckbox)  navSuppressCheckbox.checked  = !showNav; // inverted
+    if (navSuppressCheckbox)  navSuppressCheckbox.checked  = !showNav;
     if (navInstructionsSwitch) navInstructionsSwitch.checked = showNav;
   }
 
-  // The four edge masks that collectively dim everything around
-  // the highlighted target rectangle.
+  // Four edge masks that dim everything around the highlighted rect.
   const masks = {
     top:    overlay.querySelector('[data-mask="top"]'),
     right:  overlay.querySelector('[data-mask="right"]'),
@@ -122,12 +104,10 @@
     left:   overlay.querySelector('[data-mask="left"]')
   };
 
-  /* -- Step definitions ------------------------------------
-     `getRect()` returns the on-screen rect of the element to
-     highlight. We resolve it lazily per-step so a layout shift
-     between steps (e.g. details panel opening) is reflected.
-     `placement` controls which side of the highlight the card
-     sits on. ------------------------------------------------- */
+  /* -- Step definitions -------------------------------------
+     Each step has desktop and mobile variants. getRect() resolves the
+     highlight target lazily per render so layout shifts between steps
+     are reflected; `placement` picks which side the card sits on. */
      const STEPS = [
       {
         id: "left-sidebar",
@@ -201,7 +181,7 @@
             const node = document.getElementById("details");
             return node ? node.getBoundingClientRect() : null;
           },
-          placement: "top"     // card sits ABOVE the bottom sheet on mobile
+          placement: "top"
         }
       }
     ];
@@ -212,19 +192,17 @@
   let prevFocus = null;
 
   /* -- Layout helpers ---------------------------------------
-     positionCutout() applies inline geometry to the four mask
-     rectangles so they cover everything except the supplied
-     target rect. positionCard() places the tooltip relative
-     to that rect and chooses an arrow orientation that points
-     at the target. --------------------------------------- */
-
+     positionCutout() sizes the four masks so they cover everything
+     except the target rect; positionCard() places the tooltip beside
+     the rect with a matching arrow. */
   function positionCutout(rect) {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
+    // No measurable target — fully dim the screen, skip the ring, and
+    // let the card fall back to centered.
     if (!rect || rect.width === 0 || rect.height === 0) {
-      // No measurable target — fully dim the screen and skip
-      // the ring. The card will fall back to centered.
+
       masks.top.style.cssText    = "top:0;left:0;width:100%;height:100%";
       masks.right.style.cssText  = "top:0;left:0;width:0;height:0";
       masks.bottom.style.cssText = "top:0;left:0;width:0;height:0";
@@ -233,42 +211,35 @@
       return;
     }
 
-    // No padding: the cutout hugs the target's actual bounds so
-    // the dim edges align cleanly with each panel (sidebar, top
-    // bar, details panel) rather than spilling onto neighbouring
-    // chrome. The ring itself is now invisible (see 08-start-
-    // coachmark.css) so any spill would have nothing to mask it.
+    // No padding: the cutout hugs the target so the dim edges align
+    // cleanly with each panel instead of spilling onto neighbors.
     const pad = 0;
     const x  = Math.max(0, rect.left   - pad);
     const y  = Math.max(0, rect.top    - pad);
     const w  = Math.min(vw - x, rect.width  + pad * 2);
     const h  = Math.min(vh - y, rect.height + pad * 2);
 
-    // Top strip — full width, from 0 to y
     masks.top.style.top    = "0";
     masks.top.style.left   = "0";
     masks.top.style.width  = vw + "px";
     masks.top.style.height = y + "px";
 
-    // Bottom strip — full width, from y+h to vh
     masks.bottom.style.top    = (y + h) + "px";
     masks.bottom.style.left   = "0";
     masks.bottom.style.width  = vw + "px";
     masks.bottom.style.height = Math.max(0, vh - (y + h)) + "px";
 
-    // Left strip — only the band beside the cutout
     masks.left.style.top    = y + "px";
     masks.left.style.left   = "0";
     masks.left.style.width  = x + "px";
     masks.left.style.height = h + "px";
 
-    // Right strip — only the band beside the cutout
     masks.right.style.top    = y + "px";
     masks.right.style.left   = (x + w) + "px";
     masks.right.style.width  = Math.max(0, vw - (x + w)) + "px";
     masks.right.style.height = h + "px";
 
-    // Subtle outline on the cutout itself
+    // Outline on the cutout itself.
     ring.style.display = "block";
     ring.style.top    = y + "px";
     ring.style.left   = x + "px";
@@ -286,8 +257,9 @@
 
     let top, left, arrow = "none";
 
+    // Centered fallback when there is no target.
     if (!rect || rect.width === 0 || rect.height === 0) {
-      // Centered fallback
+
       top  = Math.max(edge, (vh - cardH) / 2);
       left = Math.max(edge, (vw - cardW) / 2);
       card.dataset.arrow = "none";
@@ -296,8 +268,7 @@
       return;
     }
 
-    // Pick the placement, then clamp into viewport with a tiny
-    // edge margin so the card never sits off-screen.
+    // Pick the placement, then clamp into the viewport.
     switch (placement) {
       case "right":
         left  = rect.right + gap;
@@ -322,17 +293,16 @@
         break;
     }
 
-    // If the chosen placement runs off-screen, fall back to a
-    // centered (no-arrow) position rather than clamping the
-    // card on top of the highlight.
+    // If the chosen placement runs off-screen, fall back to a centered
+    // or opposite-axis position rather than covering the highlight,
+    // keeping the original axis intent where possible.
     const fitsHoriz = left >= edge && (left + cardW) <= (vw - edge);
     const fitsVert  = top  >= edge && (top  + cardH) <= (vh - edge);
 
     if (!fitsHoriz || !fitsVert) {
-      // Try to keep the original axis intent if possible.
+
       if (placement === "right" || placement === "left") {
-        // Horizontal placement failed — center horizontally,
-        // place under the target.
+
         left  = Math.max(edge, Math.min(vw - cardW - edge, (vw - cardW) / 2));
         top   = rect.bottom + gap;
         if (top + cardH > vh - edge) {
@@ -340,8 +310,7 @@
         }
         arrow = "none";
       } else {
-        // Vertical placement failed — center vertically, place
-        // beside the target on whichever side has more room.
+
         const roomRight = vw - rect.right;
         const roomLeft  = rect.left;
         if (roomRight >= roomLeft) {
@@ -354,7 +323,6 @@
         top = Math.max(edge, Math.min(vh - cardH - edge, (vh - cardH) / 2));
       }
 
-      // Final clamp
       left = Math.max(edge, Math.min(vw - cardW - edge, left));
       top  = Math.max(edge, Math.min(vh - cardH - edge, top));
     }
@@ -364,12 +332,12 @@
     card.style.left = left + "px";
   }
 
+  /* Render the current step: copy, counter, nav buttons, then measure
+     and position the cutout + card on the next frame. */
   function renderStep() {
     const stepBase = STEPS[stepIndex];
     if (!stepBase) return;
 
-    // Resolve the variant for the current viewport. Fall back to
-    // desktop if the mobile variant isn't defined for some step.
     const step = (isMobile() && stepBase.mobile) ? stepBase.mobile
                                                  : stepBase.desktop;
 
@@ -380,9 +348,9 @@
 
     const isFirst = stepIndex === 0;
     const isLast  = stepIndex === STEPS.length - 1;
-    // Always show Previous so the "X of 3" counter stays centered
-    // (matches the Figma). On the first step it's disabled rather
-    // than hidden so it still occupies its grid cell.
+
+    // Previous stays visible (disabled on step 1) so the counter
+    // remains centered.
     prevBtn.hidden = false;
     prevBtn.disabled = isFirst;
     nextBtn.hidden = false;
@@ -430,21 +398,18 @@
   }
 
   /* -- Open / close ----------------------------------------- */
-
   function openWalkthrough() {
     if (active) return;
     active = true;
     stepIndex = 0;
 
-    // Remember focus so we can restore it on close.
     prevFocus = document.activeElement;
 
-    // Programmatically pick the first tour stop so the right
-    // details panel has real content to point at. This drives
-    // the same `selectFeature` path that a normal click would.
+    // Select the first tour stop so the details panel has real content
+    // to highlight.
     try {
       if (Array.isArray(tourStops) && tourStops.length) {
-        // goToStop already handles selecting + flying to bounds.
+
         goToStop(0);
       }
     } catch (err) {
@@ -454,18 +419,14 @@
     document.body.classList.add("coachmarks-active");
     overlay.setAttribute("aria-hidden", "false");
 
-    // Allow the details panel layout transition to settle
-    // before measuring. 320ms covers the 260ms map-refresh
-    // delay used elsewhere.
+    // Let the details-panel transition settle before measuring (320ms
+    // covers the 260ms map-refresh delay used elsewhere), then move
+    // focus into the card and trap Tab there.
     setTimeout(() => {
       renderStep();
-      // Move focus into the card and trap Tab navigation
-      // there. We do this after renderStep so the buttons
-      // hidden state for the current step is settled (the
-      // first step has no Previous button so focus shouldn't
-      // start there).
+
       try { closeBtn.focus({ preventScroll: true }); }
-      catch (_) { /* ignore */ }
+      catch (_) {  }
       installFocusTrap(card);
     }, 320);
 
@@ -484,11 +445,8 @@
     window.removeEventListener("resize", onResize);
     document.removeEventListener("keydown", onKey);
 
-    // Defensive: collapse the masks/ring/card to zero size so
-    // even if a browser leaves them paintable for a frame, they
-    // can't swallow clicks. The CSS pointer-events guard should
-    // already prevent this, but inline-style cleanup is cheap
-    // insurance.
+    // Defensive cleanup: collapse masks/ring/card so they can't swallow
+    // clicks even if a browser leaves them paintable for a frame.
     try {
       Object.values(masks).forEach((m) => {
         m.style.cssText = "top:0;left:0;width:0;height:0";
@@ -497,11 +455,10 @@
       card.style.top = "";
       card.style.left = "";
       card.dataset.arrow = "none";
-    } catch (_) { /* ignore */ }
+    } catch (_) {  }
 
-    // Reset everything we touched: clear the auto-selected
-    // building, close the details panel, and put the map
-    // back at the campus-wide default view.
+    // Undo everything the walkthrough touched: clear the auto-selected
+    // building and restore the campus-wide view.
     try { if (typeof clearSelection === "function") clearSelection(); }
     catch (err) { console.warn("[onboarding] clearSelection failed:", err); }
 
@@ -511,20 +468,18 @@
       console.warn("[onboarding] resetCampusView failed:", err);
     }
 
-    // Restore focus
+    // Restore focus.
     if (prevFocus && typeof prevFocus.focus === "function") {
       try { prevFocus.focus({ preventScroll: true }); }
-      catch (_) { /* ignore */ }
+      catch (_) {  }
     }
     prevFocus = null;
   }
 
+  /* On the last step "Next" acts as Finish and closes gracefully. */
   function nextStep() {
     if (stepIndex >= STEPS.length - 1) {
-      // Last step — "Next" finishes the walkthrough. Per the
-      // spec, the final step's button is hidden, so this is
-      // really only reachable via ArrowRight. Treat it as a
-      // graceful close.
+
       closeWalkthrough();
       return;
     }
@@ -538,19 +493,11 @@
     renderStep();
   }
 
-  /* -- Start screen ---------------------------------------- */
-
   /* -- Focus trap -------------------------------------------
-     A modal that visually blocks the page must also block
-     keyboard navigation, otherwise Tab can land focus on the
-     burger button or the search input behind the dim layer.
-     We install a single document-level keydown listener while
-     a trap is active and bounce focus back when it tries to
-     leave the trapped container.
-
-     The trap also intercepts Tab cycling so Shift+Tab from
-     the first focusable wraps to the last and vice versa,
-     which is the standard accessible-modal pattern. -------- */
+     A modal that visually blocks the page must also block keyboard
+     navigation. While a trap is active, a capture-phase keydown
+     listener bounces focus back into the container and wraps Tab /
+     Shift+Tab between the first and last focusable elements. */
   let activeTrapContainer = null;
 
   function getFocusables(container) {
@@ -564,17 +511,13 @@
       '[tabindex]:not([tabindex="-1"])'
     ].join(',');
     return Array.from(container.querySelectorAll(selector))
+      // Filter out display:none nodes, but keep the visually-hidden
+      // checkbox inputs used under custom styling — those must stay
+      // reachable.
       .filter((node) => {
-        // Skip nodes that are visually hidden — the visually-
-        // hidden checkbox inputs we use under custom styling
-        // are still focusable, which is what we want, so the
-        // only thing we filter out here is `display: none`.
+
         if (node.offsetParent === null && node.getClientRects().length === 0) {
-          // Allow our visually-hidden-but-focusable inputs through:
-          // they have offsetParent null only when truly hidden.
-          // The clip-path trick keeps offsetParent set, but the
-          // CSS `clip` rect trick we use does not. Detect ours
-          // by class so they stay reachable.
+
           if (node.matches('input[type="checkbox"]')) return true;
           return false;
         }
@@ -616,34 +559,27 @@
     document.removeEventListener("keydown", onTrapKeydown, true);
   }
 
+  /* -- Start screen ----------------------------------------- */
+
+  /* Show the welcome modal. Natural boots respect the stored
+     preference; burger-menu re-opens pass { force: true }. Marks the
+     body modal-open so global shortcuts can opt out, focuses the
+     primary button, and traps Tab inside the modal. */
   function showStartScreen(opts) {
-    // If the user has previously checked "Don't show again",
-    // skip the modal on natural boots. Burger-menu re-opens
-    // pass { force: true } to override.
+
     const force = !!(opts && opts.force);
     if (!force && !readShowOnStartup()) return;
 
-    // Always re-sync the controls before showing — the user
-    // might have toggled the burger-panel switch in a previous
-    // session and we want the checkbox to reflect that state.
     syncPrefControls();
 
     startScreen.setAttribute("aria-hidden", "false");
 
-    // Mark the body so any global keyboard shortcuts (Escape
-    // to close panels, Shift+A for align, etc.) can opt out
-    // while the modal is open.
     document.body.classList.add("modal-open");
 
-    // Move focus into the modal for screen readers and keyboard
-    // users, then trap Tab navigation inside it so the user
-    // can't accidentally focus the burger button or any other
-    // background control sitting visually-hidden behind the dim
-    // layer.
     if (startEnterBtn) {
       requestAnimationFrame(() => {
         try { startEnterBtn.focus({ preventScroll: true }); }
-        catch (_) { /* ignore */ }
+        catch (_) {  }
       });
     }
     installFocusTrap(startScreen);
@@ -655,20 +591,10 @@
     removeFocusTrap();
   }
 
-  /* -- Navigation Instructions modal ------------------------
-     Same modal pattern as the start screen but for the 3D
-     street view onboarding. Shows the first time the user
-     clicks Explore on a building's details panel (or any
-     other path that opens street view), unless they've
-     opted out. Single "Got it" button + "Don't show again"
-     checkbox.
-
-     Which instruction image is shown (mouse-and-keyboard vs.
-     VR controllers) is driven entirely by the existing
-     `body.xr-mode` class that applyTreedisProfile() in
-     01-utils.js sets at boot. The CSS in 10-nav-instructions.css
-     keys off that class so no JS coordination is needed here. */
-
+  /* -- Navigation instructions modal ------------------------
+     Same modal pattern, used for 3D street-view onboarding. Which
+     instruction image shows (mouse / touch / VR) is driven purely by
+     the body classes set at boot; see 10-nav-instructions.css. */
   function showNavInstructions(opts) {
     if (!navModal) return false;
 
@@ -682,7 +608,7 @@
     if (navGotItBtn) {
       requestAnimationFrame(() => {
         try { navGotItBtn.focus({ preventScroll: true }); }
-        catch (_) { /* ignore */ }
+        catch (_) {  }
       });
     }
     installFocusTrap(navModal);
@@ -697,19 +623,12 @@
   }
 
   /* -- openStreetView gating wrapper ------------------------
-     The 3D nav-instructions modal must show on the first
-     street-view open within a session. There are several call
-     sites that open street view (the Explore CTA, the sub-list
-     "Room 100"/etc rows, the locations list while inside SV,
-     internal warm-ups), so the cleanest seam is the function
-     itself: we monkey-patch window.openStreetView once, and
-     every caller automatically goes through the gate.
-
-     Skipped when:
-       • the preference is off
-       • street view is already active (mid-session navigation
-         between sweeps shouldn't re-prompt)
-     ------------------------------------------------------- */
+     The nav-instructions modal must appear on the first street-view
+     open of a session. Several call sites open street view, so the
+     cleanest seam is the function itself: window.openStreetView is
+     wrapped once and every caller goes through the gate. Skipped when
+     the preference is off or street view is already active (mid-
+     session sweep changes shouldn't re-prompt). */
   let pendingStreetViewArgs = null;
   let originalOpenStreetView = null;
 
@@ -723,25 +642,23 @@
     window.openStreetView = function gatedOpenStreetView() {
       const args = Array.prototype.slice.call(arguments);
 
-      // Mid-session navigation between sweeps — skip the modal.
       if (typeof streetViewActive !== "undefined" && streetViewActive) {
         return originalOpenStreetView.apply(this, args);
       }
 
-      // Preference says skip → straight through.
       if (!readShowNavInstructions()) {
         return originalOpenStreetView.apply(this, args);
       }
 
-      // Cache the args, show the modal. The "Got it" handler
-      // replays the call by invoking the original function
-      // directly with these same arguments.
+      // Cache the args and show the modal; "Got it" replays the call
+      // with the same arguments.
       pendingStreetViewArgs = args;
       showNavInstructions();
-      // Returning undefined matches the original's signature.
+
     };
   }
 
+  /* Replay the deferred openStreetView() call after "Got it". */
   function replayPendingStreetView() {
     if (!pendingStreetViewArgs || !originalOpenStreetView) return;
     const args = pendingStreetViewArgs;
@@ -752,11 +669,10 @@
     }
   }
 
-  // Expose to boot()
+  // Exposed for boot().
   window.showStartScreen = showStartScreen;
 
-  /* -- Wire up event listeners ----------------------------- */
-
+  /* -- Event wiring ----------------------------------------- */
   if (startEnterBtn) {
     startEnterBtn.addEventListener("click", () => {
       hideStartScreen();
@@ -766,8 +682,9 @@
   if (startHowBtn) {
     startHowBtn.addEventListener("click", () => {
       hideStartScreen();
-      // Brief pause so the start-screen fade-out completes
-      // before the coachmark fade-in begins.
+
+      // Pause so the start-screen fade-out completes before the
+      // coachmark fade-in begins.
       setTimeout(openWalkthrough, 200);
     });
   }
@@ -776,24 +693,20 @@
   nextBtn.addEventListener("click", nextStep);
   closeBtn.addEventListener("click", closeWalkthrough);
 
-  // The burger menu's "How to use" link reopens the walkthrough.
-  // We close the burger panel first by unchecking its checkbox.
+  // Burger "How to use" reopens the walkthrough; close the panel first
+  // and wait out its slide animation.
   if (burgerHowTo) {
     burgerHowTo.addEventListener("click", (e) => {
       e.preventDefault();
       if (burgerCheckbox) burgerCheckbox.checked = false;
-      // Wait for the panel slide-out animation (.26s) before
-      // starting so the dim layer doesn't fight the slide.
+
       setTimeout(openWalkthrough, 280);
     });
   }
 
-  /* -- Mirrored "show on startup" preference controls -------
-     The start-screen checkbox is worded negatively
-     ("Don't show again") and the burger-panel switch is worded
-     positively ("Show welcome screen on startup"). They both
-     write the same flag, so toggling either one immediately
-     updates the other for visual consistency. -------------- */
+  // Mirrored preference controls: the modal checkbox is inverted, the
+  // burger switch is direct. Both write the same flag and re-sync the
+  // other on change.
   if (suppressCheckbox) {
     suppressCheckbox.addEventListener("change", () => {
       writeShowOnStartup(!suppressCheckbox.checked);
@@ -807,12 +720,10 @@
     });
   }
 
-  /* -- Nav-instructions modal: button + mirrored controls -- */
   if (navGotItBtn) {
     navGotItBtn.addEventListener("click", () => {
       hideNavInstructions();
-      // Replay the deferred openStreetView() call that
-      // triggered this modal.
+
       replayPendingStreetView();
     });
   }
@@ -829,17 +740,15 @@
     });
   }
 
-  // Install the gate AFTER the rest of app.js has run, so
-  // window.openStreetView exists. The IIFE itself runs at
-  // script-load time, but openStreetView is declared at
-  // top-level above this IIFE so it's already on `window`.
+  // openStreetView is declared at top level before this IIFE runs, so
+  // it is already on window when the gate installs.
   installStreetViewGate();
 
-  // Reflect any stored preference into both controls now so
-  // they're correct even before the start screen ever opens.
+  // Reflect stored preferences into the controls immediately.
   syncPrefControls();
 })();
 
+/* Kick off boot. On fatal errors, surface the message on the splash. */
 boot().catch((err) => {
   console.error("[metaversity] fatal:", err);
   el.splash.innerHTML =

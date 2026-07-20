@@ -1,65 +1,39 @@
-/* === SCSU app — Part 1: Utils, reprojection, helpers === */
-/* ===========================================================
-   SCSU METAVERSITY — App
-   -----------------------------------------------------------
-   Data loading strategy:
-     1. Try fetching the .geojson files (works over http://
-        and https:// — i.e., once deployed on a website).
-     2. If fetch fails (e.g., someone opens index.html
-        directly from disk), fall back to window.SCSU_DATA
-        which is populated by the data/*.js shim scripts.
-   Either way the app ends up with the same data.
-   =========================================================== */
+/* === Utils: XR detection, reprojection, lookup helpers ===
+   Data loading strategy for the whole app:
+     1. Fetch the .geojson / .json files (works over http/https).
+     2. On failure (e.g. the page was opened from disk), fall back to
+        window.SCSU_DATA populated by the data/*.js shim scripts.
+   Either path yields the same in-memory data. */
 
 const config = window.CAMPUS_CONFIG;
 
 /* -----------------------------------------------------------
-   1.bis  XR / VR DETECTION + TREEDIS PROFILE SELECTION
+   XR / VR detection + Treedis profile selection
    -----------------------------------------------------------
-   The campus has two Treedis models — a desktop/tablet/mobile
-   one and an XR-headset one — with different sweep IDs. We pick
-   the right one as early as possible so the iframe preload, the
-   sweep lookups, and the layout-mode class on <body> all use a
-   single source of truth.
-
-   Strategy (defense in depth):
-     1. UA-token check (sync, runs at module load). Catches Meta
-        Quest Browser even when it's switched to "Desktop" mode,
-        because the OculusBrowser / VR / Quest tokens stay in the
-        UA regardless of that toggle. Also catches Pico headsets.
-     2. WebXR API confirmation (async, runs from boot()). If the
-        UA looks ambiguous we still call
-        navigator.xr.isSessionSupported("immersive-vr") and
-        upgrade to the VR profile when it resolves true. This
-        runs only when the UA didn't already commit to VR, so a
-        confirmed VR UA never gets downgraded by a transient
-        async failure.
-
-   Either signal alone is enough to flip the app into VR mode.
+   The campus ships two Treedis models (desktop and VR headset) with
+   different sweep IDs, so the right profile must be chosen before the
+   iframe src is set. Two signals are combined:
+     1. Sync UA check at module load (catches Quest/Pico headsets even
+        in "desktop mode" browsers).
+     2. Async WebXR confirmation from boot() for ambiguous UAs.
    ----------------------------------------------------------- */
 
-/* True for phones and tablets — NOT desktops, NOT VR headsets.
-   Drives the "touch-mode" body class (which selects the touch
-   variant of the nav-instructions image). We deliberately do NOT
-   use raw touch capability (ontouchstart / maxTouchPoints) for
-   this: touchscreen laptops and many Windows desktops report
-   touch support yet should still get the desktop instructions.
-   Classification is therefore by device *type* via the UA.
-
-   Headset tokens are excluded first so a Quest/Pico (which can
-   also look "mobile") is never treated as a tablet — those get
-   the VR profile and the xr-mode class instead. */
+/* True for phones and tablets only — not desktops, not headsets.
+   Drives the "touch-mode" body class (touch variant of the nav
+   instructions). Classified by device type via UA, not raw touch
+   capability, so touchscreen laptops still get desktop behavior. */
 function isMobileOrTablet() {
   try {
     const ua = (navigator.userAgent || "").toString();
+
     // Never classify a headset as mobile/tablet.
     if (/OculusBrowser|Quest|Pico|Mobile VR| VR /i.test(ua)) return false;
-    // Phone / tablet platform markers.
+
     if (/Android|iPhone|iPod|iPad|Windows Phone|IEMobile|BlackBerry/i.test(ua)) {
       return true;
     }
-    // iPadOS 13+ reports as "Macintosh" but is touch-capable —
-    // distinguish it from a real Mac by the presence of touch.
+
+    // iPadOS 13+ reports as "Macintosh"; detect it via touch support.
     if (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1) return true;
     return false;
   } catch (_) {
@@ -67,17 +41,14 @@ function isMobileOrTablet() {
   }
 }
 
-/* Synchronous, user-agent-only check. Set once at module load
-   so the very first call to resolveTreedisProfile() picks the
-   right map before the iframe src is set. Re-evaluated as part
-   of detectXRAsync() too — never trusted as the sole signal. */
+/* Sync UA-only headset check, evaluated at module load so the first
+   profile resolution happens before the iframe src is set.
+   OculusBrowser appears in every Meta Quest Browser UA; " VR " catches
+   VR Safari; Pico catches Pico headsets. */
 function isXRUserAgent() {
   try {
     const ua = (navigator.userAgent || "").toString();
-    // OculusBrowser appears in every Meta Quest Browser UA,
-    // mobile-mode or desktop-mode. " VR " (with surrounding
-    // spaces) catches the `VR Safari` / `Mobile VR Safari`
-    // token. `Pico` catches Pico headsets.
+
     if (/OculusBrowser|Quest\s|Quest\)| VR |Mobile VR|Pico/i.test(ua)) {
       return true;
     }
@@ -85,10 +56,8 @@ function isXRUserAgent() {
   return false;
 }
 
-/* Async, runs once at boot. Resolves true if the browser
-   exposes a WebXR-immersive-VR-capable device. Never rejects —
-   on any error or unsupported environment, resolves false.
-   Wrapped in a per-page-load cache so repeated calls are free. */
+/* Async WebXR probe. Resolves true when the browser exposes an
+   immersive-vr-capable device. Never rejects; cached per page load. */
 let _xrAsyncPromise = null;
 function detectXRAsync() {
   if (_xrAsyncPromise) return _xrAsyncPromise;
@@ -106,24 +75,21 @@ function detectXRAsync() {
   return _xrAsyncPromise;
 }
 
-/* Currently-active profile name: "desktop" or "vr". Set by
-   resolveTreedisProfile() at module-load time and refined by
-   maybeUpgradeToVRProfile() once detectXRAsync() resolves.
-   Treat as read-only outside those two functions. */
+/* Active profile name: "desktop" or "vr". Set by resolveTreedisProfile()
+   and maybeUpgradeToVRProfile(); treat as read-only elsewhere. */
 let activeTreedisProfile = "desktop";
 
-/* Pick the initial profile from the sync UA check and copy its
-   model/tourUrl/homeSweepId values up to the legacy top-level
-   keys so any older code path reading config.treedis.modelId
-   keeps working. Also repoints config.treedisMap to the chosen
-   per-location sweep map. Called once at module load — runs
-   before preloadTreedisIframe() so the iframe src is correct
-   from the very first load. */
+/* Pick the initial profile from the sync UA check. Runs once at module
+   load, before preloadTreedisIframe(). */
 function resolveTreedisProfile() {
   const wantVR = isXRUserAgent();
   applyTreedisProfile(wantVR ? "vr" : "desktop");
 }
 
+/* Activate a profile: copy its modelId / tourUrl / homeSweepId to the
+   top-level config.treedis aliases, repoint config.treedisMap to the
+   matching per-location sweep map, and mirror the mode onto <body>
+   (xr-mode / touch-mode classes) for CSS. */
 function applyTreedisProfile(profileName) {
   if (profileName !== "desktop" && profileName !== "vr") {
     console.warn("[treedis] unknown profile, falling back to desktop:",
@@ -132,20 +98,14 @@ function applyTreedisProfile(profileName) {
   }
   activeTreedisProfile = profileName;
 
-  // Mirror the profile onto <body> so CSS can react (the
-  // VR-mode streetview rules in mapstyles.css key off this).
   try {
     document.body.classList.toggle("xr-mode", profileName === "vr");
-    // Touch-mode: a phone or tablet that is NOT in VR. Drives the
-    // touch-controls variant of the nav-instructions modal. We key
-    // off device *type* (isMobileOrTablet), NOT raw touch support,
-    // so touchscreen laptops / touch-capable desktops still get the
-    // desktop instructions.
+
     document.body.classList.toggle("touch-mode",
       profileName !== "vr" && isMobileOrTablet());
   } catch (_) {
-    // <body> not parsed yet on module load — that's fine, the
-    // class gets re-applied below when this runs again from boot.
+    // <body> may not be parsed yet at module load; boot() re-applies.
+
   }
 
   const cfg = config.treedis || {};
@@ -158,7 +118,6 @@ function applyTreedisProfile(profileName) {
   cfg.tourUrl     = profile.tourUrl;
   cfg.homeSweepId = profile.homeSweepId;
 
-  // Swap the per-location sweep map alias.
   const maps = config.treedisMaps || {};
   config.treedisMap = maps[profileName] || maps.desktop || {};
 
@@ -166,50 +125,31 @@ function applyTreedisProfile(profileName) {
                "model:", cfg.modelId);
 }
 
-/* Plausibility gate for the async WebXR upgrade. The reason we
-   can't trust navigator.xr.isSessionSupported("immersive-vr")
-   on its own is that desktop Chrome on Windows exposes WebXR
-   whenever an OpenXR runtime is installed — SteamVR, Windows
-   Mixed Reality, the Oculus desktop app, etc. — even with no
-   headset plugged in. So the user agent reports "yes, immersive
-   VR is supported" on plenty of regular desktop PCs, and using
-   that signal alone would put every such machine on the VR
-   profile.
-
-   To rule that case out, we only let the async signal upgrade
-   the profile when the UA *also* looks like a plausible
-   standalone-headset platform: Android-on-handheld, or one of
-   the headset tokens (Quest / Pico / VR / OculusBrowser, which
-   the sync check would already have caught — listed here as a
-   belt-and-braces fallback in case the regex got too strict).
-   Anything that looks like a desktop OS (Windows / macOS / X11
-   without Android) stays on the desktop profile no matter what
-   WebXR reports. */
+/* Plausibility gate for the async WebXR upgrade. Desktop Chrome reports
+   immersive-vr support whenever an OpenXR runtime (SteamVR, WMR, Oculus
+   desktop) is installed, even with no headset connected. Only allow the
+   upgrade when the UA also looks like a standalone headset. Note the
+   Quest 3 UA contains "X11; Linux x86_64", so the Linux test must be
+   combined with an explicit absence of headset markers. */
 function isPlausibleHeadsetUA() {
   try {
     const ua = (navigator.userAgent || "").toString();
-    // Desktop OS markers — if any of these are present, we are
-    // not on a standalone headset. Note: Quest 3's UA contains
-    // "X11; Linux x86_64; Quest 3" so we have to combine the
-    // Linux test with an explicit absence of headset markers.
+
     const looksDesktop =
       /Windows NT|Macintosh|Mac OS X(?!.*Mobile)/i.test(ua) ||
       (/X11/.test(ua) && !/Quest|OculusBrowser|Pico/i.test(ua));
     if (looksDesktop) return false;
-    // Headset-platform markers
+
     return /OculusBrowser|Quest|Pico|Mobile VR| VR /i.test(ua);
   } catch (_) {
     return false;
   }
 }
 
-/* Called from boot(). If the sync UA check missed but the
-   WebXR API later confirms an XR device AND the UA looks like
-   a plausible headset platform, switch profiles. No-op when
-   already on the VR profile, or when the iframe has already
-   been loaded with desktop content (we don't try to reload
-   mid-session — that would clobber a tour the user may already
-   be inside). */
+/* Called from boot(). Upgrades to the VR profile when WebXR confirms a
+   device and the UA plausibly belongs to a headset. Skipped if the
+   iframe already loaded desktop content — reloading mid-session would
+   clobber a tour the user may be inside. */
 async function maybeUpgradeToVRProfile() {
   if (activeTreedisProfile === "vr") return;
   const isXR = await detectXRAsync();
@@ -238,18 +178,15 @@ function isVRMode() {
   return activeTreedisProfile === "vr";
 }
 
-// Run the sync check immediately. This happens before any
-// other code touches config.treedisMap / config.treedis.tourUrl,
-// so the rest of app.js sees a consistent profile.
+// Resolve the profile immediately so all later code sees a consistent
+// treedisMap / tourUrl, then pre-warm the async WebXR probe so boot()
+// awaits an already-resolved promise.
 resolveTreedisProfile();
 
-// Kick off the async WebXR detection in parallel — boot() will
-// await this promise, but pre-warming here means it's likely
-// already resolved by then and adds zero latency to boot.
 detectXRAsync();
 
 /* -----------------------------------------------------------
-   1. Reprojection (EPSG:3857 meters → EPSG:4326 lat/lng)
+   Reprojection (EPSG:3857 meters -> EPSG:4326 lat/lng)
    ----------------------------------------------------------- */
 const EARTH_HALF_CIRC = 20037508.34;
 
@@ -286,7 +223,7 @@ function reprojectFC(fc, crs) {
 }
 
 /* -----------------------------------------------------------
-   2. Helpers
+   Lookup helpers (keyed by lower-cased location name)
    ----------------------------------------------------------- */
 function cleanName(name) {
   if (!name) return "";
@@ -315,12 +252,9 @@ function getHappensHere(name) {
   return Array.isArray(list) ? list : [];
 }
 
-/* Look up the list of departments occupying a location.
-   Returns an array (possibly empty) so callers can iterate
-   without null-checks. Used by renderSearch() in
-   09-sidebar-search.js to surface buildings whose department
-   list contains the query term — e.g. typing "rotc" finds
-   Soldiers' Hall, "engineering" finds Bethea Hall, etc. */
+/* Departments occupying a location. Always returns an array so callers
+   can iterate without null checks; also used by search to match
+   department names (e.g. "rotc", "engineering"). */
 function getDepartments(name) {
   if (!name) return [];
   const k = name.toLowerCase();
@@ -341,25 +275,19 @@ function getExplorable(name) {
   return Array.isArray(list) ? list : [];
 }
 
-/* Look up the physical street address for a location, if any.
-   Returns an empty string when no address is configured. Used
-   by the details panel to render an "Open in Maps" link —
-   primarily for off-campus locations (Olar Farm) but works for
-   any location with a known address. */
+/* Street address for a location, or "" when none is configured. Used by
+   the details panel to render "Open in Maps" links. */
 function getAddress(name) {
   if (!name) return "";
   const k = name.toLowerCase();
   return (config.addressMap || {})[k] || "";
 }
 
-/* Look up a Treedis entry by location name (case-insensitive).
-   Accepts short-hand string entries as well as full objects, and
-   always returns a normalized
-     { sweepId, parentName, transitionTime, rotation }
-   object — or null if the name has no mapping.
-
-   `rotation`, when present, is forwarded to TourBridge.navigateToSweep
-   so the camera lands at the sweep facing a specific direction. */
+/* Look up a Treedis entry by location name (case-insensitive). Accepts
+   shorthand string entries or full objects and always returns a
+   normalized { sweepId, parentName, transitionTime, rotation } object,
+   or null when unmapped. rotation is forwarded to navigateToSweep so
+   the camera lands facing a configured direction. */
 function getTreedisEntry(name) {
   if (!name) return null;
   const map = config.treedisMap || {};
@@ -378,12 +306,9 @@ function getTreedisEntry(name) {
   };
 }
 
-/* True when the location has a usable Treedis sweep configured.
-   Drives whether the details panel shows the Explore CTA and
-   VR-Enabled controls — locations without a sweep have no
-   immersive view to launch, so those controls would mislead.
-   Buildings without a sweep get a quiet info-only details
-   panel (tag, title, description, image) instead. */
+/* True when the location has a usable Treedis sweep. Controls whether
+   the details panel shows the Explore CTA and VR controls; locations
+   without a sweep get an info-only panel. */
 function hasSweep(name) {
   const entry = getTreedisEntry(name);
   return !!(entry && entry.sweepId);

@@ -8,9 +8,7 @@
   min-height: 0;
   background: var(--header-bg);
   position: relative;
-  /* Panels go edge-to-edge — no outer page gutter. The Figma board
-     shows the sidebar / map / details meeting the viewport edges
-     with only a thin hairline between them. */
+
   padding: 0;
   gap: var(--panel-gap);
   transition: grid-template-columns .25s ease;
@@ -34,8 +32,7 @@
 }
 
 .locations-head {
-  /* 20px L/R gutter per Figma. Top padding gives the 60px header
-     content row some breathing room below the metabar. */
+
   padding: 18px var(--gutter) 10px;
   display: flex;
   align-items: flex-start;
@@ -84,7 +81,7 @@
 .locations-close img   { width: 16px; height: 16px; filter: invert(1) brightness(2); }
 .locations-close .lc-fallback { font-size: 18px; font-weight: 600; line-height: 1; }
 
-/* ---- Featured / All tabs (underline style, per Figma) ---- */
+/* ---- Featured / All tabs (underline style) ---- */
 .loc-tabs {
   display: flex;
   gap: 22px;
@@ -118,8 +115,6 @@
 }
 .loc-tab:hover { color: var(--on-dark); }
 
-/* Active tab: white text + thin white underline that overlays
-   the bottom border of the tab strip. */
 #locTabFeatured:checked ~ .loc-tab[for="locTabFeatured"],
 #locTabAll:checked      ~ .loc-tab[for="locTabAll"] {
   color: var(--on-dark);
@@ -147,7 +142,7 @@
   align-items: center;
   background: var(--cell-bg);
   border: 1px solid var(--on-dark-line);
-  border-radius: 0;                /* square corners per Figma */
+  border-radius: 0;                /* square corners per design spec */
   height: 40px;
 }
 
@@ -239,11 +234,6 @@
 .search-result .tag.zone     { color: var(--on-dark); }
 .search-result .tag.building { color: var(--on-dark-muted); }
 
-/* Two-line search-result layout: building name on top, an
-   optional department subtitle underneath when the search hit
-   on departmentMap rather than the building name. The
-   `.search-result-main` block sits in the first grid column;
-   the tag pill stays in the second. */
 .search-result-main {
   display: flex;
   flex-direction: column;
@@ -276,15 +266,10 @@
   flex-shrink: 0;
 }
 
-/* ---- All-tab sort control ----------------------------------
-   "Sort results by: Alphabetical • Department" row that sits
-   between the search field and the All list. Pure-CSS active
-   state, matching the Featured/All tab pattern above: the
-   selected option is white + 600 weight, the other is muted.
-   Hidden by default — only shown while the All tab is active.
-
-   The JS in 09-sidebar-search.js listens on the inputs to
-   re-render #allLocationsList in the chosen order.            */
+/* All-tab sort row ("Sort by: Alphabetical • Department"). Pure-CSS
+   active state; shown only while the All tab is checked (:has(), with
+   a sibling-selector fallback for older browsers below). The JS
+   listens on the inputs to re-render the All list. */
 .loc-sort {
   display: none;                 /* shown only on the All tab */
   align-items: center;
@@ -298,9 +283,6 @@
   letter-spacing: .02em;
 }
 
-/* Show the sort row only when the All tab is checked. We use
-   the same :has() pattern that powers the list visibility
-   toggle, with a non-:has() fallback for old browsers below. */
 .locations:has(#locTabAll:checked) .loc-sort { display: flex; }
 
 .loc-sort-input {
@@ -326,8 +308,6 @@
 }
 .loc-sort-opt:hover { color: var(--on-dark); }
 
-/* Active option — white + slightly heavier weight, matching
-   the "Alphabetical" treatment in the Figma reference. */
 #locSortAlpha:checked ~ .loc-sort-opt[for="locSortAlpha"],
 #locSortDept:checked  ~ .loc-sort-opt[for="locSortDept"] {
   color: var(--on-dark);
@@ -340,11 +320,7 @@
   line-height: 1;
 }
 
-/* Department-mode section headers inside the All list — small
-   uppercase captions above each group of buildings (e.g.
-   "ADMINISTRATION", "COLLEGE OF AGRICULTURE"). Designed to
-   read at the same weight as `.locations-meta` so the visual
-   rhythm of the sidebar stays consistent. */
+/* Department-mode group headers inside the All list. */
 .locations-group-h {
   list-style: none;
   font-size: 11px;
@@ -368,7 +344,7 @@
   -webkit-overflow-scrolling: touch;
   display: flex;
   flex-direction: column;
-  gap: 2px;                        /* GAP: 2px (per Figma) */
+  gap: 2px;                        /* cell gap per design spec */
 }
 
 /* Tab visibility — only one list visible at a time */
@@ -378,8 +354,6 @@
   /* fallback handled below for older browsers */
 }
 
-/* Robust toggle that doesn't depend on :has(): we use the
-   adjacent-sibling chain on the radio inputs themselves. */
 .locations:has(#locTabAll:checked)      .locations-list-featured { display: none; }
 .locations:has(#locTabAll:checked)      .locations-list-all      { display: flex; }
 .locations:has(#locTabFeatured:checked) .locations-list-all      { display: none; }
@@ -396,21 +370,17 @@
   grid-template-columns: 1fr auto;
   align-items: center;
   gap: 8px;
-  /* Cell height = 65px per Figma. Vertical padding kept for the
-     two-line variant (name + category); min-height enforces the
-     spec for both single- and two-line cells. */
+
   min-height: var(--cell-h);
   padding: 14px 16px;
   background: var(--cell-bg);
   color: var(--on-dark);
   cursor: pointer;
   transition: background .14s, transform .08s;
-  /* Inter (sans) per design — applies to "Recenter on Tour" and
-     every building name in both Featured and All tabs. The small
-     uppercase category caption underneath inherits the family. */
+
   font-family: var(--sans);
   border: none;
-  border-radius: 6px;              /* slight rounding per Figma */
+  border-radius: 6px;              /* slight rounding per design spec */
 }
 
 .location-row:hover     { background: var(--cell-active); }
@@ -472,12 +442,7 @@
   letter-spacing: .04em;
 }
 
-/* ---- Tour navigation footer inside the sidebar (desktop) ----
-   Per the Figma design, this bar is BLACK (matching the top bar),
-   NOT the sidebar gray (#333333) it lives over. The visual effect
-   is a black band that connects to the top metabar — sandwiching
-   the gray sidebar between two black bars. The 20px L/R gutters
-   match the rest of the panel chrome. */
+/* Desktop tour footer — black like the metabar, not sidebar gray. */
 .sidebar-tour {
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -485,7 +450,7 @@
   gap: 14px;
   padding: 14px var(--gutter);
   border-top: var(--border-light);
-  background: var(--header-bg);    /* BLACK — matches top bar (Figma) */
+  background: var(--header-bg);    /* black — matches the top bar */
   height: var(--sidebar-tour-h);
   flex-shrink: 0;
 }
@@ -502,16 +467,6 @@
 /* Mobile-only backdrop behind the locations drawer */
 .locations-backdrop { display: none; }
 
-
-/* -----------------------------------------------------------
-   Off-campus location row
-   -----------------------------------------------------------
-   Tour stops with `off_campus: true` get a small amber badge
-   showing their distance from campus, plus a slightly tinted
-   category label, so users browsing the sidebar list can tell
-   the entry isn't a normal campus building. The Olar Farm
-   (~20 mi from campus) is the current example.
-   ----------------------------------------------------------- */
 .location-row.is-offcampus .location-name::after {
   content: "↗";
   display: inline-block;
@@ -522,6 +477,8 @@
   transform: translateY(-1px);
 }
 
+/* Off-campus rows: amber distance badge + tinted category so the
+   entry reads as not-a-normal-campus-building. */
 .location-row.is-offcampus .location-cat {
   color: #C2410C;            /* tailwind orange-700 */
   font-weight: 600;
@@ -542,9 +499,6 @@
   line-height: 1.4;
 }
 
-/* When an off-campus row is the active selection the badge
-   needs a darker palette so it stays legible on the dark
-   active-row background. */
 .location-row.is-offcampus.is-active .location-offcampus-badge {
   background: #C2410C;
   border-color: #9A3412;

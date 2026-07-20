@@ -1,14 +1,6 @@
 /* === SCSU styles — Part 10: Nav instructions modal === */
 /* ===========================================================
    NAVIGATION INSTRUCTIONS MODAL (3D street view onboarding)
-   -----------------------------------------------------------
-   Same modal pattern as the start screen, but with a dark
-   #333333 card so the white-text instructional image reads
-   correctly. Single "Got it" CTA + "Don't show again"
-   checkbox. Sits at z-index 1750 — above the start screen
-   (1700) so if both are ever queued, this one wins. In
-   practice they never overlap because street view can only
-   be opened after the start screen is dismissed.
    =========================================================== */
 .nav-instructions {
   position: fixed;
@@ -60,17 +52,12 @@
   letter-spacing: -0.01em;
 }
 
-/* The placeholder image. Stretches to fill the card width
-   and preserves aspect ratio. The image already has white
-   text on a transparent background so the dark card behind
-   it provides contrast. */
 .nav-instructions-image {
   width: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  /* Reserve some minimum height so the modal doesn't collapse
-     awkwardly while the image is loading. */
+
   min-height: 200px;
 }
 .nav-instructions-image img {
@@ -79,27 +66,19 @@
   height: auto;
 }
 
-/* Two-variant image swap. The .nav-instructions-image wrapper
-   holds both a desktop/mouse <img> and an XR/VR <img>. Which
-   one is shown is driven by the global `body.xr-mode` class set
-   by applyTreedisProfile() in 01-utils.js at boot — the same
-   signal the rest of the app uses to switch into VR mode. To
-   manually flip variants for testing on a regular browser, run
-   `document.body.classList.toggle('xr-mode')` in the console. */
+/* Image variant swap: desktop/mouse by default; body.xr-mode shows
+   the VR variant and body.touch-mode shows the touch variant (both
+   classes are set at boot by applyTreedisProfile() in 01-utils.js).
+   To test variants, toggle the class in the console. */
 .nav-instructions-image .nav-instructions-img-xr { display: none; }
 .nav-instructions-image .nav-instructions-img-touch { display: none; }
 
-/* Touch device (not in VR): show the touch-controls variant
-   instead of the desktop/mouse one. Driven by body.touch-mode,
-   set by applyTreedisProfile() in 01-utils.js at boot. */
 body.touch-mode .nav-instructions-image .nav-instructions-img-desktop { display: none; }
 body.touch-mode .nav-instructions-image .nav-instructions-img-touch   { display: block; }
 
-/* The touch-controls image is tall (portrait). Without this it
-   overflows and slides underneath the checkbox + "Got it" button.
-   Make the image wrapper a flexible, scrollable region so the
-   image scrolls inside the card while the checkbox and button
-   stay pinned and fully visible at the bottom. */
+/* The touch image is tall (portrait): make the wrapper a flexible
+   scrollable region so the image scrolls inside the card while the
+   checkbox and button stay pinned at the bottom. */
 body.touch-mode .nav-instructions-image {
   flex: 1 1 auto;
   min-height: 0;          /* allow the flex item to shrink */
@@ -112,9 +91,7 @@ body.touch-mode .nav-instructions-checkbox,
 body.touch-mode .nav-instructions-actions {
   flex: 0 0 auto;
 }
-/* In touch mode the card itself should clip (the image scrolls
-   internally), rather than the whole card scrolling — that keeps
-   the button locked to the bottom edge. */
+
 body.touch-mode .nav-instructions-card {
   overflow: hidden;
 }
@@ -131,8 +108,6 @@ body.xr-mode .nav-instructions-image .nav-instructions-img-xr      { display: bl
   letter-spacing: .04em;
 }
 
-/* Reuse the start-screen checkbox styling, but invert colors
-   so the white check + transparent box read on the dark card. */
 .nav-instructions-checkbox {
   display: inline-flex;
   align-items: center;

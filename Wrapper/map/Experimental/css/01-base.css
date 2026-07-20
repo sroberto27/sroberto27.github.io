@@ -1,11 +1,6 @@
 /* === SCSU styles — Part 1: Base, variables, splash, app grid === */
 /* ===========================================================
-   SCSU VIRTUAL CAMPUS — Styles (redesigned)
-   -----------------------------------------------------------
-   Dark sidebar + dark header, brand-red flair, pill toggles,
-   integrated search, Featured/All tabs, slide-in burger menu.
-   Pixel margins from the design spec are converted to clamp()
-   so the layout stays fluid across breakpoints.
+   SCSU VIRTUAL CAMPUS — Styles
    =========================================================== */
 
 :root {
@@ -39,48 +34,27 @@
   --on-dark-line:   rgba(255,255,255,.10);
 
   /* ---------- Typography ---------- */
-  /* `--mono` previously resolved to JetBrains Mono. Per the updated
-     Figma direction, the UI should use Inter throughout — so the
-     token now aliases the same Inter stack as `--sans`. The name is
-     kept so the many existing `font-family: var(--mono)` rules
-     across the codebase don't need touching (anything that still
-     references the token now renders Inter automatically). The
-     JetBrains Mono webfont import has also been removed from
-     map.html so the font is no longer downloaded. */
+
+  /* --mono now aliases the Inter stack; the token name is kept so
+     existing font-family: var(--mono) rules keep working. */
   --mono: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
           Roboto, system-ui, sans-serif;
   --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
           Roboto, system-ui, sans-serif;
-  /* Minion (self-host via @font-face for production). EB Garamond is
-     loaded from Google Fonts as an open-source visual fallback —
-     it's an old-style serif with proportions close to Minion. */
+
   --serif: "Minion Pro", "Minion 3", "Minion",
            "EB Garamond", "Adobe Garamond Pro",
            Georgia, "Times New Roman", serif;
 
-  /* ---------- Structural sizes ----------
-     Per Figma:
-       • Top bar:     60px content row + 20px top pad (red flair)  = ~80px
-       • Sidebar:     300px wide, 20px inner gutters
-       • Details:     340px wide, 20px inner gutters
-       • Tour bar:    85px tall, BLACK (matches --header-bg, not --sidebar-bg)
-       • Cell height: 65px
-       • Cell gap:    2px
-     Widths use clamp() so the layout stays usable on smaller laptops,
-     but the Figma-spec value (300/340) is the upper bound. */
   --topbar-h:      80px;
   --tourbar-h:     85px;       /* matches the 85px sidebar tour height */
-  /* Locked to exact Figma spec on desktop. The narrower-laptop
-     breakpoint below scales them down only when the viewport
-     can no longer comfortably fit both panels at full width. */
-  --sidebar-w:     300px;      /* 300px per Figma */
-  --details-w:     340px;      /* 340px per Figma */
-  --sidebar-tour-h:85px;
-  --cell-h:        65px;       /* per Figma "LOCATION CELL — 65px" */
-  --gutter:        20px;       /* per Figma — 20px inside sidebars/panels */
 
-  /* Page edge gutter — kept ultra-thin so panels read as connected
-     to the metabar, matching the Figma board. */
+  --sidebar-w:     300px;      /* per design spec */
+  --details-w:     340px;      /* per design spec */
+  --sidebar-tour-h:85px;
+  --cell-h:        65px;       /* location cell height per design spec */
+  --gutter:        20px;       /* inner gutter for sidebars/panels */
+
   --edge-gutter:   0px;
   --panel-gap:     0px;
 
@@ -177,10 +151,10 @@ img    { user-select: none; -webkit-user-drag: none; }
 
 /* ===========================================================
    APP GRID
-     row 1 — brand red flair (4px)
-     row 2 — METABAR (logo | mode toggle | burger)
-     row 3 — LOCATIONS | MAP | DETAILS
-     row 4 — TOURBAR (mobile only; hidden on desktop)
+   row 1 — brand red flair (4px)
+   row 2 — METABAR (logo | mode toggle | burger)
+   row 3 — LOCATIONS | MAP | DETAILS
+   row 4 — TOURBAR (mobile only; hidden on desktop)
    =========================================================== */
 .app {
   display: grid;

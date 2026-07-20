@@ -1,10 +1,6 @@
 /* === SCSU styles — Part 9: Burger panel — Settings group === */
 /* ===========================================================
    BURGER PANEL — Settings group + toggle switch
-   -----------------------------------------------------------
-   Sits at the bottom of the burger panel, below the nav links.
-   The toggle is a styled switch (track + thumb) for a clearer
-   "setting" affordance vs. the link rows above.
    =========================================================== */
 .burger-settings {
   margin-top: auto;            /* pin to the bottom of the panel */
@@ -21,8 +17,7 @@
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 }
-/* Vertical spacing between stacked toggle rows. The first row
-   has no top margin so it hugs the divider above it. */
+
 .burger-toggle-row + .burger-toggle-row {
   margin-top: 18px;
   padding-top: 18px;

@@ -73,16 +73,8 @@
   transform: scale(1.15);
 }
 
-/* -----------------------------------------------------------
-   Off-campus tour pin
-   -----------------------------------------------------------
-   Used for tour stops whose real location is far outside the
-   campus map (e.g. Olar Farm, ~20mi southwest). The polygon
-   on the map is a directional indicator — typically an arrow
-   pointing the way to the actual site — so the pin uses an
-   amber palette plus a small ↗ arrow glyph to make clear
-   that this stop is not on campus.
-   ----------------------------------------------------------- */
+/* Off-campus tour pin: amber palette + arrow glyph, marking the map
+   shape as a directional indicator rather than a real footprint. */
 .tour-pin.is-offcampus {
   width: auto;
   min-width: 34px;
@@ -153,13 +145,6 @@
 
   .tourbar { display: grid; }
 
-  /* Mobile metabar — per Figma:
-       • No SCSU logo (hidden)
-       • "SCSU VIRTUAL CAMPUS" centered as the only brand element
-       • Mode toggle drops to the second row of the header
-       • Burger stays pinned to the right
-     We give the metabar two rows so the brand sits above the
-     Explore/Learn pill instead of fighting it for horizontal space. */
   .metabar {
     grid-template-columns: 1fr auto;     /* brand row | burger */
     grid-template-rows: auto auto;
@@ -178,7 +163,7 @@
   .metabar-actions      { grid-area: burger; }
   .mode-toggle-header   { grid-area: toggle; justify-self: center; }
 
-  /* Hide the round SCSU logo on mobile — Figma shows text only */
+  /* Hide the round SCSU logo on mobile — text-only brand */
   .brand-logo    { display: none; }
 
   .brand-product {
@@ -311,11 +296,6 @@
   .details-extra { display: none; }
   .details.is-full .details-extra { display: block; }
 
-  /* Mobile keeps the inline Explore CTA + VR row in the scrolling
-     content area (original behavior). The persistent desktop/iPad
-     footer is hidden here so it never appears on small screens.
-     Chained `.explore-cta.explore-cta-inline` matches the chained
-     hide selector at the top of this file. */
   .explore-cta.explore-cta-inline { display: inline-flex; }
   .details-vr-inline              { display: flex; }
   .details-footer                 { display: none; }
@@ -323,8 +303,6 @@
   .details-close { top: 14px; right: 14px; }
   .map-action    { bottom: 12px; right: 12px; }
 
-  /* Search results popover sits within the sidebar drawer
-     (not below the bar) since the bar is now inside the drawer. */
   .search-results {
     position: absolute;
     top: calc(100% - 4px);
@@ -332,8 +310,6 @@
     right: 0;
   }
 
-  /* Hide the floating "Locations" button when the drawer or
-     full-state details panel is showing */
   .shell.drawer-open .locations-toggle,
   .shell.has-details.details-full .locations-toggle {
     display: none;
@@ -360,7 +336,6 @@
     opacity: 0;
     pointer-events: none;
   }
-
 
 }
 

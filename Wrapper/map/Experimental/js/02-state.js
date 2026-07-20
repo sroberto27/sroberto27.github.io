@@ -1,8 +1,7 @@
-/* === SCSU app — Part 2: Map setup, DOM refs, state === */
-/* Includes: Leaflet map + panes (sec 3), DOM refs (sec 4),
-   styling helpers (sec 5), and all module-level state (sec 6). */
+/* === Map setup, DOM refs, styling helpers, module state === */
+
 /* -----------------------------------------------------------
-   3. Leaflet map + panes
+   Leaflet map + panes
    ----------------------------------------------------------- */
 const map = L.map("map", {
   zoomControl: false,
@@ -21,7 +20,7 @@ map.createPane("toursPane");     map.getPane("toursPane").style.zIndex     = 430
 map.createPane("pinsPane");      map.getPane("pinsPane").style.zIndex      = 500;
 
 /* -----------------------------------------------------------
-   4. DOM refs
+   DOM refs
    ----------------------------------------------------------- */
 const $ = (id) => document.getElementById(id);
 
@@ -42,7 +41,7 @@ const el = {
   locationsToggle:    $("locationsToggle"),
   locationsBackdrop:  $("locationsBackdrop"),
 
-  // All-tab sort control (Alphabetical / Department)
+  // "All" tab sort controls (Alphabetical / Department)
   locSortAlpha:       $("locSortAlpha"),
   locSortDept:        $("locSortDept"),
 
@@ -54,7 +53,7 @@ const el = {
   detailsSub:      $("detailsSub"),
   detailsBody:     $("detailsBody"),
 
-  // Metadata panel dynamic sections
+  // Details panel dynamic sections
   happensHereBlock: $("happensHereBlock"),
   chipsHere:        $("chipsHere"),
   explorableBlock:  $("explorableBlock"),
@@ -64,14 +63,14 @@ const el = {
   detailsAddressLinks: $("detailsAddressLinks"),
   detailsImage:     $("detailsImage"),
 
-  // Desktop tour nav (inside sidebar footer)
+  // Desktop tour nav (sidebar footer)
   tourName:        $("tourName"),
   tourCurrent:     $("tourCurrent"),
   tourTotal:       $("tourTotal"),
   tourPrev:        $("tourPrev"),
   tourNext:        $("tourNext"),
 
-  // Mobile tour nav (separate .tourbar at the bottom of viewport)
+  // Mobile tour nav (bottom .tourbar)
   tourNameMobile:    $("tourNameMobile"),
   tourCurrentMobile: $("tourCurrentMobile"),
   tourTotalMobile:   $("tourTotalMobile"),
@@ -80,7 +79,7 @@ const el = {
 
   fitBtn:          $("fitBtn"),
 
-  /* ---- Treedis street-view overlay (new) ---------------- */
+  // Treedis street-view overlay
   streetview:        $("streetview"),
   tourFrame:         $("tour-frame"),
   streetviewClose:   $("streetviewClose"),
@@ -92,16 +91,13 @@ const el = {
   streetviewLoadingLabel:  $("streetviewLoadingLabel"),
   streetviewLoadingCancel: $("streetviewLoadingCancel"),
 
-
-  /* Explore CTA inside the metadata panel — used to launch
-     the street view for the currently-selected location.
-     `exploreCta`       — mobile inline button (inside scroll flow)
-     `exploreCtaFooter` — desktop/iPad persistent footer button
-     `vrInline`         — mobile inline VR-Enabled row
-     `detailsFooter`    — desktop/iPad persistent footer wrapper
-                          (collapses entirely when the building
-                          has no Treedis sweep configured)
-     `vrBtn`            — legacy hidden button JS still binds to */
+  // Explore controls in the details panel:
+  //   exploreCta       — mobile inline button
+  //   exploreCtaFooter — desktop/iPad footer button
+  //   vrInline         — mobile inline VR-Enabled row
+  //   detailsFooter    — desktop/iPad footer wrapper (collapses when
+  //                      the location has no Treedis sweep)
+  //   vrBtn            — hidden legacy button JS still binds to
   exploreCta:        $("exploreCta"),
   exploreCtaFooter:  $("exploreCtaFooter"),
   detailsFooter:     document.querySelector(".details-footer"),
@@ -120,13 +116,10 @@ const mqMobile = window.matchMedia("(max-width: 880px)");
 function isMobile() { return mqMobile.matches; }
 
 /* -----------------------------------------------------------
-   5. Styling helpers
+   Styling helpers
    -----------------------------------------------------------
-   The optional `feature` argument lets us pick a different
-   palette for off-campus tour stops (e.g. the Olar Farm arrow
-   that sits at the campus edge as a directional indicator).
-   Callers that don't have a feature handy (legacy code paths)
-   can omit it — they get the original behavior.
+   The optional `feature` argument selects the distinct palette for
+   off-campus tour stops (directional indicators at the campus edge).
    ----------------------------------------------------------- */
 function isOffCampusFeature(feature) {
   return !!(feature && feature.properties && feature.properties.off_campus);
@@ -165,11 +158,11 @@ function selectedStyleFor(feature) {
 }
 
 /* -----------------------------------------------------------
-   6. State
+   Module state
    ----------------------------------------------------------- */
-let imageBounds     = null; // still used as campus bounds by reset/fit helpers
-let imageOverlay    = null; // old single-image mode only
-let baseTileLayer   = null; // new tile mode
+let imageBounds     = null;
+let imageOverlay    = null;
+let baseTileLayer   = null;
 let dataBounds      = null;
 let buildingsLayer  = null;
 let toursLayer      = null;
@@ -178,45 +171,33 @@ let tourPinsLayer   = L.layerGroup([], { pane: "pinsPane" });
 let selectedLayer = null;
 let selectedKind  = null;
 
-let tourStops  = []; // [{ feature, layer, marker, order }]
+let tourStops  = [];
 let tourIndex  = -1;
 let allFeatures = [];
 
-/* Mobile drawer state. At any given time on mobile we can be in:
-     - "map only"         (nothing open)
-     - drawer open        (locations list visible)
-     - details half       (bottom sheet covering ~half the screen)
-     - details full       (bottom sheet covering the whole map area)
-   The drawer and details are mutually exclusive. */
+/* Mobile panel state. The locations drawer and the details bottom
+   sheet are mutually exclusive; the sheet snaps to "half" or "full". */
 let drawerOpen   = false;
-let detailsMode  = null; // null | "half" | "full"
+let detailsMode  = null;
 
-/* Street view state. The iframe starts preloading the moment the
-   page boots, but stays hidden (aria-hidden + CSS) until the user
-   explicitly hits "Explore" on a location. While the street view
-   is active the locations list and tour-bar arrows keep working,
-   except they drive Treedis via postMessage instead of flying the
-   map to the next feature. */
+/* Street view state. The iframe preloads at boot but stays hidden until
+   the user hits Explore. While active, list/tour navigation drives
+   Treedis via postMessage instead of moving the map. */
 let streetViewActive = false;
 
-/* Track the last successful Treedis navigation so we don't fire a
-   redundant Navigate message (e.g. selecting the same row twice). */
+/* Last sweep sent to Treedis, used to skip redundant Navigate calls. */
 let lastStreetViewSweepId = null;
 
-/* Set to true when the user takes a real street-view action, so
-   warmHomeSweep() aborts before clobbering their chosen sweep. */
+/* Set when the user takes a real street-view action so warmHomeSweep()
+   aborts instead of clobbering their chosen sweep. */
 let warmupCancelled = false;
 
-/* When the user opens street view before TourReady has fired, we
-   stash their intended target here. Once Treedis reports ready,
-   _flushPendingSweep() sends the queued Navigate and hides the
-   loading veil. Cleared on close or on successful flush. */
+/* Target queued while Treedis is still booting. Flushed by
+   _flushPendingSweep() once TourReady fires; cleared on close. */
 let pendingSweep = null;
 
-
-/* Image-alignment state. Loaded from localStorage first (so
-   the user's tuning persists), then falls back to the values
-   in config.js. */
+/* Image-alignment state (legacy single-image mode). Loaded from
+   localStorage first so tuning persists, then from config.js. */
 const ALIGN_KEY = "scsu-map.align.v1";
 function loadAlign() {
   const fromCfg = {

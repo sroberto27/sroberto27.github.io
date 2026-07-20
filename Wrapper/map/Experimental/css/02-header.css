@@ -1,28 +1,19 @@
 /* === SCSU styles — Part 2: Metabar, mode toggle, burger panel === */
 /* ===========================================================
    METABAR (top header — black, persistent on every breakpoint)
-   Per Figma: 60px content row, 20px L/R gutters, sits below
+   60px content row, 20px L/R gutters, sits below
    a 4px brand-red flair line. Total chrome height ≈ 80px.
    =========================================================== */
 .metabar {
-  /* Three equal flexible columns so the middle column — which holds
-     the Explore/Learn pill — is mathematically centered in the
-     viewport regardless of how wide the brand block or right-side
-     actions get. The earlier `auto 1fr auto` layout let the brand
-     block consume as much room as it needed and the middle column
-     absorbed whatever was left, which meant the pill drifted to the
-     right whenever the brand was wider than the burger.
 
-     `minmax(0, 1fr)` on every column lets each side shrink past its
-     intrinsic content width if the viewport narrows — without this,
-     a long brand string would push the middle column off-center
-     again. The brand/actions children still hug their respective
-     edges via `min-width: 0` + `justify-self`. */
   display: grid;
+  /* Three flexible columns keep the Explore/Learn pill mathematically
+     centered regardless of how wide the brand or actions get;
+     minmax(0, 1fr) lets each side shrink below its content width. */
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
   align-items: center;
   gap: clamp(12px, 2vw, 28px);
-  padding: 0 var(--gutter);                       /* 20px L/R per Figma */
+  padding: 0 var(--gutter);                       /* 20px L/R gutter */
   padding-top: env(safe-area-inset-top);
   height: calc(var(--topbar-h) + env(safe-area-inset-top));
   background: var(--header-bg);
@@ -41,10 +32,7 @@
 }
 
 .brand-logo {
-  /* 48x48 white-reversed SVG seal. No background fill — the SVG is
-     already white-on-transparent, so it sits cleanly on the black
-     header. No border-radius either; the artwork carries its own
-     circular silhouette. */
+
   width: 48px;
   height: 48px;
   object-fit: contain;
@@ -70,8 +58,6 @@
   justify-self: end;
 }
 
-/* The actual burger trigger label.  Hidden checkbox below
-   drives the open/closed state via CSS sibling selectors. */
 .burger-toggle {
   position: absolute;
   opacity: 0;
@@ -149,7 +135,7 @@
 /* ===========================================================
    BURGER SLIDE-IN PANEL (right side)
    Pure-CSS open/close via the hidden #burgerToggle checkbox at
-   the top of .app. Per the Figma board, this is a *non-modal*
+   the top of .app. This is a *non-modal
    panel — the rest of the page stays visible and interactive
    behind it; we don't dim a backdrop.
    =========================================================== */
@@ -174,8 +160,7 @@
 
 .burger-toggle:checked ~ .burger-panel { transform: translateX(0); }
 
-/* Backdrop kept ONLY for mobile, where the panel is full-width
-   and the user needs an obvious tap-off-to-close target. */
+/* Backdrop is mobile-only: full-width panel needs a tap-off target. */
 .burger-backdrop {
   position: fixed;
   inset: 0;

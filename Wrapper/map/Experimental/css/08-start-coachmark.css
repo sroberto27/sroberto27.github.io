@@ -1,17 +1,11 @@
 /* === SCSU styles — Part 8: Start screen + coachmark system === */
 /* ===========================================================
    START SCREEN
-   -----------------------------------------------------------
-   Modal welcome screen shown after the splash finishes
-   loading. Centered white card on a dim backdrop. The
-   underlying app is already rendered behind it so the
-   transition into the tour feels seamless.
    =========================================================== */
 .start-screen {
   position: fixed;
   inset: 0;
-  z-index: 1700;             /* above app, below burger panel? — burger is 1500;
-                                start screen sits above everything until dismissed. */
+  z-index: 1700;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -40,7 +34,7 @@
   gap: 18px;
   box-shadow: 0 24px 60px rgba(0, 0, 0, .35);
   font-family: var(--sans);
-  /* Match the squared-off Figma aesthetic — no rounded corners. */
+  /* Squared-off aesthetic — no rounded corners. */
   border-radius: 0;
   transform: translateY(8px);
   transition: transform .32s ease;
@@ -120,14 +114,6 @@
 
 /* ===========================================================
    COACHMARK SYSTEM
-   -----------------------------------------------------------
-   Three-step walkthrough. Four edge "masks" dim everything
-   except a rectangular cutout aimed at the current step's
-   target. Cards anchor to the cutout and explain it.
-   The cutout itself does NOT receive pointer events because
-   we want the user to follow the guided sequence — clicks
-   on the highlighted UI are blocked just like the rest of
-   the page.
    =========================================================== */
 .coachmark-overlay {
   position: fixed;
@@ -142,17 +128,11 @@
   pointer-events: auto;
 }
 
-/* The four dim panels that surround the cutout. Each is sized
-   and positioned per-step from JS using inline top/left/width
-   /height. Default to covering the full viewport so a missed
-   measurement still gives a sane (fully dimmed) state.
-
-   IMPORTANT: pointer-events is ONLY auto when the overlay is
-   actually visible. Without this guard the masks keep
-   swallowing clicks even after the walkthrough closes,
-   because their inline width/height still cover the screen
-   and `pointer-events: auto` would override the parent's
-   `pointer-events: none`. */
+/* Four dim panels around the cutout, sized per step from JS inline
+   styles. Default to full-viewport cover so a missed measurement
+   still dims sanely. pointer-events is auto ONLY while the overlay
+   is visible — otherwise the masks would keep swallowing clicks
+   after the walkthrough closes. */
 .coachmark-mask {
   position: absolute;
   background: rgba(0, 0, 0, .58);
@@ -168,12 +148,8 @@
 .coachmark-mask-left   { left: 0; width: 0; }
 .coachmark-mask-right  { right: 0; width: 0; }
 
-/* The cutout used to be drawn with a visible white border + red
-   glow to call attention to the target. Per the Figma the area-
-   of-focus is just the unmasked cutout itself — no outline, no
-   glow — so the dim surround does the highlighting on its own.
-   The element is still sized inline by JS so we keep it around,
-   but render it invisibly. */
+/* Cutout outline is rendered invisibly: the unmasked area itself is
+   the highlight. JS still sizes the element inline. */
 .coachmark-ring {
   position: absolute;
   border: none;
@@ -183,9 +159,8 @@
               width .28s ease, height .28s ease;
 }
 
-/* The tooltip card itself. Position is set inline by JS.
-   Pointer-events is gated on the overlay being visible — same
-   rationale as the masks. */
+/* Tooltip card; position set inline by JS. pointer-events gated on
+   overlay visibility, same rationale as the masks. */
 .coachmark-card {
   position: absolute;
   width: min(360px, calc(100vw - 48px));
@@ -195,7 +170,7 @@
   box-shadow: 0 16px 36px rgba(0, 0, 0, .35);
   pointer-events: none;
   font-family: var(--sans);
-  /* Square corners to match the Figma board. */
+  /* Square corners per design spec. */
   border-radius: 0;
   transition: top .28s ease, left .28s ease;
 }
@@ -221,9 +196,6 @@
 .coachmark-close:hover { opacity: 1; }
 .coachmark-close svg   { width: 16px; height: 16px; }
 
-/* Decorative arrow that points from the card toward the
-   highlighted target. JS toggles which side it sits on by
-   setting data-arrow="left|right|top|bottom" on the card. */
 .coachmark-card-arrow {
   position: absolute;
   width: 12px;
@@ -293,23 +265,18 @@
   transition: opacity .14s, color .14s;
 }
 .coachmark-nav:hover     { color: var(--brand-red-2); }
-/* Disabled = visibly dimmed but still occupies its grid cell, so
-   the "X of 3" counter stays centered when Previous is inactive
-   on the first step (matches the Figma). */
+
 .coachmark-nav:disabled {
   color: #9ca3af;
   cursor: default;
   pointer-events: none;
 }
 .coachmark-nav:disabled:hover { color: #9ca3af; }
-/* Truly hidden — collapses out of the grid. Used as an escape
-   hatch; not currently triggered by the walkthrough JS. */
+
 .coachmark-nav[hidden]   { opacity: 0; pointer-events: none; }
 .coachmark-nav-prev      { justify-self: start; text-align: left; }
 .coachmark-nav-next      { justify-self: end;   text-align: right; }
 
-/* Final step: Next becomes a filled "Finish" pill so the user
-   has a clear end-state CTA instead of the trailing X button. */
 .coachmark-nav-finish {
   background: var(--brand-red);
   color: #fff;
@@ -325,17 +292,10 @@
   white-space: nowrap;
 }
 
-/* When the coachmark system is active, lock body scroll and
-   block keyboard tabbing into the dim layer's underlying UI.
-   The masks already block pointer events; this just keeps
-   focus inside the card. */
 body.coachmarks-active {
   overflow: hidden;
 }
 
-/* Mobile: keep cards readable. They're positioned absolutely
-   by JS but on small screens we let them shrink to fit and
-   re-center horizontally. */
 @media (max-width: 720px) {
   .coachmark-card {
     width: calc(100vw - 32px);
@@ -345,9 +305,6 @@ body.coachmarks-active {
 
 /* ===========================================================
    START SCREEN — "Don't show again" checkbox
-   -----------------------------------------------------------
-   A small custom-styled checkbox that sits above the action
-   buttons. Mirrors the burger panel's startup toggle.
    =========================================================== */
 .start-screen-checkbox {
   display: inline-flex;
@@ -364,8 +321,6 @@ body.coachmarks-active {
   margin-bottom: 4px;
 }
 
-/* Hide the native input but keep it focusable for keyboard /
-   screen-reader users. */
 .start-screen-checkbox input {
   position: absolute;
   width: 1px;

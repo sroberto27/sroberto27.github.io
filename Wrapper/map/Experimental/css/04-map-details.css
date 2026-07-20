@@ -103,11 +103,7 @@
 .details-close:hover { background: rgba(255,255,255,.08); }
 
 .details-content {
-  /* 20px L/R gutter per Figma metadata panel. Bottom gets extra
-     room so the last block doesn't hug the panel edge.
-     On desktop/iPad we shrink the bottom padding because the
-     persistent footer below provides its own breathing room
-     (see .details-footer rules). */
+
   padding: 22px var(--gutter) 24px;
   overflow-y: auto;
   flex: 1;
@@ -119,21 +115,16 @@
 
 /* ===========================================================
    PERSISTENT BUTTON BAR (desktop & iPad only)
-   -----------------------------------------------------------
-   Mirrors the sidebar's bottom tour-bar pattern. Stays visible
-   while the metadata content above scrolls. Hidden on mobile
-   (see mobile media query) — mobile keeps the inline Explore
-   CTA + VR row inside the scroll flow.
    =========================================================== */
+/* Persistent action bar (desktop/iPad). Matches the sidebar tour bar:
+   black background and the shared 85px height token. */
 .details-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 14px var(--gutter);
-  /* Match the sidebar tour bar exactly: black background (so it
-     reads as a continuation of the top metabar) and the same
-     85px height token both bars share. */
+
   background: var(--header-bg);
   border-top: var(--border-light);
   height: var(--sidebar-tour-h);
@@ -193,34 +184,17 @@
   margin-left: 2px;
 }
 
-/* On desktop/iPad, the inline Explore CTA and inline VR row that
-   live inside .details-content are hidden — their roles are taken
-   by the persistent footer above. They remain in the DOM so the
-   existing JS bindings on #exploreCta / .vr-link keep functioning
-   (the footer button proxies clicks to #exploreCta).
-   Chained selector on the CTA bumps specificity above the plain
-   `.explore-cta { display: inline-flex }` rule further down. */
-
 .explore-cta.explore-cta-inline,
 .details-vr.details-vr-inline {
   display: none;
 }
 
-/* Toggle applied by renderDetails() in 06-details-panel.js when
-   the currently-selected building has no Treedis sweep configured.
-   Hides the Explore CTA (mobile inline + desktop footer), the
-   mobile inline VR-Enabled row, and the entire desktop/iPad
-   persistent footer bar — so buildings like Staley Hall and Davis
-   Hall render as info-only cards (tag, title, description, image)
-   without advertising an immersive view that doesn't exist.
-
-   `!important` is required because several of these elements
-   have explicit `display: flex` / `display: inline-flex` rules
-   elsewhere in this file and in the responsive overrides
-   (05-leaflet-responsive.css). Plain `display: none` without
-   `!important` would lose the specificity battle to those rules,
-   especially the mobile media query that re-enables the inline
-   variants. */
+/* Applied by renderDetails() when the selected location has no
+   Treedis sweep: hides the Explore CTA (inline + footer), the inline
+   VR row, and the whole footer bar, leaving an info-only card.
+   !important is required — these elements carry explicit display:
+   flex/inline-flex rules (including mobile overrides) that would
+   otherwise win. */
 .is-hidden-no-sweep {
   display: none !important;
 }
@@ -369,8 +343,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 12px 14px;
-  /* Inter (sans) per design — applies to every "Explorable Locations"
-     item (Room 110, Lecture Room, etc.) in the metadata panel. */
+
   font-family: var(--sans);
   font-size: 12px;
   border-bottom: 1px solid var(--on-dark-line);
@@ -409,9 +382,6 @@
 }
 .vr-btn:hover { background: var(--cell-active); }
 
-/* The bottom Explore button was removed from the metadata panel.
-   The element stays in the DOM so JS keeps its click handler intact,
-   but it's visually suppressed. */
 .vr-btn-hidden {
   display: none !important;
 }
@@ -425,11 +395,6 @@
   gap: 6px;
 }
 
-/* When the VR-Enabled label is a deep-link to a Meta Quest headset,
-   give it button-like affordance: pointer cursor, subtle border,
-   and a clear hover/focus state so users know it's interactive.
-   The browser's native tooltip (from the `title` attribute) handles
-   the explanatory hover text. */
 a.vr-link {
   text-decoration: none;
   cursor: pointer;
@@ -517,12 +482,6 @@ a.vr-link:active { transform: translateY(1px); }
    BOTTOM TOURBAR
    Desktop: hidden (the sidebar footer takes its place)
    Mobile : visible
-
-   Per Figma: this bar is BLACK (matches the top bar / header),
-   NOT the sidebar gray. The previous build used --sidebar-bg
-   (#333333) which made it visually disconnected from the
-   metabar; both bars should read as the same black chrome
-   bracketing the map.
    =========================================================== */
 .tourbar {
   display: none;
@@ -530,23 +489,13 @@ a.vr-link:active { transform: translateY(1px); }
   align-items: center;
   gap: 18px;
   padding: 0 var(--gutter);
-  background: var(--header-bg);    /* BLACK — matches top bar (Figma) */
+  background: var(--header-bg);    /* black — matches the top bar */
   color: var(--on-dark);
   height: calc(var(--tourbar-h) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
   border-top: var(--border-light);
 }
 
-
-/* -----------------------------------------------------------
-   Off-campus details panel treatment
-   -----------------------------------------------------------
-   When the user opens the details panel for an off-campus
-   tour stop (Olar Farm), the kicker tag reads OFF-CAMPUS STOP
-   in amber instead of the usual TOUR STOP, and a distance
-   chip sits next to the title so it's unambiguous that the
-   site is not visible on the campus map.
-   ----------------------------------------------------------- */
 .details-tag.is-offcampus {
   color: #C2410C;            /* tailwind orange-700 */
   background: #FFEDD5;       /* tailwind orange-100 */
@@ -556,6 +505,7 @@ a.vr-link:active { transform: translateY(1px); }
   letter-spacing: .14em;
 }
 
+/* Off-campus notice above the description (amber, with icon). */
 .details-offcampus-note {
   display: flex;
   align-items: center;
@@ -582,30 +532,18 @@ a.vr-link:active { transform: translateY(1px); }
   font-weight: 700;
 }
 
-/* Off-campus highlight on the tour bar — gives the current stop
-   name a subtle amber tint and trailing ↗ glyph (added in JS)
-   when the active stop is off-campus (Olar Farm). */
 .tour-name.is-offcampus {
   color: #C2410C;            /* tailwind orange-700 */
 }
 
-/* -----------------------------------------------------------
-   Address block + "Open in Maps" links
-   -----------------------------------------------------------
-   Shown in the details panel for any location with an entry in
-   addressMap (locations.js). Used primarily for off-campus
-   locations like Olar Farm so users can launch the address in
-   their preferred map app (Google Maps everywhere, Apple Maps
-   on iOS/macOS, and a geo: URI on mobile to invoke the OS app
-   picker for Waze/OsmAnd/etc.).
-   ----------------------------------------------------------- */
+/* Address block + "Open in Maps" links (Google everywhere, Apple
+   Maps on iOS/macOS, geo: URI on mobile for the OS app picker). */
 .details-address {
   font-size: 13.5px;
   color: var(--on-dark);
   line-height: 1.5;
   margin: 4px 0 10px;
-  /* Use the address font as user-selectable so copy-paste works.
-     The rest of the panel inherits its default selection behavior. */
+
   user-select: text;
   -webkit-user-select: text;
 }
@@ -655,8 +593,6 @@ a.vr-link:active { transform: translateY(1px); }
   line-height: 1;
 }
 
-/* Subtle per-provider tint on the left border — keeps the row
-   readable while still telegraphing which app will open. */
 .address-link-google { border-left: 3px solid #4285F4; }
 .address-link-apple  { border-left: 3px solid #0071E3; }
 .address-link-native { border-left: 3px solid #C2410C; }

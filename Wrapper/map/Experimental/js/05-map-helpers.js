@@ -1,12 +1,11 @@
-/* === SCSU app — Part 5: Map constraints + refresh helpers === */
-/* -----------------------------------------------------------
-   6a. Map constraints + refresh helpers
-   ----------------------------------------------------------- */
+/* === Map constraints + view helpers === */
 function getCampusCoverZoom() {
   if (!imageBounds) return 15;
   return Math.min(map.getMaxZoom(), map.getBoundsZoom(imageBounds, true));
 }
 
+/* Re-measure the container and re-apply max bounds / min zoom.
+   Optionally recenters when the current view falls outside them. */
 function refreshMapConstraints({ recenterIfNeeded = true } = {}) {
   if (!imageBounds) return;
 
@@ -38,18 +37,20 @@ function getCampusOffsetCenter(zoom, offsetXPx = 0, offsetYPx = 60) {
   const baseCenter = imageBounds.getCenter();
   const projected = map.project(baseCenter, zoom);
 
-  // Negative Y here makes the image appear lower on screen.
+  // Negative Y shifts the campus lower on screen.
   const shifted = L.point(projected.x + offsetXPx, projected.y - offsetYPx);
 
   return map.unproject(shifted, zoom);
 }
 
+/* Reset to the default campus-wide view. Tile mode fits the campus
+   bounds; legacy single-image mode uses the offset cover view. */
 function resetCampusView(animate = false) {
   if (!imageBounds) return;
 
   refreshMapConstraints({ recenterIfNeeded: false });
 
-  // Tile mode: fit to the campus/vector bounds, not to a fake image box.
+  // Tile mode: fit the campus/vector bounds.
   if (config.mapMode === "tiles") {
     const opts = {
       padding: [24, 24],
@@ -71,6 +72,7 @@ function resetCampusView(animate = false) {
   map.setView(center, zoom, { animate });
 }
 
+/* Debounced refreshMapConstraints, used after layout transitions. */
 function scheduleMapRefresh({ recenterIfNeeded = true, delay = 0 } = {}) {
   clearTimeout(scheduleMapRefresh._t);
   scheduleMapRefresh._t = setTimeout(() => {

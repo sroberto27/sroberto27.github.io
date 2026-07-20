@@ -1,6 +1,6 @@
 /* === SCSU styles — Part 6: Image alignment dev tool === */
 /* ===========================================================
-   IMAGE ALIGNMENT TOOL (kept as-is — dev-only)
+   IMAGE ALIGNMENT TOOL (dev-only)
    =========================================================== */
 body.align-mode .leaflet-interactive { stroke-width: 3px !important; }
 

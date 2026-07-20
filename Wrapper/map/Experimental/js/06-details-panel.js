@@ -1,13 +1,15 @@
-/* === SCSU app — Part 6: Details panel + selection (sec 7, 8) === */
+/* === Details panel + selection === */
+
 /* -----------------------------------------------------------
-   7. Details panel
+   Details panel
    ----------------------------------------------------------- */
 function openDetails()  {
   el.shell.classList.add("has-details");
   el.details.setAttribute("aria-hidden", "false");
 
   if (isMobile()) {
-    // Always open mutually-exclusive with drawer
+
+    // Mutually exclusive with the mobile drawer.
     closeMobileLocations({ silent: true });
     setDetailsMode("half");
   }
@@ -26,8 +28,9 @@ function closeDetails() {
   scheduleMapRefresh({ recenterIfNeeded: false, delay: 260 });
 }
 
+/* Mobile only: snap the bottom sheet to "half" or "full". */
 function setDetailsMode(next) {
-  // next ∈ { "half", "full" }. On mobile, toggles the CSS state flags.
+
   if (!isMobile()) return;
   if (next !== "half" && next !== "full") return;
 
@@ -41,8 +44,8 @@ function setDetailsMode(next) {
   scheduleMapRefresh({ recenterIfNeeded: false, delay: 260 });
 }
 
-/* Render the "WHAT HAPPENS HERE?" chip row. Hides the whole
-   block if the list is empty. */
+/* Render the "WHAT HAPPENS HERE?" chip row; hides the block when the
+   list is empty. */
 function renderHappensHere(name) {
   const items = getHappensHere(name);
   if (!el.chipsHere || !el.happensHereBlock) return;
@@ -59,8 +62,11 @@ function renderHappensHere(name) {
     .join("");
 }
 
-/* Render the location hero image. Falls back to the
-   placeholder "X" frame if no image is mapped. */
+/* Render the location hero image, falling back to the placeholder frame
+   when no image is mapped. The placeholder is shown first and the real
+   <img> is swapped in on the next frame — images are preloaded at boot,
+   so the swap is instant and avoids layout thrash during the panel's
+   slide-in animation. */
 function renderImage(name) {
   if (!el.detailsImage) return;
   const src = getImage(name);
@@ -73,19 +79,14 @@ function renderImage(name) {
     return;
   }
 
-  // Show the placeholder immediately so the panel's slide-in has a
-  // simple box to render — then swap in the real <img> after the
-  // current frame commits. Because the image is already in the
-  // browser cache (preloaded on boot), this swap is effectively
-  // instant and doesn't cause layout thrash during the panel's
-  // transform animation.
   el.detailsImage.classList.remove("has-image");
   el.detailsImage.innerHTML =
     '<div class="details-image-x" aria-hidden="true"></div>' +
     '<figcaption>LOCATION IMAGE</figcaption>';
 
   requestAnimationFrame(() => {
-    // Bail if the user has already navigated somewhere else.
+
+    // Bail if the user has already navigated elsewhere.
     if (el.detailsImage.dataset.pendingSrc !== src) return;
     el.detailsImage.classList.add("has-image");
     el.detailsImage.innerHTML =
@@ -97,11 +98,10 @@ function renderImage(name) {
   el.detailsImage.dataset.pendingSrc = src;
 }
 
-/* Render the "EXPLORABLE LOCATIONS" list. Hides the whole
-   block if the list is empty. Each row is clickable and — via
-   the handler attached in renderDetails — opens the street view
-   at that sub-location's sweep (falling back to the parent's
-   view when the data isn't filled in yet). */
+/* Render the "EXPLORABLE LOCATIONS" list; hides the block when empty.
+   Each row opens street view at that sub-location's sweep. Rows without
+   a sweep get an "is-pending" class — still clickable, falling back to
+   the parent's view. */
 function renderExplorable(name) {
   const items = getExplorable(name);
   if (!el.subList || !el.explorableBlock) return;
@@ -117,8 +117,7 @@ function renderExplorable(name) {
     .map((t) => {
       const entry = getTreedisEntry(t);
       const hasSweep = !!(entry && entry.sweepId);
-      // Rows without a sweep get a subtle "pending" class so they
-      // still look clickable but signal that data is on the way.
+
       const pendingCls = hasSweep ? "" : " is-pending";
       return `<li class="sub-row${pendingCls}" role="button" tabindex="0" ` +
              `data-sub="${escapeHTML(t)}">` +
@@ -127,8 +126,7 @@ function renderExplorable(name) {
     })
     .join("");
 
-  // Wire click handlers — the enclosing renderDetails knows the
-  // parent building name, so we read it off dataset there.
+  // Parent building name is stashed on the list by renderDetails().
   const parentName = el.subList.dataset.parent || "";
   el.subList.querySelectorAll(".sub-row").forEach((li) => {
     const handler = () => {
@@ -145,24 +143,13 @@ function renderExplorable(name) {
   });
 }
 
-/* Render the physical address block and "Open in Maps" links.
-   ----------------------------------------------------------------
-   Pulls the address string from addressMap (via getAddress()). If
-   the location has no address configured the whole block is
-   hidden — there's no placeholder state. When an address IS
-   configured, we render:
-
-     • The address line itself (selectable text so users can copy).
-     • A "Google Maps" link  — works everywhere, opens in a new tab.
-     • An "Apple Maps" link  — shown only on iOS/macOS UAs.
-     • A native "Open in Maps" link using the geo: URI scheme —
-       shown only on Android/iOS where the OS routes geo: through
-       its app chooser, letting users pick whichever map app they
-       prefer (Waze, OsmAnd, Maps.me, etc.).
-
-   The Google Maps link uses the official Maps URL `search` endpoint
-   (api=1 + query=encoded address). Both Apple Maps and the geo:
-   URI accept the same plain-text address. */
+/* Render the address block and "Open in Maps" links. Hidden entirely
+   when no address is configured. When present, renders:
+     - the address line (selectable text)
+     - a Google Maps link (all platforms)
+     - an Apple Maps link (iOS/macOS only)
+     - a geo: URI link (Android/iOS only — the OS app chooser lets the
+       user pick their preferred map app) */
 function renderAddress(name) {
   if (!el.addressBlock || !el.detailsAddress || !el.detailsAddressLinks) return;
 
@@ -186,7 +173,7 @@ function renderAddress(name) {
 
   const links = [];
 
-  // Google Maps — universal, works in every browser.
+  // Google Maps — works in every browser.
   links.push(
     `<a class="address-link address-link-google" ` +
     `href="https://www.google.com/maps/search/?api=1&query=${q}" ` +
@@ -196,7 +183,7 @@ function renderAddress(name) {
     `Google Maps</a>`
   );
 
-  // Apple Maps — only show on Apple platforms where it actually opens.
+  // Apple Maps — only on Apple platforms where it actually opens.
   if (isIOS || isMacOS) {
     links.push(
       `<a class="address-link address-link-apple" ` +
@@ -208,10 +195,7 @@ function renderAddress(name) {
     );
   }
 
-  // geo: URI — Android & iOS both hand this to the OS app chooser
-  // so the user can pick their preferred map app (Waze, OsmAnd,
-  // Maps.me, etc.). Skipped on desktop browsers where it does
-  // nothing useful.
+  // geo: URI — skipped on desktop where it does nothing useful.
   if (isMobile) {
     links.push(
       `<a class="address-link address-link-native" ` +
@@ -243,13 +227,8 @@ function renderDetails(feature, kind) {
 
   el.detailsTitle.textContent = name || "—";
 
-  /* Subtitle under the building name shows the department(s)
-     occupying the location — per the Figma metadata panel (e.g.
-     "Mathematics & Science; College of Agriculture"). When the
-     location has no departments configured (open spaces,
-     historic shells), we fall back to the category so the row
-     never reads as an empty line. The category itself still
-     appears in the kicker tag above the title. */
+  // Subtitle shows the occupying department(s); falls back to the
+  // category so the row never reads as an empty line.
   const depts = getDepartments(name);
   el.detailsSub.textContent = depts.length
     ? depts.join("; ")
@@ -257,11 +236,8 @@ function renderDetails(feature, kind) {
 
   el.detailsBody.textContent  = getDescription(name);
 
-  /* Insert (or remove) a small inline notice right above the
-     description so users on the details panel know the site is
-     not represented on the campus map. The notice element is
-     created lazily on demand and lives as a sibling of the
-     description body. */
+  // Off-campus notice above the description, created lazily. Tells the
+  // user the site isn't represented on the campus map.
   let note = document.getElementById("detailsOffCampusNote");
   if (isOffCampus) {
     if (!note && el.detailsBody && el.detailsBody.parentNode) {
@@ -284,8 +260,7 @@ function renderDetails(feature, kind) {
     note.parentNode.removeChild(note);
   }
 
-  // Stash the parent name so the explorable list's click handlers
-  // know which building they belong to.
+  // Stash the parent name for the explorable list's click handlers.
   if (el.subList) el.subList.dataset.parent = name || "";
 
   renderHappensHere(name);
@@ -293,34 +268,15 @@ function renderDetails(feature, kind) {
   renderAddress(name);
   renderImage(name);
 
-  // Annotate the Explore CTA with the current location so the
-  // single button click handler (wired once, further down) knows
-  // where to navigate.
-  //
-  // Visibility rule: both the Explore CTA and the VR-Enabled
-  // controls are shown ONLY when this location has a real Treedis
-  // sweep configured (see hasSweep() / treedis-sweeps.js).
-  // Buildings without a sweep (e.g. Staley Hall, most academic
-  // halls that haven't been captured yet) shouldn't advertise an
-  // immersive view that doesn't exist — the panel quietly drops
-  // both the red CTA and the VR row, becoming an info-only card.
-  //
-  // We toggle four elements so both layouts (mobile inline +
-  // desktop/iPad persistent footer) stay in sync:
-  //   #exploreCta        — mobile inline Explore button
-  //   #exploreCtaFooter  — desktop/iPad footer Explore button
-  //   .details-vr-inline — mobile inline VR-Enabled row
-  //   .details-footer    — entire desktop/iPad footer bar
-  //                        (collapses cleanly instead of leaving
-  //                        an empty 85px black strip)
+  // The Explore CTA and VR controls are shown only when the location
+  // has a real Treedis sweep; otherwise the panel becomes an info-only
+  // card. Four elements are toggled so the mobile inline layout and the
+  // desktop/iPad footer stay in sync. A dedicated class
+  // (.is-hidden-no-sweep, with !important — see 04-map-details.css) is
+  // used instead of the hidden attribute because explicit display rules
+  // on these elements would override it.
   const sweepAvailable = hasSweep(name);
 
-  // We use a dedicated CSS class (`.is-hidden-no-sweep`) rather
-  // than the HTML `hidden` attribute because several of these
-  // elements have explicit `display: flex` / `display: inline-flex`
-  // CSS rules that outrank `hidden`'s implicit `display: none`.
-  // The class carries `!important` to win that battle cleanly —
-  // see the matching rules in 04-map-details.css.
   if (el.exploreCta) {
     const entry = getTreedisEntry(name);
     el.exploreCta.dataset.locationName = name || "";
@@ -344,24 +300,23 @@ function renderDetails(feature, kind) {
 }
 
 /* -----------------------------------------------------------
-   8. Selection + focus
+   Selection + focus
    ----------------------------------------------------------- */
 function resetLayerStyle(layer, kind) {
   if (!layer || typeof layer.setStyle !== "function") return;
   layer.setStyle(styleFor(kind, layer.feature));
 }
 
-/* Compute the padding to use when flying to a selected feature.
-   On mobile, the details sheet covers roughly the bottom half of
-   the shell area, so we inflate the *bottom* padding so that the
-   feature's center ends up in the visible upper half of the map. */
+/* Padding used when flying to a selected feature. On mobile the details
+   sheet covers roughly the bottom half, so bottom padding is inflated
+   to keep the feature in the visible upper half. */
 function focusPaddingFor(layer) {
   if (!isMobile()) return { padding: [80, 80] };
 
   const shell = el.shell;
   const shellH = shell ? shell.clientHeight : 600;
-  // matches --mobile-half-h (46dvh of the whole viewport)
-  // We need the portion of the shell that will be covered, roughly.
+
+  // Matches --mobile-half-h (46dvh of the viewport).
   const panelH = Math.round(window.innerHeight * 0.46);
   const bottomPad = Math.min(Math.max(panelH, 140), shellH - 80);
 
@@ -371,6 +326,9 @@ function focusPaddingFor(layer) {
   };
 }
 
+/* Select a feature: restyle it, render + open the details panel, sync
+   the sidebar / tour bar / pins, and (optionally) fly the map to it.
+   While street view is open, the selection also drives the 3D camera. */
 function selectFeature(layer, kind, { focus = false } = {}) {
   if (selectedLayer && selectedLayer !== layer) {
     resetLayerStyle(selectedLayer, selectedKind);
@@ -390,28 +348,15 @@ function selectFeature(layer, kind, { focus = false } = {}) {
   openDetails();
   if (layer.openTooltip) layer.openTooltip();
 
-  /* Off-campus tour stops (e.g. Olar Farm) carry a placeholder
-     polygon at the campus edge as a directional indicator only.
-     Flying to it would zoom past every real building on the way
-     and confuse the user, so we skip the per-feature fly. Instead,
-     we reset to the full campus view so the user sees the whole
-     campus plus the directional arrow pointing toward the real
-     site — visual confirmation that the location isn't on the
-     map. The details panel still opens and the user can click
-     Explore to jump straight into the Treedis sweep.
-
-     We skip the reset when the user is already inside the street
-     view (streetViewActive) — there's no visible map to refresh,
-     and snapping it underneath would just spend an animation the
-     user can't see. */
+  // Normal fly-to. The RAF settle lets the layout finish so Leaflet
+  // measures the post-panel-open shell width before flying.
   if (focus && layer.getBounds && !isOffCampus) {
     const fitOpts = {
       ...focusPaddingFor(layer),
       maxZoom: config.tour.focusZoom,
       duration: 0.55
     };
-    // Let the layout settle before flying so Leaflet measures the
-    // latest shell width after the details panel state changes.
+
     const fly = () => {
       refreshMapConstraints({ recenterIfNeeded: false });
       map.flyToBounds(layer.getBounds(), fitOpts);
@@ -421,10 +366,12 @@ function selectFeature(layer, kind, { focus = false } = {}) {
     } else {
       requestAnimationFrame(fly);
     }
+  // Off-campus stops carry only a directional placeholder polygon at
+  // the campus edge; flying to it would be disorienting. Reset to the
+  // full campus view instead so the arrow toward the real site is
+  // visible. Skipped inside street view, where no map is visible.
   } else if (focus && isOffCampus && !streetViewActive && imageBounds) {
-    // Off-campus path: animate the map back to the full campus
-    // view. Uses the same RAF settle pattern as the normal fly so
-    // Leaflet measures the post-panel-open shell width correctly.
+
     const reset = () => {
       refreshMapConstraints({ recenterIfNeeded: false });
       resetCampusView(true);
@@ -436,19 +383,15 @@ function selectFeature(layer, kind, { focus = false } = {}) {
     }
   }
 
-  // Update the left-side locations list
   syncLocationsList();
 
-  // Update tour index + pin highlight
   const idx = tourStops.findIndex((s) => s.layer === layer);
   tourIndex = idx;
   updateTourbar();
   highlightActivePin();
 
-  // If the user is currently inside the street view, also move
-  // the Treedis camera to the newly-selected location. This makes
-  // the left Locations list / tour arrows / search results all
-  // drive the 3D experience while it's open, per the spec.
+  // Keep the 3D view in sync so list/search/tour navigation drives
+  // Treedis while street view is open.
   if (streetViewActive) {
     navigateStreetViewToLayer(layer);
   }
@@ -464,8 +407,8 @@ function clearSelection() {
   selectedKind  = null;
   tourIndex = -1;
   closeDetails();
-  // Closing the details panel also closes the street view — without
-  // a selected building there's nothing to drive the 3D view.
+
+  // Without a selected building there is nothing to drive the 3D view.
   if (streetViewActive) closeStreetView();
   updateTourbar();
   highlightActivePin();

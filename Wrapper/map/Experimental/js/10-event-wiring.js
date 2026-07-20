@@ -1,9 +1,8 @@
-/* === SCSU app — Part 10: Event wiring + image alignment tool === */
-/* -----------------------------------------------------------
-   16. Event wiring
-   ----------------------------------------------------------- */
+/* === Event wiring + image alignment tool === */
 
-/* ------- IMAGE ALIGNMENT TOOL ------- */
+/* -----------------------------------------------------------
+   Image alignment tool (legacy single-image mode only)
+   ----------------------------------------------------------- */
 const alignUI = {
   btn:    $("alignBtn"),
   panel:  $("alignPanel"),
@@ -18,7 +17,8 @@ const alignUI = {
 
 let alignMode = false;
 
-/** Recompute bounds & push them to the live overlay. */
+/* Recompute bounds from the current alignment values and push them to
+   the live overlay; persists to localStorage. */
 function reapplyAlign() {
   if (!imageOverlay || !dataBounds) return;
   imageBounds = computeImageBounds(
@@ -41,8 +41,9 @@ function renderAlignValues() {
   alignUI.valSy .textContent = align.scaleY.toFixed(4);
 }
 
+/* Shift the overlay. One base step ≈ 2.5 m at this latitude. */
 function nudge(dir, big) {
-  // 1 base step ≈ ~2.5 m at this latitude (0.00002° lat, 0.00003° lng)
+
   const latStep = (big ? 0.0002  : 0.00002);
   const lngStep = (big ? 0.00024 : 0.000024);
   if (dir === "up")    align.offsetLat += latStep;
@@ -52,8 +53,9 @@ function nudge(dir, big) {
   reapplyAlign();
 }
 
+/* Adjust X/Y scale by an additive step, clamped to [0.5, 2]. */
 function scaleBy(axis, delta) {
-  // delta is multiplicative factor, e.g. +0.002 or -0.002
+
   if (axis === "x") align.scaleX = Math.max(0.5, Math.min(2, align.scaleX + delta));
   if (axis === "y") align.scaleY = Math.max(0.5, Math.min(2, align.scaleY + delta));
   reapplyAlign();
@@ -73,9 +75,10 @@ function toggleAlign(force) {
   if (alignMode) renderAlignValues();
 }
 
+// Tiles are georeferenced by the XYZ grid, so the alignment tool only
+// applies to single-image mode.
 if (config.mapMode === "tiles") {
-  // Tiles are already georeferenced by the XYZ grid.
-  // The old image alignment tool is only for single imageOverlay mode.
+
   if (alignUI.btn) {
     alignUI.btn.hidden = true;
   }
@@ -85,6 +88,7 @@ if (config.mapMode === "tiles") {
   alignUI.save .addEventListener("click", () => toggleAlign(false));
 }
 
+/* Copy the current alignment values as a config.js snippet. */
 alignUI.copy.addEventListener("click", () => {
   const snippet =
 `  imageOffsetLat: ${align.offsetLat.toFixed(6)},
@@ -129,30 +133,32 @@ alignUI.panel.addEventListener("click", (e) => {
   }
 });
 
-/* ------- Tour navigation buttons (desktop + mobile) ------- */
+/* -----------------------------------------------------------
+   Tour navigation buttons (desktop + mobile)
+   ----------------------------------------------------------- */
 if (el.tourPrev)       el.tourPrev.addEventListener("click",       tourPrevAction);
 if (el.tourNext)       el.tourNext.addEventListener("click",       tourNextAction);
 if (el.tourPrevMobile) el.tourPrevMobile.addEventListener("click", tourPrevAction);
 if (el.tourNextMobile) el.tourNextMobile.addEventListener("click", tourNextAction);
 
-/* ------- Street view wiring --------------------------------
-   • Explore CTA inside the metadata panel  → opens the viewer at
-     the currently-selected building's sweep.
-   • VR "Explore" button (desktop-only area) → same behaviour.
-   • Explorable list rows are wired inside renderExplorable().
-   • Close button hides the overlay and returns to the map.
-   • Clicking the touch guard arms the 3D viewer for the first
-     real interaction; it re-arms automatically on next open.
------------------------------------------------------------ */
+/* -----------------------------------------------------------
+   Street view wiring
+   -----------------------------------------------------------
+   - Explore CTA opens the viewer at the selected location's sweep.
+   - Explorable list rows are wired inside renderExplorable().
+   - Close button returns to the map.
+   - Tapping the touch guard arms the 3D viewer for interaction.
+   ----------------------------------------------------------- */
+
+/* The dataset only carries the sweep id, so the latest entry is
+   re-read here for the per-entry rotation / transitionTime (and in
+   case the config changed since render). */
 function handleExploreClick(e) {
   if (e) e.preventDefault();
   const btn = e && e.currentTarget;
   const name    = (btn && btn.dataset.locationName)  || "";
   const sweepId = (btn && btn.dataset.sweepId)       || "";
 
-  // Pull the latest entry in case config changed since render.
-  // `fresh` is also where we read the per-entry rotation /
-  // transitionTime — the dataset only carries the sweep id.
   const fresh = getTreedisEntry(name);
   const effectiveSweep = sweepId || (fresh && fresh.sweepId) || null;
 
@@ -163,11 +169,8 @@ function handleExploreClick(e) {
 }
 if (el.exploreCta) el.exploreCta.addEventListener("click", handleExploreClick);
 
-/* The persistent desktop/iPad footer carries its own Explore button.
-   Rather than duplicate the dataset/state logic above, the footer
-   button simply forwards its click to the canonical #exploreCta —
-   that element already has its dataset kept in sync by
-   updateDetailsPanel() above and runs through handleExploreClick. */
+/* The desktop/iPad footer button forwards clicks to the canonical
+   #exploreCta, whose dataset is kept in sync by renderDetails(). */
 if (el.exploreCtaFooter && el.exploreCta) {
   el.exploreCtaFooter.addEventListener("click", (e) => {
     e.preventDefault();
@@ -175,10 +178,8 @@ if (el.exploreCtaFooter && el.exploreCta) {
   });
 }
 
-/* The VR button carries a different intent than Explore: it shows
-   a small instruction popup explaining how to open this location
-   inside a VR headset (per the Figma annotation on the desktop
-   flow). It does NOT launch the 2D street view.               */
+/* The VR button shows instructions for opening this location in a
+   headset; it does not launch the 2D street view. */
 if (el.vrBtn) {
   el.vrBtn.addEventListener("click", (e) => {
     e.preventDefault();
@@ -218,23 +219,24 @@ el.detailsClose.addEventListener("click", () => clearSelection());
 if (el.searchInput) {
   el.searchInput.addEventListener("input", (e) => renderSearch(e.target.value));
   document.addEventListener("click", (e) => {
-    // Don't hide results if the click is inside the search area itself
+
     if (e.target.closest(".metabar-search")) return;
-    // Don't hide if user is tapping the SEARCH toggle button
+
     if (e.target.closest("#searchBtn")) return;
     el.searchResults.hidden = true;
   });
 }
 
+/* Explore/Learn pill. setAppMode() toggles body.mode-learn, which
+   swaps the visible shell via CSS. */
 el.modeBtns.forEach((btn) => {
   btn.addEventListener("click", () => {
     el.modeBtns.forEach((b) => {
       b.classList.toggle("is-active", b === btn);
       b.setAttribute("aria-selected", b === btn ? "true" : "false");
     });
-    // Drive the page-level mode swap. The CSS uses `body.mode-learn`
-    // to hide the .shell (Explore) and reveal the .learn-shell.
-    const mode = btn.dataset.mode;          // "explore" | "learn"
+
+    const mode = btn.dataset.mode;
     setAppMode(mode);
   });
 });
@@ -243,7 +245,7 @@ window.addEventListener("resize", () => {
   scheduleMapRefresh({ delay: 80 });
 });
 
-// Help button — simple info overlay for now
+/* Help button — simple info overlay. */
 el.helpBtn.addEventListener("click", () => {
   alert(
     "SCSU Metaversity\n\n" +
@@ -260,7 +262,7 @@ el.helpBtn.addEventListener("click", () => {
   );
 });
 
-// Fullscreen toggle
+/* Fullscreen toggle. */
 el.fullscreenBtn.addEventListener("click", () => {
   if (!document.fullscreenElement) {
     document.documentElement.requestFullscreen?.();
@@ -273,10 +275,17 @@ document.addEventListener("fullscreenchange", () => {
   scheduleMapRefresh({ delay: 80 });
 });
 
-// Keyboard shortcuts
+/* -----------------------------------------------------------
+   Keyboard shortcuts
+   -----------------------------------------------------------
+   Shift+A toggles the alignment tool. While it is open, arrows nudge
+   and +/- scales. Otherwise arrows step the tour and Escape closes
+   the topmost open panel (search, street view, drawer, selection).
+   ----------------------------------------------------------- */
 document.addEventListener("keydown", (e) => {
+  // Inside form fields, only handle Escape for the search input.
   if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) {
-    // Allow Escape inside the search field to close / blur
+
     if (e.key === "Escape" && e.target === el.searchInput) {
       if (isMobile() && el.metabarSearch.classList.contains("is-open")) {
         closeSearchPanel();
@@ -288,14 +297,12 @@ document.addEventListener("keydown", (e) => {
     return;
   }
 
-  // Shift+A → toggle alignment tool
   if ((e.key === "a" || e.key === "A") && e.shiftKey) {
     toggleAlign();
     e.preventDefault();
     return;
   }
 
-  // When alignment tool is open, arrow keys nudge the image, +/- scale
   if (alignMode) {
     if (e.key === "ArrowUp")    { nudge("up",    e.shiftKey); e.preventDefault(); }
     if (e.key === "ArrowDown")  { nudge("down",  e.shiftKey); e.preventDefault(); }
@@ -315,14 +322,13 @@ document.addEventListener("keydown", (e) => {
     return;
   }
 
-  // Otherwise: arrow keys drive the tour
   if (e.key === "ArrowRight")      { tourNextAction(); e.preventDefault(); }
   else if (e.key === "ArrowLeft")  { tourPrevAction(); e.preventDefault(); }
   else if (e.key === "Escape")     {
     if (isMobile() && el.metabarSearch.classList.contains("is-open")) {
       closeSearchPanel();
     } else if (streetViewActive) {
-      // Escape is the fastest way back to the map from 3D.
+
       closeStreetView();
     } else if (drawerOpen) {
       closeMobileLocations();
@@ -332,14 +338,14 @@ document.addEventListener("keydown", (e) => {
   }
 });
 
-// Clicking the bare map clears selection
+/* Clicking bare map clears the selection. Skipped while the drawer is
+   open (that tap closes the drawer) and while street view covers the
+   map (stray events shouldn't dismiss the selection). */
 map.on("click", (e) => {
   if (e.originalEvent.target.closest(".leaflet-interactive")) return;
-  // Don't steal the tap that closes the drawer
+
   if (drawerOpen) { closeMobileLocations(); return; }
-  // When the street view is covering the map, clicks that still
-  // somehow reach the Leaflet canvas (e.g., synthetic events)
-  // shouldn't dismiss the current selection.
+
   if (streetViewActive) return;
   clearSelection();
 });

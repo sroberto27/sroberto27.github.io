@@ -1,7 +1,6 @@
-/* === SCSU app — Part 7: Layer builders, bounds, tour pins === */
-/* -----------------------------------------------------------
-   9. Layer builders
-   ----------------------------------------------------------- */
+/* === Layer builders, bounds, tour pins === */
+
+/* Attach tooltip, hover, and click behavior to a feature layer. */
 function bindEvents(feature, layer, kind) {
   const props = feature.properties || {};
   const label = cleanName(props.name);
@@ -32,8 +31,9 @@ function bindEvents(feature, layer, kind) {
       resetLayerStyle(layer, kind);
       if (layer.closeTooltip) layer.closeTooltip();
     },
-    // Safety net: if Leaflet opens the tooltip AFTER the cursor
-    // has already left (fast-hover race), close it immediately.
+
+    // Safety net: if Leaflet opens the tooltip after the cursor already
+    // left (fast-hover race), close it immediately.
     tooltipopen: () => {
       if (!isHovered && layer.closeTooltip) layer.closeTooltip();
     },
@@ -52,9 +52,9 @@ function buildLayer(data, kind, paneName) {
   });
 }
 
-/* -----------------------------------------------------------
-   10. Image-bounds computation
-   ----------------------------------------------------------- */
+/* Compute image-overlay bounds that match the image aspect ratio around
+   the data bounds, with padding plus user-tuned offset/scale from the
+   alignment tool (legacy single-image mode). */
 function computeImageBounds(b, imgPxW, imgPxH, padPct, align) {
   const s = b.getSouth(), n = b.getNorth();
   const w = b.getWest(),  e = b.getEast();
@@ -77,7 +77,7 @@ function computeImageBounds(b, imgPxW, imgPxH, padPct, align) {
   widthDeg  *= 1 + padPct;
   heightDeg *= 1 + padPct;
 
-  // Apply user-tunable alignment offsets + independent X/Y scale
+  // Apply alignment offsets and independent X/Y scale.
   const a = align || {};
   const offLat = Number(a.offsetLat) || 0;
   const offLng = Number(a.offsetLng) || 0;
@@ -96,9 +96,9 @@ function computeImageBounds(b, imgPxW, imgPxH, padPct, align) {
   );
 }
 
-/* -----------------------------------------------------------
-   11. Tour pins (numbered circles over stops)
-   ----------------------------------------------------------- */
+/* Build the numbered pins over tour stops and populate tourStops in
+   order. Off-campus stops get a distinct amber pin with an arrow glyph
+   to signal a directional indicator rather than a real footprint. */
 function buildTourPins() {
   tourStops = [];
 
@@ -112,10 +112,6 @@ function buildTourPins() {
     try { center = layer.getBounds().getCenter(); }
     catch (e) { return; }
 
-    // Off-campus tour stops (e.g. Olar Farm) get a distinct
-    // amber pin with a small arrow glyph so the user can see
-    // at a glance that the shape on the map is a directional
-    // indicator rather than a real building footprint.
     const offCampus = !!props.off_campus;
     const icon = L.divIcon({
       className: offCampus ? "tour-pin-wrap is-offcampus" : "tour-pin-wrap",

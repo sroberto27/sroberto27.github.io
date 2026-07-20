@@ -1,17 +1,16 @@
-/* === SCSU app — Part 11: BOOT (data loading, preload, boot) === */
-/* -----------------------------------------------------------
-   17. BOOT
-   ----------------------------------------------------------- */
+/* === Boot: data loading, asset preload, startup sequence === */
 
-/** Try to fetch a GeoJSON file. Returns null on any failure
- *  (network error, 404, CORS, file://, non-JSON body). */
+/* Fetch a GeoJSON file. Returns null on any failure (network error,
+   404, CORS, file:// origin, non-JSON body) so the caller can fall
+   back to the shim data. */
 async function tryFetchGeoJSON(url) {
   try {
     const r = await fetch(url, { cache: "no-cache" });
     if (!r.ok) return null;
     const ct = r.headers.get("content-type") || "";
-    // Some servers serve .geojson as octet-stream or text/plain; that's fine.
-    // What we really want is to not accidentally parse HTML.
+
+    // Some servers serve .geojson as octet-stream or text/plain — fine.
+    // Just avoid accidentally parsing an HTML error page.
     if (ct.includes("text/html")) return null;
     return await r.json();
   } catch (_) {
@@ -19,21 +18,13 @@ async function tryFetchGeoJSON(url) {
   }
 }
 
-/** Load every dataset the app needs: geometry (GeoJSON) and
- *  per-location content (locations.json, treedis-sweeps.json,
- *  courses.json). All four fetches run in parallel; each one
- *  silently falls back to the corresponding data/*.js shim
- *  populated at <script> parse time when its fetch fails (404,
- *  CORS, file:// origin, etc.). loadDataJSON() — defined in
- *  js/00-data-adapter.js — is responsible for the content
- *  fetches and for rebuilding the legacy flat maps
- *  (config.descriptionMap, config.treedisMaps, …) so the rest
- *  of the app doesn't need to know JSON is involved. */
+/* Load every dataset: geometry (GeoJSON) plus per-location content
+   (locations.json, treedis-sweeps.json, courses.json). All fetches run
+   in parallel; each silently falls back to its data/*.js shim on
+   failure. Content loading is delegated to loadDataJSON() in
+   00-data-adapter.js, which rebuilds the flat config maps. */
 async function loadAllData() {
-  // Kick off all four fetches in parallel. Geometry stays here
-  // because boot() needs the FeatureCollections to build Leaflet
-  // layers; content lives on window.CAMPUS_CONFIG / SCSU_DATA
-  // so the adapter handles it side-effectfully.
+
   const contentP = (typeof loadDataJSON === "function")
     ? loadDataJSON()
     : Promise.resolve(null);
@@ -66,12 +57,10 @@ async function loadAllData() {
 }
 
 /* -----------------------------------------------------------
-   Asset preloading with progress tracking.
-
-   Every promise here is defensive: it resolves (never rejects)
-   on success, failure, OR after a per-asset timeout, so one
-   broken URL can never soft-lock the splash. A shared counter
-   updates the splash text as each asset finishes.
+   Asset preloading with progress tracking
+   -----------------------------------------------------------
+   Every promise here resolves (never rejects) on success, failure, or
+   per-asset timeout, so one broken URL can never soft-lock the splash.
    ----------------------------------------------------------- */
 function preloadImage(url, timeoutMs = 10000) {
   return new Promise((resolve) => {
@@ -103,8 +92,8 @@ function preloadImage(url, timeoutMs = 10000) {
   });
 }
 
-/* Resolves when Treedis posts TourReady, OR when `timeoutMs`
-   elapses — whichever comes first. Never rejects. */
+/* Resolves when Treedis posts TourReady or when the timeout elapses,
+   whichever comes first. Never rejects. */
 function waitForTreedisReady(timeoutMs = 8000) {
   return new Promise((resolve) => {
     if (TourBridge.isReady) {
@@ -125,21 +114,13 @@ function waitForTreedisReady(timeoutMs = 8000) {
   });
 }
 
-/* Waits for TourReady (long deadline — Treedis can take 20s+ on
-   cold loads), then silently Navigates the hidden iframe to the
-   configured homeSweepId so the entry point is warm by the time
-   the user clicks Explore.
-
-   This runs detached from the splash. The splash never waits on
-   it. If the user clicks Explore before TourReady fires, the
-   warmupCancelled flag set by openStreetView() makes this bail
-   before sending the home Navigate, so the user's chosen sweep
-   wins.
-
-   Only one sweep is warmed (the home sweep) — Treedis caches
-   aggressively after the first nav so subsequent jumps are fast
-   anyway, and blasting many navs during boot just competes with
-   the model load and slows down TourReady. Never rejects. */
+/* Waits for TourReady (long deadline — Treedis can take 20s+ on cold
+   loads), then silently Navigates the hidden iframe to the configured
+   homeSweepId so the entry point is warm before the first Explore
+   click. Runs detached from the splash. If the user opens street view
+   first, warmupCancelled makes this bail so their sweep wins. Only the
+   home sweep is warmed — Treedis caches aggressively after the first
+   nav, and extra navs during boot would just slow down TourReady. */
 async function warmHomeSweep() {
   const ready = await waitForTreedisReady(60000);
   if (!ready.ok) {
@@ -161,28 +142,23 @@ async function warmHomeSweep() {
   console.info("[preload] warming home sweep:", homeSweep);
   TourBridge.warmSweep(homeSweep);
 
-  // Reset so the user's first real Explore click always fires a
-  // fresh Navigate (otherwise the dedup in navigateStreetViewToLayer
-  // would treat the click as a no-op).
+  // Reset so the first real Explore click always fires a fresh
+  // Navigate instead of being deduped.
   lastStreetViewSweepId = null;
 
   console.info("[preload] home sweep warm-up complete");
   return { ok: true };
 }
 
-
-/* Builds the splash-blocking task list: ONLY images. The Treedis
-   iframe is started in the background by preloadTreedisIframe()
-   and is intentionally NOT in this list — its boot can take 20+
-   seconds and we don't want to hold the splash hostage to it.
-   The user can interact with the map immediately while the
-   iframe finishes loading off-screen. `onProgress(done, total)`
-   is called after each image finishes. */
+/* Build the splash-blocking task list — images only. The Treedis
+   iframe is deliberately excluded: it can take 20s+ to boot and loads
+   in the background instead. onProgress(done, total) fires after each
+   image finishes. */
 function preloadAllAssets(onProgress) {
   const imageUrls = [];
 
-  // In tile mode, the base map loads tile-by-tile through Leaflet.
-  // Do not block the splash screen by trying to preload one giant image.
+  // In tile mode the base map loads tile-by-tile through Leaflet, so
+  // there is no single large image to preload.
   if (config.mapMode !== "tiles" && config.imageUrl) {
     imageUrls.push(config.imageUrl);
   }
@@ -196,7 +172,6 @@ function preloadAllAssets(onProgress) {
   const total = tasks.length;
   let done = 0;
 
-  // Wrap each task so we can tick the counter as it finishes.
   const tracked = tasks.map((p) =>
     p.then((result) => {
       done += 1;
@@ -208,12 +183,12 @@ function preloadAllAssets(onProgress) {
   return Promise.all(tracked);
 }
 
-/* Updates the counter text shown on the splash. Called from
-   preloadAllAssets()'s onProgress callback. */
+/* Splash counter text, driven by preloadAllAssets' onProgress. */
 function updateSplashProgress(done, total) {
   const node = document.getElementById("splashProgress");
   if (node) node.textContent = "Loading " + done + "/" + total + "…";
 }
+/* Add the XYZ tile base layer from config.tiles. */
 function addBaseTileLayer() {
   const t = config.tiles || {};
 
@@ -233,26 +208,24 @@ function addBaseTileLayer() {
     attribution: t.attribution || "Created by QGIS"
   }).addTo(map);
 }
+/* -----------------------------------------------------------
+   Boot sequence
+   ----------------------------------------------------------- */
 async function boot() {
-  // If the sync UA check missed but the WebXR API confirms an
-  // XR device, switch to the VR profile *before* preloading the
-  // iframe — otherwise we'd point it at the desktop tour URL
-  // and have to reload. The async detection was kicked off at
-  // module load (detectXRAsync() is memoised), so this awaits
-  // a promise that's already in flight, not a fresh probe.
+
+  // Finish XR detection before preloading the iframe — otherwise it
+  // would point at the desktop tour URL and need a reload. The async
+  // probe was pre-warmed at module load, so this await is cheap.
   try {
     await maybeUpgradeToVRProfile();
-    // Re-apply the body class — at module-load time <body>
-    // might not have been parsed yet.
+
     document.body.classList.toggle("xr-mode", isVRMode());
   } catch (err) {
     console.warn("[treedis] XR detection failed:", err);
   }
 
-  // Start the Treedis iframe loading in parallel with the map
-  // data so it's warm by the time the user hits "Explore". The
-  // iframe is still visually hidden — preloadTreedisIframe() only
-  // sets the src and wires the postMessage bridge.
+  // Start the Treedis iframe in parallel with map data so it's warm by
+  // the time the user hits Explore. It stays visually hidden.
   preloadTreedisIframe();
 
   const { buildings: rawB, tours: rawT } = await loadAllData();
@@ -263,7 +236,7 @@ async function boot() {
   buildingsLayer = buildLayer(buildingsGeo, "building", "buildingsPane");
   toursLayer     = buildLayer(toursGeo,     "tour",     "toursPane");
 
-  // Data extent (from both layers combined)
+  // Combined extent of both layers.
   dataBounds = L.latLngBounds([]);
   [buildingsLayer, toursLayer].forEach((l) => {
     try {
@@ -277,14 +250,13 @@ async function boot() {
     dataBounds = L.latLngBounds([33.494, -80.855], [33.502, -80.843]);
   }
 
-// Base map: tiles are preferred for production.
-// In tile mode, the raster map is already georeferenced by the XYZ tile grid.
-// We do NOT compute image bounds from the polygons anymore.
+// Base map. Tile mode is the production path: the raster is already
+// georeferenced by the XYZ grid, and campus bounds come from
+// config.tiles.bounds (or padded vector bounds) for fit/reset/max-
+// bounds behavior.
 if (config.mapMode === "tiles") {
   baseTileLayer = addBaseTileLayer();
 
-  // Use explicit tile bounds if provided; otherwise use the vector data
-  // bounds with padding only for fit/reset/maxBounds behavior.
   if (config.tiles && config.tiles.bounds) {
     imageBounds = L.latLngBounds(config.tiles.bounds);
   } else {
@@ -298,8 +270,9 @@ if (config.mapMode === "tiles") {
   }
 
   refreshMapConstraints({ recenterIfNeeded: false });
+// Legacy single-image overlay mode.
 } else {
-  // Legacy single-image mode
+
   imageBounds = computeImageBounds(
     dataBounds,
     config.imageWidthPx,
@@ -318,24 +291,19 @@ if (config.mapMode === "tiles") {
   resetCampusView(false);
 }
 
-  // Add overlays (z-order: buildings → tours)
+  // Overlays (z-order: buildings, then tours), pins, and lists.
   buildingsLayer.addTo(map);
   toursLayer.addTo(map);
 
-  // Tour pins
   buildTourPins();
   tourPinsLayer.addTo(map);
 
-  // Locations list
   renderLocationsList();
   renderAllLocationsList();
 
-  // Leaflet warm-up: force the first selected-style application
-  // and immediately revert it. This pays the cost of Leaflet's
-  // lazy internal setup now, while the user is still looking at
-  // the splash, so the first real click feels snappy instead of
-  // stuttery. We do the same for a hover style to warm that path
-  // too.
+  // Leaflet warm-up: apply and revert selected/hover styles once now,
+  // while the splash is still up, so the first real click doesn't pay
+  // Leaflet's lazy setup cost.
   try {
     const warm = tourStops[0] && tourStops[0].layer;
     if (warm) {
@@ -343,9 +311,9 @@ if (config.mapMode === "tiles") {
       warm.setStyle(hoverStyleFor("tour"));
       warm.setStyle(styleFor("tour"));
     }
-  } catch (_) { /* non-critical */ }
+  } catch (_) {  }
 
-  // Search index
+  // Search index (buildings first, then tours).
   const push = (layer, kind) => {
     layer.eachLayer((lyr) => {
       const n = cleanName(lyr.feature.properties.name);
@@ -360,12 +328,9 @@ if (config.mapMode === "tiles") {
     tours:     toursLayer.getLayers().length
   });
 
-  // Wait for the map's own assets (satellite SVG + every entry in
-  // config.imageMap) before hiding the splash. The Treedis iframe
-  // is intentionally NOT in this list — it boots in the background
-  // via preloadTreedisIframe() and the user can interact with the
-  // map while that finishes. The 15s hard cap is just a safety net
-  // in case an image URL hangs.
+  // Hold the splash for image preloading only, with a 15s hard cap in
+  // case a URL hangs. The Treedis iframe keeps loading in the
+  // background.
   const preload = preloadAllAssets(updateSplashProgress);
   const hardCap = new Promise((r) => setTimeout(() => {
     console.warn("[metaversity] hard cap reached — revealing app");
@@ -373,15 +338,13 @@ if (config.mapMode === "tiles") {
   }, 15000));
   await Promise.race([preload, hardCap]);
 
-  // Kick off the Treedis home-sweep warm-up detached. It waits
-  // for TourReady (up to 60s) then nudges the iframe to the home
-  // sweep so the first Explore click feels instant. Runs in the
-  // background while the user is exploring the map.
+  // Detached: waits for TourReady (up to 60s) then warms the home
+  // sweep while the user explores the map.
   warmHomeSweep().catch((err) => {
     console.warn("[preload] home-sweep warm-up errored:", err);
   });
 
-  // Reveal app
+  // Reveal the app and show the welcome screen (unless suppressed).
   requestAnimationFrame(() => {
     el.app.setAttribute("aria-hidden", "false");
     el.app.classList.add("is-ready");
@@ -389,20 +352,12 @@ if (config.mapMode === "tiles") {
     setTimeout(() => { el.splash.style.display = "none"; }, 500);
     scheduleMapRefresh({ delay: 80 });
 
-    // Show the welcome / start screen modal. The user picks
-    // between "Enter Experience" (just dismiss) and "How to Use"
-    // (start the coachmark walkthrough). Only show on the first
-    // boot — re-opens are driven from the burger menu.
     if (typeof showStartScreen === "function") {
-      // Small delay so the splash fade-out doesn't visually clash
-      // with the start screen fade-in.
+
+      // Small delay so the splash fade-out doesn't clash with the
+      // start-screen fade-in.
       setTimeout(() => showStartScreen(), 220);
     }
   });
 }
-
-// Kick off boot immediately. The splash hides as soon as the
-// satellite image and building photos are loaded. The Treedis
-// iframe continues loading in the background and warms its home
-// sweep when ready (see warmHomeSweep inside boot).
 

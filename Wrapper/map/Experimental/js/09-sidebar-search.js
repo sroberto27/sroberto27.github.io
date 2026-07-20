@@ -1,8 +1,10 @@
-/* === SCSU app — Part 9: Sidebar, mobile drawer, search === */
-/* Includes sections 13, 13b, 14, 14a, 14b, 15. */
+/* === Locations sidebar, mobile drawer, details drag, search === */
+
 /* -----------------------------------------------------------
-   13. Locations sidebar (Figma-style list)
+   Locations sidebar
    ----------------------------------------------------------- */
+
+/* Sync the active-row highlight in both lists with the selection. */
 function syncLocationsList() {
   const rows = el.locationsList.querySelectorAll(".location-row");
   rows.forEach((r) => {
@@ -12,7 +14,6 @@ function syncLocationsList() {
     r.classList.toggle("is-active", !!active);
   });
 
-  // Also sync the All-tab list (added for the Featured/All redesign)
   if (el.allLocationsList) {
     const allRows = el.allLocationsList.querySelectorAll(".location-row");
     allRows.forEach((r) => {
@@ -24,12 +25,12 @@ function syncLocationsList() {
   }
 }
 
+/* Build the Featured list (tour stops) with a "Recenter on Tour" row
+   on top. Off-campus stops get a distance badge. */
 function renderLocationsList() {
   el.locationsCount.textContent = tourStops.length;
   const rows = [];
 
-  // "Recenter on Tour" row — fits the map to all tour stops so the
-  // user can re-orient on the full route after navigating away.
   rows.push(`
     <li class="location-row all-row" role="option" data-all="1">
       <div>
@@ -68,10 +69,11 @@ function renderLocationsList() {
 
   el.locationsList.querySelectorAll(".location-row").forEach((row) => {
     row.addEventListener("click", () => {
+      // "Recenter on Tour" — clear selection and fit the full route.
       if (row.dataset.all) {
         clearSelection();
         if (imageBounds) resetCampusView(true);
-        // On mobile, close the drawer after action
+
         closeMobileLocations();
         return;
       }
@@ -83,22 +85,14 @@ function renderLocationsList() {
 
       const locationName = cleanName(stop.feature.properties.name);
 
-      // Two paths depending on which "mode" the user is in:
-      //
-      // Street view mode → drive the 3D viewer to the selected
-      //   location's sweep without leaving street view. This is
-      //   what the wireframe describes when it says "Tap the
-      //   LOCATIONS MENU to re-access the locations list" while
-      //   street view is active. We also keep the map's selected
-      //   feature in sync (silently, without flying the map or
-      //   opening the bottom sheet) so when the user eventually
-      //   closes street view, the map is already focused on the
-      //   right building.
-      //
-      // Map mode → existing behavior: select the feature, fly
-      //   the map, open the details bottom sheet.
       closeMobileLocations({ silent: true });
 
+      // Two paths depending on the current mode:
+      //   Street view — drive the 3D viewer to the location's sweep
+      //     without leaving street view, and silently sync the map
+      //     selection so closing street view lands on the right
+      //     building. Locations without a sweep fall back to map view.
+      //   Map — select the feature, fly the map, open the details.
       if (streetViewActive) {
         const entry = getTreedisEntry(locationName);
         const sweepId = entry && entry.sweepId;
@@ -108,8 +102,7 @@ function renderLocationsList() {
             transitionTime: (entry && entry.transitionTime) || null
           });
         } else {
-          // No sweep mapped — fall back to selecting on the map
-          // and closing street view so the user isn't stranded.
+
           console.warn(
             "[locations] no Treedis sweep for", locationName,
             "— falling back to map view"
@@ -117,9 +110,9 @@ function renderLocationsList() {
           closeStreetView();
           selectFeature(stop.layer, "tour", { focus: true });
         }
-        // Keep the underlying map selection in sync so the tour
-        // bar index, pin highlight, and details data are correct
-        // when the user closes street view later.
+
+        // Silent sync: keeps tour-bar index, pin highlight, and details
+        // correct for when street view is closed later.
         selectFeature(stop.layer, "tour", { focus: false });
         return;
       }
@@ -130,19 +123,16 @@ function renderLocationsList() {
 }
 
 /* -----------------------------------------------------------
-   13b. "All" tab — every building on the campus
+   "All" tab — every building on campus
    -----------------------------------------------------------
-   Populates #allLocationsList from buildingsLayer (the full
-   building polygon set). Clicking a row selects that feature
-   on the map and opens the details panel, exactly like the
-   Featured rows do for tour stops.
-   ----------------------------------------------------------- */
+   Populates #allLocationsList from the buildings layer, deduped by
+   name. Rows select the feature exactly like Featured rows do. Sort
+   mode comes from the radio inputs: a flat A–Z list, or grouped by
+   department (a building with N departments appears in N groups;
+   buildings with none are bucketed under "Other" at the bottom). */
 function renderAllLocationsList() {
   if (!el.allLocationsList || !buildingsLayer) return;
 
-  // Collect (name, layer) pairs from the building features. We
-  // dedupe by lower-cased clean name so duplicate features don't
-  // each get their own row.
   const seen = new Map();
   buildingsLayer.eachLayer((layer) => {
     const f = layer.feature;
@@ -161,19 +151,14 @@ function renderAllLocationsList() {
     return;
   }
 
-  // Which sort mode is currently active? Defaults to alphabetical
-  // — matches the radio's `checked` default in map.html and
-  // mirrors the Figma reference where Alphabetical is the active
-  // option on first paint.
+  // Active sort mode; defaults to alphabetical (radio default in
+  // map.html).
   const byDept = !!(el.locSortDept && el.locSortDept.checked);
 
-  // Alphabetical: a single flat list, A→Z by name. The Featured
-  // tab is intentionally ordered by tour sequence; "All" reads
-  // better as a reference index here.
   const items = Array.from(seen.values())
                      .sort((a, b) => a.name.localeCompare(b.name));
 
-  // Shared row template — used by both sort modes.
+  // Shared row template for both sort modes.
   const rowHTML = (it) => {
     const cat = getCategory(it.name);
     return `
@@ -193,16 +178,8 @@ function renderAllLocationsList() {
   if (!byDept) {
     html = items.map(rowHTML).join("");
   } else {
-    // Department mode: group each building under every
-    // department it belongs to. A building with N departments
-    // appears in N groups (e.g. Nance Hall under both
-    // "Mathematics & Science" and "College of Agriculture") —
-    // this matches user expectation when scanning by program.
-    //
-    // Buildings with NO departments configured are bucketed
-    // under "OTHER" at the bottom so they remain reachable from
-    // this view rather than disappearing entirely.
-    const groups = new Map();           // groupName -> [items]
+
+    const groups = new Map();
     const ensure = (g) => {
       if (!groups.has(g)) groups.set(g, []);
       return groups.get(g);
@@ -217,8 +194,6 @@ function renderAllLocationsList() {
       }
     });
 
-    // Sort group names alphabetically, then pin "Other" last so
-    // department groups read in a predictable order.
     const groupNames = Array.from(groups.keys()).sort((a, b) => {
       if (a === "Other") return  1;
       if (b === "Other") return -1;
@@ -246,20 +221,14 @@ function renderAllLocationsList() {
       );
       if (!item) return;
 
-      // Mobile: close the drawer after the user picks something.
       closeMobileLocations({ silent: true });
 
-      // Same flow as the Featured rows — but kind:"building"
-      // because these come from the buildings layer, not tours.
       selectFeature(item.layer, "building", { focus: true });
     });
   });
 }
 
-/* Re-render the All list when the user toggles the sort radio.
-   Bound once at module load — the inputs may not exist on very
-   old saved DOM but the optional-chaining guard keeps this
-   harmless if so. */
+/* Re-render the All list when the sort radio changes. */
 if (el.locSortAlpha) {
   el.locSortAlpha.addEventListener("change", renderAllLocationsList);
 }
@@ -268,13 +237,10 @@ if (el.locSortDept) {
 }
 
 /* -----------------------------------------------------------
-   14. Mobile locations drawer
+   Mobile locations drawer
    -----------------------------------------------------------
-   The drawer slides in from the left, covering ~82% of the
-   shell width. The remaining sliver of map behind it is dimmed
-   by a backdrop that also tap-closes the drawer.
-
-   Drawer and details are mutually exclusive.
+   Slides in from the left over the map; a backdrop dims the rest and
+   tap-closes it. Drawer and details sheet are mutually exclusive.
    ----------------------------------------------------------- */
    function openMobileLocations() {
      drawerOpen = true;
@@ -282,13 +248,10 @@ if (el.locSortDept) {
      el.locationsBackdrop.classList.add("is-open");
      el.shell.classList.add("drawer-open");
 
-     // Mutually exclusive with the details bottom sheet, but only
-     // when we're in map mode. When the user is in street view, the
-     // details panel may still have `is-open` set in the background
-     // even though it's not visible — clearing the selection there
-     // would also close the street view, which is not what the user
-     // intended by tapping the Locations pill. They just want the
-     // menu open *on top of* the current view (map or street view).
+     // Clear the details selection only in map mode. In street view the
+     // panel may still be flagged open in the background, and clearing
+     // the selection there would also close the street view — the user
+     // just wants the menu on top of the current view.
      if (!streetViewActive && el.details.classList.contains("is-open")) {
        clearSelection();
      }
@@ -297,8 +260,9 @@ if (el.locSortDept) {
    }
 
 function closeMobileLocations(opts = {}) {
+  // On desktop the list is permanent; nothing to do.
   if (!isMobile() && !opts.force) {
-    // On desktop the list is permanent; nothing to do.
+
     return;
   }
   drawerOpen = false;
@@ -316,20 +280,18 @@ el.locationsToggle.addEventListener("click", () => {
 el.locationsClose.addEventListener("click", () => closeMobileLocations());
 el.locationsBackdrop.addEventListener("click", () => closeMobileLocations());
 
-/* -----------------------------------------------------------
-   14a. Mobile details drag/slide
-   -----------------------------------------------------------
-   Ported from drag.html. The bottom sheet has two "snapped"
-   states, "half" and "full", plus a transient "dragging" state
-   where JS writes a live transform on the element. On release,
-   the direction & distance of the drag decide which state to
-   snap back to.
-   ----------------------------------------------------------- */
 let dragging  = false;
 let dragStartY = 0;
 let dragCurrY  = 0;
 let dragStartMode = "half";
 
+/* -----------------------------------------------------------
+   Mobile details drag
+   -----------------------------------------------------------
+   The bottom sheet has two snapped states ("half", "full") plus a
+   transient dragging state with a live transform. On release, drag
+   direction and distance decide which state to snap to.
+   ----------------------------------------------------------- */
 function onDetailsPointerDown(e) {
   if (!isMobile()) return;
   if (detailsMode !== "half" && detailsMode !== "full") return;
@@ -349,13 +311,13 @@ function onDetailsPointerMove(e) {
   dragCurrY = e.clientY;
   const delta = dragCurrY - dragStartY;
 
-  // We only let the user drag in the "meaningful" direction for the
-  // starting state. From "full", you can only pull down (delta>0).
-  // From "half", you can either pull up to expand or down to dismiss.
+  // Only allow the meaningful direction per starting state: from
+  // "full" pull down only; from "half" pull up (capped preview) or
+  // pull down to dismiss.
   if (dragStartMode === "full") {
     el.details.style.transform = `translateY(${Math.max(0, delta)}px)`;
   } else if (dragStartMode === "half") {
-    // Allow pull-up by up to 140px preview, pull-down unlimited.
+
     el.details.style.transform = `translateY(${Math.max(-140, delta)}px)`;
   }
 }
@@ -367,13 +329,15 @@ function onDetailsPointerUp() {
   el.details.style.transform = "";
 
   const delta = dragCurrY - dragStartY;
-  const THRESH = 40; // px of drag before we commit to a state change
+  // Pixels of drag before committing to a state change.
+  const THRESH = 40;
 
   if (dragStartMode === "half") {
     if (delta < -THRESH) {
       setDetailsMode("full");
     } else if (delta > THRESH) {
-      // Pulled down from half → dismiss entirely.
+
+      // Pulled down from half — dismiss entirely.
       clearSelection();
     } else {
       setDetailsMode("half");
@@ -392,11 +356,11 @@ window.addEventListener("pointermove", onDetailsPointerMove);
 window.addEventListener("pointerup",   onDetailsPointerUp);
 window.addEventListener("pointercancel", onDetailsPointerUp);
 
-/* Handle viewport changes. Switching from mobile → desktop (or vice
-   versa) needs to reset panel state so the right CSS rules win. */
+/* Reset panel state when crossing the mobile/desktop breakpoint so the
+   right CSS rules win. */
 function handleViewportChange() {
   if (!isMobile()) {
-    // On desktop: clear mobile-only state.
+
     drawerOpen = false;
     el.locations.classList.remove("is-open");
     el.locationsBackdrop.classList.remove("is-open");
@@ -404,7 +368,7 @@ function handleViewportChange() {
     el.details.classList.remove("is-full", "is-hidden", "is-dragging");
     el.details.style.transform = "";
   } else {
-    // On mobile: if details is open, restore the half state.
+
     if (el.shell.classList.contains("has-details")) {
       setDetailsMode("half");
     }
@@ -415,15 +379,11 @@ function handleViewportChange() {
 mqMobile.addEventListener?.("change", handleViewportChange);
 
 /* -----------------------------------------------------------
-   14b. Mobile search toggle
-   ------------------------------------------------------------
-   On desktop the search field lives permanently in the header,
-   so the SEARCH button just focuses it. On mobile the search
-   panel is hidden by default and the SEARCH button slides it
-   in from under the header. The "x" button on the right of the
-   field has two states:
-     • if the input has text → clear the text
-     • if empty              → close the whole panel
+   Mobile search toggle
+   -----------------------------------------------------------
+   On desktop the search field is always visible and the SEARCH button
+   just focuses it. On mobile the button slides the panel in; the "x"
+   clears text when present, otherwise closes the panel.
    ----------------------------------------------------------- */
 function updateSearchBtnState() {
   if (!el.searchBtn) return;
@@ -434,7 +394,8 @@ function updateSearchBtnState() {
 
 function openSearchPanel() {
   el.metabarSearch.classList.add("is-open");
-  // Let the DOM settle before focusing (avoids iOS keyboard flash)
+
+  // Let the DOM settle before focusing (avoids iOS keyboard flash).
   requestAnimationFrame(() => el.searchInput && el.searchInput.focus());
   updateSearchBtnState();
 }
@@ -448,10 +409,10 @@ function closeSearchPanel() {
   updateSearchBtnState();
 }
 
+/* Clear button: hidden on desktop, visible on mobile. */
 function refreshSearchClear() {
   if (!el.searchClear) return;
-  // Desktop: always hidden (the input behaves like a normal field).
-  // Mobile : visible so the user can clear text or close the panel.
+
   if (isMobile()) {
     el.searchClear.hidden = false;
   } else {
@@ -468,7 +429,7 @@ if (el.searchBtn) {
         openSearchPanel();
       }
     } else {
-      // Desktop: just focus the field
+
       el.searchInput.focus();
       el.searchInput.select();
     }
@@ -477,14 +438,15 @@ if (el.searchBtn) {
 
 if (el.searchClear) {
   el.searchClear.addEventListener("click", () => {
+    // With text: clear it. Empty: close the panel (mobile only).
     if (el.searchInput.value) {
-      // First click with text → clear it
+
       el.searchInput.value = "";
       el.searchResults.hidden = true;
       el.searchResults.innerHTML = "";
       el.searchInput.focus();
     } else {
-      // Second click with empty input → close the panel (mobile only)
+
       if (isMobile()) {
         closeSearchPanel();
       }
@@ -492,22 +454,24 @@ if (el.searchClear) {
   });
 }
 
-// Keep the clear-button visibility in sync with the viewport
+// Keep clear-button visibility in sync with the viewport.
 mqMobile.addEventListener?.("change", refreshSearchClear);
 refreshSearchClear();
 
 /* -----------------------------------------------------------
-   15. Search
+   Search
+   -----------------------------------------------------------
+   Two-pass filter: name matches rank above department matches, so
+   "moss" surfaces Moss Hall before buildings whose department text
+   happens to contain it. Department hits are recorded so the result
+   row can show why it matched. Duplicates collapse by name — a name
+   match beats a department match, and a tour feature beats a building
+   when names collide.
    ----------------------------------------------------------- */
    function renderSearch(q) {
      const term = q.trim().toLowerCase();
      if (!term) { el.searchResults.hidden = true; el.searchResults.innerHTML = ""; return; }
 
-     // Two-pass filter: name matches rank above department matches
-     // so typing "moss" still surfaces Moss Hall before any building
-     // whose department string happens to contain "moss". We record
-     // why each row matched so the result row can show the
-     // department under the building name when that's what hit.
      const filtered = [];
      for (const x of allFeatures) {
        const n = cleanName(x.props.name).toLowerCase();
@@ -525,11 +489,6 @@ refreshSearchClear();
        }
      }
 
-     // Sort: name matches first, then department matches. Within
-     // each group, preserve the original allFeatures order
-     // (which is buildings-then-tours from boot.js, so featured
-     // tour stops sort beneath the buildings they live in — same
-     // behavior as before for the name-match case).
      filtered.sort((a, b) => {
        if (a.matchKind === b.matchKind) return 0;
        return a.matchKind === "name" ? -1 : 1;
@@ -543,12 +502,12 @@ refreshSearchClear();
          byName.set(key, m);
          continue;
        }
-       // Name match beats dept match for the same building.
+
        if (existing.matchKind === "dept" && m.matchKind === "name") {
          byName.set(key, m);
          continue;
        }
-       // Tour beats building when names collide.
+
        if (existing.kind !== "tour" && m.kind === "tour" &&
            existing.matchKind === m.matchKind) {
          byName.set(key, m);
@@ -566,9 +525,8 @@ refreshSearchClear();
 
      el.searchResults.hidden = false;
      el.searchResults.innerHTML = matches.map((m, i) => {
-       // When the hit was on a department, show that department
-       // under the building name as a small subtitle so the user
-       // sees why this result appeared.
+
+       // Department hits show the matched department as a subtitle.
        const subtitle = m.matchKind === "dept" && m.matchedDept
          ? `<div class="search-result-sub">${escapeHTML(m.matchedDept)}</div>`
          : "";
@@ -590,7 +548,7 @@ refreshSearchClear();
          selectFeature(m.layer, m.kind, { focus: true });
          el.searchInput.value = cleanName(m.props.name);
          el.searchResults.hidden = true;
-         // On mobile, tucking the search away after a pick feels right
+
          if (isMobile()) closeSearchPanel();
        });
      });

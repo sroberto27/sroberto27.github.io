@@ -1,9 +1,8 @@
-/* === SCSU app — Part 8: Tourbar (sec 12) === */
-/* -----------------------------------------------------------
-   12. Tourbar (shared between desktop sidebar footer & mobile bar)
-   ----------------------------------------------------------- */
+/* === Tour bar (shared by desktop sidebar footer and mobile bar) === */
 function setText(node, value) { if (node) node.textContent = value; }
 
+/* Sync labels, counters, and arrow disabled states with tourIndex.
+   Off-campus stops get an appended arrow glyph and explanatory title. */
 function updateTourbar() {
   if (tourIndex < 0 || !tourStops[tourIndex]) {
     const label = tourStops.length ? "Start your tour" : "No stops configured";
@@ -26,9 +25,7 @@ function updateTourbar() {
   const stop = tourStops[tourIndex];
   const name = cleanName(stop.feature.properties.name);
   const offCampus = !!(stop.feature.properties && stop.feature.properties.off_campus);
-  /* Add a small ↗ arrow after the name on off-campus stops so the
-     tourbar itself signals that the next/current stop sits beyond
-     the campus map. Tooltip explains in long form. */
+
   const labelText = offCampus ? `${name} ↗` : name;
   const titleText = offCampus
     ? `${name} — off-campus location (not on this map)`
@@ -54,6 +51,7 @@ function updateTourbar() {
   if (el.tourNextMobile) el.tourNextMobile.disabled = nextDisabled;
 }
 
+/* Jump to a stop by index (clamped) and select its feature. */
 function goToStop(i) {
   if (!tourStops.length) return;
   tourIndex = Math.max(0, Math.min(i, tourStops.length - 1));

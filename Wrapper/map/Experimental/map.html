@@ -7,20 +7,17 @@
   <meta name="theme-color" content="#000000" />
   <title>SCSU Virtual Campus</title>
 
-  <!-- Fonts: Inter for all UI chrome and body, serif for titles.
-       EB Garamond loaded as an open-source visual fallback for Minion
-       (an old-style serif with similar proportions). If you self-host
-       Minion Pro / Minion 3 via @font-face, it will take priority via
-       the --serif font stack defined in mapstyles.css. -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=EB+Garamond:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-  <!-- Split stylesheets — load order matters: later files override earlier
-       ones via the CSS cascade, mirroring the original single-file order.
-       See the matching split.py for the line ranges each piece covers. -->
+  <!-- Fonts: Inter for UI chrome and body text; EB Garamond as the serif
+       for titles (self-hosted Minion takes priority via the --serif stack
+       if added). -->
+  <!-- Split stylesheets — load order matters: later files override
+       earlier ones via the cascade. -->
   <link rel="stylesheet" href="css/01-base.css" />
   <link rel="stylesheet" href="css/02-header.css" />
   <link rel="stylesheet" href="css/03-sidebar.css" />
@@ -52,24 +49,18 @@
        ============================================================ -->
   <div class="app" id="app" aria-hidden="true">
 
-    <!-- Burger menu state checkbox (CSS-only toggle).
-         MUST be a direct child of .app because the sibling selectors
-         (.burger-toggle:checked ~ .burger-panel, etc.) only traverse
-         within the same parent. The label triggers below in the
-         metabar reference this by id="burgerToggle". -->
+    <!-- Burger menu state checkbox (CSS-only toggle). Must be a direct
+         child of .app so the sibling selectors can reach the panel;
+         labels elsewhere reference it by id. -->
     <input type="checkbox" id="burgerToggle" class="burger-toggle"
            aria-hidden="true" />
 
-    <!-- Brand red accent strip across the very top -->
+    <!-- Brand red accent strip across the top -->
     <div class="brand-flair" aria-hidden="true"></div>
 
-    <!-- ==== TOP HEADER (persistent on desktop AND mobile) ==== -->
+    <!-- ==== TOP HEADER (persistent on desktop and mobile) ==== -->
     <header class="metabar" role="banner">
       <div class="metabar-brand">
-        <!-- White-reversed SVG seal. Sized to 48x48 via .brand-logo.
-             The <img> tag loads the external white SVG file; if that
-             asset is missing the onerror swaps in an inline fallback
-             SVG (white circular badge) so we never render nothing. -->
         <img class="brand-logo"
              src="assets/Icons/logo-white.svg"
              alt="South Carolina State University"
@@ -78,10 +69,8 @@
         <span class="brand-product">SCSU VIRTUAL CAMPUS</span>
       </div>
 
-      <!-- ==== EXPLORE / LEARN TOGGLE (persistent in header) ====
-           Single instance; lives in the top bar at every breakpoint.
-           Uses the .mode-btn class so the existing JS (which targets
-           every .mode-btn via querySelectorAll) keeps it in sync. -->
+      <!-- Explore/Learn toggle. Single instance in the header; uses
+           .mode-btn so the JS keeps it in sync. -->
       <div class="mode-toggle mode-toggle-header"
            role="tablist" aria-label="Mode">
         <button class="mode-btn is-active" role="tab"
@@ -90,9 +79,7 @@
                 aria-selected="false" data-mode="learn" type="button">Learn</button>
       </div>
 
-      <!-- Burger menu trigger. The actual checkbox lives at the top
-           of .app so the sibling-selector CSS can reach the slide-in
-           panel below — labels can reference it from anywhere. -->
+      <!-- Burger menu trigger (checkbox lives at the top of .app). -->
       <div class="metabar-actions">
         <label for="burgerToggle" class="burger-btn"
                role="button" aria-label="Open menu" tabindex="0">
@@ -102,9 +89,8 @@
         </label>
       </div>
 
-      <!-- Hidden utility buttons that the existing JS still binds to.
-           They're not part of the new design but the JS references
-           them, so we keep them in the DOM and visually hide them. -->
+      <!-- Utility buttons kept in the DOM (visually hidden) because the
+           JS still binds to them. -->
       <div class="hidden-utilities" aria-hidden="true">
         <button class="link-btn" id="searchBtn" type="button"
                 tabindex="-1">SEARCH</button>
@@ -141,10 +127,8 @@
           <span>Exit</span>
         </a>
 
-        <!-- Settings group — sits below the navigation links with a
-             small visual break. Mirrors the start-screen checkbox
-             (with inverted wording: positive opt-in here, negative
-             opt-out there). Both write the same localStorage flag. -->
+        <!-- Settings group. Each switch mirrors a modal checkbox
+             (inverted wording); both write the same localStorage flag. -->
         <div class="burger-settings" role="group"
              aria-label="Display settings">
           <label class="burger-toggle-row">
@@ -164,10 +148,6 @@
             </span>
           </label>
 
-          <!-- Second toggle: 3D navigation instructions modal.
-               Mirrors the "Don't show this again" checkbox inside
-               that modal. Wording is positive here (opt-in) to
-               match the welcome-screen toggle above. -->
           <label class="burger-toggle-row">
             <span class="burger-toggle-text">
               <span class="burger-toggle-label">
@@ -191,15 +171,15 @@
     <label for="burgerToggle" class="burger-backdrop"
            aria-hidden="true"></label>
 
-    <!-- ==== MAIN GRID ==== -->
+    <!-- ==== MAIN GRID (locations | map | details) ==== -->
     <main class="shell">
 
-      <!-- Mobile backdrop — dims the sliver of map visible behind the
-           locations drawer and lets the user tap-off to close it. -->
+      <!-- Mobile backdrop: dims the map behind the drawer and closes it
+           on tap. -->
       <div class="locations-backdrop" id="locationsBackdrop"
            aria-hidden="true"></div>
 
-      <!-- ───── LEFT: LOCATIONS SIDEBAR ───── -->
+      <!-- ===== LEFT: LOCATIONS SIDEBAR ===== -->
       <aside class="locations" id="locations" aria-label="Campus locations">
 
         <header class="locations-head">
@@ -215,11 +195,8 @@
           </button>
         </header>
 
-        <!-- ==== TABS: FEATURED / ALL ====
-             Pure-CSS tab switcher using radio inputs. The Featured tab
-             shows the original tour-stop list (#locationsList, populated
-             by JS). The All tab shows #allLocationsList, populated by
-             JS from the building layer. -->
+        <!-- Featured / All tabs — pure-CSS switcher using radio inputs.
+             Featured shows the tour stops; All shows every building. -->
         <div class="loc-tabs" role="tablist" aria-label="Location filter">
           <input type="radio" name="locTab" id="locTabFeatured"
                  class="loc-tab-input" checked />
@@ -232,7 +209,7 @@
                  role="tab" aria-controls="allLocationsList">All</label>
         </div>
 
-        <!-- Search lives inside the sidebar now -->
+        <!-- Search (lives inside the sidebar) -->
         <div class="metabar-search" id="metabarSearch">
           <div class="search-field">
             <svg viewBox="0 0 24 24" class="search-icon" aria-hidden="true">
@@ -259,11 +236,8 @@
           <span id="locationsCount">0</span> locations to explore.
         </div>
 
-        <!-- Sort control — visible only when the All tab is active.
-             Pure-CSS toggle using radio inputs in the same pattern
-             as the Featured/All tabs above. The JS listens for
-             `change` on these inputs to re-render the All list
-             in the chosen order. -->
+        <!-- Sort control, visible only on the All tab. JS re-renders the
+             All list on change. -->
         <div class="loc-sort" id="locSort" role="radiogroup"
              aria-label="Sort all locations by">
           <input type="radio" name="locSort" id="locSortAlpha"
@@ -276,22 +250,19 @@
           <label for="locSortDept" class="loc-sort-opt">Department</label>
         </div>
 
-        <!-- Featured list (tour stops). The existing JS owns this. -->
+        <!-- Featured list (tour stops) — populated by JS -->
         <ul class="locations-list locations-list-featured"
             id="locationsList" role="listbox"
             aria-labelledby="locTabFeatured">
-          <!-- populated by JS -->
         </ul>
 
-        <!-- All list (every building from the building layer).
-             A small new JS function populates this from buildingsLayer. -->
+        <!-- All list (every building) — populated by JS -->
         <ul class="locations-list locations-list-all"
             id="allLocationsList" role="listbox"
             aria-labelledby="locTabAll">
-          <!-- populated by JS -->
         </ul>
 
-        <!-- Desktop tour nav lives at the bottom of the sidebar -->
+        <!-- Desktop tour nav at the bottom of the sidebar -->
         <footer class="sidebar-tour" aria-label="Tour navigation">
           <button class="tour-arrow" id="tourPrev" type="button"
                   aria-label="Previous stop">
@@ -319,13 +290,11 @@
         </footer>
       </aside>
 
-      <!-- ───── CENTER: MAP ───── -->
+      <!-- ===== CENTER: MAP ===== -->
       <section class="map-wrap">
         <div id="map" role="application" aria-label="Interactive campus map"></div>
 
-        <!-- =========================================================
-             TREEDIS STREET VIEW OVERLAY
-             ========================================================= -->
+        <!-- Treedis street view overlay -->
         <div id="streetview" class="streetview" aria-hidden="true">
           <iframe
             id="tour-frame"
@@ -381,7 +350,7 @@
           </div>
         </div>
 
-        <!-- Mobile: reveal the locations list. New icon. -->
+        <!-- Mobile: reveal the locations list -->
         <button class="locations-toggle" id="locationsToggle"
                 type="button" aria-label="Open locations list">
           <img src="assets/Icons/locations_sidebar-close.svg"
@@ -401,7 +370,7 @@
         </button>
       </section>
 
-      <!-- ───── RIGHT: METADATA PANEL ───── -->
+      <!-- ===== RIGHT: DETAILS PANEL ===== -->
       <aside class="details" id="details"
              aria-label="Location details" aria-hidden="true">
 
@@ -421,12 +390,9 @@
             <h2 class="details-title" id="detailsTitle">—</h2>
             <div class="details-sub"  id="detailsSub">—</div>
 
-            <!-- Inline Explore CTA — shown on MOBILE only.
-                 On desktop/iPad, the persistent button bar
-                 (.details-footer below) holds the same control.
-                 We keep this element here as the canonical
-                 #exploreCta the JS binds to, and the footer's
-                 button proxies clicks to it.  -->
+            <!-- Inline Explore CTA — shown on mobile only. This element is
+                 the canonical #exploreCta the JS binds to; the desktop
+                 footer button proxies clicks to it. -->
             <button class="explore-cta explore-cta-inline"
                     id="exploreCta" type="button">
               <svg class="explore-cta-icon-fallback" viewBox="0 0 24 24"
@@ -459,11 +425,8 @@
               <ul class="sub-list" id="subList"></ul>
             </div>
 
-            <!-- Physical address + "Open in Maps" link.
-                 Shown only when a location has an address configured
-                 in addressMap (locations.js). Primarily used for
-                 off-campus locations like Olar Farm so users can
-                 navigate there in their preferred map app. -->
+            <!-- Address + "Open in Maps" links; shown only when the
+                 location has an address configured. -->
             <div class="details-block details-address-block"
                  id="addressBlock" hidden>
               <div class="details-block-h">ADDRESS</div>
@@ -471,9 +434,8 @@
               <div class="details-address-links" id="detailsAddressLinks"></div>
             </div>
 
-            <!-- Inline VR-Enabled indicator — shown on MOBILE only.
-                 The persistent footer below carries the desktop/iPad
-                 version. Both link to the same Quest deep-link URL. -->
+            <!-- Inline VR-Enabled indicator — mobile only; the desktop
+                 footer carries its own version. -->
             <div class="details-vr details-vr-inline">
               <a class="vr-label vr-link"
                  href="https://www.oculus.com/open_url/?url=https://sroberto27.github.io/Wrapper/map/Experimental/map.html"
@@ -483,12 +445,8 @@
                  aria-label="Open this tour in your Meta Quest headset">
                 <span class="vr-dot" aria-hidden="true"></span> VR-Enabled
               </a>
-              <!-- The standalone "Explore" / VR button that used to live
-                   here was a duplicate of the red Explore CTA at the top
-                   of the panel. It's been removed per the redesign.
-                   The button stays in the DOM — visually hidden — because
-                   the existing JS still binds click + dataset hooks to
-                   #vrBtn and would otherwise throw a null-deref. -->
+              <!-- Hidden legacy button kept in the DOM: JS still binds
+                   click + dataset hooks to #vrBtn. -->
               <button class="vr-btn vr-btn-hidden" id="vrBtn" type="button"
                       tabindex="-1" aria-hidden="true">
                 <span>Explore</span>
@@ -497,22 +455,15 @@
           </div>
         </div>
 
-        <!-- ==== PERSISTENT BUTTON BAR (desktop & iPad only) ====
-             Mirrors the sidebar's bottom tour-bar pattern: lives
-             OUTSIDE .details-content so it never scrolls with the
-             metadata. Hidden on mobile (≤880px) — mobile keeps the
-             inline Explore CTA + VR indicator inside the scrollable
-             content area as before.
-             The Explore button here proxies clicks to the canonical
-             #exploreCta inside .details-content so all dataset/state
-             logic in app.js continues to work without changes. -->
+        <!-- Persistent button bar (desktop and iPad only). Lives outside
+             .details-content so it never scrolls; hidden on mobile. Its
+             Explore button proxies clicks to #exploreCta. -->
         <footer class="details-footer" aria-label="Location actions">
           <button class="details-footer-explore"
                   id="exploreCtaFooter" type="button"
                   aria-label="Explore this location">
             <svg viewBox="0 0 24 24" aria-hidden="true"
                  class="details-footer-explore-icon">
-              <!-- Walking person icon, per Figma -->
               <circle cx="13" cy="4" r="2"
                       fill="currentColor"/>
               <path d="M9 22l2-6 2 2 3 4M11 16l-2-5 4-2 3 3 3 1"
@@ -532,7 +483,6 @@
              aria-label="Open this tour in your Meta Quest headset">
             <svg viewBox="0 0 24 24" aria-hidden="true"
                  class="details-footer-vr-icon">
-              <!-- VR headset / camera-like icon, per Figma -->
               <path d="M3 8.5C3 7.67 3.67 7 4.5 7h15c.83 0 1.5.67 1.5 1.5v7c0 .83-.67 1.5-1.5 1.5h-3.4c-.5 0-.97-.25-1.25-.67L13.5 14h-3l-1.35 2.33c-.28.42-.75.67-1.25.67H4.5C3.67 17 3 16.33 3 15.5v-7z"
                     stroke="currentColor" stroke-width="1.8"
                     stroke-linecap="round" stroke-linejoin="round"
@@ -552,21 +502,15 @@
     <!-- ============================================================
          LEARN MODE SHELL
          ------------------------------------------------------------
-         Mirrors the Explore shell's two-column layout: a dark course
-         list on the left and a course-detail panel on the right.
-         Hidden by default — `body.mode-learn` swaps which shell is
-         visible (see CSS). All copy/data is rendered by app.js from
-         window.SCSU_DATA.courses (see data/courses.js).
-
-         Mobile flow (≤880px) reuses the same DOM: when no course is
-         picked the list view is full-bleed; tapping a course adds
-         `.has-detail` to .learn-shell, which slides the detail pane
-         in over the list. The "Back" button removes the class.
+         Two-column course catalog (list left, detail right). Hidden by
+         default; body.mode-learn swaps which shell is visible. Content
+         is rendered by js/13-learn-mode.js from SCSU_DATA.courses. On
+         mobile, picking a course adds .has-detail, sliding the detail
+         pane over the list; Back removes it.
          ============================================================ -->
     <main class="learn-shell" id="learnShell"
           aria-label="Course catalog" aria-hidden="true">
 
-      <!-- ───── LEFT: COURSE LIST ───── -->
       <aside class="courses" id="courses" aria-label="Available courses">
         <header class="courses-head">
           <div class="courses-kicker">AVAILABLE COURSES</div>
@@ -577,15 +521,12 @@
 
         <ul class="course-list" id="courseList" role="listbox"
             aria-label="Available courses">
-          <!-- populated by app.js renderCourseList() -->
         </ul>
       </aside>
 
-      <!-- ───── RIGHT: COURSE DETAIL ───── -->
       <section class="course-detail" id="courseDetail"
                aria-label="Course details">
 
-        <!-- Mobile-only "Back" — returns to the course list view -->
         <button class="course-back" id="courseBack" type="button"
                 aria-label="Back to course list">
           <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -596,7 +537,6 @@
           <span>Back</span>
         </button>
 
-        <!-- Empty-state shown until a course is selected -->
         <div class="course-empty" id="courseEmpty">
           <div class="course-empty-kicker">SELECT A COURSE</div>
           <p class="course-empty-msg">
@@ -605,13 +545,8 @@
           </p>
         </div>
 
-        <!-- Course body — populated by app.js renderCourseDetail() -->
         <article class="course-body" id="courseBody" hidden>
           <header class="course-detail-head">
-            <!-- Identifier pill: course code is the loudest piece,
-                 credits sit as a smaller separator next to it. The
-                 "last updated" line has moved DOWN into the action
-                 bar (it's provenance, not a top-line fact). -->
             <div class="course-detail-meta">
               <span class="course-code" id="courseCode">—</span>
               <span class="course-meta-sep" aria-hidden="true">·</span>
@@ -622,12 +557,6 @@
           <h1 class="course-title" id="courseTitle">—</h1>
           <p class="course-lede" id="courseLede">—</p>
 
-          <!-- Hero placeholder. Holds a course image once the team
-               has artwork; until then it shows a dark cell with
-               a faint grid pattern, the course code stamped large
-               as a watermark, and a "COURSE IMAGERY" kicker. The
-               JS sets the watermark text from the course code so
-               every course gets a distinct placeholder. -->
           <figure class="course-hero" id="courseHero" aria-hidden="true">
             <div class="course-hero-grid"  aria-hidden="true"></div>
             <div class="course-hero-stamp" id="courseHeroStamp">—</div>
@@ -647,13 +576,6 @@
           </div>
         </article>
 
-        <!-- ==== PERSISTENT ACTION BAR (desktop & iPad) ====
-             Mirrors the metadata-panel footer pattern: lives
-             OUTSIDE .course-body so it stays pinned at the
-             bottom while the article above scrolls. Hidden when
-             no course is selected (the empty-state is showing
-             instead). On mobile it sits inline at the end of
-             the article (see CSS). -->
         <footer class="course-actions" id="courseActions" hidden>
           <div class="course-actions-inner">
             <div class="course-actions-primary">
@@ -690,8 +612,6 @@
               </div>
             </div>
 
-            <!-- Provenance line — demoted from the top of the page
-                 (where it was competing with the title) to the bar. -->
             <div class="course-actions-updated">
               LAST UPDATED:
               <span id="courseUpdated">—</span>
@@ -728,9 +648,7 @@
       </button>
     </footer>
 
-    <!-- Footer bar removed per redesign spec -->
-
-    <!-- ==== ALIGNMENT TOOL (hidden until activated) ==== -->
+    <!-- ==== IMAGE ALIGNMENT TOOL (hidden until activated) ==== -->
     <div class="align-panel" id="alignPanel" hidden>
       <div class="align-head">
         <div class="align-title">IMAGE ALIGNMENT</div>
@@ -789,10 +707,9 @@
 
   <!-- ============================================================
        START SCREEN MODAL
-       Shown after the splash hides, before the user can interact.
-       Two paths: "Enter Experience" → close & use normally,
-                  "How to Use" → start the coachmark walkthrough.
-       Re-openable from the burger menu's "How to use" link.
+       Shown after the splash. "Enter Experience" closes it; "How to
+       Use" starts the coachmark walkthrough. Re-openable from the
+       burger menu.
        ============================================================ -->
   <div id="startScreen" class="start-screen" role="dialog"
        aria-modal="true" aria-labelledby="startScreenTitle"
@@ -812,9 +729,8 @@
         locations. Some stops include immersive street-view experiences.
       </p>
 
-      <!-- "Don't show again" toggle. Mirrored to the burger panel's
-           "Show welcome screen on startup" toggle — they read & write
-           the same localStorage flag, just with inverted wording. -->
+      <!-- Mirrors the burger panel's "Show welcome screen" switch
+           (inverted wording, same localStorage flag). -->
       <label class="start-screen-checkbox">
         <input type="checkbox" id="startScreenSuppress" />
         <span class="start-screen-checkbox-box" aria-hidden="true">
@@ -840,27 +756,23 @@
 
   <!-- ============================================================
        COACHMARK SYSTEM
-       Three-step interactive walkthrough. Activated either from
-       the start screen "How to Use" or the burger menu's "How
-       to use" link. Dims the map background, highlights one
-       region of the UI per step, and shows a tooltip card with
-       Previous / Next / Close controls.
+       Three-step walkthrough: dims the background, highlights one
+       region per step, and shows a tooltip card with controls.
        ============================================================ -->
   <div id="coachmarkOverlay" class="coachmark-overlay"
        aria-hidden="true">
-    <!-- Four edge masks form the dimmed area AROUND the highlight.
-         The highlight cutout itself stays clear because nothing
-         covers it. This avoids needing SVG masks and works in all
-         browsers. JS sets the four mask rects per step. -->
+    <!-- Four edge masks form the dim area around the highlight; the
+         cutout stays clear because nothing covers it. JS sets the
+         rects per step. -->
     <div class="coachmark-mask coachmark-mask-top"    data-mask="top"></div>
     <div class="coachmark-mask coachmark-mask-right"  data-mask="right"></div>
     <div class="coachmark-mask coachmark-mask-bottom" data-mask="bottom"></div>
     <div class="coachmark-mask coachmark-mask-left"   data-mask="left"></div>
 
-    <!-- Optional outline ring around the highlighted target -->
+    <!-- Outline ring around the highlighted target -->
     <div class="coachmark-ring" id="coachmarkRing" aria-hidden="true"></div>
 
-    <!-- The tooltip card. Position is set per step via JS. -->
+    <!-- Tooltip card; positioned per step by JS -->
     <div class="coachmark-card" id="coachmarkCard" role="dialog"
          aria-modal="true" aria-labelledby="coachmarkTitle"
          aria-describedby="coachmarkBody">
@@ -893,22 +805,10 @@
 
   <!-- ============================================================
        NAVIGATION INSTRUCTIONS MODAL (3D street view onboarding)
-       ------------------------------------------------------------
-       Shown the first time the user opens street view via the
-       Explore button. Single "Got it" CTA, "Don't show again"
-       checkbox. Re-openable from the burger menu's "Show 3D
-       navigation instructions" toggle. Stores its preference
-       under a separate localStorage key from the welcome screen
-       so the two settings don't conflict.
-
-       PLACEHOLDER IMAGES:
-         • assets/Icons/nav-instructions.png    (desktop / mouse)
-         • assets/Icons/nav-instructions-xr.png (XR / VR headset)
-       Both images already have white text on a transparent
-       background — the dark #333333 modal background gives the
-       contrast. Which one is shown is driven by the existing
-       `body.xr-mode` class (set by applyTreedisProfile() in
-       01-utils.js at boot); see 10-nav-instructions.css.
+       Shown the first time street view opens; "Got it" CTA plus a
+       "Don't show again" checkbox (own localStorage key). Which
+       instruction image shows (mouse / touch / VR) is driven by the
+       body classes set at boot; see 10-nav-instructions.css.
        ============================================================ -->
   <div id="navInstructions" class="nav-instructions" role="dialog"
        aria-modal="true" aria-labelledby="navInstructionsTitle"
@@ -919,25 +819,19 @@
       </h2>
 
       <div class="nav-instructions-image">
-        <!-- Desktop / mouse version (default) -->
         <img class="nav-instructions-img nav-instructions-img-desktop"
              src="assets/Icons/nav-instructions.png"
              alt="Navigation instructions for 360° tour using a mouse and keyboard"
              onerror="this.style.display='none'; this.parentElement.querySelector('.nav-instructions-fallback').style.display='block';" />
-        <!-- XR / VR headset version (shown when body.xr-mode is set) -->
         <img class="nav-instructions-img nav-instructions-img-xr"
              src="assets/Icons/nav-instructions-xr.png"
              alt="Navigation instructions for 360° tour using a VR headset"
              onerror="this.style.display='none'; this.parentElement.querySelector('.nav-instructions-fallback').style.display='block';" />
-        <!-- Touch-screen version (shown when body.touch-mode is set,
-             i.e. a touch device that is NOT in VR) -->
         <img class="nav-instructions-img nav-instructions-img-touch"
              src="assets/Icons/nav-instructions-mobile.png"
              alt="Navigation instructions for 360° tour using touch controls"
              onerror="this.style.display='none'; this.parentElement.querySelector('.nav-instructions-fallback').style.display='block';" />
-        <!-- Fallback shown if the image is missing. Specs are
-             still being finalized; replace this with the real
-             content when it lands. -->
+        <!-- Fallback if the instruction image is missing -->
         <div class="nav-instructions-fallback" style="display:none;">
           TBD
         </div>
@@ -969,6 +863,9 @@
        ============================================================ -->
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
+  <!-- Legacy data shims — fallback when the page is opened from disk
+       (file://) and the JSON/GeoJSON fetches fail. Missing files are
+       removed silently. -->
   <script src="data/buildings.js"      onerror="this.remove()"></script>
   <script src="data/tours.js"          onerror="this.remove()"></script>
   <script src="data/courses.js"        onerror="this.remove()"></script>
@@ -977,10 +874,9 @@
 
   <script src="config.js"></script>
 
-  <!-- Split app — must load in this order. Globals are shared via the
-       window scope exactly as in the original single-file app.js, so
-       each piece sees the helpers/state/refs declared before it.
-       See the matching split.py for the line ranges each piece covers. -->
+  <!-- App modules — must load in this order: globals are shared via
+       window scope, so each file sees the helpers/state declared
+       before it. -->
   <script src="js/00-data-adapter.js"></script>
   <script src="js/01-utils.js"></script>
   <script src="js/02-state.js"></script>
