@@ -14,7 +14,7 @@
   var TYPE_MS   = 40;    // ms per character (title)
   var FACT_MS   = 22;    // ms per character (fun fact)
   var LOAD_MS   = 5000;  // 0 → 100%
-  var FACTS_URL = "data/fun-facts.json";
+  var FACTS_URL = "data/faq/fun-facts.json";
 
   /* Fallback accents if the sector config isn't reachable. */
   var FALLBACK_ACCENTS = ["#FFB22C", "#2E8BFF", "#34598F", "#D27049"];
