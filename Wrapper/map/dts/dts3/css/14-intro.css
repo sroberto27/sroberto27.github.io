@@ -9,7 +9,7 @@ body.intro-pending .home-copy.intro-released{ opacity:1; }
   position:fixed; inset:0; z-index:2000;
   background:#000;
   overflow:hidden;
-  transition:opacity .6s ease;
+  transition:opacity .35s ease;
   /* --intro-accent is set at runtime from a random sector color */
   --intro-accent:#FFB22C;
 }
@@ -80,6 +80,7 @@ body.intro-pending .home-copy.intro-released{ opacity:1; }
 /* FLIP movement into hero position */
 .intro-title.is-flip{ transition:transform .9s cubic-bezier(.65,0,.2,1); }
 .intro-fact.is-out{ opacity:0; transition:opacity .35s ease; }
+.intro-kicker.is-out{ opacity:0; transition:opacity .3s ease; }
 
 @media (max-width:760px){
   .intro-title{ width:min(84%,460px); }

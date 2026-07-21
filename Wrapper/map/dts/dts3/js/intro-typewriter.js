@@ -4,16 +4,19 @@
    • Random fun fact typed underneath
    • Big % counter bottom-right — driven by REAL load progress
    • Random sector accent color per page load
-   • FLIP into the real hero, then re-type the headline
+   • FLIP the headline into the hero; the kicker fades out and
+     re-types itself in place once the headline lands
    ============================================================ */
 (function () {
   "use strict";
 
+  /* Reduced motion: no loader at all. The cloak was never applied
+     (see the inline script in index.html), so nothing to un-cloak. */
   if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
   var TYPE_MS   = 40;    // ms per character (title)
   var FACT_MS   = 22;    // ms per character (fun fact)
-  var MIN_MS    = 4600;  // never finish faster than this (fact stays readable)
+  var MIN_MS    = 3000;  // never finish faster than this (fact stays readable)
   var MAX_MS    = 9000;  // hard ceiling — never trap the visitor
   var FACTS_URL = "data/faq/fun-facts.json";
 
@@ -23,6 +26,10 @@
   /* Guards against the retry loop and the fetch callback both
      kicking off a second run. */
   var started = false;
+
+  function uncloak() {
+    document.documentElement.classList.remove("intro-cloak");
+  }
 
   document.addEventListener("DOMContentLoaded", function () {
     document.body.classList.add("intro-pending");
@@ -135,7 +142,7 @@
   }
 
   function run(hero, facts) {
-    if (document.querySelector(".intro-loader")) return;
+    if (document.querySelector(".intro-loader")) return uncloak();
 
     var accent = pickAccent();
     var fact = facts.length
@@ -153,6 +160,9 @@
       '</div>' +
       '<div class="intro-pct" id="inPct">0%</div>';
     document.body.appendChild(ov);
+
+    /* Overlay is on screen — safe to un-cloak the app underneath it. */
+    uncloak();
 
     var kickerEl = ov.querySelector("#inKicker");
     var headEl   = ov.querySelector("#inHead");
@@ -253,8 +263,11 @@
 
       pctEl.classList.add("is-out");
       factEl.classList.add("is-out");
+      kickerEl.classList.add("is-out");   // kicker doesn't travel with the block
 
       var titleBlk = ov.querySelector(".intro-title");
+      /* Measure from the kicker even though it's fading — it's the
+         alignment anchor, and hiding it doesn't change its geometry. */
       var tKick = document.querySelector(".home-copy .copy-kicker").getBoundingClientRect();
       var fKick = kickerEl.getBoundingClientRect();
 
@@ -266,16 +279,20 @@
       });
 
       setTimeout(function () {
-        var realHead = document.querySelector(".home-copy .home-headline");
-        var finalText = headlineText(realHead);
-        realHead.textContent = "";
+        uncloak();   // belt and braces
+
+        var realKicker  = document.querySelector(".home-copy .copy-kicker");
+        var kickerFinal = realKicker.textContent;
+        realKicker.textContent = "";
+
         document.querySelector(".home-copy").classList.add("intro-released");
         ov.classList.add("is-done");
         setTimeout(function () { ov.remove(); }, 700);
+        document.body.classList.remove("intro-pending");
 
-        typeInto(realHead, finalText, TYPE_MS, function (caret) {
+        /* Kicker types itself into place in the final hero position. */
+        typeInto(realKicker, kickerFinal, TYPE_MS, function (caret) {
           caret.remove();
-          document.body.classList.remove("intro-pending");
         });
       }, 950);
     }
