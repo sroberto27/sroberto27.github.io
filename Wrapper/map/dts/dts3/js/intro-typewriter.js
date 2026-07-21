@@ -43,7 +43,8 @@
 
   /* Cancellable typewriter. Each run claims a token on the element;
      an older loop aborts as soon as a newer run takes over, or if its
-     caret has been detached. */
+     caret has been detached. The first tick is always async so an
+     empty string can't fire `done` re-entrantly. */
   function typeInto(el, text, speed, done) {
     if (el._typeTimer) clearTimeout(el._typeTimer);
 
@@ -55,8 +56,9 @@
 
     var token = (el._typeToken = (el._typeToken || 0) + 1);
     var i = 0;
+    text = text || "";
 
-    (function tick() {
+    function tick() {
       if (el._typeToken !== token || caret.parentNode !== el) return;
 
       if (i < text.length) {
@@ -68,7 +70,9 @@
         el._typeTimer = null;
         done && done(caret);
       }
-    })();
+    }
+
+    el._typeTimer = setTimeout(tick, speed);
   }
 
   function pickAccent() {
@@ -83,9 +87,15 @@
 
   function loadFacts(cb) {
     fetch(FACTS_URL)
-      .then(function (r) { return r.json(); })
+      .then(function (r) {
+        if (!r.ok) throw new Error(r.status + " — " + FACTS_URL);
+        return r.json();
+      })
       .then(function (d) { cb((d && d.facts) || []); })
-      .catch(function () { cb([]); });
+      .catch(function (e) {
+        console.warn("[intro] fun facts failed to load:", e.message);
+        cb([]);
+      });
   }
 
   function heroText() {
@@ -157,6 +167,15 @@
         });
       });
     });
+
+    /* Failsafe: never let the loader hang if the typing chain breaks. */
+    setTimeout(function () {
+      if (!typeDone) {
+        console.warn("[intro] typing chain stalled — forcing handoff.");
+        typeDone = true;
+        maybeFinish();
+      }
+    }, LOAD_MS + 8000);
 
     /* --- handoff --- */
     var finished = false;
