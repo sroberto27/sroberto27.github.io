@@ -20,7 +20,7 @@
   var FALLBACK_ACCENTS = ["#FFB22C", "#2E8BFF", "#34598F", "#D27049"];
 
   /* Guards against the retry loop and the fetch callback both
-     kicking off a second run (the cause of the insertBefore error). */
+     kicking off a second run. */
   var started = false;
 
   document.addEventListener("DOMContentLoaded", function () {
@@ -43,8 +43,8 @@
 
   /* Cancellable typewriter. Each run claims a token on the element;
      an older loop aborts as soon as a newer run takes over, or if its
-     caret has been detached. The first tick is always async so an
-     empty string can't fire `done` re-entrantly. */
+     caret has been detached. First tick is always async so an empty
+     string can't fire `done` re-entrantly. */
   function typeInto(el, text, speed, done) {
     if (el._typeTimer) clearTimeout(el._typeTimer);
 
@@ -59,7 +59,11 @@
     text = text || "";
 
     function tick() {
-      if (el._typeToken !== token || caret.parentNode !== el) return;
+      if (el._typeToken !== token || caret.parentNode !== el) {
+        console.warn("[intro] typing aborted — element was overwritten:",
+                     el.id || el.className);
+        return;
+      }
 
       if (i < text.length) {
         var ch = text[i++];
@@ -134,8 +138,8 @@
     ov.style.setProperty("--intro-accent", accent);
     ov.innerHTML =
       '<div class="intro-title">' +
-        '<span class="copy-kicker" id="inKicker"></span>' +
-        '<h1 class="home-headline" id="inHead"></h1>' +
+        '<span class="intro-kicker" id="inKicker"></span>' +
+        '<h1 class="intro-headline" id="inHead"></h1>' +
         '<p class="intro-fact" id="inFact"></p>' +
       '</div>' +
       '<div class="intro-pct" id="inPct">0%</div>';
@@ -170,7 +174,7 @@
         hcaret.remove();
         typeInto(factEl, fact, FACT_MS, function () {
           console.log("[intro] fact done");
-          typeDone = true;
+          typeDone = true;          // fact keeps its blinking "_"
           maybeFinish();
         });
       });

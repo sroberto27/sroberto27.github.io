@@ -7,7 +7,7 @@ body.intro-pending .home-copy.intro-released{ opacity:1; }
 
 .intro-loader{
   position:fixed; inset:0; z-index:2000;
-  background:#000;          /* was #0a0e17 */
+  background:#000;
   overflow:hidden;
   transition:opacity .6s ease;
   /* --intro-accent is set at runtime from a random sector color */
@@ -24,9 +24,24 @@ body.intro-pending .home-copy.intro-released{ opacity:1; }
   will-change:transform;
 }
 
-/* Keep the headline's intended line break only — never let the
-   loader width force a different wrap than the final hero. */
-.intro-title .home-headline{ text-wrap:balance; }
+/* Mirror the hero styles WITHOUT reusing the class names that
+   content-loader.js targets (.copy-kicker / .home-headline) —
+   otherwise it wipes these elements mid-type and the chain stalls. */
+.intro-kicker{
+  display:inline-flex; align-items:center; gap:10px;
+  color:var(--gold);
+  font-size:clamp(10px,.9vw,13px);
+  font-weight:700; letter-spacing:.22em;
+}
+.intro-kicker::before{
+  content:""; width:clamp(24px,2.6vw,44px); height:2px;
+  background:var(--gold); border-radius:2px;
+}
+.intro-headline{
+  font-size:clamp(34px, 5.2vw, 84px);
+  font-weight:800; line-height:1.0;
+  margin:clamp(10px,1.4vh,18px) 0;
+}
 
 /* --- Fun fact, directly under the title --- */
 .intro-fact{
