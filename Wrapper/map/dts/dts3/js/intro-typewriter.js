@@ -2,7 +2,7 @@
    Intro loader
    • Centered kicker + headline typed with a terminal "_" caret
    • Random fun fact typed underneath
-   • Big % counter bottom-right
+   • Big % counter bottom-right — driven by REAL load progress
    • Random sector accent color per page load
    • FLIP into the real hero, then re-type the headline
    ============================================================ */
@@ -13,7 +13,8 @@
 
   var TYPE_MS   = 40;    // ms per character (title)
   var FACT_MS   = 22;    // ms per character (fun fact)
-  var LOAD_MS   = 3600;  // 0 → 100%
+  var MIN_MS    = 2200;  // never finish faster than this (fact stays readable)
+  var MAX_MS    = 9000;  // hard ceiling — never trap the visitor
   var FACTS_URL = "data/faq/fun-facts.json";
 
   /* Fallback accents if the sector config isn't reachable. */
@@ -25,7 +26,15 @@
 
   document.addEventListener("DOMContentLoaded", function () {
     document.body.classList.add("intro-pending");
-    setTimeout(start, 60);
+    /* Wait for content-loader.js to inject /data content, so the loader
+       always types the same headline the hero will end up showing.
+       Caps at 3s so a failed fetch can't hang the intro. */
+    var waited = 0;
+    (function waitForContent() {
+      if (window.DTS_CONTENT_READY || waited >= 3000) return start();
+      waited += 80;
+      setTimeout(waitForContent, 80);
+    })();
   });
 
   /* ---------- helpers ---------- */
@@ -150,12 +159,57 @@
     var factEl   = ov.querySelector("#inFact");
     var pctEl    = ov.querySelector("#inPct");
 
-    /* --- percentage --- */
-    var t0 = performance.now(), pctDone = false;
+    /* ============================================================
+       PERCENTAGE — real load progress
+       ------------------------------------------------------------
+       Three weighted milestones complete as the site actually loads.
+       The displayed value eases toward the highest reached milestone
+       so it never jumps or visibly stalls. A floor keeps the fun fact
+       readable; a ceiling guarantees the loader always ends even if a
+       third-party embed never finishes.
+       ============================================================ */
+    var milestones = { content: 0, windowLoad: 0, typing: 0 };
+    var WEIGHTS    = { content: 0.30, windowLoad: 0.45, typing: 0.25 };
+
+    if (window.DTS_CONTENT_READY) {
+      milestones.content = 1;
+    } else {
+      (function pollContent() {
+        if (window.DTS_CONTENT_READY) milestones.content = 1;
+        else setTimeout(pollContent, 100);
+      })();
+    }
+
+    if (document.readyState === "complete") {
+      milestones.windowLoad = 1;
+    } else {
+      window.addEventListener("load", function () { milestones.windowLoad = 1; });
+    }
+
+    var t0 = performance.now(), pctDone = false, shown = 0;
+
     (function pct(now) {
-      var p = Math.min(100, Math.round(((now - t0) / LOAD_MS) * 100));
-      pctEl.textContent = p + "%";
-      if (p < 100) requestAnimationFrame(pct);
+      var elapsed = now - t0;
+
+      /* Real progress from milestones. */
+      var target = 0;
+      for (var k in milestones) target += milestones[k] * WEIGHTS[k];
+      target *= 100;
+
+      /* Floor: never finish before MIN_MS. */
+      var floorCap = (elapsed / MIN_MS) * 100;
+      target = Math.min(target, floorCap);
+
+      /* Ceiling: past MAX_MS, drive to 100 regardless of what's pending. */
+      if (elapsed > MAX_MS) target = 100;
+
+      /* Ease toward the target — no jumps, no dead stalls. */
+      shown += (target - shown) * 0.08;
+      if (target >= 100 && shown > 99.4) shown = 100;
+
+      pctEl.textContent = Math.floor(shown) + "%";
+
+      if (shown < 100) requestAnimationFrame(pct);
       else { pctDone = true; maybeFinish(); }
     })(t0);
 
@@ -174,6 +228,7 @@
         hcaret.remove();
         typeInto(factEl, fact, FACT_MS, function () {
           console.log("[intro] fact done");
+          milestones.typing = 1;
           typeDone = true;          // fact keeps its blinking "_"
           maybeFinish();
         });
@@ -184,10 +239,11 @@
     setTimeout(function () {
       if (!typeDone) {
         console.warn("[intro] typing chain stalled — forcing handoff.");
+        milestones.typing = 1;
         typeDone = true;
         maybeFinish();
       }
-    }, LOAD_MS + 8000);
+    }, MAX_MS + 8000);
 
     /* --- handoff --- */
     var finished = false;
