@@ -157,12 +157,20 @@
 
     /* --- typing sequence --- */
     var typeDone = false;
+    console.log("[intro] kicker:", JSON.stringify(hero.kicker),
+                "| headline:", JSON.stringify(hero.headline),
+                "| fact:", JSON.stringify(fact),
+                "| facts loaded:", facts.length);
+
     typeInto(kickerEl, hero.kicker, TYPE_MS, function (caret) {
+      console.log("[intro] kicker done");
       caret.remove();
       typeInto(headEl, hero.headline, TYPE_MS, function (hcaret) {
+        console.log("[intro] headline done");
         hcaret.remove();
         typeInto(factEl, fact, FACT_MS, function () {
-          typeDone = true;          // fact keeps its blinking "_"
+          console.log("[intro] fact done");
+          typeDone = true;
           maybeFinish();
         });
       });
