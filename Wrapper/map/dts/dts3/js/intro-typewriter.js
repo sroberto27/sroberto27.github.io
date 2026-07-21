@@ -13,7 +13,7 @@
 
   var TYPE_MS   = 40;    // ms per character (title)
   var FACT_MS   = 22;    // ms per character (fun fact)
-  var MIN_MS    = 2200;  // never finish faster than this (fact stays readable)
+  var MIN_MS    = 4600;  // never finish faster than this (fact stays readable)
   var MAX_MS    = 9000;  // hard ceiling — never trap the visitor
   var FACTS_URL = "data/faq/fun-facts.json";
 
