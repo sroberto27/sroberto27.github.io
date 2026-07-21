@@ -1,0 +1,76 @@
+/* ============================================================
+   14 — INTRO LOADER (typewriter + % counter + FLIP to hero)
+   ============================================================ */
+
+body.intro-pending .home-copy{ opacity:0; }
+body.intro-pending .home-copy.intro-released{ opacity:1; }
+
+.intro-loader{
+  position:fixed; inset:0; z-index:2000;
+  background:#000;          /* was #0a0e17 */
+  overflow:hidden;
+  transition:opacity .6s ease;
+  /* --intro-accent is set at runtime from a random sector color */
+  --intro-accent:#FFB22C;
+}
+.intro-loader.is-leaving{ background:transparent; }
+.intro-loader.is-done{ opacity:0; pointer-events:none; }
+
+/* --- Title block: kicker + headline, CENTERED during load --- */
+.intro-title{
+  position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%);
+  width:min(46%,560px);
+  will-change:transform;
+}
+
+/* Keep the headline's intended line break only — never let the
+   loader width force a different wrap than the final hero. */
+.intro-title .home-headline{ text-wrap:balance; }
+
+/* --- Fun fact, directly under the title --- */
+.intro-fact{
+  margin-top:clamp(18px,3vh,34px);
+  font-size:clamp(12px,1vw,15px);
+  line-height:1.6;
+  color:var(--intro-accent);
+  opacity:.85;
+  min-height:2.6em;
+}
+
+/* Blinking underscore caret — terminal style */
+.intro-caret{
+  display:inline-block;
+  margin-left:1px;
+  font-weight:inherit;
+  color:currentColor;
+  animation:introCaret .75s steps(1) infinite;
+}
+@keyframes introCaret{ 50%{ opacity:0; } }
+
+/* --- Big loading percentage, bottom-right --- */
+.intro-pct{
+  position:absolute; right:2vw; bottom:2vh;
+  font-weight:800; line-height:1;
+  font-size:clamp(120px, 10vw, 420px);
+  color:var(--intro-accent);
+  opacity:.16;
+  letter-spacing:-.03em;
+  font-variant-numeric:tabular-nums;
+  user-select:none; pointer-events:none;
+  transition:opacity .4s ease;
+}
+.intro-pct.is-out{ opacity:0; }
+
+/* FLIP movement into hero position */
+.intro-title.is-flip{ transition:transform .9s cubic-bezier(.65,0,.2,1); }
+.intro-fact.is-out{ opacity:0; transition:opacity .35s ease; }
+
+@media (max-width:760px){
+  .intro-title{ width:min(84%,460px); }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .intro-loader{ display:none; }
+  body.intro-pending .home-copy{ opacity:1; }
+}
