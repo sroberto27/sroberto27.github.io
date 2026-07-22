@@ -118,19 +118,31 @@
 }
 /* Gold circular close — pinned to the LEFT */
 #exampleOverlay .overlay-close{
-  position:sticky;
-  top:14px;
-  float:left;
-  margin-left:14px;
-  background:var(--gold); color:#141414; border:0;
-  width:40px; height:40px;
-  flex:0 0 auto;          /* don't grow or shrink */
-  aspect-ratio:1 / 1;     /* guarantee square */
+  position:fixed;
+  top:calc(50% - min(1040px, 96vh) / 2 + 14px);
+  left:calc(max(1.25vw, (100vw - min(1860px, 97.5vw)) / 2) + 14px);
+  right:auto;
+  z-index:7;
+  flex:0 0 auto;
   box-sizing:border-box;
+  width:40px; height:40px; aspect-ratio:1 / 1; border-radius:50%;
+  background:var(--gold); color:#141414; border:0;
   font-weight:800;
-  right:auto; left:auto;
 }
 #exampleOverlay .overlay-close:hover{ background:var(--gold-bright); }
+
+/* Phones: the window is full-bleed, so pin to the viewport corner. */
+@media (max-width:760px){
+  #exampleOverlay .overlay-close{
+    top:calc(2vh + 14px);
+    left:calc(3vw + 14px);
+  }
+}
+/* Fullscreen experience owns the screen — the close button steps aside. */
+body:has(#exampleStage:fullscreen) #exampleOverlay .overlay-close,
+body:has(#exampleStage.is-faux-fullscreen) #exampleOverlay .overlay-close{
+  display:none;
+}
 
 .example-head{
   display:flex; align-items:flex-start; justify-content:space-between;
