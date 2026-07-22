@@ -106,14 +106,29 @@
     width:min(1860px,97.5vw); height:min(1040px,96vh);
     background:#070e18;
   }
-  .example-stage{ height:clamp(340px, 66%, 720px); border-bottom:0; }
+  /* Scroll the window as one document so the stage scrolls away with the content */
+  .overlay-window.example-window{ overflow-y:auto; overflow-x:hidden; }
+  .example-stage{
+    height:clamp(340px, 66vh, 720px); border-bottom:0;
+    flex:0 0 auto; position:relative;
+  }
+  .example-content{ flex:0 0 auto; overflow:visible; min-height:0; }
   .example-stage .example-loading{ background:#a8a8a8; color:#333; }
   .example-stage .example-loading .spinner{ border-color:rgba(0,0,0,.15); border-top-color:#555; }
 }
-/* Gold circular close */
+/* Gold circular close — pinned to the LEFT */
 #exampleOverlay .overlay-close{
+  position:sticky;
+  top:14px;
+  float:left;
+  margin-left:14px;
   background:var(--gold); color:#141414; border:0;
-  width:40px; height:40px; font-weight:800;
+  width:40px; height:40px;
+  flex:0 0 auto;          /* don't grow or shrink */
+  aspect-ratio:1 / 1;     /* guarantee square */
+  box-sizing:border-box;
+  font-weight:800;
+  right:auto; left:auto;
 }
 #exampleOverlay .overlay-close:hover{ background:var(--gold-bright); }
 
@@ -159,11 +174,7 @@
 }
 .example-evidence-body{ margin:14px 0 0; }
 
-/* Placeholder tiles (evidence cards + media mosaic) */
-.example-evidence-tiles{
-  display:grid; grid-template-columns:repeat(3, 1fr);
-  gap:clamp(14px,1.6vw,24px); margin-top:clamp(14px,2vh,22px);
-}
+/* Media tiles */
 .example-tile{
   display:block; background:#4a4a4a; border-radius:14px; min-height:150px;
 }
@@ -171,17 +182,49 @@
   font-weight:500; font-size:clamp(19px,1.5vw,26px);
   margin:clamp(20px,3vh,32px) 0 clamp(12px,1.8vh,18px);
 }
+/* Count-driven media grid (0-4 items, set by js/app.js via data-count).
+   Desktop column counts; tablet and phone overrides live further down. */
 .example-media-grid{
   display:grid; gap:clamp(14px,1.6vw,24px);
-  grid-template-columns:1.3fr 1fr 1.3fr;
-  grid-template-rows:repeat(2, minmax(140px,1fr));
-  grid-template-areas:"a b d" "a c d";
+  grid-auto-rows:minmax(180px, auto);
 }
-.example-media-grid .example-tile:nth-child(1){ grid-area:a; }
-.example-media-grid .example-tile:nth-child(2){ grid-area:b; }
-.example-media-grid .example-tile:nth-child(3){ grid-area:c; }
-.example-media-grid .example-tile:nth-child(4){ grid-area:d; }
+.example-media-grid[data-count="0"]{ grid-template-columns:1fr; }
+.example-media-grid[data-count="1"]{ grid-template-columns:1fr; }
+.example-media-grid[data-count="2"]{ grid-template-columns:repeat(2, 1fr); }
+.example-media-grid[data-count="3"]{ grid-template-columns:repeat(3, 1fr); }
+.example-media-grid[data-count="4"]{ grid-template-columns:repeat(2, 1fr); }
+
+/* A lone item shouldn't stretch the full width like a banner. */
+.example-media-grid[data-count="1"]{ max-width:min(760px, 100%); }
+.example-media-grid[data-count="1"] .example-tile{ min-height:clamp(240px,32vh,420px); }
+
+/* Tiles fill their cell whatever the count. */
+.example-media-grid .example-tile{ width:100%; height:100%; min-height:180px; }
 .example-tile-tall{ min-height:100%; }
+
+/* Empty state */
+.example-media-empty{
+  margin:0; padding:clamp(28px,5vh,56px) 20px;
+  border:1px dashed rgba(255,255,255,.18); border-radius:14px;
+  background:rgba(255,255,255,.03);
+  color:rgba(255,255,255,.55);
+  font-size:clamp(13px,1vw,15px); text-align:center;
+}
+
+/* Video tiles: poster image plus a play badge. */
+.example-tile-video{ position:relative; overflow:hidden; text-decoration:none; }
+.example-tile-video .example-tile-photo{ width:100%; height:100%; object-fit:cover; border-radius:14px; }
+.example-tile-play{
+  position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+  width:54px; height:54px; border-radius:50%;
+  background:rgba(0,0,0,.55); border:1px solid rgba(255,255,255,.7);
+}
+.example-tile-play::after{
+  content:""; position:absolute; top:50%; left:54%; transform:translate(-50%,-50%);
+  border-style:solid; border-width:9px 0 9px 15px;
+  border-color:transparent transparent transparent #fff;
+}
+.example-tile-video:hover .example-tile-play{ background:rgba(0,0,0,.75); }
 
 /* Real project imagery (portfolio extractions) in the media mosaic. */
 img.example-tile-photo{
@@ -233,19 +276,108 @@ img.example-tile-photo{
 .example-more-name{ font-size:15px; font-weight:700; }
 .example-more-text{ font-size:12px; color:rgba(255,255,255,.8); line-height:1.45; }
 
-/* Gold FAB */
+/* ---------- Fullscreen experience pane ----------
+   Enter Twin fullscreens the stage and plays the same centre-out
+   seam reveal as the home page's twin layer (02-home.css), so the
+   two entrances read as one gesture. Geometry, easing and duration
+   are copied from .twin-reveal / .twin-seam deliberately — if you
+   retune one, retune the other. */
+#exampleStage:fullscreen,
+#exampleStage:-webkit-full-screen,
+#exampleStage.is-faux-fullscreen{
+  width:100vw; height:100vh; max-height:none;
+  border-radius:0; border-bottom:0; background:#0a1018;
+}
+#exampleStage:fullscreen iframe,
+#exampleStage:-webkit-full-screen iframe,
+#exampleStage.is-faux-fullscreen iframe{
+  width:100%; height:100%; border:0;
+}
+
+/* The reveal clips the stage's live content (iframe + loading veil).
+   .is-revealing mounts it as a narrow centre slice; .is-revealed
+   expands it to full width. */
+#exampleStage.is-revealing iframe,
+#exampleStage.is-revealing .example-loading{
+  -webkit-clip-path:inset(0 49.85% 0 49.85%);
+  clip-path:inset(0 49.85% 0 49.85%);
+  transition:clip-path 1.15s cubic-bezier(.72,.02,.26,1),
+             -webkit-clip-path 1.15s cubic-bezier(.72,.02,.26,1);
+}
+#exampleStage.is-revealing.is-revealed iframe,
+#exampleStage.is-revealing.is-revealed .example-loading{
+  -webkit-clip-path:inset(0 0 0 0);
+  clip-path:inset(0 0 0 0);
+}
+
+/* Thin vertical seam the reveal grows out of. */
+.example-seam{
+  position:absolute; top:0; bottom:0; left:50%; width:2px;
+  transform:translateX(-50%);
+  background:rgba(255,255,255,.85);
+  opacity:0; pointer-events:none; z-index:4;
+  transition:opacity .3s ease;
+}
+#exampleStage.is-revealing:not(.is-revealed) .example-seam{ opacity:1; }
+#exampleStage.is-revealing.is-revealed .example-seam{
+  opacity:0; transition:opacity .5s ease .25s;
+}
+
+/* Hide the back-to-top FAB while the stage is fullscreen. */
+#exampleStage:fullscreen ~ .example-fab,
+#exampleStage.is-faux-fullscreen ~ .example-fab{ display:none; }
+
+/* CSS fallback for browsers without element fullscreen (iOS Safari). */
+#exampleStage.is-faux-fullscreen{
+  position:fixed; inset:0; z-index:120;
+  height:100dvh;
+}
+/* Escape hatch for the fallback, since there's no browser exit chrome. */
+#exampleStage.is-faux-fullscreen::after{
+  content:"Press Esc or tap here to exit";
+  position:absolute; left:50%; bottom:18px; transform:translateX(-50%);
+  padding:8px 16px; border-radius:999px;
+  background:rgba(0,0,0,.6); color:#fff; font-size:12px;
+  font-family:var(--sans); pointer-events:none; z-index:6;
+}
+
+/* Respect reduced-motion: skip the slice, just show the experience. */
+@media (prefers-reduced-motion:reduce){
+  #exampleStage.is-revealing iframe,
+  #exampleStage.is-revealing .example-loading{
+    -webkit-clip-path:none; clip-path:none; transition:none;
+  }
+  .example-seam{ display:none; }
+}
+
+/* Gold FAB — stays pinned bottom-right while the window scrolls.
+   position:sticky keeps it in flow but glued to the viewport edge,
+   which survives the window being the scroll container. */
 .example-fab{
-  position:absolute; right:clamp(18px,2vw,34px); bottom:clamp(18px,3vh,34px);
+  position:sticky;
+  bottom:clamp(18px,3vh,34px);
+  align-self:flex-end;
+  margin-right:clamp(18px,2vw,34px); margin-bottom:clamp(18px,3vh,34px);
   z-index:6;
   appearance:none; cursor:pointer;
   width:clamp(48px,4vw,64px); height:clamp(48px,4vw,64px);
   border:0; border-radius:16px;
-  background:var(--gold); color:#141414;
+  background:rgba(214,168,73,.55); color:#141414;
+  backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
   display:flex; align-items:center; justify-content:center;
-  box-shadow:0 14px 34px rgba(0,0,0,.4);
+  box-shadow:0 10px 26px rgba(0,0,0,.28);
+  opacity:.7;
+  transition:opacity .18s ease, background .18s ease;
 }
-.example-fab:hover{ background:var(--gold-bright); }
+.example-fab:hover{ background:var(--gold-bright); opacity:1; }
 @media (max-width:760px){ .example-fab{ display:none; } }
+
+/* Tablet (761-1100px): cap at two columns so tiles stay legible. */
+@media (min-width:761px) and (max-width:1100px){
+  .example-media-grid[data-count="3"],
+  .example-media-grid[data-count="4"]{ grid-template-columns:repeat(2, 1fr); }
+  .example-media-grid .example-tile{ min-height:160px; }
+}
 
 /* ---------- Sector projects window: full-screen mosaic ---------- */
 @media (min-width:761px){
@@ -335,11 +467,13 @@ img.example-tile-photo{
     padding:14px 16px;
   }
   .example-evidence-note{ margin-left:0; }
-  .example-evidence-tiles,
   .example-more-grid{ grid-template-columns:1fr; }
-  .example-media-grid{
-    grid-template-columns:1fr; grid-template-rows:none;
-    grid-template-areas:"a" "b" "c" "d";
-  }
-  .example-tile{ min-height:120px; }
+  /* Phones: always a single column regardless of count. */
+  .example-media-grid,
+  .example-media-grid[data-count="2"],
+  .example-media-grid[data-count="3"],
+  .example-media-grid[data-count="4"]{ grid-template-columns:1fr; }
+  .example-media-grid[data-count="1"]{ max-width:100%; }
+  .example-media-grid .example-tile{ min-height:200px; }
+  .example-media-grid[data-count="1"] .example-tile{ min-height:220px; }
 }

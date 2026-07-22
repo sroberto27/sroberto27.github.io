@@ -422,6 +422,8 @@
         <div class="spinner" aria-hidden="true"></div>
         <span class="example-loading-text">Loading experience…</span>
       </div>
+      <!-- Centre seam for the reveal, mirroring the home twin layer. -->
+      <span class="example-seam" id="exampleSeam" aria-hidden="true"></span>
     </div>
 
     <!-- Scrolling content pane: title row with gold CTAs,
@@ -449,10 +451,6 @@
         <div class="example-cta-row">
           <button class="example-cta" id="exEnter" type="button">Enter Twin</button>
           <button class="example-cta" id="exContact" type="button">Contact Us about this</button>
-          <button class="example-cta example-cta-icon" id="exOpenTab" type="button"
-                  aria-label="Open this twin in a new tab" title="Open in a new tab">
-            <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M10 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
         </div>
       </div>
 
@@ -480,11 +478,6 @@
           <span class="example-evidence-note">Filtered by<br>active sector</span>
         </div>
         <p class="example-evidence-body" id="exEvidenceBody"></p>
-        <div class="example-evidence-tiles" aria-hidden="true">
-          <span class="example-tile"></span>
-          <span class="example-tile"></span>
-          <span class="example-tile"></span>
-        </div>
       </div>
 
       <!-- Photos and Video — populated from cfg.examples[id].gallery when
@@ -492,12 +485,7 @@
            decorative placeholder mosaic. -->
       <section class="example-media" aria-label="Photos and video">
         <h3 class="example-section-title">Photos and Video</h3>
-        <div class="example-media-grid" id="exMediaGrid">
-          <span class="example-tile example-tile-tall"></span>
-          <span class="example-tile"></span>
-          <span class="example-tile"></span>
-          <span class="example-tile example-tile-tall"></span>
-        </div>
+        <div class="example-media-grid" id="exMediaGrid" data-count="0"><!-- injected --></div>
         <!-- Related live experiences & videos for this project.
              Injected by js/app.js; hidden when empty. -->
         <div class="example-links" id="exMediaLinks" hidden></div>

@@ -587,7 +587,12 @@
     const ov = $("#exampleOverlay");
     ov.classList.add("is-open");
     ov.setAttribute("aria-hidden", "false");
-    $("#exampleContent").scrollTop = 0;
+    // The window itself is the scroll container on desktop; the inner
+    // pane still scrolls on phones. Reset whichever applies.
+    const exWin = document.querySelector("#exampleOverlay .example-window");
+    if (exWin) exWin.scrollTop = 0;
+    const exPane = $("#exampleContent");
+    if (exPane) exPane.scrollTop = 0;
   }
 
   /* The URL to load in the example stage: the example's own Treedis
@@ -613,26 +618,148 @@
     return null;
   }
 
+  /* Fullscreen the example's live experience pane.
+
+     Fullscreening the STAGE (not the iframe) keeps the loading spinner
+     and any future stage chrome visible, and leaves the overlay's own
+     scroll position untouched underneath. Esc / the browser's exit
+     control returns the reader to the exact same spot. */
+  function enterExampleFullscreen() {
+    const stage = $("#exampleStage");
+    if (!stage) return;
+
+    // Mount as a narrow centre slice + seam, matching the home page's
+    // twin layer, then expand on the next frame so the clip-path
+    // transition actually runs (a single rAF is too early).
+    const playReveal = () => {
+      stage.classList.add("is-revealing");
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => stage.classList.add("is-revealed"))
+      );
+      // Drop the helper classes once the 1.15s clip has finished so the
+      // stage returns to plain styling and nothing lingers clipped.
+      clearTimeout(revealTimer);
+      revealTimer = setTimeout(() => {
+        stage.classList.remove("is-revealing", "is-revealed");
+      }, 1500);
+    };
+
+    const req = stage.requestFullscreen
+      || stage.webkitRequestFullscreen
+      || stage.msRequestFullscreen;
+
+    if (req) {
+      const p = req.call(stage);
+      if (p && typeof p.then === "function") {
+        // Start the reveal only once the browser is actually fullscreen,
+        // otherwise the slice animates at the old pane size.
+        p.then(playReveal).catch(() => {
+          stage.classList.add("is-faux-fullscreen");
+          playReveal();
+        });
+      } else {
+        // Non-promise (older WebKit): fullscreenchange drives it instead.
+        pendingReveal = playReveal;
+      }
+      return;
+    }
+    // iOS Safari on iPhone has no element fullscreen — CSS overlay.
+    stage.classList.add("is-faux-fullscreen");
+    playReveal();
+  }
+
+  let revealTimer = null;
+  let pendingReveal = null;
+
+  /* Older WebKit resolves fullscreen via event, not promise. */
+  ["fullscreenchange", "webkitfullscreenchange"].forEach((evt) =>
+    document.addEventListener(evt, () => {
+      const fsEl = document.fullscreenElement || document.webkitFullscreenElement;
+      if (fsEl && pendingReveal) { pendingReveal(); pendingReveal = null; return; }
+      // Exiting fullscreen: clear any leftover reveal state.
+      if (!fsEl) {
+        const stage = $("#exampleStage");
+        if (stage) stage.classList.remove("is-revealing", "is-revealed");
+      }
+    })
+  );
+
+  /* Tap the exit pill to leave the CSS fallback. The pill is a
+     pseudo-element, so hit-test the bottom strip of the stage. */
+  document.addEventListener("click", (e) => {
+    const stage = $("#exampleStage");
+    if (!stage || !stage.classList.contains("is-faux-fullscreen")) return;
+    const r = stage.getBoundingClientRect();
+    if (e.clientY > r.bottom - 56) {
+      e.preventDefault();
+      e.stopPropagation();
+      stage.classList.remove("is-faux-fullscreen", "is-revealing", "is-revealed");
+    }
+  }, true);
+
+  /* Leave the CSS fallback when the user presses Esc. */
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape") return;
+    const stage = $("#exampleStage");
+    if (stage && stage.classList.contains("is-faux-fullscreen")) {
+      e.stopPropagation();
+      stage.classList.remove("is-faux-fullscreen", "is-revealing", "is-revealed");
+    }
+  }, true);
+
   /* Real project imagery when the example has a gallery;
      decorative placeholder mosaic otherwise. */
   function buildExampleGallery(ex) {
     const grid = $("#exMediaGrid");
     if (!grid) return;
-    const shots = ex.gallery || [];
-    if (!shots.length) {
-      grid.setAttribute("aria-hidden", "true");
-      grid.innerHTML =
-        '<span class="example-tile example-tile-tall"></span>' +
-        '<span class="example-tile"></span>' +
-        '<span class="example-tile"></span>' +
-        '<span class="example-tile example-tile-tall"></span>';
+
+    // CMS contract: 0-4 items. Anything beyond 4 is ignored rather than
+    // breaking the grid; the layout is driven entirely by the real count.
+    const shots = (ex.gallery || []).slice(0, 4);
+    const n = shots.length;
+
+    grid.innerHTML = "";
+    grid.dataset.count = String(n);
+
+    // No media yet — a labelled placeholder, not a decorative mosaic.
+    if (!n) {
+      grid.removeAttribute("aria-hidden");
+      const empty = document.createElement("p");
+      empty.className = "example-media-empty";
+      empty.textContent = "Photos and video coming soon.";
+      grid.appendChild(empty);
       return;
     }
+
     grid.removeAttribute("aria-hidden");
-    grid.innerHTML = "";
-    shots.forEach((shot, i) => {
+    shots.forEach((shot) => {
+      // A gallery entry is a video when it carries a poster/embed pair or
+      // an explicit type; otherwise it renders as a still image.
+      const isVideo = shot.type === "video" || !!shot.embedUrl;
+      if (isVideo) {
+        const a = document.createElement("a");
+        a.className = "example-tile example-tile-video";
+        a.href = shot.watchUrl || shot.embedUrl || "#";
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.setAttribute("aria-label", shot.alt || "Play video");
+        if (shot.poster) {
+          const img = document.createElement("img");
+          img.className = "example-tile-photo";
+          img.src = shot.poster;
+          img.alt = shot.alt || "";
+          img.loading = "lazy";
+          a.appendChild(img);
+        }
+        const play = document.createElement("span");
+        play.className = "example-tile-play";
+        play.setAttribute("aria-hidden", "true");
+        a.appendChild(play);
+        grid.appendChild(a);
+        return;
+      }
       const img = document.createElement("img");
-      img.className = "example-tile example-tile-photo" + (i === 0 ? " example-tile-tall" : "");
+      img.className = "example-tile example-tile-photo";
       img.src = shot.src;
       img.alt = shot.alt || "";
       img.loading = "lazy";
@@ -1503,12 +1630,10 @@
     // "Enter Twin" — if the active example has its own experience,
     // open it in a new tab; otherwise open the shared showcase.
     $("#exEnter").addEventListener("click", () => {
-      const ex = cfg.examples && cfg.examples[activeExampleId];
-      const own = exampleOpenUrl(ex);
-      if (own) { window.open(own, "_blank", "noopener"); return; }
-      closeExample();
-      goHome();
-      openExperience();
+      // Fullscreen the live experience pane in place. The project window
+      // stays open behind it and keeps its scroll position, so exiting
+      // fullscreen returns the reader exactly where they were.
+      enterExampleFullscreen();
     });
     // "Contact Us about this" routes into the proposal lead form.
     $("#exContact").addEventListener("click", () => {
@@ -1517,16 +1642,15 @@
         || cfg.contact.ctas[0];
       if (proposal) openLeadForm(proposal.id, proposal.stage);
     });
-    // Open-in-new-tab square beside the CTAs.
-    const exOpenTab = $("#exOpenTab");
-    if (exOpenTab) exOpenTab.addEventListener("click", () => {
-      const ex = cfg.examples && cfg.examples[activeExampleId];
-      window.open(exampleOpenUrl(ex) || cfg.treedis.tourUrl, "_blank", "noopener");
-    });
     // Back-to-top FAB inside the window.
     const exFab = $("#exampleFab");
     if (exFab) exFab.addEventListener("click", () => {
-      $("#exampleContent").scrollTo({ top: 0, behavior: "smooth" });
+      // The example window is the scroll container on desktop; on phones
+      // the inner content pane still scrolls. Scroll whichever applies.
+      const win = document.querySelector("#exampleOverlay .example-window");
+      const pane = $("#exampleContent");
+      const target = win && win.scrollHeight > win.clientHeight ? win : pane;
+      if (target) target.scrollTo({ top: 0, behavior: "smooth" });
     });
     // Desktop portal nav links.
     $$("#portalNav .portal-nav-link").forEach((b) =>
