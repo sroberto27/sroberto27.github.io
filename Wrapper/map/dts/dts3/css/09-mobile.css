@@ -386,8 +386,12 @@ body.portal-open{ overflow:hidden; }
      out of the base absolute/inset:0 sizing, so it must be told to fill
      the stage — otherwise it shrinks to content height and the
      evidence strip's margin-top:auto has no free space to absorb. */
-  .view-home{ position:relative; overflow:hidden; height:100%; min-height:100%; }
-  .home-grid{ grid-template-rows:auto 1fr auto; }
+  .view-home{
+    position:relative; height:100%; min-height:100%;
+    overflow-y:auto; overflow-x:hidden;
+    -webkit-overflow-scrolling:touch;
+  }
+  .home-grid{ grid-template-rows:auto 1fr auto; flex-shrink:0; }
   .hex-cluster{
     display:block; position:relative;
     width:100%; min-height:240px;
@@ -423,9 +427,11 @@ body.portal-open{ overflow:hidden; }
   .hex-g4{ width:calc(var(--hexu)*.40); left:calc(50% + 1.72*var(--hexu)); top:calc(50% + .10*var(--hexu)); transform:translate(-50%,-50%); }
   /* Pinned to the BOTTOM of the home view, directly above the
      Ask-a-Question bar: the view is a flex column, so margin-top:auto
-     absorbs all free space above the strip; home-grid stops growing
-     so the gap actually lands here instead of inside the grid. */
-  .home-grid{ flex:0 1 auto; }
+     absorbs all free space above the strip when there IS extra room.
+     home-grid no longer shrinks (flex-shrink:0, set above) — on short
+     viewports the column now scrolls instead of compressing, which is
+     what was causing the hex-cluster to visually overflow on top of
+     the evidence bullets. */
   .evidence-bar{
     display:grid; grid-template-columns:1fr 1fr;
     gap:10px 16px; align-items:start;
@@ -463,24 +469,26 @@ body.portal-open{ overflow:hidden; }
   /* ----- Cookie disclosure: light rounded card above the
          dock, dark text, grey Accept / Reject. ----- */
   .cookie{
-    left:14px; right:14px; bottom:calc(var(--dock-h) + 18px);
-    width:auto; border:0; border-radius:16px;
-    background:rgba(214,214,214,.96); color:#222;
-    padding:16px 16px 14px;
+    left:auto; right:10px; bottom:calc(var(--dock-h) + 12px);
+    width:min(240px,62vw); border:1px solid rgba(255,255,255,.3); border-radius:14px;
+    background:rgba(214,214,214,.62); color:#222;
+    padding:11px 12px 10px;
     display:block;
-    box-shadow:0 18px 44px rgba(0,0,0,.5);
+    box-shadow:0 14px 32px rgba(0,0,0,.4);
+    backdrop-filter:blur(10px) saturate(140%);
+    -webkit-backdrop-filter:blur(10px) saturate(140%);
   }
   .cookie-text{
-    color:#333; font-size:12px; line-height:1.5;
+    color:#333; font-size:10.5px; line-height:1.4;
     display:block; -webkit-line-clamp:unset; overflow:visible;
   }
   .cookie-text strong{
-    display:block; color:#555; font-size:19px; font-weight:600; margin-bottom:8px;
+    display:block; color:#555; font-size:14px; font-weight:600; margin-bottom:4px;
   }
-  .cookie-actions{ margin-top:14px; justify-content:space-between; }
+  .cookie-actions{ margin-top:9px; justify-content:flex-end; gap:8px; }
   .cookie-btn{
     background:#6e6e6e; color:#fff; border:0; border-radius:8px;
-    font-size:15px; font-weight:600; padding:8px 22px;
+    font-size:12px; font-weight:600; padding:6px 14px;
   }
   .cookie-btn:hover{ background:#5a5a5a; }
   .cookie-btn-ghost{ background:#6e6e6e; color:#fff; }
@@ -521,9 +529,13 @@ body.portal-open{ overflow:hidden; }
     box-shadow:-8px 10px 26px rgba(0,0,0,.28);
     z-index:5;
   }
-  /* Keep the intro paragraph clear of the tab (copy wraps
-     before the tab, no overlap). Tab intrudes ~52px into the panel. */
-  .cat-panel-cards .cat-body{ padding-right:60px; }
+  /* Keep the WHOLE intro block clear of the tab — kicker, title, and
+     subhead, not just the body paragraph. The title previously had no
+     reserved space, so on narrow/short screens (where the tab's top:18%
+     lands higher, closer to the heading) it ran straight over
+     "Commercial & Industrial" instead of just brushing the paragraph.
+     Tab intrudes ~52px into the panel. */
+  .cat-panel-cards .cat-intro{ padding-right:60px; }
   /* Horizontal stacked label (was vertical). */
   .contact-edge-text{
     writing-mode:horizontal-tb; transform:none;

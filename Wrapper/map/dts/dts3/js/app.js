@@ -830,6 +830,87 @@
     ov.classList.remove("is-open");
     ov.setAttribute("aria-hidden", "true");
     activeExampleId = null;
+    closeShare();     // never leave the share popup open behind a closed window
+  }
+
+  /* ============================================================
+     SHARE THIS PROJECT
+     ------------------------------------------------------------
+     The link is built from the project's own id — the same id the
+     Admin Board assigns to every project doc (see content-loader.js
+     buildConfig: cfg.examples[p.id]). That means any project created
+     or edited in the CMS gets a correct, working share link the
+     moment it's saved — nothing to configure by hand. Loading the
+     site with ?project=<id> in the URL (see openSharedProjectFromURL,
+     called from boot()) reopens that exact project window, so a
+     shared link never just lands on the homepage or the live tour.
+     ============================================================ */
+  function exampleShareUrl(id) {
+    return location.origin + location.pathname + "?project=" + encodeURIComponent(id);
+  }
+
+  function openShare() {
+    if (!activeExampleId) return;
+    const ex = cfg.examples && cfg.examples[activeExampleId];
+    const name = (ex && ex.project && ex.project.name) || (ex && ex.title) || "Digital Twin Studios";
+    const url = exampleShareUrl(activeExampleId);
+    const encUrl = encodeURIComponent(url);
+    const text = encodeURIComponent(name + " — Digital Twin Studios");
+
+    $("#shareLinkInput").value = url;
+    $("#shareFacebook").href = "https://www.facebook.com/sharer/sharer.php?u=" + encUrl;
+    $("#shareX").href = "https://twitter.com/intent/tweet?url=" + encUrl + "&text=" + text;
+    $("#shareLinkedIn").href = "https://www.linkedin.com/sharing/share-offsite/?url=" + encUrl;
+    $("#shareEmail").href = "mailto:?subject=" + text + "&body=" + encodeURIComponent(name + "\n\n" + url);
+
+    const ov = $("#shareOverlay");
+    ov.classList.add("is-open");
+    ov.setAttribute("aria-hidden", "false");
+  }
+
+  function closeShare() {
+    const ov = $("#shareOverlay");
+    if (!ov) return;
+    ov.classList.remove("is-open");
+    ov.setAttribute("aria-hidden", "true");
+  }
+
+  /* Reopen the exact project window a shared link points to. Called
+     once at boot, after cfg.examples is available. Silently does
+     nothing if there's no ?project= param or the id no longer exists
+     (e.g. a project was later removed from the CMS). */
+  function openSharedProjectFromURL() {
+    try {
+      const id = new URLSearchParams(location.search).get("project");
+      if (id && cfg.examples && cfg.examples[id]) openExample(id);
+    } catch (_e) { /* malformed URL params — ignore */ }
+  }
+
+  /* The project window overlay lives outside .app, so the intro
+     loading screen's cloak (which only hides .app) never covered it —
+     opening it during boot() meant it flashed on screen BEFORE the
+     loading screen had even appeared, which then covered it and later
+     faded away to reveal it again. Instead, wait until <html> no
+     longer carries the intro-cloak class (i.e. the loading screen has
+     genuinely finished, or was skipped entirely for reduced-motion
+     users) before opening the shared project — so the loading screen
+     always shows first, then the project window. */
+  function maybeOpenSharedProjectFromURL() {
+    let id;
+    try { id = new URLSearchParams(location.search).get("project"); }
+    catch (_e) { return; }
+    if (!id) return;
+
+    if (!document.documentElement.classList.contains("intro-cloak")) {
+      openSharedProjectFromURL();
+      return;
+    }
+    const poll = setInterval(() => {
+      if (!document.documentElement.classList.contains("intro-cloak")) {
+        clearInterval(poll);
+        openSharedProjectFromURL();
+      }
+    }, 60);
   }
 
   /* ============================================================
@@ -1642,6 +1723,36 @@
         || cfg.contact.ctas[0];
       if (proposal) openLeadForm(proposal.id, proposal.stage);
     });
+    // Share this project window
+    $("#exShare").addEventListener("click", openShare);
+    $("#shareClose").addEventListener("click", closeShare);
+    $$("[data-close-share]").forEach((s) => s.addEventListener("click", closeShare));
+    $("#shareCopyBtn").addEventListener("click", () => {
+      const input = $("#shareLinkInput");
+      const btn = $("#shareCopyBtn");
+      const showCopied = () => {
+        const original = "Copy";
+        btn.textContent = "Copied!";
+        btn.classList.add("is-copied");
+        clearTimeout(btn._copyTimer);
+        btn._copyTimer = setTimeout(() => {
+          btn.textContent = original;
+          btn.classList.remove("is-copied");
+        }, 1800);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(input.value).then(showCopied).catch(() => {
+          input.select();
+          document.execCommand("copy");
+          showCopied();
+        });
+      } else {
+        input.select();
+        document.execCommand("copy");
+        showCopied();
+      }
+    });
+
     // Back-to-top FAB inside the window.
     const exFab = $("#exampleFab");
     if (exFab) exFab.addEventListener("click", () => {
@@ -1718,6 +1829,7 @@
       if (e.key === "Escape") {
         if (!$("#portalMenu").hidden) { closePortalMenu(); return; }
         if ($("#portalLayer").classList.contains("is-open")) { closePortal(false); return; }
+        if ($("#shareOverlay").classList.contains("is-open")) { closeShare(); return; }
         if ($("#projectsOverlay").classList.contains("is-open")) { closeProjects(); return; }
         if ($("#exampleOverlay").classList.contains("is-open")) { closeExample(); return; }
         if ($("#accessOverlay").classList.contains("is-open"))  { closeAccess();  return; }
@@ -1775,6 +1887,7 @@
     startTreedis();              // embed the live experience right away
     cyclePrompt();
     setInterval(cyclePrompt, 3200);
+    maybeOpenSharedProjectFromURL();  // ?project=<id> deep-link → open once the loading screen clears
   }
 
   if (document.readyState === "loading") {

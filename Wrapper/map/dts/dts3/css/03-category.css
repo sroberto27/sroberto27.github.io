@@ -175,14 +175,21 @@ body:has(#view-home.is-active) .bg-video{
   padding:8px 8px 8px 14px;
   width:clamp(240px, 30vw, 460px);
   position:relative; flex:0 0 auto;
+  overflow:hidden;
 }
-.qbar-icon{ display:flex; color:#444; }
-.qbar-label{ position:absolute; left:42px; color:#333; font-weight:600; font-size:clamp(12px,1vw,15px); pointer-events:none; }
+.qbar-icon{ display:flex; color:#444; flex:0 0 auto; }
+.qbar-label{
+  position:absolute; left:42px; right:16px; color:#333; font-weight:600;
+  font-size:clamp(12px,1vw,15px); pointer-events:none;
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+}
 .qbar-input{
-  flex:1; border:0; background:transparent; outline:none;
-  font-family:var(--sans); font-size:clamp(12px,.95vw,14px); color:#222; padding-left:96px;
+  flex:1; min-width:0; border:0; background:transparent; outline:none;
+  font-family:var(--sans); font-size:clamp(12px,.95vw,14px); color:#222;
+  padding-left:clamp(70px,9vw,96px);
+  overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
 }
-.qbar-input::placeholder{ color:#888; }
+.qbar-input::placeholder{ color:#888; overflow:hidden; text-overflow:ellipsis; }
 .qbar-send{
   appearance:none; cursor:pointer; border:0;
   width:30px; height:30px; border-radius:50%;

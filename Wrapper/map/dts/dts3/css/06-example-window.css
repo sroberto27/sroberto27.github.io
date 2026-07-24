@@ -81,6 +81,13 @@
 .example-cta-primary{ background:var(--gold); color:#1a1206; border-color:var(--gold); }
 .example-cta-primary:hover{ background:var(--gold-bright); }
 
+/* Icon-only variant — the Share button sitting alongside Enter Twin /
+   Contact Us about this in the CTA row. */
+.example-cta-icon{
+  flex:0 0 auto; width:46px; height:46px;
+  padding:0; display:flex; align-items:center; justify-content:center;
+}
+
 /* Sector colour accents for the example window kicker / project rule. */
 .example-window[data-sector="education"]  .example-kicker,
 .example-window[data-sector="education"]  .example-project-label{ color:#e9b44c; }

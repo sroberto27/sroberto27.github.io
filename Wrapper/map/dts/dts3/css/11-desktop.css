@@ -9,8 +9,9 @@
    The hexagon cluster and the blue arrow-burst behind
    "Try a Digital Twin" stay as-is (they respond via clamp() sizing
    on all viewports). Only the evidence row is restyled. */
-@media (min-width:761px){
-  /* Evidence bullets: a single spread row above the dock, no rule line. */
+
+/* Wide desktop: enough room for all 4 items on one spread row. */
+@media (min-width:1101px){
   .evidence-bar{
     border-top:0; padding-top:0;
     justify-content:space-between;
@@ -18,6 +19,27 @@
     font-size:clamp(11px,.9vw,14px);
   }
   .evidence-dot{ color:#ff9d00; }
+}
+
+/* Tablet / small-laptop range (761–1100px): a single row is too narrow
+   for 4 long entries and used to wrap unevenly (3 items spread across
+   the row, 4th dropping to its own line, nothing lined up). Switch to
+   the same 2-column grid used on phone so it always lines up cleanly. */
+@media (min-width:761px) and (max-width:1100px){
+  .evidence-bar{
+    display:grid; grid-template-columns:1fr 1fr;
+    gap:10px 24px; align-items:start;
+    border-top:0; padding-top:0;
+    color:rgba(255,255,255,.85);
+    font-size:clamp(11px,1vw,13px);
+  }
+  .evidence-item{ display:flex; gap:6px; align-items:flex-start; white-space:normal; }
+  /* Row order: Maslow | NAICS  /  Bronfenbrenner | Human Capital. */
+  .evidence-item:nth-child(1){ order:1; }  /* Maslow */
+  .evidence-item:nth-child(4){ order:2; }  /* NAICS */
+  .evidence-item:nth-child(3){ order:3; }  /* Bronfenbrenner */
+  .evidence-item:nth-child(2){ order:4; }  /* Human Capital */
+  .evidence-dot{ color:#ff9d00; flex:0 0 auto; }
 }
 
 /* ---------- Question bar (light pill, bold label, quoted hint) ---------- */
@@ -28,26 +50,34 @@
 .qbar-input::placeholder{ color:#7c7c7c; font-style:italic; }
 .qbar-send{ background:#9c9c9c; color:#f4f4f4; }
 
-/* ---------- Cookie disclosure (light card, grey pill buttons) ---------- */
-.cookie{
-  background:#d6d6d6; border:0;
-  border-radius:18px;
-  width:min(760px,86vw);
-  display:flex; align-items:flex-end; gap:14px;
+/* ---------- Cookie disclosure (light card, grey pill buttons) ----------
+   Wrapped in the desktop media query on purpose: previously this rule had
+   no @media guard, so it overrode the mobile-specific .cookie styling in
+   09-mobile.css too (same specificity + later in the cascade), which is
+   why the popup looked oversized on phones as well. */
+@media (min-width:761px){
+  .cookie{
+    background:rgba(214,214,214,.62); border:1px solid rgba(255,255,255,.3);
+    border-radius:14px;
+    width:min(320px,30vw);
+    display:block;
+    backdrop-filter:blur(10px) saturate(140%);
+    -webkit-backdrop-filter:blur(10px) saturate(140%);
+  }
+  .cookie-text{ color:#2b2b2b; }
+  .cookie-text strong{
+    display:block; color:#555; font-size:clamp(13px,1vw,15px);
+    font-weight:600; margin-bottom:3px;
+  }
+  .cookie-actions{ margin-top:9px; justify-content:flex-end; }
+  .cookie-btn{
+    background:#696969; color:#fff; border:0;
+    border-radius:999px; padding:6px 16px;
+    font-size:clamp(11px,.85vw,13px);
+  }
+  .cookie-btn:hover{ background:#585858; }
+  .cookie-btn-ghost{ background:#696969; color:#fff; }
 }
-.cookie-text{ color:#2b2b2b; }
-.cookie-text strong{
-  display:block; color:#555; font-size:clamp(15px,1.2vw,20px);
-  font-weight:600; margin-bottom:4px;
-}
-.cookie-actions{ margin-top:0; flex:0 0 auto; }
-.cookie-btn{
-  background:#696969; color:#fff; border:0;
-  border-radius:999px; padding:9px 22px;
-  font-size:clamp(12px,1vw,15px);
-}
-.cookie-btn:hover{ background:#585858; }
-.cookie-btn-ghost{ background:#696969; color:#fff; }
 
 /* ---------- Dock tabs ("Use Cases" filled grey, rest uppercase) ---------- */
 .dock-tab.is-active{ background:#474a50; }

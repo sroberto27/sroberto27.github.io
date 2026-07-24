@@ -122,13 +122,19 @@
     overflow-y:auto;
     -webkit-overflow-scrolling:touch;
   }
-  .uc-card{ padding:14px; min-height:0; }
+  .uc-card{ padding:14px; min-height:0; overflow:hidden; }
   .uc-card h3{ font-size:12px; margin-bottom:6px; }
-  .uc-card p{ font-size:11.5px; line-height:1.4; }
+  .uc-card p{
+    font-size:11.5px; line-height:1.4;
+    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
+    overflow:hidden;
+  }
 
-  /* The right-edge "Contact & Info" tab is replaced on phone by the
-     sector strip + swipe; hide it to keep the layout clean. */
-  .contact-edge{ display:none; }
+  /* NOTE: the right-edge "Contact & Info" tab is intentionally shown
+     on phone — see the full .contact-edge styling in 09-mobile.css,
+     which loads after this file and is what actually controls it.
+     (This used to say display:none here, but that never took effect
+     since the later rule overrides it — removed to avoid confusion.) */
 
   /* Contact panel: vertical, full layout (matches image 2). The side
      arrow buttons are hidden — Back lives in the sector strip / swipe. */
