@@ -103,12 +103,13 @@
     <canvas class="bg-net" id="bgNet" aria-hidden="true"></canvas>
 
     <!-- Animated dot-network background (Vimeo, muted loop). The canvas
-         above stays as a graceful fallback while the video loads or if
-         the embed is blocked. -->
-    <div class="bg-video" aria-hidden="true">
-      <iframe src="https://player.vimeo.com/video/1201869618?h=a2fecf162b&background=1&autoplay=1&loop=1&muted=1&autopause=0&dnt=1"
-              title="" frameborder="0" allow="autoplay; fullscreen" tabindex="-1"></iframe>
-    </div>
+         above stays as a graceful fallback while the video loads, if
+         the embed is blocked, or if js/bg-video.js decides the visitor
+         is on a slow/metered connection and skips it entirely. The
+         iframe is NOT in the markup on page load -- js/bg-video.js
+         injects it (or doesn't) after the critical path is clear. -->
+    <div class="bg-video" aria-hidden="true" id="bgVideo"
+         data-src="https://player.vimeo.com/video/1201869618?h=a2fecf162b&background=1&autoplay=1&loop=1&muted=1&autopause=0&dnt=1"></div>
 
     <!-- ---------- VIEW: HOME ---------- -->
     <section class="view view-home is-active" id="view-home" aria-label="Home">
@@ -867,15 +868,18 @@
 
 
 
-<!-- Scripts: config.js + clients.js define fallback globals, then the
-     Treedis bridge, then content-loader.js hydrates DTS_CONFIG from the
-     /data JSON documents (or the Admin Board's draft) and injects
-     app.js, smoke-depth.js, vision-pro-spatial.js, and admin.js once
-     content is ready. Keep this order. -->
-<script src="js/config.js"></script>
+<!-- Scripts: clients.js defines a fallback global, then the Treedis
+     bridge, then content-loader.js hydrates DTS_CONFIG from the /data
+     JSON documents (or the Admin Board's draft) and injects app.js,
+     smoke-depth.js, vision-pro-spatial.js, and hex-media.js once
+     content is ready -- admin.js only joins that list when this
+     browser is in an admin context (see content-loader.js). js/config.js
+     is NOT loaded here: content-loader.js pulls it in dynamically, and
+     only as a fallback if /data itself fails to load. Keep this order. -->
 <script src="js/clients.js"></script>
 <script src="js/tour-bridge.js"></script>
 <script src="js/content-loader.js"></script>
 <script src="js/intro-typewriter.js"></script>
+<script src="js/bg-video.js" defer></script>
 </body>
 </html>

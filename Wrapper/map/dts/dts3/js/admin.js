@@ -691,6 +691,10 @@
   }
 
   function exportData() {
+    // Bump the version stamp so every published doc gets a fresh
+    // ?v=... URL in content-loader.js -- this is what lets those
+    // files be cached hard by the browser without ever going stale.
+    content.manifest.contentVersion = new Date().toISOString().replace(/[:.]/g, "-");
     var files = {};
     files["manifest.json"] = JSON.stringify(content.manifest, null, 2) + "\n";
     Object.keys(docs).forEach(function (f) {

@@ -42,8 +42,13 @@
     return null;
   }
 
-  function fetchJSON(path) {
-    return fetch(path, { cache: "no-store" }).then(function (r) {
+  /* fresh=true forces a real network hit (used only for manifest.json,
+     which is tiny and must always reflect the latest publish). Every
+     other document is fetched with normal HTTP caching -- safe because
+     its URL carries a ?v=<contentVersion> suffix that only changes
+     when the content actually changes (see admin.js exportData()). */
+  function fetchJSON(path, fresh) {
+    return fetch(path, { cache: fresh ? "no-store" : "default" }).then(function (r) {
       if (!r.ok) throw new Error(path + " " + r.status);
       return r.json();
     });
@@ -56,10 +61,11 @@
       console.info("[content] admin draft active (saved " + (draft.savedAt || "?") + ")");
       return Promise.resolve({ manifest: draft.manifest, docs: draft.docs, fromDraft: true });
     }
-    return fetchJSON(DATA_ROOT + "manifest.json").then(function (manifest) {
+    return fetchJSON(DATA_ROOT + "manifest.json", true).then(function (manifest) {
+      var ver = encodeURIComponent(manifest.contentVersion || "0");
       var files = flattenManifest(manifest);
       return Promise.all(files.map(function (f) {
-        return fetchJSON(DATA_ROOT + f).then(function (doc) { return [f, doc]; });
+        return fetchJSON(DATA_ROOT + f + "?v=" + ver).then(function (doc) { return [f, doc]; });
       })).then(function (pairs) {
         var docs = {};
         pairs.forEach(function (p) { docs[p[0]] = p[1]; });
@@ -290,14 +296,54 @@
     }
   }
 
+  /* ---------- admin gating ----------
+     admin.js is the CMS (Admin Board). Ordinary visitors should never
+     download or parse it, so it's only added to the script list when
+     this browser is in an "admin context":
+       - the URL carries ?admin or #admin -- bookmark this as the CMS
+         entry point; visiting it once remembers the browser via
+         localStorage so you don't need the flag every time
+       - OR a draft is already saved (DRAFT_KEY) -- so an editor
+         mid-session can still reopen/discard it after a reload even
+         without the flag present in that particular URL */
+  var ADMIN_FLAG_KEY = "dtsAdminMode";
+  function isAdminContext() {
+    try {
+      if (/(^|[?&])admin(=1)?(&|$)/.test(location.search) || location.hash === "#admin") {
+        localStorage.setItem(ADMIN_FLAG_KEY, "1");
+        return true;
+      }
+      if (localStorage.getItem(ADMIN_FLAG_KEY) === "1") return true;
+      if (localStorage.getItem(DRAFT_KEY)) return true;
+    } catch (e) { /* storage unavailable -- default to no admin */ }
+    return false;
+  }
+
   /* ---------- boot the app scripts in order ---------- */
-  var APP_SCRIPTS = ["js/app.js", "js/smoke-depth.js", "js/vision-pro-spatial.js", "js/hex-media.js", "js/admin.js"];
+  function appScripts() {
+    var list = ["js/app.js", "js/smoke-depth.js", "js/vision-pro-spatial.js", "js/hex-media.js"];
+    if (isAdminContext()) list.push("js/admin.js");
+    return list;
+  }
   function injectScripts(list, done) {
     if (!list.length) { if (done) done(); return; }
     var s = document.createElement("script");
     s.src = list[0];
     s.onload = s.onerror = function () { injectScripts(list.slice(1), done); };
     document.body.appendChild(s);
+  }
+
+  /* ---------- config.js fallback loader ----------
+     config.js is no longer a static <script> tag in index.html. When
+     /data loads fine (the normal case) buildConfig() below gives
+     app.js everything it needs and config.js is never downloaded at
+     all. It's only pulled in here, on demand, when /data failed and
+     app.js needs its baked-in fallback content instead. */
+  function loadConfigFallback(done) {
+    var s = document.createElement("script");
+    s.src = "js/config.js";
+    s.onload = s.onerror = done;
+    document.head.appendChild(s);
   }
 
   function whenDOMReady(fn) {
@@ -313,13 +359,15 @@
       window.DTS_CONTENT_READY = true;              // js/intro-typewriter.js waits on this
       whenDOMReady(function () {
         applyHome(content);
-        injectScripts(APP_SCRIPTS);
+        injectScripts(appScripts());
       });
     })
     .catch(function (err) {
       console.warn("[content] /data unavailable, using js/config.js fallback:", err);
       window.DTS_CONTENT = null;
-      window.DTS_CONTENT_READY = true;              // config.js fallback is all we'll get — don't hang the intro
-      whenDOMReady(function () { injectScripts(APP_SCRIPTS); });
+      window.DTS_CONTENT_READY = true;              // config.js fallback is all we'll get -- don't hang the intro
+      loadConfigFallback(function () {
+        whenDOMReady(function () { injectScripts(appScripts()); });
+      });
     });
 })();

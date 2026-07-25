@@ -1,6 +1,7 @@
 {
   "_type": "contentManifest",
   "schemaVersion": "1.0.0",
+  "contentVersion": "2026-07-25T00-00-00Z",
   "generatedFrom": "js/config.js, js/clients.js, index.html (July 2026)",
   "description": "Index of every content document in /data. The site loader and the future Admin Board (mini CMS) both read this file to discover content. Add a new document = add its file and register it here.",
   "mediaConvention": {
