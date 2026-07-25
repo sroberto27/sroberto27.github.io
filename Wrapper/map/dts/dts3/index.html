@@ -159,11 +159,32 @@
              not on the wrapper — clip-path clips children, so the minimize
              button must sit on the unclipped wrapper to stay visible.
              The positioning CSS still targets .hex.hex-N, so the wrapper
-             keeps both classes and the exact edge-contact geometry holds. -->
+             keeps both classes and the exact edge-contact geometry holds.
+
+             BORDER (important for 3D models): WebGL canvases (model-viewer,
+             video) sometimes ignore an ancestor's clip-path — the browser can
+             promote them to their own compositing layer. .hex-clip therefore
+             clips with BOTH clip-path and mask-image (masks are composited
+             more reliably for GPU layers). The .hex-border SVG is drawn as a
+             SEPARATE, unclipped sibling on top of the media, at the exact hex
+             edge — it seals any stray pixel that slips past the clip/mask and
+             gives every hexagon a visible outline, whatever the media is. -->
+        <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+          <defs>
+            <linearGradient id="hexBorderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%"  stop-color="#fff6d8"/>
+              <stop offset="45%" stop-color="var(--gold, #d0a33a)"/>
+              <stop offset="100%" stop-color="#8a6a1e"/>
+            </linearGradient>
+          </defs>
+        </svg>
         <div class="hex-cluster" id="hexCluster">
           <div class="hex hexbox hex-1" data-slot="hex-1" role="button" tabindex="0"
                aria-label="Expand hexagon 1">
             <div class="hex-clip"><div class="hex-media hex-img" style="background-image:url('assets/dtsBR.png')"></div></div>
+            <svg class="hex-border" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <polygon points="25,0 75,0 100,50 75,100 25,100 0,50" vector-effect="non-scaling-stroke"/>
+            </svg>
             <button class="hex-min" type="button" aria-label="Minimize" tabindex="-1">
               <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
             </button>
@@ -171,6 +192,9 @@
           <div class="hex hexbox hex-2" data-slot="hex-2" role="button" tabindex="0"
                aria-label="Expand hexagon 2">
             <div class="hex-clip"><div class="hex-media hex-img" style="background-image:url('assets/assets-droplet.jpg')"></div></div>
+            <svg class="hex-border" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <polygon points="25,0 75,0 100,50 75,100 25,100 0,50" vector-effect="non-scaling-stroke"/>
+            </svg>
             <button class="hex-min" type="button" aria-label="Minimize" tabindex="-1">
               <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
             </button>
@@ -178,6 +202,9 @@
           <div class="hex hexbox hex-3" data-slot="hex-3" role="button" tabindex="0"
                aria-label="Expand hexagon 3">
             <div class="hex-clip"><div class="hex-media hex-img" style="background-image:url('assets/InteractiveCities.png')"></div></div>
+            <svg class="hex-border" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <polygon points="25,0 75,0 100,50 75,100 25,100 0,50" vector-effect="non-scaling-stroke"/>
+            </svg>
             <button class="hex-min" type="button" aria-label="Minimize" tabindex="-1">
               <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
             </button>
@@ -185,6 +212,9 @@
           <div class="hex hexbox hex-4" data-slot="hex-4" role="button" tabindex="0"
                aria-label="Expand hexagon 4">
             <div class="hex-clip"><div class="hex-media hex-img" style="background-image:url('assets/assets-wave.jpg')"></div></div>
+            <svg class="hex-border" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <polygon points="25,0 75,0 100,50 75,100 25,100 0,50" vector-effect="non-scaling-stroke"/>
+            </svg>
             <button class="hex-min" type="button" aria-label="Minimize" tabindex="-1">
               <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
             </button>

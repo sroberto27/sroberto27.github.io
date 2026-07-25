@@ -12,6 +12,9 @@
 .hex{
   /* Flat-top hexagon (points left/right). */
   --hexp: polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%);
+  /* Same shape as an SVG mask (belt-and-suspenders for GPU content —
+     see .hex-clip). Percent coords match --hexp exactly. */
+  --hexm: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="25,0 75,0 100,50 75,100 25,100 0,50" fill="%23fff"/></svg>');
   position:absolute;
   /* Regular flat-top hexagon: height = width × √3/2, so diagonal
      edges sit at exactly 60° and neighbours meet flush. */
@@ -115,11 +118,23 @@
              top .55s cubic-bezier(.65,0,.2,1),
              opacity .35s ease, filter .35s ease;
 }
-/* Inner clipped window — the actual hexagon. */
+/* Inner clipped window — the actual hexagon.
+   clip-path ALONE is not always enough for GPU-composited content
+   (WebGL canvases from <model-viewer>/<video> can be promoted to
+   their own compositing layer and ignore an ancestor's clip-path in
+   some browser/GPU combinations). mask-image uses a different
+   compositing path and reliably clips that content too; contain +
+   isolation stop the promoted layer from escaping its own stacking
+   context. Belt-and-suspenders — harmless where clip-path alone was
+   already sufficient (images). */
 .hex-clip{
   position:absolute; inset:0;
   -webkit-clip-path:var(--hexp); clip-path:var(--hexp);
+  -webkit-mask-image:var(--hexm); mask-image:var(--hexm);
+  -webkit-mask-size:100% 100%; mask-size:100% 100%;
+  -webkit-mask-repeat:no-repeat; mask-repeat:no-repeat;
   overflow:hidden;
+  contain:paint; isolation:isolate; transform:translateZ(0);
   background:transparent;          /* models show the site through it */
 }
 /* Media fills the clip. Idle media never captures the pointer —
@@ -211,6 +226,50 @@
 
 @media (prefers-reduced-motion:reduce){
   .hexbox{ transition:opacity .2s ease; }
+}
+
+/* ---------- Hex border ----------
+   A separate, UNCLIPPED svg sibling drawn on top of .hex-clip, at the
+   exact hex silhouette. Two jobs: (1) visible edge for every hexagon
+   regardless of what the media is — essential once media can be a
+   transparent-background 3D model; (2) seals any stray pixel that a
+   WebGL layer might still slip past .hex-clip's clip/mask.
+   vector-effect="non-scaling-stroke" keeps the stroke a constant
+   pixel width even though preserveAspectRatio="none" stretches the
+   viewBox to the hexagon's non-square aspect ratio. */
+.hex-border{
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  overflow:visible;
+  pointer-events:none;
+  z-index:1;
+}
+.hex-border polygon{
+  fill:none;
+  stroke:url(#hexBorderGrad);
+  stroke-width:1.5;
+  opacity:.55;
+  filter:drop-shadow(0 0 3px rgba(208,163,58,.35));
+  transition:opacity .3s ease, stroke-width .3s ease, filter .3s ease;
+}
+/* Hover — brighter line, stronger glow. */
+.hexbox.is-hot .hex-border polygon{
+  stroke-width:2.25;
+  opacity:1;
+  filter:drop-shadow(0 0 10px rgba(208,163,58,.7));
+}
+/* Expanded — thicker still, slow ambient pulse reads as "now live". */
+.hexbox.is-expanded .hex-border polygon{
+  stroke-width:2.5;
+  opacity:1;
+  animation:hexBorderPulse 2.6s ease-in-out infinite;
+}
+@keyframes hexBorderPulse{
+  0%,100%{ filter:drop-shadow(0 0 8px rgba(208,163,58,.55)); }
+  50%    { filter:drop-shadow(0 0 18px rgba(208,163,58,.95)); }
+}
+@media (prefers-reduced-motion:reduce){
+  .hex-border polygon{ animation:none !important; transition:opacity .2s ease; }
 }
 
 /* ---------- Primary CTA ----------
