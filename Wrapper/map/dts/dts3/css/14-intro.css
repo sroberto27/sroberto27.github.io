@@ -82,8 +82,65 @@ body.intro-pending .home-copy.intro-released{ opacity:1; }
 .intro-fact.is-out{ opacity:0; transition:opacity .35s ease; }
 .intro-kicker.is-out{ opacity:0; transition:opacity .3s ease; }
 
+/* ------------------------------------------------------------
+   Category sequence banner — top edge of the loading screen.
+   A traveling pulse draws a colored line through four category
+   markers (Education → Industry → Government → Community),
+   illustrating the "natural sequence" from the design rationale.
+   Purely decorative: it loops on its own clock, independent of
+   the % / typing milestones, and is torn down at handoff.
+   ------------------------------------------------------------ */
+.intro-flow{
+  position:absolute; left:50%; top:clamp(20px,5vh,52px);
+  transform:translateX(-50%);
+  width:min(84vw,920px);
+  text-align:center;
+  opacity:1;
+  transition:opacity .5s ease;
+  pointer-events:none; user-select:none;
+}
+.intro-flow.is-out{ opacity:0; }
+.intro-flow svg{ width:100%; height:auto; display:block; }
+
+.flow-label{
+  font-size:10px; letter-spacing:.13em; text-transform:uppercase;
+  text-anchor:middle; opacity:0; transition:opacity .35s ease;
+}
+.flow-label.on{ opacity:1; }
+
+.flow-peak{
+  opacity:.22;
+  transition:opacity .4s ease, transform .4s ease;
+}
+.flow-peak.on{ opacity:1; transform:translateY(-3px); }
+
+.flow-ring{
+  opacity:0;
+  transform-origin:center;
+  transform-box:fill-box;
+}
+.flow-ring.pulse{ animation:introRingPulse .8s ease-out; }
+@keyframes introRingPulse{
+  0%{ opacity:.7; transform:scale(1); }
+  100%{ opacity:0; transform:scale(3.2); }
+}
+
+.flow-comet{ filter:blur(.2px); }
+.flow-comet-glow{ opacity:.55; }
+
+.flow-caption{
+  min-height:1.5em; margin:6px 0 0;
+  font-size:12px; color:var(--gold-bright,#e3b855);
+  opacity:0; transition:opacity .35s ease;
+}
+.flow-caption.show{ opacity:.85; }
+.flow-caption.dim{ opacity:.4; font-size:11px; }
+
 @media (max-width:760px){
   .intro-title{ width:min(84%,460px); }
+  .intro-flow{ width:92vw; top:14px; }
+  .flow-label{ font-size:9px; }
+  .flow-caption{ font-size:11px; }
 }
 
 @media (prefers-reduced-motion:reduce){

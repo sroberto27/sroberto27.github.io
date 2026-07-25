@@ -2,7 +2,13 @@
    Intro loader
    • Centered kicker + headline typed with a terminal "_" caret
    • Random fun fact typed underneath
-   • Big % counter bottom-right — driven by REAL load progress
+   • Big % counter bottom-right — driven by REAL load progress,
+     including the hero hexagons' own images/video/3D models
+   • Category-sequence banner across the top edge — a traveling
+     light draws a colored line through four category markers,
+     illustrating "education prepares people, industry employs
+     them, government structures their society, community is
+     what all three build together"
    • Random sector accent color per page load
    • FLIP the headline into the hero; the kicker fades out and
      re-types itself in place once the headline lands
@@ -22,6 +28,192 @@
 
   /* Fallback accents if the sector config isn't reachable. */
   var FALLBACK_ACCENTS = ["#FFB22C", "#2E8BFF", "#34598F", "#D27049"];
+
+  /* ---------- category sequence banner ---------- */
+  var FLOW_NODES = [
+    { frac: 0.05, x: 82,  color: "#e9b44c", label: "Education",  clause: "education prepares people" },
+    { frac: 0.35, x: 334, color: "#4a7df0", label: "Industry",   clause: "industry employs them" },
+    { frac: 0.65, x: 586, color: "#5f6fa8", label: "Government", clause: "government structures their society" },
+    { frac: 0.95, x: 838, color: "#d98e73", label: "Community",  clause: "community is what all three build together" }
+  ];
+  var FLOW_FINAL = "That sequence is the website.";
+  var FLOW_RECAP = "Systems have a natural sequence \u2014 education prepares people, " +
+    "industry employs them, government structures their society, " +
+    "community is what all three systems build together.";
+  var FLOW_START_X = 40, FLOW_END_X = 880, FLOW_LEN = FLOW_END_X - FLOW_START_X;
+  var FLOW_TRAVEL_MS = 2600, FLOW_HOLD_MS = 1300, FLOW_RECAP_MS = 3400,
+      FLOW_FADE_MS = 500, FLOW_GAP_MS = 500;
+
+  function flowIconMarkup(i) {
+    var tx = FLOW_NODES[i].x - 14;
+    if (i === 0) {
+      return '<g transform="translate(' + tx + ',62)"><g class="flow-peak">' +
+        '<polygon fill="#e9b44c" points="0,10 14,2 28,10 14,18"/>' +
+        '<rect fill="#e9b44c" x="8" y="13" width="12" height="9" rx="1.5"/>' +
+        '<line x1="28" y1="10" x2="24" y2="24" stroke="#e9b44c" stroke-width="1.6" stroke-linecap="round"/>' +
+        '<circle fill="#e9b44c" cx="24" cy="25" r="1.6"/>' +
+        '</g></g>';
+    }
+    if (i === 1) {
+      return '<g transform="translate(' + tx + ',62)"><g class="flow-peak">' +
+        '<circle fill="#4a7df0" opacity=".5" cx="21" cy="-1" r="1.6"/>' +
+        '<circle fill="#4a7df0" opacity=".4" cx="23.5" cy="-4.5" r="1.3"/>' +
+        '<circle fill="#4a7df0" opacity=".3" cx="25" cy="-8" r="1"/>' +
+        '<rect fill="#4a7df0" x="19" y="2" width="4" height="10"/>' +
+        '<polygon fill="#4a7df0" points="2,18 14,8 26,18"/>' +
+        '<rect fill="#4a7df0" x="2" y="18" width="24" height="8"/>' +
+        '</g></g>';
+    }
+    if (i === 2) {
+      return '<g transform="translate(' + tx + ',62)"><g class="flow-peak">' +
+        '<polygon fill="#5f6fa8" points="1,10 14,2 27,10"/>' +
+        '<rect fill="#5f6fa8" x="1" y="10" width="26" height="2"/>' +
+        '<rect fill="#5f6fa8" x="4" y="12" width="2.6" height="12"/>' +
+        '<rect fill="#5f6fa8" x="10" y="12" width="2.6" height="12"/>' +
+        '<rect fill="#5f6fa8" x="16" y="12" width="2.6" height="12"/>' +
+        '<rect fill="#5f6fa8" x="22" y="12" width="2.6" height="12"/>' +
+        '<rect fill="#5f6fa8" x="0" y="24" width="28" height="3"/>' +
+        '</g></g>';
+    }
+    return '<g transform="translate(' + tx + ',62)"><g class="flow-peak">' +
+      '<circle fill="#d98e73" opacity=".55" cx="9" cy="8" r="4.2"/>' +
+      '<path fill="#d98e73" opacity=".55" d="M 2,26 Q 2,15 9,15 Q 16,15 16,26 Z"/>' +
+      '<circle fill="#d98e73" cx="18" cy="9" r="4.8"/>' +
+      '<path fill="#d98e73" d="M 9,27 Q 9,16 18,16 Q 27,16 27,27 Z"/>' +
+      '</g></g>';
+  }
+
+  function flowBannerMarkup() {
+    var nodesSVG = "";
+    FLOW_NODES.forEach(function (n, i) {
+      nodesSVG += '<g id="inNode' + i + '">' +
+        flowIconMarkup(i) +
+        '<circle class="flow-ring" cx="' + n.x + '" cy="90" r="9" fill="none" stroke="' + n.color + '" stroke-width="2"/>' +
+        '<text class="flow-label" x="' + n.x + '" y="112" fill="' + n.color + '">' + n.label + '</text>' +
+        '</g>';
+    });
+    return '<div class="intro-flow" id="inFlow">' +
+      '<svg viewBox="0 0 920 140" xmlns="http://www.w3.org/2000/svg">' +
+        '<defs>' +
+          '<linearGradient id="inFlowGrad" x1="0%" y1="0%" x2="100%" y2="0%">' +
+            '<stop offset="0%" stop-color="#e9b44c"/>' +
+            '<stop offset="33%" stop-color="#4a7df0"/>' +
+            '<stop offset="66%" stop-color="#5f6fa8"/>' +
+            '<stop offset="100%" stop-color="#d98e73"/>' +
+          '</linearGradient>' +
+          '<filter id="inFlowBlur" x="-60%" y="-60%" width="220%" height="220%">' +
+            '<feGaussianBlur stdDeviation="3"/>' +
+          '</filter>' +
+        '</defs>' +
+        '<line x1="' + FLOW_START_X + '" y1="90" x2="' + FLOW_END_X + '" y2="90" stroke="#1c2438" stroke-width="1"/>' +
+        '<line id="inFlowLine" x1="' + FLOW_START_X + '" y1="90" x2="' + FLOW_END_X + '" y2="90" stroke="url(#inFlowGrad)" stroke-width="2" stroke-dasharray="' + FLOW_LEN + '" stroke-dashoffset="' + FLOW_LEN + '"/>' +
+        nodesSVG +
+        '<circle id="inCometGlow" class="flow-comet-glow" cx="' + FLOW_START_X + '" cy="90" r="10" fill="#fff2cf" filter="url(#inFlowBlur)"/>' +
+        '<circle id="inComet" class="flow-comet" cx="' + FLOW_START_X + '" cy="90" r="3.6" fill="#fffdf5"/>' +
+      '</svg>' +
+      '<p class="flow-caption" id="inFlowCaption"></p>' +
+    '</div>';
+  }
+
+  /* Drives the traveling pulse + node ignitions + captions. Loops on
+     its own clock as ambient motion; returns a stop() the intro calls
+     once at handoff so nothing keeps ticking on a detached overlay. */
+  function startFlowSequence(ov) {
+    var flowLine   = ov.querySelector("#inFlowLine");
+    var comet      = ov.querySelector("#inComet");
+    var cometGlow  = ov.querySelector("#inCometGlow");
+    var flowWrap   = ov.querySelector("#inFlow");
+    var caption    = ov.querySelector("#inFlowCaption");
+    if (!flowLine || !comet || !flowWrap || !caption) return function () {};
+
+    var timers = [];
+    var rafId = null;
+    var ignited = [false, false, false, false];
+    var stopped = false;
+
+    function setCaption(text, dim) {
+      caption.classList.remove("show");
+      timers.push(setTimeout(function () {
+        if (stopped) return;
+        caption.textContent = text || "";
+        caption.classList.toggle("dim", !!dim);
+        if (text) caption.classList.add("show");
+      }, text ? 160 : 0));
+    }
+
+    function igniteNode(i) {
+      var g = ov.querySelector("#inNode" + i);
+      if (!g) return;
+      g.querySelector(".flow-peak").classList.add("on");
+      g.querySelector(".flow-label").classList.add("on");
+      var ring = g.querySelector(".flow-ring");
+      ring.classList.remove("pulse"); void ring.offsetWidth; ring.classList.add("pulse");
+      setCaption(FLOW_NODES[i].clause + (i < 3 ? "\u2014" : "."));
+    }
+
+    function resetVisual() {
+      ignited = [false, false, false, false];
+      for (var i = 0; i < 4; i++) {
+        var g = ov.querySelector("#inNode" + i);
+        if (!g) continue;
+        g.querySelector(".flow-peak").classList.remove("on");
+        g.querySelector(".flow-label").classList.remove("on");
+        g.querySelector(".flow-ring").classList.remove("pulse");
+      }
+      flowLine.setAttribute("stroke-dashoffset", FLOW_LEN);
+      comet.setAttribute("cx", FLOW_START_X);
+      cometGlow.setAttribute("cx", FLOW_START_X);
+      setCaption("");
+    }
+
+    function runCycle() {
+      if (stopped) return;
+      resetVisual();
+      flowWrap.classList.remove("is-out");
+
+      var start = null;
+      function frame(ts) {
+        if (stopped) return;
+        if (!start) start = ts;
+        var t = Math.min((ts - start) / FLOW_TRAVEL_MS, 1);
+        var x = FLOW_START_X + t * FLOW_LEN;
+        comet.setAttribute("cx", x);
+        cometGlow.setAttribute("cx", x);
+        flowLine.setAttribute("stroke-dashoffset", FLOW_LEN * (1 - t));
+        FLOW_NODES.forEach(function (n, i) {
+          if (!ignited[i] && t >= n.frac) { ignited[i] = true; igniteNode(i); }
+        });
+        if (t < 1) rafId = requestAnimationFrame(frame);
+      }
+      rafId = requestAnimationFrame(frame);
+
+      timers.push(setTimeout(function () {
+        if (stopped) return;
+        var lastRing = ov.querySelector("#inNode3 .flow-ring");
+        if (lastRing) { lastRing.classList.remove("pulse"); void lastRing.offsetWidth; lastRing.classList.add("pulse"); }
+        setCaption(FLOW_FINAL);
+      }, FLOW_TRAVEL_MS + 60));
+
+      timers.push(setTimeout(function () {
+        if (!stopped) setCaption(FLOW_RECAP);
+      }, FLOW_TRAVEL_MS + FLOW_HOLD_MS));
+
+      timers.push(setTimeout(function () {
+        if (!stopped) flowWrap.classList.add("is-out");
+      }, FLOW_TRAVEL_MS + FLOW_HOLD_MS + FLOW_RECAP_MS));
+
+      timers.push(setTimeout(runCycle,
+        FLOW_TRAVEL_MS + FLOW_HOLD_MS + FLOW_RECAP_MS + FLOW_FADE_MS + FLOW_GAP_MS));
+    }
+
+    runCycle();
+
+    return function stop() {
+      stopped = true;
+      timers.forEach(clearTimeout);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
+  }
 
   /* Guards against the retry loop and the fetch callback both
      kicking off a second run. */
@@ -169,6 +361,7 @@
     ov.className = "intro-loader";
     ov.style.setProperty("--intro-accent", accent);
     ov.innerHTML =
+      flowBannerMarkup() +
       '<div class="intro-title">' +
         '<span class="intro-kicker" id="inKicker"></span>' +
         '<h1 class="intro-headline" id="inHead"></h1>' +
@@ -185,17 +378,21 @@
     var factEl   = ov.querySelector("#inFact");
     var pctEl    = ov.querySelector("#inPct");
 
+    var stopFlow = startFlowSequence(ov);
+
     /* ============================================================
        PERCENTAGE — real load progress
        ------------------------------------------------------------
-       Three weighted milestones complete as the site actually loads.
-       The displayed value eases toward the highest reached milestone
-       so it never jumps or visibly stalls. A floor keeps the fun fact
-       readable; a ceiling guarantees the loader always ends even if a
-       third-party embed never finishes.
+       Four weighted milestones complete as the site actually loads,
+       including the hero hexagons' own media (images, video, 3D
+       models — see hex-media.js). The displayed value eases toward
+       the highest reached milestone so it never jumps or visibly
+       stalls. A floor keeps the fun fact readable; a ceiling
+       guarantees the loader always ends even if a third-party embed
+       never finishes.
        ============================================================ */
-    var milestones = { content: 0, windowLoad: 0, typing: 0 };
-    var WEIGHTS    = { content: 0.30, windowLoad: 0.45, typing: 0.25 };
+    var milestones = { content: 0, windowLoad: 0, hexMedia: 0, typing: 0 };
+    var WEIGHTS    = { content: 0.20, windowLoad: 0.25, hexMedia: 0.35, typing: 0.20 };
 
     if (window.DTS_CONTENT_READY) {
       milestones.content = 1;
@@ -210,6 +407,20 @@
       milestones.windowLoad = 1;
     } else {
       window.addEventListener("load", function () { milestones.windowLoad = 1; });
+    }
+
+    /* Set by js/hex-media.js once every hexagon's image has decoded,
+       its video has real frame data, or its 3D model has fired its
+       own "load" event (a broken asset still counts as settled, via
+       its "error" event — see expectHexLoad() there). Undefined until
+       that script runs, which the polling loop treats as "not yet". */
+    if (window.DTS_HEX_MEDIA_READY) {
+      milestones.hexMedia = 1;
+    } else {
+      (function pollHexMedia() {
+        if (window.DTS_HEX_MEDIA_READY) milestones.hexMedia = 1;
+        else setTimeout(pollHexMedia, 100);
+      })();
     }
 
     var t0 = performance.now(), pctDone = false, shown = 0;
@@ -276,6 +487,10 @@
     function maybeFinish() {
       if (finished || !(pctDone && typeDone)) return;
       finished = true;
+
+      if (stopFlow) stopFlow();
+      var flowEl = ov.querySelector(".intro-flow");
+      if (flowEl) flowEl.classList.add("is-out");
 
       pctEl.classList.add("is-out");
       factEl.classList.add("is-out");

@@ -352,11 +352,46 @@
     } else { fn(); }
   }
 
+  /* ---------- click-triggered admin load ----------
+     The ?admin / #admin / draft checks above cover deliberate CMS
+     entry points, but the everyday case is simpler: someone clicks
+     ACCESS YOUR TWIN and types their normal admin credentials,
+     exactly like a client would. For that to work, admin.js has to
+     be loaded (and its capture-phase submit listener registered)
+     BEFORE they hit submit -- so the click on #accessTwin itself
+     starts loading it, giving it the several seconds a person takes
+     to type an email + password to finish downloading and register.
+
+     admin.js requires window.DTS_CONTENT to already be populated (it
+     bails out otherwise), so injection waits for contentReady --
+     which, on a fast click, may already be true; on a slow
+     connection it queues until loadContent() resolves. */
+  var contentReady = false;
+  var contentReadyQueue = [];
+  function markContentReady() {
+    contentReady = true;
+    contentReadyQueue.forEach(function (cb) { cb(); });
+    contentReadyQueue = [];
+  }
+  function whenContentReady(cb) {
+    if (contentReady) cb(); else contentReadyQueue.push(cb);
+  }
+  function ensureAdminBundle() {
+    if (document.querySelector('script[src="js/admin.js"]')) return; // already loading/loaded
+    whenContentReady(function () { injectScripts(["js/admin.js"]); });
+  }
+  function wireAdminTrigger() {
+    var btn = document.getElementById("accessTwin");
+    if (btn) btn.addEventListener("click", ensureAdminBundle);
+  }
+  whenDOMReady(wireAdminTrigger);
+
   loadContent()
     .then(function (content) {
       window.DTS_CONTENT = content;                 // raw documents (Admin Board edits these)
       window.DTS_CONFIG = buildConfig(content);     // legacy shape for app.js
       window.DTS_CONTENT_READY = true;              // js/intro-typewriter.js waits on this
+      markContentReady();
       whenDOMReady(function () {
         applyHome(content);
         injectScripts(appScripts());
@@ -366,6 +401,7 @@
       console.warn("[content] /data unavailable, using js/config.js fallback:", err);
       window.DTS_CONTENT = null;
       window.DTS_CONTENT_READY = true;              // config.js fallback is all we'll get -- don't hang the intro
+      markContentReady();
       loadConfigFallback(function () {
         whenDOMReady(function () { injectScripts(appScripts()); });
       });

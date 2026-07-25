@@ -43,6 +43,15 @@
    Loaded by content-loader.js after app.js. Also works in the
    file:// fallback (no /data): the inline images in index.html
    stay, and hover/expand still function.
+
+   MEDIA READINESS (window.DTS_HEX_MEDIA_READY): js/intro-typewriter.js
+   holds the loading screen's progress on this flag so the intro
+   doesn't hand off to a page whose hexagons are still popping in
+   images, buffering video, or streaming a 3D model. Every hexagon's
+   media reports completion (loaded or errored — a broken asset
+   still counts as "settled", never hangs the loader) via
+   expectHexLoad() below; a short failsafe timeout guarantees the
+   flag flips even if a network request never resolves.
    ============================================================ */
 (function () {
   "use strict";
@@ -50,11 +59,37 @@
   var MV_SRC = "https://ajax.googleapis.com/ajax/libs/model-viewer/4.0.0/model-viewer.min.js";
   var MV_FALLBACK = "https://cdn.jsdelivr.net/npm/@google/model-viewer@4.0.0/dist/model-viewer.min.js";
 
+  /* Any early-return path below marks this true immediately — there's
+     nothing for the intro loader to wait on if there's no cluster, no
+     boxes, or nothing configured. */
+  window.DTS_HEX_MEDIA_READY = false;
+
   var cluster = document.getElementById("hexCluster") ||
                 document.querySelector(".hex-cluster");
-  if (!cluster) return;
+  if (!cluster) { window.DTS_HEX_MEDIA_READY = true; return; }
   var boxes = Array.prototype.slice.call(cluster.querySelectorAll(".hexbox"));
-  if (!boxes.length) return;
+  if (!boxes.length) { window.DTS_HEX_MEDIA_READY = true; return; }
+
+  /* ---------- hex media readiness tracking ---------- */
+  var HEX_LOAD_FAILSAFE_MS = 12000;   // never let a stalled asset hang the intro forever
+  var pendingHexLoads = 0;
+  var hexLoadTimeout = null;
+
+  /* Call once per hexagon as soon as you know it has media to load;
+     call the returned function once (loaded OR errored) when settled. */
+  function expectHexLoad() {
+    pendingHexLoads++;
+    var done = false;
+    return function () {
+      if (done) return;
+      done = true;
+      pendingHexLoads--;
+      if (pendingHexLoads <= 0) {
+        clearTimeout(hexLoadTimeout);
+        window.DTS_HEX_MEDIA_READY = true;
+      }
+    };
+  }
 
   /* ---------- config ---------- */
   function srcValue(s) { return s && s.value ? s.value : ""; }
@@ -137,7 +172,14 @@
     var value = srcValue(media.source);
     if (media._type === "image" || !value) {
       var img = clip.querySelector(".hex-media");
-      if (img && value) img.style.backgroundImage = "url('" + value + "')";
+      if (img && value) {
+        var markImgDone = expectHexLoad();
+        var probe = new Image();
+        probe.onload = markImgDone;
+        probe.onerror = markImgDone;
+        probe.src = value;
+        img.style.backgroundImage = "url('" + value + "')";
+      }
       if (img && media.alt) box.setAttribute("aria-label", media.alt + " — expand");
       return;
     }
@@ -154,6 +196,9 @@
         v.preload = mode === "autoplay" ? "auto" : "metadata";
         if (media.poster && srcValue(media.poster)) v.poster = srcValue(media.poster);
         v.src = value;
+        var markVideoDone = expectHexLoad();
+        v.addEventListener("loadeddata", markVideoDone, { once: true });
+        v.addEventListener("error", markVideoDone, { once: true });
         clip.appendChild(v);
         box._media.el = v; box._media.kind = "file"; box._media.mode = mode;
         if (mode === "autoplay") {
@@ -177,6 +222,9 @@
         f.allow = "autoplay; fullscreen; picture-in-picture";
         f.setAttribute("frameborder", "0");
         f.tabIndex = -1; f.title = "";
+        var markEmbedDone = expectHexLoad();
+        f.addEventListener("load", markEmbedDone, { once: true });
+        f.addEventListener("error", markEmbedDone, { once: true });
         clip.appendChild(f);
         box._media.el = f; box._media.kind = "embed"; box._media.urls = urls; box._media.mode = mode;
       }
@@ -185,6 +233,7 @@
     }
 
     if (media._type === "model") {
+      var markModelDone = expectHexLoad();
       ensureModelViewer().then(function () {
         if (!customElements.get("model-viewer")) {
           console.warn("[hex] model-viewer unavailable — showing poster only.");
@@ -194,6 +243,7 @@
             fall.style.backgroundImage = "url('" + srcValue(media.poster) + "')";
           }
           clip.appendChild(fall);
+          markModelDone();
           return;
         }
         var mv = document.createElement("model-viewer");
@@ -218,9 +268,11 @@
         mv.style.backgroundColor =
           (!bg || bg === "transparent" || bg === "none") ? "transparent" : media.background;
         mv.setAttribute("shadow-intensity", "0.6");
+        mv.addEventListener("load", markModelDone, { once: true });
+        mv.addEventListener("error", markModelDone, { once: true });
         clip.appendChild(mv);
         box._media.el = mv;
-      });
+      }).catch(markModelDone);
       box.setAttribute("aria-label", "Explore 3D model");
       return;
     }
@@ -337,6 +389,16 @@
       e.stopPropagation(); collapse(); box.focus();
     });
   });
+
+  /* Nothing was configured with actual media (e.g. cfg empty) — settle
+     immediately rather than waiting on the failsafe for no reason. */
+  if (pendingHexLoads === 0) {
+    window.DTS_HEX_MEDIA_READY = true;
+  } else {
+    hexLoadTimeout = setTimeout(function () {
+      window.DTS_HEX_MEDIA_READY = true;
+    }, HEX_LOAD_FAILSAFE_MS);
+  }
 
   /* Escape / click outside collapses. */
   document.addEventListener("keydown", function (e) {
