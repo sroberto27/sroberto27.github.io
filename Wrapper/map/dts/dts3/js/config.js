@@ -790,19 +790,19 @@ window.DTS_CONFIG = {
      and is what the Admin Board edits.
      ============================================================ */
   funFacts: [
-    "The USDA commissioned SC State's virtual campus twin from DTS.",
-    "Our food-safety training for the Louisiana Department of Health won a Unity award.",
+    "The USDA commissioned South Carolina State University's virtual campus twin from DTS.",
+    "Our food-safety training for the Louisiana Department of Health won Unity's \u201cBest Public Health Solution\u201d award at I/ITSEC.",
     "One build, every device \u2014 phone, desktop, or headset. No separate versions.",
-    "DTS is SAM.gov qualified, which means we can contract at the federal level.",
-    "A digital twin isn't a video. It's dimensionally accurate \u2014 you can measure a room from your browser.",
-    "We organize by system, not by industry: education, industry, government, community.",
-    "Every capture adds to a community's spatial record. The twin accumulates.",
-    "Spaces are captured with a Matterport Pro3, then published as navigable space on Treedis.",
-    "A hotel, a campus, and a food-safety lab are the same problem: a real place, made navigable.",
+    "DTS is SAM.gov qualified \u2014 cleared to contract directly with federal and state agencies.",
+    "A digital twin isn't a video \u2014 it's dimensionally accurate. You could measure a room straight from your browser.",
+    "We don't organize by industry \u2014 we organize by the systems that shape human life: education, industry, government, community.",
+    "Every new capture adds to a community's spatial record \u2014 it never really finishes.",
+    "Spaces are captured with a Matterport Pro3 and an Insta360 Pro 2, then published as navigable space on Treedis.",
+    "A hotel, a campus, and a state health department are the same problem: a real place, made navigable.",
     "Government moves on different timelines than industry. We build for both.",
-    "Tags and hotspots turn a scan into something you can actually interrogate.",
-    "Preservation-grade capture means a building is documented even as it changes.",
+    "Tags and hotspots turn a flat scan into something you can actually explore, not just look at.",
+    "Preservation-grade capture means a historic building stays documented even as it changes.",
     "The world is our interface.",
-    "Most spatial data dies in a folder. A twin is meant to be walked through."
+    "Most spatial data dies in a folder somewhere. A digital twin is built to be walked through."
   ]
 };
