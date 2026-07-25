@@ -37,9 +37,8 @@
     { frac: 0.95, x: 838, color: "#d98e73", label: "Community",  clause: "community is what all three build together" }
   ];
   var FLOW_FINAL = "That sequence is the website.";
-  var FLOW_RECAP = "Systems have a natural sequence \u2014 education prepares people, " +
-    "industry employs them, government structures their society, " +
-    "community is what all three systems build together.";
+  var FLOW_RECAP = "Education prepares people, industry employs them, " +
+    "government keeps it running, and community is the result.";
   var FLOW_START_X = 40, FLOW_END_X = 880, FLOW_LEN = FLOW_END_X - FLOW_START_X;
   var FLOW_TRAVEL_MS = 2600, FLOW_HOLD_MS = 1300, FLOW_RECAP_MS = 3400,
       FLOW_FADE_MS = 500, FLOW_GAP_MS = 500;
