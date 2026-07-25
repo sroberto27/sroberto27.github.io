@@ -83,14 +83,22 @@
 
   /* ---------- video URL helpers ---------- */
   function isFileVideo(v) { return /\.(mp4|webm|ogv|ogg|mov|m4v)(\?.*)?$/i.test(v); }
-  function vimeoId(v)   { var m = v.match(/vimeo\.com\/(?:video\/)?(\d+)/); return m ? m[1] : null; }
+  function vimeoMatch(v) {
+    // Vimeo unlisted/private links look like vimeo.com/ID/HASH — the hash
+    // must be passed back as ?h=HASH or the embed refuses to play.
+    var m = v.match(/vimeo\.com\/(?:video\/)?(\d+)(?:[/?]([a-zA-Z0-9]+))?/);
+    return m ? { id: m[1], hash: m[2] || null } : null;
+  }
   function youtubeId(v) { var m = v.match(/(?:youtu\.be\/|[?&]v=|\/embed\/|\/shorts\/)([\w-]{11})/); return m ? m[1] : null; }
   function embedUrls(value) {
-    var vid = vimeoId(value);
-    if (vid) return {
-      idle:   "https://player.vimeo.com/video/" + vid + "?background=1&autoplay=1&muted=1&loop=1&autopause=0&dnt=1",
-      active: "https://player.vimeo.com/video/" + vid + "?autoplay=1&autopause=0&dnt=1"
-    };
+    var vm = vimeoMatch(value);
+    if (vm) {
+      var h = vm.hash ? "&h=" + vm.hash : "";
+      return {
+        idle:   "https://player.vimeo.com/video/" + vm.id + "?background=1&autoplay=1&muted=1&loop=1&autopause=0&dnt=1" + h,
+        active: "https://player.vimeo.com/video/" + vm.id + "?autoplay=1&autopause=0&dnt=1" + h
+      };
+    }
     var yid = youtubeId(value);
     if (yid) return {
       idle:   "https://www.youtube.com/embed/" + yid + "?autoplay=1&mute=1&loop=1&playlist=" + yid + "&controls=0&playsinline=1&rel=0&modestbranding=1",
@@ -103,6 +111,11 @@
   function buildMedia(box, media) {
     var clip = box.querySelector(".hex-clip");
     if (!clip || !media) return;
+    // Lets CSS style per media type: border only on .media-model,
+    // play badge only on .media-video (see 02-home.css).
+    box.classList.remove("media-image", "media-video", "media-model");
+    box.classList.add("media-" + (media._type || "image"));
+
     var value = srcValue(media.source);
     if (media._type === "image" || !value) {
       var img = clip.querySelector(".hex-media");

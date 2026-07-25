@@ -228,48 +228,67 @@
   .hexbox{ transition:opacity .2s ease; }
 }
 
-/* ---------- Hex border ----------
+/* ---------- Hex border (3D models only) ----------
    A separate, UNCLIPPED svg sibling drawn on top of .hex-clip, at the
-   exact hex silhouette. Two jobs: (1) visible edge for every hexagon
-   regardless of what the media is — essential once media can be a
-   transparent-background 3D model; (2) seals any stray pixel that a
-   WebGL layer might still slip past .hex-clip's clip/mask.
-   vector-effect="non-scaling-stroke" keeps the stroke a constant
-   pixel width even though preserveAspectRatio="none" stretches the
-   viewBox to the hexagon's non-square aspect ratio. */
+   exact hex silhouette. Hidden by default; js/hex-media.js adds
+   .media-model to the .hexbox only for model media, which is the only
+   case that needs a visible edge (transparent background + a WebGL
+   layer that can slip past clip-path — see .hex-clip). Images/videos
+   already read as a filled hexagon on their own, so they stay
+   border-free. Light grey keeps it a quiet technical affordance
+   rather than a decorative frame. vector-effect="non-scaling-stroke"
+   (set in index.html) keeps the stroke a constant pixel width even
+   though preserveAspectRatio="none" stretches the viewBox. */
 .hex-border{
   position:absolute; inset:0;
   width:100%; height:100%;
   overflow:visible;
   pointer-events:none;
   z-index:1;
+  opacity:0;
+  transition:opacity .3s ease;
 }
+.hexbox.media-model .hex-border{ opacity:1; }
 .hex-border polygon{
   fill:none;
-  stroke:url(#hexBorderGrad);
-  stroke-width:1.5;
-  opacity:.55;
-  filter:drop-shadow(0 0 3px rgba(208,163,58,.35));
-  transition:opacity .3s ease, stroke-width .3s ease, filter .3s ease;
+  stroke:rgba(255,255,255,.32);
+  stroke-width:1.25;
+  transition:stroke .3s ease, stroke-width .3s ease;
 }
-/* Hover — brighter line, stronger glow. */
-.hexbox.is-hot .hex-border polygon{
-  stroke-width:2.25;
-  opacity:1;
-  filter:drop-shadow(0 0 10px rgba(208,163,58,.7));
+.hexbox.media-model.is-hot .hex-border polygon,
+.hexbox.media-model.is-expanded .hex-border polygon{
+  stroke:rgba(255,255,255,.55);
+  stroke-width:1.75;
 }
-/* Expanded — thicker still, slow ambient pulse reads as "now live". */
-.hexbox.is-expanded .hex-border polygon{
-  stroke-width:2.5;
-  opacity:1;
-  animation:hexBorderPulse 2.6s ease-in-out infinite;
+
+/* ---------- Video play badge ----------
+   A small translucent circular play icon, centred, shown only on
+   hexes whose media is a video (js/hex-media.js adds .media-video).
+   It's the only cue that a hexagon is a video rather than a photo —
+   without it an idle muted looping clip is indistinguishable from a
+   still image. Fades out once expanded, since native player controls
+   take over. */
+.hex-play{
+  position:absolute; left:50%; top:50%;
+  transform:translate(-50%,-50%);
+  width:42px; height:42px; border-radius:50%;
+  display:none; align-items:center; justify-content:center;
+  background:rgba(8,12,24,.42);
+  border:1px solid rgba(255,255,255,.5);
+  color:#fff;
+  pointer-events:none;
+  z-index:2;
+  opacity:.85;
+  transition:opacity .25s ease, transform .25s ease, background .25s ease;
 }
-@keyframes hexBorderPulse{
-  0%,100%{ filter:drop-shadow(0 0 8px rgba(208,163,58,.55)); }
-  50%    { filter:drop-shadow(0 0 18px rgba(208,163,58,.95)); }
+.hex-play svg{ margin-left:2px; }   /* optical centring of the triangle */
+.hexbox.media-video .hex-play{ display:flex; }
+.hexbox.media-video.is-hot .hex-play{
+  opacity:1; background:rgba(8,12,24,.6);
+  transform:translate(-50%,-50%) scale(1.08);
 }
-@media (prefers-reduced-motion:reduce){
-  .hex-border polygon{ animation:none !important; transition:opacity .2s ease; }
+.hexbox.media-video.is-expanded .hex-play{
+  opacity:0; transform:translate(-50%,-50%) scale(.7);
 }
 
 /* ---------- Primary CTA ----------

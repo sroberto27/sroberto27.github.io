@@ -153,7 +153,10 @@
              image, a looping video, or an interactive 3D model (GLB/glTF via
              <model-viewer>), configured in data/pages/home.json (hexCluster →
              media). js/hex-media.js hydrates the media and drives the
-             hover-grow / click-to-expand / minimize interaction.
+             hover-grow / click-to-expand / minimize interaction, and adds a
+             .media-image / .media-video / .media-model class to each
+             .hexbox so CSS can style per media type (border only on models,
+             play badge only on videos).
 
              STRUCTURE (important): the clip-path lives on the INNER .hex-clip,
              not on the wrapper — clip-path clips children, so the minimize
@@ -161,23 +164,14 @@
              The positioning CSS still targets .hex.hex-N, so the wrapper
              keeps both classes and the exact edge-contact geometry holds.
 
-             BORDER (important for 3D models): WebGL canvases (model-viewer,
-             video) sometimes ignore an ancestor's clip-path — the browser can
-             promote them to their own compositing layer. .hex-clip therefore
-             clips with BOTH clip-path and mask-image (masks are composited
-             more reliably for GPU layers). The .hex-border SVG is drawn as a
-             SEPARATE, unclipped sibling on top of the media, at the exact hex
-             edge — it seals any stray pixel that slips past the clip/mask and
-             gives every hexagon a visible outline, whatever the media is. -->
-        <svg width="0" height="0" style="position:absolute" aria-hidden="true">
-          <defs>
-            <linearGradient id="hexBorderGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%"  stop-color="#fff6d8"/>
-              <stop offset="45%" stop-color="var(--gold, #d0a33a)"/>
-              <stop offset="100%" stop-color="#8a6a1e"/>
-            </linearGradient>
-          </defs>
-        </svg>
+             BORDER (3D models only, see 02-home.css .hex-border): WebGL
+             canvases (model-viewer) can ignore an ancestor's clip-path — the
+             browser may promote them to their own compositing layer.
+             .hex-clip therefore clips with BOTH clip-path and mask-image
+             (masks composite more reliably for GPU layers). The .hex-border
+             SVG is a SEPARATE, unclipped sibling on top of the media, at the
+             exact hex edge — it seals any stray pixel that slips past the
+             clip/mask and gives 3D-model hexes a visible outline. -->
         <div class="hex-cluster" id="hexCluster">
           <div class="hex hexbox hex-1" data-slot="hex-1" role="button" tabindex="0"
                aria-label="Expand hexagon 1">
@@ -185,6 +179,9 @@
             <svg class="hex-border" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
               <polygon points="25,0 75,0 100,50 75,100 25,100 0,50" vector-effect="non-scaling-stroke"/>
             </svg>
+            <div class="hex-play" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20"><polygon points="9,6 9,18 18,12" fill="currentColor"/></svg>
+            </div>
             <button class="hex-min" type="button" aria-label="Minimize" tabindex="-1">
               <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
             </button>
@@ -195,6 +192,9 @@
             <svg class="hex-border" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
               <polygon points="25,0 75,0 100,50 75,100 25,100 0,50" vector-effect="non-scaling-stroke"/>
             </svg>
+            <div class="hex-play" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20"><polygon points="9,6 9,18 18,12" fill="currentColor"/></svg>
+            </div>
             <button class="hex-min" type="button" aria-label="Minimize" tabindex="-1">
               <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
             </button>
@@ -205,6 +205,9 @@
             <svg class="hex-border" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
               <polygon points="25,0 75,0 100,50 75,100 25,100 0,50" vector-effect="non-scaling-stroke"/>
             </svg>
+            <div class="hex-play" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20"><polygon points="9,6 9,18 18,12" fill="currentColor"/></svg>
+            </div>
             <button class="hex-min" type="button" aria-label="Minimize" tabindex="-1">
               <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
             </button>
@@ -215,6 +218,9 @@
             <svg class="hex-border" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
               <polygon points="25,0 75,0 100,50 75,100 25,100 0,50" vector-effect="non-scaling-stroke"/>
             </svg>
+            <div class="hex-play" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="20" height="20"><polygon points="9,6 9,18 18,12" fill="currentColor"/></svg>
+            </div>
             <button class="hex-min" type="button" aria-label="Minimize" tabindex="-1">
               <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
             </button>
