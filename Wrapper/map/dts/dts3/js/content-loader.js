@@ -96,6 +96,7 @@
     var home     = docs["pages/home.json"];
     var contact  = docs["pages/contact.json"];
     var faq      = docs["faq/answers.json"];
+    var funFacts = docs["faq/fun-facts.json"];
 
     if (settings) {
       cfg.brand = {
@@ -170,6 +171,7 @@
     }
 
     if (faq && faq.items) cfg.answers = faq.items;
+    if (funFacts && funFacts.facts) cfg.funFacts = funFacts.facts;
     return cfg;
   }
 
@@ -308,6 +310,7 @@
     .then(function (content) {
       window.DTS_CONTENT = content;                 // raw documents (Admin Board edits these)
       window.DTS_CONFIG = buildConfig(content);     // legacy shape for app.js
+      window.DTS_CONTENT_READY = true;              // js/intro-typewriter.js waits on this
       whenDOMReady(function () {
         applyHome(content);
         injectScripts(APP_SCRIPTS);
@@ -316,6 +319,7 @@
     .catch(function (err) {
       console.warn("[content] /data unavailable, using js/config.js fallback:", err);
       window.DTS_CONTENT = null;
+      window.DTS_CONTENT_READY = true;              // config.js fallback is all we'll get — don't hang the intro
       whenDOMReady(function () { injectScripts(APP_SCRIPTS); });
     });
 })();

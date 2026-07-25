@@ -164,6 +164,11 @@
         "file": "faq/answers.json",
         "type": "faqCollection",
         "id": "faq.answers"
+      },
+      {
+        "file": "faq/fun-facts.json",
+        "type": "funFacts",
+        "id": "faq.funFacts"
       }
     ],
     "access": [

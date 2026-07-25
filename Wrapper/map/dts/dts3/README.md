@@ -75,6 +75,7 @@ data/                   ALL live site content, as JSON documents
   projects/             16 sub-vertical documents (campus, workforce, energy, …)
   forms/                discovery / proposal / pilot lead-form definitions
   faq/answers.json      Question-bar answers
+  faq/fun-facts.json    Loading-intro fun facts
   access/access.json    Sign-in UI copy, directory source, adminUsers
   media/library.json    Media library
 
@@ -164,6 +165,7 @@ Other routine tasks:
 - Sectors are ordered by their `order` field, not by manifest order.
 - `pages/home.json` is applied straight to the DOM by `applyHome()` (headline supports one line break written as `\n`; `hexCluster[].slot` must match a `.hex.<slot>` element in `index.html`).
 - Lead forms are discovered by `_type: "leadForm"` anywhere in the docs, keyed by their `id` (`discovery`, `proposal`, `pilot`).
+- `faq/fun-facts.json` maps straight to `cfg.funFacts`; `js/intro-typewriter.js` reads it from `window.DTS_CONTENT`/`window.DTS_CONFIG` first (so Admin Board edits and drafts show up), falling back to a direct fetch only if those aren't populated yet.
 
 ### Document schemas (essentials)
 
@@ -172,6 +174,7 @@ Other routine tasks:
 - **media convention** (everywhere): `source: { kind: "path" | "url", value }` — `path` is relative to site root, `url` is external. Renderers must support both.
 - **leadForm** (`forms/*.json`): `id, title, intro, submitLabel, fields[]`.
 - **faqCollection** (`faq/answers.json`): `items[{match[], q, a}]` — `match` strings are matched against the question-bar input.
+- **funFacts** (`faq/fun-facts.json`): `facts[]` — plain strings; one is picked at random and typed out under the headline by `js/intro-typewriter.js` during the loading intro.
 - **accessConfig** (`access/access.json`): sign-in `ui` copy, `directorySource`, and `adminUsers[{access_id, access_code}]` for the Admin Board.
 
 When in doubt, copy an existing document of the same `_type` — it is the schema.

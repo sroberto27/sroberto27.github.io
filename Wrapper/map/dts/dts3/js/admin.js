@@ -442,6 +442,33 @@
     });
   }
 
+  function editFaq(pane) {
+    var faq = docs["faq/answers.json"];
+    if (!faq) { pane.appendChild(el("p", "adm-hint", "faq/answers.json missing.")); return; }
+    var s1 = section(pane, "FAQ answers",
+      "Shown in the home question bar when a visitor's question matches. \u201cMatch phrases\u201d are " +
+      "lower-case substrings checked against what they type \u2014 list every wording you expect " +
+      "(e.g. \u201ctreedis\u201d, \u201cwhat is treedis\u201d).");
+    fList(s1, "Questions", faq.items, function (card, item) {
+      fText(card, "Question (shown as the heading in the answer popover)", item, "q");
+      fText(card, "Answer", item, "a", { textarea: true, rows: 4 });
+      if (!item.match) item.match = [];
+      fStringList(card, "Match phrases", item.match);
+    }, function () {
+      return { match: [], q: "New question", a: "" };
+    }, "+ Add question");
+  }
+
+  function editFunFacts(pane) {
+    var doc = docs["faq/fun-facts.json"];
+    if (!doc) { pane.appendChild(el("p", "adm-hint", "faq/fun-facts.json missing.")); return; }
+    var s1 = section(pane, "Fun facts",
+      "One is picked at random and typed out under the headline while the site loads. Keep each " +
+      "one short \u2014 it has to finish typing before the loader hands off to the live site.");
+    if (!doc.facts) doc.facts = [];
+    fStringList(s1, "Facts", doc.facts);
+  }
+
   function editSector(pane, file) {
     var s = docs[file];
     if (!s) return;
@@ -783,6 +810,8 @@
     navEl.appendChild(el("p", "adm-navhead", "SITE"));
     navBtn("Home page", "home");
     navBtn("Contact panel", "contact");
+    navBtn("FAQ answers", "faq");
+    navBtn("Fun facts", "funfacts");
     navEl.appendChild(el("p", "adm-navhead", "CATEGORY PAGES"));
     sectorFiles().forEach(function (f) { navBtn(docs[f].label, "sector:" + f); });
     navEl.appendChild(el("p", "adm-navhead", "PROJECTS"));
@@ -819,6 +848,8 @@
     paneEl.innerHTML = "";
     if (key === "home") editHome(paneEl);
     else if (key === "contact") editContact(paneEl);
+    else if (key === "faq") editFaq(paneEl);
+    else if (key === "funfacts") editFunFacts(paneEl);
     else if (key.indexOf("sector:") === 0) editSector(paneEl, key.slice(7));
     else if (key.indexOf("project:") === 0) {
       var file = key.slice(8);

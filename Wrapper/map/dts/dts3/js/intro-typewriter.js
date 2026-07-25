@@ -106,6 +106,22 @@
   }
 
   function loadFacts(cb) {
+    /* Prefer the content pipeline — this is the same data source the
+       Admin Board edits, so a saved draft or a published edit shows up
+       here immediately. We wait for DTS_CONTENT_READY before calling
+       loadFacts(), so this is populated in all but the slowest loads. */
+    try {
+      var doc = window.DTS_CONTENT && window.DTS_CONTENT.docs &&
+                window.DTS_CONTENT.docs["faq/fun-facts.json"];
+      if (doc && doc.facts && doc.facts.length) return cb(doc.facts);
+    } catch (e) { /* fall through */ }
+    try {
+      var cfg = window.DTS_CONFIG || window.CONFIG;
+      if (cfg && cfg.funFacts && cfg.funFacts.length) return cb(cfg.funFacts);
+    } catch (e) { /* fall through */ }
+
+    /* Last resort — a direct fetch, for the rare case content-loader.js
+       hasn't populated the globals yet. */
     fetch(FACTS_URL)
       .then(function (r) {
         if (!r.ok) throw new Error(r.status + " — " + FACTS_URL);
