@@ -224,6 +224,7 @@
   function goHome() {
     showView("home");
     closeDrawer();
+    if (!restoringFromHistory) syncURL(false);
   }
 
   function openCategory(id) {
@@ -238,6 +239,235 @@
     syncSectorPager();
     syncDrawer();
     syncContactBar();
+    if (!restoringFromHistory) syncURL(false);
+  }
+
+  /* ============================================================
+     URL STATE  (history.pushState / popstate)
+     ------------------------------------------------------------
+     Only three states ever get a history entry: home, a category
+     view, and a category view with a project window open on top of
+     it (or, for a bare `?project=` link with no category context —
+     e.g. an old-style share link — a project window open on top of
+     home). Everything else (lead form, sign-in, share popup, FAQ
+     answer bar, any other overlay) stays in-memory only.
+
+     goHome / openCategory / openExample / closeExample are the only
+     choke points that ever touch the URL, via syncURL() below — so
+     every existing call site (pillars, drawer, dock tabs, "More from
+     Sector", the sector projects window, the brand logo, Share) gets
+     correct history entries automatically.
+
+     restoringFromHistory mutes those same choke points while we're
+     rebuilding state FROM a URL (popstate, or the initial page load)
+     so we never push a redundant second entry on top of the one
+     already in the address bar.
+     ============================================================ */
+  let restoringFromHistory = false;
+
+  /* How many history entries THIS app has pushed in this session.
+     history.length can't be used for that — it counts every entry in
+     the tab, including pages visited before ours — and there's no way
+     to ask the browser "is there anything behind me that I own". We
+     track it ourselves: incremented on every pushState, decremented
+     whenever popstate moves us backwards. closeExample() consults it
+     before calling history.back(), so a project opened from a fresh
+     deep link (depth 0) tears down in place instead of navigating the
+     reader out of the site entirely. */
+  let pushDepth = 0;
+
+  /* Monotonic position marker written into history.state on every
+     entry we create. Comparing the incoming entry's marker against the
+     one we left tells us whether a popstate went backwards or forwards,
+     which is what keeps pushDepth honest. */
+  let histIndex = 0;
+
+  /* The query string for whatever the app is showing right now.
+
+     When a project window is open, the project's OWN sector is
+     authoritative — not state.category. openExample() can be called
+     from a different category than the project belongs to ("More from
+     Sector" cards, dock tabs, the sector projects window), and the URL
+     has to describe the project's real home so that reloading or
+     sharing it rebuilds the correct backdrop underneath. Using
+     state.category here would emit URLs like
+     ?category=education&project=civic for a government project. */
+  function currentURLParams() {
+    const params = new URLSearchParams();
+
+    if (activeExampleId) {
+      const ex = cfg.examples && cfg.examples[activeExampleId];
+      const sector = (ex && ex.sector) || state.category;
+      if (sector) params.set("category", sector);
+      params.set("project", activeExampleId);
+      return params;
+    }
+
+    if (state.view === "category" && state.category) {
+      params.set("category", state.category);
+    }
+    return params;
+  }
+
+  function buildStateURL() {
+    const qs = currentURLParams().toString();
+    return location.pathname + (qs ? "?" + qs : "");
+  }
+
+  /* Push (or replace) a history entry matching current app state.
+     Skips a redundant push when the URL wouldn't actually change
+     (e.g. re-clicking the already-active pillar). */
+  function syncURL(replace) {
+    try {
+      const url = buildStateURL();
+      if (!replace && url === location.pathname + location.search) return;
+      if (replace) {
+        // Keep whatever index this entry already had (or claim the
+        // current one) so replacing never reorders the sequence.
+        const existing = history.state && typeof history.state.i === "number"
+          ? history.state.i : histIndex;
+        histIndex = existing;
+        history.replaceState({ i: existing }, "", url);
+      } else {
+        histIndex++;
+        history.pushState({ i: histIndex }, "", url);
+        pushDepth++;
+      }
+    } catch (_e) { /* history API unavailable — URL just won't update */ }
+  }
+
+  /* Rebuild app state (home / category / category+project) to match
+     whatever the address bar says RIGHT NOW. Used for popstate
+     (back/forward). Never pushes a new entry itself —
+     restoringFromHistory mutes the choke points above while it runs. */
+  function applyStateFromURL() {
+    let categoryId = null, projectId = null;
+    try {
+      const params = new URLSearchParams(location.search);
+      categoryId = params.get("category");
+      projectId = params.get("project");
+    } catch (_e) { /* malformed URL params — treat as home */ }
+
+    const validProject = !!(projectId && cfg.examples && cfg.examples[projectId]);
+
+    // Same rule as on first load: the project's own sector is the
+    // backdrop, whatever the category param happens to say.
+    if (validProject) {
+      const sector = cfg.examples[projectId].sector;
+      if (sector && cfg.categories.some((c) => c.id === sector)) categoryId = sector;
+    }
+    const validCategory = !!(categoryId && cfg.categories.some((c) => c.id === categoryId));
+
+    restoringFromHistory = true;
+    try {
+      // 1. Backdrop — home or a category.
+      if (validCategory) {
+        if (state.view !== "category" || state.category !== categoryId) {
+          openCategory(categoryId);
+        }
+      } else if (state.view !== "home") {
+        goHome();
+      }
+      // 2. Project window on top of it (or nothing).
+      if (validProject) {
+        if (activeExampleId !== projectId) openExample(projectId);
+      } else if (activeExampleId) {
+        // Raw teardown, never closeExample() — we're already responding
+        // to a history move, so the URL is correct and nothing should
+        // navigate again.
+        closeExampleNow();
+      }
+    } finally {
+      restoringFromHistory = false;
+    }
+  }
+
+  window.addEventListener("popstate", (e) => {
+    /* Track which direction the reader moved before rebuilding state,
+       so pushDepth still reflects how many of our own entries sit
+       behind the current one. Entries created before this marker
+       existed (or by another script) report no index — treat those as
+       "unknown" and just resync rather than guessing a direction. */
+    const incoming = e.state && typeof e.state.i === "number" ? e.state.i : null;
+    if (incoming !== null) {
+      if (incoming < histIndex) pushDepth = Math.max(0, pushDepth - (histIndex - incoming));
+      else if (incoming > histIndex) pushDepth += incoming - histIndex;
+      histIndex = incoming;
+    }
+    applyStateFromURL();
+  });
+
+  /* Wait for the intro loading screen to genuinely finish (or be
+     skipped, for reduced-motion) before revealing restored state that
+     lives outside .app — the project window overlay isn't covered by
+     the cloak's opacity:0 rule, so opening it early would flash on
+     screen before the loader itself even appears. */
+  function waitForIntroCloak(cb) {
+    if (!document.documentElement.classList.contains("intro-cloak")) { cb(); return; }
+
+    let done = false;
+    const finish = () => {
+      if (done) return;
+      done = true;
+      clearInterval(poll);
+      clearTimeout(bail);
+      cb();
+    };
+    const poll = setInterval(() => {
+      if (!document.documentElement.classList.contains("intro-cloak")) finish();
+    }, 60);
+    /* Bailout. index.html's inline script already removes the cloak
+       after 4s if the loader never runs, but that script could itself
+       be edited or fail — without a ceiling here a stuck cloak would
+       silently swallow the deep link and the reader would land on a
+       bare category with no project window and no error. */
+    const bail = setTimeout(finish, 5000);
+  }
+
+  /* Called once at boot: resolve the page's starting URL into app
+     state, then normalize the URL with replaceState (never pushState)
+     so the starting entry isn't duplicated. The home/category part is
+     safe to apply immediately — it's hidden behind the cloak either
+     way — while a project window is deferred behind waitForIntroCloak,
+     same as the old share-link deep-link behavior it replaces. */
+  function restoreInitialStateFromURL() {
+    let categoryId = null, projectId = null;
+    try {
+      const params = new URLSearchParams(location.search);
+      categoryId = params.get("category");
+      projectId = params.get("project");
+    } catch (_e) { /* malformed URL params — treat as home */ }
+
+    const validProject = !!(projectId && cfg.examples && cfg.examples[projectId]);
+
+    /* A project's own sector wins over the category in the URL. That
+       makes old-style share links (?project=<id>, no category) restore
+       the right backdrop instead of stranding the window over home,
+       and it repairs any link that names a mismatched pair. */
+    if (validProject) {
+      const sector = cfg.examples[projectId].sector;
+      if (sector && cfg.categories.some((c) => c.id === sector)) categoryId = sector;
+    }
+    const validCategory = !!(categoryId && cfg.categories.some((c) => c.id === categoryId));
+
+    restoringFromHistory = true;
+    if (validCategory) {
+      openCategory(categoryId);
+    } else {
+      renderCategory(getCategory(state.category));
+      goHome();
+    }
+    restoringFromHistory = false;
+    syncURL(true);   // normalize the starting entry — replace, never push
+
+    if (validProject) {
+      waitForIntroCloak(() => {
+        restoringFromHistory = true;
+        openExample(projectId);
+        restoringFromHistory = false;
+        syncURL(true);
+      });
+    }
   }
 
   /* ============================================================
@@ -487,6 +717,16 @@
   function openExample(cardId, evidenceLabel) {
     const ex = cfg.examples && cfg.examples[cardId];
     if (!ex) { console.warn("[dts] no example for", cardId); return; }
+
+    /* Dock tabs, "More from Sector", and the sector projects window can
+       all open a different project while the window is ALREADY open
+       (a swap, not a fresh entry). A swap replaces the current history
+       entry instead of pushing a new one — otherwise every project
+       browsed in one sitting stacks up its own back-button stop, and
+       closing the window (which steps back exactly one entry) would
+       land on whichever project was viewed just before this one
+       instead of the category underneath all of them. */
+    const isSwap = !!activeExampleId && activeExampleId !== cardId;
     activeExampleId = cardId;
 
     const cat = cfg.categories.find((c) => c.id === ex.sector) || getCategory(state.category);
@@ -593,6 +833,8 @@
     if (exWin) exWin.scrollTop = 0;
     const exPane = $("#exampleContent");
     if (exPane) exPane.scrollTop = 0;
+
+    if (!restoringFromHistory) syncURL(isSwap);
   }
 
   /* The URL to load in the example stage: the example's own Treedis
@@ -820,7 +1062,43 @@
     if (start) select(start);
   }
 
+  /* Close the project window and drop back to whatever's underneath.
+
+     If the address bar is currently showing THIS project's entry, we
+     step backwards through history rather than pushing a new one, so
+     the ✕ button and the browser back button do the same thing —
+     otherwise closing would leave a forward entry behind and pressing
+     back would reopen the window the reader just dismissed.
+
+     popstate then runs applyStateFromURL(), which performs the actual
+     teardown, so this call returns early and lets that happen. The
+     guard covers the cases where stepping back ISN'T right: a project
+     opened directly via a deep link (nothing behind it in this
+     session) or any state where the URL doesn't name this project. */
   function closeExample() {
+    if (activeExampleId && !restoringFromHistory && canStepBackFromProject()) {
+      history.back();
+      return;
+    }
+    closeExampleNow();
+  }
+
+  /* True when the current history entry is this project's own entry AND
+     there's somewhere in-session to step back to. history.length is a
+     coarse signal (it counts the whole tab's history, not just ours),
+     so we also track how many entries this app pushed itself. */
+  function canStepBackFromProject() {
+    try {
+      const params = new URLSearchParams(location.search);
+      if (params.get("project") !== activeExampleId) return false;
+      return pushDepth > 0;
+    } catch (_e) {
+      return false;
+    }
+  }
+
+  function closeExampleNow() {
+    const wasOpen = !!activeExampleId;
     const ov = $("#exampleOverlay");
     // Tear down the per-example media frame so a video doesn't keep
     // playing behind the closed window.
@@ -831,29 +1109,35 @@
     ov.setAttribute("aria-hidden", "true");
     activeExampleId = null;
     closeShare();     // never leave the share popup open behind a closed window
+    /* Reached either via popstate (restoringFromHistory — the URL is
+       already correct, nothing to write) or by closing a deep-linked
+       project with no in-session entry behind it. In that second case
+       there's nothing to step back to, so replace the current entry
+       with the bare category rather than pushing a new one — the
+       reader shouldn't have to press back twice to leave. */
+    if (wasOpen && !restoringFromHistory) syncURL(true);
   }
 
   /* ============================================================
      SHARE THIS PROJECT
      ------------------------------------------------------------
-     The link is built from the project's own id — the same id the
-     Admin Board assigns to every project doc (see content-loader.js
-     buildConfig: cfg.examples[p.id]). That means any project created
-     or edited in the CMS gets a correct, working share link the
-     moment it's saved — nothing to configure by hand. Loading the
-     site with ?project=<id> in the URL (see openSharedProjectFromURL,
-     called from boot()) reopens that exact project window, so a
+     The link is just the current URL. openExample() (via syncURL, see
+     the URL STATE section above) already keeps the address bar in
+     sync with whatever project window is open — including which
+     category it belongs to — so there's nothing extra to build here.
+     Loading that URL reconstructs the same state on the way in (see
+     restoreInitialStateFromURL / applyStateFromURL above), so a
      shared link never just lands on the homepage or the live tour.
      ============================================================ */
-  function exampleShareUrl(id) {
-    return location.origin + location.pathname + "?project=" + encodeURIComponent(id);
+  function exampleShareUrl() {
+    return location.href;
   }
 
   function openShare() {
     if (!activeExampleId) return;
     const ex = cfg.examples && cfg.examples[activeExampleId];
     const name = (ex && ex.project && ex.project.name) || (ex && ex.title) || "Digital Twin Studios";
-    const url = exampleShareUrl(activeExampleId);
+    const url = exampleShareUrl();
     const encUrl = encodeURIComponent(url);
     const text = encodeURIComponent(name + " — Digital Twin Studios");
 
@@ -873,44 +1157,6 @@
     if (!ov) return;
     ov.classList.remove("is-open");
     ov.setAttribute("aria-hidden", "true");
-  }
-
-  /* Reopen the exact project window a shared link points to. Called
-     once at boot, after cfg.examples is available. Silently does
-     nothing if there's no ?project= param or the id no longer exists
-     (e.g. a project was later removed from the CMS). */
-  function openSharedProjectFromURL() {
-    try {
-      const id = new URLSearchParams(location.search).get("project");
-      if (id && cfg.examples && cfg.examples[id]) openExample(id);
-    } catch (_e) { /* malformed URL params — ignore */ }
-  }
-
-  /* The project window overlay lives outside .app, so the intro
-     loading screen's cloak (which only hides .app) never covered it —
-     opening it during boot() meant it flashed on screen BEFORE the
-     loading screen had even appeared, which then covered it and later
-     faded away to reveal it again. Instead, wait until <html> no
-     longer carries the intro-cloak class (i.e. the loading screen has
-     genuinely finished, or was skipped entirely for reduced-motion
-     users) before opening the shared project — so the loading screen
-     always shows first, then the project window. */
-  function maybeOpenSharedProjectFromURL() {
-    let id;
-    try { id = new URLSearchParams(location.search).get("project"); }
-    catch (_e) { return; }
-    if (!id) return;
-
-    if (!document.documentElement.classList.contains("intro-cloak")) {
-      openSharedProjectFromURL();
-      return;
-    }
-    const poll = setInterval(() => {
-      if (!document.documentElement.classList.contains("intro-cloak")) {
-        clearInterval(poll);
-        openSharedProjectFromURL();
-      }
-    }, 60);
   }
 
   /* ============================================================
@@ -1879,15 +2125,13 @@
     buildDrawer();
     buildSectorPager();
     buildContact();
-    renderCategory(getCategory(state.category));
-    showView("home");
+    restoreInitialStateFromURL();  // home / ?category=… / ?category=…&project=… → matching state; URL normalized via replaceState
     wire();
     initSwipe();
     initBackground();
     startTreedis();              // embed the live experience right away
     cyclePrompt();
     setInterval(cyclePrompt, 3200);
-    maybeOpenSharedProjectFromURL();  // ?project=<id> deep-link → open once the loading screen clears
   }
 
   if (document.readyState === "loading") {

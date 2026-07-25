@@ -23,17 +23,23 @@
           "value": "assets/InteractiveCities.png"
         },
         "alt": "Interactive cities render"
+      },
+      "media": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/InteractiveCities.png"
+        },
+        "alt": "Interactive cities render"
       }
     },
     {
       "slot": "hex-2",
-      "image": {
-        "_type": "image",
-        "source": {
-          "kind": "path",
-          "value": "assets/assets-droplet.jpg"
-        },
-        "alt": "Droplet macro imagery"
+      "media": {
+        "_type": "model",
+        "source": { "kind": "path", "value": "assets/Buildings.glb" },
+        "background": "transparent",
+        "autoRotate": true
       }
     },
     {
@@ -45,17 +51,23 @@
           "value": "assets/dtsBR.png"
         },
         "alt": "Virgin Hotels experience"
+      },
+      "media": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/dtsBR.png"
+        },
+        "alt": "Virgin Hotels experience"
       }
     },
     {
       "slot": "hex-4",
-      "image": {
-        "_type": "image",
-        "source": {
-          "kind": "path",
-          "value": "assets/assets-wave.jpg"
-        },
-        "alt": "Wave imagery"
+      "media": {
+        "_type": "model",
+        "source": { "kind": "path", "value": "assets/ToolBox.glb" },
+        "background": "transparent",
+        "autoRotate": true
       }
     }
   ],
@@ -94,5 +106,6 @@
     "What is a Digital Twin?",
     "How do I get in contact?",
     "Can I use a mobile device?"
-  ]
+  ],
+  "_hexMediaNote": "Each hexCluster entry uses media: {_type: image|video|model, source:{kind,value}, ...}. image: + alt. video: local .mp4/.webm path OR YouTube/Vimeo url, optional poster. model: .glb/.gltf source, background ('transparent' or CSS color), autoRotate, optional poster and iosSource (.usdz for Apple AR). The legacy 'image' field is still read if 'media' is missing."
 }

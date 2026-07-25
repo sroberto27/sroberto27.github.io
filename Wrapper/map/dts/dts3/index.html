@@ -148,23 +148,51 @@
           </div>
         </div>
 
-        <!-- ===== DECORATIVE HEXAGON CLUSTER =====
-             Purely decorative — visible only in the initial hero state.
-             The Treedis experience is revealed full-screen in #twinLayer
-             below when the user presses "Try a Digital Twin". -->
-        <div class="hex-cluster" aria-hidden="true">
-          <!-- Diagonal run, bottom-left → top-right, with project imagery
-               in every hexagon. To reorder, swap the url() values between
-               the hex-1…hex-4 spans; positions and sizes stay put (they're
-               keyed to the hex-N class). -->
-               <span class="hex hex-img hex-1" style="background-image:url('assets/dtsBR.png')"></span>
-               <span class="hex hex-img hex-2" style="background-image:url('assets/assets-droplet.jpg')"></span>
-               <span class="hex hex-img hex-3" style="background-image:url('assets/InteractiveCities.png')"></span>
-               <span class="hex hex-img hex-4" style="background-image:url('assets/assets-wave.jpg')"></span>
-          <span class="hex hex-ghost hex-g1"></span>
-          <span class="hex hex-ghost hex-g2"></span>
-          <span class="hex hex-ghost hex-g3"></span>
-          <span class="hex hex-ghost hex-g4"></span>
+        <!-- ===== MEDIA HEXAGON CLUSTER =====
+             Visible only in the initial hero state. Each hexagon can hold an
+             image, a looping video, or an interactive 3D model (GLB/glTF via
+             <model-viewer>), configured in data/pages/home.json (hexCluster →
+             media). js/hex-media.js hydrates the media and drives the
+             hover-grow / click-to-expand / minimize interaction.
+
+             STRUCTURE (important): the clip-path lives on the INNER .hex-clip,
+             not on the wrapper — clip-path clips children, so the minimize
+             button must sit on the unclipped wrapper to stay visible.
+             The positioning CSS still targets .hex.hex-N, so the wrapper
+             keeps both classes and the exact edge-contact geometry holds. -->
+        <div class="hex-cluster" id="hexCluster">
+          <div class="hex hexbox hex-1" data-slot="hex-1" role="button" tabindex="0"
+               aria-label="Expand hexagon 1">
+            <div class="hex-clip"><div class="hex-media hex-img" style="background-image:url('assets/dtsBR.png')"></div></div>
+            <button class="hex-min" type="button" aria-label="Minimize" tabindex="-1">
+              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <div class="hex hexbox hex-2" data-slot="hex-2" role="button" tabindex="0"
+               aria-label="Expand hexagon 2">
+            <div class="hex-clip"><div class="hex-media hex-img" style="background-image:url('assets/assets-droplet.jpg')"></div></div>
+            <button class="hex-min" type="button" aria-label="Minimize" tabindex="-1">
+              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <div class="hex hexbox hex-3" data-slot="hex-3" role="button" tabindex="0"
+               aria-label="Expand hexagon 3">
+            <div class="hex-clip"><div class="hex-media hex-img" style="background-image:url('assets/InteractiveCities.png')"></div></div>
+            <button class="hex-min" type="button" aria-label="Minimize" tabindex="-1">
+              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <div class="hex hexbox hex-4" data-slot="hex-4" role="button" tabindex="0"
+               aria-label="Expand hexagon 4">
+            <div class="hex-clip"><div class="hex-media hex-img" style="background-image:url('assets/assets-wave.jpg')"></div></div>
+            <button class="hex-min" type="button" aria-label="Minimize" tabindex="-1">
+              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true"><path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+            </button>
+          </div>
+          <span class="hex hex-ghost hex-g1" aria-hidden="true"></span>
+          <span class="hex hex-ghost hex-g2" aria-hidden="true"></span>
+          <span class="hex hex-ghost hex-g3" aria-hidden="true"></span>
+          <span class="hex hex-ghost hex-g4" aria-hidden="true"></span>
         </div>
 
         <!-- Primary CTA — outlined gold pill over the arrow-burst

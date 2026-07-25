@@ -265,6 +265,79 @@
     return s;
   }
 
+  /* Per-hexagon media editor: a type dropdown that swaps in the
+     fields for image / video / 3D model. Edits h.media in place
+     (the canonical shape content-loader.js and hex-media.js read). */
+  function hexMediaEditor(parent, h) {
+    // Migrate legacy image-only entries to the media shape.
+    if (window.DTS_NORMALIZE_HEX) window.DTS_NORMALIZE_HEX(h);
+    else if (!h.media || !h.media._type) {
+      var legacy = h.image || {};
+      h.media = { _type: "image",
+                  source: legacy.source || { kind: "path", value: "" },
+                  alt: legacy.alt || "" };
+    }
+
+    var card = el("div", "adm-listitem");
+    var bar = el("div", "adm-itembar");
+    bar.appendChild(el("span", "adm-itemno", h.slot.toUpperCase()));
+    card.appendChild(bar);
+
+    var typeWrap = el("div", "adm-field half");
+    typeWrap.appendChild(el("label", "adm-label", "Content type"));
+    var typeSel = el("select", "adm-select");
+    [["image", "Image"], ["video", "Video"], ["model", "3D model (GLB)"]].forEach(function (o) {
+      var opt = el("option", null, o[1]); opt.value = o[0]; typeSel.appendChild(opt);
+    });
+    typeSel.value = h.media._type;
+    typeWrap.appendChild(typeSel);
+    card.appendChild(typeWrap);
+
+    var fields = el("div");
+    card.appendChild(fields);
+
+    function ensure(key, fallback) { if (!h.media[key]) h.media[key] = fallback; }
+
+    function draw() {
+      fields.innerHTML = "";
+      var m = h.media;
+      if (m._type === "image") {
+        fSource(fields, "Image (site path or external link)", m.source, { imagePreview: true });
+        if (m.alt == null) m.alt = "";
+        fText(fields, "Alt text", m, "alt");
+      } else if (m._type === "video") {
+        fSource(fields, "Video — local file (assets/…​.mp4/.webm) or YouTube/Vimeo link", m.source,
+                { hint: "Plays silently on a loop inside the hexagon; visitors click the hexagon to expand it with sound and controls." });
+        ensure("poster", { kind: "path", value: "" });
+        fSource(fields, "Poster image (optional, shown while the video loads)", m.poster, { imagePreview: true });
+      } else if (m._type === "model") {
+        fSource(fields, "3D model file (.glb / .gltf)", m.source,
+                { hint: "GLB is the web format. FBX/OBJ won\u2019t load directly \u2014 export as glTF 2.0 from Blender first." });
+        if (m.background == null) m.background = "transparent";
+        fText(fields, "Background \u2014 \u201ctransparent\u201d shows the website behind the model, or any CSS color (e.g. #0c1322)", m, "background", { half: true });
+        if (m.autoRotate == null) m.autoRotate = true;
+        fCheck(fields, "Auto-rotate while idle", m, "autoRotate");
+        ensure("poster", { kind: "path", value: "" });
+        fSource(fields, "Poster image (optional, shown while the model loads)", m.poster, { imagePreview: true });
+        ensure("iosSource", { kind: "path", value: "" });
+        fSource(fields, "USDZ file for AR on Apple devices (optional)", m.iosSource,
+                { hint: "Adds an AR button on iPhone/iPad/Vision Pro. Leave empty to skip." });
+      }
+    }
+    typeSel.addEventListener("change", function () {
+      var m = h.media;
+      m._type = typeSel.value;
+      if (!m.source) m.source = { kind: "path", value: "" };
+      if (m._type === "model") {
+        if (m.background == null) m.background = "transparent";
+        if (m.autoRotate == null) m.autoRotate = true;
+      }
+      markDirty(); draw();
+    });
+    draw();
+    parent.appendChild(card);
+  }
+
   /* ============================================================
      EDITORS
      ============================================================ */
@@ -277,10 +350,13 @@
     fText(s1, "Body paragraph", home.hero, "body", { textarea: true, rows: 4 });
     fStringList(s1, "Pills (Campus / Company / City / Community)", home.hero.pills);
 
-    var s2 = section(pane, "Hexagon images", "The four picture hexagons next to the headline. Each can point to a file in the site (e.g. assets/…) or an external link.");
+    var s2 = section(pane, "Hexagon media",
+      "The four hexagons next to the headline. Each can show an image, a video " +
+      "(local .mp4/.webm file or a YouTube/Vimeo link), or an interactive 3D model. " +
+      "Models must be GLB/glTF (.glb) — convert FBX/OBJ/USDZ in Blender via " +
+      "File \u2192 Export \u2192 glTF 2.0. An extra .usdz can be attached for AR on Apple devices.");
     (home.hexCluster || []).forEach(function (h) {
-      fSource(s2, h.slot.toUpperCase() + " image", h.image.source, { imagePreview: true });
-      fText(s2, h.slot.toUpperCase() + " alt text", h.image, "alt");
+      hexMediaEditor(s2, h);
     });
 
     var s3 = section(pane, "Primary button");
@@ -378,7 +454,7 @@
         if (sel.value === "none") delete project.media;
         else if (sel.value === "treedis") {
           project.media = { _type: "treedis", label: "Explore the experience",
-                            tourUrl: "https://spaces.dtsxr.com/tour/", 
+                            tourUrl: "https://spaces.dtsxr.com/tour/",
                             origin: "https://spaces.dtsxr.com", sweepId: null };
         } else {
           project.media = { _type: "video", provider: "vimeo", label: "Watch the video",

@@ -173,6 +173,36 @@
     return cfg;
   }
 
+  /* ---------- hex media normalisation ----------
+     Canonical hex entry shape (data/pages/home.json → hexCluster[]):
+       { slot, media: { _type: "image"|"video"|"model",
+                        source: {kind, value},
+                        alt?,                      (image)
+                        poster?: {kind, value},    (video/model, optional)
+                        background?,               (model: "transparent" or CSS color)
+                        autoRotate?,               (model)
+                        iosSource?: {kind, value}  (model: optional .usdz for AR) } }
+     Legacy entries that only have { image: {source, alt} } are migrated
+     in place so the Admin Board and hex-media.js see one shape. */
+  function normalizeHexEntry(h) {
+    if (!h) return h;
+    if (!h.media || !h.media._type) {
+      var legacy = h.image || {};
+      h.media = {
+        _type: "image",
+        source: legacy.source || { kind: "path", value: "" },
+        alt: legacy.alt || ""
+      };
+    }
+    if (!h.media.source) h.media.source = { kind: "path", value: "" };
+    if (h.media._type === "model") {
+      if (h.media.background == null) h.media.background = "transparent";
+      if (h.media.autoRotate == null) h.media.autoRotate = true;
+    }
+    return h;
+  }
+  window.DTS_NORMALIZE_HEX = normalizeHexEntry;   // shared with hex-media.js / admin.js
+
   /* ---------- apply home-page content to the DOM ---------- */
   function text(sel, value) {
     document.querySelectorAll(sel).forEach(function (el) { el.textContent = value; });
@@ -203,9 +233,20 @@
         });
       });
     }
+    /* Hexagon cluster — supports image / video / 3D-model media.
+       Entries are normalised to h.media ({_type, source, …}); legacy
+       documents that only carry h.image keep working. Images are
+       painted here immediately (no flash of the built-in defaults);
+       video and model media are hydrated by js/hex-media.js, which
+       reads the same normalised entries. */
     (home.hexCluster || []).forEach(function (h) {
-      var el = document.querySelector(".hex." + h.slot);
-      if (el && h.image) el.style.backgroundImage = "url('" + srcValue(h.image.source) + "')";
+      normalizeHexEntry(h);
+      var box = document.querySelector(".hexbox[data-slot='" + h.slot + "'], .hex." + h.slot);
+      if (!box) return;
+      if (h.media._type === "image") {
+        var img = box.querySelector(".hex-media") || box;
+        img.style.backgroundImage = "url('" + srcValue(h.media.source) + "')";
+      }
     });
     if (home.primaryCta) {
       var cta = document.querySelector(".twin-cta");
@@ -235,7 +276,7 @@
   }
 
   /* ---------- boot the app scripts in order ---------- */
-  var APP_SCRIPTS = ["js/app.js", "js/smoke-depth.js", "js/vision-pro-spatial.js", "js/admin.js"];
+  var APP_SCRIPTS = ["js/app.js", "js/smoke-depth.js", "js/vision-pro-spatial.js", "js/hex-media.js", "js/admin.js"];
   function injectScripts(list, done) {
     if (!list.length) { if (done) done(); return; }
     var s = document.createElement("script");
