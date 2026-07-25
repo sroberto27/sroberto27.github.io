@@ -40,7 +40,7 @@
   var FLOW_RECAP = "Education prepares people, industry employs them, " +
     "government keeps it running, and community is the result.";
   var FLOW_START_X = 40, FLOW_END_X = 880, FLOW_LEN = FLOW_END_X - FLOW_START_X;
-  var FLOW_TRAVEL_MS = 2600, FLOW_HOLD_MS = 1300, FLOW_RECAP_MS = 3400,
+  var FLOW_TRAVEL_MS = 2600, FLOW_HOLD_MS = 1300, FLOW_RECAP_MS = 5400,
       FLOW_FADE_MS = 500, FLOW_GAP_MS = 500;
 
   function flowIconMarkup(i) {
