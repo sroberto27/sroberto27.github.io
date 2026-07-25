@@ -23,7 +23,8 @@
           "value": "https://vimeo.com/1210236846/b81cbc0210"
         },
         "border": "none",
-        "autoplayMode": "autoplay"
+        "autoplayMode": "none",
+        "poster": { "kind": "path", "value": "assets/InteractiveCities.png" }
       }
     },
     {
