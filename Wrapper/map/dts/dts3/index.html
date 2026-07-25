@@ -155,8 +155,10 @@
              media). js/hex-media.js hydrates the media and drives the
              hover-grow / click-to-expand / minimize interaction, and adds a
              .media-image / .media-video / .media-model class to each
-             .hexbox so CSS can style per media type (border only on models,
-             play badge only on videos).
+             .hexbox so CSS can style per media type (video play badge,
+             corner-badge icon), plus a .border-{none|stroke|brackets|
+             vignette|badge|scanline} class from media.border (CMS-chosen,
+             default none — purely visual, see 02-home.css).
 
              STRUCTURE (important): the clip-path lives on the INNER .hex-clip,
              not on the wrapper — clip-path clips children, so the minimize
@@ -164,14 +166,18 @@
              The positioning CSS still targets .hex.hex-N, so the wrapper
              keeps both classes and the exact edge-contact geometry holds.
 
-             BORDER (3D models only, see 02-home.css .hex-border): WebGL
+             CLIP FIX (always on, independent of border choice): WebGL
              canvases (model-viewer) can ignore an ancestor's clip-path — the
              browser may promote them to their own compositing layer.
              .hex-clip therefore clips with BOTH clip-path and mask-image
-             (masks composite more reliably for GPU layers). The .hex-border
-             SVG is a SEPARATE, unclipped sibling on top of the media, at the
-             exact hex edge — it seals any stray pixel that slips past the
-             clip/mask and gives 3D-model hexes a visible outline. -->
+             (masks composite more reliably for GPU layers). This applies
+             regardless of which border style (if any) is selected.
+
+             Six overlay elements sit on the unclipped wrapper, each hidden
+             unless its matching .border-* class is set: .hex-border (stroke),
+             .hex-brackets, .hex-vignette, .hex-badge (icon picked by the
+             .media-* class), .hex-scanline (sweep on hover), plus the
+             always-available .hex-play (video only) and .hex-min. -->
         <div class="hex-cluster" id="hexCluster">
           <div class="hex hexbox hex-1" data-slot="hex-1" role="button" tabindex="0"
                aria-label="Expand hexagon 1">
@@ -179,6 +185,17 @@
             <svg class="hex-border" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
               <polygon points="25,0 75,0 100,50 75,100 25,100 0,50" vector-effect="non-scaling-stroke"/>
             </svg>
+            <svg class="hex-brackets" viewBox="0 0 100 87" aria-hidden="true">
+              <path d="M 3 45 L 25 2 L 47 2"/>
+              <path d="M 53 2 L 75 2 L 97 45"/>
+            </svg>
+            <div class="hex-vignette" aria-hidden="true"></div>
+            <div class="hex-badge" aria-hidden="true">
+              <svg class="hex-badge-icon hex-badge-cube" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M12 2 21 7 21 17 12 22 3 17 3 7 Z M12 2 12 12 M3 7 12 12 M21 7 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
+              <svg class="hex-badge-icon hex-badge-camera" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+              <svg class="hex-badge-icon hex-badge-image" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="9.5" r="1.6" fill="currentColor"/><path d="M21 16l-5.5-5.5a1.5 1.5 0 00-2.1 0L4 19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="hex-scanline" aria-hidden="true"></div>
             <div class="hex-play" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="20" height="20"><polygon points="9,6 9,18 18,12" fill="currentColor"/></svg>
             </div>
@@ -192,6 +209,17 @@
             <svg class="hex-border" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
               <polygon points="25,0 75,0 100,50 75,100 25,100 0,50" vector-effect="non-scaling-stroke"/>
             </svg>
+            <svg class="hex-brackets" viewBox="0 0 100 87" aria-hidden="true">
+              <path d="M 3 45 L 25 2 L 47 2"/>
+              <path d="M 53 2 L 75 2 L 97 45"/>
+            </svg>
+            <div class="hex-vignette" aria-hidden="true"></div>
+            <div class="hex-badge" aria-hidden="true">
+              <svg class="hex-badge-icon hex-badge-cube" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M12 2 21 7 21 17 12 22 3 17 3 7 Z M12 2 12 12 M3 7 12 12 M21 7 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
+              <svg class="hex-badge-icon hex-badge-camera" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+              <svg class="hex-badge-icon hex-badge-image" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="9.5" r="1.6" fill="currentColor"/><path d="M21 16l-5.5-5.5a1.5 1.5 0 00-2.1 0L4 19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="hex-scanline" aria-hidden="true"></div>
             <div class="hex-play" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="20" height="20"><polygon points="9,6 9,18 18,12" fill="currentColor"/></svg>
             </div>
@@ -205,6 +233,17 @@
             <svg class="hex-border" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
               <polygon points="25,0 75,0 100,50 75,100 25,100 0,50" vector-effect="non-scaling-stroke"/>
             </svg>
+            <svg class="hex-brackets" viewBox="0 0 100 87" aria-hidden="true">
+              <path d="M 3 45 L 25 2 L 47 2"/>
+              <path d="M 53 2 L 75 2 L 97 45"/>
+            </svg>
+            <div class="hex-vignette" aria-hidden="true"></div>
+            <div class="hex-badge" aria-hidden="true">
+              <svg class="hex-badge-icon hex-badge-cube" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M12 2 21 7 21 17 12 22 3 17 3 7 Z M12 2 12 12 M3 7 12 12 M21 7 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
+              <svg class="hex-badge-icon hex-badge-camera" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+              <svg class="hex-badge-icon hex-badge-image" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="9.5" r="1.6" fill="currentColor"/><path d="M21 16l-5.5-5.5a1.5 1.5 0 00-2.1 0L4 19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="hex-scanline" aria-hidden="true"></div>
             <div class="hex-play" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="20" height="20"><polygon points="9,6 9,18 18,12" fill="currentColor"/></svg>
             </div>
@@ -218,6 +257,17 @@
             <svg class="hex-border" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
               <polygon points="25,0 75,0 100,50 75,100 25,100 0,50" vector-effect="non-scaling-stroke"/>
             </svg>
+            <svg class="hex-brackets" viewBox="0 0 100 87" aria-hidden="true">
+              <path d="M 3 45 L 25 2 L 47 2"/>
+              <path d="M 53 2 L 75 2 L 97 45"/>
+            </svg>
+            <div class="hex-vignette" aria-hidden="true"></div>
+            <div class="hex-badge" aria-hidden="true">
+              <svg class="hex-badge-icon hex-badge-cube" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M12 2 21 7 21 17 12 22 3 17 3 7 Z M12 2 12 12 M3 7 12 12 M21 7 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round"/></svg>
+              <svg class="hex-badge-icon hex-badge-camera" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><path d="M4 8h3l1.5-2h7L17 8h3a1 1 0 011 1v9a1 1 0 01-1 1H4a1 1 0 01-1-1V9a1 1 0 011-1z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.2" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>
+              <svg class="hex-badge-icon hex-badge-image" viewBox="0 0 24 24" width="13" height="13" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="9.5" r="1.6" fill="currentColor"/><path d="M21 16l-5.5-5.5a1.5 1.5 0 00-2.1 0L4 19" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="hex-scanline" aria-hidden="true"></div>
             <div class="hex-play" aria-hidden="true">
               <svg viewBox="0 0 24 24" width="20" height="20"><polygon points="9,6 9,18 18,12" fill="currentColor"/></svg>
             </div>

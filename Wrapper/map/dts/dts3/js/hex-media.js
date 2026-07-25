@@ -5,8 +5,10 @@
    data/pages/home.json → hexCluster[].media and drives the
    interaction model:
 
-     idle      image / muted looping video / auto-rotating model
-     hover     the hovered hex grows, the others give way
+     idle      image / video (per autoplayMode below) / auto-rotating
+               model
+     hover     the hovered hex grows, the others give way; a video set
+               to autoplayMode "hover" starts playing while hovered
      click     the hex expands to the cluster centre; the media
                becomes interactive (video controls + sound,
                model orbit/zoom via <model-viewer>)
@@ -16,9 +18,14 @@
    Media types (all editable in the Admin Board):
      image  — background-image div (as before)
      video  — local .mp4/.webm file OR a YouTube/Vimeo link.
-              Files: <video muted loop> idle → controls+sound on
-              expand. Links: background-mode iframe idle →
-              interactive player on expand.
+              autoplayMode controls idle behaviour:
+                "autoplay" (default) — muted loop plays immediately
+                "hover"              — plays only while hovered,
+                                       pauses and rewinds on leave
+                "none"               — stays paused until expanded
+              Whatever the idle behaviour, expanding always gives
+              full controls + sound (files) or the interactive
+              embed (links).
      model  — GLB/glTF rendered by Google's <model-viewer>
               (library lazy-loaded only when a model is present).
               Transparent background by default so the site shows
@@ -26,6 +33,12 @@
               Optional .usdz (iosSource) enables AR Quick Look on
               Apple devices. FBX/OBJ are not browser formats —
               convert to GLB (Blender: File → Export → glTF 2.0).
+
+   Border treatment (media.border, CMS-chosen, default "none"): one
+   of none / stroke / brackets / vignette / badge / scanline — purely
+   the CSS class applied (see 02-home.css). The WebGL clip/mask fix
+   that keeps models inside their hexagon is unconditional and lives
+   in 02-home.css .hex-clip, independent of this choice.
 
    Loaded by content-loader.js after app.js. Also works in the
    file:// fallback (no /data): the inline images in index.html
@@ -95,26 +108,31 @@
     if (vm) {
       var h = vm.hash ? "&h=" + vm.hash : "";
       return {
-        idle:   "https://player.vimeo.com/video/" + vm.id + "?background=1&autoplay=1&muted=1&loop=1&autopause=0&dnt=1" + h,
-        active: "https://player.vimeo.com/video/" + vm.id + "?autoplay=1&autopause=0&dnt=1" + h
+        idlePlaying: "https://player.vimeo.com/video/" + vm.id + "?background=1&autoplay=1&muted=1&loop=1&autopause=0&dnt=1" + h,
+        idlePaused:  "https://player.vimeo.com/video/" + vm.id + "?background=1&autoplay=0&muted=1&loop=1&autopause=0&dnt=1" + h,
+        active:      "https://player.vimeo.com/video/" + vm.id + "?autoplay=1&autopause=0&dnt=1" + h
       };
     }
     var yid = youtubeId(value);
     if (yid) return {
-      idle:   "https://www.youtube.com/embed/" + yid + "?autoplay=1&mute=1&loop=1&playlist=" + yid + "&controls=0&playsinline=1&rel=0&modestbranding=1",
-      active: "https://www.youtube.com/embed/" + yid + "?autoplay=1&controls=1&playsinline=1&rel=0&modestbranding=1"
+      idlePlaying: "https://www.youtube.com/embed/" + yid + "?autoplay=1&mute=1&loop=1&playlist=" + yid + "&controls=0&playsinline=1&rel=0&modestbranding=1",
+      idlePaused:  "https://www.youtube.com/embed/" + yid + "?autoplay=0&mute=1&controls=0&playsinline=1&rel=0&modestbranding=1",
+      active:      "https://www.youtube.com/embed/" + yid + "?autoplay=1&controls=1&playsinline=1&rel=0&modestbranding=1"
     };
-    return { idle: value, active: value };   // already a player/embed URL
+    return { idlePlaying: value, idlePaused: value, active: value };   // already a player/embed URL
   }
 
   /* ---------- media builders ---------- */
   function buildMedia(box, media) {
     var clip = box.querySelector(".hex-clip");
     if (!clip || !media) return;
-    // Lets CSS style per media type: border only on .media-model,
-    // play badge only on .media-video (see 02-home.css).
+    // Lets CSS style per media type (play badge, corner-badge icon)
+    // and per CMS-chosen border style (see 02-home.css).
     box.classList.remove("media-image", "media-video", "media-model");
     box.classList.add("media-" + (media._type || "image"));
+    box.classList.remove("border-none", "border-stroke", "border-brackets",
+                          "border-vignette", "border-badge", "border-scanline");
+    box.classList.add("border-" + (media.border || "none"));
 
     var value = srcValue(media.source);
     if (media._type === "image" || !value) {
@@ -128,25 +146,39 @@
     box._media = { type: media._type };
 
     if (media._type === "video") {
+      var mode = media.autoplayMode || "autoplay";
       if (isFileVideo(value) || (media.source.kind === "path" && value)) {
         var v = document.createElement("video");
-        v.muted = true; v.loop = true; v.autoplay = true;
+        v.muted = true; v.loop = true;
         v.playsInline = true; v.setAttribute("playsinline", "");
-        v.preload = "metadata";
+        v.preload = mode === "autoplay" ? "auto" : "metadata";
         if (media.poster && srcValue(media.poster)) v.poster = srcValue(media.poster);
         v.src = value;
         clip.appendChild(v);
-        box._media.el = v; box._media.kind = "file";
-        var p = v.play(); if (p && p.catch) p.catch(function () {});
+        box._media.el = v; box._media.kind = "file"; box._media.mode = mode;
+        if (mode === "autoplay") {
+          v.autoplay = true;
+          var p = v.play(); if (p && p.catch) p.catch(function () {});
+        } else {
+          // "hover"/"none" start paused. Some browsers show a blank
+          // frame until playback has happened once — nudge a single
+          // play+immediate-pause (still muted, no visible flash) so
+          // the poster-less first frame renders instead of blank.
+          v.addEventListener("loadeddata", function nudge() {
+            v.removeEventListener("loadeddata", nudge);
+            var pp = v.play();
+            if (pp && pp.then) pp.then(function () { v.pause(); }).catch(function () {});
+          });
+        }
       } else {
         var urls = embedUrls(value);
         var f = document.createElement("iframe");
-        f.src = urls.idle;
+        f.src = mode === "autoplay" ? urls.idlePlaying : urls.idlePaused;
         f.allow = "autoplay; fullscreen; picture-in-picture";
         f.setAttribute("frameborder", "0");
         f.tabIndex = -1; f.title = "";
         clip.appendChild(f);
-        box._media.el = f; box._media.kind = "embed"; box._media.urls = urls;
+        box._media.el = f; box._media.kind = "embed"; box._media.urls = urls; box._media.mode = mode;
       }
       box.setAttribute("aria-label", "Play video");
       return;
@@ -215,9 +247,15 @@
     var m = box._media; if (!m || !m.el) return;
     if (m.type === "video" && m.kind === "file") {
       m.el.controls = false; m.el.muted = true; m.el.loop = true;
-      var p = m.el.play(); if (p && p.catch) p.catch(function () {});
+      if (m.mode === "autoplay") {
+        var p = m.el.play(); if (p && p.catch) p.catch(function () {});
+      } else {
+        m.el.pause();
+        try { m.el.currentTime = 0; } catch (e) {}
+      }
     } else if (m.type === "video" && m.kind === "embed") {
-      if (m.el.src !== m.urls.idle) m.el.src = m.urls.idle;
+      var target = m.mode === "autoplay" ? m.urls.idlePlaying : m.urls.idlePaused;
+      if (m.el.src !== target) m.el.src = target;
       m.el.tabIndex = -1;
     } else if (m.type === "model") {
       m.el.removeAttribute("camera-controls");
@@ -261,10 +299,29 @@
       if (box.classList.contains("is-expanded")) return;
       box.classList.add("is-hot");
       cluster.classList.add("has-hover");
+      var m = box._media;
+      if (m && m.type === "video" && m.mode === "hover") {
+        if (m.kind === "file" && m.el) {
+          try { m.el.currentTime = 0; } catch (e) {}
+          var p = m.el.play(); if (p && p.catch) p.catch(function () {});
+        } else if (m.kind === "embed" && m.el && m.urls && m.el.src !== m.urls.idlePlaying) {
+          m.el.src = m.urls.idlePlaying;
+        }
+      }
     });
     box.addEventListener("pointerleave", function () {
       box.classList.remove("is-hot");
       if (!cluster.querySelector(".hexbox.is-hot")) cluster.classList.remove("has-hover");
+      if (box.classList.contains("is-expanded")) return;
+      var m = box._media;
+      if (m && m.type === "video" && m.mode === "hover") {
+        if (m.kind === "file" && m.el) {
+          m.el.pause();
+          try { m.el.currentTime = 0; } catch (e) {}
+        } else if (m.kind === "embed" && m.el && m.urls && m.el.src !== m.urls.idlePaused) {
+          m.el.src = m.urls.idlePaused;
+        }
+      }
     });
     box.addEventListener("click", function (e) {
       if (e.target.closest(".hex-min")) return;

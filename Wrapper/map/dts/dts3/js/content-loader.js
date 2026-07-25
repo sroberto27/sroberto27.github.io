@@ -178,10 +178,19 @@
        { slot, media: { _type: "image"|"video"|"model",
                         source: {kind, value},
                         alt?,                      (image)
+                        border?,                   (any type — see below)
                         poster?: {kind, value},    (video/model, optional)
+                        autoplayMode?,             (video — see below)
                         background?,               (model: "transparent" or CSS color)
                         autoRotate?,               (model)
                         iosSource?: {kind, value}  (model: optional .usdz for AR) } }
+     border: "none" (default) | "stroke" | "brackets" | "vignette" |
+             "badge" | "scanline" — purely visual; the WebGL clip/mask
+             fix in 02-home.css .hex-clip applies to models regardless
+             of this choice.
+     autoplayMode (video only): "autoplay" (default, muted loop) |
+             "hover" (plays only while hovered) | "none" (paused until
+             the hex is clicked/expanded).
      Legacy entries that only have { image: {source, alt} } are migrated
      in place so the Admin Board and hex-media.js see one shape. */
   function normalizeHexEntry(h) {
@@ -195,9 +204,13 @@
       };
     }
     if (!h.media.source) h.media.source = { kind: "path", value: "" };
+    if (h.media.border == null) h.media.border = "none";
     if (h.media._type === "model") {
       if (h.media.background == null) h.media.background = "transparent";
       if (h.media.autoRotate == null) h.media.autoRotate = true;
+    }
+    if (h.media._type === "video" && h.media.autoplayMode == null) {
+      h.media.autoplayMode = "autoplay";
     }
     return h;
   }

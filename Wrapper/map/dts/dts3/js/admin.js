@@ -174,6 +174,23 @@
     parent.appendChild(wrap);
   }
 
+  /* A labelled dropdown from an [value, label] option list. */
+  function fSelect(parent, label, obj, key, options, opts) {
+    opts = opts || {};
+    var wrap = el("div", "adm-field" + (opts.half ? " half" : ""));
+    wrap.appendChild(el("label", "adm-label", label));
+    var sel = el("select", "adm-select");
+    options.forEach(function (o) {
+      var opt = el("option", null, o[1]); opt.value = o[0]; sel.appendChild(opt);
+    });
+    sel.value = obj[key] == null ? options[0][0] : obj[key];
+    sel.addEventListener("change", function () { obj[key] = sel.value; markDirty(); if (opts.onChange) opts.onChange(); });
+    wrap.appendChild(sel);
+    if (opts.hint) wrap.appendChild(el("p", "adm-hint", opts.hint));
+    parent.appendChild(wrap);
+    return sel;
+  }
+
   /* A file reference that can be a local path or an external link. */
   function fSource(parent, label, sourceObj, opts) {
     opts = opts || {};
@@ -268,6 +285,20 @@
   /* Per-hexagon media editor: a type dropdown that swaps in the
      fields for image / video / 3D model. Edits h.media in place
      (the canonical shape content-loader.js and hex-media.js read). */
+  var BORDER_OPTIONS = [
+    ["none", "No border (default)"],
+    ["stroke", "Thin outline"],
+    ["brackets", "Corner brackets"],
+    ["vignette", "Inner vignette"],
+    ["badge", "Corner type badge"],
+    ["scanline", "Hover scan-line"]
+  ];
+  var AUTOPLAY_OPTIONS = [
+    ["autoplay", "Autoplay (muted loop)"],
+    ["hover", "Play on hover"],
+    ["none", "Don\u2019t autoplay (play on click)"]
+  ];
+
   function hexMediaEditor(parent, h) {
     // Migrate legacy image-only entries to the media shape.
     if (window.DTS_NORMALIZE_HEX) window.DTS_NORMALIZE_HEX(h);
@@ -277,6 +308,7 @@
                   source: legacy.source || { kind: "path", value: "" },
                   alt: legacy.alt || "" };
     }
+    if (h.media.border == null) h.media.border = "none";
 
     var card = el("div", "adm-listitem");
     var bar = el("div", "adm-itembar");
@@ -301,15 +333,28 @@
     function draw() {
       fields.innerHTML = "";
       var m = h.media;
+
+      // Border style — applies to any media type, defaults to none.
+      // The clip/mask fix that keeps 3D models inside their hexagon
+      // (see 02-home.css .hex-clip) is always on regardless of this
+      // choice; this control is purely the visible edge treatment.
+      fSelect(fields, "Border style", m, "border", BORDER_OPTIONS, {
+        hint: "\u201cCorner type badge\u201d shows a cube for models, a camera for videos, a photo icon for images."
+      });
+
       if (m._type === "image") {
         fSource(fields, "Image (site path or external link)", m.source, { imagePreview: true });
         if (m.alt == null) m.alt = "";
         fText(fields, "Alt text", m, "alt");
       } else if (m._type === "video") {
+        if (m.autoplayMode == null) m.autoplayMode = "autoplay";
+        fSelect(fields, "Autoplay behavior", m, "autoplayMode", AUTOPLAY_OPTIONS, {
+          hint: "\u201cPlay on hover\u201d and \u201cDon\u2019t autoplay\u201d both show a still first frame at rest \u2014 add a poster below for the cleanest result."
+        });
         fSource(fields, "Video — local file (assets/…​.mp4/.webm) or YouTube/Vimeo link", m.source,
-                { hint: "Plays silently on a loop inside the hexagon; visitors click the hexagon to expand it with sound and controls." });
+                { hint: "Visitors click the hexagon to expand it with sound and full controls, whatever the autoplay behavior above." });
         ensure("poster", { kind: "path", value: "" });
-        fSource(fields, "Poster image (optional, shown while the video loads)", m.poster, { imagePreview: true });
+        fSource(fields, "Poster image (optional, shown before playback starts)", m.poster, { imagePreview: true });
       } else if (m._type === "model") {
         fSource(fields, "3D model file (.glb / .gltf)", m.source,
                 { hint: "GLB is the web format. FBX/OBJ won\u2019t load directly \u2014 export as glTF 2.0 from Blender first." });
@@ -332,6 +377,7 @@
         if (m.background == null) m.background = "transparent";
         if (m.autoRotate == null) m.autoRotate = true;
       }
+      if (m._type === "video" && m.autoplayMode == null) m.autoplayMode = "autoplay";
       markDirty(); draw();
     });
     draw();

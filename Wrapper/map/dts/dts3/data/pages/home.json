@@ -21,7 +21,9 @@
         "source": {
           "kind": "url",
           "value": "https://vimeo.com/1210236846/b81cbc0210"
-        }
+        },
+        "border": "none",
+        "autoplayMode": "autoplay"
       }
     },
     {
@@ -33,7 +35,8 @@
           "value": "assets/Buildings.glb"
         },
         "background": "transparent",
-        "autoRotate": true
+        "autoRotate": true,
+        "border": "none"
       }
     },
     {
@@ -44,7 +47,8 @@
           "kind": "path",
           "value": "assets/dtsBR.png"
         },
-        "alt": "Virgin Hotels experience"
+        "alt": "Virgin Hotels experience",
+        "border": "none"
       }
     },
     {
@@ -56,7 +60,8 @@
           "value": "assets/ToolBox.glb"
         },
         "background": "transparent",
-        "autoRotate": true
+        "autoRotate": true,
+        "border": "none"
       }
     }
   ],

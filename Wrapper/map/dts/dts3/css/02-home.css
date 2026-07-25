@@ -228,20 +228,24 @@
   .hexbox{ transition:opacity .2s ease; }
 }
 
-/* ---------- Hex border (3D models + videos) ----------
-   A separate, UNCLIPPED svg sibling drawn on top of .hex-clip, at the
-   exact hex silhouette. Hidden by default; js/hex-media.js adds
-   .media-model / .media-video to the .hexbox for those media types.
-   Models need it — transparent background + a WebGL layer that can
-   slip past clip-path (see .hex-clip). Videos get it too so every
-   interactive (non-static-image) hex reads as its own contained
-   frame, especially embeds whose player chrome can letterbox
-   unevenly against the hex edge. Plain images stay border-free —
-   they already read as a complete, filled hexagon on their own.
-   Light grey keeps it a quiet technical affordance rather than a
-   decorative frame. vector-effect="non-scaling-stroke" (set in
-   index.html) keeps the stroke a constant pixel width even though
-   preserveAspectRatio="none" stretches the viewBox. */
+/* ============================================================
+   HEX BORDER TREATMENTS  (CMS-chosen, default none)
+   ------------------------------------------------------------
+   js/hex-media.js reads media.border from data/pages/home.json and
+   sets exactly one .border-{none|stroke|brackets|vignette|badge|
+   scanline} class on the .hexbox. Every treatment below is hidden
+   unless its class matches — "none" means nothing renders. All are
+   drawn on UNCLIPPED siblings of .hex-clip (not inside it), because
+   clip-path clips children — this is also why they layer cleanly
+   over any media type.
+
+   NOTE: none of this is what keeps a 3D model inside its hexagon.
+   That's handled unconditionally by .hex-clip's clip-path + mask-image
+   further up this file — these treatments are purely decorative and
+   safe to leave on "none".
+   ============================================================ */
+
+/* ---- 1. Stroke — thin outline traced on the exact hex edge ---- */
 .hex-border{
   position:absolute; inset:0;
   width:100%; height:100%;
@@ -251,29 +255,106 @@
   opacity:0;
   transition:opacity .3s ease;
 }
-.hexbox.media-model .hex-border,
-.hexbox.media-video .hex-border{ opacity:1; }
+.hexbox.border-stroke .hex-border{ opacity:1; }
 .hex-border polygon{
   fill:none;
   stroke:rgba(255,255,255,.45);
   stroke-width:1.5;
   transition:stroke .3s ease, stroke-width .3s ease;
 }
-.hexbox.media-model.is-hot .hex-border polygon,
-.hexbox.media-model.is-expanded .hex-border polygon,
-.hexbox.media-video.is-hot .hex-border polygon,
-.hexbox.media-video.is-expanded .hex-border polygon{
+.hexbox.border-stroke.is-hot .hex-border polygon,
+.hexbox.border-stroke.is-expanded .hex-border polygon{
   stroke:rgba(255,255,255,.75);
   stroke-width:2;
 }
+
+/* ---- 2. Corner brackets — HUD-style marks at the two top corners,
+   built from short segments along the real hex edges meeting each
+   vertex (see index.html), not a full outline. ---- */
+.hex-brackets{
+  position:absolute; inset:0;
+  width:100%; height:100%;
+  overflow:visible;
+  pointer-events:none;
+  z-index:1;
+  opacity:0;
+  transition:opacity .3s ease;
+}
+.hexbox.border-brackets .hex-brackets{ opacity:1; }
+.hex-brackets path{
+  fill:none;
+  stroke:rgba(255,255,255,.6);
+  stroke-width:2;
+  stroke-linecap:round;
+  vector-effect:non-scaling-stroke;
+  transition:stroke .3s ease, stroke-width .3s ease;
+}
+.hexbox.border-brackets.is-hot .hex-brackets path,
+.hexbox.border-brackets.is-expanded .hex-brackets path{
+  stroke:rgba(255,255,255,.9);
+  stroke-width:2.5;
+}
+
+/* ---- 3. Inner vignette — soft radial darkening toward the hex
+   edge, no hard line. Contains the media like a photo fading into a
+   mat rather than a bordered box; also quietly hides any stray pixel
+   at the very edge of transparent-background model renders. ---- */
+.hex-vignette{
+  position:absolute; inset:0;
+  pointer-events:none;
+  z-index:1;
+  opacity:0;
+  background:radial-gradient(ellipse at center, transparent 42%, rgba(6,9,16,.8) 100%);
+  transition:opacity .3s ease;
+}
+.hexbox.border-vignette .hex-vignette{ opacity:1; }
+
+/* ---- 4. Corner type-badge — a small icon signalling what the hex
+   holds, instead of outlining the shape at all. The three icons sit
+   in the same DOM slot; CSS reveals the one matching the hex's
+   .media-* class (set by js/hex-media.js from the same config that
+   picked "badge" as the border style). ---- */
+.hex-badge{
+  position:absolute; right:14%; bottom:10%;
+  width:24px; height:24px; border-radius:50%;
+  display:none; align-items:center; justify-content:center;
+  background:rgba(8,12,24,.72);
+  color:#fff;
+  pointer-events:none;
+  z-index:2;
+}
+.hexbox.border-badge .hex-badge{ display:flex; }
+.hex-badge-icon{ display:none; }
+.hexbox.border-badge.media-model .hex-badge-cube{ display:block; }
+.hexbox.border-badge.media-video .hex-badge-camera{ display:block; }
+.hexbox.border-badge.media-image .hex-badge-image{ display:block; }
+
+/* ---- 5. Hover scan-line — nothing visible at rest; a thin light
+   sweeps once across the hex on hover, giving a moment of motion at
+   the point of engagement instead of a static frame. ---- */
+.hex-scanline{
+  position:absolute; inset:0;
+  overflow:hidden;
+  pointer-events:none;
+  z-index:1;
+}
+.hex-scanline::before{
+  content:"";
+  position:absolute; top:0; bottom:0; left:-30%;
+  width:22%;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.5), transparent);
+  transition:left .7s ease;
+}
+.hexbox.border-scanline.is-hot .hex-scanline::before{ left:110%; }
 
 /* ---------- Video play badge ----------
    A small translucent circular play icon, centred, shown only on
    hexes whose media is a video (js/hex-media.js adds .media-video).
    It's the only cue that a hexagon is a video rather than a photo —
    without it an idle muted looping clip is indistinguishable from a
-   still image. Fades out once expanded, since native player controls
-   take over. */
+   still image. Independent of the border-style choice above — a
+   video always gets this regardless of which (if any) border is set.
+   Fades out once expanded, since native player controls take over. */
 .hex-play{
   position:absolute; left:50%; top:50%;
   transform:translate(-50%,-50%);
