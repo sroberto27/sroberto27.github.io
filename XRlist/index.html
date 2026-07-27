@@ -1,12 +1,13 @@
 <!DOCTYPE html>
-<html lang="en"><head>
+<html lang="en">
+<head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>VR/XR Log — headsets tried and untried</title>
 <meta name="description" content="A running log of every VR, AR and XR headset I've worn, and the ones still on the list.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans+Condensed:wght@600;700&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
   --void:#14181d;
@@ -277,6 +278,13 @@ body.owner .owner-only{display:flex}
 
 footer{border-top:1px solid var(--line-soft);padding:26px 0 96px;color:var(--ink-dim);font-size:12.5px}
 footer p{margin:0 0 8px}
+.linkish{background:none;border:0;padding:0;color:var(--coat);text-decoration:underline;text-underline-offset:2px;font:inherit}
+.linkish:hover{color:var(--amber)}
+.radio-row{display:flex;gap:10px;align-items:flex-start;padding:11px 12px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;cursor:pointer;background:var(--panel-2)}
+.radio-row:hover{border-color:#3d4855}
+.radio-row input{margin:3px 0 0;accent-color:var(--amber);flex:none}
+.radio-row b{display:block;font-weight:600;font-size:13.5px}
+.radio-row small{color:var(--ink-dim);font-size:12.5px;line-height:1.5}
 
 @media (max-width:640px){
   .hero{padding:34px 0 22px}
@@ -295,7 +303,7 @@ footer p{margin:0 0 8px}
 }
 </style>
 </head>
-<body class="">
+<body>
 
 <!-- ============ device data: this block is what gets rewritten on save ============ -->
 <script id="device-data" type="application/json">
@@ -1536,21 +1544,34 @@ footer p{margin:0 0 8px}
 </script>
 <!-- ============ end device data ============ -->
 
+<!-- ============ site config: title, wording and the edit password ============ -->
+<script id="site-config" type="application/json">
+{
+ "title": "VR/XR Log",
+ "heading": "Every VR, AR and XR headset I\u2019ve had on my face \u2014 and the ones still waiting.",
+ "sub": "Tick one off when I finally get to try it. Everyone else gets the read-only view.",
+ "salt": "vrxdeck::",
+ "hash": "1bec28ffd871388545080384d76fb691c4f6c5e84cf3fd70bffd9c9555296935"
+}
+</script>
+<!-- ============ end site config ============ -->
+
 <div class="bar">
   <div class="bar-in">
-    <div class="brand"><i></i>VR/XR Log</div>
+    <div class="brand"><i></i><span id="brandName">VR/XR Log</span></div>
     <button class="btn btn-sm" id="btnCompareOpen">Compare</button>
-    <button class="btn btn-sm btn-key" id="btnLock">Lock editing</button>
+    <button class="btn btn-sm btn-key" id="btnLock">Unlock to edit</button>
   </div>
 </div>
 
 <div class="owner-bar">
   <div class="owner-in">
     <span class="dirty-dot"></span>
-    <span id="ownerStatus" class="eyebrow">Unsaved edits in this browser only — download and commit index.html to publish them</span>
-    <button class="btn btn-sm btn-solid" id="btnPublish" disabled="">Building…</button>
+    <span id="ownerStatus" class="eyebrow">Editing enabled</span>
+    <button class="btn btn-sm btn-solid" id="btnPublish">Save &amp; download index.html</button>
     <button class="btn btn-sm" id="btnAdd">Add device</button>
-    <button class="btn btn-sm" id="btnFetchAll">Fetching 56/56…</button>
+    <button class="btn btn-sm" id="btnFetchAll">Fetch missing images</button>
+    <button class="btn btn-sm" id="btnPassword">Change password</button>
     <button class="btn btn-sm" id="btnExportJson">Export JSON</button>
     <button class="btn btn-sm" id="btnImportJson">Import JSON</button>
     <button class="btn btn-sm btn-ghost" id="btnDiscard">Discard local edits</button>
@@ -1568,24 +1589,24 @@ footer p{margin:0 0 8px}
       </div>
       <div class="hero-side">
         <div class="eyebrow">Headsets worn / headsets known</div>
-        <h1>Every VR, AR and XR headset I’ve had on my face — and the ones still waiting.</h1>
-        <p>Tick one off when I finally get to try it. Everyone else gets the read-only view.</p>
+        <h1 id="pgHeading">Every VR, AR and XR headset I&rsquo;ve had on my face &mdash; and the ones still waiting.</h1>
+        <p id="pgSub">Tick one off when I finally get to try it. Everyone else gets the read-only view.</p>
       </div>
     </div>
 
     <div class="fov">
-      <div class="fov-track" role="img" aria-label="22 of 56 tried, 39 percent" id="fovTrack">
+      <div class="fov-track" role="img" aria-label="Progress through the list" id="fovTrack">
         <div class="fov-fill" id="fovFill"></div>
         <div class="fov-ticks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
       </div>
       <div class="fov-legend">
-        <span class="eyebrow" id="legendLeft"></span>
-        <span class="eyebrow" id="legendRight"></span>
+        <span class="eyebrow" id="legendLeft">0 tried</span>
+        <span class="eyebrow" id="legendRight">0 remaining</span>
       </div>
     </div>
 
     <div class="controls">
-      <input class="field" id="q" type="search" placeholder="Search name, brand, notes or specs…" aria-label="Search devices">
+      <input class="field" id="q" type="search" placeholder="Search name, brand, notes or specs&hellip;" aria-label="Search devices">
       <div class="seg" role="group" aria-label="Filter by status">
         <button data-status="all" aria-pressed="true">All</button>
         <button data-status="tried" aria-pressed="false">Tried</button>
@@ -1594,7 +1615,7 @@ footer p{margin:0 0 8px}
       <select class="field" id="cat" aria-label="Filter by category"></select>
       <select class="field" id="sort" aria-label="Sort order">
         <option value="status">Sort: status</option>
-        <option value="name">Sort: name A–Z</option>
+        <option value="name">Sort: name A&ndash;Z</option>
         <option value="new">Sort: newest first</option>
         <option value="old">Sort: oldest first</option>
         <option value="brand">Sort: brand</option>
@@ -1610,6 +1631,7 @@ footer p{margin:0 0 8px}
 <footer class="wrap">
   <p>Specifications are a best-effort starting point and are not guaranteed accurate. Every card links out to <a href="https://vr-compare.com/" target="_blank" rel="noopener">VRcompare</a> so you can check the real numbers.</p>
   <p>Built as a single HTML file. Nothing is sent anywhere; the list you see is whatever is committed to the repository.</p>
+  <p>Want your own? Clone the repo, then <button class="linkish" id="btnSetup">reset this page and make it yours</button>.</p>
 </footer>
 
 <!-- compare tray -->
@@ -1617,7 +1639,7 @@ footer p{margin:0 0 8px}
   <div class="tray-in">
     <span class="eyebrow">Comparing</span>
     <span id="trayChips" style="display:flex;gap:7px;flex-wrap:wrap"></span>
-    <button class="btn btn-sm btn-solid" id="btnCompareShow" style="margin-left:auto" disabled="">Show table</button>
+    <button class="btn btn-sm btn-solid" id="btnCompareShow" style="margin-left:auto">Show table</button>
     <button class="btn btn-sm" id="btnCompareClear">Clear</button>
   </div>
 </div>
@@ -1627,7 +1649,7 @@ footer p{margin:0 0 8px}
   <div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <div class="modal-head">
       <h2 id="modalTitle"></h2>
-      <button class="x" id="modalClose" aria-label="Close">×</button>
+      <button class="x" id="modalClose" aria-label="Close">&times;</button>
     </div>
     <div class="modal-body" id="modalBody"></div>
     <div class="modal-foot" id="modalFoot"></div>
@@ -1639,6 +1661,10 @@ footer p{margin:0 0 8px}
 <script>
 (function(){
 "use strict";
+
+/* Snapshot the file exactly as it was authored, before the app touches anything.
+   Saving rebuilds from this, so a save can never bake in mid-click button states. */
+var PRISTINE = "<!DOCTYPE html>\n" + document.documentElement.outerHTML;
 
 /* ============================================================
    0. tiny SHA-256 (works over file:// too, unlike crypto.subtle)
@@ -1683,13 +1709,23 @@ function sha256(ascii){
   return result;
 }
 
-/* Salted hash of the edit password. Changing the password = replace this string.
-   This gate stops casual fiddling on the live page. It is not real security:
-   anyone can read this file. That is fine, because edits only ever become
-   public when the owner commits a regenerated index.html to the repo. */
-var PASS_HASH = "1bec28ffd871388545080384d76fb691c4f6c5e84cf3fd70bffd9c9555296935";
-var PASS_SALT = "vrxdeck::";
-var STORE_KEY = "vrxlog.draft.v1";
+/* The password lives in the site-config block above, stored as a salted hash so the
+   plain text isn't sitting in the file. This gate stops casual fiddling on the live
+   page; it is not real security, since anyone can read this file. That is fine,
+   because edits only become public when a regenerated index.html is committed. */
+
+/* Namespaced per path, so two projects on the same github.io account don't collide. */
+var STORE_KEY = "vrxlog.draft:" + location.pathname;
+
+function randomSalt(){
+  try{
+    var a = new Uint8Array(8);
+    window.crypto.getRandomValues(a);
+    return Array.prototype.map.call(a, function(b){ return ("0"+b.toString(16)).slice(-2); }).join("") + "::";
+  }catch(e){
+    return Math.random().toString(36).slice(2) + Date.now().toString(36) + "::";
+  }
+}
 
 /* ============================================================
    1. state
@@ -1702,7 +1738,9 @@ var SPEC_FIELDS = [
 var CATEGORIES = ["Standalone VR","PC VR","Console VR","Enterprise / Pro","AR & Smart Glasses","Phone-based"];
 
 var baseline = JSON.parse(document.getElementById('device-data').textContent);
+var baseConfig = JSON.parse(document.getElementById('site-config').textContent);
 var state = {
+  config: JSON.parse(JSON.stringify(baseConfig)),
   devices: clone(baseline),
   owner: false,
   dirty: false,
@@ -1734,18 +1772,22 @@ function lsDel(k){ try { window.localStorage.removeItem(k); } catch(e){} }
   if(!raw) return;
   try{
     var d = JSON.parse(raw);
-    if(Array.isArray(d) && d.length){
+    if(Array.isArray(d)){                 /* drafts written by the older version */
+      if(!d.length) return;
       state.devices = d;
-      state.dirty = true;
-      document.body.classList.add("dirty");
-    }
+    } else if(d && Array.isArray(d.devices)){
+      state.devices = d.devices;
+      if(d.config) state.config = d.config;
+    } else return;
+    state.dirty = true;
+    document.body.classList.add("dirty");
   }catch(e){}
 })();
 
 function persist(){
   state.dirty = true;
   document.body.classList.add("dirty");
-  lsSet(STORE_KEY, JSON.stringify(state.devices));
+  lsSet(STORE_KEY, JSON.stringify({devices: state.devices, config: state.config}));
   updateOwnerStatus();
 }
 function updateOwnerStatus(){
@@ -1804,7 +1846,9 @@ function render(){
   var grid = $("#grid");
 
   if(!list.length){
-    grid.innerHTML = '<div class="empty"><strong>Nothing matches that.</strong>Clear the search or switch the filter back to All.</div>';
+    grid.innerHTML = state.devices.length
+      ? '<div class="empty"><strong>Nothing matches that.</strong>Clear the search or switch the filter back to All.</div>'
+      : '<div class="empty"><strong>The list is empty.</strong>Unlock editing, then use Add device to start building it.</div>';
   } else {
     grid.innerHTML = list.map(cardHtml).join("");
   }
@@ -2153,7 +2197,7 @@ $("#btnLock").addEventListener("click", function(){
 
   function attempt(){
     var v = $("#pw").value;
-    if(sha256(PASS_SALT + v) === PASS_HASH){
+    if(state.config.hash && sha256(state.config.salt + v) === state.config.hash){
       state.owner = true;
       document.body.classList.add("owner");
       $("#btnLock").textContent = "Lock editing";
@@ -2185,7 +2229,7 @@ function download(filename, text, mime){
   a.href = URL.createObjectURL(blob);
   a.download = filename;
   document.body.appendChild(a); a.click();
-  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+  setTimeout(function(){ try{ URL.revokeObjectURL(a.href); }catch(e){} a.remove(); }, 1000);
 }
 
 $("#btnExportJson").addEventListener("click", function(){
@@ -2216,59 +2260,137 @@ $("#btnDiscard").addEventListener("click", function(){
   if(!confirm("Throw away local edits and go back to the published list?")) return;
   lsDel(STORE_KEY);
   state.devices = clone(baseline);
+  state.config = JSON.parse(JSON.stringify(baseConfig));
   state.dirty = false;
   document.body.classList.remove("dirty");
-  updateOwnerStatus(); render();
+  applyConfig(); updateOwnerStatus(); render();
   toast("Back to the published list.");
 });
 
-/* Rebuild this same file with the current data baked into the JSON block. */
-function bakeHtml(sourceHtml){
-  var json = JSON.stringify(state.devices, null, 1).replace(/</g, "\\u003c");
-  var open = '<script id="device-data" type="application/json">';
-  var i = sourceHtml.indexOf(open);
-  if(i === -1) return null;
-  var j = sourceHtml.indexOf("<" + "/script>", i);
-  if(j === -1) return null;
-  return sourceHtml.slice(0, i + open.length) + "\n" + json + "\n" + sourceHtml.slice(j);
+/* Rebuild this file from the pristine snapshot with the current data and
+   config baked into their JSON blocks. Nothing else in the file changes. */
+function safeJson(o){
+  return JSON.stringify(o, null, 1).replace(/</g, "\\u003c");
 }
-
-function currentHtmlFallback(){
-  var doc = document.documentElement.cloneNode(true);
-  /* strip everything the app rendered at runtime so the file goes back to a clean shell */
-  var blanks = ["#grid","#trayChips","#modalBody","#modalFoot","#cat"];
-  blanks.forEach(function(sel){ var n = doc.querySelector(sel); if(n) n.innerHTML = ""; });
-  var t = doc.querySelector("#modalTitle"); if(t) t.textContent = "";
-  var sc = doc.querySelector("#scrim"); if(sc) sc.className = "scrim";
-  var tr = doc.querySelector("#tray"); if(tr) tr.className = "tray";
-  var to = doc.querySelector("#toast"); if(to){ to.className = "toast"; to.textContent = ""; }
-  var ff = doc.querySelector("#fovFill"); if(ff) ff.removeAttribute("style");
-  var bd = doc.querySelector("body"); if(bd){ bd.className = ""; bd.removeAttribute("style"); }
-  ["#tallyM","#tallyL","#tallyR"].forEach(function(s){ var n = doc.querySelector(s); if(n) n.textContent = "0"; });
-  ["#count","#legendLeft","#legendRight"].forEach(function(s){ var n = doc.querySelector(s); if(n) n.textContent = ""; });
-  var q = doc.querySelector("#q"); if(q) q.removeAttribute("value");
-  return "<!DOCTYPE html>\n" + doc.outerHTML;
+function replaceBlock(html, id, jsonText){
+  var open = '<script id="' + id + '" type="application/json">';
+  var i = html.indexOf(open);
+  if(i === -1) return null;
+  var j = html.indexOf("<" + "/script>", i);
+  if(j === -1) return null;
+  return html.slice(0, i + open.length) + "\n" + jsonText + "\n" + html.slice(j);
+}
+function bake(devices, config){
+  var h = replaceBlock(PRISTINE, "device-data", safeJson(devices));
+  if(!h) return null;
+  return replaceBlock(h, "site-config", safeJson(config));
 }
 
 $("#btnPublish").addEventListener("click", function(){
-  var btn = this;
-  btn.disabled = true; btn.textContent = "Building\u2026";
-  function finish(html){
-    var baked = bakeHtml(html);
-    btn.disabled = false; btn.textContent = "Save & download index.html";
-    if(!baked){ toast("Couldn't rebuild the file. Use Export JSON instead."); return; }
-    download("index.html", baked, "text/html;charset=utf-8");
-    state.dirty = false;
-    document.body.classList.remove("dirty");
-    lsDel(STORE_KEY);
-    updateOwnerStatus();
-    toast("Downloaded. Replace index.html in your repo to publish.");
-  }
-  fetch(location.href, {cache:"no-store"})
-    .then(function(r){ return r.text(); })
-    .then(finish)
-    .catch(function(){ finish(currentHtmlFallback()); });
+  var html = bake(state.devices, state.config);
+  if(!html){ toast("Couldn't rebuild the file. Use Export JSON instead."); return; }
+  download("index.html", html, "text/html;charset=utf-8");
+  state.dirty = false;
+  document.body.classList.remove("dirty");
+  lsDel(STORE_KEY);
+  updateOwnerStatus();
+  toast("Downloaded. Replace index.html in your repo to publish.");
 });
+
+/* ============================================================
+   7b. change password (owner)
+   ============================================================ */
+$("#btnPassword").addEventListener("click", function(){
+  openModal("Change password",
+    '<div class="form-grid">' +
+      '<label class="f span-all"><span>New password</span><input id="np1" type="password" autocomplete="new-password"></label>' +
+      '<label class="f span-all"><span>Repeat it</span><input id="np2" type="password" autocomplete="new-password"></label>' +
+    '</div>' +
+    '<p class="hint">The new password only takes effect in the published page once you save and commit <code>index.html</code>. Write it down \u2014 there is no recovery, though you can always run a reset.</p>',
+    '<button class="btn btn-sm btn-solid" id="npGo">Set password</button>' +
+    '<button class="btn btn-sm" id="npCancel">Cancel</button>');
+
+  $("#npCancel").addEventListener("click", closeModal);
+  $("#npGo").addEventListener("click", function(){
+    var a = $("#np1").value, b = $("#np2").value;
+    if(a.length < 4){ toast("Use at least four characters."); return; }
+    if(a !== b){ toast("The two entries don't match."); return; }
+    state.config.salt = randomSalt();
+    state.config.hash = sha256(state.config.salt + a);
+    persist();
+    closeModal();
+    toast("Password changed. Save and commit index.html to make it live.");
+    /* keep the current session unlocked under the new password */
+  });
+});
+
+/* ============================================================
+   7c. reset / make your own copy
+   ============================================================ */
+function openSetup(){
+  var c = state.config;
+  openModal("Make this page your own",
+    '<p class="hint" style="margin:0 0 16px">Everything below is written into a fresh <code>index.html</code> that you download and commit. Your own copy, your own password. This never touches the published page you are looking at.</p>' +
+    '<div class="form-grid">' +
+      '<label class="f span-all"><span>Page name</span><input id="suTitle" value="' + esc(c.title) + '"></label>' +
+      '<label class="f span-all"><span>Headline</span><input id="suHeading" value="' + esc(c.heading) + '"></label>' +
+      '<label class="f span-all"><span>Sub-line</span><input id="suSub" value="' + esc(c.sub) + '"></label>' +
+    '</div>' +
+    '<fieldset class="specset"><legend>What to start from</legend>' +
+      '<label class="radio-row"><input type="radio" name="sumode" value="fresh" checked>' +
+        '<span><b>Fresh start, keep the catalogue</b><small>Keeps all ' + state.devices.length +
+        ' devices with their specs and images. Clears every tried mark and every note, so the list is yours to fill in.</small></span></label>' +
+      '<label class="radio-row"><input type="radio" name="sumode" value="asis">' +
+        '<span><b>Keep everything as it is</b><small>Devices, tried marks and notes all stay. Use this if you just want to change the password or the wording.</small></span></label>' +
+      '<label class="radio-row"><input type="radio" name="sumode" value="empty">' +
+        '<span><b>Empty list</b><small>Removes all devices. You start from nothing and add your own.</small></span></label>' +
+    '</fieldset>' +
+    '<div class="form-grid" style="margin-top:16px">' +
+      '<label class="f"><span>Your password</span><input id="suP1" type="password" autocomplete="new-password"></label>' +
+      '<label class="f"><span>Repeat it</span><input id="suP2" type="password" autocomplete="new-password"></label>' +
+    '</div>',
+    '<button class="btn btn-sm btn-solid" id="suGo">Build my copy</button>' +
+    '<button class="btn btn-sm" id="suCancel">Cancel</button>');
+
+  $("#suCancel").addEventListener("click", closeModal);
+  $("#suGo").addEventListener("click", function(){
+    var a = $("#suP1").value, b = $("#suP2").value;
+    if(a.length < 4){ toast("Use a password of at least four characters."); return; }
+    if(a !== b){ toast("The two passwords don't match."); return; }
+
+    var mode = modal.querySelector('input[name="sumode"]:checked').value;
+    var devices;
+    if(mode === "empty"){
+      devices = [];
+    } else {
+      devices = clone(state.devices);
+      if(mode === "fresh"){
+        devices.forEach(function(d){ d.tried = false; d.note = ""; });
+      }
+    }
+
+    var salt = randomSalt();
+    var config = {
+      title:   $("#suTitle").value.trim() || "VR/XR Log",
+      heading: $("#suHeading").value.trim(),
+      sub:     $("#suSub").value.trim(),
+      salt:    salt,
+      hash:    sha256(salt + a)
+    };
+
+    var html = bake(devices, config);
+    if(!html){ toast("Couldn't build the file."); return; }
+    download("index.html", html, "text/html;charset=utf-8");
+    closeModal();
+
+    openModal("Your copy is downloading",
+      '<p style="margin:0 0 12px">Put the downloaded <code>index.html</code> into your own repository, replacing the one that is there, and enable GitHub Pages on it.</p>' +
+      '<p class="hint" style="margin:0">Your new password is already baked into that file. The page you are looking at right now is unchanged \u2014 reload it to go back to normal.</p>',
+      '<button class="btn btn-sm btn-solid" id="suDone">Got it</button>');
+    $("#suDone").addEventListener("click", closeModal);
+  });
+}
+$("#btnSetup").addEventListener("click", openSetup);
 
 /* ============================================================
    8. controls
@@ -2309,11 +2431,21 @@ function toast(msg){
   toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 2600);
 }
 
+function applyConfig(){
+  var c = state.config;
+  document.title = c.title + " \u2014 headsets tried and untried";
+  $("#brandName").textContent = c.title;
+  $("#pgHeading").textContent = c.heading;
+  $("#pgSub").textContent = c.sub;
+}
+
+applyConfig();
 updateOwnerStatus();
 render();
 
+if(/[?&]setup\b/.test(location.search)) openSetup();
+
 })();
 </script>
-
-
-</body></html>
+</body>
+</html>
