@@ -1,0 +1,306 @@
+{
+  "_id": "gis.sources",
+  "_type": "gisSources",
+  "id": "iberia-coastal-sources",
+  "generatedFrom": "docs/plans/gis/07-GIS-DATA-SOURCES.md, Phase 0 verification",
+  "lastVerified": "2026-08-01",
+  "verifiedBy": "Claude (automated verification pass — see notes on items requiring human follow-up)",
+
+  "corsSpike": {
+    "summary": "Both target ArcGIS Server instances return permissive, origin-reflecting CORS headers on real /query and /exportImage calls, not just on service-root probes. esriFeature (client-side interactive vector) is viable directly against both servers — the esriDynamic/harvest fallback is not required as a default, only as an option for oversized or historical layer sets.",
+    "servers": [
+      {
+        "host": "maps.iberiagov.net",
+        "arcgisVersion": "11.4",
+        "authRequired": false,
+        "corsResult": "PASS — Access-Control-Allow-Origin reflects request Origin, Access-Control-Allow-Credentials: true, Vary: Origin",
+        "testedEndpoints": [
+          "GET /server/rest/services?f=json (root)",
+          "GET /server/rest/services/Govt_Units/Updated_Parish_Boundary/MapServer/0/query?f=geojson (feature query, returned real geometry)",
+          "GET /server/rest/services/Imagery/Aerials2024/ImageServer/exportImage?f=image (image export)"
+        ],
+        "testedWithOriginHeader": "http://localhost:8000",
+        "verifiedDate": "2026-08-01"
+      },
+      {
+        "host": "cimsgeo3.coastal.louisiana.gov",
+        "arcgisVersion": "10.81",
+        "authRequired": false,
+        "corsResult": "PASS — same origin-reflection behavior as the Iberia server",
+        "testedEndpoints": [
+          "GET /arcgis/rest/services?f=json (root)",
+          "GET /arcgis/rest/services/mp/MasterPlan2023_RP/MapServer/0/query?f=geojson (feature query, returned real project data)",
+          "GET /arcgis/rest/services/prot_rest/CPRA_Projects/MapServer/0/query?f=geojson (feature query)",
+          "GET /arcgis/rest/services/lasard/shoreline/MapServer/0/query?f=geojson (feature query)"
+        ],
+        "testedWithOriginHeader": "http://localhost:8000",
+        "verifiedDate": "2026-08-01"
+      }
+    ],
+    "method": "curl -D - -H \"Origin: http://localhost:8000\" against real query/export endpoints on each server, inspecting response headers for Access-Control-Allow-Origin/Access-Control-Allow-Credentials. This is a decisive, reproducible proxy for browser CORS enforcement (the browser applies the exact same header check); a live-browser confirmation from the actual served site is a cheap final sanity check worth doing once in Phase 3 but is not expected to change this result.",
+    "conclusion": "Default sourceType for interactive Iberia/CIMS feature layers can be esriFeature. Reserve esriDynamic for layers that are visually dense but don't need per-feature interactivity (e.g., yearly historical shoreline contour stacks), and reserve harvested geojson for anything CORS-blocked in the future or for the parish boundary clip mask itself (small, static, worth freezing rather than re-fetching)."
+  },
+
+  "iberiaParishServer": {
+    "base": "https://maps.iberiagov.net/server/rest/services",
+    "restrictedFolders": ["AddressLocators", "DamageAssessment", "Elevation", "Sheriff_IPSO", "Utilities"],
+    "restrictedNote": "These five folders return {\"error\":{\"code\":499,\"message\":\"Token Required\"}} — confirmed not publicly accessible. Do not reference them in any map config.",
+    "publicFolders": ["Cemeteries", "E911", "Econ", "EmergencyResponse", "Fire", "Flood", "Govt_Units", "Hosted", "Hydrography", "Imagery", "Infrastructure", "Mosquito", "Parcels", "PublicWorks", "Registrar_of_Voters", "SewerageDistrict1", "WaterDist3", "Zoning"]
+  },
+
+  "cimsServer": {
+    "base": "https://cimsgeo3.coastal.louisiana.gov/arcgis/rest/services",
+    "folders": ["bicm", "cims_viewer", "image_services", "IS_BP_Aerial", "LASAAP", "lasard", "lca_mrhdms", "LIMS", "mp", "mp_viewer_2017", "mp_viewer_tilecache_2017", "outreach", "Oyster", "prot_rest", "ref", "ref_wgs84", "sed", "selection", "subsidence", "Utilities"],
+    "note": "cims_viewer folder is empty (no services). All others enumerated and public — no token required on any CIMS folder tested."
+  },
+
+  "parishGeometry": {
+    "sourceLayer": "Govt_Units/Updated_Parish_Boundary/MapServer/0",
+    "nativeSpatialReference": "WKID 102682 / 3452 (NAD83 StatePlane LA South, US feet)",
+    "envelopeWGS84": { "xmin": -92.050021835543717, "ymin": 29.357702082864506, "xmax": -91.221632647465057, "ymax": 30.123086027489265 },
+    "centroidApprox": { "lat": 29.740394, "lng": -91.635827, "method": "bbox midpoint — adequate for initial map view; refine to true polygon centroid in Phase 3 if needed" },
+    "geometryFetchVerified": true,
+    "geometryNote": "Full polygon geometry confirmed fetchable via /query?f=geojson&where=1=1 — a single feature, multi-ring polygon. Actual harvest-and-freeze into data/gis/layers/parish-boundary.geojson is Phase 3 work (tools/gis-harvest.mjs), not done here."
+  },
+
+  "candidateLayers": [
+    {
+      "sourceId": "iberia-parish-boundary",
+      "feedsGroup": "Boundaries",
+      "publisher": "Iberia Parish GIS",
+      "serviceEndpoint": "https://maps.iberiagov.net/server/rest/services/Govt_Units/Updated_Parish_Boundary/MapServer/0",
+      "serviceType": "ArcGIS MapServer 11.4",
+      "nativeSRS": "WKID 102682",
+      "access": "public, no token",
+      "cors": "verified pass",
+      "attribution": "no copyrightText set on this layer — confirm attribution wording with Iberia Parish GIS directly (see openQuestions)",
+      "recommendedSourceType": "esriFeature (single static polygon; also freeze as a local geojson clip mask in Phase 3)",
+      "iberiaFilter": "n/a — this IS the parish boundary",
+      "harvested": false,
+      "notes": "Fields include NAME, AREA, EFF_DATE, VINTAGE — clean, small, no PII."
+    },
+    {
+      "sourceId": "iberia-hydrography",
+      "feedsGroup": "Water & drainage",
+      "publisher": "Iberia Parish GIS",
+      "serviceEndpoint": "https://maps.iberiagov.net/server/rest/services/Hydrography/Laterals_and_Mains_2026/MapServer",
+      "serviceType": "ArcGIS MapServer 11.4",
+      "access": "public, no token",
+      "cors": "assumed pass (same server, same auth posture as tested endpoints — not individually re-tested)",
+      "recommendedSourceType": "esriFeature",
+      "iberiaFilter": "n/a — parish-scoped already",
+      "harvested": false,
+      "notes": "Drainage network is the plan's stated default-on layer alongside the boundary and dark basemap. Also present: Drainage_Endpoints, Laterals_and_Mains_with_Arrows (labeled variant)."
+    },
+    {
+      "sourceId": "iberia-flood-risk",
+      "feedsGroup": "Flood risk",
+      "publisher": "Iberia Parish GIS / FEMA DFIRM",
+      "serviceEndpoint": "https://maps.iberiagov.net/server/rest/services/Flood/DFIRM_Panels/MapServer and Flood/BFE_with_Floodways_for_Public_Map/MapServer",
+      "serviceType": "ArcGIS MapServer 11.4",
+      "access": "public, no token",
+      "cors": "assumed pass (not individually re-tested)",
+      "recommendedSourceType": "esriDynamic for DFIRM panel images (large, standardized FEMA cartography — no reason to re-style); esriFeature for BFE/floodway lines if interactivity is wanted",
+      "iberiaFilter": "n/a — parish-scoped already (a Vermilion-specific variant also exists: BFE_with_Floodways_Vermilion)",
+      "harvested": false,
+      "notes": "FEMA-sourced data via the parish's own service — confirm FEMA attribution requirement, not just Iberia's."
+    },
+    {
+      "sourceId": "iberia-infrastructure-exposure",
+      "feedsGroup": "Infrastructure & exposure",
+      "publisher": "Iberia Parish GIS",
+      "serviceEndpoint": "https://maps.iberiagov.net/server/rest/services/EmergencyResponse/Critical_Facilities/MapServer, Fire/Parish_Fire_Stations/MapServer, Infrastructure/Port_of_Iberia_Canals_and_Slips/MapServer",
+      "serviceType": "ArcGIS MapServer 11.4",
+      "access": "public, no token",
+      "cors": "assumed pass (not individually re-tested)",
+      "recommendedSourceType": "esriFeature",
+      "iberiaFilter": "n/a",
+      "harvested": false,
+      "notes": "Clean candidate set for exposure storytelling — facility name/type only, no PII fields found."
+    },
+    {
+      "sourceId": "iberia-parcels",
+      "feedsGroup": "Infrastructure & exposure (optional)",
+      "publisher": "Iberia Parish Assessor's Office",
+      "serviceEndpoint": "https://maps.iberiagov.net/server/rest/services/Parcels/Parcels_May_2024/MapServer/0",
+      "serviceType": "ArcGIS MapServer 11.4",
+      "access": "public, no token",
+      "cors": "verified pass (same folder tree, root-level access confirmed public)",
+      "attribution": "copyrightText: \"Iberia Parish Assessor's Office\" (confirmed present on the service — must be shown in map attribution if this layer is used at all)",
+      "recommendedSourceType": "NOT RECOMMENDED for v1 — see openQuestions. If ever used: display-only polygon outline, outFields limited to ASSNUM/ParcelNumb only, never Owner_Name/Owner_Addr/Owner_City/Assessed_V/SaleDate/SalesPrice/DeedNumber.",
+      "iberiaFilter": "n/a",
+      "harvested": false,
+      "notes": "Confirmed fields include Owner_Name, Owner_Addr, Owner_City, Assessed_V, DeedNumber, SaleDate, SalesPrice — real PII/financial data about named property owners. This is exactly the field set 07-SPEC §E warned about."
+    },
+    {
+      "sourceId": "iberia-address-points",
+      "feedsGroup": "Infrastructure & exposure (not recommended)",
+      "publisher": "Iberia Parish GIS / GeoComm / InterAct",
+      "serviceEndpoint": "https://maps.iberiagov.net/server/rest/services/E911/Address_Points/MapServer/0",
+      "serviceType": "ArcGIS MapServer 11.4",
+      "access": "public, no token",
+      "cors": "verified pass (root-level access confirmed public)",
+      "attribution": "copyrightText: \"GeoComm, InterAct, Iberia Parish GIS\"",
+      "recommendedSourceType": "OMIT from v1",
+      "iberiaFilter": "n/a",
+      "harvested": false,
+      "notes": "Fields include Private, Notes, Specialist, Assessment, Structure, Visited — this is internal E911 dispatch/CAD data, not a general address gazetteer. Not appropriate for a public marketing map at full field resolution. If parish-wide address search is needed later, use this only as a geocoding backend (never displayed), or use the AddressLocators service — which is itself token-restricted and therefore already excluded."
+    },
+    {
+      "sourceId": "iberia-nursing-homes",
+      "feedsGroup": "Infrastructure & exposure (judgment call)",
+      "publisher": "Iberia Parish GIS",
+      "serviceEndpoint": "https://maps.iberiagov.net/server/rest/services/EmergencyResponse/Nursing_homes_and_assisted_living/MapServer/0",
+      "serviceType": "ArcGIS MapServer 11.4",
+      "access": "public, no token",
+      "cors": "assumed pass (not individually re-tested)",
+      "recommendedSourceType": "OMIT from default view pending human sign-off; if included, only inside an explicitly-labeled toggle with clear narrative justification (evacuation planning context), never as a default-on layer",
+      "iberiaFilter": "n/a",
+      "harvested": false,
+      "notes": "Fields are only FacilityName/Address/City — no resident-level PII — but per 07-SPEC §E this still needs a deliberate narrative justification before shipping, since it maps a vulnerable population's locations. Flagged in openQuestions."
+    },
+    {
+      "sourceId": "iberia-imagery-2013",
+      "feedsGroup": "Imagery / historical comparison",
+      "publisher": "Iberia Parish GIS",
+      "serviceEndpoint": "https://maps.iberiagov.net/server/rest/services/Imagery/Aerials2013MrSid/ImageServer",
+      "serviceType": "ArcGIS ImageServer 11.4",
+      "access": "public, no token",
+      "cors": "verified pass (exportImage tested on the 2024 sibling service; same server/folder posture)",
+      "recommendedSourceType": "esriImage",
+      "iberiaFilter": "n/a — parish-scoped already",
+      "harvested": false,
+      "notes": "Pairs with iberia-imagery-2024 for the swipe-compare tool. 2018 and 2021 vintages also exist if a mid-point year is wanted."
+    },
+    {
+      "sourceId": "iberia-imagery-2024",
+      "feedsGroup": "Imagery / historical comparison",
+      "publisher": "Iberia Parish GIS",
+      "serviceEndpoint": "https://maps.iberiagov.net/server/rest/services/Imagery/Aerials2024/ImageServer",
+      "serviceType": "ArcGIS ImageServer 11.4",
+      "access": "public, no token",
+      "cors": "verified pass — tested directly (exportImage, PNG, with Origin header) 2026-08-01",
+      "recommendedSourceType": "esriImage",
+      "iberiaFilter": "n/a — parish-scoped already",
+      "harvested": false,
+      "notes": "The newest available parish aerial; the 08-SPEC \"single most legible thing this map can do\" swipe should pair this with iberia-imagery-2013."
+    },
+    {
+      "sourceId": "cpra-coastal-projects",
+      "feedsGroup": "Coastal projects (CPRA)",
+      "publisher": "Louisiana CPRA",
+      "serviceEndpoint": "https://cimsgeo3.coastal.louisiana.gov/arcgis/rest/services/prot_rest/CPRA_Projects/MapServer/0 (also CPRA_Project_Infrastructure)",
+      "serviceType": "ArcGIS MapServer 10.81",
+      "nativeSRS": "WKID 26915 (NAD83 UTM 15N, metres)",
+      "access": "public, no token",
+      "cors": "verified pass — tested directly 2026-08-01",
+      "recommendedSourceType": "esriFeature",
+      "iberiaFilter": "REQUIRED — this service is statewide; every query needs a spatial filter to the parish envelope/boundary",
+      "harvested": false,
+      "notes": "Statewide project inventory. Cross-check the Iberia-specific subset against the factsheet once retrieved (task 0.5, blocked — see openQuestions)."
+    },
+    {
+      "sourceId": "cpra-master-plan-2023",
+      "feedsGroup": "Coastal projects (CPRA) / scenario projections",
+      "publisher": "Louisiana CPRA",
+      "serviceEndpoint": "https://cimsgeo3.coastal.louisiana.gov/arcgis/rest/services/mp/MasterPlan2023_RP/MapServer and mp/MasterPlan2023_SRR/MapServer",
+      "serviceType": "ArcGIS MapServer 10.81",
+      "access": "public, no token",
+      "cors": "verified pass — tested directly against MasterPlan2023_RP, 2026-08-01, real feature data returned (e.g. a Central Wetlands Diversion project record with cost/schedule/description fields)",
+      "recommendedSourceType": "esriFeature",
+      "iberiaFilter": "REQUIRED — statewide dataset, spatial-filter to parish envelope",
+      "harvested": false,
+      "notes": "RP = Restore & Protect track, SRR = presumed Sea-level-Rise-Risk track (label unconfirmed — verify against the CIMS legend/documentation in Phase 3). Rich per-project fields (ProjectName, ImplementationPeriod, cost model group, factsheet PDF URL) confirm this is a viable direct substitute for a bulk MP-DAP download for map purposes. IMPORTANT: per-project data are model outputs / scenarios, not predictions — any UI copy using this data must say so explicitly, per 05-SPEC's sourcing caution."
+    },
+    {
+      "sourceId": "cpra-coastal-change-shorelines",
+      "feedsGroup": "Coastal change (scenarios)",
+      "publisher": "Louisiana CPRA (BICM program) / LSU LaSARD",
+      "serviceEndpoint": "https://cimsgeo3.coastal.louisiana.gov/arcgis/rest/services/bicm/bicm_shorelines/MapServer, bicm/shoreline_assessment_timeseries/MapServer, lasard/shoreline/MapServer",
+      "serviceType": "ArcGIS MapServer 10.81",
+      "access": "public, no token",
+      "cors": "verified pass — lasard/shoreline tested directly 2026-08-01",
+      "recommendedSourceType": "esriFeature for a curated subset of years; harvest to geojson if the full historical stack (lasard also has per-year contour layers back to 1870s) is too heavy for live querying",
+      "iberiaFilter": "REQUIRED — statewide/coastwide dataset, spatial-filter to parish envelope",
+      "harvested": false,
+      "notes": "lasard also exposes dozens of per-year historical shoreline CONTOUR layers (contours1870 … contours2023) — good raw material for a coastal-change time slider, but pick 3-5 representative years rather than all of them for performance."
+    },
+    {
+      "sourceId": "cpra-subsidence",
+      "feedsGroup": "Coastal change (scenarios)",
+      "publisher": "Louisiana CPRA",
+      "serviceEndpoint": "https://cimsgeo3.coastal.louisiana.gov/arcgis/rest/services/subsidence/cmp2023_subsidence/MapServer and subsidence/subsidence_prediction/MapServer",
+      "serviceType": "ArcGIS MapServer 10.81",
+      "access": "public, no token",
+      "cors": "assumed pass (not individually re-tested — same folder tree as verified endpoints)",
+      "recommendedSourceType": "esriDynamic (continuous surface data reads better as a styled raster/image than as clickable vector)",
+      "iberiaFilter": "REQUIRED — statewide, spatial-filter to parish envelope",
+      "harvested": false,
+      "notes": "subsidence_prediction is explicitly modeled/projected data — same 05-SPEC labeling caution applies (scenario, not forecast)."
+    }
+  ],
+
+  "platformNotes": {
+    "mpdap": {
+      "url": "https://mpdap.coastal.la.gov",
+      "reachable": true,
+      "robotsTxt": "returns the SPA's index.html for /robots.txt (no dedicated robots.txt file found — no disallow rules apply to this host)",
+      "architecture": "Vite-bundled SPA calling a separate statistical API at https://api.mpdap.coastal.la.gov, with bulk files served from https://files.mpdap.coastal.la.gov/{raster,static}",
+      "apiCors": "wildcard Access-Control-Allow-Origin: * confirmed on api.mpdap.coastal.la.gov (tested against a 404 route, so header behavior is server-wide, not endpoint-specific)",
+      "apiShape": "Time-series statistical endpoints keyed by geographicUnit/timeUnit/route (e.g. .../parish/annual/<dataset-route>/), built from a client-side dataset-route mapping this static analysis did not fully enumerate — appears to serve chart data (land change, damage, etc.) by geography, not raw spatial layers.",
+      "conclusion": "Not needed as the primary acquisition route for the GFC map: the CIMS ArcGIS layers above (mp/MasterPlan2023_RP, _SRR, prot_rest/CPRA_Projects) already provide directly queryable, CORS-permissive spatial data covering the same master-plan project content. MP-DAP remains a secondary option only if a specific statistical time series (not a map layer) is ever needed. A full dataset-route inventory would require live browser interaction (Chrome automation was unavailable in this session) — flagged as optional follow-up, not a blocker."
+    },
+    "mpdv": {
+      "url": "https://mpdv.coastal.la.gov/#map=8.66/29.5211/-91.51",
+      "reachable": true,
+      "mappingLibrary": "MapLibre GL JS 2.4.0, loaded directly from unpkg — CONFIRMED VECTOR TILES, not ArcGIS MapServer image export. This resolves the scope question flagged in 07-SPEC §C and 04-SPEC §2 in favor of \"MPDV's layers are vector tiles.\"",
+      "tileServer": "https://tiles.mpdv.coastal.la.gov/services (root path 404s with wildcard CORS; individual per-layer tile/style paths are built dynamically client-side and were not fully enumerated without live network inspection)",
+      "searchImplementation": "MPDV proxies Nominatim through its own origin at https://mpdv.coastal.la.gov/nominatim/search — i.e. it does NOT call the public nominatim.openstreetmap.org endpoint directly from the browser. Relevant for 04-SPEC's search-tool fallback chain: our site has no backend to proxy through, so a direct client-side Nominatim call (bounded to the parish, with a compliant User-Agent/Referer and conservative rate limiting per OSM's usage policy) is the closest equivalent, not a like-for-like copy of MPDV's approach.",
+      "guidedTourTranscript": {
+        "method": "Static extraction from the shipped, unminified-enough production JS bundle (component call arguments contain literal slide text) — Chrome automation was unavailable in this session, so this is NOT a live interactive walkthrough. Visual/interaction mechanics (dock position, animation timing, progress-dot behavior) could not be observed and should be spot-checked live before Phase 4 finalizes the player UI.",
+        "slideCount": 10,
+        "flow": "Tour slides progress through: 1) historical land change since 1932, 2) sea-level-rise/scenario framing, 3) land-loss projection without the plan (1,100–3,000 sq mi over 50 years), 4) storm-surge flood-damage framing, 5) EADD/EASD damage metrics explained, 6) introduces the 77 selected projects, 7) land-loss avoided WITH the plan (230–310 sq mi), 8) structural risk-reduction project framing, 9) damage reduction WITH the plan, 10) closing \"future coast\" vision framed explicitly as a plan-dependent vision, not a guarantee.",
+        "exitBehavior": "Tour ends by inviting the user into a separate 'Explore' mode via an \"Explore the Plan\" button — not a hard reset. Confirms the 05-SPEC's 'exit leaves the map where the tour left it, no hostile reset' principle is exactly what CPRA's own tool does.",
+        "toneNotes": "Every scenario figure is paired with its environmental-scenario qualifier (\"lower\"/\"higher\" scenario) in the same sentence as the number — CPRA never states a bare projection without naming it as scenario-dependent. The Iberia tour's own copy should match this discipline exactly, per 05-SPEC's sourcing caution."
+      }
+    }
+  },
+
+  "openQuestions": [
+    {
+      "id": "iberia-terms-of-use",
+      "question": "No published terms-of-use page was found on maps.iberiagov.net during this pass. Confirm actual usage terms and preferred attribution wording directly with Iberia Parish GIS.",
+      "owner": "human — requires an actual outbound email to the parish GIS office",
+      "status": "unresolved",
+      "blocksLayers": ["all Iberia-sourced layers listed above"]
+    },
+    {
+      "id": "cpra-cims-terms-of-use",
+      "question": "No published terms-of-use page was found on cimsgeo3.coastal.louisiana.gov during this pass. Confirm CPRA/CIMS terms and any USGS cooperative-agreement attribution notice that may apply to specific layers (e.g. bicm/lasard, which reference LSU/coastal research partnerships).",
+      "owner": "human — requires checking CPRA's published terms (if any exist elsewhere on coastal.la.gov) and/or contacting CPRA directly",
+      "status": "unresolved",
+      "blocksLayers": ["all CIMS-sourced layers listed above"]
+    },
+    {
+      "id": "iberia-factsheet-retrieval",
+      "question": "The Iberia Parish CPRA factsheet must be retrieved manually — its host (cims.coastal.louisiana.gov) sends Disallow: / in robots.txt for all crawlers, confirmed 2026-08-01. Open https://cims.coastal.louisiana.gov/outreach/factsheets/Parishes/parish_map in a browser, select Iberia Parish, and transcribe the project list as the authoritative cross-check for cpra-coastal-projects above.",
+      "owner": "human — a real browser session, not automatable",
+      "status": "unresolved",
+      "blocksLayers": ["cpra-coastal-projects (cross-check only, not a hard blocker for building the layer)"]
+    },
+    {
+      "id": "parcels-decision",
+      "question": "Ship the Parcels layer at all? Recommendation in this doc is to omit it from v1 — the GFC map's purpose is coastal-resilience storytelling, not a property-records lookup, and the layer's raw fields include named owners, sale prices, and deed numbers.",
+      "owner": "human — product/content call",
+      "status": "unresolved",
+      "blocksLayers": ["iberia-parcels"]
+    },
+    {
+      "id": "nursing-homes-decision",
+      "question": "Ship the Nursing_homes_and_assisted_living layer, and if so, under what narrative framing? No resident PII is present, but the layer maps a vulnerable population's locations. Recommendation: omit from the default view; if included, gate behind an explicitly-labeled toggle with evacuation-planning context copy, reviewed at the same time as the GFC public-copy sign-off (Decision (c) in the build plan).",
+      "owner": "human — same sign-off path as the GFC copy gate",
+      "status": "unresolved",
+      "blocksLayers": ["iberia-nursing-homes"]
+    }
+  ]
+}
