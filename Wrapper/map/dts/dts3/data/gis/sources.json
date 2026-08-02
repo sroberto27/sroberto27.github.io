@@ -271,14 +271,14 @@
       "id": "iberia-terms-of-use",
       "question": "No published terms-of-use page was found on maps.iberiagov.net during this pass. Confirm actual usage terms and preferred attribution wording directly with Iberia Parish GIS.",
       "owner": "human — requires an actual outbound email to the parish GIS office",
-      "status": "unresolved",
+      "status": "proceeding pending confirmation — human (2026-08-02) is contacting the parish GIS office directly and is confident permission exists; harvesting is not blocked on this while confirmation is in progress, but attribution wording must still be finalized once a response comes back",
       "blocksLayers": ["all Iberia-sourced layers listed above"]
     },
     {
       "id": "cpra-cims-terms-of-use",
       "question": "No published terms-of-use page was found on cimsgeo3.coastal.louisiana.gov during this pass. Confirm CPRA/CIMS terms and any USGS cooperative-agreement attribution notice that may apply to specific layers (e.g. bicm/lasard, which reference LSU/coastal research partnerships).",
       "owner": "human — requires checking CPRA's published terms (if any exist elsewhere on coastal.la.gov) and/or contacting CPRA directly",
-      "status": "unresolved",
+      "status": "proceeding pending confirmation — human (2026-08-02) is confirming directly with CPRA/LSU contacts and is confident permission exists; harvesting is not blocked on this while confirmation is in progress, but the bicm/lasard research-partnership attribution line must still be finalized once a response comes back",
       "blocksLayers": ["all CIMS-sourced layers listed above"]
     },
     {
