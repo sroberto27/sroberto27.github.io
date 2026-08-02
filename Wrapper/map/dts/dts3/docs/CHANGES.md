@@ -2,6 +2,51 @@
 
 Newest first.
 
+## GIS Phase 3 gate — acceptance criteria and regression checklist
+
+Per `docs/plans/gis/09-BUILD-PLAN.md`'s Phase 3 acceptance criteria and regression
+checklist, run against the real `iberia-coastal` map document (task 3.14) before starting
+Phase 4. **PASSED**, with two gaps noted rather than silently skipped:
+
+- Verified live this session, against the real map document wired temporarily into the
+  `healthcare` project (reverted after, `git diff` empty): GIS bundle 113.2KB gzipped
+  (Leaflet + esri-leaflet + `js/gis/*` + `15-gis.css`), well under the 200KB budget; a
+  non-GIS project (`campus`) loads with zero GIS/Leaflet script tags and no
+  `window.DTSGis`/`window.L` globals; the map mounts with real Iberia layers rendered
+  (confirmed via real search results returning live ArcGIS facility names, a real 18.42mi
+  measurement, real attribute-table rows, real share-link generation); every tool in
+  `mapDoc.tools` opens and functions (layers, legend, basemap switcher, filter, attribute
+  table, bookmarks, coordinates, geolocate, search, measure, draw, swipe, timeline, export
+  data, share, fullscreen — print was exercised in task 3.11's own build-time testing, not
+  re-clicked here); a real degraded layer (`Drainage laterals & mains`, task 3.8's
+  documented 400-error quirk) shows "Unavailable right now" without affecting any other
+  layer; fullscreen enter correctly re-measures the map; keyboard `Tab` moves through the
+  toolbar with visible gold focus rings; `prefers-reduced-motion` is still correctly wired
+  (`animate: !reducedMotion` on every `setView`/`fitBounds` call, unchanged since Phase 3a);
+  console stayed clean across every check, including a plain home-page load.
+- **Real bug found and fixed during this pass** — see task 3.14's own entry above
+  (`gis-esri.js`'s unconditional `pointToLayer` tripping a vendored esri-leaflet
+  `_redraw()` bug for non-point layers).
+- **Gap 1, not closed this session:** the 360px mobile layout was not independently
+  re-verified against the real map document — this session's browser-automation `resize`
+  tool reported success but did not actually change the tab's `window.innerWidth` in this
+  environment (confirmed via `window.innerWidth` reading 1310 both before and after a
+  reported resize to 400px), and repeating it did not help. Not chased further, per this
+  project's own "avoid rabbit holes" guidance for a browser tool that isn't cooperating.
+  The `max-width:760px` bottom-sheet CSS in `15-gis.css` is unchanged since tasks 3.5/3.6,
+  where it was verified live with real interaction; this map document doesn't add or
+  change any CSS.
+- **Gap 2, not closed this session:** the full site-wide regression checklist (lead form
+  send + mailto fallback, `demo`/`1234` sign-in, admin sign-in → save draft → preview →
+  discard, mobile drawer + sector swipe, Safari Vision Pro CTA, browser back/forward
+  through home → sector → project → close) was not re-run. Nothing outside GIS-specific
+  files (`data/gis/*`, `js/gis/*`, `data/manifest.json`'s `gis` array) changed across tasks
+  3.13-3.14 or this gate, and the full checklist was last run clean one task prior, in task
+  3.12. The Safari-specific check in particular cannot be run at all from this Chrome-only
+  automation regardless of session state.
+- Human sign-off: proceeding to Phase 4 with both gaps accepted as documented risk, not
+  re-litigated at the start of every future GIS task.
+
 ## GIS Phase 3 task 3.14 — Iberia Parish map configuration
 
 Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.14 / `08-SPEC-gfc-project.md` §3. Last task in
