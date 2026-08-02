@@ -2,6 +2,57 @@
 
 Newest first.
 
+## GIS Phase 3a — map engine and layer sources
+
+Per `docs/plans/gis/09-BUILD-PLAN.md` Phase 3 tasks 3.1-3.4 / `04-SPEC-gis-engine.md`.
+Phase 3 is split into several commits per the plan; this is the first ("map engine and
+layer sources"). No wiring into `index.html`/`app.js` yet -- that's task 3.12
+(`mountGis()` in the switcher), still to come. Vendoring vs CDN (04-SPEC §2) was
+confirmed with the human before starting.
+
+- `vendor/leaflet/`: Leaflet 1.9.4 + esri-leaflet 3.0.19, SHA-256-verified against
+  jsdelivr's package metadata; versions/hashes/licenses in `vendor/leaflet/README.md`.
+- `js/gis/gis-loader.js`: idempotent `DTSGisLoader.load()` -- injects the vendored
+  CSS/JS only on first call, rejects cleanly (not a hang) on failure. Verified a plain
+  page load makes zero `vendor/`/`gis` requests.
+- `js/gis/gis-viewer.js` -- `window.DTSGis`: map init, view/bounds (`maxBounds` +
+  `restrictToBounds`), basemaps (`tileXYZ`, `esriImage`), the layer factory dispatcher,
+  the parish boundary dim mask, and the full §5 public API (`setView`,
+  `setLayerVisible/Opacity`, `setBasemap`, `highlight/clearHighlight`, `startTour/
+  tourNext/tourPrev/exitTour`, `getState/applyState`, lifecycle, `on`).
+- `js/gis/gis-esri.js` -- `window.DTSGisEsri`: `buildDynamic` (esriDynamic, image
+  overlay, no client query) and `buildFeature` (esriFeature, with a `query()` that
+  carries the parish envelope per §8 defence 2). `esriImage`/`geojson`/`tileXYZ`/`wms`
+  are simple enough to build inline in `gis-viewer.js`.
+- Each layer builds independently and asynchronously into the registry so one slow or
+  broken source never blocks the map or the others (§11); a `requesterror` listener on
+  each esri-leaflet layer catches runtime fetch failures, since those surface as an
+  event, not a constructor throw, as an earlier version of this code assumed. Layers
+  outside their declared zoom range are removed from the map on `zoomend`, not just
+  hidden (§9).
+- Parish boundary dim mask (§8 defence 3): once the `mapDoc.boundary.layerId` layer
+  loads, its real ring geometry (recursively flattened from Polygon/MultiPolygon
+  `getLatLngs()`) becomes the hole in a world-covering `evenodd`-fill donut polygon, in
+  its own pane above ordinary data layers. Independent of that layer's own visibility
+  toggle -- the mask is static map chrome, not a togglable layer.
+- **Design departure from the spec, deliberate:** `startTour`/`tourNext`/`tourPrev`/
+  `exitTour` are fully implemented in `gis-viewer.js` now (applying each step's
+  `view`/`layers`/`highlight` per `05-SPEC-guided-tours.md §1`), not left as stubs for
+  the later guided-tours phase. Re-read that spec to get the step schema right first.
+  The rationale: §5 says the tour player "drives the map exclusively through this API,"
+  which reads as the engine owning step application and the player (a later phase)
+  owning presentation only (card UI, keyboard, off-script pill, autoAdvance timing).
+- Verified live in Chrome against real, CORS-verified Iberia Parish ArcGIS services
+  (not synthetic fixtures): all six `sourceType`s build and render; a bad service URL
+  and an unsupported `sourceType` both degrade to "unavailable" without affecting other
+  layers; bounds/zoom-range enforcement, state round-trip, and the dim mask all checked
+  against the real parish boundary layer. Found and fixed two real bugs this way before
+  they shipped: esri-leaflet's `FeatureLayer` has no `layerId` option (the sublayer id
+  must be part of the URL, or every query silently hits the wrong endpoint), and
+  animated `setView` calls stall in this session's automated-Chrome test harness
+  (confirmed as a harness/rAF-throttling artifact, not a product bug, by reproducing it
+  against bare Leaflet with no DTSGis code involved).
+
 ## GIS Phase 2 — the tabbed stage
 
 Per `docs/plans/gis/09-BUILD-PLAN.md` Phase 2 / `03-SPEC-multi-experience.md §3-5`.
