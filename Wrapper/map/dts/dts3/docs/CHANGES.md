@@ -2,6 +2,100 @@
 
 Newest first.
 
+## GIS Phase 3 task 3.9 — measure, draw, coordinates, search, geolocate, bookmarks
+
+Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.9 / `04-SPEC-gis-engine.md` §6. Nothing
+wired into `index.html`/`app.js` yet -- still task 3.12. Six tools, all gated by
+`mapDoc.tools.<name>`.
+
+- **Bookmarks**: no engine changes at all -- `setView()` already accepts either
+  `{center,zoom}` or `{bbox}`, exactly what a `mapDoc.bookmarks[].view` already is.
+- **Coordinates**: `gis-viewer.js` emits a new `"pointer"` event (an addition to §5's
+  event set, same spirit as `"identify"`) on `mousemove`+`click` -- click covers touch
+  taps, which don't fire `mousemove`. `gis-tools.js` shows an always-on readout chip
+  (click-to-copy) plus a "go to coordinates" panel parsing both decimal degrees and
+  DMS (`29°52'12"N 91°45'00"W`), figuring out which half of the pair is latitude from
+  which one carries N/S rather than assuming input order.
+- **Geolocate**: `instance._geolocate()` wraps `navigator.geolocation`, draws an
+  accuracy circle, and reports whether the result falls inside `view.maxBounds`.
+  Per §11, a permission denial is silent (no toast); every other outcome gets a brief
+  one, and being outside the parish offers a "Zoom to parish" action instead of flying
+  to the user.
+- **Search**: two parish-limited scopes per §6. Feature search runs across every
+  queryable (`geojson`/`esriFeature`) layer using `def.searchField` if the map
+  document sets one -- an additive extension to §4's layer schema -- else the first
+  field `fieldsForLayer()` (from task 3.8) resolves. Place search is Nominatim, bounded
+  to the map's own `view.maxBounds`: `sources.json` already confirmed the Iberia
+  AddressLocators service is token-restricted, so per §6's own fallback chain Nominatim
+  is the only option, not a corner cut. A failed place search says so in the results
+  list rather than silently only showing feature matches.
+- **Measure**: distance (multi-segment, running total) and area, per §6. All
+  interaction lives in `gis-viewer.js` -- click adds a vertex, mousemove previews the
+  next segment/closing edge, dblclick finishes, Escape cancels an in-progress session,
+  Clear removes every finished one. Distance uses Leaflet's own `L.LatLng#distanceTo`
+  (already haversine -- §2's "hand-roll haversine" note doesn't apply once you're
+  already inside Leaflet); area uses §2's own suggested shortcut, an equirectangular
+  projection centred on the ring's mean latitude plus the ordinary planar shoelace
+  formula. On-map segment + running-total labels are `L.divIcon` markers; the panel
+  mirrors the same total as text per §10 (the on-map label isn't the only channel).
+- **Draw/annotate**: point, line, polygon, rectangle, text, per §6. Same
+  click-to-vertex/dblclick-finish model as measure for line/polygon; rectangle is two
+  opposite corners; text places a point then `gis-tools.js` collects the label via a
+  small inline input positioned at the point's `containerPoint` (same technique task
+  3.7's identify popup uses) before finalizing. Drawings are a plain-object registry --
+  `{id,type,color,latlng?,latlngs?,text?}` -- so `getState().d`/`applyState()` (§7) and
+  the "download as GeoJSON" button both just read it directly, no Leaflet object ever
+  crosses out. **Security note:** a drawing's `text` can arrive via `applyState()` from
+  a share link someone else authored and is rendered through a `divIcon`'s `innerHTML`
+  -- escaped before render (confirmed live: a label typed as `Test <b>label</b>`
+  rendered as literal text, not a real `<b>` element), since an unescaped label would
+  be a real self-XSS vector via a crafted share link, not just a cosmetic concern.
+- **Real bug, found live, pre-existing in the tools UI's own DOM structure (not new to
+  this task, just newly triggered by it):** `js/gis/gis-tools.js`'s `host` element is a
+  DOM descendant of the same container Leaflet owns as its map root (both mounted onto
+  the same `containerEl`). Per ordinary DOM bubbling, any click on a *real* control
+  inside `host` (buttons, inputs -- `host` itself stays `pointer-events:none`) was also
+  reaching Leaflet's own container-level listeners as a genuine map click. Mostly
+  harmless before now (a stray "identify: miss" event, a misleading coordinate
+  readout), but for measure it was a real functional bug: opening the measure panel,
+  or switching its mode/unit mid-measurement, injected a spurious vertex at the
+  clicked button's screen position, because `gis-viewer.js`'s map click listener was
+  already (re-)attached by the time the same click event finished bubbling to the
+  container. Fixed once, at the root: `host` now calls `stopPropagation()` on
+  click/dblclick/mouse*/wheel/touch* -- the single place that fixes every current and
+  future control the same way, rather than patching each one. Corollary fix: this also
+  stops scrolling a panel's list (e.g. the attribute table) from also zooming the map
+  via the bubbled wheel event.
+- **Second real bug, found live:** `gis-viewer.js`'s `finishMeasure()` built the
+  emitted `"measure"` event's `detail` (via `buildMeasureDetail(true)`) *before*
+  clearing `measureSession`, so `detail.active` read `true` on the very event meant to
+  announce the session had ended. `gis-tools.js`'s readout -- which resets to "Click
+  the map to start measuring." only `if (!detail.active)` -- got stuck showing the
+  last in-progress distance instead of resetting. Fixed by explicitly setting
+  `detail.active = false` after building the (still session-derived) totals.
+  Confirmed via direct `MouseEvent`/`dblclick` dispatch in the console, not the
+  higher-level browser-automation `double_click` action -- that action reliably added
+  a third vertex instead of finishing in this environment, but dispatching the same
+  two-clicks-then-`dblclick` sequence real browsers actually produce finished the
+  measurement correctly both before and after this fix was isolated, confirming the
+  automation action itself doesn't reproduce a real double-click here (harness
+  artifact, not a product bug -- same category as Phase 3a's animated-`setView`
+  finding).
+- **Naming fix, not a behavior bug:** the filter panel's Apply/Clear buttons (task
+  3.8) were `.dts-gis-filter-apply`/`.dts-gis-filter-clear`. This task reused those
+  same classes for the coordinates "Go" button and measure's Finish/Clear, which is
+  what actually caught this: a `document.querySelector('.dts-gis-filter-clear')`
+  during testing silently grabbed the filter panel's button instead of measure's.
+  Renamed everywhere to `.dts-gis-btn-primary`/`.dts-gis-btn-secondary` -- generic
+  names for what was always a generic style, now unambiguous for any future caller.
+- Verified live in Chrome against real, CORS-verified Iberia Parish data (parish
+  boundary) plus a local geojson point fixture: every tool above end-to-end, including
+  the two bugs' before/after states, `getState()`/`applyState()` round-tripping a
+  restored drawing, the XSS-escaping check, and that task 3.6-3.8's existing tools
+  (layer panel checkbox toggling, identify) still work unchanged after the
+  `stopPropagation` fix. Console clean throughout. Test harness and geojson fixture
+  deleted before committing.
+
 ## GIS Phase 3 task 3.8 — attribute table and filter/query builder
 
 Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.8 / `04-SPEC-gis-engine.md` §6. Nothing

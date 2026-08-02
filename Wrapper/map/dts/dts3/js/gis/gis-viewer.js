@@ -78,6 +78,61 @@
     };
   }
 
+  // Measure tool (3.9) geometry math. Per 04-SPEC §2 ("~80 lines, no Turf"):
+  // distance doesn't need hand-rolled haversine at all -- Leaflet's own
+  // L.LatLng#distanceTo already implements it (L.CRS.Earth), so
+  // pathLengthMeters below just sums that. Area has no Leaflet-core
+  // equivalent (that's Leaflet.draw's separate GeometryUtil plugin, not
+  // vendored), so this uses the spec's own suggested shortcut: an
+  // equirectangular projection centred on the ring's mean latitude, then
+  // the ordinary planar shoelace formula -- accurate enough at parish scale,
+  // far simpler than full spherical-excess trigonometry.
+  function pathLengthMeters(latlngs) {
+    let d = 0;
+    for (let i = 1; i < latlngs.length; i++) d += latlngs[i - 1].distanceTo(latlngs[i]);
+    return d;
+  }
+
+  function polygonAreaMeters2(latlngs) {
+    if (latlngs.length < 3) return 0;
+    const R = 6371000;
+    const toRad = Math.PI / 180;
+    const refLat = latlngs.reduce(function (s, p) { return s + p.lat; }, 0) / latlngs.length;
+    const cosRef = Math.cos(refLat * toRad);
+    const pts = latlngs.map(function (p) { return [R * p.lng * toRad * cosRef, R * p.lat * toRad]; });
+    let sum = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      sum += a[0] * b[1] - b[0] * a[1];
+    }
+    return Math.abs(sum) / 2;
+  }
+
+  const UNIT_CONVERT = {
+    distance: {
+      ft: function (m) { return m * 3.28084; },
+      mi: function (m) { return m / 1609.344; },
+      m: function (m) { return m; },
+      km: function (m) { return m / 1000; }
+    },
+    area: {
+      ac: function (m2) { return m2 / 4046.8564224; },
+      ft2: function (m2) { return m2 * 10.76391; },
+      m2: function (m2) { return m2; },
+      km2: function (m2) { return m2 / 1e6; }
+    }
+  };
+
+  function formatDistance(m, system) {
+    if (system === "metric") return m < 1000 ? round(m, 0) + " m" : round(UNIT_CONVERT.distance.km(m), 2) + " km";
+    return m < 528 ? round(UNIT_CONVERT.distance.ft(m), 0) + " ft" : round(UNIT_CONVERT.distance.mi(m), 2) + " mi";
+  }
+
+  function formatArea(m2, system) {
+    if (system === "metric") return m2 < 1e6 ? round(m2, 0) + " m²" : round(UNIT_CONVERT.area.km2(m2), 2) + " km²";
+    return round(UNIT_CONVERT.area.ac(m2), 2) + " ac";
+  }
+
   function buildTileLayer(def, ctx) {
     const opts = { attribution: def.attribution || "", opacity: typeof def.opacity === "number" ? def.opacity : 1 };
     if (typeof def.minZoom === "number") opts.minZoom = def.minZoom;
@@ -287,6 +342,14 @@
     map.on("moveend", function () {
       const c = map.getCenter();
       emit("viewchange", { center: [c.lat, c.lng], zoom: map.getZoom() });
+    });
+
+    // Coordinates tool (3.9): "live lat/lng readout on pointer move (and on
+    // tap on touch devices)". Leaflet's own mousemove doesn't fire on touch,
+    // so click covers the tap case too (harmless extra emit on desktop click).
+    // An addition to §5's documented event set, same spirit as "identify".
+    map.on("mousemove click", function (e) {
+      emit("pointer", { lat: e.latlng.lat, lng: e.latlng.lng });
     });
 
     /* ---- basemaps ---- */
@@ -547,6 +610,345 @@
       }
     }
 
+    /* ---- geolocate (task 3.9): navigator.geolocation, one-shot, with an
+       accuracy circle. §11: geolocation denial is silent at the tool level
+       (no scolding) -- this just rejects with a typed reason and lets
+       gis-tools.js decide tone; "outside parish" is reported, not hidden,
+       so the UI can offer to zoom to the parish instead of the user. */
+    const geolocateGroup = L.layerGroup().addTo(map);
+    function clearGeolocate() { geolocateGroup.clearLayers(); }
+    function geolocate() {
+      return new Promise(function (resolve, reject) {
+        if (!navigator.geolocation) { reject({ code: "unsupported", message: "Geolocation isn't available in this browser." }); return; }
+        navigator.geolocation.getCurrentPosition(function (pos) {
+          const latlng = L.latLng(pos.coords.latitude, pos.coords.longitude);
+          const accuracy = pos.coords.accuracy;
+          clearGeolocate();
+          L.circleMarker(latlng, { radius: 6, color: "#4fb3ff", weight: 2, fillColor: "#4fb3ff", fillOpacity: 0.7, interactive: false }).addTo(geolocateGroup);
+          if (accuracy) L.circle(latlng, { radius: accuracy, color: "#4fb3ff", weight: 1, fillOpacity: 0.08, interactive: false }).addTo(geolocateGroup);
+          const bounds = view.maxBounds ? L.latLngBounds(view.maxBounds) : null;
+          resolve({ lat: latlng.lat, lng: latlng.lng, accuracy: accuracy, withinParish: !bounds || bounds.contains(latlng) });
+        }, function (err) {
+          reject({ code: err.code === 1 ? "denied" : (err.code === 3 ? "timeout" : "unavailable"), message: err.message });
+        }, { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 });
+      });
+    }
+
+    /* ---- measure (task 3.9): distance (multi-segment, running total) and
+       area, per §6. Interaction lives entirely here (gis-tools.js never
+       touches L) -- click adds a vertex, mousemove previews the next
+       segment/closing edge, dblclick finishes, Escape cancels an
+       in-progress session (via _cancelMeasure), the clear button removes
+       every finished measurement (via _clearMeasurements). Distance uses
+       Leaflet's own L.LatLng#distanceTo (already haversine -- no need to
+       hand-roll it); area uses polygonAreaMeters2 (§2's suggested
+       projected-plane shoelace, defined above buildTileLayer). */
+    const measureGroup = L.layerGroup().addTo(map);
+    const measureState = { mode: null, unit: "imperial" };
+    let measureSession = null; // {points, shapeLayer, pointLayers, labelLayers} while a measurement is in progress
+    let finishedMeasureLayers = [];
+
+    function measureLabel(latlng, text, extraClass) {
+      const marker = L.marker(latlng, {
+        icon: L.divIcon({ className: "dts-gis-measure-label" + (extraClass ? " " + extraClass : ""), html: text, iconSize: null }),
+        interactive: false, keyboard: false
+      });
+      marker.addTo(measureGroup);
+      return marker;
+    }
+    function measureMidpoint(a, b) { return L.latLng((a.lat + b.lat) / 2, (a.lng + b.lng) / 2); }
+
+    function redrawMeasureSession(previewLatLng) {
+      if (measureSession.shapeLayer) { measureGroup.removeLayer(measureSession.shapeLayer); measureSession.shapeLayer = null; }
+      measureSession.pointLayers.forEach(function (l) { measureGroup.removeLayer(l); });
+      measureSession.pointLayers = [];
+      measureSession.labelLayers.forEach(function (l) { measureGroup.removeLayer(l); });
+      measureSession.labelLayers = [];
+
+      const pts = measureSession.points;
+      pts.forEach(function (p) {
+        const m = L.circleMarker(p, { radius: 4, color: "#f0c75e", weight: 2, fillColor: "#151005", fillOpacity: 1, interactive: false });
+        m.addTo(measureGroup);
+        measureSession.pointLayers.push(m);
+      });
+
+      const livePts = previewLatLng ? pts.concat([previewLatLng]) : pts;
+      if (livePts.length < 2) return;
+      const isArea = measureState.mode === "area";
+      const closed = isArea && livePts.length >= 3;
+      const shapePts = closed ? livePts.concat([livePts[0]]) : livePts;
+      measureSession.shapeLayer = L.polyline(shapePts, {
+        color: "#f0c75e", weight: 2, dashArray: previewLatLng ? "6 5" : null
+      }).addTo(measureGroup);
+
+      for (let i = 1; i < livePts.length; i++) {
+        const segLen = livePts[i - 1].distanceTo(livePts[i]);
+        measureSession.labelLayers.push(measureLabel(measureMidpoint(livePts[i - 1], livePts[i]), formatDistance(segLen, measureState.unit)));
+      }
+      if (isArea && closed) {
+        measureSession.labelLayers.push(measureLabel(
+          livePts[livePts.length - 1], formatArea(polygonAreaMeters2(livePts), measureState.unit), "dts-gis-measure-total"
+        ));
+      } else if (!isArea) {
+        measureSession.labelLayers.push(measureLabel(
+          livePts[livePts.length - 1], "Total " + formatDistance(pathLengthMeters(livePts), measureState.unit), "dts-gis-measure-total"
+        ));
+      }
+    }
+
+    function buildMeasureDetail(finished) {
+      const pts = measureSession ? measureSession.points : [];
+      return {
+        mode: measureState.mode, active: !!measureSession, finished: !!finished, unit: measureState.unit,
+        distanceM: pathLengthMeters(pts),
+        areaM2: measureState.mode === "area" ? polygonAreaMeters2(pts) : 0,
+        points: pts.map(function (p) { return [p.lat, p.lng]; })
+      };
+    }
+
+    function onMeasureClick(e) {
+      measureSession.points.push(e.latlng);
+      redrawMeasureSession(null);
+      emit("measure", buildMeasureDetail(false));
+    }
+    function onMeasureMove(e) {
+      if (!measureSession.points.length) return;
+      redrawMeasureSession(e.latlng);
+    }
+    function onMeasureDblClick(e) {
+      L.DomEvent.stop(e);
+      // Leaflet fires two ordinary 'click' events before 'dblclick'; if the
+      // last two confirmed points are effectively the same screen spot (the
+      // dblclick's own click pair), drop the redundant one before finishing.
+      if (measureSession.points.length >= 2) {
+        const a = map.latLngToContainerPoint(measureSession.points[measureSession.points.length - 1]);
+        const b = map.latLngToContainerPoint(measureSession.points[measureSession.points.length - 2]);
+        if (Math.hypot(a.x - b.x, a.y - b.y) < 10) measureSession.points.pop();
+      }
+      finishMeasure();
+    }
+
+    function teardownMeasureListeners() {
+      map.doubleClickZoom.enable();
+      containerEl.classList.remove("dts-gis-measuring");
+      map.off("click", onMeasureClick);
+      map.off("mousemove", onMeasureMove);
+      map.off("dblclick", onMeasureDblClick);
+    }
+
+    function cancelMeasureSession() {
+      if (!measureSession) return;
+      if (measureSession.shapeLayer) measureGroup.removeLayer(measureSession.shapeLayer);
+      measureSession.pointLayers.forEach(function (l) { measureGroup.removeLayer(l); });
+      measureSession.labelLayers.forEach(function (l) { measureGroup.removeLayer(l); });
+      teardownMeasureListeners();
+      measureSession = null;
+    }
+
+    function startMeasure(mode, unit) {
+      cancelMeasureSession(); // an in-progress session is abandoned when a new one starts; finished ones stay
+      measureState.mode = mode === "area" ? "area" : "distance";
+      if (unit) measureState.unit = unit;
+      measureSession = { points: [], shapeLayer: null, pointLayers: [], labelLayers: [] };
+      map.doubleClickZoom.disable();
+      containerEl.classList.add("dts-gis-measuring");
+      map.on("click", onMeasureClick);
+      map.on("mousemove", onMeasureMove);
+      map.on("dblclick", onMeasureDblClick);
+      emit("measure", buildMeasureDetail(false));
+    }
+
+    function finishMeasure() {
+      if (!measureSession) return;
+      const minPts = measureState.mode === "area" ? 3 : 2;
+      if (measureSession.points.length < minPts) { cancelMeasure(); return; }
+      redrawMeasureSession(null);
+      finishedMeasureLayers.push(measureSession.shapeLayer);
+      measureSession.pointLayers.forEach(function (l) { finishedMeasureLayers.push(l); });
+      measureSession.labelLayers.forEach(function (l) { finishedMeasureLayers.push(l); });
+      // Built while measureSession is still non-null (buildMeasureDetail reads
+      // its points for the final totals), but the session ends as of this
+      // same event -- active must report false here, not "still active".
+      // Confirmed live: without this override, gis-tools.js's readout got
+      // stuck showing the last in-progress distance instead of resetting.
+      const detail = buildMeasureDetail(true);
+      detail.active = false;
+      teardownMeasureListeners();
+      measureSession = null;
+      emit("measure", detail);
+    }
+
+    function cancelMeasure() {
+      cancelMeasureSession();
+      emit("measure", { mode: null, active: false, finished: false });
+    }
+
+    function clearMeasurements() {
+      cancelMeasureSession();
+      finishedMeasureLayers.forEach(function (l) { measureGroup.removeLayer(l); });
+      finishedMeasureLayers = [];
+      emit("measure", { mode: null, active: false, finished: false, cleared: true });
+    }
+
+    function setMeasureUnit(unit) {
+      measureState.unit = unit === "metric" ? "metric" : "imperial";
+      if (measureSession) { redrawMeasureSession(null); emit("measure", buildMeasureDetail(false)); }
+    }
+
+    /* ---- draw / annotate (task 3.9): point, line, polygon, rectangle, text.
+       Same click-to-vertex/dblclick-finish interaction model as measure
+       (line/polygon only -- point is one click, rectangle is two opposite
+       corners, text is one click + inline text entry owned by gis-tools.js).
+       Drawings are a plain-object registry -- {id,type,color,latlng?,
+       latlngs?,text?} -- so they're already exactly what §7's getState().d
+       and applyState() need, with no Leaflet object ever crossing out. */
+    const drawGroup = L.layerGroup().addTo(map);
+    const drawings = {};
+    const drawingLayers = {};
+    let drawIdCounter = 0;
+    let drawSession = null; // {type, color, points, previewLayer}
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+    }
+
+    // Text labels render through a divIcon's innerHTML -- d.text can arrive
+    // via applyState() from a share link someone else authored, so it must
+    // be escaped here, not trusted as safe markup.
+    function renderDrawingLayer(d) {
+      const color = d.color || "#c49a2a";
+      if (d.type === "point") {
+        return L.circleMarker(d.latlng, { radius: 6, color: color, weight: 2, fillColor: color, fillOpacity: 0.7 });
+      }
+      if (d.type === "text") {
+        return L.marker(d.latlng, {
+          icon: L.divIcon({
+            className: "dts-gis-draw-text", iconSize: null,
+            html: '<span style="color:' + color + '">' + escapeHtml(d.text || "") + "</span>"
+          })
+        });
+      }
+      if (d.type === "line") return L.polyline(d.latlngs, { color: color, weight: 3 });
+      return L.polygon(d.latlngs, { color: color, weight: 2, fillColor: color, fillOpacity: 0.15 }); // polygon | rectangle
+    }
+
+    function addDrawing(d) {
+      const id = d.id || ("d" + (++drawIdCounter) + "-" + Date.now().toString(36));
+      const rec = Object.assign({}, d, { id: id });
+      drawings[id] = rec;
+      drawingLayers[id] = renderDrawingLayer(rec).addTo(drawGroup);
+      emit("draw", { action: "added", drawing: rec });
+      return id;
+    }
+    function removeDrawing(id) {
+      if (!drawings[id]) return;
+      drawGroup.removeLayer(drawingLayers[id]);
+      delete drawingLayers[id];
+      delete drawings[id];
+      emit("draw", { action: "removed", id: id });
+    }
+    function clearDrawings() {
+      drawGroup.clearLayers();
+      Object.keys(drawings).forEach(function (id) { delete drawings[id]; });
+      Object.keys(drawingLayers).forEach(function (id) { delete drawingLayers[id]; });
+      emit("draw", { action: "cleared" });
+    }
+    function getDrawings() { return Object.keys(drawings).map(function (id) { return drawings[id]; }); }
+    function setDrawingText(id, text) {
+      const d = drawings[id];
+      if (!d) return;
+      d.text = text;
+      drawGroup.removeLayer(drawingLayers[id]);
+      drawingLayers[id] = renderDrawingLayer(d).addTo(drawGroup);
+      emit("draw", { action: "updated", drawing: d });
+    }
+
+    function redrawDrawPreview(previewLatLng) {
+      if (drawSession.previewLayer) { drawGroup.removeLayer(drawSession.previewLayer); drawSession.previewLayer = null; }
+      const pts = previewLatLng ? drawSession.points.concat([previewLatLng]) : drawSession.points;
+      if (pts.length < 2) return;
+      const build = drawSession.type === "polygon" ? L.polygon : L.polyline;
+      drawSession.previewLayer = build(pts, {
+        color: drawSession.color, weight: 2, fillOpacity: 0.12, dashArray: previewLatLng ? "6 5" : null
+      }).addTo(drawGroup);
+    }
+
+    function rectCorners(a, b) { return [[a.lat, a.lng], [a.lat, b.lng], [b.lat, b.lng], [b.lat, a.lng]]; }
+
+    function finishDrawSession(pts) {
+      const type = drawSession.type, color = drawSession.color;
+      if (drawSession.previewLayer) drawGroup.removeLayer(drawSession.previewLayer);
+      teardownDrawListeners();
+      drawSession = null;
+      if (type === "point") addDrawing({ type: "point", latlng: [pts[0].lat, pts[0].lng], color: color });
+      else addDrawing({ type: type, latlngs: pts.map(function (p) { return [p.lat, p.lng]; }), color: color });
+    }
+
+    function onDrawClick(e) {
+      const type = drawSession.type;
+      if (type === "point") { finishDrawSession([e.latlng]); return; }
+      if (type === "text") {
+        const color = drawSession.color;
+        teardownDrawListeners();
+        drawSession = null;
+        const id = addDrawing({ type: "text", latlng: [e.latlng.lat, e.latlng.lng], text: "", color: color });
+        emit("draw", { action: "pending-text", id: id, containerPoint: [e.containerPoint.x, e.containerPoint.y] });
+        return;
+      }
+      if (type === "rectangle") {
+        drawSession.points.push(e.latlng);
+        if (drawSession.points.length === 2) finishDrawSession(rectCorners(drawSession.points[0], drawSession.points[1]));
+        return;
+      }
+      drawSession.points.push(e.latlng); // line | polygon
+      redrawDrawPreview(null);
+    }
+    function onDrawMove(e) {
+      if (!drawSession || !drawSession.points.length) return;
+      redrawDrawPreview(e.latlng);
+    }
+    function onDrawDblClick(e) {
+      L.DomEvent.stop(e);
+      if (!drawSession) return;
+      if (drawSession.points.length >= 2) {
+        const a = map.latLngToContainerPoint(drawSession.points[drawSession.points.length - 1]);
+        const b = map.latLngToContainerPoint(drawSession.points[drawSession.points.length - 2]);
+        if (Math.hypot(a.x - b.x, a.y - b.y) < 10) drawSession.points.pop();
+      }
+      const minPts = drawSession.type === "polygon" ? 3 : 2;
+      if (drawSession.points.length < minPts) { cancelDraw(); return; }
+      finishDrawSession(drawSession.points.slice());
+    }
+
+    function teardownDrawListeners() {
+      map.doubleClickZoom.enable();
+      containerEl.classList.remove("dts-gis-drawing");
+      map.off("click", onDrawClick);
+      map.off("mousemove", onDrawMove);
+      map.off("dblclick", onDrawDblClick);
+    }
+    function cancelDrawSession() {
+      if (!drawSession) return;
+      if (drawSession.previewLayer) drawGroup.removeLayer(drawSession.previewLayer);
+      teardownDrawListeners();
+      drawSession = null;
+    }
+    function startDraw(type, color) {
+      cancelDrawSession();
+      drawSession = { type: type, color: color || "#c49a2a", points: [], previewLayer: null };
+      containerEl.classList.add("dts-gis-drawing");
+      map.doubleClickZoom.disable();
+      map.on("click", onDrawClick);
+      if (type === "line" || type === "polygon") { map.on("mousemove", onDrawMove); map.on("dblclick", onDrawDblClick); }
+      emit("draw", { action: "started", type: type });
+    }
+    function cancelDraw() {
+      cancelDrawSession();
+      emit("draw", { action: "cancelled" });
+    }
+
     /* ---- highlight ---- */
     const highlightGroup = L.layerGroup().addTo(map);
     function clearHighlight() { highlightGroup.clearLayers(); }
@@ -732,7 +1134,7 @@
         l: l,
         f: f,   // filters: layerId -> [{field, op, value}], per setLayerFilter
         t: tourState.tour ? [tourState.tour.doc.id, tourState.tour.index] : null,
-        d: []   // drawings -- draw/annotate task
+        d: getDrawings()   // [{id,type,color,latlng?,latlngs?,text?}, …] -- draw/annotate task
       };
     }
 
@@ -762,6 +1164,10 @@
         if (Array.isArray(obj.t) && obj.t[0]) {
           startTour(obj.t[0]);
           if (typeof obj.t[1] === "number") applyStep(obj.t[1]);
+        }
+        if (Array.isArray(obj.d)) {
+          clearDrawings();
+          obj.d.forEach(function (rec) { if (rec && rec.type) addDrawing(rec); });
         }
       } catch (err) {
         console.warn("[gis] applyState: malformed state, falling back to default view:", err);
@@ -813,7 +1219,20 @@
       _getLayerBounds: getLayerBounds,
       _queryLayer: queryLayer,
       _setLayerFilter: setLayerFilter,
-      _zoomToFeature: zoomToFeature
+      _zoomToFeature: zoomToFeature,
+      _geolocate: geolocate,
+      _startMeasure: startMeasure,
+      _finishMeasure: finishMeasure,
+      _cancelMeasure: cancelMeasure,
+      _clearMeasurements: clearMeasurements,
+      _setMeasureUnit: setMeasureUnit,
+      _startDraw: startDraw,
+      _cancelDraw: cancelDraw,
+      _addDrawing: addDrawing,
+      _removeDrawing: removeDrawing,
+      _clearDrawings: clearDrawings,
+      _getDrawings: getDrawings,
+      _setDrawingText: setDrawingText
     };
 
     if (opts.stateParam) {

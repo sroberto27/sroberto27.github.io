@@ -42,7 +42,13 @@
     target: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
     table: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 9.5h17M3.5 14.5h17M9 4.5v15" stroke="currentColor" stroke-width="1.6"/></svg>',
     filter: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7.5V18l-4 2v-7.5L4 5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
-    download: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>'
+    download: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
+    bookmark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.5h12v17l-6-4-6 4v-17z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+    crosshair: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="1.6" fill="currentColor"/><path d="M12 2v5M12 17v5M2 12h5M17 12h5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    locate: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    search: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M20 20l-4.8-4.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    ruler: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 15l6-6 12 12-6 6z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 9l2 2M12 6l2 2M15 3l2 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    pencil: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4.5L15.5 5 19 8.5 8.5 19z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>'
   };
 
   function mount(containerEl, mapDoc, instance, opts) {
@@ -68,6 +74,21 @@
     const host = el("div", { class: "dts-gis-tools" });
     containerEl.appendChild(host);
 
+    // host is a DOM descendant of the same element Leaflet made its map
+    // container -- so, per plain DOM bubbling, any interaction with an
+    // actual control in here (host itself is pointer-events:none; only its
+    // real children opt back in) would otherwise also reach Leaflet's own
+    // container-level listeners as a genuine map click/drag/wheel. Real bug
+    // caught live: opening the measure panel, or switching its mode/unit
+    // mid-measurement, injected a spurious vertex at the clicked button's
+    // screen position, since gis-viewer.js's map click listener was already
+    // (re-)attached by the time the same click event finished bubbling here.
+    // Stopping propagation at this single root -- not per-control -- is the
+    // one place that fixes every current and future control the same way.
+    ["click", "dblclick", "mousedown", "mouseup", "mousemove", "wheel", "touchstart", "touchmove"].forEach(function (type) {
+      host.addEventListener(type, function (e) { e.stopPropagation(); });
+    });
+
     const toolbar = el("div", { class: "dts-gis-toolbar" });
     host.appendChild(toolbar);
 
@@ -77,9 +98,11 @@
 
     function closePanel() {
       if (!openPanel) return;
-      panels[openPanel].panel.hidden = true;
-      panels[openPanel].btn.setAttribute("aria-expanded", "false");
+      const closing = panels[openPanel];
+      closing.panel.hidden = true;
+      closing.btn.setAttribute("aria-expanded", "false");
       openPanel = null;
+      if (closing.onClose) closing.onClose(); // e.g. measure: stop an in-progress session, don't leave map listeners dangling
     }
 
     function openPanelByName(name) {
@@ -91,8 +114,8 @@
       if (panels[name].onOpen) panels[name].onOpen();
     }
 
-    function registerPanel(name, btn, panel, onOpen) {
-      panels[name] = { btn: btn, panel: panel, onOpen: onOpen };
+    function registerPanel(name, btn, panel, onOpen, onClose) {
+      panels[name] = { btn: btn, panel: panel, onOpen: onOpen, onClose: onClose };
       btn.addEventListener("click", function () { openPanelByName(name); });
       host.appendChild(panel);
     }
@@ -571,8 +594,8 @@
       });
       const rowsContainer = el("div", { class: "dts-gis-filter-rows" });
       const addRowBtn = el("button", { type: "button", class: "dts-gis-filter-add", text: "+ Add condition" });
-      const applyBtn = el("button", { type: "button", class: "dts-gis-filter-apply", text: "Apply" });
-      const clearBtn = el("button", { type: "button", class: "dts-gis-filter-clear", text: "Clear" });
+      const applyBtn = el("button", { type: "button", class: "dts-gis-btn-primary", text: "Apply" });
+      const clearBtn = el("button", { type: "button", class: "dts-gis-btn-secondary", text: "Clear" });
 
       function activeFilterDef() { return queryableDefs.find(function (d) { return d.id === filterLayerId; }); }
 
@@ -799,6 +822,468 @@
       ]);
       tableDrawer.querySelector(".dts-gis-panel-close").addEventListener("click", closePanel);
       registerPanel("table", tableBtn, tableDrawer, renderAttributeTable);
+    }
+
+    /* ================= bookmarks (task 3.9) =================
+       Read-only at runtime, authored in the CMS (mapDoc.bookmarks). No
+       engine changes needed at all: setView() already accepts either a
+       {center,zoom} or {bbox} view object, which is exactly what a
+       bookmark's own `view` already is. */
+    if (tools.bookmarks !== false && Array.isArray(mapDoc.bookmarks) && mapDoc.bookmarks.length) {
+      const bookmarksBtn = el("button", {
+        class: "dts-gis-toolbtn", type: "button", "aria-label": "Bookmarks",
+        "aria-expanded": "false", "aria-controls": "dtsGisBookmarksPanel", html: ICONS.bookmark
+      });
+      toolbar.appendChild(bookmarksBtn);
+
+      const bookmarksBody = el("div", { class: "dts-gis-panel-body dts-gis-bookmarks" });
+      mapDoc.bookmarks.forEach(function (b) {
+        const item = el("button", { type: "button", class: "dts-gis-bookmark-item", text: b.title || b.id });
+        item.addEventListener("click", function () { instance.setView(b.view); closePanel(); });
+        bookmarksBody.appendChild(item);
+      });
+      const bookmarksPanel = el("div", {
+        class: "dts-gis-panel", id: "dtsGisBookmarksPanel", role: "region", "aria-label": "Bookmarks", hidden: ""
+      }, [
+        el("div", { class: "dts-gis-panel-head" }, [
+          el("h3", { text: "Bookmarks" }),
+          el("button", { class: "dts-gis-panel-close", type: "button", "aria-label": "Close bookmarks panel", html: ICONS.close })
+        ]),
+        bookmarksBody
+      ]);
+      bookmarksPanel.querySelector(".dts-gis-panel-close").addEventListener("click", closePanel);
+      registerPanel("bookmarks", bookmarksBtn, bookmarksPanel);
+    }
+
+    /* ================= coordinates (task 3.9) =================
+       Live readout is always-on map chrome while the tool is enabled (like
+       the scale bar), not gated behind a panel open/closed state; the panel
+       only holds the "go to coordinates" action. Parsing accepts decimal
+       degrees ("29.87, -91.75") or DMS ("29°52'12\"N 91°45'00\"W"). */
+    function parseCoordInput(text) {
+      const dd = text.match(/^\s*(-?\d+(?:\.\d+)?)\s*[,\s]\s*(-?\d+(?:\.\d+)?)\s*$/);
+      if (dd) return { lat: parseFloat(dd[1]), lng: parseFloat(dd[2]) };
+      const dmsPart = "(\\d+)[°\\s]+(\\d+)['\\s]+([\\d.]+)[\"\\s]*([NSEW])";
+      const dms = new RegExp("^\\s*" + dmsPart + "\\s*[,\\s]\\s*" + dmsPart + "\\s*$", "i").exec(text);
+      if (dms) {
+        function toDec(deg, min, sec, hemi) {
+          const v = parseFloat(deg) + parseFloat(min) / 60 + parseFloat(sec) / 3600;
+          return /[SW]/i.test(hemi) ? -v : v;
+        }
+        const a = toDec(dms[1], dms[2], dms[3], dms[4]);
+        const b = toDec(dms[5], dms[6], dms[7], dms[8]);
+        // Whichever of the pair carries N/S is latitude, regardless of order.
+        const aIsLat = /[NS]/i.test(dms[4]);
+        return aIsLat ? { lat: a, lng: b } : { lat: b, lng: a };
+      }
+      return null;
+    }
+
+    if (tools.coordinates !== false) {
+      const coordReadout = el("button", { type: "button", class: "dts-gis-coord-readout", "aria-label": "Copy coordinates" });
+      host.appendChild(coordReadout);
+      let lastCoord = null;
+      offListeners.push(instance.on("pointer", function (detail) {
+        lastCoord = detail;
+        coordReadout.textContent = detail.lat.toFixed(5) + ", " + detail.lng.toFixed(5);
+      }));
+      coordReadout.addEventListener("click", function () {
+        if (!lastCoord || !navigator.clipboard) return;
+        navigator.clipboard.writeText(lastCoord.lat.toFixed(5) + ", " + lastCoord.lng.toFixed(5)).then(function () {
+          const prev = coordReadout.textContent;
+          coordReadout.textContent = "Copied";
+          setTimeout(function () { coordReadout.textContent = prev; }, 900);
+        }).catch(function () {});
+      });
+
+      const coordBtn = el("button", {
+        class: "dts-gis-toolbtn", type: "button", "aria-label": "Go to coordinates",
+        "aria-expanded": "false", "aria-controls": "dtsGisCoordPanel", html: ICONS.crosshair
+      });
+      toolbar.appendChild(coordBtn);
+
+      const coordInput = el("input", { type: "text", class: "dts-gis-coord-input", placeholder: "29.87, -91.75 or DMS", "aria-label": "Coordinates" });
+      const coordGoBtn = el("button", { type: "button", class: "dts-gis-btn-primary", text: "Go" });
+      const coordStatus = el("p", { class: "dts-gis-coord-status", role: "status" });
+      function goToCoords() {
+        const parsed = parseCoordInput(coordInput.value);
+        if (!parsed) { coordStatus.textContent = "Couldn't parse that -- try \"29.87, -91.75\"."; return; }
+        coordStatus.textContent = "";
+        instance.setView({ center: [parsed.lat, parsed.lng], zoom: Math.max(state.zoom, 14) });
+      }
+      coordGoBtn.addEventListener("click", goToCoords);
+      coordInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); goToCoords(); } });
+
+      const coordPanel = el("div", {
+        class: "dts-gis-panel", id: "dtsGisCoordPanel", role: "region", "aria-label": "Go to coordinates", hidden: ""
+      }, [
+        el("div", { class: "dts-gis-panel-head" }, [
+          el("h3", { text: "Go to coordinates" }),
+          el("button", { class: "dts-gis-panel-close", type: "button", "aria-label": "Close coordinates panel", html: ICONS.close })
+        ]),
+        el("div", { class: "dts-gis-panel-body" }, [
+          el("div", { class: "dts-gis-coord-row" }, [coordInput, coordGoBtn]), coordStatus
+        ])
+      ]);
+      coordPanel.querySelector(".dts-gis-panel-close").addEventListener("click", closePanel);
+      registerPanel("coords", coordBtn, coordPanel);
+    }
+
+    /* ================= geolocate (task 3.9) =================
+       One-shot, gated behind instance._geolocate (absent only if
+       gis-viewer.js somehow didn't load the seam -- never in practice).
+       §11: a permission denial stays silent (no scolding, no toast) --
+       every other outcome gets a brief, dismissible one. */
+    if (tools.geolocate !== false && instance._geolocate) {
+      const geoBtn = el("button", { class: "dts-gis-toolbtn", type: "button", "aria-label": "My location", html: ICONS.locate });
+      toolbar.appendChild(geoBtn);
+      const geoToast = el("div", { class: "dts-gis-toast", role: "status", hidden: "" });
+      host.appendChild(geoToast);
+      let geoToastTimer = null;
+      function showGeoToast(children, autoHideMs) {
+        geoToast.textContent = "";
+        (Array.isArray(children) ? children : [document.createTextNode(children)]).forEach(function (c) { geoToast.appendChild(c); });
+        geoToast.hidden = false;
+        if (geoToastTimer) clearTimeout(geoToastTimer);
+        if (autoHideMs) geoToastTimer = setTimeout(function () { geoToast.hidden = true; }, autoHideMs);
+      }
+      geoBtn.addEventListener("click", function () {
+        geoBtn.disabled = true;
+        showGeoToast("Locating…");
+        instance._geolocate().then(function (result) {
+          geoBtn.disabled = false;
+          if (result.withinParish) { showGeoToast("Location found.", 2500); return; }
+          const zoomBtn = el("button", { type: "button", class: "dts-gis-toast-action", text: "Zoom to parish" });
+          zoomBtn.addEventListener("click", function () { instance.setView(mapDoc.view); geoToast.hidden = true; });
+          showGeoToast([document.createTextNode("You're outside Iberia Parish. "), zoomBtn]);
+        }).catch(function (err) {
+          geoBtn.disabled = false;
+          if (err && err.code === "denied") { geoToast.hidden = true; return; }
+          showGeoToast("Couldn't get your location.", 3000);
+        });
+      });
+    }
+
+    /* ================= search (task 3.9) =================
+       Two parish-limited scopes per §6: (a) feature search across queryable
+       layers by a "primary field" -- def.searchField if the map document
+       sets one (an additive, backward-compatible extension to §4's layer
+       schema, same spirit as popup/legend), else the first field
+       fieldsForLayer() resolves for that layer; (b) place search via
+       Nominatim, bounded to the map's own parish envelope. sources.json
+       confirmed the Iberia AddressLocators service is token-restricted, so
+       Nominatim -- not that service -- is the only place-search option per
+       §6's own fallback chain; no silent statewide results if it fails. */
+    if (tools.search !== false) {
+      const searchBtn = el("button", {
+        class: "dts-gis-toolbtn", type: "button", "aria-label": "Search",
+        "aria-expanded": "false", "aria-controls": "dtsGisSearchPanel", html: ICONS.search
+      });
+      toolbar.appendChild(searchBtn);
+
+      const searchInput = el("input", { type: "search", class: "dts-gis-search-input", placeholder: "Search this map…", "aria-label": "Search" });
+      const searchResults = el("div", { class: "dts-gis-search-results" });
+      const searchFieldCache = {};
+      function searchFieldFor(def) {
+        if (def.searchField) return Promise.resolve(def.searchField);
+        if (searchFieldCache[def.id]) return searchFieldCache[def.id];
+        searchFieldCache[def.id] = fieldsForLayer(def).then(function (fields) { return fields.length ? fields[0].name : null; });
+        return searchFieldCache[def.id];
+      }
+
+      function searchFeatures(q) {
+        const lower = q.toLowerCase();
+        return Promise.all(queryableDefs.map(function (def) {
+          return searchFieldFor(def).then(function (field) {
+            if (!field) return [];
+            return queryRows(def).then(function (rows) {
+              return rows.filter(function (f) {
+                const v = (f.properties || {})[field];
+                return v != null && String(v).toLowerCase().indexOf(lower) !== -1;
+              }).slice(0, 6).map(function (f) { return { def: def, feature: f, label: String((f.properties || {})[field]) }; });
+            });
+          });
+        })).then(function (grouped) { return [].concat.apply([], grouped); });
+      }
+
+      function searchPlaces(q) {
+        const b = mapDoc.view && mapDoc.view.maxBounds;
+        const params = new URLSearchParams({ format: "json", q: q, countrycodes: "us", limit: "5" });
+        if (b) { params.set("viewbox", b[0][1] + "," + b[1][0] + "," + b[1][1] + "," + b[0][0]); params.set("bounded", "1"); }
+        return fetch("https://nominatim.openstreetmap.org/search?" + params.toString())
+          .then(function (res) { if (!res.ok) throw new Error("HTTP " + res.status); return res.json(); })
+          .then(function (results) { return results.map(function (r) { return { label: r.display_name, lat: parseFloat(r.lat), lng: parseFloat(r.lon) }; }); })
+          .catch(function (err) { console.warn("[gis-tools] place search failed:", err); return null; });
+      }
+
+      let searchDebounce = null;
+      function runSearch() {
+        const q = searchInput.value.trim();
+        searchResults.textContent = "";
+        if (q.length < 2) return;
+        searchResults.appendChild(el("p", { class: "dts-gis-search-status", text: "Searching…" }));
+        Promise.all([searchFeatures(q), searchPlaces(q)]).then(function (res) {
+          const features = res[0], places = res[1];
+          searchResults.textContent = "";
+          if (features.length) {
+            searchResults.appendChild(el("h4", { class: "dts-gis-search-heading", text: "On this map" }));
+            features.forEach(function (r) {
+              const item = el("button", { type: "button", class: "dts-gis-search-item" }, [
+                document.createTextNode(r.label), el("span", { class: "dts-gis-search-sub", text: r.def.title || r.def.id })
+              ]);
+              item.addEventListener("click", function () {
+                instance._zoomToFeature(r.def.id, { objectIds: [rowFeatureId(r.feature)] });
+                closePanel();
+              });
+              searchResults.appendChild(item);
+            });
+          }
+          if (places === null) {
+            searchResults.appendChild(el("p", { class: "dts-gis-search-status", text: "Place search is unavailable right now." }));
+          } else if (places.length) {
+            searchResults.appendChild(el("h4", { class: "dts-gis-search-heading", text: "Places" }));
+            places.forEach(function (r) {
+              const item = el("button", { type: "button", class: "dts-gis-search-item", text: r.label });
+              item.addEventListener("click", function () {
+                instance.setView({ center: [r.lat, r.lng], zoom: 15 });
+                closePanel();
+              });
+              searchResults.appendChild(item);
+            });
+          }
+          if (!features.length && (places === null || !places.length)) {
+            searchResults.appendChild(el("p", { class: "dts-gis-search-status", text: "No matches." }));
+          }
+        });
+      }
+      searchInput.addEventListener("input", function () {
+        if (searchDebounce) clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(runSearch, 350);
+      });
+      searchInput.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); if (searchDebounce) clearTimeout(searchDebounce); runSearch(); } });
+
+      const searchPanel = el("div", {
+        class: "dts-gis-panel", id: "dtsGisSearchPanel", role: "region", "aria-label": "Search", hidden: ""
+      }, [
+        el("div", { class: "dts-gis-panel-head" }, [
+          el("h3", { text: "Search" }),
+          el("button", { class: "dts-gis-panel-close", type: "button", "aria-label": "Close search panel", html: ICONS.close })
+        ]),
+        el("div", { class: "dts-gis-panel-body" }, [searchInput, searchResults])
+      ]);
+      searchPanel.querySelector(".dts-gis-panel-close").addEventListener("click", closePanel);
+      registerPanel("search", searchBtn, searchPanel, function () { searchInput.focus(); });
+    }
+
+    /* ================= measure (task 3.9) =================
+       All interaction (click-to-vertex, live preview, dblclick-finish,
+       on-map labels) lives in gis-viewer.js -- this panel only starts/stops
+       a session and mirrors its running total as text (§10: the on-map
+       label is not the only channel). Escape cancels an in-progress
+       session; the Clear button removes every finished measurement. */
+    if (tools.measure !== false && instance._startMeasure) {
+      const measureBtn = el("button", {
+        class: "dts-gis-toolbtn", type: "button", "aria-label": "Measure",
+        "aria-expanded": "false", "aria-controls": "dtsGisMeasurePanel", html: ICONS.ruler
+      });
+      toolbar.appendChild(measureBtn);
+
+      let measureMode = "distance", measureUnit = "imperial";
+      const distBtn = el("button", { type: "button", class: "dts-gis-seg-btn", "aria-pressed": "true", text: "Distance" });
+      const areaBtn = el("button", { type: "button", class: "dts-gis-seg-btn", "aria-pressed": "false", text: "Area" });
+      const unitImperial = el("button", { type: "button", class: "dts-gis-seg-btn", "aria-pressed": "true", text: "ft / mi" });
+      const unitMetric = el("button", { type: "button", class: "dts-gis-seg-btn", "aria-pressed": "false", text: "m / km" });
+      const measureReadout = el("p", { class: "dts-gis-measure-readout", role: "status", text: "Click the map to start measuring." });
+      const finishBtn = el("button", { type: "button", class: "dts-gis-btn-primary", text: "Finish" });
+      const clearBtn = el("button", { type: "button", class: "dts-gis-btn-secondary", text: "Clear" });
+
+      function setPressed(group, active) { group.forEach(function (b) { b.setAttribute("aria-pressed", b === active ? "true" : "false"); }); }
+      function restart() { instance._startMeasure(measureMode, measureUnit); }
+      distBtn.addEventListener("click", function () { measureMode = "distance"; setPressed([distBtn, areaBtn], distBtn); restart(); });
+      areaBtn.addEventListener("click", function () { measureMode = "area"; setPressed([distBtn, areaBtn], areaBtn); restart(); });
+      unitImperial.addEventListener("click", function () { measureUnit = "imperial"; setPressed([unitImperial, unitMetric], unitImperial); instance._setMeasureUnit(measureUnit); });
+      unitMetric.addEventListener("click", function () { measureUnit = "metric"; setPressed([unitImperial, unitMetric], unitMetric); instance._setMeasureUnit(measureUnit); });
+      finishBtn.addEventListener("click", function () { if (instance._finishMeasure) instance._finishMeasure(); });
+      clearBtn.addEventListener("click", function () { instance._clearMeasurements(); });
+
+      offListeners.push(instance.on("measure", function (detail) {
+        if (!detail || !detail.active) {
+          measureReadout.textContent = "Click the map to start measuring.";
+          return;
+        }
+        measureReadout.textContent = detail.mode === "area"
+          ? (detail.points.length < 3 ? "Click to add points, double-click to finish." : "Area: " + formatAreaLabel(detail.areaM2, detail.unit))
+          : (detail.points.length < 2 ? "Click to add points, double-click to finish." : "Distance: " + formatDistanceLabel(detail.distanceM, detail.unit));
+      }));
+
+      // Mirrors gis-viewer.js's own formatDistance/formatArea -- kept local
+      // for the same reason as matchesConditions above: this file only
+      // reads engine state through events/seams, never its module scope.
+      function formatDistanceLabel(m, unit) {
+        if (unit === "metric") return m < 1000 ? Math.round(m) + " m" : (m / 1000).toFixed(2) + " km";
+        return m < 528 ? Math.round(m * 3.28084) + " ft" : (m / 1609.344).toFixed(2) + " mi";
+      }
+      function formatAreaLabel(m2, unit) {
+        if (unit === "metric") return m2 < 1e6 ? Math.round(m2) + " m²" : (m2 / 1e6).toFixed(2) + " km²";
+        return (m2 / 4046.8564224).toFixed(2) + " ac";
+      }
+
+      function onMeasureKeydown(e) { if (e.key === "Escape") instance._cancelMeasure(); }
+      document.addEventListener("keydown", onMeasureKeydown);
+      offListeners.push(function () { document.removeEventListener("keydown", onMeasureKeydown); });
+
+      const measurePanel = el("div", {
+        class: "dts-gis-panel", id: "dtsGisMeasurePanel", role: "region", "aria-label": "Measure", hidden: ""
+      }, [
+        el("div", { class: "dts-gis-panel-head" }, [
+          el("h3", { text: "Measure" }),
+          el("button", { class: "dts-gis-panel-close", type: "button", "aria-label": "Close measure panel", html: ICONS.close })
+        ]),
+        el("div", { class: "dts-gis-panel-body" }, [
+          el("div", { class: "dts-gis-segmented" }, [distBtn, areaBtn]),
+          el("div", { class: "dts-gis-segmented" }, [unitImperial, unitMetric]),
+          measureReadout,
+          el("div", { class: "dts-gis-filter-actions" }, [finishBtn, clearBtn])
+        ])
+      ]);
+      measurePanel.querySelector(".dts-gis-panel-close").addEventListener("click", closePanel);
+      registerPanel("measure", measureBtn, measurePanel, restart, function () { instance._cancelMeasure(); });
+    }
+
+    /* ================= draw / annotate (task 3.9) =================
+       Same shape as measure: interaction lives in gis-viewer.js, this panel
+       starts/stops sessions and reflects state as text. Drawings persist in
+       the engine's own registry (included in getState().d per §7, so they
+       survive a share link) until Clear or _removeDrawing. Text labels need
+       a value gis-viewer.js can't collect itself -- the engine places the
+       point and emits "pending-text"; this file shows a small inline input
+       at that point's containerPoint (same positioning technique the 3.7
+       identify popup already uses) and finalizes or discards it. */
+    if (tools.draw !== false && instance._startDraw) {
+      const drawBtn = el("button", {
+        class: "dts-gis-toolbtn", type: "button", "aria-label": "Draw",
+        "aria-expanded": "false", "aria-controls": "dtsGisDrawPanel", html: ICONS.pencil
+      });
+      toolbar.appendChild(drawBtn);
+
+      const DRAW_COLORS = ["#c49a2a", "#4fb3ff", "#e35b5b", "#5bd0a0", "#e3b855"];
+      let drawColor = DRAW_COLORS[0];
+      const typeRow = el("div", { class: "dts-gis-segmented dts-gis-draw-types" });
+      ["point", "line", "polygon", "rectangle", "text"].forEach(function (type, i) {
+        const btn = el("button", {
+          type: "button", class: "dts-gis-seg-btn", "aria-pressed": i === 0 ? "true" : "false",
+          text: type.charAt(0).toUpperCase() + type.slice(1)
+        });
+        btn.addEventListener("click", function () {
+          Array.prototype.forEach.call(typeRow.children, function (b) { b.setAttribute("aria-pressed", b === btn ? "true" : "false"); });
+          instance._startDraw(type, drawColor);
+        });
+        typeRow.appendChild(btn);
+      });
+
+      const colorRow = el("div", { class: "dts-gis-draw-colors" });
+      const colorSwatches = DRAW_COLORS.map(function (c) {
+        const sw = el("button", { type: "button", class: "dts-gis-draw-swatch", "aria-label": "Colour " + c, style: "background:" + c });
+        sw.addEventListener("click", function () {
+          drawColor = c;
+          colorSwatches.forEach(function (s) { s.classList.toggle("is-active", s === sw); });
+        });
+        colorRow.appendChild(sw);
+        return sw;
+      });
+      colorSwatches[0].classList.add("is-active");
+
+      const drawReadout = el("p", { class: "dts-gis-measure-readout", role: "status", text: "Choose a type above, then click the map." });
+      const drawClearBtn = el("button", { type: "button", class: "dts-gis-btn-secondary", text: "Clear" });
+      const drawDownloadBtn = el("button", { type: "button", class: "dts-gis-btn-primary", text: "Download GeoJSON" });
+      drawClearBtn.addEventListener("click", function () { instance._clearDrawings(); });
+
+      function drawingsToGeoJson(list) {
+        return {
+          type: "FeatureCollection",
+          features: list.map(function (d) {
+            let geometry;
+            if (d.type === "point" || d.type === "text") geometry = { type: "Point", coordinates: [d.latlng[1], d.latlng[0]] };
+            else if (d.type === "line") geometry = { type: "LineString", coordinates: d.latlngs.map(function (p) { return [p[1], p[0]]; }) };
+            else geometry = { type: "Polygon", coordinates: [d.latlngs.concat([d.latlngs[0]]).map(function (p) { return [p[1], p[0]]; })] };
+            const props = { type: d.type, color: d.color };
+            if (d.text) props.text = d.text;
+            return { type: "Feature", properties: props, geometry: geometry };
+          })
+        };
+      }
+      drawDownloadBtn.addEventListener("click", function () {
+        const list = instance._getDrawings ? instance._getDrawings() : [];
+        if (!list.length) return;
+        const blob = new Blob([JSON.stringify(drawingsToGeoJson(list), null, 2)], { type: "application/geo+json" });
+        const url = URL.createObjectURL(blob);
+        const a = el("a", { href: url, download: "drawings.geojson" });
+        document.body.appendChild(a); a.click(); a.remove();
+        URL.revokeObjectURL(url);
+      });
+
+      offListeners.push(instance.on("draw", function (detail) {
+        if (!detail) return;
+        if (detail.action === "started") {
+          drawReadout.textContent = detail.type === "point" ? "Click the map to place the point."
+            : detail.type === "text" ? "Click the map to place the label."
+            : detail.type === "rectangle" ? "Click two opposite corners."
+            : "Click to add points, double-click to finish.";
+        } else if (detail.action === "cancelled" || detail.action === "cleared") {
+          drawReadout.textContent = "Choose a type above, then click the map.";
+        } else if (detail.action === "added") {
+          drawReadout.textContent = "Added. Choose a type to draw another.";
+        } else if (detail.action === "pending-text") {
+          showTextInput(detail.id, detail.containerPoint);
+        }
+      }));
+
+      let textInputEl = null;
+      function closeTextInput(commit) {
+        if (!textInputEl) return;
+        const wrap = textInputEl;
+        textInputEl = null; // set before remove(): its synchronous blur re-enters this function
+        const id = wrap._dtsDrawId;
+        const value = wrap.querySelector("input").value.trim();
+        wrap.remove();
+        if (commit && value) instance._setDrawingText(id, value);
+        else instance._removeDrawing(id);
+      }
+      function showTextInput(id, containerPoint) {
+        closeTextInput(false);
+        const input = el("input", { type: "text", placeholder: "Label text", "aria-label": "Label text" });
+        const wrap = el("div", { class: "dts-gis-draw-textbox" }, [input]);
+        wrap.style.left = containerPoint[0] + "px";
+        wrap.style.top = containerPoint[1] + "px";
+        wrap._dtsDrawId = id;
+        input.addEventListener("keydown", function (e) {
+          if (e.key === "Enter") { e.preventDefault(); closeTextInput(true); }
+          if (e.key === "Escape") { e.preventDefault(); closeTextInput(false); }
+        });
+        input.addEventListener("blur", function () { closeTextInput(true); });
+        host.appendChild(wrap);
+        textInputEl = wrap;
+        input.focus();
+      }
+
+      function onDrawKeydown(e) { if (e.key === "Escape" && !textInputEl) instance._cancelDraw(); }
+      document.addEventListener("keydown", onDrawKeydown);
+      offListeners.push(function () { document.removeEventListener("keydown", onDrawKeydown); });
+
+      const drawPanel = el("div", {
+        class: "dts-gis-panel", id: "dtsGisDrawPanel", role: "region", "aria-label": "Draw", hidden: ""
+      }, [
+        el("div", { class: "dts-gis-panel-head" }, [
+          el("h3", { text: "Draw" }),
+          el("button", { class: "dts-gis-panel-close", type: "button", "aria-label": "Close draw panel", html: ICONS.close })
+        ]),
+        el("div", { class: "dts-gis-panel-body" }, [
+          typeRow, colorRow, drawReadout,
+          el("div", { class: "dts-gis-filter-actions" }, [drawDownloadBtn, drawClearBtn])
+        ])
+      ]);
+      drawPanel.querySelector(".dts-gis-panel-close").addEventListener("click", closePanel);
+      registerPanel("draw", drawBtn, drawPanel, null, function () { closeTextInput(false); instance._cancelDraw(); });
     }
 
     /* ================= keep state in sync ================= */

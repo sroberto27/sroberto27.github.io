@@ -315,16 +315,16 @@
 .dts-gis-filter-add:hover,
 .dts-gis-filter-add:focus{ border-color:var(--gold); color:var(--gold-bright); }
 .dts-gis-filter-actions{ display:flex; gap:8px; margin-top:10px; }
-.dts-gis-filter-apply,
-.dts-gis-filter-clear{
+.dts-gis-btn-primary,
+.dts-gis-btn-secondary{
   appearance:none; flex:1 1 auto; border-radius:7px; font:700 11.5px var(--sans); padding:7px 10px; cursor:pointer;
 }
-.dts-gis-filter-apply{ background:var(--gold); border:1px solid var(--gold); color:#1a1305; }
-.dts-gis-filter-apply:hover,
-.dts-gis-filter-apply:focus{ background:var(--gold-bright); border-color:var(--gold-bright); }
-.dts-gis-filter-clear{ background:transparent; border:1px solid var(--line); color:var(--muted); }
-.dts-gis-filter-clear:hover,
-.dts-gis-filter-clear:focus{ border-color:var(--gold); color:var(--gold-bright); }
+.dts-gis-btn-primary{ background:var(--gold); border:1px solid var(--gold); color:#1a1305; }
+.dts-gis-btn-primary:hover,
+.dts-gis-btn-primary:focus{ background:var(--gold-bright); border-color:var(--gold-bright); }
+.dts-gis-btn-secondary{ background:transparent; border:1px solid var(--line); color:var(--muted); }
+.dts-gis-btn-secondary:hover,
+.dts-gis-btn-secondary:focus{ border-color:var(--gold); color:var(--gold-bright); }
 
 /* ---------- attribute table drawer -- bottom, full width, at every
    viewport (unlike .dts-gis-panel, which is only a bottom sheet under
@@ -383,6 +383,120 @@
 .dts-gis-table tbody tr:hover,
 .dts-gis-table tbody tr:focus{ background:var(--bg-3); }
 .dts-gis-table tbody tr:focus{ outline:2px solid var(--gold-bright); outline-offset:-2px; }
+
+/* ============================================================
+   Bookmarks, coordinates, geolocate, search, measure, draw (task 3.9)
+   ============================================================ */
+
+/* ---------- shared primary/secondary action buttons -- filter, coords
+   "Go", measure Finish/Clear, draw Download/Clear all share these ---------- */
+.dts-gis-btn-primary,
+.dts-gis-btn-secondary{ border-radius:7px; font:700 11.5px var(--sans); padding:7px 10px; cursor:pointer; appearance:none; }
+.dts-gis-btn-primary{ flex:1 1 auto; background:var(--gold); border:1px solid var(--gold); color:#1a1305; }
+.dts-gis-btn-primary:hover,
+.dts-gis-btn-primary:focus{ background:var(--gold-bright); border-color:var(--gold-bright); }
+.dts-gis-btn-secondary{ flex:1 1 auto; background:transparent; border:1px solid var(--line); color:var(--muted); }
+.dts-gis-btn-secondary:hover,
+.dts-gis-btn-secondary:focus{ border-color:var(--gold); color:var(--gold-bright); }
+
+/* ---------- bookmarks ---------- */
+.dts-gis-bookmarks{ display:flex; flex-direction:column; gap:4px; }
+.dts-gis-bookmark-item{
+  appearance:none; text-align:left; background:transparent; border:1px solid var(--line-soft); border-radius:8px;
+  color:var(--ink); font:600 12px var(--sans); padding:8px 10px; cursor:pointer;
+}
+.dts-gis-bookmark-item:hover,
+.dts-gis-bookmark-item:focus{ border-color:var(--gold); color:var(--gold-bright); }
+
+/* ---------- coordinates ---------- */
+.dts-gis-coord-readout{
+  position:absolute; left:10px; bottom:26px; z-index:1150; pointer-events:auto;
+  appearance:none; background:var(--glass); border:1px solid var(--line); border-radius:8px;
+  color:var(--muted); font:600 11px var(--sans); padding:5px 9px; cursor:pointer;
+  box-shadow:0 6px 16px rgba(0,0,0,.35);
+}
+.dts-gis-coord-readout:hover,
+.dts-gis-coord-readout:focus{ border-color:var(--gold); color:var(--gold-bright); }
+.dts-gis-coord-row{ display:flex; gap:6px; }
+.dts-gis-coord-input{
+  flex:1 1 auto; min-width:0; background:var(--glass); color:var(--ink); border:1px solid var(--line);
+  border-radius:7px; font:600 12px var(--sans); padding:6px 8px;
+}
+.dts-gis-coord-status{ margin:8px 0 0; font-size:11px; color:var(--faint); }
+
+/* ---------- geolocate toast ---------- */
+.dts-gis-toast{
+  position:absolute; top:48px; right:10px; z-index:1200; pointer-events:auto;
+  display:flex; align-items:center; gap:8px;
+  background:var(--glass); border:1px solid var(--gold); border-radius:10px;
+  color:var(--ink); font:600 11.5px var(--sans); padding:8px 12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.5); max-width:min(260px, calc(100% - 20px));
+}
+.dts-gis-toast[hidden]{ display:none; }
+.dts-gis-toast-action{
+  appearance:none; flex:none; background:transparent; border:1px solid var(--line); border-radius:6px;
+  color:var(--gold-bright); font:700 11px var(--sans); padding:4px 8px; cursor:pointer;
+}
+.dts-gis-toast-action:hover,
+.dts-gis-toast-action:focus{ border-color:var(--gold); }
+
+/* ---------- search ---------- */
+.dts-gis-search-input{
+  width:100%; background:var(--glass); color:var(--ink); border:1px solid var(--line);
+  border-radius:7px; font:600 12.5px var(--sans); padding:7px 9px; margin-bottom:8px;
+}
+.dts-gis-search-heading{ margin:8px 0 4px; font-size:10.5px; font-weight:700; letter-spacing:.04em; text-transform:uppercase; color:var(--faint); }
+.dts-gis-search-heading:first-child{ margin-top:0; }
+.dts-gis-search-item{
+  display:flex; flex-direction:column; align-items:flex-start; gap:1px; width:100%;
+  appearance:none; text-align:left; background:transparent; border:0; border-top:1px solid var(--line-soft);
+  color:var(--ink); font:600 12px var(--sans); padding:7px 2px; cursor:pointer;
+}
+.dts-gis-search-item:hover,
+.dts-gis-search-item:focus{ color:var(--gold-bright); }
+.dts-gis-search-sub{ font:500 10.5px var(--sans); color:var(--faint); }
+.dts-gis-search-status{ margin:6px 2px; color:var(--faint); font-size:11.5px; }
+
+/* ---------- segmented mode/unit toggles (measure, draw type row) ---------- */
+.dts-gis-segmented{ display:flex; gap:0; border:1px solid var(--line); border-radius:8px; overflow:hidden; margin-bottom:6px; }
+.dts-gis-draw-types{ flex-wrap:wrap; border:0; gap:4px; }
+.dts-gis-draw-types .dts-gis-seg-btn{ border:1px solid var(--line); border-radius:7px; flex:1 1 auto; }
+.dts-gis-seg-btn{
+  flex:1 1 0; appearance:none; background:transparent; border:0; border-right:1px solid var(--line);
+  color:var(--muted); font:600 11px var(--sans); padding:6px 4px; cursor:pointer;
+}
+.dts-gis-seg-btn:last-child{ border-right:0; }
+.dts-gis-seg-btn[aria-pressed="true"]{ background:var(--gold); color:#1a1305; font-weight:700; }
+.dts-gis-seg-btn:not([aria-pressed="true"]):hover,
+.dts-gis-seg-btn:not([aria-pressed="true"]):focus{ color:var(--gold-bright); }
+
+/* ---------- measure / draw shared readout + on-map labels ---------- */
+.dts-gis-measure-readout{ margin:2px 0 10px; font-size:12px; color:var(--muted); min-height:2.6em; }
+.dts-gis-filter-actions{ display:flex; gap:8px; margin-top:4px; }
+.dts-gis-map.leaflet-container.dts-gis-measuring,
+.dts-gis-map.leaflet-container.dts-gis-drawing{ cursor:crosshair; }
+.dts-gis-measure-label{
+  background:var(--glass); border:1px solid var(--gold); border-radius:6px;
+  color:var(--ink); font:600 10.5px var(--sans); padding:2px 6px; white-space:nowrap;
+  transform:translate(-50%, -50%); box-shadow:0 4px 10px rgba(0,0,0,.4);
+}
+.dts-gis-measure-label.dts-gis-measure-total{ border-color:var(--gold-bright); color:var(--gold-bright); font-weight:700; }
+
+/* ---------- draw colour swatches + text label ---------- */
+.dts-gis-draw-colors{ display:flex; gap:7px; margin-bottom:8px; }
+.dts-gis-draw-swatch{
+  appearance:none; width:22px; height:22px; border-radius:50%; border:2px solid transparent; cursor:pointer; padding:0;
+}
+.dts-gis-draw-swatch.is-active{ border-color:var(--ink); box-shadow:0 0 0 2px var(--gold); }
+.dts-gis-draw-text{ font:700 12px var(--sans); text-shadow:0 1px 3px rgba(0,0,0,.8), 0 0 6px rgba(0,0,0,.6); white-space:nowrap; }
+.dts-gis-draw-textbox{
+  position:absolute; z-index:1300; pointer-events:auto; transform:translate(-50%, 10px);
+}
+.dts-gis-draw-textbox input{
+  background:var(--glass); border:1px solid var(--gold); border-radius:7px;
+  color:var(--ink); font:600 12px var(--sans); padding:6px 9px; width:160px;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);
+}
 
 @media (max-width:760px){
   .dts-gis-drawer{ max-height:75%; }
