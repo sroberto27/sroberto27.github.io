@@ -1,0 +1,83 @@
+{
+  "_id": "gis.tour.iberia-coastal-intro",
+  "_type": "gisTour",
+  "id": "iberia-coastal-intro",
+  "mapId": "iberia-coastal",
+  "title": "Iberia Parish: land, water, and risk",
+  "intro": "A six-stop walk through what the parish is facing and what's being built to answer it. You can leave the tour at any point and keep exploring.",
+  "autoStart": true,
+  "autoAdvance": false,
+  "defaultDuration": 12,
+  "showProgress": true,
+  "position": "left",
+
+  "steps": [
+    {
+      "id": "where",
+      "title": "Where we are",
+      "body": "Iberia Parish runs from the sugarcane country north of New Iberia down to the open water of Vermilion Bay. Nearly half the parish is wetland.",
+      "view": { "center": [29.740394, -91.635827], "zoom": 10 },
+      "basemap": "dark",
+      "layers": { "on": ["parish-boundary"], "off": ["*"] },
+      "highlight": { "layerId": "parish-boundary", "where": "1=1" },
+      "media": null,
+      "duration": null
+    },
+    {
+      "id": "water",
+      "title": "The water that drains it",
+      "body": "Bayou Teche, the parish laterals, and the drainage network that moves water off the land. Drainage capacity is the first constraint on everything else the parish plans around.",
+      "view": { "bbox": [[29.90, -91.95], [30.05, -91.70]] },
+      "layers": { "on": ["hydrography"], "off": [] },
+      "highlight": null,
+      "media": null,
+      "duration": null
+    },
+    {
+      "id": "flood",
+      "title": "What floods",
+      "body": "FEMA's flood zones and base flood elevations set the regulatory line. Not every place inside it is empty, and not every place outside it is safe from a serious storm.",
+      "view": { "center": [29.95, -91.80], "zoom": 12 },
+      "layers": { "on": ["dfirm-panels", "bfe-floodways"], "off": ["hydrography"] },
+      "highlight": null,
+      "media": null,
+      "duration": null
+    },
+    {
+      "id": "exposed",
+      "title": "What's exposed",
+      "body": "Fire stations, critical facilities, and the Port of Iberia's canals and slips sit close to the water that makes the parish's economy work — and close to the water that threatens it.",
+      "view": { "center": [29.86, -91.86], "zoom": 13 },
+      "layers": { "on": ["critical-facilities", "fire-stations", "port-canals"], "off": ["dfirm-panels", "bfe-floodways"] },
+      "highlight": { "layerId": "port-canals", "where": "1=1" },
+      "media": null,
+      "duration": null
+    },
+    {
+      "id": "built",
+      "title": "What's being built",
+      "body": "CPRA's coastal protection and restoration projects in and around Iberia Parish — built, in design, or proposed. Planning here happens over decades, not budget cycles.",
+      "view": { "center": [29.740394, -91.635827], "zoom": 10 },
+      "layers": { "on": ["cpra-projects"], "off": ["critical-facilities", "fire-stations", "port-canals"] },
+      "highlight": null,
+      "media": null,
+      "duration": null
+    },
+    {
+      "id": "future",
+      "title": "What fifty years looks like",
+      "body": "The 2023 Coastal Master Plan's restoration projects and subsidence model, clipped to the parish. These are modelled scenarios of what may happen — not a forecast or a guarantee.",
+      "view": { "center": [29.740394, -91.635827], "zoom": 10 },
+      "layers": { "on": ["cpra-master-plan-2023", "subsidence"], "off": ["cpra-projects"] },
+      "highlight": null,
+      "media": null,
+      "duration": null
+    }
+  ],
+
+  "outro": {
+    "title": "Explore on your own",
+    "body": "Every layer used in this tour is in the layer panel. Turn things on and off, click any feature for its details, or scrub the timeline through fifty years of shoreline change.",
+    "cta": { "label": "Open the layer panel", "action": "openLayerPanel" }
+  }
+}

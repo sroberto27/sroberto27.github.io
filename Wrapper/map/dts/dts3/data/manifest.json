@@ -196,6 +196,11 @@
         "file": "gis/maps/iberia-coastal.json",
         "type": "gisMap",
         "id": "gis.maps.iberia-coastal"
+      },
+      {
+        "file": "gis/tours/iberia-coastal-intro.json",
+        "type": "gisTour",
+        "id": "gis.tour.iberia-coastal-intro"
       }
     ]
   }

@@ -29,7 +29,7 @@
       "id": "map",
       "label": "Parish map",
       "mapId": "iberia-coastal",
-      "tourId": null
+      "tourId": "iberia-coastal-intro"
     }
   ],
   "links": [],

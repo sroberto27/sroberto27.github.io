@@ -2,6 +2,158 @@
 
 Newest first.
 
+## GIS Phase 4 — guided tours
+
+Per `docs/plans/gis/09-BUILD-PLAN.md` Phase 4 / `05-SPEC-guided-tours.md`. All of tasks
+4.1–4.7. Phases 0–3 were already gated; this phase is now gated too.
+
+- **05-SPEC's own prerequisite — not fully satisfiable this session:** the spec requires
+  running CPRA's Master Plan Data Viewer guided tour live at
+  `https://mpdv.coastal.la.gov/#map=8.66/29.5211/-91.51` before finalizing the player UI.
+  Attempted with real browser automation this session (three attempts, including a plain
+  navigation and a bare-domain retry); the host itself is unreachable from this session's
+  browser (network otherwise confirmed working — `google.com` loaded fine in the same
+  tab). Per this project's own "avoid rabbit holes" guidance, not chased further. Fell back
+  to Phase 0's own `data/gis/sources.json` → `platformNotes.mpdv.guidedTourTranscript` —
+  a static-bundle-analysis transcript of the same tour (10 slides, exit-to-"Explore"
+  behavior, consistent scenario-qualifier tone discipline) — which was already flagged
+  in Phase 0 as needing this exact live spot-check. **Gap carried forward, not silently
+  closed:** the player's visual/interaction mechanics (card animation timing, exact
+  docking behavior) are built from 05-SPEC §2's own description plus that transcript, not
+  from a live observation of CPRA's actual UI.
+- `js/gis/gis-tour.js` (new) — the presentational player. Confirmed before writing it that
+  `js/gis/gis-viewer.js` already owns step application (`startTour`/`tourNext`/`tourPrev`,
+  `getState()`/`applyState()`'s existing `t` field) since Phase 3a — this file drives the
+  map exclusively through that public API (plus one narrow, justified addition, next
+  bullet) and never touches a Leaflet object, same rule `gis-tools.js` already follows.
+  Card UI (desktop dock + mobile bottom sheet, collapsible via a chevron tap rather than a
+  drag gesture — a deliberate, documented simplification of §2's "drag handle" wording),
+  progress dots (clickable), off-script detection + "Back to step N" pill, an outro screen
+  (presentation-only — the engine has no concept of a step past the last one, so "Next" on
+  the last step never calls `tourNext()`, it just swaps the card's own content and leaves
+  the map exactly where the last real step put it), keyboard (`←`/`→`/`Escape`, scoped to
+  when focus is inside the tour card so it doesn't fight Leaflet's own arrow-key map
+  panning), focus management, and a live region for step announcements.
+- `js/gis/gis-viewer.js` gains one additive method, `tourGoTo(index)` — an arbitrary-index
+  jump, needed because the progress dots' "click to jump" and the off-script "back to step"
+  pill can't be expressed through `tourNext`/`tourPrev`'s relative-step shape, and
+  `applyStep(index)` already did exactly this internally. Same "extend, don't reshape" as
+  every prior schema/API addition in this project.
+- **Real bug, found live, first found this session:** a center/zoom step's `setView()`
+  animates over several hundred ms; `checkOffScript()`'s naive read of the map's live
+  position immediately after a step change was comparing the *previous* step's
+  still-in-flight position against the *new* step's target, flagging every animated step
+  change as off-script instantly. Fixed by seeding the tracked position optimistically to
+  the commanded target the moment a step renders (self-correcting either way: a normal
+  flight confirms no drift on its own final `"viewchange"`; a genuinely interrupted one
+  reports the real position instead). The `"viewchange"`-triggered half of the check is
+  also debounced (350ms of quiet) rather than reacting to every single event, since a step
+  with both a center and a zoom change can make Leaflet fire more than one `"moveend"`
+  while settling.
+- **Second real bug, found live, more consequential — a genuine, deterministic, and (for
+  this specific authored content) 100%-reproducible position error, not the animation-race
+  above:** two tour steps (`built`, `future`) originally used `center: [29.78, -91.78],
+  zoom: 11`. At this browser's actual viewport width, that combination puts part of the
+  requested view outside `iberia-coastal.json`'s own `view.maxBounds` — with
+  `restrictToBounds: true` (`maxBoundsViscosity: 1.0`), Leaflet correctly clamps the center
+  to keep the viewport inside bounds rather than honoring the requested one, landing at the
+  bounds' own longitudinal midpoint (confirmed by direct calculation: `(-92.10 + -91.17) /
+  2 = -91.635`, matching the observed drift to 5 decimal places) while latitude tracked
+  correctly. This is Leaflet doing exactly what §8's own bounds defence is supposed to do —
+  not an engine bug — but it meant the *authored* view for those two steps was never
+  actually reachable at ordinary desktop widths, which the off-script detector correctly
+  (if confusingly, at first) flagged as a real mismatch every time. Root-caused by adding
+  temporary instrumentation (a debug global exposing the live engine instance's own
+  `getState()`, removed before committing) rather than continuing to guess from the
+  symptom. Fixed at the content level: both steps now reuse the map's own verified-safe
+  default parish view (`[29.740394, -91.635827]`, zoom 10) instead of an unverified
+  hand-picked one — thematically apt too, since both are whole-parish-scale steps.
+- **Third real bug, found live, most consequential:** `?...&map=<state>` (05-SPEC
+  criterion 4) did not restore anything at all, for a tour or otherwise — not a gap in
+  `gis-viewer.js`'s `getState()`/`applyState()` (already correct since Phase 3a), but in
+  `js/app.js`, which never read the `map` query parameter or passed it to
+  `DTSGis.mount()`'s `opts.stateParam` at all, for any map, since Phase 3. Wiring it in
+  surfaced a second problem: reading `location.search` from inside `mountGis()`'s own async
+  callback (after the lazy GIS engine finishes loading) is too late — `openExample()`'s own
+  `syncURL()` call already rewrites the address bar (to `category`/`project`/`exp` only;
+  `buildStateURL()` never carries `map`) synchronously, before that callback ever gets a
+  turn to run. Fixed by capturing the `map` param once, at `js/app.js`'s module parse time
+  — before any `syncURL()` call in the file can execute — into `pendingGisStateParam`,
+  consumed (read once, then cleared) by whichever GIS map is the first to actually mount
+  that session. Confirmed live end-to-end: a hand-built `map=` link encoding `{v:1,
+  t:["iberia-coastal-intro", 2]}`, opened as a fresh navigation, restored directly to tour
+  step 3 with no earlier steps played.
+- `js/gis/gis-tools.js`: the "Guided tours" toolbar button (task 4.5), gated on
+  `mapDoc.tours.length` and the resolved tour docs actually being available. Mounts
+  `gis-tour.js` once; click toggles start/exit. Once-per-session autostart via
+  `sessionStorage` (keyed by map id) when `mapDoc.defaultTour` is set — additionally gated
+  on the resolved tour document's own `autoStart !== false` (a real, if easy to miss, field
+  in 05-SPEC §1's own schema) and skipped entirely both when a `map=` deep link already
+  restored a specific state (`opts.hasStateParam`) and when a tour is already running from
+  an experience-level `tourId` (see next bullet) — otherwise autostart would stomp a
+  correctly-already-running tour with a second, competing `startTour()` call back to step 0.
+  CTA actions (`openLayerPanel`/`openAttributeTable`) bridge into this file's own panel
+  registry via a plain callback, since `gis-tour.js` has no reason to know panel internals.
+- **Fourth real bug, found by inspection, not live — but confirmed necessary, not
+  theoretical:** `data/projects/gfc.json`'s `gis` experience carries its own `tourId` field
+  (an experience-level "always start this tour" flag, predating Phase 4 — see
+  `js/content-loader.js`'s `gis` branch, Phase 1) which `js/app.js` already passed straight
+  to `DTSGis.mount()`'s `opts.tourId`. That starts the tour *inside* `createInstance()`,
+  before `gis-tools.js`/`gis-tour.js` are even mounted (both are mounted from the
+  `DTSGis.mount()` promise's own `.then()`, one async hop later) — the resulting
+  `"tourstep"` event would otherwise fire to no listener, applying the step to the map with
+  no card ever shown. Same failure mode for a `map=`-restored mid-tour state. Fixed by
+  having `gis-tour.js` check `instance.getState().t` once at its own mount time and render
+  whatever tour/step is already active, before relying on the listener for every step
+  after. Confirmed live: this is exactly the path that made the `experiences[1].tourId`
+  wiring (below) actually show a card on first load, not just silently move the map.
+- Content, per task 4.7: `data/gis/tours/iberia-coastal-intro.json` (new) — six authored
+  steps (where / water / flood / exposed / built / future) per 05-SPEC §3's outline, plus a
+  separate `outro` (the spec's own schema keeps these distinct; `08-SPEC`'s "seven-step
+  tour" phrasing means six steps + the outro hand-off, not seven `steps[]` entries), using
+  this map's real layer ids throughout (`parish-boundary`, `hydrography`, `dfirm-panels`,
+  `bfe-floodways`, `critical-facilities`, `fire-stations`, `port-canals`, `cpra-projects`,
+  `cpra-master-plan-2023`, `subsidence`) — 05-SPEC §1's example step schema uses placeholder
+  ids that don't exist in this map and were not copied. The `water` step deliberately never
+  highlights or otherwise queries `hydrography`, per this map's own already-documented
+  permanent 400-error quirk (task 3.8) — the layer is still toggled on for the drainage
+  narrative (it degrades to "Unavailable right now" gracefully, confirmed live, unaffected
+  by this phase), just never depended on rendering. Step `future`'s body explicitly labels
+  the Master Plan/subsidence layers as "modelled scenarios of what may happen — not a
+  forecast or a guarantee," per 05-SPEC §3's sourcing caution. Each step's body checked
+  against §3's own ~55-word guidance.
+- Three-place wiring, per the build plan: (a) `data/gis/maps/iberia-coastal.json` —
+  `tours: ["iberia-coastal-intro"]`, `defaultTour: "iberia-coastal-intro"`; (b)
+  `data/manifest.json`'s `gis` array — registered the new tour document (nothing loads it
+  otherwise, same as every other manifest-driven document type in this repo); (c)
+  `data/projects/gfc.json`'s `gis` experience — `tourId: "iberia-coastal-intro"` (was
+  `null`), so the tour offers itself the moment that project's map tab first mounts, not
+  just via the map-level session default.
+- Verified live in Chrome against the real, deployed content (`python -m http.server 8000`,
+  Government → Coastal, no temporary test data — `gfc.json` is already real and live, per
+  the prior out-of-band entry, so this phase's own content was the integration target):
+  autostart on first mount (via the `experiences[1].tourId` path, confirmed distinct from
+  the `mapDoc.defaultTour` session-autostart path by checking `aria-pressed` and
+  `sessionStorage`); clicking through all six steps plus the outro end-to-end, each
+  changing view/layers/highlight/basemap exactly as authored, with progress dots and the
+  "Back"/"Next"/"Done" labels correct at every boundary; a real off-script trigger (manual
+  scroll-zoom on step 1) showing the "Back to step 1" pill and correctly restoring the
+  exact step view on click; the outro's "Open the layer panel" CTA actually opening the
+  real layer panel; exit (✕) showing the "Tour ended. The map is where you left it." toast,
+  leaving the map and the (still-open) layer panel exactly where they were, restoring focus;
+  `←`/`→` stepping the tour when focus is inside the card; the `map=` deep-link restore
+  (previous bullet); a 511px-wide window rendering the card as a collapsible bottom sheet,
+  confirmed both expanded and collapsed-to-title-bar; and a clean console throughout every
+  check above, including a plain home-page load and the Government sector's card grid.
+  **Not independently re-verified this session** (regression-checklist items unrelated to
+  any file this phase touched, already covered in this project's own Phase 3 gate one task
+  prior): the lead form, `demo`/`1234` sign-in, admin draft round-trip, and the Safari
+  Vision Pro CTA (still not runnable from Chrome-only automation).
+- Debug-only instrumentation (a temporary cache-busting query string on the lazily-injected
+  `js/gis/*` script tags, and a temporary `window.__DTS_DEBUG_INSTANCE` assignment in
+  `gis-tools.js`) was added and removed within this session, used only to root-cause the
+  two real bugs above — confirmed not present in any committed file.
+
 ## GFC project shipped early, replacing Safety & Emergency
 
 Out of the normal phase order — the human explicitly asked to showcase the Iberia Parish

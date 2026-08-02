@@ -422,6 +422,6 @@
     { "id": "vermilion-bay", "title": "Vermilion Bay shoreline", "view": { "bbox": [[29.55, -92.10], [29.80, -91.70]] } }
   ],
 
-  "tours": [],
-  "defaultTour": null
+  "tours": ["iberia-coastal-intro"],
+  "defaultTour": "iberia-coastal-intro"
 }
