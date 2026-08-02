@@ -2,6 +2,104 @@
 
 Newest first.
 
+## GIS Phase 3 task 3.8 — attribute table and filter/query builder
+
+Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.8 / `04-SPEC-gis-engine.md` §6. Nothing
+wired into `index.html`/`app.js` yet -- still task 3.12.
+
+- `js/gis/gis-viewer.js` gains three internal seams for `gis-tools.js`, same "not §5
+  public API" footing as `_getLayerBounds`: `_queryLayer(id, selector)` (returns every
+  feature, not just an objectIds lookup -- both `esriFeature`'s and `geojson`'s
+  `query()` were extended to support a selector-less "give me everything" call),
+  `_setLayerFilter(id, conditions)` (an ANDed `[{field, op, value}]` list, translated
+  per sourceType -- `buildWhereFromConditions()` to an ArcGIS SQL where-clause for
+  esriFeature, `buildPredicateFromConditions()` to an in-memory predicate for geojson),
+  and `_zoomToFeature(id, selector)` (queries once, reuses the result for both the
+  highlight layer and the bounds fit, for the table's row-click).
+- `js/gis/gis-esri.js`'s `buildFeature()` now also returns `setFilter(where)`, a thin
+  wrapper over esri-leaflet's own `FeatureLayer.setWhere()` -- confirmed live in the
+  vendored bundle that this is a real, intentional API for exactly this ("filtering out
+  data" by requerying and swapping the displayed feature set), not something to
+  reimplement. `js/gis/gis-viewer.js`'s `buildGeoJsonLayer()` grew a matching
+  `setFilter(predicate)` that toggles each feature's already-built sub-layer in/out of
+  the `L.geoJSON` group by membership -- captured once at construction, no rebuild.
+- **Deliberate departure from §7's illustrative state shape:** `getState().f` holds
+  `{ layerId: [{field, op, value}, …] }` -- the condition list itself -- not a raw
+  ArcGIS where-clause string as §7's example shows. A where-clause string is lossy to
+  parse back for the geojson predicate path, and the spec itself flags the exact `f`
+  shape as an example, not a contract ("Decide in Phase 3"). This round-trips exactly
+  through `applyState()` for both sourceTypes.
+- `js/gis/gis-tools.js`: the attribute table (`tools.attributeTable`) is a bottom
+  drawer -- `.dts-gis-drawer`, deliberately not `.dts-gis-panel`, since §6 calls for it
+  full-width at every viewport, not just as a mobile bottom sheet -- with one tab per
+  queryable (`geojson`/`esriFeature`, `queryable !== false`) layer (tab strip hidden
+  entirely for a single such layer). Sortable columns (click a `<th>`, `aria-sort`
+  kept honest), a text filter box searching every shown column, row click →
+  `_zoomToFeature` + highlight, "download visible rows as CSV" (the full filtered set,
+  not just the current page), paginated at 200 rows per §6 with a status line naming
+  the true total. Row set reflects both the text box and the layer's active
+  query-builder filter (via a small `matchesConditions()` mirroring
+  `buildPredicateFromConditions()`, kept local rather than shared -- this file never
+  reaches into `gis-viewer.js` beyond the instance/`_`-prefixed seams).
+- The filter/query builder (`tools.filter`) is a docked panel matching the layers/
+  legend panels: a layer select, one or more field+operator+value condition rows
+  (`+ Add condition`, ANDed), Apply/Clear. The active filter is always shown as a
+  removable chip over the map (top-left, independent of whether either panel is open,
+  per §6's "never invisibly on"), each chip clickable to clear that layer's filter on
+  its own.
+- **Real bug, found live, pre-existing in task 3.4's code (not introduced here):**
+  the parish boundary dim mask's `buildParishMask()` called `boundaryLayerGroup
+  .eachLayer(...)` directly on the boundary layer's built Leaflet object. That's fine
+  for the `geojson` sourceType (a real `L.geoJSON`/`LayerGroup`), but confirmed live
+  against the vendored esri-leaflet 3.0.19 bundle, `FeatureLayer` extends `L.Layer`,
+  not `L.LayerGroup` -- `typeof L.esri.featureLayer({url}).eachLayer` is `"undefined"`
+  (esri-leaflet's own source only ever calls it guarded, `this.eachLayer &&
+  this.eachLayer(...)`, i.e. it expects this to be absent on some layer types). Since
+  `sources.json` recommends `esriFeature` as the *primary* sourceType for the parish
+  boundary layer itself, this meant the dim mask silently never rendered for the
+  boundary config every future map is actually likely to ship with. Fixed by rebuilding
+  `buildParishMask()` off the layer's `query({})` (the same seam this task added
+  full-fetch support to) instead of its Leaflet object directly -- works for both
+  sourceTypes uniformly via one throwaway `L.geoJSON()` conversion of the query result.
+- **Second real bug, found live, also pre-existing (task 3.7's `highlight()`, not
+  introduced here):** `L.geoJSON(fc, {style}).addTo(highlightGroup)` renders a Point
+  feature with Leaflet's default blue marker icon -- `style` only touches path layers
+  (lines/polygons); points need an explicit `pointToLayer`. Surfaced live via this
+  task's row-click zoom-to-feature against the point fixture layer. Fixed with a
+  shared `highlightGeoJson()` helper (used by both `highlight()` and the new
+  `_zoomToFeature()`) that supplies a gold `circleMarker` `pointToLayer`, matching the
+  site's styling instead of Leaflet's default pin.
+- **Third finding, not a code bug:** an early version of the live test harness called
+  `setFilter` unconditionally on every layer load (even with no filter set, to cover
+  the "restore a filter from a share link before the layer finishes loading" case).
+  Confirmed live this forces esri-leaflet's `FeatureLayer.setWhere()` to run an
+  immediate full requery that races the layer's own just-started initial grid load
+  against the same service. Fixed by only ever touching `setFilter` from `loadLayer`'s
+  ready branch when a filter is actually pending (`applyPendingFilter()`); an ordinary
+  first load leaves the layer's own default query alone entirely.
+- Verified live in Chrome against real, CORS-verified Iberia Parish data (parish
+  boundary + a local geojson point fixture standing in for a parcels-style layer,
+  since the two real `esriFeature` candidates in `sources.json` -- boundary and
+  hydrography -- don't give a numeric field to exercise sort/CSV against): both
+  sourceTypes' attribute tables (system fields excluded, real ArcGIS field aliases for
+  the boundary, `OWNER`/`ZONE`/`ACRES` for the fixture), column sort, the text filter
+  box, row-click zoom+highlight (confirmed the marker-icon fix), CSV button (no
+  console errors), the filter builder's layer switch/condition rows/Apply/Clear, the
+  chip appearing and disappearing in sync with both the map (only matching points
+  remained) and the table ("3 of 10" narrowing correctly), and `getState()`/
+  `applyState()` round-tripping a filter through the console. Also incidentally
+  confirmed no regression in 3.7's identify popups (Escape-to-close) during testing.
+  One real ArcGIS service quirk found and *not* fixed, because there's nothing to fix
+  in our code: the Iberia hydrography layer (`Hydrography/Laterals_and_Mains_2026`,
+  sublayer 3) returns a genuine server-side `400 "Unable to complete operation"` for
+  esri-leaflet's default combination of `resultType=tile`+`geometryPrecision=6` query
+  params specifically on that service -- confirmed via direct `curl` isolation, not an
+  artifact of this task's code. The engine's existing per-layer try/catch correctly
+  degraded it to "Unavailable right now" without affecting the boundary or fixture
+  layers, which is §11's contract working as intended; flagged here as a content/
+  sourcing note for whoever finalizes `data/gis/maps/iberia-coastal.json` in task 3.14.
+  Test harness and geojson fixture deleted before committing.
+
 ## GIS Phase 3 task 3.7 — identify and popups
 
 Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.7 / `04-SPEC-gis-engine.md` §6. Nothing

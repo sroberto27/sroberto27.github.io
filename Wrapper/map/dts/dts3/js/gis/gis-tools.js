@@ -39,7 +39,10 @@
     legend: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="3.5" cy="6" r="1.5" fill="currentColor"/><circle cx="3.5" cy="12" r="1.5" fill="currentColor"/><circle cx="3.5" cy="18" r="1.5" fill="currentColor"/></svg>',
     close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
     info: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 11v5.5M12 7.6v.01" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
-    target: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'
+    target: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="7" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
+    table: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="4.5" width="17" height="15" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3.5 9.5h17M3.5 14.5h17M9 4.5v15" stroke="currentColor" stroke-width="1.6"/></svg>',
+    filter: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16l-6 7.5V18l-4 2v-7.5L4 5z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+    download: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>'
   };
 
   function mount(containerEl, mapDoc, instance, opts) {
@@ -52,7 +55,7 @@
     /* ---- local state model, seeded from the static doc + getState(),
        kept in sync via events -- never read off a Leaflet object ---- */
     const initial = instance.getState();
-    const state = { zoom: initial.z, basemap: initial.b, layers: {} };
+    const state = { zoom: initial.z, basemap: initial.b, layers: {}, filters: initial.f || {} };
     layerDefs.forEach(function (def) {
       const diff = initial.l && initial.l[def.id];
       state.layers[def.id] = {
@@ -437,6 +440,367 @@
       offListeners.push(function () { document.removeEventListener("keydown", onKeyDown); });
     }
 
+    /* ================= attribute table + filter/query builder (task 3.8) =================
+       Per §6: table is "one tab per queryable layer", offered only for
+       geojson/esriFeature; filter is field+operator+value rows ANDed,
+       applied as a where clause (esriFeature) or predicate (geojson) via
+       instance._setLayerFilter -- gis-viewer.js decides which. The active
+       filter is always shown as a removable chip over the map so it's
+       never invisibly on, independent of whether either panel is open. */
+    const queryableDefs = layerDefs.filter(function (def) {
+      return (def.sourceType === "geojson" || def.sourceType === "esriFeature") && def.queryable !== false;
+    });
+
+    const rowsCache = {};
+    function queryRows(def) {
+      if (!rowsCache[def.id]) {
+        rowsCache[def.id] = (instance._queryLayer ? instance._queryLayer(def.id, {}) : Promise.resolve(null))
+          .then(function (fc) { return (fc && fc.features) || []; });
+      }
+      return rowsCache[def.id];
+    }
+
+    function rowFeatureId(f) {
+      if (f.id != null) return f.id;
+      const props = f.properties || {};
+      return props.OBJECTID != null ? props.OBJECTID : props.id;
+    }
+
+    // Mirrors gis-viewer.js's buildPredicateFromConditions exactly, kept
+    // local rather than shared: this file never reaches into gis-viewer.js
+    // beyond the instance/_-prefixed seams, and the function is a few lines.
+    // Used so the attribute table's row set reflects an active query-builder
+    // filter, not just its own text box.
+    function matchesConditions(props, conditions) {
+      if (!conditions || !conditions.length) return true;
+      return conditions.every(function (c) {
+        const raw = props[c.field];
+        if (c.op === "contains") return raw != null && String(raw).toLowerCase().indexOf(String(c.value).toLowerCase()) !== -1;
+        if (raw == null) return false;
+        const n = parseFloat(c.value);
+        const isNum = c.value !== "" && !isNaN(n) && typeof raw === "number";
+        const a = isNum ? Number(raw) : String(raw);
+        const b = isNum ? n : String(c.value);
+        switch (c.op) {
+          case "=": return a === b;
+          case "!=": return a !== b;
+          case ">": return a > b;
+          case "<": return a < b;
+          case ">=": return a >= b;
+          case "<=": return a <= b;
+          default: return true;
+        }
+      });
+    }
+
+    const fieldsCacheByLayer = {};
+    function fieldsForLayer(def) {
+      if (fieldsCacheByLayer[def.id]) return fieldsCacheByLayer[def.id];
+      let p;
+      if (def.popup && Array.isArray(def.popup.fields) && def.popup.fields.length) {
+        p = Promise.resolve(def.popup.fields.map(function (f) { return { name: f.name, label: f.label || f.name }; }));
+      } else if (def.sourceType === "esriFeature" && window.DTSGisEsri) {
+        p = DTSGisEsri.fetchFieldAliases(def.url, typeof def.layerId === "number" ? def.layerId : 0).then(function (aliases) {
+          return Object.keys(aliases).filter(function (k) { return !isSystemField(k); }).map(function (k) { return { name: k, label: aliases[k] }; });
+        });
+      } else {
+        p = queryRows(def).then(function (rows) {
+          const keys = rows.length ? Object.keys(rows[0].properties || {}).filter(function (k) { return !isSystemField(k); }) : [];
+          return keys.map(function (k) { return { name: k, label: k }; });
+        });
+      }
+      fieldsCacheByLayer[def.id] = p;
+      return p;
+    }
+
+    function csvEscape(v) {
+      const s = v === null || v === undefined ? "" : String(v);
+      return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }
+
+    function downloadCsv(filename, fields, rows) {
+      const header = fields.map(function (f) { return csvEscape(f.label || f.name); }).join(",");
+      const lines = rows.map(function (f) {
+        const props = f.properties || {};
+        return fields.map(function (fld) { return csvEscape(props[fld.name]); }).join(",");
+      });
+      const blob = new Blob([[header].concat(lines).join("\r\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = el("a", { href: url, download: filename });
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    /* ---- filter chips (always visible when a filter is active, regardless
+       of whether either panel is open) ---- */
+    let renderChips = function () {};
+    let renderFilterBuilder = function () {};
+    let filterLayerId = queryableDefs.length ? queryableDefs[0].id : null;
+
+    if (tools.filter !== false && queryableDefs.length && instance._setLayerFilter) {
+      const chipsHost = el("div", { class: "dts-gis-filter-chips" });
+      host.appendChild(chipsHost);
+
+      renderChips = function () {
+        chipsHost.textContent = "";
+        Object.keys(state.filters).forEach(function (id) {
+          const conditions = state.filters[id];
+          if (!conditions || !conditions.length) return;
+          const def = layerDefs.find(function (d) { return d.id === id; });
+          const label = (def ? (def.title || def.id) : id) + " · " + conditions.length + (conditions.length === 1 ? " filter" : " filters");
+          const chip = el("button", {
+            type: "button", class: "dts-gis-filter-chip",
+            "aria-label": "Remove filter on " + (def ? (def.title || def.id) : id)
+          }, [document.createTextNode(label), el("span", { class: "dts-gis-filter-chip-x", html: ICONS.close })]);
+          chip.addEventListener("click", function () { instance._setLayerFilter(id, null); });
+          chipsHost.appendChild(chip);
+        });
+      };
+
+      const filterBtn = el("button", {
+        class: "dts-gis-toolbtn", type: "button", "aria-label": "Filter",
+        "aria-expanded": "false", "aria-controls": "dtsGisFilterPanel", html: ICONS.filter
+      });
+      toolbar.appendChild(filterBtn);
+
+      const layerSelect = el("select", { class: "dts-gis-filter-layer", "aria-label": "Layer to filter" });
+      queryableDefs.forEach(function (def) {
+        layerSelect.appendChild(el("option", { value: def.id, text: def.title || def.id }));
+      });
+      const rowsContainer = el("div", { class: "dts-gis-filter-rows" });
+      const addRowBtn = el("button", { type: "button", class: "dts-gis-filter-add", text: "+ Add condition" });
+      const applyBtn = el("button", { type: "button", class: "dts-gis-filter-apply", text: "Apply" });
+      const clearBtn = el("button", { type: "button", class: "dts-gis-filter-clear", text: "Clear" });
+
+      function activeFilterDef() { return queryableDefs.find(function (d) { return d.id === filterLayerId; }); }
+
+      function buildConditionRow(cond) {
+        const fieldSelect = el("select", { class: "dts-gis-filter-field", "aria-label": "Field" });
+        const opSelect = el("select", { class: "dts-gis-filter-op", "aria-label": "Operator" }, [
+          el("option", { value: "=", text: "=" }),
+          el("option", { value: "!=", text: "≠" }),
+          el("option", { value: ">", text: ">" }),
+          el("option", { value: "<", text: "<" }),
+          el("option", { value: ">=", text: "≥" }),
+          el("option", { value: "<=", text: "≤" }),
+          el("option", { value: "contains", text: "contains" })
+        ]);
+        opSelect.value = cond.op || "=";
+        const valueInput = el("input", { type: "text", class: "dts-gis-filter-value", "aria-label": "Value" });
+        valueInput.value = cond.value || "";
+        const removeBtn = el("button", { type: "button", class: "dts-gis-filter-remove", "aria-label": "Remove condition", html: ICONS.close });
+        const row = el("div", { class: "dts-gis-filter-row" }, [fieldSelect, opSelect, valueInput, removeBtn]);
+        row._dtsGet = function () { return { field: fieldSelect.value, op: opSelect.value, value: valueInput.value }; };
+        row._dtsSetFields = function (fields) {
+          fieldSelect.textContent = "";
+          fields.forEach(function (f) { fieldSelect.appendChild(el("option", { value: f.name, text: f.label || f.name })); });
+          if (cond.field) fieldSelect.value = cond.field;
+        };
+        removeBtn.addEventListener("click", function () { row.remove(); });
+        return row;
+      }
+
+      renderFilterBuilder = function () {
+        const def = activeFilterDef();
+        rowsContainer.textContent = "";
+        if (!def) return;
+        const existing = state.filters[def.id];
+        const initialRows = (existing && existing.length) ? existing : [{ field: "", op: "=", value: "" }];
+        fieldsForLayer(def).then(function (fields) {
+          initialRows.forEach(function (cond) {
+            const row = buildConditionRow(cond);
+            row._dtsSetFields(fields);
+            rowsContainer.appendChild(row);
+          });
+        });
+      };
+
+      layerSelect.addEventListener("change", function () { filterLayerId = layerSelect.value; renderFilterBuilder(); });
+      addRowBtn.addEventListener("click", function () {
+        const def = activeFilterDef();
+        if (!def) return;
+        fieldsForLayer(def).then(function (fields) {
+          const row = buildConditionRow({ field: "", op: "=", value: "" });
+          row._dtsSetFields(fields);
+          rowsContainer.appendChild(row);
+        });
+      });
+      applyBtn.addEventListener("click", function () {
+        const def = activeFilterDef();
+        if (!def) return;
+        const conditions = Array.prototype.slice.call(rowsContainer.children)
+          .map(function (row) { return row._dtsGet(); })
+          .filter(function (c) { return c.field && c.value !== ""; });
+        instance._setLayerFilter(def.id, conditions.length ? conditions : null);
+      });
+      clearBtn.addEventListener("click", function () {
+        const def = activeFilterDef();
+        if (!def) return;
+        instance._setLayerFilter(def.id, null);
+      });
+
+      const filterPanel = el("div", {
+        class: "dts-gis-panel", id: "dtsGisFilterPanel", role: "region", "aria-label": "Filter", hidden: ""
+      }, [
+        el("div", { class: "dts-gis-panel-head" }, [
+          el("h3", { text: "Filter" }),
+          el("button", { class: "dts-gis-panel-close", type: "button", "aria-label": "Close filter panel", html: ICONS.close })
+        ]),
+        el("div", { class: "dts-gis-panel-body" }, [
+          layerSelect, rowsContainer, addRowBtn,
+          el("div", { class: "dts-gis-filter-actions" }, [applyBtn, clearBtn])
+        ])
+      ]);
+      filterPanel.querySelector(".dts-gis-panel-close").addEventListener("click", closePanel);
+      registerPanel("filter", filterBtn, filterPanel, renderFilterBuilder);
+      renderChips();
+    }
+
+    /* ---- attribute table (bottom drawer, always full-width regardless of
+       viewport -- distinct from the docked/bottom-sheet .dts-gis-panel used
+       by layers/legend/filter) ---- */
+    let renderAttributeTable = function () {};
+    let tableActiveLayerId = queryableDefs.length ? queryableDefs[0].id : null;
+
+    if (tools.attributeTable !== false && queryableDefs.length && instance._queryLayer) {
+      const tableSort = { field: null, dir: 1 };
+      const tableBtn = el("button", {
+        class: "dts-gis-toolbtn", type: "button", "aria-label": "Attribute table",
+        "aria-expanded": "false", "aria-controls": "dtsGisTableDrawer", html: ICONS.table
+      });
+      toolbar.appendChild(tableBtn);
+
+      const tableTabs = el("div", { class: "dts-gis-table-tabs", role: "tablist", "aria-label": "Layer" });
+      if (queryableDefs.length > 1) {
+        queryableDefs.forEach(function (def) {
+          const tab = el("button", {
+            type: "button", class: "dts-gis-table-tab", role: "tab",
+            "aria-selected": def.id === tableActiveLayerId ? "true" : "false", text: def.title || def.id
+          });
+          tab.addEventListener("click", function () {
+            tableActiveLayerId = def.id;
+            tableSort.field = null;
+            Array.prototype.forEach.call(tableTabs.children, function (t) { t.setAttribute("aria-selected", t === tab ? "true" : "false"); });
+            renderAttributeTable();
+          });
+          tableTabs.appendChild(tab);
+        });
+      }
+
+      const filterInput = el("input", { type: "search", class: "dts-gis-table-filter", placeholder: "Filter rows", "aria-label": "Filter table rows" });
+      const statusEl = el("span", { class: "dts-gis-table-status", role: "status" });
+      const csvBtn = el("button", { type: "button", class: "dts-gis-table-csv" }, [el("span", { html: ICONS.download }), document.createTextNode(" CSV")]);
+      const tableScroll = el("div", { class: "dts-gis-table-scroll" });
+
+      let lastFields = [], lastRows = [];
+      filterInput.addEventListener("input", function () { renderAttributeTable(); });
+      csvBtn.addEventListener("click", function () {
+        const def = queryableDefs.find(function (d) { return d.id === tableActiveLayerId; });
+        if (!def || !lastRows.length) return;
+        downloadCsv((def.id || "layer") + ".csv", lastFields, lastRows);
+      });
+
+      function renderTableBody(fields, rows, totalFiltered, totalRows) {
+        lastFields = fields; lastRows = rows.slice(); // full filtered set, ahead of the 200-row page cap, for CSV
+        tableScroll.textContent = "";
+        if (!rows.length) {
+          tableScroll.appendChild(el("p", { class: "dts-gis-table-empty", text: "No rows match." }));
+          statusEl.textContent = "0 of " + totalRows;
+          return;
+        }
+        const page = rows.slice(0, 200);
+        const table = el("table", { class: "dts-gis-table" });
+        const thead = el("thead");
+        const headRow = el("tr");
+        fields.forEach(function (f) {
+          const sorted = tableSort.field === f.name;
+          const th = el("th", {
+            scope: "col", "aria-sort": sorted ? (tableSort.dir === 1 ? "ascending" : "descending") : "none"
+          }, [document.createTextNode((f.label || f.name) + (sorted ? (tableSort.dir === 1 ? " ▲" : " ▼") : ""))]);
+          th.tabIndex = 0;
+          th.addEventListener("click", function () {
+            tableSort.dir = (tableSort.field === f.name) ? -tableSort.dir : 1;
+            tableSort.field = f.name;
+            renderAttributeTable();
+          });
+          th.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); th.click(); } });
+          headRow.appendChild(th);
+        });
+        thead.appendChild(headRow);
+        const tbody = el("tbody");
+        page.forEach(function (f) {
+          const props = f.properties || {};
+          const tr = el("tr", { tabindex: "0" });
+          fields.forEach(function (fld) { tr.appendChild(el("td", { text: props[fld.name] == null ? "—" : String(props[fld.name]) })); });
+          function activate() {
+            if (!instance._zoomToFeature) return;
+            instance._zoomToFeature(tableActiveLayerId, { objectIds: [rowFeatureId(f)] });
+          }
+          tr.addEventListener("click", activate);
+          tr.addEventListener("keydown", function (e) { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); activate(); } });
+          tbody.appendChild(tr);
+        });
+        table.appendChild(thead);
+        table.appendChild(tbody);
+        tableScroll.appendChild(table);
+        statusEl.textContent = totalFiltered > 200
+          ? ("Showing 200 of " + totalFiltered + (totalFiltered !== totalRows ? " (filtered from " + totalRows + ")" : ""))
+          : (totalFiltered + " of " + totalRows);
+      }
+
+      renderAttributeTable = function () {
+        const def = queryableDefs.find(function (d) { return d.id === tableActiveLayerId; });
+        if (!def) return;
+        statusEl.textContent = "Loading…";
+        Promise.all([queryRows(def), fieldsForLayer(def)]).then(function (results) {
+          const rows = results[0], fields = results[1];
+          const conditions = state.filters[def.id];
+          const q = (filterInput.value || "").trim().toLowerCase();
+          let filtered = rows.filter(function (f) { return matchesConditions(f.properties || {}, conditions); });
+          if (q) {
+            filtered = filtered.filter(function (f) {
+              const props = f.properties || {};
+              return fields.some(function (fld) {
+                const v = props[fld.name];
+                return v != null && String(v).toLowerCase().indexOf(q) !== -1;
+              });
+            });
+          }
+          if (tableSort.field) {
+            filtered = filtered.slice().sort(function (a, b) {
+              const av = (a.properties || {})[tableSort.field], bv = (b.properties || {})[tableSort.field];
+              if (av == null && bv == null) return 0;
+              if (av == null) return 1;
+              if (bv == null) return -1;
+              if (av < bv) return -tableSort.dir;
+              if (av > bv) return tableSort.dir;
+              return 0;
+            });
+          }
+          renderTableBody(fields, filtered, filtered.length, rows.length);
+        }).catch(function (err) {
+          statusEl.textContent = "Couldn't load rows.";
+          console.warn("[gis-tools] attribute table load failed:", err);
+        });
+      };
+
+      const tableDrawer = el("div", {
+        class: "dts-gis-drawer", id: "dtsGisTableDrawer", role: "region", "aria-label": "Attribute table", hidden: ""
+      }, [
+        el("div", { class: "dts-gis-panel-head" }, [
+          el("h3", { text: "Attribute table" }),
+          el("button", { class: "dts-gis-panel-close", type: "button", "aria-label": "Close attribute table", html: ICONS.close })
+        ]),
+        tableTabs,
+        el("div", { class: "dts-gis-table-toolbar" }, [filterInput, statusEl, csvBtn]),
+        tableScroll
+      ]);
+      tableDrawer.querySelector(".dts-gis-panel-close").addEventListener("click", closePanel);
+      registerPanel("table", tableBtn, tableDrawer, renderAttributeTable);
+    }
+
     /* ================= keep state in sync ================= */
     offListeners.push(instance.on("viewchange", function (detail) {
       state.zoom = detail.zoom;
@@ -456,6 +820,12 @@
         ref.root.classList.toggle("is-unavailable", s.status === "unavailable");
       }
       if (openPanel === "legend") renderLegend();
+      if ("filter" in detail) {
+        state.filters[detail.id] = detail.filter;
+        renderChips();
+        if (openPanel === "table" && tableActiveLayerId === detail.id) renderAttributeTable();
+        if (openPanel === "filter" && filterLayerId === detail.id) renderFilterBuilder();
+      }
     }));
 
     function destroy() {

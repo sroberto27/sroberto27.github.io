@@ -93,7 +93,17 @@
       });
     };
 
-    return { leaflet: layer, query: query };
+    // Filter/query-builder task (3.8): esri-leaflet's FeatureLayer ships its
+    // own setWhere(where, callback) that requeries the service and swaps the
+    // displayed feature set -- this *is* the "applies as a where clause"
+    // mechanism §6 asks for, not something to reimplement. It's independent
+    // of query() above (a fresh, unfiltered Query object each call), so the
+    // attribute table always sees every row regardless of an active map filter.
+    const setFilter = (def.queryable === false) ? null : function (where) {
+      layer.setWhere(where || "1=1");
+    };
+
+    return { leaflet: layer, query: query, setFilter: setFilter };
   }
 
   /* ---- identify (task 3.7) -- esriDynamic only; esriFeature/geojson clicks

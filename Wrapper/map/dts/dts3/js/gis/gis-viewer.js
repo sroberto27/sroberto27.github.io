@@ -28,6 +28,56 @@
     return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }
 
+  function featureRowId(f) {
+    if (f.id != null) return f.id;
+    const props = f.properties || {};
+    return props.OBJECTID != null ? props.OBJECTID : props.id;
+  }
+
+  // Filter/query-builder (3.8): gis-tools.js builds a plain, serialisable
+  // condition list -- [{field, op, value}], ANDed -- and hands it here to
+  // translate into whichever mechanism a sourceType actually understands:
+  // an ArcGIS SQL where-clause for esriFeature, an in-memory predicate
+  // function for geojson. Kept next to each other so the two stay in sync
+  // on operator support.
+  function sqlQuote(v) { return "'" + String(v).replace(/'/g, "''") + "'"; }
+
+  function buildWhereFromConditions(conditions) {
+    if (!conditions || !conditions.length) return "1=1";
+    const opSql = { "=": "=", "!=": "<>", ">": ">", "<": "<", ">=": ">=", "<=": "<=" };
+    return conditions.map(function (c) {
+      const field = '"' + String(c.field).replace(/"/g, "") + '"';
+      if (c.op === "contains") return "UPPER(" + field + ") LIKE UPPER(" + sqlQuote("%" + c.value + "%") + ")";
+      const n = parseFloat(c.value);
+      const isNum = c.value !== "" && !isNaN(n);
+      return field + " " + (opSql[c.op] || "=") + " " + (isNum ? n : sqlQuote(c.value));
+    }).join(" AND ");
+  }
+
+  function buildPredicateFromConditions(conditions) {
+    if (!conditions || !conditions.length) return null;
+    return function (props) {
+      return conditions.every(function (c) {
+        const raw = props[c.field];
+        if (c.op === "contains") return raw != null && String(raw).toLowerCase().indexOf(String(c.value).toLowerCase()) !== -1;
+        if (raw == null) return false;
+        const n = parseFloat(c.value);
+        const isNum = c.value !== "" && !isNaN(n) && typeof raw === "number";
+        const a = isNum ? Number(raw) : String(raw);
+        const b = isNum ? n : String(c.value);
+        switch (c.op) {
+          case "=": return a === b;
+          case "!=": return a !== b;
+          case ">": return a > b;
+          case "<": return a < b;
+          case ">=": return a >= b;
+          case "<=": return a <= b;
+          default: return true;
+        }
+      });
+    };
+  }
+
   function buildTileLayer(def, ctx) {
     const opts = { attribution: def.attribution || "", opacity: typeof def.opacity === "number" ? def.opacity : 1 };
     if (typeof def.minZoom === "number") opts.minZoom = def.minZoom;
@@ -92,24 +142,40 @@
       if (ctx && ctx.pane) geoJsonOpts.pane = ctx.pane;
       const leaflet = L.geoJSON(data, geoJsonOpts);
 
+      // Filter/query-builder + attribute-table tasks (3.8) both need every
+      // feature back, not just an objectIds lookup -- selector.predicate is
+      // a plain (properties) => bool function built by gis-tools.js from its
+      // field/operator/value rows, run in-memory against the already-fetched
+      // data. No selector at all (attribute table's "give me every row")
+      // returns the full set.
       const query = (def.queryable === false) ? null : function (selector) {
-        const ids = selector && selector.objectIds;
-        if (!ids) {
-          // A full WHERE-clause evaluator for in-memory GeoJSON is the
-          // filter/query-builder task's job, not the layer factory's.
-          console.info('[gis] query: layer "' + def.id + '" (geojson) only supports objectIds selectors right now');
-          return Promise.resolve({ type: "FeatureCollection", features: [] });
+        let feats = data.features || [];
+        if (selector && selector.objectIds) {
+          const idSet = {};
+          selector.objectIds.forEach(function (id) { idSet[id] = true; });
+          feats = feats.filter(function (f) { return idSet[featureRowId(f)]; });
+        } else if (selector && typeof selector.predicate === "function") {
+          feats = feats.filter(function (f) { return selector.predicate(f.properties || {}); });
         }
-        const idSet = {};
-        ids.forEach(function (id) { idSet[id] = true; });
-        const matched = (data.features || []).filter(function (f) {
-          const fid = f.id != null ? f.id : (f.properties && (f.properties.OBJECTID != null ? f.properties.OBJECTID : f.properties.id));
-          return idSet[fid];
-        });
-        return Promise.resolve({ type: "FeatureCollection", features: matched });
+        return Promise.resolve({ type: "FeatureCollection", features: feats });
       };
 
-      return { leaflet: leaflet, query: query };
+      // Live L.geoJSON is a LayerGroup -- every feature's sub-layer was added
+      // to it at construction, so capturing that set once here is enough to
+      // toggle membership later without ever re-fetching or rebuilding.
+      const allFeatureLayers = [];
+      leaflet.eachLayer(function (l) { allFeatureLayers.push(l); });
+
+      const setFilter = (def.queryable === false) ? null : function (predicate) {
+        allFeatureLayers.forEach(function (l) {
+          const match = !predicate || predicate((l.feature && l.feature.properties) || {});
+          const shown = leaflet.hasLayer(l);
+          if (match && !shown) leaflet.addLayer(l);
+          if (!match && shown) leaflet.removeLayer(l);
+        });
+      };
+
+      return { leaflet: leaflet, query: query, setFilter: setFilter };
     });
   }
 
@@ -269,6 +335,8 @@
         opacity: typeof def.opacity === "number" ? def.opacity : 1,
         leaflet: null,
         query: null,
+        setFilter: null,
+        filterConditions: null,
         status: "pending"
       };
     });
@@ -296,27 +364,48 @@
     /* ---- parish boundary dim mask (§8 defence 3 -- cosmetic; defences 1-2
        are the real enforcement, done at harvest/query time) ---- */
     const boundaryCfg = mapDoc.boundary || null;
-    function buildParishMask(boundaryLayerGroup) {
-      const rings = [];
-      boundaryLayerGroup.eachLayer(function (child) {
-        if (typeof child.getLatLngs === "function") flattenRings(child.getLatLngs(), rings);
-      });
-      if (!rings.length) {
-        console.warn('[gis] boundary layer "' + boundaryCfg.layerId + '" has no polygon geometry -- skipping the dim mask');
+
+    // Real bug, found live while testing task 3.8 against an esriFeature
+    // boundary layer (sources.json's own recommended default sourceType for
+    // the parish boundary, "esriFeature (single static polygon; also freeze
+    // as a local geojson clip mask)"): esri-leaflet's FeatureLayer extends
+    // L.Layer, not L.LayerGroup -- confirmed live, `typeof
+    // L.esri.featureLayer({url}).eachLayer` is "undefined" (esri-leaflet's
+    // own source only ever calls it as `this.eachLayer && this.eachLayer(...)`,
+    // i.e. it expects this to be absent on some layer types). The original
+    // eachLayer()+getLatLngs() approach only ever worked for the geojson
+    // sourceType's plain L.geoJSON layer. Building the mask from entry.query()
+    // instead -- already implemented for both esriFeature and geojson --
+    // works for both, via a throwaway L.geoJSON() conversion of the result.
+    function buildParishMask(entry) {
+      if (typeof entry.query !== "function") {
+        console.warn('[gis] boundary layer "' + boundaryCfg.layerId + '" isn\'t queryable -- skipping the dim mask');
         return;
       }
-      const worldRing = [L.latLng(85, -180), L.latLng(85, 180), L.latLng(-85, 180), L.latLng(-85, -180)];
-      const maskPane = ensurePane(map, 450); // above ordinary data-layer panes, below markers/popups
-      const mask = L.polygon([worldRing].concat(rings), {
-        pane: maskPane,
-        stroke: false,
-        fill: true,
-        fillColor: "#04070c",
-        fillOpacity: typeof boundaryCfg.maskOpacity === "number" ? boundaryCfg.maskOpacity : 0.55,
-        fillRule: "evenodd",
-        interactive: false
+      entry.query({}).then(function (fc) {
+        const rings = [];
+        L.geoJSON(fc).eachLayer(function (child) {
+          if (typeof child.getLatLngs === "function") flattenRings(child.getLatLngs(), rings);
+        });
+        if (!rings.length) {
+          console.warn('[gis] boundary layer "' + boundaryCfg.layerId + '" has no polygon geometry -- skipping the dim mask');
+          return;
+        }
+        const worldRing = [L.latLng(85, -180), L.latLng(85, 180), L.latLng(-85, 180), L.latLng(-85, -180)];
+        const maskPane = ensurePane(map, 450); // above ordinary data-layer panes, below markers/popups
+        const mask = L.polygon([worldRing].concat(rings), {
+          pane: maskPane,
+          stroke: false,
+          fill: true,
+          fillColor: "#04070c",
+          fillOpacity: typeof boundaryCfg.maskOpacity === "number" ? boundaryCfg.maskOpacity : 0.55,
+          fillRule: "evenodd",
+          interactive: false
+        });
+        mask.addTo(map);
+      }).catch(function (err) {
+        console.warn('[gis] boundary mask query failed:', err);
       });
-      mask.addTo(map);
     }
 
     function markUnavailable(id, message) {
@@ -340,7 +429,9 @@
       buildLayer(entry.def, map, view).then(function (built) {
         entry.leaflet = built.leaflet;
         entry.query = built.query;
+        entry.setFilter = built.setFilter || null;
         entry.status = "ready";
+        applyPendingFilter(entry); // re-applies a filter set by applyState() before this layer finished loading
         if (typeof entry.leaflet.setOpacity === "function") entry.leaflet.setOpacity(entry.opacity);
         // esri-leaflet layers build synchronously but fetch lazily -- a bad
         // service surfaces here, not as a constructor throw (§11).
@@ -369,7 +460,7 @@
         }
         syncLayerToMap(entry);
         if (boundaryCfg && boundaryCfg.showMask !== false && id === boundaryCfg.layerId) {
-          buildParishMask(entry.leaflet);
+          buildParishMask(entry);
         }
         emit("layerchange", { id: id, status: "ready" });
       }).catch(function (err) {
@@ -459,6 +550,23 @@
     /* ---- highlight ---- */
     const highlightGroup = L.layerGroup().addTo(map);
     function clearHighlight() { highlightGroup.clearLayers(); }
+
+    // Shared by highlight() and zoomToFeature() below. L.geoJSON's `style`
+    // option only touches path layers (lines/polygons) -- a bare L.geoJSON()
+    // on point features falls back to Leaflet's default blue marker icon,
+    // confirmed live via the attribute table's row-click zoom against the
+    // point fixture layer. pointToLayer is required to get the site's gold
+    // circle-marker highlight instead.
+    function highlightGeoJson(geojson, style) {
+      const s = Object.assign({ color: "#c49a2a", weight: 3, fillOpacity: 0.08 }, style || {});
+      return L.geoJSON(geojson, {
+        style: s,
+        pointToLayer: function (feature, latlng) {
+          return L.circleMarker(latlng, { radius: 8, color: s.color, weight: s.weight, fillColor: s.color, fillOpacity: 0.35 });
+        }
+      }).addTo(highlightGroup);
+    }
+
     function highlight(layerId, selector, style) {
       const entry = layers[layerId];
       clearHighlight();
@@ -469,12 +577,77 @@
         return;
       }
       entry.query(selector).then(function (geojson) {
-        L.geoJSON(geojson, {
-          style: Object.assign({ color: "#c49a2a", weight: 3, fillOpacity: 0.08 }, style || {})
-        }).addTo(highlightGroup);
+        highlightGeoJson(geojson, style);
       }).catch(function (err) {
         console.warn("[gis] highlight query failed:", err);
         emit("error", { scope: "highlight", id: layerId, message: err.message });
+      });
+    }
+
+    /* ---- filter/query builder (task 3.8) and attribute-table support ----
+       Internal seams for js/gis/gis-tools.js, same "not §5 public API"
+       footing as _getLayerBounds: the table needs raw feature rows and a
+       row-click zoom, neither of which has an honest Leaflet-object-free
+       shape to add to §5 itself. */
+    function queryLayer(id, selector) {
+      const entry = layers[id];
+      if (!entry || typeof entry.query !== "function") return Promise.resolve({ type: "FeatureCollection", features: [] });
+      return entry.query(selector || {});
+    }
+
+    // Split from setLayerFilter so a filter set via applyState() (share-link
+    // restore) before the layer has finished loading -- entry.setFilter is
+    // only attached once loadLayer()'s promise resolves -- is remembered and
+    // re-applied from loadLayer's ready branch rather than silently dropped.
+    function applyLayerFilter(entry) {
+      if (typeof entry.setFilter !== "function") return; // not loaded yet, or sourceType doesn't support filtering
+      if (entry.def.sourceType === "esriFeature") entry.setFilter(buildWhereFromConditions(entry.filterConditions));
+      else entry.setFilter(buildPredicateFromConditions(entry.filterConditions));
+    }
+
+    function setLayerFilter(id, conditions) {
+      const entry = layers[id];
+      if (!entry) { console.warn('[gis] setLayerFilter: unknown layer "' + id + '"'); return; }
+      const list = (Array.isArray(conditions) && conditions.length) ? conditions : null;
+      entry.filterConditions = list;
+      applyLayerFilter(entry);
+      emit("layerchange", { id: id, filter: list });
+    }
+
+    // Called from loadLayer's ready branch. A no-op "1=1"/null-predicate
+    // setFilter() on a layer with no filter ever set is not just wasted work:
+    // confirmed live, esri-leaflet's FeatureLayer.setWhere() forces an
+    // immediate full requery that races the layer's own just-started initial
+    // grid load against the same service, and one of the two concurrent
+    // request waves came back "Unable to complete operation." Only touch
+    // setFilter here when a filter is actually pending (applyState() ran
+    // before this layer finished loading) -- an ordinary first load leaves
+    // the layer's own default query alone entirely.
+    function applyPendingFilter(entry) {
+      if (entry.filterConditions) applyLayerFilter(entry);
+    }
+
+    // Zooms to + highlights one feature (by the same objectIds selector
+    // highlight() already takes). Reprojection/bounds math needs a real
+    // Leaflet object, which is exactly why this lives here and not in
+    // gis-tools.js -- same rationale as _getLayerBounds. Queries once and
+    // reuses the result for both the highlight layer and the bounds fit,
+    // rather than letting highlight() re-issue the same query.
+    function zoomToFeature(id, selector) {
+      const entry = layers[id];
+      if (!entry || typeof entry.query !== "function") return Promise.resolve(false);
+      clearHighlight();
+      return entry.query(selector).then(function (fc) {
+        if (!fc || !fc.features || !fc.features.length) return false;
+        highlightGeoJson(fc, { color: "#f0c75e" });
+        try {
+          const bounds = L.geoJSON(fc).getBounds();
+          if (bounds.isValid()) map.fitBounds(bounds, { animate: !reducedMotion, maxZoom: view.maxZoom });
+        } catch (err) { /* geometry-less or malformed feature -- highlight still applied */ }
+        return true;
+      }).catch(function (err) {
+        console.warn("[gis] zoomToFeature query failed:", err);
+        return false;
       });
     }
 
@@ -540,6 +713,7 @@
     function getState() {
       const c = map.getCenter();
       const l = {};
+      const f = {};
       Object.keys(layers).forEach(function (id) {
         const entry = layers[id];
         const def = entry.def;
@@ -548,6 +722,7 @@
         if (entry.visible !== defaultVisible || entry.opacity !== defaultOpacity) {
           l[id] = [entry.visible ? 1 : 0, round(entry.opacity, 2)];
         }
+        if (entry.filterConditions) f[id] = entry.filterConditions;
       });
       return {
         v: 1,
@@ -555,7 +730,7 @@
         z: map.getZoom(),
         b: currentBasemapId,
         l: l,
-        f: {},  // filters -- query-builder task
+        f: f,   // filters: layerId -> [{field, op, value}], per setLayerFilter
         t: tourState.tour ? [tourState.tour.doc.id, tourState.tour.index] : null,
         d: []   // drawings -- draw/annotate task
       };
@@ -576,6 +751,12 @@
               setLayerVisible(id, !!pair[0]);
               if (typeof pair[1] === "number") setLayerOpacity(id, pair[1]);
             }
+          });
+        }
+        if (obj.f && typeof obj.f === "object") {
+          Object.keys(obj.f).forEach(function (id) {
+            if (!layers[id]) return; // unknown ids ignored, per spec
+            if (Array.isArray(obj.f[id])) setLayerFilter(id, obj.f[id]);
           });
         }
         if (Array.isArray(obj.t) && obj.t[0]) {
@@ -628,8 +809,11 @@
       getState: getState,
       applyState: applyState,
       on: on,
-      // Internal seam for js/gis/gis-tools.js only -- not §5 public API.
-      _getLayerBounds: getLayerBounds
+      // Internal seams for js/gis/gis-tools.js only -- not §5 public API.
+      _getLayerBounds: getLayerBounds,
+      _queryLayer: queryLayer,
+      _setLayerFilter: setLayerFilter,
+      _zoomToFeature: zoomToFeature
     };
 
     if (opts.stateParam) {
