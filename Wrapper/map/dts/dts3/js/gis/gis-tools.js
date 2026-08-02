@@ -48,7 +48,11 @@
     locate: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
     search: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M20 20l-4.8-4.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
     ruler: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 15l6-6 12 12-6 6z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 9l2 2M12 6l2 2M15 3l2 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>',
-    pencil: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4.5L15.5 5 19 8.5 8.5 19z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>'
+    pencil: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20l1-4.5L15.5 5 19 8.5 8.5 19z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>',
+    swipe: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M7 9l-4 3 4 3M17 9l4 3-4 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
+    clock: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
+    play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>',
+    pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4.5" width="4" height="15" fill="currentColor"/><rect x="14" y="4.5" width="4" height="15" fill="currentColor"/></svg>'
   };
 
   function mount(containerEl, mapDoc, instance, opts) {
@@ -1284,6 +1288,135 @@
       ]);
       drawPanel.querySelector(".dts-gis-panel-close").addEventListener("click", closePanel);
       registerPanel("draw", drawBtn, drawPanel, null, function () { closeTextInput(false); instance._cancelDraw(); });
+    }
+
+    /* ================= swipe compare (task 3.10) =================
+       Layer choice comes from currently-visible layers, per §6, rebuilt
+       every time the panel opens and kept live while it's open via the
+       existing layerchange listener below. Unlike measure/draw, this is
+       persistent view state, not a transient session -- closing the panel
+       leaves the divider active; only choosing "None" or the engine's own
+       reset-on-hide (§6: "must reset cleanly when its layer is switched
+       off") turns it off. Dragging uses Pointer Events for one code path
+       across mouse and touch. */
+    if (tools.swipe !== false && layerDefs.length) {
+      const swipeBtn = el("button", {
+        class: "dts-gis-toolbtn", type: "button", "aria-label": "Swipe compare",
+        "aria-expanded": "false", "aria-controls": "dtsGisSwipePanel", html: ICONS.swipe
+      });
+      toolbar.appendChild(swipeBtn);
+
+      const swipeSelect = el("select", { class: "dts-gis-filter-layer", "aria-label": "Layer to compare" });
+      const swipeHint = el("p", { class: "dts-gis-coord-status", text: "Drag the divider on the map to compare." });
+
+      function refreshSwipeOptions() {
+        const current = swipeSelect.value;
+        swipeSelect.textContent = "";
+        swipeSelect.appendChild(el("option", { value: "", text: "None" }));
+        layerDefs.forEach(function (def) {
+          if (!state.layers[def.id] || !state.layers[def.id].visible) return;
+          swipeSelect.appendChild(el("option", { value: def.id, text: def.title || def.id }));
+        });
+        swipeSelect.value = Array.prototype.some.call(swipeSelect.options, function (o) { return o.value === current; }) ? current : "";
+      }
+
+      const divider = el("div", { class: "dts-gis-swipe-divider", hidden: "" }, [el("div", { class: "dts-gis-swipe-grip" })]);
+      host.appendChild(divider);
+
+      function setDividerPct(frac) { divider.style.left = (frac * 100) + "%"; }
+
+      let dragging = false;
+      divider.addEventListener("pointerdown", function (e) {
+        dragging = true;
+        divider.setPointerCapture(e.pointerId);
+      });
+      divider.addEventListener("pointermove", function (e) {
+        if (!dragging) return;
+        const rect = host.getBoundingClientRect();
+        const frac = (e.clientX - rect.left) / rect.width;
+        instance._setSwipeDivider(frac);
+      });
+      function endDrag() { dragging = false; }
+      divider.addEventListener("pointerup", endDrag);
+      divider.addEventListener("pointercancel", endDrag);
+
+      swipeSelect.addEventListener("change", function () { instance._setSwipeLayer(swipeSelect.value || null); });
+
+      offListeners.push(instance.on("swipechange", function (detail) {
+        divider.hidden = !detail.layerId;
+        if (detail.layerId) setDividerPct(detail.divider);
+        if (swipeSelect.value !== (detail.layerId || "")) swipeSelect.value = detail.layerId || "";
+      }));
+
+      const swipePanel = el("div", {
+        class: "dts-gis-panel", id: "dtsGisSwipePanel", role: "region", "aria-label": "Swipe compare", hidden: ""
+      }, [
+        el("div", { class: "dts-gis-panel-head" }, [
+          el("h3", { text: "Swipe compare" }),
+          el("button", { class: "dts-gis-panel-close", type: "button", "aria-label": "Close swipe panel", html: ICONS.close })
+        ]),
+        el("div", { class: "dts-gis-panel-body" }, [swipeSelect, swipeHint])
+      ]);
+      swipePanel.querySelector(".dts-gis-panel-close").addEventListener("click", closePanel);
+      registerPanel("swipe", swipeBtn, swipePanel, refreshSwipeOptions);
+    }
+
+    /* ================= time slider (task 3.10) =================
+       Shown only when the map document actually has a time series or a
+       layer with a timeField, per §6 -- mapDoc is static, so this can be
+       decided once at mount rather than re-checked per event. */
+    const timeSteps = (mapDoc.timeSeries && Array.isArray(mapDoc.timeSeries.steps)) ? mapDoc.timeSeries.steps : [];
+    // §6 says the tool shows for "a timeField or ... scenario steps", but a
+    // scrubber needs at least two positions to mean anything -- a timeField
+    // layer with no mapDoc.timeSeries.steps declared has no defined
+    // positions to scrub between (CPRA content is scenario-layers, not a
+    // continuous timeField, so steps are the realistic authoring path;
+    // timeField alone, with no steps, is a documented no-op here rather
+    // than inventing positions from ArcGIS service time-extent metadata).
+    if (tools.timeline !== false && timeSteps.length >= 2 && instance._setTimeStep) {
+      const timeBtn = el("button", {
+        class: "dts-gis-toolbtn", type: "button", "aria-label": "Timeline",
+        "aria-expanded": "false", "aria-controls": "dtsGisTimePanel", html: ICONS.clock
+      });
+      toolbar.appendChild(timeBtn);
+
+      const playBtn = el("button", { type: "button", class: "dts-gis-time-play", "aria-label": "Play" }, [el("span", { html: ICONS.play })]);
+      const stepBackBtn = el("button", { type: "button", class: "dts-gis-time-step", "aria-label": "Previous step", text: "◀" });
+      const stepFwdBtn = el("button", { type: "button", class: "dts-gis-time-step", "aria-label": "Next step", text: "▶" });
+      const scrubber = el("input", {
+        type: "range", min: "0", max: String(Math.max(0, timeSteps.length - 1)), step: "1", value: "0",
+        class: "dts-gis-time-scrubber", "aria-label": "Time step"
+      });
+      const timeLabel = el("p", { class: "dts-gis-coord-status", role: "status", text: timeSteps.length ? (timeSteps[0].label || timeSteps[0].id) : "" });
+
+      let playing = false;
+      function setPlayIcon() { playBtn.innerHTML = ""; playBtn.appendChild(el("span", { html: playing ? ICONS.pause : ICONS.play })); playBtn.setAttribute("aria-label", playing ? "Pause" : "Play"); }
+      playBtn.addEventListener("click", function () { if (playing) instance._pauseTimeSeries(); else instance._playTimeSeries(); });
+      stepBackBtn.addEventListener("click", function () { instance._setTimeStep(parseInt(scrubber.value, 10) - 1); });
+      stepFwdBtn.addEventListener("click", function () { instance._setTimeStep(parseInt(scrubber.value, 10) + 1); });
+      scrubber.addEventListener("input", function () { instance._setTimeStep(parseInt(scrubber.value, 10)); });
+
+      offListeners.push(instance.on("timechange", function (detail) {
+        playing = !!detail.playing;
+        setPlayIcon();
+        if (typeof detail.index === "number") scrubber.value = String(detail.index);
+        timeLabel.textContent = detail.label || "";
+      }));
+
+      const timePanel = el("div", {
+        class: "dts-gis-panel", id: "dtsGisTimePanel", role: "region", "aria-label": "Timeline", hidden: ""
+      }, [
+        el("div", { class: "dts-gis-panel-head" }, [
+          el("h3", { text: "Timeline" }),
+          el("button", { class: "dts-gis-panel-close", type: "button", "aria-label": "Close timeline panel", html: ICONS.close })
+        ]),
+        el("div", { class: "dts-gis-panel-body" }, [
+          el("div", { class: "dts-gis-time-controls" }, [stepBackBtn, playBtn, stepFwdBtn]),
+          scrubber, timeLabel
+        ])
+      ]);
+      timePanel.querySelector(".dts-gis-panel-close").addEventListener("click", closePanel);
+      registerPanel("time", timeBtn, timePanel);
     }
 
     /* ================= keep state in sync ================= */

@@ -185,13 +185,27 @@
       const geoJsonOpts = {
         style: styleFor,
         pointToLayer: function (feature, latlng) {
-          return L.circleMarker(latlng, {
+          // Real bug, found live while testing 3.10's swipe compare against
+          // a point layer: L.circleMarker built here has always defaulted
+          // to Leaflet's own "overlayPane" (zIndex 400) instead of this
+          // layer's ensurePane(zIndex) pane -- pane is a per-layer option on
+          // individual L.Path instances, not something a parent L.geoJSON's
+          // own `pane` option propagates into a custom pointToLayer's
+          // manually-built marker. Confirmed live: every point feature from
+          // every geojson layer was landing in one shared pane regardless of
+          // its configured zIndex, and swipe compare -- which clips a
+          // layer's *own* pane -- was clipping the wrong element entirely
+          // for any point layer. §6's "layer order follows zIndex" was
+          // silently never true for points until this fix.
+          const opts = {
             radius: typeof styleOpts.pointRadius === "number" ? styleOpts.pointRadius : 5,
             color: styleOpts.color || "#c49a2a",
             weight: typeof styleOpts.weight === "number" ? styleOpts.weight : 1.5,
             fillColor: styleOpts.fillColor || styleOpts.color || "#c49a2a",
             fillOpacity: typeof styleOpts.fillOpacity === "number" ? styleOpts.fillOpacity : 0.6
-          });
+          };
+          if (ctx && ctx.pane) opts.pane = ctx.pane;
+          return L.circleMarker(latlng, opts);
         }
       };
       if (ctx && ctx.pane) geoJsonOpts.pane = ctx.pane;
@@ -413,7 +427,7 @@
 
     function syncLayerToMap(entry) {
       if (!entry.leaflet) return;
-      const shouldShow = entry.visible && isInZoomRange(entry.def);
+      const shouldShow = entry.visible && isInZoomRange(entry.def) && isTimeVisible(entry);
       const isShown = map.hasLayer(entry.leaflet);
       if (shouldShow && !isShown) entry.leaflet.addTo(map);
       if (!shouldShow && isShown) map.removeLayer(entry.leaflet);
@@ -572,6 +586,8 @@
       if (!entry) { console.warn('[gis] setLayerVisible: unknown layer "' + id + '"'); return; }
       entry.visible = !!visible;
       syncLayerToMap(entry);
+      // §6: swipe "must reset cleanly when its layer is switched off".
+      if (!entry.visible && id === swipeLayerId) setSwipeLayer(null);
       emit("layerchange", { id: id, visible: entry.visible });
     }
 
@@ -949,6 +965,111 @@
       emit("draw", { action: "cancelled" });
     }
 
+    /* ---- swipe compare (task 3.9/3.10): a draggable divider clipping one
+       chosen layer to the region right of it, per §6. Clips the layer's own
+       Leaflet pane via CSS clip-path rather than reassigning it to a
+       dedicated pane -- simpler, and correct as long as each layer keeps a
+       distinct zIndex (true of every layer in 04-SPEC §4's own example and
+       the expected authoring convention; two layers sharing one zIndex
+       would share one pane and both get clipped, a documented limitation,
+       not a silent one). Reset is explicit: switching the swiped layer off
+       via setLayerVisible clears the clip immediately, per §6's own
+       "must reset cleanly" requirement. */
+    let swipeLayerId = null;
+    let swipeDivider = 0.5; // fraction 0..1 of map width
+
+    // Real bug, found live: entry.leaflet.getPane() throws once the layer
+    // has been removed from the map (map.removeLayer() nulls its internal
+    // _map reference, and Leaflet's own getPane() reads this._map.getPane()
+    // with no null guard) -- exactly what happens when the swiped layer is
+    // switched off, since setLayerVisible's syncLayerToMap() call removes it
+    // from the map *before* this code runs. Looking the pane up by name
+    // through the map object itself is always safe, attached or not.
+    function paneElFor(id) {
+      const entry = layers[id];
+      const name = entry && entry.leaflet && entry.leaflet.options && entry.leaflet.options.pane;
+      return name ? map.getPane(name) : null;
+    }
+    function applySwipeClip() {
+      const el = swipeLayerId && paneElFor(swipeLayerId);
+      if (!el) return;
+      el.style.clipPath = "inset(0 0 0 " + Math.round(map.getSize().x * swipeDivider) + "px)";
+    }
+    function clearSwipeClip(id) {
+      const el = paneElFor(id);
+      if (el) el.style.clipPath = "";
+    }
+    function setSwipeLayer(id) {
+      if (swipeLayerId) clearSwipeClip(swipeLayerId);
+      swipeLayerId = id || null;
+      if (swipeLayerId) applySwipeClip();
+      emit("swipechange", { layerId: swipeLayerId, divider: swipeDivider });
+    }
+    function setSwipeDivider(fraction) {
+      swipeDivider = clamp(fraction, 0, 1);
+      applySwipeClip();
+      emit("swipechange", { layerId: swipeLayerId, divider: swipeDivider });
+    }
+
+    /* ---- time slider (task 3.10), per §6: shown when at least one visible
+       layer has a timeField or the map declares timeSeries steps. Additive
+       to §3's gisMap schema -- mapDoc.timeSeries.steps: [{id,label,date?}] --
+       and to §4's layer schema -- def.timeStep (matches a step id: pure
+       visibility swap, since "CPRA's projections are typically separate
+       layers per scenario rather than a temporal field") or def.timeField
+       (ArcGIS time query via the layer's own setTimeRange, for the case a
+       source genuinely is temporal). A layer can only use one mechanism;
+       both are supported per §6's explicit "support both". */
+    let timeStepIndex = 0;
+    let timePlayTimer = null;
+    function timeSteps() { return (mapDoc.timeSeries && Array.isArray(mapDoc.timeSeries.steps)) ? mapDoc.timeSeries.steps : []; }
+    function isTimeVisible(entry) {
+      if (!entry.def.timeStep) return true;
+      const steps = timeSteps();
+      if (!steps.length) return true;
+      const step = steps[timeStepIndex];
+      return !!step && entry.def.timeStep === step.id;
+    }
+    function applyTimeFilters() {
+      const steps = timeSteps();
+      const step = steps[timeStepIndex];
+      Object.keys(layers).forEach(function (id) {
+        const entry = layers[id];
+        syncLayerToMap(entry); // re-evaluates visibility including isTimeVisible()
+        if (step && entry.def.timeField && entry.leaflet && typeof entry.leaflet.setTimeRange === "function") {
+          const t = step.date ? new Date(step.date).getTime() : null;
+          if (t != null && !isNaN(t)) entry.leaflet.setTimeRange(t, t);
+        }
+      });
+    }
+    function emitTimeChange() {
+      const step = timeSteps()[timeStepIndex];
+      emit("timechange", { index: timeStepIndex, stepId: step ? step.id : null, label: step ? step.label : null, playing: !!timePlayTimer });
+    }
+    function setTimeStep(index) {
+      const steps = timeSteps();
+      if (!steps.length) return;
+      timeStepIndex = clamp(index, 0, steps.length - 1);
+      applyTimeFilters();
+      emitTimeChange();
+    }
+    function pauseTimeSeries() {
+      if (!timePlayTimer) return;
+      clearInterval(timePlayTimer);
+      timePlayTimer = null;
+      emitTimeChange();
+    }
+    function playTimeSeries() {
+      const steps = timeSteps();
+      if (timePlayTimer || steps.length < 2) return;
+      timePlayTimer = setInterval(function () {
+        const next = timeStepIndex + 1;
+        if (next >= steps.length) { pauseTimeSeries(); return; }
+        setTimeStep(next);
+      }, 1800);
+      emitTimeChange();
+    }
+
     /* ---- highlight ---- */
     const highlightGroup = L.layerGroup().addTo(map);
     function clearHighlight() { highlightGroup.clearLayers(); }
@@ -1176,7 +1297,10 @@
     }
 
     /* ---- lifecycle ---- */
-    function invalidateSize() { map.invalidateSize(); }
+    function invalidateSize() {
+      map.invalidateSize();
+      if (swipeLayerId) applySwipeClip(); // the divider is a px offset of map width -- must re-derive on resize
+    }
 
     let suspendedLayers = null;
     function suspend() {
@@ -1192,6 +1316,7 @@
     }
 
     function destroy() {
+      pauseTimeSeries(); // clears the setInterval -- would otherwise keep firing against a torn-down map
       map.remove();
       containerEl.classList.remove("dts-gis-map");
       Object.keys(listeners).forEach(function (k) { delete listeners[k]; });
@@ -1232,7 +1357,12 @@
       _removeDrawing: removeDrawing,
       _clearDrawings: clearDrawings,
       _getDrawings: getDrawings,
-      _setDrawingText: setDrawingText
+      _setDrawingText: setDrawingText,
+      _setSwipeLayer: setSwipeLayer,
+      _setSwipeDivider: setSwipeDivider,
+      _setTimeStep: setTimeStep,
+      _playTimeSeries: playTimeSeries,
+      _pauseTimeSeries: pauseTimeSeries
     };
 
     if (opts.stateParam) {

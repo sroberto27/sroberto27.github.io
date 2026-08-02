@@ -65,14 +65,20 @@
         if (c) { style.color = c; style.fillColor = c; }
         return style;
       },
+      // Same fix as gis-viewer.js's buildGeoJsonLayer: pane must be forwarded
+      // explicitly to a manually-built pointToLayer marker -- it is not
+      // inherited from the parent layer's own pane option. Real bug, found
+      // live testing task 3.10's swipe compare against a point layer.
       pointToLayer: function (feature, latlng) {
-        return L.circleMarker(latlng, {
+        const pointOpts = {
           radius: typeof styleOpts.pointRadius === "number" ? styleOpts.pointRadius : 5,
           color: styleOpts.color || "#c49a2a",
           weight: typeof styleOpts.weight === "number" ? styleOpts.weight : 1.5,
           fillColor: styleOpts.fillColor || styleOpts.color || "#c49a2a",
           fillOpacity: typeof styleOpts.fillOpacity === "number" ? styleOpts.fillOpacity : 0.6
-        });
+        };
+        if (ctx && ctx.pane) pointOpts.pane = ctx.pane;
+        return L.circleMarker(latlng, pointOpts);
       }
     };
     if (typeof def.minZoom === "number") opts.minZoom = def.minZoom;

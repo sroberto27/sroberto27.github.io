@@ -2,6 +2,79 @@
 
 Newest first.
 
+## GIS Phase 3 task 3.10 — swipe compare and time slider
+
+Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.10 / `04-SPEC-gis-engine.md` §6. Nothing
+wired into `index.html`/`app.js` yet -- still task 3.12. This is the last of the
+§6 tool set; only 3.11 (print/export/share) and the wiring/content tasks remain in
+Phase 3.
+
+- **Swipe compare**: a draggable divider clipping one chosen layer's own Leaflet pane
+  via CSS `clip-path` -- simpler than reassigning the layer to a dedicated pane, and
+  correct as long as each layer keeps a distinct `zIndex` (true of every layer in
+  §4's own schema example and the expected authoring convention; two layers sharing
+  one `zIndex` would share one pane and both get clipped -- a documented limitation,
+  not a silent one). Layer choice is a dropdown of currently-*visible* layers, per §6,
+  rebuilt live off the existing layerchange tracking. Dragging uses Pointer Events
+  (`setPointerCapture`) for one code path across mouse and touch. Resets cleanly per
+  §6's own requirement: `setLayerVisible` clears the clip immediately if the hidden
+  layer is the active swipe target.
+- **Time slider**: additive to the schema, same "extend, don't reshape" pattern as
+  earlier tasks -- `mapDoc.timeSeries.steps: [{id,label,date?}]` (§3) and, per layer
+  (§4), `def.timeStep` (pure visibility swap -- CPRA content is "separate layers per
+  scenario," per §6's own text, not a continuous temporal field) or `def.timeField`
+  (ArcGIS time query via the layer's own `setTimeRange`, for a source that genuinely
+  is temporal). Both mechanisms are supported per §6's explicit "support both."
+  `isTimeVisible()` folds into the existing `syncLayerToMap()` visibility gate
+  alongside the zoom-range check, so a layer panel checkbox stays the master switch --
+  turning a time-stepped layer off keeps it off regardless of the active step. Play
+  advances on a timer and auto-stops at the last step; `destroy()` now clears that
+  timer, since nothing else would stop it firing against a torn-down map.
+  **Scope decision:** the tool only shows when `timeSeries.steps.length >= 2` -- a
+  lone `timeField` layer with no declared steps has no defined positions to scrub
+  between (deriving them from ArcGIS service time-extent metadata was out of scope
+  for this pass); §6's "or a timeField" wording is about which layers *respond* to
+  the slider once it exists, not an independent trigger for showing it.
+- **Real bug, found live, pre-existing since Phase 3a (not introduced here):**
+  `entry.leaflet.getPane()` throws once a layer has actually been removed from the
+  map -- `map.removeLayer()` nulls the layer's internal `_map` reference, and
+  Leaflet's own `getPane()` reads `this._map.getPane(...)` with no null guard. This
+  is exactly what happens when a layer being used as the swipe target gets switched
+  off: `setLayerVisible()`'s `syncLayerToMap()` call removes it from the map, then
+  the very next line tried to clear its swipe clip via `.getPane()` and threw.
+  Fixed by looking the pane up through the map object by name
+  (`map.getPane(layer.options.pane)`) instead of asking the layer object for it --
+  always safe, attached or not.
+- **Second real bug, found live, pre-existing since the original geojson/esriFeature
+  layer factories (not introduced here) -- the most consequential finding of this
+  task:** `pointToLayer`'s manually-built `L.circleMarker` (in both
+  `gis-viewer.js`'s `buildGeoJsonLayer` and `gis-esri.js`'s `buildFeature`) never
+  forwarded the layer's `pane` option. A parent `L.geoJSON`'s own `pane` option does
+  *not* propagate into a custom `pointToLayer`'s manually-constructed marker -- that's
+  a separate `L.Path` instance with its own `pane` option, defaulting to Leaflet's
+  shared `"overlayPane"` (zIndex 400) when unset. This meant **every point feature
+  from every geojson/esriFeature layer, ever, has silently ignored its configured
+  `zIndex`** and rendered into one shared pane above (almost) everything else --
+  §6's "layer order follows zIndex" was never actually true for points. Harmless-
+  looking in isolation (points were still visible, just in the wrong stacking order,
+  which no prior test happened to check for) until this task's swipe compare, which
+  clips a layer's *own* pane by name: against a point layer it was clipping the wrong
+  element entirely, doing nothing visible. Fixed by forwarding `ctx.pane` /
+  `opts.pane` into the `pointToLayer` marker's own options in both files.
+- Verified live in Chrome against real, CORS-verified Iberia Parish data (parish
+  boundary) plus local geojson fixtures (two overlapping polygons for swipe, three
+  point markers tagged to different `timeStep`s for the slider). Screenshot-based
+  visual verification was unreliable in this session's automated Chrome environment
+  for *both* tasks this time -- not just the already-documented animation/dblclick
+  quirks, but canvas content specifically: a deliberately-painted, fully-opaque test
+  rectangle on a layer's own canvas did not appear in a screenshot of that exact
+  region, and `getImageData` reads immediately after a time-step change were
+  inconsistent with reality. Fell back to ground-truth checks with no rendering
+  dependency -- `map.hasLayer()`, `getBoundingClientRect()`, DOM pane structure, and
+  computed `clipPath` values -- which is what actually caught and confirmed both bugs
+  above; screenshots would have shown the point layers "worked" the whole time.
+  Test harness and geojson fixtures deleted before committing.
+
 ## GIS Phase 3 task 3.9 — measure, draw, coordinates, search, geolocate, bookmarks
 
 Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.9 / `04-SPEC-gis-engine.md` §6. Nothing
