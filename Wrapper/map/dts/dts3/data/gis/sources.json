@@ -76,7 +76,9 @@
       "attribution": "no copyrightText set on this layer — confirm attribution wording with Iberia Parish GIS directly (see openQuestions)",
       "recommendedSourceType": "esriFeature (single static polygon; also freeze as a local geojson clip mask in Phase 3)",
       "iberiaFilter": "n/a — this IS the parish boundary",
-      "harvested": false,
+      "harvested": true,
+      "harvestedFile": "data/gis/layers/parish-boundary.geojson",
+      "harvestNotes": "Harvested 2026-08-02 via tools/gis-harvest.mjs (task 3.13). 1 feature, 1 ring, 1409 vertices, 32.3KB — no simplification applied (already far under the 2MB budget, and this is the clip-mask geometry every other harvested layer's accuracy depends on). Coordinates rounded to 6 decimal degrees (~0.11m).",
       "notes": "Fields include NAME, AREA, EFF_DATE, VINTAGE — clean, small, no PII."
     },
     {
@@ -197,7 +199,7 @@
       "recommendedSourceType": "esriFeature",
       "iberiaFilter": "REQUIRED — this service is statewide; every query needs a spatial filter to the parish envelope/boundary",
       "harvested": false,
-      "notes": "Statewide project inventory. Cross-check the Iberia-specific subset against the factsheet once retrieved (task 0.5, blocked — see openQuestions)."
+      "notes": "Statewide project inventory. Cross-check the Iberia-specific subset against data/gis/iberia-cpra-factsheet.json (task 0.5 — resolved 2026-08-02)."
     },
     {
       "sourceId": "cpra-master-plan-2023",
@@ -220,10 +222,17 @@
       "serviceType": "ArcGIS MapServer 10.81",
       "access": "public, no token",
       "cors": "verified pass — lasard/shoreline tested directly 2026-08-01",
-      "recommendedSourceType": "esriFeature for a curated subset of years; harvest to geojson if the full historical stack (lasard also has per-year contour layers back to 1870s) is too heavy for live querying",
+      "recommendedSourceType": "harvested geojson — see harvestNotes for a real correction to this entry's own description",
       "iberiaFilter": "REQUIRED — statewide/coastwide dataset, spatial-filter to parish envelope",
-      "harvested": false,
-      "notes": "lasard also exposes dozens of per-year historical shoreline CONTOUR layers (contours1870 … contours2023) — good raw material for a coastal-change time slider, but pick 3-5 representative years rather than all of them for performance."
+      "harvested": true,
+      "harvestedFiles": [
+        "data/gis/layers/shoreline-1935.geojson",
+        "data/gis/layers/shoreline-1948.geojson",
+        "data/gis/layers/shoreline-1998.geojson",
+        "data/gis/layers/shoreline-2008.geojson",
+        "data/gis/layers/shoreline-2015.geojson"
+      ],
+      "harvestNotes": "CORRECTION, found live while writing tools/gis-harvest.mjs (task 3.13, 2026-08-02): the 'per-year contour layers back to 1870s' referenced just above (lasard/contoursYYYY, e.g. lasard/contours1934) are NOT shoreline position snapshots — checked live, they're TopoBathyContours: bathymetric/topographic elevation isolines (Z_FT class-break renderer, fields like V_BENCH/V_EPOCH/THICKNESS) mined near each labelled year, not the shoreline itself. Wrong dataset for a coastal-change time slider. Harvested lasard/shoreline instead (the same layer already CORS/query-verified above) — a single compiled feature layer where each feature carries its own SRC_DATE (YYYYMMDD), not one shoreline per calendar year. Real coverage inside the Iberia envelope clusters unevenly: dense around 1931-1937, 1946-1955, 1994-1999, then solid single-year counts in 2008 and 2015 — so the 'five representative years' are SRC_DATE range windows (1930-1939→'1935', 1945-1955→'1948', 1994-1999→'1998', plus exact 2008 and 2015), not five clean single-date queries. Each window queried with the parish-envelope spatial filter, then features were genuinely clipped (not just kept-or-dropped) to the vertex runs falling inside the real parish polygon — one 1998-window feature (USGS DDS-79, a statewide digitization) had 475,623 vertices before clipping trimmed it to only its Iberia-intersecting run. Simplified with Ramer-Douglas-Peucker at 0.0001° (~10m) after clipping, coordinates rounded to 6 decimals. Final sizes: 110-610KB per file, all well under the 2MB budget. Per-feature `year` property added (the representative window label) alongside the original SRC_DATE. Attribution wording is a placeholder pending the cpra-cims-terms-of-use openQuestion below."
     },
     {
       "sourceId": "cpra-subsidence",
@@ -285,7 +294,7 @@
       "id": "iberia-factsheet-retrieval",
       "question": "The Iberia Parish CPRA factsheet must be retrieved manually — its host (cims.coastal.louisiana.gov) sends Disallow: / in robots.txt for all crawlers, confirmed 2026-08-01. Open https://cims.coastal.louisiana.gov/outreach/factsheets/Parishes/parish_map in a browser, select Iberia Parish, and transcribe the project list as the authoritative cross-check for cpra-coastal-projects above.",
       "owner": "human — a real browser session, not automatable",
-      "status": "unresolved",
+      "status": "resolved — transcribed 2026-08-02 into data/gis/iberia-cpra-factsheet.json",
       "blocksLayers": ["cpra-coastal-projects (cross-check only, not a hard blocker for building the layer)"]
     },
     {

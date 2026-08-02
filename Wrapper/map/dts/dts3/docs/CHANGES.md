@@ -2,6 +2,80 @@
 
 Newest first.
 
+## GIS Phase 3 task 3.13 — harvest script and frozen boundary/shoreline layers
+
+Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.13 / `04-SPEC-gis-engine.md` §8 defence 1.
+Only 3.14 (hand-building `data/gis/maps/iberia-coastal.json`) remains before Phase 3's
+gate. Harvesting was explicitly unblocked by the human ahead of final ToS confirmation
+from Iberia Parish GIS and CPRA/LSU (see `data/gis/sources.json`'s `openQuestions`) —
+every harvested file's attribution is placeholder text flagged as pending, not final copy.
+
+- `tools/gis-harvest.mjs` (new): a Node script (`.mjs`, no `package.json` needed) run
+  manually — `node tools/gis-harvest.mjs` — never per-visitor. Identifies itself with a
+  real User-Agent naming the project, and throttles every request (including between
+  pagination pages) at 900ms, per the risk register's "Iberia server is small... throttle
+  hard, schedule not on-demand."
+- Ran it for real against two sources this session and committed the real output:
+  - **Iberia Parish boundary** (`Govt_Units/Updated_Parish_Boundary`) →
+    `data/gis/layers/parish-boundary.geojson` — 1 feature, 1409 vertices, 32.3KB. This is
+    both a layer in its own right and defence 1's own clip geometry for every other
+    harvested file.
+  - **CPRA/LSU historical shoreline**, 5 representative years →
+    `data/gis/layers/shoreline-{1935,1948,1998,2008,2015}.geojson` (one file per year, not
+    one file with a per-feature year discriminator — chosen to match the time-slider's
+    existing `def.timeStep` mechanism from task 3.10, which already expects "separate
+    layers per scenario/step," not a single file it would have to split itself).
+- **Real, consequential correction to `data/gis/sources.json`'s own description, found
+  live while writing this script:** the doc's `cpra-coastal-change-shorelines` entry
+  described `lasard/contoursYYYY` (e.g. `lasard/contours1934`) as historical shoreline
+  contour layers good for a time slider. Checked live: those are actually
+  **TopoBathyContours** — bathymetric/topographic elevation isolines (a `Z_FT`
+  class-break renderer, fields like `V_BENCH`/`V_EPOCH`/`THICKNESS`) mined from surveys
+  *near* each labelled year, not shoreline position snapshots. Wrong dataset entirely for
+  "the coast used to be here." Harvested `lasard/shoreline` instead — the layer already
+  CORS/query-verified in Phase 0 — a single compiled feature layer where each feature
+  carries its own `SRC_DATE` (`YYYYMMDD`), not one shoreline per calendar year. Real
+  coverage inside the Iberia envelope clusters unevenly across ~160 years (dense around
+  1931-1937, 1946-1955, and 1994-1999; solid single-year counts in 2008 and 2015), so the
+  "five representative years" are `SRC_DATE` range windows queried with a lexical string
+  comparison (safe: the field is a fixed-width zero-padded `YYYYMMDD` string, so lexical
+  order equals numeric order) rather than five clean single-date queries. `data/gis/sources.json` is updated with the correction and full harvest provenance per layer.
+- **Real bug in the first version of this script's own clip logic, found live, fixed
+  before committing:** defence 1's "point-in-polygon pass" was first implemented as a
+  keep-the-whole-feature-or-drop-it test — a feature survived if *any* vertex fell inside
+  the parish polygon, but every vertex (including ones far outside Iberia) was then
+  written unchanged. This is not what `04-SPEC §1` means by "Iberia-clipped snapshots."
+  It surfaced immediately as a budget failure: one `shoreline-1998` feature (USGS
+  `DDS-79`, "Coastal Erosion and Wetland Change in Louisiana") is a single polyline
+  digitized across the entire Louisiana coast with 475,623 vertices; keeping it whole
+  because a fraction of its points passed near Iberia blew that one file to 11.3MB, ~5.7x
+  the `04-SPEC §9` 2MB budget, and defeated the point of a parish-scoped layer regardless
+  of size. Chasing the budget with heavier Ramer-Douglas-Peucker tolerances alone only
+  got it down to ~2.3MB before real detail loss would have started to show. Fixed at the
+  root: `clipGeometryToParish()` now walks each line's vertices and keeps only the
+  contiguous run(s) that actually fall inside the parish polygon, discarding the rest —
+  a real trim, not an include/drop decision. That one feature's Iberia-relevant run turned
+  out to be a small fraction of its statewide original; final `shoreline-1998.geojson` is
+  610.5KB. Every other year's file was already small and dropped further too (paragraph
+  above's byte counts are post-fix). Simplification (RDP at 0.0001°, ~10m, imperceptible
+  at this map's scale) runs after clipping, coordinate rounding (6 decimals, ~0.11m) after
+  that — both documented per layer in `sources.json`, per `§9`'s "tolerance documented per
+  layer" requirement.
+- Geometry math (point-in-polygon via ray-casting across all rings at once — correctly
+  handles holes by winding parity with no separate per-ring XOR step; iterative
+  stack-based Ramer-Douglas-Peucker, not recursive, since a 475k-vertex real feature made
+  naive recursion a stack-depth risk) is hand-rolled in the script itself, no Turf, per
+  `04-SPEC §2`'s explicit steer — this is a one-time offline tool, not the live engine, so
+  it's a separate ~140 lines from the engine's own geometry helpers, not a extension of
+  them.
+- Verified for real, not just by inspection: every point in every harvested shoreline
+  file (a script-driven point-in-polygon check re-run independently against the written
+  files, not reusing the harvest script's own pass) falls inside the real parish polygon
+  — 0 of ~24,000 points outside, across all 5 years. All 6 output files are valid
+  GeoJSON, well under the 2MB budget (110KB-625KB), and none are registered in
+  `data/manifest.json` or reachable from the Admin Board's document set, per `04-SPEC §1`'s
+  localStorage warning.
+
 ## GIS Phase 3 task 3.12 — mountGis() wiring, instance cache, invalidateSize
 
 Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.12 / `04-SPEC-gis-engine.md` §9. Wires the
