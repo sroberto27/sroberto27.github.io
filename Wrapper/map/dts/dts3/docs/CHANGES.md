@@ -2,6 +2,51 @@
 
 Newest first.
 
+## GFC project shipped early, replacing Safety & Emergency
+
+Out of the normal phase order — the human explicitly asked to showcase the Iberia Parish
+GIS map's current progress on the live site now, rather than waiting for `08-SPEC-
+gfc-project.md`'s planned build order (GFC is built last, through the Admin Board, after
+Phase 5/CMS).
+
+- **Deliberate, explicit departure from `08-SPEC`'s own gate:** that spec says build the
+  GFC project document with `illustrative:true` and "leave it unlinked from any sector
+  card" until the PI (LSU/Dr. Schwarz, or Marcus) signs off on naming the partners and
+  Iberia Parish publicly — the source Statement of Work is a draft grant document with
+  budget splits and named personnel that aren't the partner's to publish before award. The
+  human was shown this exact gate and explicitly chose to proceed and link the project now
+  regardless — their call on their own client relationship, not overridden or second-guessed
+  here. Compensating control kept regardless of that decision: only the copy `08-SPEC`
+  itself already pre-cleared as safe is used anywhere (programme name, partner
+  organisations, purpose, the four goals, DTS's role) — no budget figures, subaward
+  percentages, indirect rates, named individuals, or period of performance, in `gfc.json`
+  or anywhere else. `project.illustrative` was left `false` per the human's explicit choice
+  (the site's only WIP-marker chip reads "Illustrative example — representative of DTS's
+  work in this space," which doesn't fit a real, ongoing, unfinished research partnership,
+  and adding a more accurate status label was judged out of proportion for this change).
+- `data/projects/gfc.json` (new): `sectorId: "government"`, two experiences — a real
+  Treedis tour (`spaces.dtsxr.com/tour/56111605`, confirmed live: 242 real sweeps loaded,
+  not a placeholder) and the real `iberia-coastal` GIS map from Phase 3 (`tourId: null` —
+  the Phase 4 guided tour doesn't exist yet).
+- **Replaced, not added as a fifth card:** `data/sectors/government.json`'s existing
+  `emergency` card ("Safety & Emergency" / GOHSEP-FEMA PA documentation, a real,
+  non-illustrative, currently-live project) is now the `gfc` card ("Coastal Resilience" /
+  "Coastal" short label, exact card text `08-SPEC §1` proposes). This was the human's own
+  framing, and it sidesteps `08-SPEC` task 6.1's open question about whether the sector
+  card slider handles five cards — it never has to, since the count stays at four.
+  `data/projects/emergency.json` is unregistered from `data/manifest.json` (removed from
+  the `projects` array) but left on disk, not deleted — fully recoverable by re-adding one
+  manifest entry if the GOHSEP/FEMA positioning is wanted again later.
+- `js/config.js`'s fallback (`file://` path, no `/data` available) carried real duplicate
+  content for both the government sector's card list and a full `emergency` example entry
+  — unlike the empty `gisMaps`/`gisTours` stubs from Phase 1, this wasn't a structural
+  no-op to skip. Updated both to the same `gfc` content so the fallback path doesn't show
+  stale GOHSEP/FEMA copy while the real `/data` path shows GFC.
+- Verified live in Chrome: Government sector now shows exactly 4 cards ending in
+  "Coastal"; clicking it opens the GFC project with both tabs; the Treedis tab genuinely
+  loads the real tour (`[treedis] sweeps: 242` in console, not a stub); the map tab mounts
+  `iberia-coastal` exactly as it did at the end of Phase 3; console clean throughout.
+
 ## GIS Phase 3 gate — acceptance criteria and regression checklist
 
 Per `docs/plans/gis/09-BUILD-PLAN.md`'s Phase 3 acceptance criteria and regression

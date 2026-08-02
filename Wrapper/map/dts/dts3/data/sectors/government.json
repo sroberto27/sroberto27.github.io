@@ -19,9 +19,10 @@
       "text": "Municipal twins, transportation, utility grids, urban planning."
     },
     {
-      "projectId": "emergency",
-      "title": "Safety & Emergency",
-      "text": "GOHSEP, FEMA PA documentation, disaster response twins."
+      "projectId": "gfc",
+      "title": "Coastal Resilience",
+      "short": "Coastal",
+      "text": "Parish-scale digital twins, GIS, and scenario planning for coastal risk."
     },
     {
       "projectId": "foodsafety",

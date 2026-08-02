@@ -108,9 +108,9 @@
         "id": "project.municipal"
       },
       {
-        "file": "projects/emergency.json",
+        "file": "projects/gfc.json",
         "type": "project",
-        "id": "project.emergency"
+        "id": "project.gfc"
       },
       {
         "file": "projects/foodsafety.json",

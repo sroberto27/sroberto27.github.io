@@ -88,7 +88,7 @@ window.DTS_CONFIG = {
       body: "Where collective output becomes public infrastructure. Government has a fundamentally different procurement process, budget authority, and decision timeline. DTS is SAM.gov qualified. Organized by function \u2014 not agency level.",
       cards: [
         { id: "municipal",  title: "Infrastructure & Cities",   text: "Municipal twins, transportation, utility grids, urban planning." },
-        { id: "emergency",  title: "Safety & Emergency",        text: "GOHSEP, FEMA PA documentation, disaster response twins." },
+        { id: "gfc",        title: "Coastal Resilience",        short: "Coastal", text: "Parish-scale digital twins, GIS, and scenario planning for coastal risk." },
         { id: "foodsafety", title: "Regulatory & Compliance",   text: "Food safety, environmental compliance, inspection training." },
         { id: "civic",      title: "Civic Services",            text: "Libraries, transit, parks, civic engagement, accessibility." }
       ]
@@ -540,26 +540,26 @@ window.DTS_CONFIG = {
         "Project Data": "Aerial context · Accessibility-first navigation · Two-week concept-to-demo cycle."
       }
     },
-    emergency: {
+    gfc: {
       sector: "government",
-      title: "Safety & Emergency",
-      tagline: "GOHSEP, FEMA PA documentation, disaster response twins.",
-      overview: "Time-sensitive, compliance-driven work: GOHSEP relationships and FEMA Public Assistance documentation, accessible through a specific intermediary on a short timeline. A twin is the authoritative record of conditions before and after an event.",
+      title: "Coastal Resilience \u2014 Gulf Futures Challenge",
+      tagline: "A parish-scale digital twin for coastal risk, drainage, and planning.",
+      overview: "An integrated digital twin platform for Gulf coastal resilience, joining spatial capture, live environmental data, and a parish's own GIS so land change, flood exposure, and drainage capacity can be examined together instead of in separate systems. Iberia Parish is the demonstration community.",
       project: {
-        name: "GOHSEP / FEMA PA Documentation",
-        kind: "Compliance engagement",
+        name: "Gulf Futures Challenge \u2014 Phase 2",
+        kind: "Active project \u00b7 Multi-institution research partnership",
         illustrative: false,
-        blurb: "Emergency-management documentation tied to GOHSEP and FEMA Public Assistance: a spatial record captured on a short, compliance-driven timeline that stands as the authoritative account of site conditions."
+        blurb: "Digital Twin Studios leads platform engineering for the Gulf Futures Challenge \u2014 3D visualization, real-time data integration, and AI-assisted scenario modeling \u2014 built with Louisiana State University, the University of Louisiana at Lafayette, and Do It Greener Foundation. The partnership pairs technical development with sustained community engagement."
       },
-      capturedWith: "On-site reality capture",
-      platform: "FEMA PA documentation",
+      capturedWith: "Matterport Pro3",
+      platform: "Treedis \u00b7 DTS GIS",
       sweepId: null,
       evidence: {
-        "Case Studies": "FEMA PA documentation capture delivered inside a compliance deadline.",
+        "Case Studies": "Iberia Parish demonstration deployment \u2014 spatial capture joined to parish GIS, flood and drainage data, and coastal-change layers in a single planning surface.",
         "Awards": "\u2014",
-        "Client Feedback": "\u201cThe twin is the record of record.\u201d",
-        "Press & Research": "Disaster documentation is a time-sensitive, intermediary-driven market.",
-        "Project Data": "Date-stamped spatial record for Public Assistance claims."
+        "Client Feedback": "\u2014",
+        "Press & Research": "Findings, methods, and platform architecture intended for peer-reviewed publication and public technical documentation, to support replication in other Gulf communities.",
+        "Project Data": "Research data, processed datasets, and platform architecture documented for replication in approved public repositories."
       }
     },
     municipal: {

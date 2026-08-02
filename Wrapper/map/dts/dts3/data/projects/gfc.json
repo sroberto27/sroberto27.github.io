@@ -1,0 +1,45 @@
+{
+  "_id": "project.gfc",
+  "_type": "project",
+  "id": "gfc",
+  "sectorId": "government",
+  "title": "Coastal Resilience — Gulf Futures Challenge",
+  "tagline": "A parish-scale digital twin for coastal risk, drainage, and planning.",
+  "overview": "An integrated digital twin platform for Gulf coastal resilience, joining spatial capture, live environmental data, and a parish's own GIS so land change, flood exposure, and drainage capacity can be examined together instead of in separate systems. Iberia Parish is the demonstration community.",
+  "project": {
+    "name": "Gulf Futures Challenge — Phase 2",
+    "kind": "Active project · Multi-institution research partnership",
+    "illustrative": false,
+    "blurb": "Digital Twin Studios leads platform engineering for the Gulf Futures Challenge — 3D visualization, real-time data integration, and AI-assisted scenario modeling — built with Louisiana State University, the University of Louisiana at Lafayette, and Do It Greener Foundation. The partnership pairs technical development with sustained community engagement."
+  },
+  "capturedWith": "Matterport Pro3",
+  "platform": "Treedis · DTS GIS",
+  "experiences": [
+    {
+      "_type": "treedis",
+      "id": "tour",
+      "label": "Site experience",
+      "tourUrl": "https://spaces.dtsxr.com/tour/56111605",
+      "origin": "https://spaces.dtsxr.com",
+      "sweepId": null,
+      "default": true
+    },
+    {
+      "_type": "gis",
+      "id": "map",
+      "label": "Parish map",
+      "mapId": "iberia-coastal",
+      "tourId": null
+    }
+  ],
+  "links": [],
+  "gallery": [],
+  "sweepId": null,
+  "evidence": {
+    "Case Studies": "Iberia Parish demonstration deployment — spatial capture joined to parish GIS, flood and drainage data, and coastal-change layers in a single planning surface.",
+    "Awards": "—",
+    "Client Feedback": "—",
+    "Press & Research": "Findings, methods, and platform architecture intended for peer-reviewed publication and public technical documentation, to support replication in other Gulf communities.",
+    "Project Data": "Research data, processed datasets, and platform architecture documented for replication in approved public repositories."
+  }
+}
