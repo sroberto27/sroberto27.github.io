@@ -51,8 +51,15 @@
 .example-stage-tab:focus-visible{ outline:2px solid var(--gold-bright); outline-offset:-2px; }
 .example-stage-tab svg{ width:13px; height:13px; opacity:.8; flex:none; }
 
-/* GIS placeholder — the real map lands in a later phase; this just keeps
-   a "gis" experience from rendering as a blank pane if one is ever active. */
+/* GIS pane — the real div js/app.js's mountGis() hands to DTSGis.mount(),
+   which builds its Leaflet map directly into it. A parallel rule to the
+   ".example-stage-slot iframe" one above, not a change to it — that
+   selector is locked to iframe elements specifically (see CLAUDE.md). */
+.example-gis-pane{ position:absolute; inset:0; }
+.example-gis-pane[hidden]{ display:none; }
+
+/* GIS error state (map missing from cfg.gisMaps, or DTSGis.mount() itself
+   failed) — a "gis" experience must never render as a blank pane. */
 .example-gis-placeholder{
   position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
   color:var(--faint); font-size:13px; text-align:center; padding:20px;

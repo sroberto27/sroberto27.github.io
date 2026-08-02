@@ -2,6 +2,70 @@
 
 Newest first.
 
+## GIS Phase 3 task 3.12 — mountGis() wiring, instance cache, invalidateSize
+
+Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.12 / `04-SPEC-gis-engine.md` §9. Wires the
+already-complete engine (3.1-3.11) into the real experience switcher. Only 3.13 (harvest
+script) and 3.14 (the real Iberia map document) remain in Phase 3.
+
+- `js/app.js`'s `mountGis()` placeholder is now a real `DTSGis.mount()` call. Two lazy-load
+  layers stack: `js/gis/gis-loader.js` (already lazy, vendors Leaflet/esri-leaflet) plus a
+  new `loadGisEngine()` that lazily injects *our own* `gis-viewer.js`/`gis-esri.js`/
+  `gis-tools.js` too -- §9's "under 200KB, loaded only on first GIS tab activation" budget
+  covers `js/gis/*` itself, not just `vendor/`, so a visitor who never opens a map project
+  should download none of it. (`css/15-gis.css` stays statically linked, per task 3.5's own
+  precedent -- a small stylesheet with no such budget concern, not revisited here.)
+- **Instance cache with an LRU cap of 2** (`gisCache`, keyed by `mapId` -- deliberately not
+  experience id, since a `mapId` can be referenced by more than one project, and every
+  experience's base id defaults to its `_type` alone, so two different projects' first "gis"
+  experience would otherwise collide on id "gis"). Leaving a map's tab (`suspendExperience`)
+  or closing its project (`closeExampleNow`) calls the engine's own `suspend()` (§5/§9 --
+  stops pending tile/query requests, a backgrounded map costs nothing) and just hides the
+  pane; nothing is destroyed or removed from `#exStageSlot`, so a returning visit is a cache
+  hit -- same instance, same DOM node, no reload, no re-fetch, matching the "no reload on
+  switch back" bar this codebase already holds Treedis to. `closeExampleNow`'s existing
+  `[id^="exampleMediaFrame-"]` removal is naturally exempt from the parked GIS pane, since it
+  uses its own distinct `exampleGisPane-<mapId>` id prefix. Only eviction past the cap
+  actually tears an instance down (`instance.destroy()` + its `DTSGisTools` instance's own
+  `destroy()` + pane removal); the map currently on screen is never a candidate.
+- `invalidateSize()` wired to: the CSS-fallback fullscreen enter (`playReveal()`, covering
+  the real Fullscreen-API path, the older-WebKit event path, and the no-Fullscreen-API CSS
+  overlay, since all three funnel through it), the two fullscreen-exit paths (the native
+  `fullscreenchange`/`webkitfullscreenchange` listener, and the CSS fallback's own tap-exit
+  and Escape-exit handlers), and a plain `window` `resize` listener.
+- **Finding, not a bug (confirmed live, worth recording so it isn't "fixed" again later):**
+  prototype-patching `L.Map.prototype.invalidateSize` and dispatching a synthetic `resize`
+  event showed vendored Leaflet 1.9.4 already calls `invalidateSize()` on every *live* map
+  instance itself on `window` resize (its own internal listener, bound at construction,
+  still firing even for a suspended/hidden map) -- making this task's explicit `resize`
+  listener redundant for that one case. Kept anyway: it's harmless, it's what the task
+  explicitly calls for, and it doesn't rely on an implementation detail of a vendored
+  library that could change. It is **not** redundant for fullscreen: entering/exiting the
+  CSS fallback changes the stage's size via a class toggle, with no native `resize` event at
+  all, so that path only re-measures because of this task's own explicit call -- confirmed
+  live by spying the same prototype method around a real `#exEnter` click (browser
+  automation can't grant a script-driven `.click()` real Fullscreen-API transient activation,
+  so the click reliably exercises the CSS-fallback branch, the one this task most needed to
+  verify) and around a synthetic Escape keydown.
+- Verified live in Chrome against the real app shell (not a standalone harness this time --
+  `python -m http.server 8000` serving the actual site), with three temporary `gisMap`
+  documents and matching `experiences[]` entries added to three real, existing projects
+  (`energy`, `workforce`, `healthcare` -- one of the three, `healthcare`, wired to the real,
+  CORS-verified Iberia parish-boundary `esriFeature` layer to confirm the *whole* pipeline
+  end to end, not just the engine in isolation) and registered in `data/manifest.json`'s
+  `gis` group: a deep link straight to a project's GIS tab (`?category=…&project=…&exp=…`)
+  mounts correctly alongside its Treedis tab; switching tabs away and back reuses the exact
+  same DOM node and Leaflet instance (checked by object identity, not just visual
+  inspection); closing the project and reopening it later reuses the same cached instance
+  too; opening two more distinct maps in sequence correctly evicts the least-recently-used
+  entry once the cache exceeds its cap of 2, while never touching the one currently on
+  screen; and a non-GIS legacy project (`campus`) loads with zero GIS/Leaflet script tags
+  and no `window.DTSGis`/`window.L` globals at all, confirmed directly via the DOM rather
+  than the session's network-request-capture tool, which (consistent with this session's
+  already-documented automation quirks) failed to reliably attribute requests to the page
+  under test. All temporary map/manifest/project-file test data reverted before committing,
+  same pattern as every prior phase's live-data testing.
+
 ## GIS Phase 3 task 3.11 — print/export image, export data, and share links
 
 Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.11 / `04-SPEC-gis-engine.md` §6-7. This is the

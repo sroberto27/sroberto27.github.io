@@ -720,7 +720,6 @@
      ============================================================ */
   let activeExampleId = null;
   let activeExperienceId = null;   // id of the active tab within the open example
-  let gisInstances = {};           // mapId → live GIS viewer instance (wired in a later phase)
 
   function openExample(cardId, evidenceLabel, expId) {
     const ex = cfg.examples && cfg.examples[cardId];
@@ -905,34 +904,174 @@
     }
   }
 
-  /* Placeholder until the GIS engine lands (a later phase wires the real
-     map here via DTSGis.mount()) — keeps a "gis" experience from ever
-     rendering a blank pane or throwing if one becomes active early. */
-  function mountGis(target, ex, slot, loading) {
-    if (loading) loading.classList.add("is-hidden");
-    let el = document.getElementById("exGisPlaceholder");
+  /* ============================================================
+     GIS EXPERIENCE MOUNTING  (task 3.12)
+     ------------------------------------------------------------
+     Real DTSGis.mount() wiring. Two lazy-load layers stack here:
+     js/gis/gis-loader.js (already lazy) injects the vendored
+     Leaflet/esri-leaflet bundle; loadGisEngine() below lazily
+     injects our OWN wrapper code (gis-viewer.js/gis-esri.js/
+     gis-tools.js) too — §9's "under 200KB, loaded only on first
+     GIS tab activation" budget covers js/gis/* itself, not just
+     vendor/, so nothing GIS-related should download for a visitor
+     who never opens a map project.
+
+     Instances are cached by mapId (not experience id — a mapId
+     can be referenced by more than one project) with a small LRU
+     cap: leaving a map's tab, or closing its project, suspends the
+     live instance (§5/§9 — stops pending tile/query requests, a
+     backgrounded map costs nothing) and leaves its pane parked
+     (hidden, still inside #exStageSlot — closeExampleNow's own
+     iframe cleanup only matches the "exampleMediaFrame-" prefix,
+     so a parked GIS pane is naturally exempt) rather than
+     destroying it, so reopening the same map is instant and never
+     re-fetches a single layer. Only eviction past the cap actually
+     tears an instance down.
+     ============================================================ */
+  const GIS_CACHE_CAP = 2;
+  const gisCache = new Map();      // mapId → { pane, instance, toolsInstance, lastUsed }
+  let activeGisMapId = null;       // mapId currently shown in the stage, or null
+
+  let gisEnginePromise = null;
+  function loadGisEngine() {
+    if (gisEnginePromise) return gisEnginePromise;
+    const files = ["js/gis/gis-loader.js", "js/gis/gis-viewer.js", "js/gis/gis-esri.js", "js/gis/gis-tools.js"];
+    gisEnginePromise = files.reduce((p, src) => p.then(() => new Promise((resolve, reject) => {
+      if (document.querySelector('script[src="' + src + '"]')) { resolve(); return; }
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error("Failed to load " + src));
+      document.body.appendChild(s);
+    })), Promise.resolve());
+    return gisEnginePromise;
+  }
+
+  function toursForMap(mapDoc) {
+    return (Array.isArray(mapDoc.tours) ? mapDoc.tours : [])
+      .map((id) => cfg.gisTours && cfg.gisTours[id])
+      .filter(Boolean);
+  }
+
+  /* Never evicts the map currently on screen. */
+  function evictGisIfOverCap() {
+    if (gisCache.size <= GIS_CACHE_CAP) return;
+    let oldestId = null, oldestTime = Infinity;
+    gisCache.forEach((entry, id) => {
+      if (id === activeGisMapId) return;
+      if (entry.lastUsed < oldestTime) { oldestTime = entry.lastUsed; oldestId = id; }
+    });
+    if (!oldestId) return;
+    const entry = gisCache.get(oldestId);
+    gisCache.delete(oldestId);
+    if (entry.toolsInstance) { try { entry.toolsInstance.destroy(); } catch (_e) {} }
+    try { entry.instance.destroy(); } catch (_e) {}
+    entry.pane.remove();
+  }
+
+  function showGisError(slot, message) {
+    let el = document.getElementById("exGisError");
     if (!el) {
       el = document.createElement("div");
-      el.id = "exGisPlaceholder";
+      el.id = "exGisError";
       el.className = "example-gis-placeholder";
-      el.textContent = "Map experience — coming soon.";
     }
+    el.textContent = message;
     if (el.parentNode !== slot) slot.appendChild(el);
     el.hidden = false;
   }
+  function hideGisError() {
+    const el = document.getElementById("exGisError");
+    if (el) el.hidden = true;
+  }
+
+  function mountGis(target, ex, slot, loading) {
+    const mapId = target.mapId;
+    const mapDoc = cfg.gisMaps && cfg.gisMaps[mapId];
+    if (!mapId || !mapDoc) {
+      if (loading) loading.classList.add("is-hidden");
+      activeGisMapId = null;
+      showGisError(slot, "Map not available.");
+      return;
+    }
+    hideGisError();
+    activeGisMapId = mapId;
+
+    const cached = gisCache.get(mapId);
+    if (cached) {
+      cached.lastUsed = Date.now();
+      if (cached.pane.parentNode !== slot) slot.appendChild(cached.pane);
+      cached.pane.hidden = false;
+      cached.instance.resume();
+      cached.instance.invalidateSize();
+      if (loading) loading.classList.add("is-hidden");
+      return;
+    }
+
+    if (loading) loading.classList.remove("is-hidden");
+    loadGisEngine().then(() => {
+      // Superseded by a later mountGis()/close while the engine was
+      // still loading — don't mount a map nobody is looking at.
+      if (activeGisMapId !== mapId) return;
+      const pane = document.createElement("div");
+      pane.className = "example-gis-pane";
+      pane.id = "exampleGisPane-" + mapId;
+      slot.appendChild(pane);
+      return DTSGis.mount(pane, mapDoc, {
+        tours: toursForMap(mapDoc),
+        tourId: target.tourId || null,
+        initialView: target.initialView || null
+      }).then((instance) => {
+        if (activeGisMapId !== mapId) {
+          // Same race, one async hop later — tear down rather than leave
+          // an orphaned, invisible live map running in the background.
+          instance.destroy();
+          pane.remove();
+          return;
+        }
+        const toolsInstance = window.DTSGisTools ? DTSGisTools.mount(pane, mapDoc, instance, {}) : null;
+        gisCache.set(mapId, { pane, instance, toolsInstance, lastUsed: Date.now() });
+        evictGisIfOverCap();
+        if (loading) loading.classList.add("is-hidden");
+      }).catch((err) => {
+        pane.remove();
+        throw err;
+      });
+    }).catch((err) => {
+      console.warn("[dts] GIS mount failed:", err);
+      if (loading) loading.classList.add("is-hidden");
+      if (activeGisMapId === mapId) showGisError(slot, "The map couldn't load. Reload the page to try again.");
+    });
+  }
+
+  function invalidateActiveGisSize() {
+    if (!activeGisMapId) return;
+    const entry = gisCache.get(activeGisMapId);
+    if (entry) entry.instance.invalidateSize();
+  }
+
+  function suspendActiveGis() {
+    if (!activeGisMapId) return;
+    const entry = gisCache.get(activeGisMapId);
+    if (entry) {
+      entry.instance.suspend();
+      entry.pane.hidden = true;
+    }
+    activeGisMapId = null;
+  }
 
   function suspendExperience(expId) {
-    if (!expId) return;
-    const frame = document.getElementById(experienceFrameId(expId));
-    if (frame) {
-      // Treedis must not reload when the reader comes back — just hide
-      // it. Video must stop playing audio behind the newly active tab —
-      // blank its src too.
-      if (frame.dataset.kind === "vimeo") frame.src = "about:blank";
-      frame.hidden = true;
+    if (expId) {
+      const frame = document.getElementById(experienceFrameId(expId));
+      if (frame) {
+        // Treedis must not reload when the reader comes back — just hide
+        // it. Video must stop playing audio behind the newly active tab —
+        // blank its src too.
+        if (frame.dataset.kind === "vimeo") frame.src = "about:blank";
+        frame.hidden = true;
+      }
     }
-    const gisEl = document.getElementById("exGisPlaceholder");
-    if (gisEl) gisEl.hidden = true;
+    suspendActiveGis();
   }
 
   function experienceGlyph(type) {
@@ -1043,6 +1182,10 @@
       revealTimer = setTimeout(() => {
         stage.classList.remove("is-revealing", "is-revealed");
       }, 1500);
+      // Covers every entry path (real Fullscreen API, older-WebKit event,
+      // and the CSS-only fallback below) — a GIS pane mounted at the old
+      // stage size must re-measure once the fullscreen size is real.
+      invalidateActiveGisSize();
     };
 
     const req = stage.requestFullscreen
@@ -1081,6 +1224,7 @@
       if (!fsEl) {
         const stage = $("#exampleStage");
         if (stage) stage.classList.remove("is-revealing", "is-revealed");
+        invalidateActiveGisSize();
       }
     })
   );
@@ -1095,6 +1239,7 @@
       e.preventDefault();
       e.stopPropagation();
       stage.classList.remove("is-faux-fullscreen", "is-revealing", "is-revealed");
+      invalidateActiveGisSize();
     }
   }, true);
 
@@ -1105,6 +1250,7 @@
     if (stage && stage.classList.contains("is-faux-fullscreen")) {
       e.stopPropagation();
       stage.classList.remove("is-faux-fullscreen", "is-revealing", "is-revealed");
+      invalidateActiveGisSize();
     }
   }, true);
 
@@ -1263,8 +1409,9 @@
     // so a video doesn't keep playing behind the closed window, and the
     // next project opened starts from a clean slot.
     $$('[id^="exampleMediaFrame-"]').forEach((f) => f.remove());
-    const gisEl = document.getElementById("exGisPlaceholder");
-    if (gisEl) gisEl.remove();
+    suspendActiveGis();   // parks the live map (cached, not destroyed) — see mountGis()
+    const gisErr = document.getElementById("exGisError");
+    if (gisErr) gisErr.remove();
     if (treedisIframe) parkIframe();
     ov.classList.remove("is-open");
     ov.setAttribute("aria-hidden", "true");
@@ -2157,6 +2304,9 @@
       // fullscreen returns the reader exactly where they were.
       enterExampleFullscreen();
     });
+    // A live GIS pane must re-measure on every plain window resize too,
+    // not just fullscreen enter/exit (04-SPEC §9).
+    window.addEventListener("resize", invalidateActiveGisSize);
     // "Contact Us about this" routes into the proposal lead form.
     $("#exContact").addEventListener("click", () => {
       closeExample();
