@@ -64,23 +64,48 @@
         const c = feature && feature.properties && classifiedColor(styleOpts.classify, feature.properties[styleOpts.classify && styleOpts.classify.field]);
         if (c) { style.color = c; style.fillColor = c; }
         return style;
-      },
-      // Same fix as gis-viewer.js's buildGeoJsonLayer: pane must be forwarded
-      // explicitly to a manually-built pointToLayer marker -- it is not
-      // inherited from the parent layer's own pane option. Real bug, found
-      // live testing task 3.10's swipe compare against a point layer.
-      pointToLayer: function (feature, latlng) {
+      }
+    };
+    // Real bug, found live task 3.14 against the real Iberia hydrography
+    // (polyline) layer: the vendored esri-leaflet 3.0.19 FeatureLayer's own
+    // _redraw() unconditionally calls this.options.pointToLayer(feature,
+    // L.latLng(feature.geometry.coordinates[1], feature.geometry.coordinates[0]))
+    // whenever pointToLayer is set and the existing layer object has
+    // setStyle -- true of Polyline/Polygon too, not just point markers, and
+    // with no geometry.type check at all. _redraw() runs whenever a feature
+    // already on the map is re-encountered (e.g. a line spanning more than
+    // one of esri-leaflet's internal query tiles, exactly what a
+    // parish-wide drainage network does on pan/zoom): for a LineString/
+    // MultiLineString/Polygon, geometry.coordinates[0]/[1] are whole
+    // coordinate arrays, not lat/lng numbers, so L.latLng() throws "Invalid
+    // LatLng object" as an uncaught exception outside this file's own
+    // try/catch (gis-viewer.js only wraps the initial layer build, not
+    // esri-leaflet's own later internal redraws). Leaflet core's
+    // geometryToLayer -- what actually builds each feature the first time,
+    // via createNewLayer() -- already checks geometry.type before ever
+    // calling pointToLayer, so omitting it here for non-point layers loses
+    // nothing on that path; it only starves the buggy branch above of a
+    // truthy this.options.pointToLayer to call. pointRadius is only ever
+    // set on this map's actual point layers, so it's used as the geometry
+    // signal here rather than adding a new authored field to the schema
+    // for a vendored-library workaround.
+    if (typeof styleOpts.pointRadius === "number") {
+      opts.pointToLayer = function (feature, latlng) {
         const pointOpts = {
-          radius: typeof styleOpts.pointRadius === "number" ? styleOpts.pointRadius : 5,
+          radius: styleOpts.pointRadius,
           color: styleOpts.color || "#c49a2a",
           weight: typeof styleOpts.weight === "number" ? styleOpts.weight : 1.5,
           fillColor: styleOpts.fillColor || styleOpts.color || "#c49a2a",
           fillOpacity: typeof styleOpts.fillOpacity === "number" ? styleOpts.fillOpacity : 0.6
         };
+        // Same fix as gis-viewer.js's buildGeoJsonLayer: pane must be
+        // forwarded explicitly -- it is not inherited from the parent
+        // layer's own pane option. Real bug, found live testing task
+        // 3.10's swipe compare against a point layer.
         if (ctx && ctx.pane) pointOpts.pane = ctx.pane;
         return L.circleMarker(latlng, pointOpts);
-      }
-    };
+      };
+    }
     if (typeof def.minZoom === "number") opts.minZoom = def.minZoom;
     if (typeof def.maxZoom === "number") opts.maxZoom = def.maxZoom;
     if (ctx && ctx.pane) opts.pane = ctx.pane;

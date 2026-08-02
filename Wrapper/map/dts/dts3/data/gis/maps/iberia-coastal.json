@@ -1,0 +1,427 @@
+{
+  "_id": "gis.maps.iberia-coastal",
+  "_type": "gisMap",
+  "id": "iberia-coastal",
+  "title": "Iberia Parish — Coastal Resilience",
+  "subtitle": "Land change, flood risk, infrastructure and CPRA projects",
+  "attribution": "Iberia Parish GIS · CPRA / LSU LaSARD · FEMA",
+
+  "view": {
+    "center": [29.740394, -91.635827],
+    "zoom": 10,
+    "minZoom": 8,
+    "maxZoom": 18,
+    "maxBounds": [[29.31, -92.10], [30.17, -91.17]],
+    "restrictToBounds": true
+  },
+
+  "boundary": {
+    "layerId": "parish-boundary",
+    "showMask": true,
+    "maskOpacity": 0.55
+  },
+
+  "basemaps": [
+    {
+      "id": "dark",
+      "title": "Dark",
+      "type": "tileXYZ",
+      "url": "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+      "attribution": "&copy; OpenStreetMap contributors &copy; CARTO",
+      "default": true
+    },
+    {
+      "id": "imagery",
+      "title": "Aerial 2024",
+      "type": "esriImage",
+      "url": "https://maps.iberiagov.net/server/rest/services/Imagery/Aerials2024/ImageServer",
+      "attribution": "Iberia Parish GIS — attribution wording pending confirmation (see data/gis/sources.json openQuestions.iberia-terms-of-use)"
+    },
+    {
+      "id": "streets",
+      "title": "Streets",
+      "type": "tileXYZ",
+      "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "attribution": "&copy; OpenStreetMap contributors"
+    }
+  ],
+
+  "groups": [
+    { "id": "boundaries", "title": "Boundaries & jurisdictions", "open": true },
+    { "id": "water", "title": "Water & drainage", "open": true },
+    { "id": "risk", "title": "Flood risk", "open": false },
+    { "id": "infra", "title": "Infrastructure & exposure", "open": false },
+    { "id": "coastal", "title": "Coastal projects (CPRA)", "open": false },
+    { "id": "coastal-change", "title": "Coastal change (scenarios)", "open": false },
+    { "id": "imagery", "title": "Imagery", "open": false }
+  ],
+
+  "layers": [
+    {
+      "id": "parish-boundary",
+      "title": "Iberia Parish boundary",
+      "group": "boundaries",
+      "sourceType": "geojson",
+      "sourceRef": "iberia-parish-boundary",
+      "url": "data/gis/layers/parish-boundary.geojson",
+      "visible": true,
+      "opacity": 1,
+      "zIndex": 90,
+      "legend": { "mode": "auto" },
+      "queryable": true,
+      "searchField": "NAME",
+      "popup": {
+        "title": "{NAME} Parish",
+        "fields": [
+          { "name": "AREA", "label": "Area" },
+          { "name": "VINTAGE", "label": "Vintage" }
+        ]
+      },
+      "style": { "color": "#c49a2a", "weight": 2, "fillColor": "#c49a2a", "fillOpacity": 0.03 },
+      "attribution": "Iberia Parish GIS — attribution wording pending confirmation (see data/gis/sources.json openQuestions.iberia-terms-of-use)",
+      "description": "Official parish boundary. Also the clip mask that dims everything outside Iberia Parish on this map.",
+      "updated": "2026-08-02"
+    },
+    {
+      "id": "hydrography",
+      "title": "Drainage laterals & mains",
+      "group": "water",
+      "sourceType": "esriFeature",
+      "sourceRef": "iberia-hydrography",
+      "url": "https://maps.iberiagov.net/server/rest/services/Hydrography/Laterals_and_Mains_2026/MapServer",
+      "layerId": 3,
+      "visible": true,
+      "opacity": 0.85,
+      "zIndex": 35,
+      "legend": { "mode": "auto" },
+      "queryable": true,
+      "style": { "color": "#4fb3d9", "weight": 1.5 },
+      "attribution": "Iberia Parish GIS — attribution wording pending confirmation (see data/gis/sources.json openQuestions.iberia-terms-of-use)",
+      "description": "Parish drainage laterals and mains network. Note: this ArcGIS sublayer is known to return a server-side error for the engine's default query parameters (confirmed live in Phase 3 task 3.8) — it degrades to \"Unavailable right now\" gracefully rather than breaking the map; a real service-side quirk, not a bug in this site's code."
+    },
+    {
+      "id": "dfirm-panels",
+      "title": "FEMA DFIRM panel index",
+      "group": "risk",
+      "sourceType": "esriDynamic",
+      "sourceRef": "iberia-flood-risk",
+      "url": "https://maps.iberiagov.net/server/rest/services/Flood/DFIRM_Panels/MapServer",
+      "layers": [0],
+      "visible": false,
+      "opacity": 0.7,
+      "zIndex": 15,
+      "legend": { "mode": "auto" },
+      "queryable": false,
+      "attribution": "FEMA / Iberia Parish GIS — attribution wording pending confirmation (see data/gis/sources.json openQuestions.iberia-terms-of-use)",
+      "description": "FEMA Digital Flood Insurance Rate Map panel index, served as Iberia Parish's own standardized cartography."
+    },
+    {
+      "id": "bfe-floodways",
+      "title": "Base flood elevations & floodways",
+      "group": "risk",
+      "sourceType": "esriFeature",
+      "sourceRef": "iberia-flood-risk",
+      "url": "https://maps.iberiagov.net/server/rest/services/Flood/BFE_with_Floodways_for_Public_Map/MapServer",
+      "layerId": 1,
+      "visible": false,
+      "opacity": 0.8,
+      "minZoom": 11,
+      "maxZoom": 18,
+      "zIndex": 25,
+      "legend": { "mode": "auto" },
+      "queryable": true,
+      "style": { "color": "#e0574a", "weight": 1.5, "fillColor": "#e0574a", "fillOpacity": 0.18 },
+      "attribution": "FEMA / Iberia Parish GIS — attribution wording pending confirmation (see data/gis/sources.json openQuestions.iberia-terms-of-use)",
+      "description": "Effective FEMA base flood elevations and regulatory floodway extents."
+    },
+    {
+      "id": "critical-facilities",
+      "title": "Critical facilities",
+      "group": "infra",
+      "sourceType": "esriFeature",
+      "sourceRef": "iberia-infrastructure-exposure",
+      "url": "https://maps.iberiagov.net/server/rest/services/EmergencyResponse/Critical_Facilities/MapServer",
+      "layerId": 0,
+      "visible": false,
+      "opacity": 1,
+      "zIndex": 52,
+      "legend": { "mode": "auto" },
+      "queryable": true,
+      "style": { "color": "#f2b705", "fillColor": "#f2b705", "pointRadius": 6 },
+      "attribution": "Iberia Parish GIS — attribution wording pending confirmation (see data/gis/sources.json openQuestions.iberia-terms-of-use)",
+      "description": "Emergency-response critical facilities across the parish."
+    },
+    {
+      "id": "fire-stations",
+      "title": "Fire stations",
+      "group": "infra",
+      "sourceType": "esriFeature",
+      "sourceRef": "iberia-infrastructure-exposure",
+      "url": "https://maps.iberiagov.net/server/rest/services/Fire/Parish_Fire_Stations/MapServer",
+      "layerId": 0,
+      "visible": false,
+      "opacity": 1,
+      "zIndex": 50,
+      "legend": { "mode": "auto" },
+      "queryable": true,
+      "style": { "color": "#e05a3f", "fillColor": "#e05a3f", "pointRadius": 6 },
+      "attribution": "Iberia Parish GIS — attribution wording pending confirmation (see data/gis/sources.json openQuestions.iberia-terms-of-use)",
+      "description": "Parish fire station locations."
+    },
+    {
+      "id": "port-canals",
+      "title": "Port of Iberia canals & slips",
+      "group": "infra",
+      "sourceType": "esriFeature",
+      "sourceRef": "iberia-infrastructure-exposure",
+      "url": "https://maps.iberiagov.net/server/rest/services/Infrastructure/Port_of_Iberia_Canals_and_Slips/MapServer",
+      "layerId": 0,
+      "visible": false,
+      "opacity": 1,
+      "zIndex": 37,
+      "legend": { "mode": "auto" },
+      "queryable": true,
+      "style": { "color": "#5fb3b3", "weight": 2 },
+      "attribution": "Iberia Parish GIS — attribution wording pending confirmation (see data/gis/sources.json openQuestions.iberia-terms-of-use)",
+      "description": "Navigable canals and slips at the Port of Iberia."
+    },
+    {
+      "id": "cpra-projects",
+      "title": "CPRA project footprints",
+      "group": "coastal",
+      "sourceType": "esriFeature",
+      "sourceRef": "cpra-coastal-projects",
+      "url": "https://cimsgeo3.coastal.louisiana.gov/arcgis/rest/services/prot_rest/CPRA_Projects/MapServer",
+      "layerId": 0,
+      "visible": false,
+      "opacity": 0.75,
+      "zIndex": 20,
+      "legend": { "mode": "auto" },
+      "queryable": true,
+      "style": { "color": "#3fae5c", "weight": 1.5, "fillColor": "#3fae5c", "fillOpacity": 0.2 },
+      "attribution": "Louisiana CPRA — attribution wording pending confirmation (see data/gis/sources.json openQuestions.cpra-cims-terms-of-use)",
+      "description": "CPRA coastal protection and restoration project footprints (statewide service, shown here within Iberia Parish only). Note: this is a joined ArcGIS view — its own field names carry table-qualified prefixes (e.g. \"Project_Status_List.Project_Name\"), a real service quirk left to the engine's default \"show all fields with aliases\" popup fallback rather than a guessed exact-name mapping."
+    },
+    {
+      "id": "cpra-master-plan-2023",
+      "title": "2023 Coastal Master Plan — restoration projects",
+      "group": "coastal-change",
+      "sourceType": "esriFeature",
+      "sourceRef": "cpra-master-plan-2023",
+      "url": "https://cimsgeo3.coastal.louisiana.gov/arcgis/rest/services/mp/MasterPlan2023_RP/MapServer",
+      "layerId": 2,
+      "visible": false,
+      "opacity": 0.75,
+      "zIndex": 22,
+      "legend": { "mode": "auto" },
+      "queryable": true,
+      "searchField": "ProjectName",
+      "popup": {
+        "title": "{ProjectName}",
+        "fields": [
+          { "name": "ElementName", "label": "Element" },
+          { "name": "ImplementationPeriod", "label": "Implementation period" },
+          { "name": "ModelGroup", "label": "Model group" }
+        ]
+      },
+      "style": { "color": "#2e8b57", "weight": 1.5, "fillColor": "#2e8b57", "fillOpacity": 0.2 },
+      "attribution": "Louisiana CPRA — attribution wording pending confirmation (see data/gis/sources.json openQuestions.cpra-cims-terms-of-use)",
+      "description": "2023 Coastal Master Plan restoration project footprints, Restore & Protect track (statewide service, shown here within Iberia Parish only). Modelled scenario output, not a guarantee — label any UI copy built from this layer accordingly, per 05-SPEC's sourcing caution."
+    },
+    {
+      "id": "subsidence",
+      "title": "Subsidence (2023 model)",
+      "group": "coastal-change",
+      "sourceType": "esriDynamic",
+      "sourceRef": "cpra-subsidence",
+      "url": "https://cimsgeo3.coastal.louisiana.gov/arcgis/rest/services/subsidence/cmp2023_subsidence/MapServer",
+      "layers": [0],
+      "visible": false,
+      "opacity": 0.6,
+      "zIndex": 10,
+      "legend": { "mode": "auto" },
+      "queryable": false,
+      "attribution": "Louisiana CPRA — attribution wording pending confirmation (see data/gis/sources.json openQuestions.cpra-cims-terms-of-use)",
+      "description": "Modelled land subsidence, 2023 Coastal Master Plan (statewide service, shown here within Iberia Parish only). Modelled scenario output, not a measured prediction — label any UI copy built from this layer accordingly."
+    },
+    {
+      "id": "imagery-2013",
+      "title": "Aerial imagery 2013",
+      "group": "imagery",
+      "sourceType": "esriImage",
+      "sourceRef": "iberia-imagery-2013",
+      "url": "https://maps.iberiagov.net/server/rest/services/Imagery/Aerials2013MrSid/ImageServer",
+      "visible": false,
+      "opacity": 1,
+      "zIndex": 5,
+      "legend": { "mode": "none" },
+      "queryable": false,
+      "attribution": "Iberia Parish GIS — attribution wording pending confirmation (see data/gis/sources.json openQuestions.iberia-terms-of-use)",
+      "description": "2013 parish aerial imagery. Switch the basemap to \"Aerial 2024\", turn this layer on, and use Swipe compare against it — the clearest single before/after this map can show."
+    },
+    {
+      "id": "shoreline-1935",
+      "title": "Historical shoreline — 1930s",
+      "group": "coastal-change",
+      "sourceType": "geojson",
+      "sourceRef": "cpra-coastal-change-shorelines",
+      "url": "data/gis/layers/shoreline-1935.geojson",
+      "timeStep": "1935",
+      "visible": true,
+      "opacity": 0.9,
+      "zIndex": 30,
+      "legend": { "mode": "custom" },
+      "legendItems": [{ "label": "Shoreline (1930s survey window)", "color": "#c9784f" }],
+      "queryable": true,
+      "popup": {
+        "title": "Shoreline survey — {SHORE_TYPE}",
+        "fields": [
+          { "name": "SRC_DATE", "label": "Source date" },
+          { "name": "PROGRAM", "label": "Program" },
+          { "name": "year", "label": "Representative year" }
+        ]
+      },
+      "style": { "color": "#c9784f", "weight": 2 },
+      "attribution": "Louisiana CPRA / LSU LaSARD — attribution wording pending confirmation (see data/gis/sources.json openQuestions.cpra-cims-terms-of-use)",
+      "description": "Compiled historical shoreline surveys dated 1930-1939 within Iberia Parish (LSU LaSARD / lasard/shoreline). Harvested and parish-clipped 2026-08-02 — see data/gis/sources.json for the harvest method.",
+      "updated": "2026-08-02"
+    },
+    {
+      "id": "shoreline-1948",
+      "title": "Historical shoreline — late 1940s",
+      "group": "coastal-change",
+      "sourceType": "geojson",
+      "sourceRef": "cpra-coastal-change-shorelines",
+      "url": "data/gis/layers/shoreline-1948.geojson",
+      "timeStep": "1948",
+      "visible": true,
+      "opacity": 0.9,
+      "zIndex": 30,
+      "legend": { "mode": "custom" },
+      "legendItems": [{ "label": "Shoreline (1945-1955 survey window)", "color": "#c9784f" }],
+      "queryable": true,
+      "popup": {
+        "title": "Shoreline survey — {SHORE_TYPE}",
+        "fields": [
+          { "name": "SRC_DATE", "label": "Source date" },
+          { "name": "PROGRAM", "label": "Program" },
+          { "name": "year", "label": "Representative year" }
+        ]
+      },
+      "style": { "color": "#c9784f", "weight": 2 },
+      "attribution": "Louisiana CPRA / LSU LaSARD — attribution wording pending confirmation (see data/gis/sources.json openQuestions.cpra-cims-terms-of-use)",
+      "description": "Compiled historical shoreline surveys dated 1945-1955 within Iberia Parish (LSU LaSARD / lasard/shoreline). Harvested and parish-clipped 2026-08-02 — see data/gis/sources.json for the harvest method.",
+      "updated": "2026-08-02"
+    },
+    {
+      "id": "shoreline-1998",
+      "title": "Historical shoreline — late 1990s",
+      "group": "coastal-change",
+      "sourceType": "geojson",
+      "sourceRef": "cpra-coastal-change-shorelines",
+      "url": "data/gis/layers/shoreline-1998.geojson",
+      "timeStep": "1998",
+      "visible": true,
+      "opacity": 0.9,
+      "zIndex": 30,
+      "legend": { "mode": "custom" },
+      "legendItems": [{ "label": "Shoreline (1994-1999 survey window)", "color": "#c9784f" }],
+      "queryable": true,
+      "popup": {
+        "title": "Shoreline survey — {SHORE_TYPE}",
+        "fields": [
+          { "name": "SRC_DATE", "label": "Source date" },
+          { "name": "PROGRAM", "label": "Program" },
+          { "name": "year", "label": "Representative year" }
+        ]
+      },
+      "style": { "color": "#c9784f", "weight": 2 },
+      "attribution": "Louisiana CPRA / LSU LaSARD — attribution wording pending confirmation (see data/gis/sources.json openQuestions.cpra-cims-terms-of-use)",
+      "description": "Compiled historical shoreline surveys dated 1994-1999 within Iberia Parish (LSU LaSARD / lasard/shoreline). Harvested and parish-clipped 2026-08-02 — see data/gis/sources.json for the harvest method.",
+      "updated": "2026-08-02"
+    },
+    {
+      "id": "shoreline-2008",
+      "title": "Historical shoreline — 2008",
+      "group": "coastal-change",
+      "sourceType": "geojson",
+      "sourceRef": "cpra-coastal-change-shorelines",
+      "url": "data/gis/layers/shoreline-2008.geojson",
+      "timeStep": "2008",
+      "visible": true,
+      "opacity": 0.9,
+      "zIndex": 30,
+      "legend": { "mode": "custom" },
+      "legendItems": [{ "label": "Shoreline (2008 survey)", "color": "#c9784f" }],
+      "queryable": true,
+      "popup": {
+        "title": "Shoreline survey — {SHORE_TYPE}",
+        "fields": [
+          { "name": "SRC_DATE", "label": "Source date" },
+          { "name": "PROGRAM", "label": "Program" },
+          { "name": "year", "label": "Representative year" }
+        ]
+      },
+      "style": { "color": "#c9784f", "weight": 2 },
+      "attribution": "Louisiana CPRA / LSU LaSARD — attribution wording pending confirmation (see data/gis/sources.json openQuestions.cpra-cims-terms-of-use)",
+      "description": "Compiled historical shoreline surveys dated 2008 within Iberia Parish (LSU LaSARD / lasard/shoreline). Harvested and parish-clipped 2026-08-02 — see data/gis/sources.json for the harvest method.",
+      "updated": "2026-08-02"
+    },
+    {
+      "id": "shoreline-2015",
+      "title": "Historical shoreline — 2015",
+      "group": "coastal-change",
+      "sourceType": "geojson",
+      "sourceRef": "cpra-coastal-change-shorelines",
+      "url": "data/gis/layers/shoreline-2015.geojson",
+      "timeStep": "2015",
+      "visible": true,
+      "opacity": 0.9,
+      "zIndex": 30,
+      "legend": { "mode": "custom" },
+      "legendItems": [{ "label": "Shoreline (2015 survey — most recent)", "color": "#c9784f" }],
+      "queryable": true,
+      "popup": {
+        "title": "Shoreline survey — {SHORE_TYPE}",
+        "fields": [
+          { "name": "SRC_DATE", "label": "Source date" },
+          { "name": "PROGRAM", "label": "Program" },
+          { "name": "year", "label": "Representative year" }
+        ]
+      },
+      "style": { "color": "#c9784f", "weight": 2 },
+      "attribution": "Louisiana CPRA / LSU LaSARD — attribution wording pending confirmation (see data/gis/sources.json openQuestions.cpra-cims-terms-of-use)",
+      "description": "Compiled historical shoreline surveys dated 2015 within Iberia Parish (LSU LaSARD / lasard/shoreline). Harvested and parish-clipped 2026-08-02 — see data/gis/sources.json for the harvest method.",
+      "updated": "2026-08-02"
+    }
+  ],
+
+  "timeSeries": {
+    "steps": [
+      { "id": "1935", "label": "1930s", "date": "1935" },
+      { "id": "1948", "label": "Late 1940s", "date": "1948" },
+      { "id": "1998", "label": "Late 1990s", "date": "1998" },
+      { "id": "2008", "label": "2008", "date": "2008" },
+      { "id": "2015", "label": "2015", "date": "2015" }
+    ]
+  },
+
+  "tools": {
+    "layerPanel": true, "basemapSwitcher": true, "legend": true,
+    "identify": true, "attributeTable": true, "filter": true,
+    "measure": true, "draw": true, "coordinates": true, "search": true,
+    "geolocate": true, "bookmarks": true, "swipe": true, "timeline": true,
+    "print": true, "exportData": true, "share": true, "fullscreen": true,
+    "scaleBar": true, "miniMap": false
+  },
+
+  "bookmarks": [
+    { "id": "new-iberia", "title": "New Iberia", "view": { "center": [30.00, -91.82], "zoom": 13 } },
+    { "id": "avery", "title": "Avery Island", "view": { "center": [29.90, -91.90], "zoom": 13 } },
+    { "id": "port", "title": "Port of Iberia", "view": { "center": [29.86, -91.86], "zoom": 14 } },
+    { "id": "vermilion-bay", "title": "Vermilion Bay shoreline", "view": { "bbox": [[29.55, -92.10], [29.80, -91.70]] } }
+  ],
+
+  "tours": [],
+  "defaultTour": null
+}

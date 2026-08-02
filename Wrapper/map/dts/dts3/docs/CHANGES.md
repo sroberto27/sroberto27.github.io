@@ -2,6 +2,92 @@
 
 Newest first.
 
+## GIS Phase 3 task 3.14 — Iberia Parish map configuration
+
+Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.14 / `08-SPEC-gfc-project.md` §3. Last task in
+Phase 3 before the phase gate. Hand-built (CMS authoring is Phase 5) using only what Phase
+0 actually verified in `data/gis/sources.json` plus task 3.13's real harvested layers — not
+the full aspirational `08-SPEC` composition table where it outran what's actually verified
+(no municipalities/levee-district/CRMS/pump-station layers — none were catalogued in
+Phase 0, and guessing service names wasn't an option).
+
+- `data/gis/maps/iberia-coastal.json` (new): 16 layers across 7 groups (boundaries, water,
+  risk, infra, coastal, coastal-change, imagery), 3 basemaps (CARTO dark default, Aerial
+  2024, OSM streets), the real parish centroid/envelope from `sources.json`'s Phase 0
+  derivation, all `tools` from the completed §6 set turned on. Every ArcGIS layer's
+  `layerId`/`layers` sublayer index was checked live against the real service (`?f=json`)
+  before writing it in, not guessed from `sources.json`'s service-root URLs alone — caught
+  that `BFE_with_Floodways_for_Public_Map` has two sublayers (0 is a labels-only layer, 1 is
+  the real data) and that `CPRA_Projects` is a joined ArcGIS view whose field names carry
+  table-qualified prefixes (e.g. `Project_Status_List.Project_Name`), left to the engine's
+  existing "show all fields with aliases" popup fallback rather than a guessed exact-name
+  popup config.
+- Registered `iberia-coastal` (and, since it was never done, `sources.json` itself) in
+  `data/manifest.json`'s `gis` group per `04-SPEC §1` — without this the content loader
+  never discovers the map document at all; `flattenManifest()` only reads each entry's
+  `file` path, so this is the one required step, `type`/`id` are documentation only.
+- **Correction to `08-SPEC`'s own composition table, decided here:** "2023 Master Plan"
+  and CPRA's subsidence model are grouped under **Coastal change (scenarios)** together
+  with task 3.13's 5 harvested shoreline-history layers, not under "Coastal projects
+  (CPRA)" (that group holds only `prot_rest/CPRA_Projects`, current project footprints —
+  a different story than modelled change over time).
+- **Scope decision, default layer state:** per `08-SPEC §3` ("parish boundary + dark
+  basemap + drainage network visible, everything else off"), only the boundary and
+  hydrography layers default on — except the 5 harvested shoreline layers, which also
+  default on (checkbox-checked) so the timeline tool has something to scrub between the
+  moment the map opens, rather than an empty scrubber until a visitor finds and checks all
+  five by hand. Not a real contradiction of "everything else off": `mapDoc.timeSeries`'s
+  gate means only the *active* step's layer ever actually renders at once (confirmed
+  live — checking all 5 shows exactly one shoreline on screen, matching the current
+  timeline position), so the visible default state is still just boundary + drainage +
+  one shoreline year, not five overlapping layers.
+- `tours: []`, `defaultTour: null` — deliberately not referencing
+  `iberia-coastal-intro` yet. That tour document doesn't exist until Phase 4; nothing in
+  `gis-tools.js` reads `mapDoc.tours` yet either (the launcher button is task 4.5), so this
+  is inert either way, but referencing a tour id with no matching document would be an
+  unnecessary dangling reference the moment 4.5 does land.
+- **Real bug, found live, pre-existing since Phase 3a's `gis-esri.js` (not introduced by
+  this task, only ever exercised by it — no prior map document had a non-point
+  `esriFeature` layer that both rendered *and* got repeatedly re-queried across pan/zoom):**
+  panning near New Iberia with the real hydrography layer (`Laterals_and_Mains_2026`, a
+  polyline layer) threw an uncaught `Error: Invalid LatLng object` from inside vendored
+  esri-leaflet 3.0.19 itself, outside any of this codebase's own try/catch. Root-caused by
+  reading the vendored source directly: esri-leaflet's `FeatureLayer._redraw()`
+  unconditionally calls `this.options.pointToLayer(feature, L.latLng(feature.geometry
+  .coordinates[1], feature.geometry.coordinates[0]))` whenever `pointToLayer` is set and
+  the existing Leaflet layer object has `setStyle` — true of Polyline/Polygon layers too,
+  not just point markers, with **no `geometry.type` check at all**. `_redraw()` runs
+  whenever `createLayers()` re-encounters a feature ID already on the map, which is exactly
+  what a parish-wide drainage line spanning more than one of esri-leaflet's internal query
+  tiles does on ordinary pan/zoom. For a LineString/MultiLineString, `coordinates[0]`/`[1]`
+  are whole coordinate arrays, not lat/lng numbers, so `L.latLng()` threw. `gis-esri.js`'s
+  `buildFeature()` had set `pointToLayer` unconditionally on every `esriFeature` layer
+  since Phase 3a, point or not, so every non-point `esriFeature` layer with more than one
+  query tile in view was exposed to this, not just hydrography. Fixed by only setting
+  `opts.pointToLayer` when the layer's own `style.pointRadius` is declared (the existing,
+  already-meaningful signal that a layer's authors intend point styling) — confirmed safe
+  by reading Leaflet core's `GeoJSON.geometryToLayer()`, which is what actually builds each
+  feature the *first* time via `createNewLayer()`: it already checks `geometry.type` itself
+  before ever calling `pointToLayer`, so omitting the option for non-point layers changes
+  nothing on that path and only starves `_redraw()`'s buggy branch of a truthy callback to
+  invoke. Vendored library left untouched, per this repo's own "vendor, don't patch"
+  posture.
+- Verified live in Chrome (`python -m http.server 8000`) against the real app shell: a
+  temporary `gis` experience wired into the existing `healthcare` project (same pattern as
+  task 3.12's testing), confirming the real `iberia-coastal` document mounts with the real
+  parish silhouette and dim mask, the layer panel's 7 groups and 16 real layer titles, the
+  attribution line combining all three real sources, the bookmarks panel jumping to all 4
+  real named places, and the timeline panel showing the 5 real representative-year steps.
+  Confirmed `Drainage laterals & mains` degrades to "Unavailable right now" exactly per
+  §11's contract for its already-documented, separate 400-error quirk (task 3.8) without
+  affecting any other layer. Reproduced the `_redraw` crash against the live hydrography
+  layer before the fix (twice, with different feature coordinates each time, both times
+  panning near New Iberia's dense drainage network), confirmed it stopped after the fix
+  under the same repro steps, and confirmed a plain home-page load stays console-clean
+  afterward. Temporary experience wiring on `healthcare.json` reverted before committing
+  (`git diff` empty on that file); `iberia-coastal.json`, the manifest registration, and
+  the `gis-esri.js` fix are the real, permanent deliverables.
+
 ## GIS Phase 3 task 3.13 — harvest script and frozen boundary/shoreline layers
 
 Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.13 / `04-SPEC-gis-engine.md` §8 defence 1.

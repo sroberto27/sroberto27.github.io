@@ -186,6 +186,17 @@
         "id": "media.library"
       }
     ],
-    "gis": []
+    "gis": [
+      {
+        "file": "gis/sources.json",
+        "type": "gisSources",
+        "id": "gis.sources"
+      },
+      {
+        "file": "gis/maps/iberia-coastal.json",
+        "type": "gisMap",
+        "id": "gis.maps.iberia-coastal"
+      }
+    ]
   }
 }
