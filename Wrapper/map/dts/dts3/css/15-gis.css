@@ -1,0 +1,91 @@
+/* ============================================================
+   15-gis.css — GIS engine chrome
+   ------------------------------------------------------------
+   Restyles Leaflet's default (white, boxy) chrome to the site's
+   dark/gold tokens: control bars, popups, attribution, scale bar,
+   focus rings. Everything is scoped under .dts-gis-map (added by
+   js/gis/gis-viewer.js on mount, to the same element Leaflet gives
+   its own .leaflet-container class) so nothing here can leak
+   outside the map pane.
+
+   Every selector below is anchored on the compound
+   ".dts-gis-map.leaflet-container" (no space -- one element, two
+   classes), not just ".dts-gis-map". js/gis/gis-loader.js injects
+   leaflet.css into <head> lazily, after this file, so plain
+   ".dts-gis-map ..." rules tie in specificity with leaflet.css's
+   own ".leaflet-container ..." rules and lose on source order.
+   Confirmed live: a plain ".dts-gis-map a" rule was silently beaten
+   by leaflet.css's ".leaflet-container a { color:#0078A8 }".
+
+   Per docs/plans/gis/09-BUILD-PLAN.md task 3.5 /
+   docs/plans/gis/04-SPEC-gis-engine.md §6 (chrome), §10 (a11y).
+   ============================================================ */
+
+.dts-gis-map.leaflet-container{
+  width:100%; height:100%;
+  background:var(--bg);
+  font-family:var(--sans);
+}
+
+/* ---------- links: attribution text, popup content ---------- */
+.dts-gis-map.leaflet-container a{ color:var(--gold); }
+.dts-gis-map.leaflet-container a:hover,
+.dts-gis-map.leaflet-container a:focus{ color:var(--gold-bright); }
+
+/* ---------- focus rings (§10 — visible everywhere, --gold-bright) ---------- */
+.dts-gis-map.leaflet-container a:focus-visible{
+  outline:2px solid var(--gold-bright); outline-offset:-2px; z-index:1;
+}
+
+/* ---------- control bars (zoom today; future tool bars share .leaflet-bar) ---------- */
+.dts-gis-map.leaflet-container .leaflet-bar{
+  border:1px solid var(--line); border-radius:10px; overflow:hidden;
+  box-shadow:0 6px 20px rgba(0,0,0,.4);
+}
+.dts-gis-map.leaflet-container .leaflet-bar a{
+  background:var(--glass); color:var(--ink);
+  border-bottom:1px solid var(--line-soft);
+  font-weight:600;
+}
+.dts-gis-map.leaflet-container .leaflet-bar a:last-child{ border-bottom:0; }
+.dts-gis-map.leaflet-container .leaflet-bar a:hover,
+.dts-gis-map.leaflet-container .leaflet-bar a:focus{ background:var(--bg-3); color:var(--gold-bright); }
+.dts-gis-map.leaflet-container .leaflet-bar a.leaflet-disabled{ background:var(--glass); color:var(--faint); opacity:.5; }
+
+/* ---------- attribution ---------- */
+.dts-gis-map.leaflet-container .leaflet-control-attribution{
+  background:var(--glass); color:var(--faint);
+  padding:2px 9px; border-radius:8px 0 0 0;
+  font-size:10.5px; line-height:1.6;
+}
+
+/* ---------- popups ---------- */
+.dts-gis-map.leaflet-container .leaflet-popup-content-wrapper{
+  background:var(--glass); color:var(--ink);
+  border:1px solid var(--gold); border-radius:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);
+}
+.dts-gis-map.leaflet-container .leaflet-popup-content{
+  margin:12px 26px 12px 14px; font-size:13px; line-height:1.5;
+}
+.dts-gis-map.leaflet-container .leaflet-popup-content p{ margin:.5em 0; }
+/* The tip's own overflow:hidden container clips a border on its rotated
+   square unevenly, so it only picks up the wrapper's fill colour. */
+.dts-gis-map.leaflet-container .leaflet-popup-tip{ background:var(--glass); box-shadow:none; }
+.dts-gis-map.leaflet-container a.leaflet-popup-close-button{
+  color:var(--faint); font:20px/24px var(--sans);
+}
+.dts-gis-map.leaflet-container a.leaflet-popup-close-button:hover,
+.dts-gis-map.leaflet-container a.leaflet-popup-close-button:focus{ color:var(--gold-bright); }
+
+/* ---------- scale bar (always on, §6) ---------- */
+.dts-gis-map.leaflet-container .leaflet-control-scale-line{
+  background:var(--glass); color:var(--muted);
+  border:1px solid var(--line); border-top:2px solid var(--gold);
+  padding:1px 6px 2px; font-size:10.5px;
+  border-radius:0 0 6px 6px;
+  text-shadow:none;
+}
+.dts-gis-map.leaflet-container .leaflet-control-scale-line:not(:first-child){
+  border-top:2px solid var(--gold); border-bottom:1px solid var(--line);
+}

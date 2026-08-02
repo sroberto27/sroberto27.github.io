@@ -206,6 +206,7 @@
       mapOptions.center = view.center;
       mapOptions.zoom = typeof view.zoom === "number" ? view.zoom : 10;
     }
+    containerEl.classList.add("dts-gis-map");
     const map = L.map(containerEl, mapOptions);
     if (view.bbox) {
       map.fitBounds(view.bbox, { animate: false });
@@ -213,6 +214,9 @@
       map.setView([0, 0], 2);
     }
     if (mapDoc.attribution) map.attributionControl.addAttribution(mapDoc.attribution);
+    // Scale bar is always-on chrome (§6), not a gated tool -- css/15-gis.css
+    // restyles it to the site tokens.
+    L.control.scale({ position: "bottomleft" }).addTo(map);
 
     map.on("moveend", function () {
       const c = map.getCenter();
@@ -516,6 +520,7 @@
 
     function destroy() {
       map.remove();
+      containerEl.classList.remove("dts-gis-map");
       Object.keys(listeners).forEach(function (k) { delete listeners[k]; });
     }
 

@@ -2,6 +2,39 @@
 
 Newest first.
 
+## GIS Phase 3 task 3.5 — map chrome
+
+Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.5. CSS-only; nothing new is wired into
+`index.html`/`app.js` yet.
+
+- `css/15-gis.css`: restyles Leaflet's default white/boxy chrome to the site's dark/gold
+  tokens — the zoom control bar, popups (content wrapper, tip, close button), the
+  attribution control, and the scale bar — plus visible `--gold-bright` focus rings on
+  every control and link (04-SPEC §10). `index.html` links it last in the stylesheet
+  order, after `14-intro.css`.
+- `js/gis/gis-viewer.js`: `createInstance()` now adds a `dts-gis-map` class to the mount
+  container (removed again in `destroy()`) so `15-gis.css` has something to scope to.
+  Also adds `L.control.scale()` on mount — the scale bar is always-on map chrome per
+  04-SPEC §6, not a gated tool, so it belongs with the other init-time controls rather
+  than waiting for `gis-tools.js`.
+- **Real bug found and fixed by live testing, not by inspection alone:** every selector
+  in `15-gis.css` is anchored on the compound `.dts-gis-map.leaflet-container` (both
+  classes, no space), not plain `.dts-gis-map`. `js/gis/gis-loader.js` injects
+  `leaflet.css` into `<head>` lazily, *after* this file, and several of Leaflet's own
+  rules (`.leaflet-container a`, `.leaflet-container .leaflet-control-attribution`,
+  `.leaflet-container a.leaflet-popup-close-button`) match at the exact same
+  specificity as a plain `.dts-gis-map` equivalent — a tie that source order decides,
+  and Leaflet loads later. A first pass of this file used plain `.dts-gis-map` and
+  silently lost every one of those ties (link color, attribution background, close
+  button color all stayed Leaflet's defaults) until a live check caught the zoom
+  control showing the browser's default blue focus outline instead of gold.
+- Verified live in Chrome against a temporary, not-committed test harness mounting
+  `DTSGis` with the real, CORS-verified Iberia Parish boundary layer
+  (`Govt_Units/Updated_Parish_Boundary`) from `data/gis/sources.json`: zoom control,
+  scale bar, attribution, and a sample popup all render in the site's dark-glass/gold
+  language; keyboard `Tab` shows the gold focus ring on the zoom control; console clean.
+  Harness deleted before committing, same pattern as prior phases' temporary test data.
+
 ## GIS Phase 3a — map engine and layer sources
 
 Per `docs/plans/gis/09-BUILD-PLAN.md` Phase 3 tasks 3.1-3.4 / `04-SPEC-gis-engine.md`.
