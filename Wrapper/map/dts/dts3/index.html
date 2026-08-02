@@ -533,6 +533,11 @@
     <!-- Live experience pane — the shared Treedis iframe is moved in
          here, then navigated to this sub-vertical's sweep (if any). -->
     <div class="example-stage" id="exampleStage">
+      <!-- Tab strip — hidden entirely for the single-experience case
+           (the 16 legacy projects), so they render exactly as before. -->
+      <div class="example-stage-tabs" id="exStageTabs" role="tablist" aria-label="Experience" hidden></div>
+      <!-- Mount point for the active experience (iframe or, later, the GIS map). -->
+      <div class="example-stage-slot" id="exStageSlot"></div>
       <div class="example-loading" id="exampleLoading">
         <div class="spinner" aria-hidden="true"></div>
         <span class="example-loading-text">Loading experience…</span>

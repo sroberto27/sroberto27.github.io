@@ -300,6 +300,10 @@
       const sector = (ex && ex.sector) || state.category;
       if (sector) params.set("category", sector);
       params.set("project", activeExampleId);
+      // Only emit &exp= once there's something to disambiguate — keeps
+      // every existing single-experience project URL byte-identical.
+      const list = (ex && ex.experiences) || [];
+      if (list.length > 1 && activeExperienceId) params.set("exp", activeExperienceId);
       return params;
     }
 
@@ -341,11 +345,12 @@
      (back/forward). Never pushes a new entry itself —
      restoringFromHistory mutes the choke points above while it runs. */
   function applyStateFromURL() {
-    let categoryId = null, projectId = null;
+    let categoryId = null, projectId = null, expId = null;
     try {
       const params = new URLSearchParams(location.search);
       categoryId = params.get("category");
       projectId = params.get("project");
+      expId = params.get("exp");
     } catch (_e) { /* malformed URL params — treat as home */ }
 
     const validProject = !!(projectId && cfg.examples && cfg.examples[projectId]);
@@ -370,7 +375,7 @@
       }
       // 2. Project window on top of it (or nothing).
       if (validProject) {
-        if (activeExampleId !== projectId) openExample(projectId);
+        if (activeExampleId !== projectId) openExample(projectId, undefined, expId);
       } else if (activeExampleId) {
         // Raw teardown, never closeExample() — we're already responding
         // to a history move, so the URL is correct and nothing should
@@ -431,11 +436,12 @@
      way — while a project window is deferred behind waitForIntroCloak,
      same as the old share-link deep-link behavior it replaces. */
   function restoreInitialStateFromURL() {
-    let categoryId = null, projectId = null;
+    let categoryId = null, projectId = null, expId = null;
     try {
       const params = new URLSearchParams(location.search);
       categoryId = params.get("category");
       projectId = params.get("project");
+      expId = params.get("exp");
     } catch (_e) { /* malformed URL params — treat as home */ }
 
     const validProject = !!(projectId && cfg.examples && cfg.examples[projectId]);
@@ -463,7 +469,7 @@
     if (validProject) {
       waitForIntroCloak(() => {
         restoringFromHistory = true;
-        openExample(projectId);
+        openExample(projectId, undefined, expId);
         restoringFromHistory = false;
         syncURL(true);
       });
@@ -713,8 +719,10 @@
      example specifies a sweepId) navigates the tour to that sweep.
      ============================================================ */
   let activeExampleId = null;
+  let activeExperienceId = null;   // id of the active tab within the open example
+  let gisInstances = {};           // mapId → live GIS viewer instance (wired in a later phase)
 
-  function openExample(cardId, evidenceLabel) {
+  function openExample(cardId, evidenceLabel, expId) {
     const ex = cfg.examples && cfg.examples[cardId];
     if (!ex) { console.warn("[dts] no example for", cardId); return; }
 
@@ -784,45 +792,10 @@
     buildExampleLinks(ex);
 
     // ---- Experience pane ----------------------------------------
-    // Priority: the example's OWN media (its Treedis tour or its best
-    // project video) > shared showcase iframe navigated to a sweep.
-    const stage = $("#exampleStage");
-    const loading = $("#exampleLoading");
-    const mediaUrl = exampleMediaUrl(ex);
-
-    if (mediaUrl) {
-      // Park the shared showcase iframe (if it was borrowed here before).
-      if (treedisIframe && treedisIframe.parentNode === stage) parkIframe();
-      let frame = $("#exampleMediaFrame");
-      if (!frame) {
-        frame = document.createElement("iframe");
-        frame.id = "exampleMediaFrame";
-        frame.className = "twin-iframe";
-        frame.allow = "autoplay; fullscreen; picture-in-picture; xr-spatial-tracking; gyroscope; accelerometer";
-        frame.allowFullscreen = true;
-        frame.addEventListener("load", () => {
-          const l = $("#exampleLoading");
-          if (l) l.classList.add("is-hidden");
-        });
-      }
-      if (frame.parentNode !== stage) stage.appendChild(frame);
-      if (loading) loading.classList.toggle("is-hidden", frame.src === mediaUrl);
-      if (frame.src !== mediaUrl) frame.src = mediaUrl;
-    } else {
-      // Fallback — borrow the shared live iframe and navigate by sweep.
-      const oldFrame = $("#exampleMediaFrame");
-      if (oldFrame) oldFrame.remove();
-      if (treedisIframe && stage && treedisIframe.parentNode !== stage) {
-        stage.appendChild(treedisIframe);
-      }
-      if (loading) loading.classList.toggle("is-hidden", TourBridge.isReady);
-      if (TourBridge.isReady) {
-        TourBridge.navigateToSweep(ex.sweepId || cfg.treedis.homeSweepId || undefined);
-      } else if (ex.sweepId) {
-        // Queue the sweep for when Treedis finishes booting.
-        pendingExampleSweep = ex.sweepId;
-      }
-    }
+    // Priority: the example's own experiences[] (tabbed if 2+) > the
+    // shared showcase iframe navigated to a sweep, for legacy projects
+    // that carry no media/experiences at all.
+    showExperience(ex, expId);
 
     const ov = $("#exampleOverlay");
     ov.classList.add("is-open");
@@ -837,27 +810,213 @@
     if (!restoringFromHistory) syncURL(isSwap);
   }
 
-  /* The URL to load in the example stage: the example's own Treedis
-     tour, or its best directly-related project video (Vimeo embed). */
-  function exampleMediaUrl(ex) {
-    const m = ex.media;
-    if (!m) return null;
-    if (m.type === "treedis" && m.tourUrl) return m.tourUrl;
-    if (m.type === "vimeo" && m.embedUrl) {
-      // Autoplay muted so the pane reads as a live experience.
-      const sep = m.embedUrl.indexOf("?") >= 0 ? "&" : "?";
-      return m.embedUrl + sep + "muted=1&title=0&byline=0&portrait=0";
-    }
-    return null;
+  /* ============================================================
+     EXPERIENCE SWITCHER  (tabbed stage — one or more experiences
+     per project: a Treedis tour, a video, or — in a later phase — a
+     GIS map)
+     ------------------------------------------------------------
+     Each dedicated experience gets its own persistent iframe, keyed
+     by experience id (exampleMediaFrame-<expId>), instead of one
+     shared element reused across tabs. That's deliberate: a project
+     that mixes a Treedis tour with a video would otherwise have both
+     fight over a single iframe's `src`, and reassigning it every tab
+     switch would force the tour to reload and re-run the TourBridge
+     handshake on every return visit. Suspending a tab hides its
+     frame rather than removing it, so a Treedis session survives
+     switching away and back; a video's frame is blanked instead, so
+     its audio actually stops.
+     ============================================================ */
+  function experienceFrameId(expId) { return "exampleMediaFrame-" + expId; }
+
+  function activeExperience(ex) {
+    const list = (ex && ex.experiences) || [];
+    return list.find((e) => e.id === activeExperienceId)
+        || list.find((e) => e.default) || list[0] || null;
   }
 
   /* The URL "Enter Twin" / "open in new tab" should target for the
-     ACTIVE example — its own tour or video when it has one. */
+     ACTIVE experience — its own tour or video when it has one. */
   function exampleOpenUrl(ex) {
-    if (!ex || !ex.media) return null;
-    if (ex.media.type === "treedis") return ex.media.tourUrl || null;
-    if (ex.media.type === "vimeo")   return ex.media.watchUrl || ex.media.embedUrl || null;
-    return null;
+    const e = activeExperience(ex);
+    if (!e) return null;
+    if (e.type === "treedis") return e.tourUrl || null;
+    if (e.type === "vimeo")   return e.watchUrl || e.embedUrl || null;
+    return null;   // gis — no "open in new tab" target
+  }
+
+  function videoEmbedUrl(target) {
+    if (!target.embedUrl) return null;
+    // Autoplay muted so the pane reads as a live experience.
+    const sep = target.embedUrl.indexOf("?") >= 0 ? "&" : "?";
+    return target.embedUrl + sep + "muted=1&title=0&byline=0&portrait=0";
+  }
+
+  function ensureFrame(id) {
+    let frame = document.getElementById(id);
+    if (!frame) {
+      frame = document.createElement("iframe");
+      frame.id = id;
+      frame.className = "twin-iframe";
+      frame.allow = "autoplay; fullscreen; picture-in-picture; xr-spatial-tracking; gyroscope; accelerometer";
+      frame.allowFullscreen = true;
+      frame.addEventListener("load", () => {
+        const l = $("#exampleLoading");
+        if (l) l.classList.add("is-hidden");
+      });
+    }
+    return frame;
+  }
+
+  function mountTreedis(target, slot, loading) {
+    if (treedisIframe && slot && treedisIframe.parentNode === slot) parkIframe();
+    const frame = ensureFrame(experienceFrameId(target.id));
+    frame.dataset.kind = "treedis";
+    if (frame.parentNode !== slot) slot.appendChild(frame);
+    frame.hidden = false;
+    if (loading) loading.classList.toggle("is-hidden", frame.src === target.tourUrl);
+    if (target.tourUrl && frame.src !== target.tourUrl) frame.src = target.tourUrl;
+  }
+
+  function mountVideo(target, slot, loading) {
+    if (treedisIframe && slot && treedisIframe.parentNode === slot) parkIframe();
+    const url = videoEmbedUrl(target);
+    const frame = ensureFrame(experienceFrameId(target.id));
+    frame.dataset.kind = "vimeo";
+    if (frame.parentNode !== slot) slot.appendChild(frame);
+    frame.hidden = false;
+    if (loading) loading.classList.toggle("is-hidden", frame.src === url);
+    if (url && frame.src !== url) frame.src = url;
+  }
+
+  /* No structured media at all (a legacy project with neither
+     `experiences` nor `media`) — borrow the shared showcase iframe and
+     navigate it to this project's sweep, exactly as before multi-
+     experience support existed. */
+  function mountSharedShowcase(ex, slot, loading) {
+    if (treedisIframe && slot && treedisIframe.parentNode !== slot) {
+      slot.appendChild(treedisIframe);
+    }
+    if (loading) loading.classList.toggle("is-hidden", TourBridge.isReady);
+    if (TourBridge.isReady) {
+      TourBridge.navigateToSweep(ex.sweepId || cfg.treedis.homeSweepId || undefined);
+    } else if (ex.sweepId) {
+      // Queue the sweep for when Treedis finishes booting.
+      pendingExampleSweep = ex.sweepId;
+    }
+  }
+
+  /* Placeholder until the GIS engine lands (a later phase wires the real
+     map here via DTSGis.mount()) — keeps a "gis" experience from ever
+     rendering a blank pane or throwing if one becomes active early. */
+  function mountGis(target, ex, slot, loading) {
+    if (loading) loading.classList.add("is-hidden");
+    let el = document.getElementById("exGisPlaceholder");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "exGisPlaceholder";
+      el.className = "example-gis-placeholder";
+      el.textContent = "Map experience — coming soon.";
+    }
+    if (el.parentNode !== slot) slot.appendChild(el);
+    el.hidden = false;
+  }
+
+  function suspendExperience(expId) {
+    if (!expId) return;
+    const frame = document.getElementById(experienceFrameId(expId));
+    if (frame) {
+      // Treedis must not reload when the reader comes back — just hide
+      // it. Video must stop playing audio behind the newly active tab —
+      // blank its src too.
+      if (frame.dataset.kind === "vimeo") frame.src = "about:blank";
+      frame.hidden = true;
+    }
+    const gisEl = document.getElementById("exGisPlaceholder");
+    if (gisEl) gisEl.hidden = true;
+  }
+
+  function experienceGlyph(type) {
+    if (type === "treedis") {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l9 4.5-9 4.5-9-4.5L12 3z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3 12l9 4.5 9-4.5M3 16.5l9 4.5 9-4.5" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+    }
+    if (type === "vimeo") {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>';
+    }
+    if (type === "gis") {
+      return '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3L3 5.5v15L9 18l6 2.5 6-2.5v-15L15 5.5 9 3zM9 5.2v13M15 5.5v13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>';
+    }
+    return "";
+  }
+
+  /* Tab strip — one button per experience; hidden entirely for fewer
+     than two so the 16 legacy single-experience projects render exactly
+     as before, with no extra chrome and no layout shift. A real ARIA
+     tablist: roving tabindex, arrow/Home/End to move focus, Enter/Space
+     to activate (wired once, by delegation, in wire() below). */
+  function syncStageTabs(list, activeId) {
+    const wrap = $("#exStageTabs");
+    if (!wrap) return;
+    // Rebuilding replaces every button, which would silently drop focus
+    // out of the strip (to <body>) on a keyboard-driven switch — re-focus
+    // the new active tab afterward if the strip owned focus beforehand.
+    const hadFocus = wrap.contains(document.activeElement);
+    wrap.innerHTML = "";
+    if (list.length < 2) { wrap.hidden = true; return; }
+    wrap.hidden = false;
+    let activeBtn = null;
+    list.forEach((e) => {
+      const b = document.createElement("button");
+      b.type = "button";
+      b.className = "example-stage-tab";
+      b.id = "exTab-" + e.id;
+      b.setAttribute("role", "tab");
+      b.setAttribute("aria-selected", String(e.id === activeId));
+      b.setAttribute("aria-controls", "exStageSlot");
+      b.tabIndex = e.id === activeId ? 0 : -1;
+      b.dataset.expId = e.id;
+      b.innerHTML = experienceGlyph(e.type) + "<span>" + escapeHTML(e.label || e.type) + "</span>";
+      wrap.appendChild(b);
+      if (e.id === activeId) activeBtn = b;
+    });
+    if (hadFocus && activeBtn) activeBtn.focus();
+  }
+
+  /* expId is optional — omit it to fall back to the experience marked
+     `default`, or the first one. Pure mount/switch: callers own the URL
+     sync (openExample()'s own trailing syncURL for a project open/swap;
+     the tab click handler's own replaceState for an in-place tab switch). */
+  function showExperience(ex, expId) {
+    const list = ex.experiences || [];
+    const target = list.find((e) => e.id === expId)
+                || list.find((e) => e.default)
+                || list[0];
+
+    const slot = $("#exStageSlot");
+    const loading = $("#exampleLoading");
+    const enterBtn = $("#exEnter");
+
+    suspendExperience(activeExperienceId);
+
+    if (!target) {
+      activeExperienceId = null;
+      syncStageTabs([], null);
+      mountSharedShowcase(ex, slot, loading);
+      if (enterBtn) enterBtn.textContent = "Enter Twin";
+      return;
+    }
+
+    activeExperienceId = target.id;
+
+    if (target.type === "treedis") mountTreedis(target, slot, loading);
+    else if (target.type === "vimeo") mountVideo(target, slot, loading);
+    else if (target.type === "gis")  mountGis(target, ex, slot, loading);
+
+    // A GIS pane has no "open in new tab" target — the button fullscreens
+    // the map in place instead. Recomputed on every call, so switching
+    // back to a tour/video tab restores the usual label automatically.
+    if (enterBtn) enterBtn.textContent = target.type === "gis" ? "Full screen map" : "Enter Twin";
+
+    syncStageTabs(list, target.id);
   }
 
   /* Fullscreen the example's live experience pane.
@@ -1100,14 +1259,18 @@
   function closeExampleNow() {
     const wasOpen = !!activeExampleId;
     const ov = $("#exampleOverlay");
-    // Tear down the per-example media frame so a video doesn't keep
-    // playing behind the closed window.
-    const mediaFrame = $("#exampleMediaFrame");
-    if (mediaFrame) mediaFrame.remove();
+    // Tear down every dedicated experience frame (one per experience id)
+    // so a video doesn't keep playing behind the closed window, and the
+    // next project opened starts from a clean slot.
+    $$('[id^="exampleMediaFrame-"]').forEach((f) => f.remove());
+    const gisEl = document.getElementById("exGisPlaceholder");
+    if (gisEl) gisEl.remove();
     if (treedisIframe) parkIframe();
     ov.classList.remove("is-open");
     ov.setAttribute("aria-hidden", "true");
     activeExampleId = null;
+    activeExperienceId = null;
+    syncStageTabs([], null);
     closeShare();     // never leave the share popup open behind a closed window
     /* Reached either via popstate (restoringFromHistory — the URL is
        already correct, nothing to write) or by closing a deep-linked
@@ -1954,6 +2117,38 @@
     // Example window
     $("#exampleClose").addEventListener("click", closeExample);
     $$("[data-close-example]").forEach((s) => s.addEventListener("click", closeExample));
+    // Experience tab strip — delegated (syncStageTabs() rebuilds the
+    // buttons on every switch, so listeners live on the wrapper instead
+    // of the buttons themselves). Tab switching replaces the current
+    // history entry rather than pushing — the back stack shouldn't grow
+    // just because the reader looked at a different tab.
+    const exStageTabs = $("#exStageTabs");
+    exStageTabs.addEventListener("click", (e) => {
+      const btn = e.target.closest(".example-stage-tab");
+      if (!btn) return;
+      const ex = cfg.examples && cfg.examples[activeExampleId];
+      if (!ex) return;
+      showExperience(ex, btn.dataset.expId);
+      syncURL(true);
+    });
+    exStageTabs.addEventListener("keydown", (e) => {
+      const tabs = $$(".example-stage-tab", exStageTabs);
+      if (!tabs.length) return;
+      const i = tabs.indexOf(document.activeElement);
+      let next = -1;
+      if (e.key === "ArrowRight") next = (i + 1) % tabs.length;
+      else if (e.key === "ArrowLeft") next = (i - 1 + tabs.length) % tabs.length;
+      else if (e.key === "Home") next = 0;
+      else if (e.key === "End") next = tabs.length - 1;
+      else if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        if (i >= 0) tabs[i].click();
+        return;
+      } else return;
+      e.preventDefault();
+      tabs.forEach((t, idx) => { t.tabIndex = idx === next ? 0 : -1; });
+      tabs[next].focus();
+    });
     // "Enter Twin" — if the active example has its own experience,
     // open it in a new tab; otherwise open the shared showcase.
     $("#exEnter").addEventListener("click", () => {

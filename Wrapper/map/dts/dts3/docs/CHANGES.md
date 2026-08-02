@@ -2,6 +2,65 @@
 
 Newest first.
 
+## GIS Phase 2 — the tabbed stage
+
+Per `docs/plans/gis/09-BUILD-PLAN.md` Phase 2 / `03-SPEC-multi-experience.md §3-5`.
+
+- `index.html`: `#exStageTabs` (tablist) and `#exStageSlot` (mount point) added
+  inside `#exampleStage`, as siblings of the existing loading veil and seam.
+- `css/06-example-window.css`: `.example-stage` is now a column flex container;
+  `.example-stage iframe` narrowed to `.example-stage-slot iframe`, plus an
+  explicit `[hidden]` override (author CSS otherwise beats the UA `[hidden]`
+  rule, so a suspended-but-not-removed iframe would keep rendering); tab strip
+  styles; a placeholder style for the not-yet-built GIS pane. Checked
+  `08-responsive.css`, `09-mobile.css`, `11-desktop.css` — none had a
+  conflicting `.example-stage iframe` selector to update.
+- `js/app.js`: `showExperience()`/`activeExperience()` switcher,
+  `mountTreedis()`/`mountVideo()`/`mountSharedShowcase()`/`mountGis()` (the last
+  a placeholder — the real GIS engine lands in a later phase),
+  `suspendExperience()`, `syncStageTabs()` with a full keyboard-operable
+  tablist (roving tabindex; arrows move focus, Home/End jump, Enter/Space
+  activates), delegated so rebuilding the tab buttons doesn't cost re-wiring.
+  `exampleMediaUrl()`/`exampleOpenUrl()` replaced per spec §3.4;
+  `currentURLParams()`/`applyStateFromURL()`/`restoreInitialStateFromURL()`
+  carry `&exp=` (only emitted for 2+ experiences); tab switches use
+  `replaceState`, never `pushState`.
+- **Design departure from the spec, deliberate:** each experience gets its own
+  persistent iframe (`exampleMediaFrame-<expId>`), not one `#exampleMediaFrame`
+  reused across a project's tabs. A project mixing a Treedis tour with a video
+  would otherwise fight over one iframe's `src` — reassigning it on every tab
+  switch would force the tour to reload and re-run the TourBridge handshake on
+  every return visit, which fails the phase's own "no reload on switch back"
+  acceptance criterion. Suspending hides a tour's frame (never reloads it) and
+  blanks a video's `src` (actually stops its audio).
+- **Scope decision, confirmed with the user:** skipped the spec's proposed
+  optimization of borrowing the shared showcase iframe whenever an
+  experience's `tourUrl` happens to match `cfg.treedis.tourUrl`. One live
+  project (Properties & Places) has exactly that match with a null `sweepId`;
+  borrowing would make it show whatever pose the shared iframe already has
+  instead of a deterministic fresh load, breaking this phase's own
+  byte-identical-for-legacy-projects criterion. Every experience with its own
+  `tourUrl` always gets its dedicated frame, matching today's behavior
+  exactly. Revisit as a deliberate, separately-tested change later if wanted.
+- **Deferred, not done:** the spec's optional `:has(.example-stage-tabs)`
+  stage-height growth for 2+ experience projects — needs matching overrides in
+  both `08-responsive.css` and `11-desktop.css` to actually win at every
+  breakpoint (source order means only touching `06` has no effect at
+  desktop width), out of proportion for a cosmetic nicety with zero real
+  multi-experience content until Phase 6. The tab strip still renders inside
+  today's stage height with no clipping, just a slightly shorter slot.
+- Verified live in Chrome (`python -m http.server 8000`): temporarily gave the
+  `energy` project a second (video) experience per the spec's own suggested
+  test step, confirmed the tab strip, tab switching, keyboard operation (found
+  and fixed a real bug here — rebuilding the tab buttons on every switch was
+  dropping keyboard focus to `<body>`; `syncStageTabs()` now re-focuses the new
+  active tab when the strip owned focus), `&exp=` deep links, single-step
+  browser back after several tab switches (confirms `replaceState`), and — via
+  the console — that switching a Treedis tab away and back fires no new
+  `TourReady`. Reverted the test data before committing. Also spot-checked a
+  legacy single-experience project (`campus`) renders with no tab strip and no
+  `&exp=` param, and that "Try a Digital Twin" still opens/closes cleanly.
+
 ## GIS Phase 1 — multi-experience schema and loader
 
 Per `docs/plans/gis/09-BUILD-PLAN.md` Phase 1 / `03-SPEC-multi-experience.md §1-2`.

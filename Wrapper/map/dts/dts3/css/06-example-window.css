@@ -7,14 +7,58 @@
   display:flex; flex-direction:column;
   background:#0c111c;
 }
-/* Experience pane — the borrowed Treedis iframe fills it. */
+/* Experience pane — the borrowed Treedis iframe fills it. Column layout:
+   an optional tab strip (2+ experiences only), then the experience slot. */
 .example-stage{
   position:relative; flex:0 0 auto;
+  display:flex; flex-direction:column;
   height:clamp(220px, 42%, 460px);
   background:radial-gradient(120% 120% at 50% 0%, #16203400, #0a1018);
   border-bottom:1px solid var(--line);
 }
-.example-stage iframe{ width:100%; height:100%; border:0; display:block; }
+/* #exStageSlot holds whichever experience is active — an iframe today,
+   the GIS map mount in a later phase. Loading veil and seam stay direct
+   children of the stage, not the slot, so the switcher never has to work
+   around them. */
+.example-stage-slot{ position:relative; flex:1 1 auto; min-height:0; }
+.example-stage-slot iframe{ width:100%; height:100%; border:0; display:block; }
+/* A suspended (not active) experience is kept in the DOM — so a Treedis
+   session isn't lost — but hidden. Author CSS overrides the UA [hidden]
+   rule by cascade origin, so the plain-display rule above has to be
+   re-beaten explicitly here or a "hidden" iframe still renders. */
+.example-stage-slot iframe[hidden]{ display:none; }
+
+/* Tab strip — one button per experience, hidden entirely (no chrome, no
+   layout shift) when a project has fewer than two. */
+.example-stage-tabs{
+  flex:0 0 auto; display:flex; gap:2px; align-items:stretch;
+  padding:0 clamp(10px,1.2vw,18px);
+  background:linear-gradient(180deg, rgba(7,14,24,.92), rgba(7,14,24,.55));
+  border-bottom:1px solid var(--line-soft);
+  overflow-x:auto; scrollbar-width:none;
+}
+.example-stage-tabs[hidden]{ display:none; }
+.example-stage-tab{
+  appearance:none; background:none; border:0; cursor:pointer;
+  display:inline-flex; align-items:center; gap:7px; white-space:nowrap;
+  padding:9px clamp(10px,1vw,15px);
+  font:600 12.5px/1 var(--sans); letter-spacing:.02em;
+  color:var(--faint); border-bottom:2px solid transparent;
+  transition:color .18s ease, border-color .18s ease;
+}
+.example-stage-tab:hover{ color:var(--muted); }
+.example-stage-tab[aria-selected="true"]{ color:var(--ink); border-bottom-color:var(--gold); }
+.example-stage-tab:focus-visible{ outline:2px solid var(--gold-bright); outline-offset:-2px; }
+.example-stage-tab svg{ width:13px; height:13px; opacity:.8; flex:none; }
+
+/* GIS placeholder — the real map lands in a later phase; this just keeps
+   a "gis" experience from rendering as a blank pane if one is ever active. */
+.example-gis-placeholder{
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  color:var(--faint); font-size:13px; text-align:center; padding:20px;
+}
+.example-gis-placeholder[hidden]{ display:none; }
+
 .example-loading{
   position:absolute; inset:0; display:flex; flex-direction:column;
   align-items:center; justify-content:center; gap:14px; color:var(--muted);
