@@ -1362,7 +1362,8 @@
       _setSwipeDivider: setSwipeDivider,
       _setTimeStep: setTimeStep,
       _playTimeSeries: playTimeSeries,
-      _pauseTimeSeries: pauseTimeSeries
+      _pauseTimeSeries: pauseTimeSeries,
+      _encodeState: encodeStateParam
     };
 
     if (opts.stateParam) {
@@ -1396,6 +1397,18 @@
       console.warn("[gis] decodeStateParam: malformed state param:", err);
       return null;
     }
+  }
+
+  // Share tool (task 3.11): the encode half of §7's state param, mirroring
+  // decodeStateParam's own escape/atob round trip exactly (rather than
+  // TextEncoder/TextDecoder, which §7 suggests but decodeStateParam never
+  // adopted) -- encode must invert exactly what decode already expects,
+  // and decode's mechanism is the one actually exercised by every prior
+  // applyState() test. Base64url per §7 ("JSON -> ... -> base64url").
+  function encodeStateParam(obj) {
+    const json = JSON.stringify(obj);
+    const b64 = btoa(unescape(encodeURIComponent(json)));
+    return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   }
 
   window.DTSGis = { mount: mount };

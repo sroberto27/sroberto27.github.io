@@ -52,7 +52,9 @@
     swipe: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M7 9l-4 3 4 3M17 9l4 3-4 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
     clock: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 7v5l3.5 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>',
     play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>',
-    pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4.5" width="4" height="15" fill="currentColor"/><rect x="14" y="4.5" width="4" height="15" fill="currentColor"/></svg>'
+    pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4.5" width="4" height="15" fill="currentColor"/><rect x="14" y="4.5" width="4" height="15" fill="currentColor"/></svg>',
+    print: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V4h12v5M6 18H4a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><rect x="6" y="14" width="12" height="6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
+    share: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="12" r="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="18" cy="19" r="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8.1 10.7l7.7-4.3M8.1 13.3l7.7 4.3" stroke="currentColor" stroke-width="1.6"/></svg>'
   };
 
   function mount(containerEl, mapDoc, instance, opts) {
@@ -1417,6 +1419,361 @@
       ]);
       timePanel.querySelector(".dts-gis-panel-close").addEventListener("click", closePanel);
       registerPanel("time", timeBtn, timePanel);
+    }
+
+    /* ================= print / export image (task 3.11) =================
+       §6: "Compose the current view to a canvas (map image + legend + title
+       + attribution + scale) and download a PNG. ... If the canvas is
+       tainted, fall back to opening a print-styled view and letting the
+       browser's own print-to-PDF handle it." Composition reads straight off
+       the live DOM Leaflet already rendered (every <img>/<canvas> inside
+       containerEl, positioned by getBoundingClientRect() rather than by
+       re-deriving Leaflet's internal pixel math) -- no Leaflet object
+       required, same "read the DOM, not the map" footing as the rest of
+       this file. Tile/image layers are cross-origin with no crossOrigin
+       attribute set (changing that is a basemap-wide risk out of scope for
+       this task -- see docs/CHANGES.md), so toBlob() genuinely comes back
+       null against real Iberia layers; the print fallback is not
+       theoretical here, it's the normal path. */
+    if (tools.print !== false) {
+      const printBtn = el("button", {
+        class: "dts-gis-toolbtn", type: "button", "aria-label": "Print or export image",
+        "aria-expanded": "false", "aria-controls": "dtsGisPrintPanel", html: ICONS.print
+      });
+      toolbar.appendChild(printBtn);
+
+      function paneZIndexOf(node) {
+        let cur = node;
+        while (cur && cur !== containerEl) {
+          if (cur.classList && cur.classList.contains("leaflet-pane")) {
+            const z = parseInt(cur.style.zIndex, 10);
+            return isNaN(z) ? 0 : z;
+          }
+          cur = cur.parentElement;
+        }
+        return 0;
+      }
+
+      function visibleLegendLayers() {
+        return layerDefs.filter(function (def) {
+          const s = state.layers[def.id];
+          return s && s.visible && s.status !== "unavailable";
+        });
+      }
+
+      function composeMapCanvas(legendResults) {
+        const rect = containerEl.getBoundingClientRect();
+        const w = Math.max(1, Math.round(rect.width));
+        const h = Math.max(1, Math.round(rect.height));
+        const canvas = document.createElement("canvas");
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext("2d");
+        ctx.fillStyle = "#04070c";
+        ctx.fillRect(0, 0, w, h);
+
+        const nodes = Array.prototype.slice.call(containerEl.querySelectorAll("img, canvas"))
+          .filter(function (n) { return n !== canvas; })
+          .sort(function (a, b) { return paneZIndexOf(a) - paneZIndexOf(b); });
+
+        nodes.forEach(function (node) {
+          const style = window.getComputedStyle(node);
+          if (style.display === "none" || style.visibility === "hidden") return;
+          const opacity = parseFloat(style.opacity);
+          const r = node.getBoundingClientRect();
+          if (!r.width || !r.height) return;
+          ctx.save();
+          ctx.globalAlpha = isNaN(opacity) ? 1 : opacity;
+          try { ctx.drawImage(node, r.left - rect.left, r.top - rect.top, r.width, r.height); }
+          catch (err) { /* one element failed to draw (e.g. not yet loaded) -- keep compositing the rest */ }
+          ctx.restore();
+        });
+
+        const bandH = Math.min(130, Math.round(h * 0.32));
+        ctx.fillStyle = "rgba(4,7,12,.82)";
+        ctx.fillRect(0, h - bandH, w, bandH);
+        ctx.fillStyle = "#f0c75e";
+        ctx.font = "700 15px sans-serif";
+        ctx.fillText(mapDoc.title || "", 14, h - bandH + 20);
+        ctx.font = "500 11px sans-serif";
+        let ly = h - bandH + 38;
+        const scaleEl = containerEl.querySelector(".leaflet-control-scale-line");
+        const metaBits = [mapDoc.attribution, scaleEl ? scaleEl.textContent : null].filter(Boolean).join("   ·   ");
+        if (metaBits) { ctx.fillStyle = "#c8ceda"; ctx.fillText(metaBits, 14, ly); ly += 16; }
+        legendResults.forEach(function (r) {
+          r.rows.slice(0, 6).forEach(function (row) {
+            if (ly > h - 8) return;
+            ctx.fillStyle = row.color || "#c49a2a";
+            ctx.fillRect(14, ly - 9, 10, 10);
+            ctx.fillStyle = "#c8ceda";
+            ctx.fillText(row.label, 30, ly);
+            ly += 15;
+          });
+        });
+        return canvas;
+      }
+
+      const printStatus = el("p", { class: "dts-gis-coord-status", role: "status" });
+
+      function exportPng() {
+        printStatus.textContent = "Preparing image…";
+        Promise.all(visibleLegendLayers().map(function (def) {
+          return legendRowsFor(def).then(function (rows) { return { def: def, rows: rows }; });
+        })).then(function (legendResults) {
+          let canvas;
+          try { canvas = composeMapCanvas(legendResults); } catch (err) {
+            console.warn("[gis-tools] map image composition failed:", err);
+            printStatus.textContent = "Image export isn't available for these layers — use Print instead.";
+            return;
+          }
+          // Real bug, found live: MDN documents a tainted canvas as
+          // resolving toBlob's callback with null, but Chrome actually
+          // throws a synchronous SecurityError instead (confirmed against
+          // real cross-origin tile/ArcGIS image layers, which have no
+          // crossOrigin attribute set -- see the block comment above this
+          // tool). Both outcomes mean the same thing here, so both take the
+          // same fallback message.
+          try {
+            canvas.toBlob(function (blob) {
+              if (!blob) {
+                printStatus.textContent = "Image export isn't available for these layers — use Print instead.";
+                return;
+              }
+              const url = URL.createObjectURL(blob);
+              const a = el("a", { href: url, download: (mapDoc.id || "map") + ".png" });
+              document.body.appendChild(a); a.click(); a.remove();
+              URL.revokeObjectURL(url);
+              printStatus.textContent = "";
+            }, "image/png");
+          } catch (err) {
+            printStatus.textContent = "Image export isn't available for these layers — use Print instead.";
+          }
+        });
+      }
+
+      // Print fallback: rather than clone the map into a second Leaflet
+      // instance (a second live mount re-triggers every layer's network
+      // fetch for no benefit -- the same waste the "one iframe ever" rule
+      // elsewhere in this codebase warns against in spirit), this
+      // repositions the REAL mounted map full-page for print via the
+      // classic visibility-flip technique (css/15-gis.css's @media print
+      // block). Canvas tainting only blocks JS pixel readback -- it never
+      // affects the browser's own on-screen/print compositing, so the map
+      // prints correctly even when exportPng() above cannot read it.
+      function buildPrintInfoBlock() {
+        const box = el("div", { class: "dts-gis-print-info" });
+        box.appendChild(el("h2", { text: mapDoc.title || "" }));
+        if (mapDoc.subtitle) box.appendChild(el("p", { text: mapDoc.subtitle }));
+        const scaleEl = containerEl.querySelector(".leaflet-control-scale-line");
+        const metaBits = [mapDoc.attribution, scaleEl ? scaleEl.textContent : null].filter(Boolean).join(" · ");
+        if (metaBits) box.appendChild(el("p", { text: metaBits }));
+        const legendRow = el("div", { class: "dts-gis-print-legend" });
+        box.appendChild(legendRow);
+        Promise.all(visibleLegendLayers().map(function (def) {
+          return legendRowsFor(def).then(function (rows) { return rows; });
+        })).then(function (grouped) {
+          [].concat.apply([], grouped).forEach(function (row) {
+            legendRow.appendChild(el("span", {}, [
+              el("span", { class: "sw", style: "background:" + (row.color || "#c49a2a") }),
+              document.createTextNode(row.label)
+            ]));
+          });
+        });
+        return box;
+      }
+
+      function printMap() {
+        const block = buildPrintInfoBlock();
+        containerEl.appendChild(block);
+        document.body.classList.add("dts-gis-printing");
+        function cleanup() {
+          document.body.classList.remove("dts-gis-printing");
+          block.remove();
+          window.removeEventListener("afterprint", cleanup);
+        }
+        window.addEventListener("afterprint", cleanup);
+        // afterprint doesn't fire in every environment (e.g. the print
+        // dialog dismissed in a way the browser doesn't report) -- this
+        // guarantees cleanup either way.
+        setTimeout(cleanup, 60000);
+        window.print();
+      }
+
+      const pngBtn = el("button", { type: "button", class: "dts-gis-btn-primary", text: "Download PNG" });
+      const printMapBtn = el("button", { type: "button", class: "dts-gis-btn-secondary", text: "Print map" });
+      pngBtn.addEventListener("click", exportPng);
+      printMapBtn.addEventListener("click", printMap);
+
+      const printPanel = el("div", {
+        class: "dts-gis-panel", id: "dtsGisPrintPanel", role: "region", "aria-label": "Print or export image", hidden: ""
+      }, [
+        el("div", { class: "dts-gis-panel-head" }, [
+          el("h3", { text: "Print / export image" }),
+          el("button", { class: "dts-gis-panel-close", type: "button", "aria-label": "Close print panel", html: ICONS.close })
+        ]),
+        el("div", { class: "dts-gis-panel-body" }, [
+          el("div", { class: "dts-gis-filter-actions" }, [pngBtn, printMapBtn]),
+          printStatus
+        ])
+      ]);
+      printPanel.querySelector(".dts-gis-panel-close").addEventListener("click", closePanel);
+      registerPanel("print", printBtn, printPanel, function () { printStatus.textContent = ""; });
+    }
+
+    /* ================= export data (task 3.11) =================
+       §6: "Per-layer GeoJSON and CSV download of currently visible/filtered
+       features, with the layer's attribution embedded in the GeoJSON as a
+       properties-level note." Reuses task 3.8's queryRows/fieldsForLayer/
+       matchesConditions/downloadCsv wholesale -- "currently visible/
+       filtered" is exactly the attribute table's own row set (minus its
+       transient text-box search, which isn't part of the map's actual
+       state), so there's nothing new to compute here. */
+    if (tools.exportData !== false && queryableDefs.length) {
+      const exportBtn = el("button", {
+        class: "dts-gis-toolbtn", type: "button", "aria-label": "Export layer data",
+        "aria-expanded": "false", "aria-controls": "dtsGisExportPanel", html: ICONS.download
+      });
+      toolbar.appendChild(exportBtn);
+
+      const exportSelect = el("select", { class: "dts-gis-filter-layer", "aria-label": "Layer to export" });
+      const exportStatus = el("p", { class: "dts-gis-coord-status", role: "status" });
+
+      function refreshExportOptions() {
+        const current = exportSelect.value;
+        exportSelect.textContent = "";
+        queryableDefs.forEach(function (def) {
+          if (!state.layers[def.id] || !state.layers[def.id].visible) return;
+          exportSelect.appendChild(el("option", { value: def.id, text: def.title || def.id }));
+        });
+        if (!exportSelect.options.length) {
+          exportSelect.appendChild(el("option", { value: "", text: "No visible layers to export" }));
+        } else {
+          exportSelect.value = Array.prototype.some.call(exportSelect.options, function (o) { return o.value === current; })
+            ? current : exportSelect.options[0].value;
+        }
+      }
+
+      function currentExportRows(def) {
+        return Promise.all([queryRows(def), fieldsForLayer(def)]).then(function (results) {
+          const rows = results[0], fields = results[1];
+          const conditions = state.filters[def.id];
+          return { rows: rows.filter(function (f) { return matchesConditions(f.properties || {}, conditions); }), fields: fields };
+        });
+      }
+
+      const geojsonBtn = el("button", { type: "button", class: "dts-gis-btn-primary", text: "Download GeoJSON" });
+      const csvExportBtn = el("button", { type: "button", class: "dts-gis-btn-secondary", text: "Download CSV" });
+
+      geojsonBtn.addEventListener("click", function () {
+        const def = queryableDefs.find(function (d) { return d.id === exportSelect.value; });
+        if (!def) return;
+        exportStatus.textContent = "Preparing…";
+        currentExportRows(def).then(function (r) {
+          const attribution = def.attribution || mapDoc.attribution || null;
+          const fc = {
+            type: "FeatureCollection",
+            features: r.rows.map(function (f) {
+              return { type: "Feature", id: f.id, geometry: f.geometry, properties: Object.assign({}, f.properties || {}, { _attribution: attribution }) };
+            })
+          };
+          const blob = new Blob([JSON.stringify(fc)], { type: "application/geo+json" });
+          const url = URL.createObjectURL(blob);
+          const a = el("a", { href: url, download: (def.id || "layer") + ".geojson" });
+          document.body.appendChild(a); a.click(); a.remove();
+          URL.revokeObjectURL(url);
+          exportStatus.textContent = r.rows.length + (r.rows.length === 1 ? " feature exported." : " features exported.");
+        });
+      });
+
+      csvExportBtn.addEventListener("click", function () {
+        const def = queryableDefs.find(function (d) { return d.id === exportSelect.value; });
+        if (!def) return;
+        exportStatus.textContent = "Preparing…";
+        currentExportRows(def).then(function (r) {
+          downloadCsv((def.id || "layer") + ".csv", r.fields, r.rows);
+          exportStatus.textContent = r.rows.length + (r.rows.length === 1 ? " row exported." : " rows exported.");
+        });
+      });
+
+      const exportPanel = el("div", {
+        class: "dts-gis-panel", id: "dtsGisExportPanel", role: "region", "aria-label": "Export layer data", hidden: ""
+      }, [
+        el("div", { class: "dts-gis-panel-head" }, [
+          el("h3", { text: "Export data" }),
+          el("button", { class: "dts-gis-panel-close", type: "button", "aria-label": "Close export panel", html: ICONS.close })
+        ]),
+        el("div", { class: "dts-gis-panel-body" }, [
+          exportSelect,
+          el("div", { class: "dts-gis-filter-actions" }, [geojsonBtn, csvExportBtn]),
+          exportStatus
+        ])
+      ]);
+      exportPanel.querySelector(".dts-gis-panel-close").addEventListener("click", closePanel);
+      registerPanel("export", exportBtn, exportPanel, function () { exportStatus.textContent = ""; refreshExportOptions(); });
+    }
+
+    /* ================= share (task 3.11) =================
+       §6: "Copies the current URL with the map state encoded (§7)." One
+       opaque `map=` query param carrying the whole state blob -- the
+       decision §7 flags ("consider splitting the view into a #map=z/lat/
+       lng fragment... decide in Phase 3") was already made implicitly back
+       in Phase 3a: decodeStateParam has only ever accepted the full blob,
+       and every applyState() round-trip test since (3.8's filters, 3.9's
+       drawings, 3.10's swipe/time state) has verified that shape. Splitting
+       now would break an already-tested contract for a cosmetic win. */
+    if (tools.share !== false && instance._encodeState) {
+      const shareBtn = el("button", {
+        class: "dts-gis-toolbtn", type: "button", "aria-label": "Share this view",
+        "aria-expanded": "false", "aria-controls": "dtsGisSharePanel", html: ICONS.share
+      });
+      toolbar.appendChild(shareBtn);
+
+      const shareInput = el("input", { type: "text", class: "dts-gis-coord-input", readonly: "", "aria-label": "Share link" });
+      const shareCopyBtn = el("button", { type: "button", class: "dts-gis-btn-primary", text: "Copy link" });
+      const shareStatus = el("p", { class: "dts-gis-coord-status", role: "status" });
+
+      function buildShareUrl() {
+        const s = instance.getState();
+        let encoded = instance._encodeState(s);
+        let droppedDrawings = false;
+        // §7: "Cap at 1500 chars; if drawings push it over, drop them from
+        // the link and tell the user."
+        if (encoded.length > 1500 && s.d && s.d.length) {
+          encoded = instance._encodeState(Object.assign({}, s, { d: [] }));
+          droppedDrawings = true;
+        }
+        const url = new URL(location.href);
+        url.searchParams.set("map", encoded);
+        shareStatus.textContent = droppedDrawings ? "Drawings were left out to keep the link a reasonable length." : "";
+        return url.toString();
+      }
+
+      shareCopyBtn.addEventListener("click", function () {
+        const link = shareInput.value;
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(link).then(function () {
+            const prev = shareCopyBtn.textContent;
+            shareCopyBtn.textContent = "Copied";
+            setTimeout(function () { shareCopyBtn.textContent = prev; }, 1200);
+          }).catch(function () { shareInput.select(); });
+        } else {
+          shareInput.select();
+        }
+      });
+
+      const sharePanel = el("div", {
+        class: "dts-gis-panel", id: "dtsGisSharePanel", role: "region", "aria-label": "Share this view", hidden: ""
+      }, [
+        el("div", { class: "dts-gis-panel-head" }, [
+          el("h3", { text: "Share this view" }),
+          el("button", { class: "dts-gis-panel-close", type: "button", "aria-label": "Close share panel", html: ICONS.close })
+        ]),
+        el("div", { class: "dts-gis-panel-body" }, [
+          el("div", { class: "dts-gis-coord-row" }, [shareInput, shareCopyBtn]),
+          shareStatus
+        ])
+      ]);
+      sharePanel.querySelector(".dts-gis-panel-close").addEventListener("click", closePanel);
+      registerPanel("share", shareBtn, sharePanel, function () { shareInput.value = buildShareUrl(); });
     }
 
     /* ================= keep state in sync ================= */

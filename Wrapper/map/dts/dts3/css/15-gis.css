@@ -548,3 +548,34 @@
   .dts-gis-drawer{ max-height:75%; }
   .dts-gis-filter-row{ grid-template-columns:1fr 60px 1fr auto; }
 }
+
+/* ============================================================
+   Print fallback (task 3.11) — js/gis/gis-tools.js's printMap().
+   Repositions the real, already-mounted map full-page for print via the
+   classic visibility-flip technique, rather than cloning it into a second
+   Leaflet instance: canvas tainting (the reason this fallback exists at
+   all) only blocks JS pixel readback, never the browser's own on-screen/
+   print compositing, so the live map prints correctly regardless.
+   ============================================================ */
+.dts-gis-print-info{ display:none; }
+@media print{
+  body.dts-gis-printing *{ visibility:hidden !important; }
+  body.dts-gis-printing .dts-gis-map,
+  body.dts-gis-printing .dts-gis-map *{ visibility:visible !important; }
+  body.dts-gis-printing .dts-gis-map{
+    position:fixed !important; inset:0 !important; width:100vw !important; height:100vh !important;
+    z-index:2147483000 !important; background:#fff !important;
+  }
+  body.dts-gis-printing .dts-gis-tools{ display:none !important; }
+  body.dts-gis-printing .dts-gis-print-info{
+    display:block !important; visibility:visible !important;
+    position:fixed !important; left:0 !important; right:0 !important; bottom:0 !important;
+    z-index:2147483001 !important; max-height:24vh !important; overflow:hidden !important;
+    background:#fff !important; color:#111 !important; padding:8px 16px !important;
+    font:12px/1.4 var(--sans), sans-serif !important;
+  }
+}
+.dts-gis-print-info h2{ margin:0 0 2px; font-size:14px; }
+.dts-gis-print-info p{ margin:0 0 4px; }
+.dts-gis-print-legend{ display:flex; flex-wrap:wrap; gap:6px 12px; font-size:10.5px; }
+.dts-gis-print-legend .sw{ display:inline-block; width:9px; height:9px; margin-right:4px; vertical-align:middle; }

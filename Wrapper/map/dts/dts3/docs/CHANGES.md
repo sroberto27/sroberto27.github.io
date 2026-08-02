@@ -2,6 +2,80 @@
 
 Newest first.
 
+## GIS Phase 3 task 3.11 — print/export image, export data, and share links
+
+Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.11 / `04-SPEC-gis-engine.md` §6-7. This is the
+last of the §6 tool set; only 3.12 (wiring `mountGis()` into `js/app.js`'s switcher) and the
+content tasks remain in Phase 3. Nothing wired into `index.html`/`app.js` yet.
+
+- **Share** (`getState()`/`applyState()` already existed from Phase 3a; this task adds the
+  encode half): `js/gis/gis-viewer.js` gains `encodeStateParam()`, the exact inverse of the
+  already-tested `decodeStateParam()` -- same `escape`/`atob` round trip, not
+  `TextEncoder`/`TextDecoder` as §7 suggests, because encode has to invert what decode
+  already expects, and decode's mechanism is the one every prior `applyState()` test (3.8's
+  filters, 3.9's drawings, 3.10's swipe/time state) actually exercised. Exposed as
+  `instance._encodeState`, same internal-seam footing as `_getLayerBounds`. §7's "consider
+  splitting the view into a `#map=z/lat/lng` fragment" question was already answered
+  implicitly back in Phase 3a -- `decodeStateParam` has only ever accepted the whole blob --
+  so `gis-tools.js`'s share panel keeps that shape: one opaque `map=` query parameter.
+  Round, per §7: centre to 5 decimals and opacity to 2 (already true of `getState()`); cap
+  the encoded blob at 1500 chars, and if drawings are what pushed it over, drop them and say
+  so in the panel. Verified live: encode → URL → a **second, independent `DTSGis.mount()`**
+  with `stateParam` set reproduces the exact same `getState()` (center, zoom, layer
+  visibility/opacity) -- the real decode path, not a hand-rolled copy of it. Also verified
+  the cap: 40 synthetic drawings pushed the blob to 4774 chars; the share link correctly
+  dropped them (down to 142 chars) and showed the message, while a single drawing under the
+  cap round-tripped intact.
+- **Export data**: a new toolbar panel, layer-scoped to currently-visible queryable layers
+  (dropdown rebuilt on open, same live pattern as swipe's layer choice), with GeoJSON and
+  CSV downloads. Deliberately reuses task 3.8's `queryRows`/`fieldsForLayer`/
+  `matchesConditions`/`downloadCsv` wholesale instead of writing a parallel path: "currently
+  visible/filtered features" is exactly the attribute table's own row set (minus its
+  transient text-search box, which isn't part of the map's actual state), so there was
+  nothing new to compute. Per §6, the GeoJSON export embeds the layer's attribution as a
+  properties-level note (`_attribution`) on every feature -- confirmed live against the real
+  Iberia parish-boundary layer.
+- **Print / export image**: composes the live DOM Leaflet already rendered into a canvas --
+  every `<img>`/`<canvas>` inside the map container, positioned via `getBoundingClientRect()`
+  and ordered by its ancestor pane's `zIndex` -- rather than re-deriving Leaflet's internal
+  pixel math. A bottom band overlays title/attribution/scale-bar-text/legend swatches read
+  straight off the same `legendRowsFor()` the legend panel already uses. Downloads as PNG via
+  `canvas.toBlob()`.
+- **Real bug, found live (this task's central finding, matching §6's own warning that canvas
+  tainting is "a common late surprise"):** MDN documents a tainted canvas as resolving
+  `toBlob()`'s callback with `null`. Confirmed live against Chrome and the real Iberia
+  boundary layer + CARTO dark basemap tiles (neither loaded with a `crossOrigin` attribute --
+  changing that site-wide for every tile/image layer to chase untainted exports was judged
+  out of scope and too risky for this task, since a server that doesn't answer the
+  `crossOrigin` fetch correctly would silently break basemap tiles everywhere, not just
+  export): Chrome instead throws a **synchronous `SecurityError` out of `toBlob()` itself**,
+  which an unguarded call would let escape as an uncaught exception. Fixed by wrapping the
+  `toBlob()` call itself in try/catch, in addition to the `null`-blob check -- both outcomes
+  reach the same §11 message ("Image export isn't available for these layers — use Print
+  instead."). This is not a theoretical fallback: against real project data it is the
+  *normal* path, confirmed live.
+- **Print fallback**, per §6 ("open a print-styled view and let the browser's own
+  print-to-PDF handle it"): rather than clone the map into a second Leaflet instance (a
+  second live mount re-triggers every layer's network fetch for no benefit -- the same waste
+  the "one Treedis iframe ever" rule elsewhere in this codebase warns against in spirit),
+  `printMap()` repositions the *real*, already-mounted map full-page via the classic
+  visibility-flip `@media print` technique (`css/15-gis.css`) plus a small injected
+  title/legend/attribution block. This works precisely because canvas tainting only blocks
+  JS pixel *readback* -- it never affects the browser's own on-screen/print compositing, so
+  the same layers that can't be exported to PNG still print correctly. Cleanup runs on the
+  `afterprint` event, with a 60s fallback timer since `afterprint` doesn't fire in every
+  environment. Verified live (with `window.print` stubbed to avoid blocking the test session
+  on a native OS dialog -- the same reason browser-automation guidance elsewhere avoids
+  triggering real dialogs): the printing class and info block appear with the correct title
+  and a real legend row, and both are removed once `afterprint` fires.
+- Verified live in Chrome against real, CORS-verified Iberia Parish data (the parish boundary
+  `esriFeature` layer) and a CARTO dark basemap: all three tools end-to-end, including both
+  real bugs above and their fixes. Automated `computer` clicks on the small toolbar buttons
+  were unreliable in this session (a CSS-pixel/screenshot-pixel scale mismatch sent clicks to
+  the wrong coordinates) -- fell back to direct DOM `.click()` dispatch via the JS console for
+  every interaction, the same ground-truth-over-screenshot approach documented in prior
+  tasks' entries. Test harness deleted before committing.
+
 ## GIS Phase 3 task 3.10 — swipe compare and time slider
 
 Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.10 / `04-SPEC-gis-engine.md` §6. Nothing
