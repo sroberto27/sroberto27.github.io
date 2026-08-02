@@ -30,6 +30,12 @@ window.DTS_CONFIG = {
      flow. Placeholder until a real authenticated portal exists. */
   clientPortalUrl: "#access-your-twin",
 
+  /* GIS map/tour documents, keyed by id. Empty until Phase 3+ authors any
+     (data/gis/maps, data/gis/tours) — kept here only for structural parity
+     with the shape js/content-loader.js builds from /data. */
+  gisMaps: {},
+  gisTours: {},
+
   /* The four sector pillars are the primary navigation. Order:
      Education → Industry → Government → Community. */
   categories: [

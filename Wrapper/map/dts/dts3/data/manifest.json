@@ -185,6 +185,7 @@
         "type": "mediaLibrary",
         "id": "media.library"
       }
-    ]
+    ],
+    "gis": []
   }
 }

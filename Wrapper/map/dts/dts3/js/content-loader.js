@@ -81,17 +81,33 @@
       .filter(function (d) { return d && d._type === type; });
   }
 
-  function convertMedia(m) {
-    if (!m) return undefined;
+  /* projects normally carry `experiences[]`; the 16 legacy documents still
+     carry a single `media` object instead. Neither is migrated here -- the
+     Admin Board does that, editor-triggered, when it first touches a project
+     (see 03-SPEC-multi-experience.md §1). */
+  function projectExperiences(p) {
+    if (Array.isArray(p.experiences) && p.experiences.length) return p.experiences;
+    if (p.media) return [Object.assign({ id: p.media._type }, p.media)];
+    return [];
+  }
+
+  function convertExperience(m, i) {
+    if (!m || !m._type) return undefined;
+    var base = { id: m.id || (m._type + (i ? "-" + (i + 1) : "")),
+                 label: m.label || "", default: !!m.default };
     if (m._type === "treedis") {
-      return { type: "treedis", label: m.label || "", tourUrl: m.tourUrl || "",
-               origin: m.origin || "https://spaces.dtsxr.com" };
+      return Object.assign(base, { type: "treedis", tourUrl: m.tourUrl || "",
+        origin: m.origin || "https://spaces.dtsxr.com", sweepId: m.sweepId || null });
     }
     if (m._type === "video") {
-      return { type: "vimeo", label: m.label || "",
-               embedUrl: srcValue(m.embed), watchUrl: srcValue(m.watch) };
+      return Object.assign(base, { type: "vimeo",
+        embedUrl: srcValue(m.embed), watchUrl: srcValue(m.watch) });
     }
-    return undefined;
+    if (m._type === "gis") {
+      return Object.assign(base, { type: "gis", mapId: m.mapId || "",
+        tourId: m.tourId || null, initialView: m.initialView || null });
+    }
+    return undefined;                     // unknown types still dropped, deliberately
   }
 
   function buildConfig(content) {
@@ -170,11 +186,20 @@
           sweepId: p.sweepId || null,
           evidence: p.evidence || {}
         };
-        var media = convertMedia(p.media);
-        if (media) ex.media = media;
+        ex.experiences = projectExperiences(p).map(convertExperience).filter(Boolean);
+        if (ex.experiences.length) ex.media = ex.experiences[0];   // legacy alias -- keep it
         cfg.examples[p.id] = ex;
       });
     }
+
+    /* GIS documents pass through raw, keyed by id -- a deliberate exception
+       to the flattening convention above. The GIS engine (js/gis/*, arriving
+       Phase 3) reads its own schema directly rather than through a legacy
+       translation layer. */
+    cfg.gisMaps = {};
+    docsByType(content, "gisMap").forEach(function (m) { cfg.gisMaps[m.id] = m; });
+    cfg.gisTours = {};
+    docsByType(content, "gisTour").forEach(function (t) { cfg.gisTours[t.id] = t; });
 
     if (faq && faq.items) cfg.answers = faq.items;
     if (funFacts && funFacts.facts) cfg.funFacts = funFacts.facts;

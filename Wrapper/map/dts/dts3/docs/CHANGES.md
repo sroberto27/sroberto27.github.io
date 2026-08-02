@@ -2,6 +2,56 @@
 
 Newest first.
 
+## GIS Phase 1 — multi-experience schema and loader
+
+Per `docs/plans/gis/09-BUILD-PLAN.md` Phase 1 / `03-SPEC-multi-experience.md §1-2`.
+No UI change — loader/schema only.
+
+- `js/content-loader.js`: added `projectExperiences(p)` (normalises a project's
+  `experiences[]` or legacy `media` into a uniform list) and `convertExperience(m, i)`
+  (replaces `convertMedia()`; adds a `gis` branch alongside `treedis`/`video`, still drops
+  unknown `_type`s silently).
+- `buildConfig()`'s project loop now sets `ex.experiences = projectExperiences(p)
+  .map(convertExperience).filter(Boolean)` and keeps `ex.media` as a live alias to
+  `experiences[0]` — every existing `ex.media` reader in `js/app.js` keeps working
+  unchanged.
+- `buildConfig()` now also loads `gisMap`/`gisTour` documents straight through into
+  `cfg.gisMaps`/`cfg.gisTours`, keyed by id — a deliberate exception to the flattening
+  convention; the GIS engine (Phase 3) reads its own schema directly.
+- `data/manifest.json`: added the (currently empty) `gis` document group.
+- `js/config.js`: structural sync only — added empty `gisMaps`/`gisTours`.
+- Verified against real `/data` content with a Node-based replay of `buildConfig()`
+  (browser extension unavailable this pass): all 16 existing projects produce
+  behaviorally identical `media` (`type`/`tourUrl`/`embedUrl`/`watchUrl`), and
+  `energy.experiences` is the expected one-item array. A live in-browser console/UI
+  check (`python -m http.server 8000`) is still recommended before Phase 2 starts.
+
+## GIS Phase 0 — source verification and CORS spike
+
+No production code; research only, per `docs/plans/gis/09-BUILD-PLAN.md` Phase 0.
+
+- CORS spike: both `maps.iberiagov.net` and `cimsgeo3.coastal.louisiana.gov`
+  return permissive, origin-reflecting CORS headers on real `/query` and
+  `/exportImage` calls — `esriFeature` can be the default sourceType on both
+  servers, not just the `esriDynamic`/harvest fallback.
+- Enumerated both ArcGIS service trees; catalogued candidate layers for the
+  Boundaries/Water/Flood/Infrastructure/Coastal-projects/Coastal-change/Imagery
+  groups in `08-SPEC-gfc-project.md`'s composition table.
+- Confirmed MPDV runs on MapLibre GL JS with vector tiles (not ArcGIS image
+  export) — resolves the scope question flagged in `07-SPEC §C`/`04-SPEC §2`.
+- Transcribed MPDV's 10-step guided tour via static bundle analysis (no live
+  browser session available this pass — visual/interaction details still need
+  a live spot-check before Phase 4).
+- Derived the parish's WGS84 envelope and an approximate centroid from
+  `Govt_Units/Updated_Parish_Boundary`.
+- Flagged five open items needing a human, not more automation: Iberia/CPRA
+  terms-of-use confirmation (no published ToS found for either), manual
+  retrieval of the robots.txt-blocked parish factsheet, and product-level calls
+  on the Parcels and Nursing-Homes layers (real PII / vulnerable-population
+  sensitivity respectively).
+- Output: `data/gis/sources.json` (committed) and `docs/GIS-DATA-SOURCES.md`
+  (gitignored, local reference only — `docs/` is excluded from this repo).
+
 ## Code reorganization (maintainability pass)
 
 No functional changes. The site behaves exactly as before.
