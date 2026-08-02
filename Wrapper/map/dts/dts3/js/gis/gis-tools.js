@@ -2,9 +2,10 @@
    GIS tool UI -- window.DTSGisTools
    ------------------------------------------------------------
    Per docs/plans/gis/04-SPEC-gis-engine.md §6 / 09-BUILD-PLAN.md
-   task 3.6: layer panel, basemap switcher, legend. Later tasks
-   (identify, attribute table, filter, measure, draw, swipe,
-   timeline, print/export, share) extend this same file.
+   tasks 3.6 (layer panel, basemap switcher, legend) and 3.7
+   (identify/popups). Later tasks (attribute table, filter,
+   measure, draw, swipe, timeline, print/export, share) extend
+   this same file.
 
    Talks to the map almost entirely through window.DTSGis's public
    §5 API (setLayerVisible/setLayerOpacity/setBasemap/getState/on),
@@ -14,7 +15,9 @@
    ArcGIS service metadata alone (see the comment in gis-viewer.js).
    Everything else here reads mapDoc (the static document) and the
    instance's events/getState() to keep its own small state model
-   in sync -- it never touches a Leaflet object.
+   in sync -- it never touches a Leaflet object. The identify popup
+   (task 3.7) follows the same rule: it's positioned from the
+   "identify" event's containerPoint, not a Leaflet popup object.
    ============================================================ */
 (function () {
   "use strict";
@@ -333,10 +336,112 @@
       }));
     }
 
+    /* ================= identify / popup (task 3.7) =================
+       gis-viewer.js emits "identify" -- an addition to §5's documented
+       event set (ready/viewchange/layerchange/tourstep/error), same
+       spirit as extending DTS_CONFIG rather than reshaping it -- with
+       {latlng, containerPoint, hits:[{layerId, sublayerId, properties}]}.
+       This popup is a plain positioned div, not a Leaflet popup: it only
+       needs containerPoint (already relative to the map container, which
+       this module owns the overlay for) and never needs the map object
+       itself, so identify stays on the same "no Leaflet objects here"
+       footing as the rest of this file. It doesn't track the map on pan/
+       zoom -- closing on the next viewchange is simpler than repositioning
+       and matches how most identify popups behave anyway. */
+    let popupEl = null;
+    function closePopup() {
+      if (!popupEl) return;
+      const restore = popupEl._dtsRestoreFocus;
+      popupEl.remove();
+      popupEl = null;
+      if (restore && typeof restore.focus === "function") restore.focus();
+    }
+
+    const SYSTEM_FIELD_RE = /^(objectid|fid|globalid|shape)([._]|$)/i;
+    function isSystemField(name) { return SYSTEM_FIELD_RE.test(name); }
+
+    function formatFieldValue(field, raw) {
+      if (raw === null || raw === undefined || raw === "") return "—";
+      if (field.format === "number" && typeof raw === "number") return raw.toLocaleString() + (field.suffix || "");
+      return String(raw);
+    }
+
+    function renderTemplate(tpl, props) {
+      return tpl.replace(/\{(\w+)\}/g, function (m, key) {
+        return (key in props) ? String(props[key]) : "";
+      });
+    }
+
+    function fieldsForHit(hit, def) {
+      const props = hit.properties || {};
+      if (def && def.popup && Array.isArray(def.popup.fields) && def.popup.fields.length) {
+        return Promise.resolve(def.popup.fields);
+      }
+      const keys = Object.keys(props).filter(function (k) { return !isSystemField(k); });
+      const isEsri = def && (def.sourceType === "esriFeature" || def.sourceType === "esriDynamic");
+      if (isEsri && typeof hit.sublayerId === "number" && window.DTSGisEsri) {
+        return DTSGisEsri.fetchFieldAliases(def.url, hit.sublayerId).then(function (aliases) {
+          return keys.map(function (k) { return { name: k, label: aliases[k] || k }; });
+        });
+      }
+      return Promise.resolve(keys.map(function (k) { return { name: k, label: k }; }));
+    }
+
+    function buildPopupSection(hit, def) {
+      const props = hit.properties || {};
+      const popupCfg = (def && def.popup) || {};
+      const title = popupCfg.title ? renderTemplate(popupCfg.title, props) : (def ? (def.title || def.id) : "Feature");
+      return fieldsForHit(hit, def).then(function (fields) {
+        const rows = fields.map(function (f) {
+          return el("div", { class: "dts-gis-popup-row" }, [
+            el("span", { class: "dts-gis-popup-key", text: f.label || f.name }),
+            el("span", { class: "dts-gis-popup-val", text: formatFieldValue(f, props[f.name]) })
+          ]);
+        });
+        return el("div", { class: "dts-gis-popup-section" }, [el("h4", { text: title })].concat(rows));
+      });
+    }
+
+    function showPopup(containerPoint, sectionEls) {
+      const closeBtn = el("button", { class: "dts-gis-popup-close", type: "button", "aria-label": "Close", html: ICONS.close });
+      const body = el("div", { class: "dts-gis-popup-body" }, sectionEls);
+      const popup = el("div", { class: "dts-gis-popup", role: "dialog", "aria-label": "Feature details" }, [closeBtn, body]);
+      closeBtn.addEventListener("click", closePopup);
+
+      const flipDown = containerPoint[1] < 160;
+      popup.classList.toggle("is-below", flipDown);
+      const hostWidth = containerEl.clientWidth || 0;
+      const x = hostWidth ? Math.min(Math.max(containerPoint[0], 150), Math.max(150, hostWidth - 150)) : containerPoint[0];
+      popup.style.left = x + "px";
+      popup.style.top = containerPoint[1] + "px";
+
+      popup._dtsRestoreFocus = document.activeElement;
+      host.appendChild(popup);
+      popupEl = popup;
+      closeBtn.focus();
+    }
+
+    if (tools.identify !== false) {
+      offListeners.push(instance.on("identify", function (detail) {
+        closePopup();
+        if (!detail || !detail.hits || !detail.hits.length) return;
+        Promise.all(detail.hits.map(function (hit) {
+          const def = layerDefs.find(function (d) { return d.id === hit.layerId; });
+          return buildPopupSection(hit, def);
+        })).then(function (sections) {
+          showPopup(detail.containerPoint, sections);
+        });
+      }));
+      function onKeyDown(e) { if (e.key === "Escape") closePopup(); }
+      document.addEventListener("keydown", onKeyDown);
+      offListeners.push(function () { document.removeEventListener("keydown", onKeyDown); });
+    }
+
     /* ================= keep state in sync ================= */
     offListeners.push(instance.on("viewchange", function (detail) {
       state.zoom = detail.zoom;
       layerDefs.forEach(function (def) { refreshZoomGate(def.id); });
+      closePopup(); // doesn't track the map -- see the identify/popup section above
     }));
     offListeners.push(instance.on("layerchange", function (detail) {
       if (!detail || !detail.id || !state.layers[detail.id]) return;
@@ -356,6 +461,7 @@
     function destroy() {
       offListeners.forEach(function (off) { off(); });
       closePanel();
+      closePopup();
       host.remove();
     }
 

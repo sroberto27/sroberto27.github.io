@@ -92,9 +92,10 @@
 
 /* ============================================================
    Tool UI — js/gis/gis-tools.js (task 3.6: layer panel, legend,
-   basemap switcher). These are our own elements, not Leaflet's, so
-   there's no injection-order specificity race to guard against —
-   plain .dts-gis-tools-prefixed selectors are enough.
+   basemap switcher; task 3.7: identify popup). These are our own
+   elements, not Leaflet's, so there's no injection-order
+   specificity race to guard against — plain .dts-gis-tools-prefixed
+   selectors are enough.
    ============================================================ */
 .dts-gis-tools{
   position:absolute; inset:0; z-index:1200;
@@ -230,3 +231,32 @@
 .dts-gis-legend-row{ display:flex; align-items:center; gap:8px; padding:2px 0; font-size:11.5px; color:var(--muted); }
 .dts-gis-legend-swatch{ width:16px; height:16px; border-radius:3px; flex:none; border:1px solid var(--line); background:#fff; object-fit:contain; }
 .dts-gis-legend-empty{ margin:4px 0; color:var(--faint); font-size:12px; }
+
+/* ---------- identify popup (task 3.7) ----------
+   A plain positioned div, not a Leaflet popup -- see the comment in
+   gis-tools.js. Anchored above its containerPoint by default, like a
+   normal map pin popup; .is-below flips it under the point when there's
+   not enough room above. */
+.dts-gis-popup{
+  position:absolute; z-index:1300; pointer-events:auto;
+  transform:translate(-50%, calc(-100% - 14px));
+  width:max-content; max-width:min(280px, calc(100% - 20px));
+  background:var(--glass); border:1px solid var(--gold); border-radius:12px;
+  box-shadow:0 10px 30px rgba(0,0,0,.5);
+  padding:10px 30px 10px 12px;
+}
+.dts-gis-popup.is-below{ transform:translate(-50%, 14px); }
+.dts-gis-popup-close{
+  position:absolute; top:6px; right:6px;
+  appearance:none; border:0; background:transparent; color:var(--faint); cursor:pointer;
+  width:22px; height:22px; display:flex; align-items:center; justify-content:center;
+}
+.dts-gis-popup-close svg{ width:13px; height:13px; }
+.dts-gis-popup-close:hover,
+.dts-gis-popup-close:focus{ color:var(--gold-bright); }
+.dts-gis-popup-body{ max-height:240px; overflow-y:auto; }
+.dts-gis-popup-section + .dts-gis-popup-section{ margin-top:10px; padding-top:8px; border-top:1px solid var(--line-soft); }
+.dts-gis-popup-section h4{ margin:0 0 4px; font-size:12px; font-weight:700; color:var(--gold-bright); letter-spacing:.02em; }
+.dts-gis-popup-row{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:1.5px 0; font-size:11.5px; }
+.dts-gis-popup-key{ color:var(--faint); flex:none; }
+.dts-gis-popup-val{ color:var(--ink); text-align:right; }

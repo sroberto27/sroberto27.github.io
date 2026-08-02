@@ -2,6 +2,61 @@
 
 Newest first.
 
+## GIS Phase 3 task 3.7 — identify and popups
+
+Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.7 / `04-SPEC-gis-engine.md` §6. Nothing
+wired into `index.html`/`app.js` yet -- still task 3.12.
+
+- `js/gis/gis-viewer.js`: click handling, gated entirely by `mapDoc.tools.identify`
+  (`false` attaches no listeners and makes no requests at all, not just hides the UI).
+  Two paths, matching §6's split exactly:
+  - **Vector layers** (`esriFeature`/`geojson`, `queryable !== false`): a `click` listener
+    on the built layer itself, resolved instantly from the already-client-side feature --
+    no network round trip. `L.DomEvent.stopPropagation` keeps it from also falling through
+    to the map's background-click handler below.
+  - **`esriDynamic`**: a raster image has nothing to attach a per-feature click to, so a
+    single `map.on("click", …)` handler runs `identifyFeatures` (via the new
+    `DTSGisEsri.identify()`) against every visible+ready+queryable esriDynamic layer in
+    zoom range, in parallel, and combines the results into one event -- §6's "grouped by
+    layer when several hit."
+  - Both paths emit a new `"identify"` event -- `{latlng, containerPoint, hits:[{layerId,
+    sublayerId, properties}]}` -- through the existing `on()`/`emit()` mechanism. This is
+    an *addition* to §5's documented event set (`ready`/`viewchange`/`layerchange`/
+    `tourstep`/`error`), same spirit as extending `DTS_CONFIG` rather than reshaping it,
+    not a change to any existing event's shape.
+  - Fires with `hits: []` on a genuine miss (not silently dropped), so gis-tools.js can
+    dismiss a stale popup on every click, not just on ones that hit something.
+- `js/gis/gis-esri.js`: `identify(def, map, latlng)` wraps `L.esri.identifyFeatures`, but
+  reads the task's raw third callback argument (the untouched ArcGIS JSON) instead of the
+  GeoJSON conversion, because each result carries its own true `layerId` (which sublayer
+  actually matched) -- needed since one `esriDynamic` layer can have several sublayers
+  with different schemas. `fetchFieldAliases(url, sublayerId)` fetches and caches
+  `<service>/<sublayerId>?f=pjson` for the popup's "no `popup.fields` configured" fallback
+  (§6: "show all non-system fields with their ArcGIS aliases") -- the same per-service
+  caching idea the legend fetch in gis-tools.js already uses, and it works unchanged for
+  both `esriDynamic` (using the sublayer id the identify response reported) and
+  `esriFeature` (using the layer's own static `layerId`).
+- `js/gis/gis-tools.js`: builds and positions the popup itself -- **a plain absolutely-
+  positioned div, not a Leaflet popup object.** It only needs `containerPoint` (already
+  relative to the map container this module owns the overlay for) and never needs the map
+  or `L`, keeping identify on the same "no Leaflet objects here" footing as the rest of
+  the file. Trade-off, deliberate: it doesn't track the map on pan/zoom -- it closes on
+  the next `viewchange` instead of repositioning, which is simpler and matches how most
+  identify popups behave anyway. Also: system-field filtering (`OBJECTID`/`Shape*`/
+  `GlobalID` pattern), `popup.title`'s `{field}` template, `format:"number"` + `suffix`
+  value formatting, grouped-by-layer sections, close button, Escape-to-close, and focus
+  move-in/restore-on-close per §10.
+- `css/15-gis.css`: popup styling (dark glass, gold hairline, gold-bright section
+  headers), continuing the tokens from 3.5/3.6.
+- Verified live in Chrome against real Iberia Parish data: a real `esriFeature` click
+  (Iberia Parish boundary attributes, field aliases fetched with no `popup.fields`
+  configured), a real `esriDynamic` background click (FEMA BFE/floodway attributes,
+  multiple fields, scrolling body), a `geojson` layer with `popup.fields` configured
+  (confirmed the `{name}` title template and `format:"number"`+`suffix` -- `"128.4 ac"`)
+  stacked correctly above the boundary layer by `zIndex`, the close button, Escape,
+  pan-to-close, and that focus lands on the close button on open. Console clean throughout.
+  Test harness and geojson fixture deleted before committing.
+
 ## GIS Phase 3 task 3.6 — layer panel, legend, basemap switcher
 
 Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.6 / `04-SPEC-gis-engine.md` §6. Nothing

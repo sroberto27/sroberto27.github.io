@@ -329,6 +329,11 @@
       emit("layerchange", { id: id, status: "unavailable" });
     }
 
+    /* ---- identify (task 3.7). Gated at the source, not just in
+       gis-tools.js's UI, so a map with tools.identify:false attaches no
+       click listeners and makes no identify requests at all. */
+    const identifyEnabled = !(mapDoc.tools && mapDoc.tools.identify === false);
+
     function loadLayer(id) {
       const entry = layers[id];
       entry.status = "loading";
@@ -342,6 +347,26 @@
         if (typeof entry.leaflet.on === "function") {
           entry.leaflet.on("requesterror", function (e) { markUnavailable(id, e.message || "request failed"); });
         }
+        // Vector layers (esriFeature/geojson) already have the clicked
+        // feature client-side -- identify resolves it locally with no
+        // network round trip. esriDynamic is a raster image with nothing
+        // to attach a click to; that path is the map-level handler below.
+        if (identifyEnabled && entry.def.queryable !== false && typeof entry.leaflet.on === "function" &&
+          (entry.def.sourceType === "esriFeature" || entry.def.sourceType === "geojson")) {
+          entry.leaflet.on("click", function (e) {
+            L.DomEvent.stopPropagation(e);
+            const feature = (e.layer && e.layer.feature) || (e.sourceTarget && e.sourceTarget.feature);
+            emit("identify", {
+              latlng: [e.latlng.lat, e.latlng.lng],
+              containerPoint: [e.containerPoint.x, e.containerPoint.y],
+              hits: [{
+                layerId: id,
+                sublayerId: entry.def.sourceType === "esriFeature" ? entry.def.layerId : null,
+                properties: (feature && feature.properties) || {}
+              }]
+            });
+          });
+        }
         syncLayerToMap(entry);
         if (boundaryCfg && boundaryCfg.showMask !== false && id === boundaryCfg.layerId) {
           buildParishMask(entry.leaflet);
@@ -353,6 +378,40 @@
     }
 
     Object.keys(layers).forEach(loadLayer);
+
+    /* ---- identify, continued: esriDynamic is a raster image, so a click
+       on it never reaches a Leaflet layer object -- it always falls through
+       to the map itself. Every visible+ready+queryable esriDynamic layer in
+       zoom range gets queried in parallel and the results are combined into
+       one "grouped by layer" identify event (§6), same event vector-layer
+       clicks emit above. Fires with an empty hits[] on a genuine miss so
+       gis-tools.js can dismiss a stale popup on every click, not just hits. */
+    if (identifyEnabled) {
+      map.on("click", function (e) {
+        const targets = Object.keys(layers).filter(function (id) {
+          const entry = layers[id];
+          return entry.status === "ready" && entry.visible && entry.def.queryable !== false &&
+            entry.def.sourceType === "esriDynamic" && isInZoomRange(entry.def);
+        });
+        if (!targets.length) {
+          emit("identify", { latlng: [e.latlng.lat, e.latlng.lng], containerPoint: [e.containerPoint.x, e.containerPoint.y], hits: [] });
+          return;
+        }
+        Promise.all(targets.map(function (id) {
+          return requireEsri().identify(layers[id].def, map, e.latlng).then(function (results) {
+            return results.map(function (r) {
+              return { layerId: id, sublayerId: r.sublayerId, sublayerName: r.sublayerName, properties: r.properties };
+            });
+          }).catch(function (err) {
+            console.warn('[gis] identify failed for "' + id + '":', err);
+            return [];
+          });
+        })).then(function (grouped) {
+          const hits = [].concat.apply([], grouped);
+          emit("identify", { latlng: [e.latlng.lat, e.latlng.lng], containerPoint: [e.containerPoint.x, e.containerPoint.y], hits: hits });
+        });
+      });
+    }
 
     function setLayerVisible(id, visible) {
       const entry = layers[id];

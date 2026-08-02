@@ -8,8 +8,11 @@
    (client-side vector, with a query() that carries the parish
    envelope per §8 defence 2). esriImage is trivial enough to
    build inline in gis-viewer.js -- shared by both basemaps and
-   data layers there. Legend/identify/pagination helpers land
-   with the tasks that need them (layer panel, identify).
+   data layers there. Also identifyFeatures + field-alias lookup
+   (task 3.7, used by gis-viewer.js's click handling and
+   gis-tools.js's popup content, respectively). The legend fetch
+   lives directly in gis-tools.js instead -- it's a plain fetch,
+   nothing esri-leaflet-specific to wrap.
    ============================================================ */
 (function () {
   "use strict";
@@ -93,5 +96,54 @@
     return { leaflet: layer, query: query };
   }
 
-  window.DTSGisEsri = { buildDynamic: buildDynamic, buildFeature: buildFeature };
+  /* ---- identify (task 3.7) -- esriDynamic only; esriFeature/geojson clicks
+     resolve locally in gis-viewer.js since the feature is already client-side.
+     Uses the task's raw third callback argument (the untouched ArcGIS JSON),
+     not the GeoJSON conversion, because each result carries its own true
+     sublayerId -- needed to fetch that sublayer's field aliases below, and
+     an esriDynamic layer can have several sublayers with different schemas. ---- */
+  function identify(def, map, latlng) {
+    return new Promise(function (resolve) {
+      L.esri.identifyFeatures({ url: def.url })
+        .on(map)
+        .at(latlng)
+        .layers("visible:" + (Array.isArray(def.layers) && def.layers.length ? def.layers.join(",") : "all"))
+        .tolerance(6)
+        .run(function (error, featureCollection, rawResponse) {
+          if (error || !rawResponse || !Array.isArray(rawResponse.results)) { resolve([]); return; }
+          resolve(rawResponse.results.map(function (r) {
+            return { sublayerId: r.layerId, sublayerName: r.layerName, properties: r.attributes || {} };
+          }));
+        });
+    });
+  }
+
+  /* ---- field aliases for the popup "no popup.fields configured" fallback
+     (04-SPEC §6: "show all non-system fields with their ArcGIS aliases").
+     Cached per url+sublayerId -- the layer panel's legend fetch uses the
+     same per-service caching idea in gis-tools.js. ---- */
+  const fieldsCache = {};
+  function fetchFieldAliases(url, sublayerId) {
+    const key = url + "|" + sublayerId;
+    if (fieldsCache[key]) return fieldsCache[key];
+    fieldsCache[key] = fetch(url.replace(/\/$/, "") + "/" + sublayerId + "?f=pjson").then(function (res) {
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    }).then(function (data) {
+      const aliases = {};
+      (data.fields || []).forEach(function (f) { aliases[f.name] = f.alias || f.name; });
+      return aliases;
+    }).catch(function (err) {
+      console.warn("[gis] field alias fetch failed for " + key + ":", err);
+      return {};
+    });
+    return fieldsCache[key];
+  }
+
+  window.DTSGisEsri = {
+    buildDynamic: buildDynamic,
+    buildFeature: buildFeature,
+    identify: identify,
+    fetchFieldAliases: fetchFieldAliases
+  };
 })();
