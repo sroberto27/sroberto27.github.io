@@ -370,6 +370,33 @@
       emit("layerchange", { id: id, opacity: entry.opacity });
     }
 
+    /* ---- layer bounds: not part of the §5 public API (no Leaflet objects
+       cross that boundary), but gis-tools.js's zoom-to-extent button needs
+       real, already-reprojected bounds and there's no reliable way to get
+       those from ArcGIS service metadata alone (extents come back in the
+       service's native SR, which for Iberia's servers isn't WGS84). Returns
+       a Promise of [[south,west],[north,east]] -- a serialisable array, not
+       a Leaflet object -- or null when there's no answer.
+
+       Confirmed live against the vendored esri-leaflet 3.0.19: FeatureLayer
+       and DynamicMapLayer implement no getBounds() at all (typeof is
+       "undefined", not sync or async), so this only ever resolves non-null
+       for the geojson sourceType's plain L.geoJSON layer, which has the
+       standard synchronous Leaflet getBounds(). Wrapped in a resolved
+       Promise regardless, so this seam has one stable async contract no
+       matter which sourceType built the layer. */
+    function getLayerBounds(id) {
+      const entry = layers[id];
+      if (!entry || !entry.leaflet || typeof entry.leaflet.getBounds !== "function") return Promise.resolve(null);
+      try {
+        const b = entry.leaflet.getBounds();
+        if (!b || (typeof b.isValid === "function" && !b.isValid())) return Promise.resolve(null);
+        return Promise.resolve([[b.getSouth(), b.getWest()], [b.getNorth(), b.getEast()]]);
+      } catch (err) {
+        return Promise.resolve(null);
+      }
+    }
+
     /* ---- highlight ---- */
     const highlightGroup = L.layerGroup().addTo(map);
     function clearHighlight() { highlightGroup.clearLayers(); }
@@ -541,7 +568,9 @@
       exitTour: exitTour,
       getState: getState,
       applyState: applyState,
-      on: on
+      on: on,
+      // Internal seam for js/gis/gis-tools.js only -- not §5 public API.
+      _getLayerBounds: getLayerBounds
     };
 
     if (opts.stateParam) {

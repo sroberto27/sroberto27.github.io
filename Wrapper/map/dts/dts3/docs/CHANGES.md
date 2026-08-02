@@ -2,6 +2,71 @@
 
 Newest first.
 
+## GIS Phase 3 task 3.6 — layer panel, legend, basemap switcher
+
+Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.6 / `04-SPEC-gis-engine.md` §6. Nothing
+wired into `index.html`/`app.js` yet -- still task 3.12.
+
+- `js/gis/gis-tools.js` (new) -- `window.DTSGisTools.mount(containerEl, mapDoc, instance,
+  opts)`: a toolbar (top-right) with toggleable Layers/Legend panels and an inline
+  basemap `<select>`, gated by `mapDoc.tools.layerPanel` / `.legend` / `.basemapSwitcher`.
+  Desktop: docked panels. Mobile (`max-width:760px`, matching the site's existing
+  breakpoint): bottom sheets.
+  - **Layer panel**: grouped by `mapDoc.groups` (open/closed per the doc), per-group
+    show-all/hide-all, per-layer checkbox + expandable detail (description, attribution,
+    updated date, opacity slider, zoom-to-extent). A layer whose `status` goes
+    `"unavailable"` shows "Unavailable right now" in place of controls; a layer outside
+    its `minZoom`/`maxZoom` greys out with "Zoom in to see this layer" -- both driven
+    live off `viewchange`/`layerchange` events, not polled.
+  - **Legend**: rebuilt from currently-visible layers only. `legend.mode:"custom"` renders
+    `legendItems` directly; `"auto"` fetches `<serviceUrl>/legend?f=pjson` for esri layers
+    (cached per URL) and filters to the layer's own sublayer id(s), falling back to a
+    single swatch from `style.color` for geojson/tileXYZ/wms or a failed fetch.
+  - **Basemap switcher**: a native `<select>` (keyboard/mobile-friendly by construction,
+    no custom listbox needed) kept in sync via `getState()` at mount and the `layerchange`
+    `{type:"basemap"}` event afterward.
+  - State model is seeded from `instance.getState()` + the static `mapDoc` defaults and
+    kept current purely off `viewchange`/`layerchange` events -- gis-tools.js never reads
+    a Leaflet object or reaches into gis-viewer.js's closure.
+- `js/gis/gis-viewer.js`: adds one narrow, deliberately-not-public method,
+  `instance._getLayerBounds(id)`, for the zoom-to-extent button -- returns a `Promise` of
+  plain `[[south,west],[north,east]]` or `null`. Not part of §5: the tour/CMS boundary
+  stays Leaflet-object-free, but zoom-to-extent has no honest answer through ArcGIS
+  service metadata alone (extents come back in the service's native SR -- State Plane for
+  both Iberia servers per `data/gis/sources.json`, not WGS84, and reprojecting by hand is
+  out of scope).
+- **Real bug found only by live testing, now fixed:** a first version of
+  `_getLayerBounds` assumed esri-leaflet's `FeatureLayer.getBounds()` was async
+  (`callback(err, bounds)`, querying the service for the real full extent). Live testing
+  showed otherwise: the vendored esri-leaflet 3.0.19 `FeatureLayer` and `DynamicMapLayer`
+  implement no `getBounds()` at all (`typeof` is `"undefined"`, not a function of either
+  arity). Zoom-to-extent is therefore only ever available for the `geojson` sourceType's
+  plain `L.geoJSON` layer, which has the ordinary synchronous Leaflet `getBounds()` --
+  confirmed by adding a temporary local geojson fixture layer and watching the map
+  actually fly to its bounds. `_getLayerBounds` still returns a `Promise` (always
+  immediately resolved) so this seam has one stable async contract regardless of which
+  sourceType built the layer, rather than a sync/async split only one branch of which is
+  ever real. For esri layers the button now honestly reports "Extent isn't available for
+  this layer yet" rather than silently doing nothing.
+- `getState()`'s `l` map only lists layers that differ from their `mapDoc` default (per
+  `04-SPEC §7`), so gis-tools.js seeds its own visible/opacity state from
+  `mapDoc.layers[i]`'s defaults whenever a layer id is absent from `getState().l`, rather
+  than treating absence as "unknown."
+- `css/15-gis.css`: extended with the tool-panel chrome (toolbar, panels, groups, layer
+  rows, legend rows) styled to the same tokens as task 3.5's Leaflet-chrome pass. These
+  are the project's own elements, not Leaflet's, so (unlike 3.5) there's no
+  injection-order specificity race to guard against -- plain `.dts-gis-tools`-prefixed
+  selectors are enough here.
+- Verified live in Chrome against a temporary, not-committed test harness (same pattern as
+  3.5) mounting real Iberia Parish boundary + hydrography `esriFeature` layers, a
+  deliberately-nonexistent `esriFeature` URL (confirmed it degrades to "Unavailable right
+  now" without affecting the other layers), and a local geojson fixture: group
+  expand/collapse, per-layer checkbox/opacity/zoom-to-extent, zoom-range greying, legend
+  swatches (both the real ArcGIS `data:` image swatches and the style-color fallback),
+  live basemap switching, the `max-width:760px` mobile bottom sheet, keyboard reachability
+  with visible gold focus rings, and a clean console. Harness and fixture deleted before
+  committing.
+
 ## GIS Phase 3 task 3.5 — map chrome
 
 Per `docs/plans/gis/09-BUILD-PLAN.md` task 3.5. CSS-only; nothing new is wired into
