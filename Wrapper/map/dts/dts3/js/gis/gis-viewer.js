@@ -1225,6 +1225,13 @@
     }
     function tourNext() { if (tourState.tour) applyStep(tourState.tour.index + 1); }
     function tourPrev() { if (tourState.tour) applyStep(tourState.tour.index - 1); }
+    // Phase 4 (gis-tour.js): the progress dots' "jump to step" and the
+    // off-script "back to step" pill both need an arbitrary-index jump,
+    // which tourNext/tourPrev's relative shape can't express. A genuine,
+    // additive extension of §5 -- applyStep() already does exactly this
+    // internally, this just exposes it under its own name rather than
+    // overloading tourNext/tourPrev with an optional index argument.
+    function tourGoTo(index) { if (tourState.tour) applyStep(index); }
     function exitTour() {
       if (!tourState.tour) return;
       clearHighlight();
@@ -1336,6 +1343,7 @@
       startTour: startTour,
       tourNext: tourNext,
       tourPrev: tourPrev,
+      tourGoTo: tourGoTo,
       exitTour: exitTour,
       getState: getState,
       applyState: applyState,

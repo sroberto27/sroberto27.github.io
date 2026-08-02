@@ -54,7 +54,8 @@
     play: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>',
     pause: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="4.5" width="4" height="15" fill="currentColor"/><rect x="14" y="4.5" width="4" height="15" fill="currentColor"/></svg>',
     print: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9V4h12v5M6 18H4a1 1 0 0 1-1-1v-6a1 1 0 0 1 1-1h16a1 1 0 0 1 1 1v6a1 1 0 0 1-1 1h-2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><rect x="6" y="14" width="12" height="6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
-    share: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="12" r="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="18" cy="19" r="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8.1 10.7l7.7-4.3M8.1 13.3l7.7 4.3" stroke="currentColor" stroke-width="1.6"/></svg>'
+    share: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="18" cy="5" r="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="6" cy="12" r="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="18" cy="19" r="2.4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8.1 10.7l7.7-4.3M8.1 13.3l7.7 4.3" stroke="currentColor" stroke-width="1.6"/></svg>',
+    tour: '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M15 8l-2 5-5 2 2-5 5-2z" fill="currentColor" stroke="none"/></svg>'
   };
 
   function mount(containerEl, mapDoc, instance, opts) {
@@ -1776,6 +1777,62 @@
       registerPanel("share", shareBtn, sharePanel, function () { shareInput.value = buildShareUrl(); });
     }
 
+    /* ================= guided tours (Phase 4, 05-SPEC) =================
+       Mounts js/gis/gis-tour.js once (the presentational player) and adds
+       the "Guided tours" toolbar button that starts/exits it, per 05-SPEC
+       §2's launcher: "a Guided tours button sits in the map toolbar." The
+       player is only mounted at all when the map document actually
+       references a tour and the caller (mountGis() in js/app.js) actually
+       resolved it -- opts.tours is the same array js/app.js already builds
+       for DTSGis.mount() itself, not a second, separate lookup. */
+    let tourPlayer = null;
+    const toursAvailable = Array.isArray(opts.tours) ? opts.tours : [];
+    if (Array.isArray(mapDoc.tours) && mapDoc.tours.length && toursAvailable.length && window.DTSGisTour) {
+      const tourBtn = el("button", { class: "dts-gis-toolbtn", type: "button", "aria-label": "Guided tours", "aria-pressed": "false", html: ICONS.tour });
+      toolbar.appendChild(tourBtn);
+
+      tourPlayer = window.DTSGisTour.mount(containerEl, mapDoc, instance, {
+        tours: toursAvailable,
+        onAction: function (action) {
+          if (action === "openLayerPanel" && panels.layers) openPanelByName("layers");
+          else if (action === "openAttributeTable" && panels.table) openPanelByName("table");
+        },
+        onExit: function () { tourBtn.setAttribute("aria-pressed", "false"); }
+      });
+      if (tourPlayer.isActive()) tourBtn.setAttribute("aria-pressed", "true");
+
+      tourBtn.addEventListener("click", function () {
+        if (tourPlayer.isActive()) { instance.exitTour(); return; }
+        tourBtn.setAttribute("aria-pressed", "true");
+        tourPlayer.startTour(mapDoc.defaultTour || mapDoc.tours[0]);
+      });
+
+      // §2: "opens automatically on first mount once per session
+      // (sessionStorage, keyed by map id) -- never again on the same
+      // visit, and never on a deep link that already carries map state."
+      // opts.hasStateParam is set by js/app.js's mountGis() from the same
+      // `?...&map=` read that feeds DTSGis.mount()'s own stateParam --
+      // the one place that already knows whether this mount is a plain
+      // visit or a restored deep link.
+      // Skip entirely if a tour is already running -- either a share-link
+      // restore (opts.hasStateParam, checked below) or an experience-level
+      // opts.tourId (js/app.js's target.tourId) that started before this
+      // button even existed; gis-tour.js's own mount-time sync already put
+      // that tour's card on screen, so autostart must not stomp on it with
+      // a second, competing startTour() call.
+      const defaultTourDoc = toursAvailable.find(function (t) { return t.id === mapDoc.defaultTour; });
+      if (mapDoc.defaultTour && defaultTourDoc && defaultTourDoc.autoStart !== false && !opts.hasStateParam && !tourPlayer.isActive()) {
+        const key = "dtsGisTourAutostart:" + (mapDoc.id || "map");
+        let alreadyShown = false;
+        try { alreadyShown = sessionStorage.getItem(key) === "1"; } catch (_e) { /* storage unavailable -- fail open to "show once" behaviour of a fresh session each time, not a hard error */ }
+        if (!alreadyShown) {
+          try { sessionStorage.setItem(key, "1"); } catch (_e) { /* ignore */ }
+          tourBtn.setAttribute("aria-pressed", "true");
+          tourPlayer.startTour(mapDoc.defaultTour);
+        }
+      }
+    }
+
     /* ================= keep state in sync ================= */
     offListeners.push(instance.on("viewchange", function (detail) {
       state.zoom = detail.zoom;
@@ -1807,6 +1864,7 @@
       offListeners.forEach(function (off) { off(); });
       closePanel();
       closePopup();
+      if (tourPlayer) tourPlayer.destroy();
       host.remove();
     }
 

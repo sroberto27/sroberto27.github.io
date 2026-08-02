@@ -579,3 +579,93 @@
 .dts-gis-print-info p{ margin:0 0 4px; }
 .dts-gis-print-legend{ display:flex; flex-wrap:wrap; gap:6px 12px; font-size:10.5px; }
 .dts-gis-print-legend .sw{ display:inline-block; width:9px; height:9px; margin-right:4px; vertical-align:middle; }
+
+/* ============================================================
+   Guided tours (Phase 4) — js/gis/gis-tour.js.
+   Per docs/plans/gis/05-SPEC-guided-tours.md §2: a card docked over the
+   map, never a modal (the map stays live and visible underneath).
+   Position is per the tour document's own `position` field on desktop
+   ("left" default here, "right" the alternate); bottom sheet is forced
+   on mobile regardless, same breakpoint as every other .dts-gis-panel.
+   ============================================================ */
+.dts-gis-tour{ position:absolute; inset:0; pointer-events:none; z-index:1210; }
+
+.dts-gis-tour-sr{
+  position:absolute; width:1px; height:1px; overflow:hidden;
+  clip:rect(0 0 0 0); clip-path:inset(50%); white-space:nowrap;
+}
+.dts-gis-tour-toast{ top:auto; bottom:14px; left:50%; right:auto; transform:translateX(-50%); }
+
+.dts-gis-tour-card{
+  position:absolute; top:14px; left:14px; bottom:14px;
+  width:min(300px, calc(100% - 28px));
+  background:var(--glass); border:1px solid var(--line); border-left:2px solid var(--gold);
+  border-radius:12px; box-shadow:0 10px 30px rgba(0,0,0,.5);
+  display:flex; flex-direction:column; overflow:hidden;
+  pointer-events:auto; z-index:1250;
+}
+.dts-gis-tour-card[hidden]{ display:none; }
+.dts-gis-tour-card:not(.dts-gis-no-motion){ transition:transform .25s ease, opacity .25s ease; }
+
+.dts-gis-tour-head{
+  display:flex; align-items:center; gap:6px;
+  padding:10px 8px 10px 14px; border-bottom:1px solid var(--line-soft); flex:0 0 auto;
+}
+.dts-gis-tour-head-label{
+  flex:1 1 auto; font:700 11px var(--sans); letter-spacing:.06em; text-transform:uppercase; color:var(--gold-bright);
+}
+.dts-gis-tour-collapse{
+  appearance:none; border:0; background:transparent; color:var(--faint); cursor:pointer;
+  width:26px; height:26px; display:none; align-items:center; justify-content:center; flex:none;
+}
+.dts-gis-tour-collapse svg{ width:14px; height:14px; transition:transform .2s ease; }
+.dts-gis-tour-card.is-collapsed .dts-gis-tour-collapse svg{ transform:rotate(180deg); }
+
+.dts-gis-tour-body-wrap{ padding:4px 14px 14px; overflow-y:auto; flex:1 1 auto; }
+.dts-gis-tour-card.is-collapsed .dts-gis-tour-body-wrap{ display:none; }
+.dts-gis-tour-title{ margin:6px 0 8px; font-size:15px; font-weight:700; color:var(--ink); }
+.dts-gis-tour-body{ margin:0 0 10px; font-size:12.5px; line-height:1.5; color:var(--muted); }
+.dts-gis-tour-media{ margin:0 0 10px; border-radius:8px; overflow:hidden; }
+.dts-gis-tour-media[hidden]{ display:none; }
+.dts-gis-tour-media-el{ width:100%; display:block; }
+
+.dts-gis-tour-pill{
+  appearance:none; display:block; width:100%; margin:0 0 10px;
+  background:var(--bg-3); border:1px solid var(--gold); border-radius:8px;
+  color:var(--gold-bright); font:700 11.5px var(--sans); padding:7px 10px; cursor:pointer;
+}
+.dts-gis-tour-pill[hidden]{ display:none; }
+.dts-gis-tour-pill:hover,
+.dts-gis-tour-pill:focus{ background:var(--gold); color:#1a1305; }
+
+.dts-gis-tour-nav{ margin-top:4px; }
+.dts-gis-tour-dots{ display:flex; align-items:center; gap:6px; margin-bottom:10px; flex-wrap:wrap; }
+.dts-gis-tour-dots[hidden]{ display:none; }
+.dts-gis-tour-dot{
+  appearance:none; width:9px; height:9px; border-radius:50%; padding:0; cursor:pointer;
+  background:var(--line); border:1px solid var(--line);
+}
+.dts-gis-tour-dot.is-active{ background:var(--gold); border-color:var(--gold); }
+.dts-gis-tour-dot:hover,
+.dts-gis-tour-dot:focus-visible{ border-color:var(--gold-bright); }
+
+.dts-gis-tour-nav-buttons{ display:flex; gap:8px; }
+.dts-gis-tour-nav-buttons .dts-gis-btn-primary,
+.dts-gis-tour-nav-buttons .dts-gis-btn-secondary{ flex:1 1 auto; }
+
+.dts-gis-tour-card .dts-gis-btn-primary[disabled],
+.dts-gis-tour-card .dts-gis-btn-secondary[disabled]{ opacity:.4; cursor:default; }
+
+.dts-gis-tour-card.dts-gis-tour-outro .dts-gis-tour-title{ color:var(--gold-bright); }
+
+@media (max-width:760px){
+  .dts-gis-tour-card{
+    top:auto; left:0; right:0; bottom:0; width:auto; height:auto; max-height:60%;
+    border-radius:14px 14px 0 0; border-left:0; border-right:0; border-top:2px solid var(--gold); border-bottom:0;
+  }
+  .dts-gis-tour-collapse{ display:flex; }
+}
+
+@media (prefers-reduced-motion: reduce){
+  .dts-gis-tour-card{ transition:none !important; }
+}

@@ -22,6 +22,18 @@
   const $  = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
+  // Real bug, found live testing Phase 4's deep-link restore (05-SPEC
+  // criterion 4, `?...&map=<state>`): openExample()'s own syncURL() call
+  // rewrites the address bar from category/project/exp alone (buildStateURL()
+  // never carries `map`), synchronously, on the same call that opens the
+  // project -- before mountGis()'s lazy-loaded engine ever gets an async
+  // turn to read location.search itself. By the time it did, the param was
+  // already gone. Captured once here, at parse time, before any syncURL()
+  // call in this file can run.
+  let pendingGisStateParam = (function () {
+    try { return new URLSearchParams(location.search).get("map"); } catch (_e) { return null; }
+  })();
+
   /* ---------------- App state ---------------- */
   const state = {
     view: "home",          // "home" | "category"
@@ -935,7 +947,7 @@
   let gisEnginePromise = null;
   function loadGisEngine() {
     if (gisEnginePromise) return gisEnginePromise;
-    const files = ["js/gis/gis-loader.js", "js/gis/gis-viewer.js", "js/gis/gis-esri.js", "js/gis/gis-tools.js"];
+    const files = ["js/gis/gis-loader.js", "js/gis/gis-viewer.js", "js/gis/gis-esri.js", "js/gis/gis-tools.js", "js/gis/gis-tour.js"];
     gisEnginePromise = files.reduce((p, src) => p.then(() => new Promise((resolve, reject) => {
       if (document.querySelector('script[src="' + src + '"]')) { resolve(); return; }
       const s = document.createElement("script");
@@ -1017,10 +1029,26 @@
       pane.className = "example-gis-pane";
       pane.id = "exampleGisPane-" + mapId;
       slot.appendChild(pane);
+      // §7/05-SPEC criterion 4: a `?...&map=<state>` link (built by the
+      // share tool's own buildShareUrl()) was never actually read back on
+      // load anywhere in the app -- gis-viewer.js's decodeStateParam/
+      // applyState() has supported this since Phase 3a, but nothing wired
+      // the URL to opts.stateParam. Reads the value captured at parse time
+      // (see pendingGisStateParam above), not a fresh location.search read
+      // here -- by the time this async callback runs, openExample()'s own
+      // syncURL() has already rewritten the address bar without it. Consumed
+      // exactly once, for whichever GIS map is the first to actually mount
+      // this session (a deep link's category/project/exp params always
+      // route straight to it) -- a later map switch shouldn't keep
+      // replaying a stale deep link.
+      const stateParam = pendingGisStateParam;
+      pendingGisStateParam = null;
+      const tours = toursForMap(mapDoc);
       return DTSGis.mount(pane, mapDoc, {
-        tours: toursForMap(mapDoc),
-        tourId: target.tourId || null,
-        initialView: target.initialView || null
+        tours: tours,
+        tourId: stateParam ? null : (target.tourId || null),
+        initialView: target.initialView || null,
+        stateParam: stateParam || null
       }).then((instance) => {
         if (activeGisMapId !== mapId) {
           // Same race, one async hop later — tear down rather than leave
@@ -1029,7 +1057,7 @@
           pane.remove();
           return;
         }
-        const toolsInstance = window.DTSGisTools ? DTSGisTools.mount(pane, mapDoc, instance, {}) : null;
+        const toolsInstance = window.DTSGisTools ? DTSGisTools.mount(pane, mapDoc, instance, { tours: tours, hasStateParam: !!stateParam }) : null;
         gisCache.set(mapId, { pane, instance, toolsInstance, lastUsed: Date.now() });
         evictGisIfOverCap();
         if (loading) loading.classList.add("is-hidden");
