@@ -109,3 +109,30 @@ Deploying = pushing files. There is nothing to build.
 - If something the plan didn't anticipate comes up, stop and say so rather than
   improvising a change to the content schema or the Treedis bridge.
 - Append a short entry to `docs/CHANGES.md` after each phase.
+
+### Verification approach (changed after the GIS Phase 4 gate)
+
+Live, agent-driven browser testing (Claude-in-Chrome) burned a lot of tokens for
+comparatively little signal in Phase 4 and is no longer the default. Verify by other
+means first, in this order:
+
+1. Read the code. Trace the actual call path a claim depends on — don't infer behavior
+   from a function's name or a comment; open it and follow it.
+2. Where a claim depends on a real external service or file (an ArcGIS endpoint, a
+   vendored library's actual API, a real data file), check it directly — `curl` the
+   service, decode a real response, `node --check`/`node -e` a small script, grep the
+   vendored source for the real method name. This is cheap and gives a real answer,
+   unlike guessing from documentation.
+3. Only reach for live browser verification when a claim is genuinely undecidable by
+   1-2 — real DOM/rendering/interaction behavior, timing, or something that only shows
+   up on screen. Even then, prefer asking the human to check it manually over spending
+   an extended Claude-in-Chrome session, unless they've asked for the opposite.
+4. At the end of a phase, instead of (or in addition to, if 3 already happened for a
+   few specific things) an agent-driven browser pass, produce a manual testing
+   document in the same shape as `docs/plans/gis/GIS-FULL-SYSTEM-TESTING.md`
+   (unchecked boxes, a Comments line per test, Pass/Fail/Not-tested) for the human to
+   run through themselves and report back. Don't mark anything passed on their behalf.
+
+Always be explicit in your own reporting about which claims are "confirmed by reading
+the code," "confirmed against the real service/data," and "not yet confirmed live" —
+don't blur those together as if they carry the same weight.
