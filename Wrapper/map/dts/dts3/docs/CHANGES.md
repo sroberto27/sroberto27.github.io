@@ -2,6 +2,174 @@
 
 Newest first.
 
+## GIS Phase 5 — CMS
+
+Per `docs/plans/gis/09-BUILD-PLAN.md` Phase 5 / `06-SPEC-cms-admin.md`, tasks 5.1–5.9.
+Confirmed before starting that Phase 4 was actually gated (the "GIS Phase 4 gate —
+testing fixes" entry below, plus the human's own filled-in
+`GIS-FULL-SYSTEM-TESTING.md`, both present) rather than taking it on faith. All of
+`js/admin.js`'s new GIS editors edit `window.DTS_CONTENT.docs` in place, same
+draft → preview → export → commit model as every other document type in the board.
+
+- **5.1** New field builders in `js/admin.js`, alongside the existing `fList`:
+  `fNumber`, `fRange` (slider + live value), `fListOrdered` (`fList` + ▲▼ reorder),
+  `fKeyValue`, `fDocPicker`. `fListOrdered` also takes an optional trailing `opts`
+  (`swapKeys`, `beforeRemove`, `onChange`) — an additive extension beyond §1's literal
+  signature, needed for layer draw-order swapping and the group-delete reassignment
+  guard; every other field builder in this file already ends in an optional `opts`,
+  so this follows the file's own convention rather than departing from it.
+- **5.2** `experiencesEditor()` replaces `mediaEditor()` in `editProject()`. The
+  legacy-migration rule (`media` → `experiences[0]`, only on the first real edit) is
+  implemented via a new one-shot `preDirtyHook`, fired from inside the shared
+  `markDirty()` — every mutating field builder already funnels through it, so this
+  is the one choke point that can catch "the very next real edit" regardless of
+  which field it comes from. `select()` clears the hook on every pane switch so a
+  stale hook from a previously-viewed project can never fire against the wrong
+  document. **Confirmed directly, not just by reading the code:** a small Node
+  script re-derived this same detection/synthesis logic against all 16 real
+  `data/projects/*.json` legacy documents and re-stringified each one unedited —
+  byte-identical to the file on disk in every case (the few that weren't identical
+  differ only by pre-existing CRLF line endings on those specific files, unrelated
+  to this change and already true of `exportData()`'s existing `JSON.parse`/
+  `stringify` round trip before this phase).
+- **5.3** GIS nav group (`gisMapFiles()`/`gisTourFiles()`/`gisSourcesFile()`,
+  `addGisMap()`/`deleteGisMap()`/`addGisTour()`/`deleteGisTour()`), following
+  `addProject()`/`deleteProject()`'s exact pattern — maps, tours and `sources.json`
+  all share one manifest group (`data/manifest.json`'s `gis` array), so new entries
+  push into that same array. Delete guards remove (not just warn about) referencing
+  project experiences and attached tours, named in the confirm dialog, mirroring how
+  `deleteProject()` already prunes sector cards. **Deliberate simplification from
+  06-SPEC §3's nav mockup:** no separate "Layers" nav entry (it's a section within
+  the map's own single-page editor, same pattern this file already uses for a
+  project's "Cards" section) and no "Guided tours" sub-heading label between a map
+  and its tours in the nav — tours are listed directly, sub-indented, under their
+  map. Documented here rather than silently deviating.
+- **5.4** Map editor (`editGisMap()`): Map/Default view/Parish boundary/Basemaps/
+  Layer groups/Layers/Tools/Bookmarks/Guided tours, all as sections in one scrolling
+  pane next to the live preview (same one-pane-many-sections shape `editProject()`
+  already uses). `groupsEditor()`'s delete guard prompts (via `prompt()`, same
+  mechanism `addProject()`/`addGisMap()` already use for text input) for which
+  remaining group a deleted group's layers should move to, and actually reassigns
+  them — not just a warning. `basemapsEditor()` blocks removing the last basemap.
+- **5.5** Layer editor (`layerEditor()`), the largest single piece. **Test
+  connection** fetches `<serviceUrl>?f=json` and reports the real service name,
+  sublayer count and spatial reference; a CORS-blocked or unreachable service gets a
+  plain-language message suggesting `esriDynamic` instead — confirmed live this
+  session via a headless harness pointed at the real `maps.iberiagov.net` boundary
+  service through a stubbed-offline `fetch`, producing exactly this message rather
+  than an uncaught rejection. **Load fields from service** fetches
+  `<url>/<sublayer>?f=pjson` and populates `popup.fields` from real field
+  aliases, matching the exact request shape `js/gis/gis-esri.js`'s own
+  `fetchFieldAliases()` already uses (read directly, not guessed) — skips
+  `OBJECTID`/`FID`/`Shape`/`GlobalID`-prefixed fields, a small deliberate
+  narrowing beyond 04-SPEC's literal "show all fields" wording. **Real bug caught
+  by a direct data check, fixed before this ever shipped:** the layer's `sourceRef`
+  field was first wired as a plain `fDocPicker(..., "gisSources")`, which filters
+  `docs` by `_type` — but `sourceRef` values (e.g. `iberia-parish-boundary`,
+  `cpra-master-plan-2023`) are `sourceId`s *inside* `data/gis/sources.json`'s single
+  `candidateLayers` array, not separate documents; there is only ever one
+  `gisSources` document, so that picker would only ever have offered one, wrong
+  option. Confirmed against the real file (every real layer's `sourceRef` matches a
+  real `candidateLayers[].sourceId` exactly) and replaced with a dedicated
+  `sourceRefPicker()` that reads the real array directly.
+- **Layer reordering and draw order:** confirmed by reading `js/gis/gis-viewer.js`'s
+  `ensurePane()` that the live engine gives each distinct `zIndex` value its own
+  Leaflet pane (`"gis-z-" + zIndex`), so stacking order is purely a `zIndex`
+  comparison, unrelated to a layer's position in the `layers[]` array. `▲▼` on the
+  layers list therefore swaps `zIndex` between exactly the two swapped layers
+  (`fListOrdered`'s new `swapKeys` option) rather than renumbering the whole list —
+  a minimal, predictable diff that satisfies 06-SPEC §9 criterion 2 without
+  silently rewriting every other layer's stacking value on an unrelated reorder.
+  **Note for whoever next reorders layers on the real `iberia-coastal` map:** its
+  16 layers' existing `zIndex` values don't already sort in the same order as the
+  `layers[]` array (they predate this CMS, hand-authored in Phase 3) — swapping via
+  ▲▼ is still correct for the two layers involved, it just won't retroactively
+  make the whole list's positions match zIndex order.
+- **5.6** Tour editor (`editGisTour()`), including **Capture current view** (reads
+  the live preview's `getState()`, reconstructs *every* layer's true on/off state by
+  overlaying the diff-shaped `l` map onto each layer's own authored default —
+  `getState()` only ever reports layers that differ from default, so a naive read
+  would miss layers already on/off *because* they're at their default) and
+  **Preview this step**. **Deliberate implementation choice, not the obvious one:**
+  "Preview this step" does NOT reuse `applyState()`'s diff semantics (which only
+  overrides layers present in its `l` map and leaves everything else at whatever
+  the map currently shows — not equivalent to a real step application). It instead
+  calls the same public `setView`/`setLayerVisible`/`setLayerOpacity`/`setBasemap`/
+  `highlight`/`clearHighlight` sequence `js/gis/gis-tour.js`'s own `applyStep()`
+  documented behavior describes, so the CMS preview and the real tour player can
+  never diverge in how a step gets applied. The outro CTA editor supports all 5 of
+  05-SPEC §1's closed-vocabulary actions, including the two parameterized ones
+  (`startTour:<id>`, `link:<url>`) via a kind dropdown plus a conditional secondary
+  field, rather than only the 3 that don't need a parameter.
+- **5.7** Data sources editor (`editGisSources()`). **Deliberate, documented
+  deviation from 06-SPEC §6's idealized field list:** the real, already-shipped
+  `data/gis/sources.json` is Phase 0's actual verification record
+  (`candidateLayers[]` with `sourceId`/`feedsGroup`/`publisher`/`serviceEndpoint`/
+  free-text `access`/`cors`/`harvested`/`harvestNotes`/…, plus `corsSpike` and
+  `platformNotes`), not the spec's proposed enum-driven schema (`Access: Public /
+  Public with attribution / …`, a `Retrieval method` toggle, etc.) — forcing the
+  real data into that idealized shape would have meant reshaping or discarding real
+  provenance text. Per this project's own "extend, don't reshape" rule, the editor
+  works the real fields directly; `corsSpike`/`platformNotes` (one-time Phase 0
+  findings, not routine editorial content) are shown read-only rather than built
+  into a full editor. "Export sources document" generates a Markdown summary from
+  the live document — not byte-identical to the hand-written
+  `docs/GIS-DATA-SOURCES.md`, but a real, reviewable table.
+- **5.8** Live preview (`gisPreviewPanel()`), mounted beside the map/tour editor's
+  form in a new two-column layout (`.adm-gissplit`, `.adm-pane-wide` overriding the
+  board's normal 880px single-column cap for just these two editors — cleared again
+  on every `select()` pane switch, same discipline as `preDirtyHook`). Lazily
+  injects the exact same `js/gis/gis-loader.js` → `gis-viewer.js` → `gis-esri.js` →
+  `gis-tools.js` load order `js/app.js`'s own `loadGisEngine()` already uses for the
+  live site, not a lighter subset invented for the board. Re-mounts debounced
+  400ms after a structural edit; plain text-field edits don't trigger it. On
+  narrow viewports the preview collapses to a "⛶ Preview map" button that opens it
+  fullscreen (06-SPEC §7's explicit "don't over-invest" steer for a desktop tool).
+  The preview instance is torn down (`instance.destroy()`) on every pane switch, not
+  just hidden, so a backgrounded Leaflet map never keeps making requests after its
+  DOM is gone.
+- **5.9** `exportData()` now also fetches every `gisMap` layer whose `sourceType` is
+  `geojson` and whose `url` points under `data/gis/layers/` (those files are
+  deliberately never in `DTS_CONTENT.docs`/localStorage, per 04-SPEC §1's size
+  warning, so export is the only path that ships them at all) and bundles them into
+  the zip at the matching path. **Fails loudly, confirmed live:** if any harvested
+  file can't be fetched, the whole export aborts with an alert naming the failure —
+  no `data.zip` is produced at all, not a zip silently missing that one layer.
+  Confirmed against the real `iberia-coastal` map (all 6 real files — the parish
+  boundary plus 5 shoreline years — collected correctly) and, separately, by
+  stubbing `fetch` to always fail in the same headless harness used throughout this
+  phase: the export correctly stopped with the exact alert text describing all 6
+  missing files, no download fired.
+- **Verification approach for this phase, per `CLAUDE.md`'s post-Phase-4 note:** no
+  live Claude-in-Chrome session was run. Every claim above was either confirmed by
+  reading the real call path in `js/gis/gis-viewer.js`/`gis-esri.js`/`gis-tour.js`
+  and `js/content-loader.js`, confirmed against the real data files directly (small
+  Node scripts checking `data/projects/*.json`, `data/gis/maps/iberia-coastal.json`,
+  `data/gis/sources.json`), or confirmed through a headless (jsdom, no real browser)
+  harness that signs into the real Admin Board with the real `data/access.json`
+  credential, loads every real document from `data/manifest.json`, and drives the
+  actual DOM (nav clicks, button clicks, form submits) — not a hand-written
+  simulation of what the code *should* do. That harness caught the `sourceRef`
+  picker bug above and confirmed, with zero uncaught exceptions, every real GIS
+  document (map, tour, sources) and both a legacy and an already-migrated project
+  render correctly. It cannot render CSS/Leaflet or exercise a real ArcGIS network
+  call, real drag/click timing, or mobile layout — `docs/plans/gis/
+  GIS-PHASE5-CMS-TESTING.md` is the manual pass covering exactly that gap, for the
+  human to run and report back, same pattern as the Phase 4 gate.
+- **Known, accepted cosmetic finding, not fixed this phase:** `layerEditor()`
+  unconditionally instantiates placeholder `popup`/`style` objects on render for any
+  layer that doesn't already have one (7 of the real map's 16 layers lack `popup`,
+  3 lack `style`). Confirmed by reading `js/gis/gis-tools.js`'s own popup-fields
+  fallback that an empty `fields` array (or an empty `title` string) is treated
+  identically to a missing `popup` field entirely — this changes no rendered
+  behavior — but it does mean exporting after touching *anything else* on the same
+  map will carry these harmless placeholder objects into layers nobody meant to
+  touch. A full fix would need the same detached-copy/commit-on-first-edit machinery
+  `experiencesEditor()` uses, replicated per optional sub-object across every layer;
+  judged disproportionate for a diff-noise-only issue this phase. Flagged in
+  `GIS-PHASE5-CMS-TESTING.md` §5.6 rather than silently left for someone to
+  rediscover as a "new" bug later.
+
 ## GIS Phase 4 gate — testing fixes
 
 Per `docs/plans/gis/GIS-FULL-SYSTEM-TESTING.md`, the human's own manual pass against

@@ -34,6 +34,19 @@
   var content = window.DTS_CONTENT;          // live working set (edited in place)
   var docs = content.docs;
   var dirty = false;
+  // One-shot hook an editor can register to run just before the very next
+  // markDirty() -- used for legacy-shape migrations that must only happen on
+  // the FIRST real edit, never just from opening the editor (see
+  // experiencesEditor()). select() clears it on every pane switch so a stale
+  // hook from a previously-viewed project can never fire against the wrong
+  // document.
+  var preDirtyHook = null;
+  // The live GIS preview instance for whichever gismap:/gistour: pane is
+  // currently open, if any -- select() tears it down before building the
+  // next pane so a backgrounded Leaflet instance never keeps making network
+  // requests after its DOM is gone (same discipline as suspend()/destroy()
+  // in js/app.js's own GIS instance cache).
+  var currentGisPreview = null;
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
 
@@ -124,6 +137,7 @@
     return n;
   }
   function markDirty() {
+    if (preDirtyHook) preDirtyHook();
     dirty = true;
     var s = $("#admStatus");
     if (s) { s.textContent = "Unsaved changes — Save draft & preview to see them on the site."; s.classList.add("is-dirty"); }
@@ -272,6 +286,199 @@
       input.addEventListener("input", function () { arr[i] = input.value; markDirty(); });
       card.appendChild(input);
     }, function () { return ""; });
+  }
+
+  /* ============================================================
+     FIELD BUILDERS — Phase 5 additions (06-SPEC-cms-admin.md §1)
+     ============================================================ */
+  function fNumber(parent, label, obj, key, opts) {
+    opts = opts || {};
+    var wrap = el("div", "adm-field" + (opts.half ? " half" : ""));
+    wrap.appendChild(el("label", "adm-label", label));
+    var row = el("div", "adm-numrow");
+    var input = el("input", "adm-input"); input.type = "number";
+    if (opts.min != null) input.min = opts.min;
+    if (opts.max != null) input.max = opts.max;
+    if (opts.step != null) input.step = opts.step;
+    input.value = obj[key] == null ? "" : obj[key];
+    input.addEventListener("input", function () {
+      obj[key] = input.value === "" ? null : parseFloat(input.value);
+      markDirty();
+    });
+    row.appendChild(input);
+    if (opts.suffix) row.appendChild(el("span", "adm-suffix", opts.suffix));
+    wrap.appendChild(row);
+    if (opts.hint) wrap.appendChild(el("p", "adm-hint", opts.hint));
+    parent.appendChild(wrap);
+    return input;
+  }
+
+  /* Slider + live value readout. */
+  function fRange(parent, label, obj, key, opts) {
+    opts = opts || {};
+    var wrap = el("div", "adm-field" + (opts.half ? " half" : ""));
+    wrap.appendChild(el("label", "adm-label", label));
+    var row = el("div", "adm-rangerow");
+    var input = el("input"); input.type = "range";
+    input.min = opts.min != null ? opts.min : 0;
+    input.max = opts.max != null ? opts.max : 1;
+    input.step = opts.step != null ? opts.step : 0.05;
+    input.value = obj[key] == null ? input.min : obj[key];
+    var out = el("span", "adm-rangeval", String(input.value));
+    input.addEventListener("input", function () {
+      obj[key] = parseFloat(input.value);
+      out.textContent = input.value;
+      markDirty();
+    });
+    row.appendChild(input); row.appendChild(out);
+    wrap.appendChild(row);
+    if (opts.hint) wrap.appendChild(el("p", "adm-hint", opts.hint));
+    parent.appendChild(wrap);
+    return input;
+  }
+
+  /* fList plus ▲▼ reorder — layer draw order, tour step order. Swapping two
+     items also swaps any numeric fields named in opts.swapKeys on those two
+     items (e.g. "zIndex"), so reordering in the CMS actually changes draw
+     order in the engine, which reads zIndex per layer, not array position —
+     see js/gis/gis-viewer.js's ensurePane(), one Leaflet pane per distinct
+     zIndex. Only the two swapped items are touched; nothing else in the
+     list is renumbered, so this stays a minimal, predictable diff. */
+  function fListOrdered(parent, title, arr, renderItem, makeNew, addLabel, opts) {
+    opts = opts || {};
+    var swapKeys = opts.swapKeys || [];
+    var box = el("div", "adm-listbox");
+    var head = el("div", "adm-listhead");
+    head.appendChild(el("span", "adm-listtitle", title));
+    var add = el("button", "adm-btn adm-btn-small", addLabel || "+ Add");
+    add.type = "button";
+    head.appendChild(add);
+    box.appendChild(head);
+    var itemsWrap = el("div", "adm-listitems");
+    box.appendChild(itemsWrap);
+
+    function swap(i, j) {
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+      swapKeys.forEach(function (k) {
+        var t = arr[i][k]; arr[i][k] = arr[j][k]; arr[j][k] = t;
+      });
+      markDirty(); draw();
+      if (opts.onChange) opts.onChange();
+    }
+
+    function draw() {
+      itemsWrap.innerHTML = "";
+      arr.forEach(function (item, i) {
+        var card = el("div", "adm-listitem");
+        var bar = el("div", "adm-itembar");
+        bar.appendChild(el("span", "adm-itemno", "#" + (i + 1)));
+        var btns = el("div", "adm-itembtns");
+        var up = el("button", "adm-btn adm-btn-ghost adm-btn-small", "▲");
+        up.type = "button"; up.title = "Move up"; up.disabled = i === 0;
+        up.addEventListener("click", function () { swap(i, i - 1); });
+        var down = el("button", "adm-btn adm-btn-ghost adm-btn-small", "▼");
+        down.type = "button"; down.title = "Move down"; down.disabled = i === arr.length - 1;
+        down.addEventListener("click", function () { swap(i, i + 1); });
+        var del = el("button", "adm-btn adm-btn-ghost adm-btn-small", "Remove");
+        del.type = "button";
+        del.addEventListener("click", function () {
+          if (opts.beforeRemove && opts.beforeRemove(item, i) === false) return;
+          arr.splice(i, 1); markDirty(); draw();
+          if (opts.onChange) opts.onChange();
+        });
+        btns.appendChild(up); btns.appendChild(down); btns.appendChild(del);
+        bar.appendChild(btns);
+        card.appendChild(bar);
+        renderItem(card, item, i);
+        itemsWrap.appendChild(card);
+      });
+      if (!arr.length) itemsWrap.appendChild(el("p", "adm-hint", "Nothing here yet."));
+    }
+    add.addEventListener("click", function () {
+      arr.push(makeNew()); markDirty(); draw();
+      if (opts.onChange) opts.onChange();
+    });
+    draw();
+    parent.appendChild(box);
+    return { redraw: draw };
+  }
+
+  /* Editable string→string object — layers.opacity-style maps. */
+  function fKeyValue(parent, title, obj, opts) {
+    opts = opts || {};
+    var keyLabel = opts.keyLabel || "Key";
+    var valueLabel = opts.valueLabel || "Value";
+    var box = el("div", "adm-listbox");
+    var head = el("div", "adm-listhead");
+    head.appendChild(el("span", "adm-listtitle", title));
+    var add = el("button", "adm-btn adm-btn-small", "+ Add");
+    add.type = "button";
+    head.appendChild(add);
+    box.appendChild(head);
+    var itemsWrap = el("div", "adm-listitems");
+    box.appendChild(itemsWrap);
+
+    function draw() {
+      itemsWrap.innerHTML = "";
+      var keys = Object.keys(obj);
+      keys.forEach(function (k) {
+        var card = el("div", "adm-listitem");
+        var row = el("div", "adm-kvrow");
+        var kIn = el("input", "adm-input"); kIn.type = "text"; kIn.value = k; kIn.placeholder = keyLabel;
+        var vIn = el("input", "adm-input"); vIn.type = "text";
+        vIn.value = obj[k] == null ? "" : obj[k]; vIn.placeholder = valueLabel;
+        kIn.addEventListener("change", function () {
+          var newKey = kIn.value.trim();
+          if (!newKey || newKey === k) { kIn.value = k; return; }
+          if (obj[newKey] != null) { alert("“" + newKey + "” already exists."); kIn.value = k; return; }
+          obj[newKey] = obj[k]; delete obj[k]; markDirty(); draw();
+        });
+        vIn.addEventListener("input", function () { obj[k] = vIn.value; markDirty(); });
+        var del = el("button", "adm-btn adm-btn-ghost adm-btn-small", "Remove");
+        del.type = "button";
+        del.addEventListener("click", function () { delete obj[k]; markDirty(); draw(); });
+        row.appendChild(kIn); row.appendChild(vIn); row.appendChild(del);
+        card.appendChild(row);
+        itemsWrap.appendChild(card);
+      });
+      if (!keys.length) itemsWrap.appendChild(el("p", "adm-hint", "Nothing here yet."));
+    }
+    add.addEventListener("click", function () {
+      var n = 1, k = "key1";
+      while (obj[k] != null) { n++; k = "key" + n; }
+      obj[k] = ""; markDirty(); draw();
+    });
+    draw();
+    parent.appendChild(box);
+  }
+
+  /* Dropdown that picks another document by its short id, filtered by _type. */
+  function fDocPicker(parent, label, obj, key, docType, opts) {
+    opts = opts || {};
+    var wrap = el("div", "adm-field" + (opts.half ? " half" : ""));
+    wrap.appendChild(el("label", "adm-label", label));
+    var sel = el("select", "adm-select");
+    if (opts.allowNone) {
+      var noneOpt = el("option", null, opts.noneLabel || "— None —");
+      noneOpt.value = ""; sel.appendChild(noneOpt);
+    }
+    Object.keys(docs).filter(function (f) { return docs[f] && docs[f]._type === docType; })
+      .sort(function (a, b) { return (docs[a].title || docs[a].id || "").localeCompare(docs[b].title || docs[b].id || ""); })
+      .forEach(function (f) {
+        var d = docs[f];
+        var opt = el("option", null, (d.title || d.id) + " (" + d.id + ")");
+        opt.value = d.id; sel.appendChild(opt);
+      });
+    sel.value = obj[key] == null ? "" : obj[key];
+    sel.addEventListener("change", function () {
+      obj[key] = sel.value ? sel.value : (opts.allowNone ? null : sel.value);
+      markDirty();
+      if (opts.onChange) opts.onChange();
+    });
+    wrap.appendChild(sel);
+    if (opts.hint) wrap.appendChild(el("p", "adm-hint", opts.hint));
+    parent.appendChild(wrap);
+    return sel;
   }
 
   function section(parent, title, hint) {
@@ -507,52 +714,149 @@
     }, "+ Add card");
   }
 
-  function mediaEditor(parent, project) {
-    var box = section(parent, "Main experience", "What plays in the big pane of this project's window: a live Treedis experience, a Vimeo video, or nothing (the shared showcase twin is reused).");
-    var holder = el("div");
-    box.appendChild(holder);
-
-    function draw() {
-      holder.innerHTML = "";
-      var typeWrap = el("div", "adm-field");
-      typeWrap.appendChild(el("label", "adm-label", "Type"));
-      var sel = el("select", "adm-select");
-      [["none", "None — reuse the shared showcase twin"],
-       ["treedis", "Treedis experience (interactive twin)"],
-       ["video", "Vimeo video"]].forEach(function (o) {
-        var opt = el("option", null, o[1]); opt.value = o[0]; sel.appendChild(opt);
-      });
-      sel.value = project.media ? project.media._type : "none";
-      sel.addEventListener("change", function () {
-        if (sel.value === "none") delete project.media;
-        else if (sel.value === "treedis") {
-          project.media = { _type: "treedis", label: "Explore the experience",
-                            tourUrl: "https://spaces.dtsxr.com/tour/",
-                            origin: "https://spaces.dtsxr.com", sweepId: null };
-        } else {
-          project.media = { _type: "video", provider: "vimeo", label: "Watch the video",
-                            embed: { kind: "url", value: "https://player.vimeo.com/video/" },
-                            watch: { kind: "url", value: "https://vimeo.com/" } };
-        }
-        markDirty(); draw();
-      });
-      typeWrap.appendChild(sel);
-      holder.appendChild(typeWrap);
-
-      var m = project.media;
-      if (m && m._type === "treedis") {
-        fText(holder, "Button / pane label", m, "label");
-        fText(holder, "Treedis tour URL", m, "tourUrl", { placeholder: "https://spaces.dtsxr.com/tour/xxxx" });
-        fText(holder, "Treedis origin", m, "origin");
-        fText(holder, "Sweep ID (optional landing sweep)", m, "sweepId", { hint: "Leave blank to open at the model default." });
-      } else if (m && m._type === "video") {
-        fText(holder, "Video label", m, "label");
-        fSource(holder, "Embed (player URL, or a local video file)", m.embed);
-        if (!m.watch) m.watch = { kind: "url", value: "" };
-        fSource(holder, "Watch link (public page, optional)", m.watch);
-      }
+  /* A fresh experiences[] item for the given type — same field shapes
+     js/content-loader.js's convertExperience() already expects, so nothing
+     downstream needs to change. */
+  function experienceSkeleton(type) {
+    if (type === "video") {
+      return { _type: "video", id: "video", label: "Watch the video",
+        embed: { kind: "url", value: "https://player.vimeo.com/video/" },
+        watch: { kind: "url", value: "https://vimeo.com/" }, default: false };
     }
-    draw();
+    if (type === "gis") {
+      return { _type: "gis", id: "map", label: "Parish map",
+        mapId: "", tourId: null, initialView: null, default: false };
+    }
+    return { _type: "treedis", id: "tour", label: "Explore the experience",
+      tourUrl: "https://spaces.dtsxr.com/tour/", origin: "https://spaces.dtsxr.com",
+      sweepId: null, default: false };
+  }
+
+  /* project.media (legacy) -> a single experiences[]-shaped item. Same
+     fields either way (content-loader.js's own projectExperiences() reads
+     p.media the same way), just adding id/default. */
+  function normalizeLegacyMedia(media) {
+    var item = JSON.parse(JSON.stringify(media));
+    if (!item.id) item.id = item._type;
+    item.default = true;
+    return item;
+  }
+
+  function renderExperienceItem(card, item, i, arr, redraw) {
+    var typeWrap = el("div", "adm-field half");
+    typeWrap.appendChild(el("label", "adm-label", "Type"));
+    var typeSel = el("select", "adm-select");
+    [["treedis", "Treedis experience"], ["video", "Vimeo video"], ["gis", "GIS map"]].forEach(function (o) {
+      var opt = el("option", null, o[1]); opt.value = o[0]; typeSel.appendChild(opt);
+    });
+    typeSel.value = item._type;
+    typeSel.addEventListener("change", function () {
+      var keepLabel = item.label;
+      var skeleton = experienceSkeleton(typeSel.value);
+      Object.keys(item).forEach(function (k) { delete item[k]; });
+      Object.assign(item, skeleton);
+      if (keepLabel) item.label = keepLabel;
+      markDirty();
+      redraw();
+    });
+    typeWrap.appendChild(typeSel);
+    card.appendChild(typeWrap);
+
+    var idWrap = el("div", "adm-field half");
+    idWrap.appendChild(el("label", "adm-label", "Short id (used in links)"));
+    var idInput = el("input", "adm-input"); idInput.type = "text"; idInput.value = item.id || "";
+    var idMsg = el("p", "adm-hint", "");
+    function validateId() {
+      var v = idInput.value.trim();
+      var ok = /^[a-z0-9-]{1,24}$/.test(v);
+      var dupe = ok && arr.some(function (o) { return o !== item && o.id === v; });
+      if (!ok) idMsg.textContent = "Letters, numbers and hyphens only, 1–24 characters.";
+      else if (dupe) idMsg.textContent = "Another experience in this project already uses this id.";
+      else idMsg.textContent = "Deep link: …&exp=" + v;
+    }
+    idInput.addEventListener("input", function () { item.id = idInput.value; markDirty(); validateId(); });
+    validateId();
+    idWrap.appendChild(idInput); idWrap.appendChild(idMsg);
+    card.appendChild(idWrap);
+
+    fText(card, "Tab label", item, "label");
+
+    if (item._type === "treedis") {
+      fText(card, "Tour URL", item, "tourUrl", { placeholder: "https://spaces.dtsxr.com/tour/xxxx" });
+      fText(card, "Origin", item, "origin");
+      fText(card, "Sweep ID (optional landing sweep)", item, "sweepId", { hint: "Leave blank to open at the model default." });
+    } else if (item._type === "video") {
+      if (!item.embed) item.embed = { kind: "url", value: "" };
+      fSource(card, "Embed (player URL, or a local video file)", item.embed);
+      if (!item.watch) item.watch = { kind: "url", value: "" };
+      fSource(card, "Watch link (public page, optional)", item.watch);
+    } else if (item._type === "gis") {
+      fDocPicker(card, "Map", item, "mapId", "gisMap", { hint: "Authored under GIS Maps in this board's nav." });
+      var tourSel = fDocPicker(card, "Guided tour on open", item, "tourId", "gisTour", { allowNone: true, noneLabel: "None" });
+      var mismatchNote = el("p", "adm-hint", "");
+      card.appendChild(mismatchNote);
+      function checkMismatch() {
+        if (!item.tourId) { mismatchNote.textContent = ""; return; }
+        var tourFile = Object.keys(docs).filter(function (f) {
+          return docs[f] && docs[f]._type === "gisTour" && docs[f].id === item.tourId;
+        })[0];
+        var tourDoc = tourFile ? docs[tourFile] : null;
+        mismatchNote.textContent = (tourDoc && tourDoc.mapId !== item.mapId)
+          ? "This tour belongs to a different map (" + tourDoc.mapId + ") and won't line up with this one."
+          : "";
+      }
+      tourSel.addEventListener("change", checkMismatch);
+      checkMismatch();
+    }
+
+    var defWrap = el("div", "adm-field adm-check");
+    var defLab = el("label", "adm-checklabel");
+    var defRadio = el("input"); defRadio.type = "radio"; defRadio.name = "admExpDefault";
+    defRadio.checked = !!item.default;
+    defRadio.addEventListener("change", function () {
+      arr.forEach(function (o) { o.default = (o === item); });
+      markDirty();
+    });
+    defLab.appendChild(defRadio);
+    defLab.appendChild(document.createTextNode(" Open this one first"));
+    defWrap.appendChild(defLab);
+    card.appendChild(defWrap);
+  }
+
+  /* Replaces the old single-media section (06-SPEC §2). Built on
+     fListOrdered over project.experiences.
+
+     Legacy migration: a project that still has `media` and no `experiences`
+     is shown as a single experiences[0] item, but the document itself is
+     only rewritten (experiences = [media]; delete media) the moment the
+     editor makes a real change -- never just from opening the editor. That
+     keeps the 16 pre-GIS projects' export diff byte-identical until an
+     editor actually touches one. Implemented via preDirtyHook: the working
+     array starts out detached from the document; the very next markDirty()
+     (from any field edit, add, remove, or reorder inside this section)
+     promotes it to project.experiences before doing anything else. */
+  function experiencesEditor(parent, project) {
+    var box = section(parent, "Main experiences",
+      "What appears in the big pane at the top of this project's window. Add more than one and " +
+      "visitors get tabs to switch between them. Leave empty to reuse the shared showcase twin.");
+
+    var isLegacy = !(Array.isArray(project.experiences) && project.experiences.length) && !!project.media;
+    var committed = !isLegacy;
+    var arr = isLegacy ? [normalizeLegacyMedia(project.media)] : (project.experiences || (project.experiences = []));
+
+    function commitIfNeeded() {
+      if (committed) return;
+      committed = true;
+      project.experiences = arr;
+      delete project.media;
+    }
+    preDirtyHook = commitIfNeeded;
+
+    var listHandle = fListOrdered(box, "Experiences", arr, function (card, item, i) {
+      renderExperienceItem(card, item, i, arr, function () { listHandle.redraw(); });
+    }, function () {
+      return experienceSkeleton("treedis");
+    }, "+ Add experience");
   }
 
   function editProject(pane, file) {
@@ -582,7 +886,7 @@
     fText(s2, "Blurb", p.project, "blurb", { textarea: true, rows: 4 });
     fCheck(s2, "Illustrative placeholder (swap for a real project later)", p.project, "illustrative");
 
-    mediaEditor(pane, p);
+    experiencesEditor(pane, p);
 
     var s3 = section(pane, "Related links", "Chips under the experience — tours, videos, Matterport links.");
     fList(s3, "Links", p.links, function (card, item) {
@@ -668,6 +972,1188 @@
   }
 
   /* ============================================================
+     ADD / DELETE GIS MAPS AND TOURS  (06-SPEC §3)
+     ------------------------------------------------------------
+     Maps, tours and sources.json all share one manifest group
+     (data/manifest.json's "gis" array) — new entries are pushed
+     into that same array, same as addProject()/deleteProject()
+     push into "projects".
+     ============================================================ */
+  function gisMapFiles() {
+    return Object.keys(docs).filter(function (f) { return docs[f] && docs[f]._type === "gisMap"; })
+      .sort(function (a, b) { return (docs[a].title || "").localeCompare(docs[b].title || ""); });
+  }
+  function gisTourFiles(mapId) {
+    return Object.keys(docs).filter(function (f) {
+      return docs[f] && docs[f]._type === "gisTour" && (!mapId || docs[f].mapId === mapId);
+    }).sort(function (a, b) { return (docs[a].title || "").localeCompare(docs[b].title || ""); });
+  }
+  function gisSourcesFile() {
+    return Object.keys(docs).filter(function (f) { return docs[f] && docs[f]._type === "gisSources"; })[0];
+  }
+
+  function addGisMap() {
+    var id = prompt("Short id for the new map (letters/numbers/hyphens, e.g. downtown-corridor):");
+    if (!id) return;
+    id = id.toLowerCase().replace(/[^a-z0-9-]/g, "");
+    if (!id) return alert("That id isn't usable.");
+    var file = "gis/maps/" + id + ".json";
+    if (docs[file]) return alert("A map with that id already exists.");
+    docs[file] = {
+      _id: "gis.maps." + id, _type: "gisMap", id: id,
+      title: "New map", subtitle: "", attribution: "",
+      view: { center: [29.740394, -91.635827], zoom: 10, minZoom: 8, maxZoom: 18,
+              maxBounds: null, restrictToBounds: false },
+      boundary: { layerId: "", showMask: false, maskOpacity: 0.55 },
+      basemaps: [
+        { id: "streets", title: "Streets", type: "tileXYZ",
+          url: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+          attribution: "&copy; OpenStreetMap contributors", default: true },
+        { id: "none", title: "No basemap", type: "none" }
+      ],
+      groups: [],
+      layers: [],
+      tools: { layerPanel: true, basemapSwitcher: true, legend: true, identify: true,
+               attributeTable: true, filter: true, measure: true, draw: true,
+               coordinates: true, search: true, geolocate: true, bookmarks: true,
+               swipe: true, timeline: false, print: true, exportData: true,
+               share: true, fullscreen: true, scaleBar: true, miniMap: false },
+      bookmarks: [],
+      tours: [], defaultTour: null
+    };
+    content.manifest.documents.gis.push({ file: file, type: "gisMap", id: "gis.maps." + id });
+    markDirty(); buildNav(); select("gismap:" + file);
+  }
+
+  function deleteGisMap(file) {
+    var m = docs[file];
+    if (!m) return;
+    var refs = [];
+    projectFiles().forEach(function (pf) {
+      (docs[pf].experiences || []).forEach(function (ex) {
+        if (ex._type === "gis" && ex.mapId === m.id) refs.push(docs[pf].title);
+      });
+    });
+    var tourFiles = gisTourFiles(m.id);
+    var msg = "Delete “" + m.title + "”?";
+    if (refs.length) msg += "\n\nStill referenced by: " + refs.join(", ") + ". Those experiences will be removed too.";
+    if (tourFiles.length) msg += "\n\nIts " + tourFiles.length + " guided tour(s) will also be deleted.";
+    if (!confirm(msg)) return;
+    tourFiles.forEach(function (tf) {
+      delete docs[tf];
+      content.manifest.documents.gis = content.manifest.documents.gis.filter(function (e) { return e.file !== tf; });
+    });
+    projectFiles().forEach(function (pf) {
+      var p = docs[pf];
+      if (Array.isArray(p.experiences)) {
+        p.experiences = p.experiences.filter(function (ex) { return !(ex._type === "gis" && ex.mapId === m.id); });
+      }
+    });
+    delete docs[file];
+    content.manifest.documents.gis = content.manifest.documents.gis.filter(function (e) { return e.file !== file; });
+    markDirty(); buildNav(); select("home");
+  }
+
+  function addGisTour(mapFile) {
+    var mapDoc = docs[mapFile];
+    if (!mapDoc) return;
+    var id = prompt("Short id for the new tour (letters/numbers/hyphens):");
+    if (!id) return;
+    id = id.toLowerCase().replace(/[^a-z0-9-]/g, "");
+    if (!id) return alert("That id isn't usable.");
+    var file = "gis/tours/" + id + ".json";
+    if (docs[file]) return alert("A tour with that id already exists.");
+    docs[file] = {
+      _id: "gis.tour." + id, _type: "gisTour", id: id, mapId: mapDoc.id,
+      title: "New tour", intro: "",
+      autoStart: false, autoAdvance: false, defaultDuration: 12,
+      showProgress: true, position: "left",
+      steps: [],
+      outro: { title: "Explore on your own",
+               body: "Every layer used in this tour is in the layer panel.",
+               cta: { label: "Open the layer panel", action: "openLayerPanel" } }
+    };
+    content.manifest.documents.gis.push({ file: file, type: "gisTour", id: "gis.tour." + id });
+    if (!Array.isArray(mapDoc.tours)) mapDoc.tours = [];
+    mapDoc.tours.push(id);
+    markDirty(); buildNav(); select("gistour:" + file);
+  }
+
+  function deleteGisTour(file) {
+    var t = docs[file];
+    if (!t) return;
+    if (!confirm("Delete “" + t.title + "”?")) return;
+    gisMapFiles().forEach(function (mf) {
+      var m = docs[mf];
+      if (Array.isArray(m.tours)) m.tours = m.tours.filter(function (id) { return id !== t.id; });
+      if (m.defaultTour === t.id) m.defaultTour = null;
+    });
+    projectFiles().forEach(function (pf) {
+      (docs[pf].experiences || []).forEach(function (ex) {
+        if (ex._type === "gis" && ex.tourId === t.id) ex.tourId = null;
+      });
+    });
+    delete docs[file];
+    content.manifest.documents.gis = content.manifest.documents.gis.filter(function (e) { return e.file !== file; });
+    markDirty(); buildNav(); select("gismap:gis/maps/" + t.mapId + ".json");
+  }
+
+  /* ============================================================
+     LIVE MAP PREVIEW  (06-SPEC §7)
+     ------------------------------------------------------------
+     Lazily injects the same js/gis/* engine files js/app.js's own
+     mountGis() uses (gis-loader vendors Leaflet/esri-leaflet; the
+     other three are our own engine code) — same known-good load
+     order verified live across Phases 3-4, not a lighter subset
+     invented for the admin board.
+     ============================================================ */
+  var gisEnginePromise = null;
+  function loadGisEngineForAdmin() {
+    if (gisEnginePromise) return gisEnginePromise;
+    var files = ["js/gis/gis-loader.js", "js/gis/gis-viewer.js", "js/gis/gis-esri.js", "js/gis/gis-tools.js"];
+    gisEnginePromise = files.reduce(function (p, src) {
+      return p.then(function () {
+        return new Promise(function (resolve, reject) {
+          if (document.querySelector('script[src="' + src + '"]')) { resolve(); return; }
+          var s = document.createElement("script");
+          s.src = src;
+          s.onload = function () { resolve(); };
+          s.onerror = function () { reject(new Error("Failed to load " + src)); };
+          document.body.appendChild(s);
+        });
+      });
+    }, Promise.resolve());
+    return gisEnginePromise;
+  }
+
+  /* getMapDoc() is called fresh on every (re)mount so the preview always
+     reflects the in-memory document, including unsaved edits (same
+     instant-feedback principle as Save draft & preview, just tighter).
+     refresh() re-mounts debounced ~400ms -- editors call it after a
+     structural edit (layers/groups/basemaps/boundary added, removed or
+     rewired); plain label/text edits should just let the preview be, per
+     §7's "do not re-mount on every keystroke in a title field." */
+  function gisPreviewPanel(parent, getMapDoc) {
+    var wrap = el("div", "adm-gispreview");
+    var bar = el("div", "adm-gispreview-bar");
+    var msg = el("span", "adm-hint", "Loading preview…");
+    bar.appendChild(msg);
+    var toggle = el("button", "adm-btn adm-btn-small adm-gispreview-toggle", "⛶ Preview map");
+    toggle.type = "button";
+    toggle.addEventListener("click", function () { wrap.classList.toggle("is-expanded"); });
+    bar.appendChild(toggle);
+    var mapHolder = el("div", "adm-gispreview-map");
+    wrap.appendChild(bar);
+    wrap.appendChild(mapHolder);
+    parent.appendChild(wrap);
+
+    var instance = null, mounting = false, debounceTimer = null, destroyed = false;
+
+    function doMount() {
+      if (destroyed) return;
+      if (instance) { try { instance.destroy(); } catch (_e) {} instance = null; }
+      mapHolder.innerHTML = "";
+      msg.textContent = "Loading preview…";
+      mounting = true;
+      loadGisEngineForAdmin().then(function () {
+        if (destroyed) return null;
+        return window.DTSGis.mount(mapHolder, getMapDoc(), { preview: true });
+      }).then(function (inst) {
+        if (!inst) return;
+        if (destroyed) { try { inst.destroy(); } catch (_e) {} return; }
+        instance = inst; mounting = false; msg.textContent = "";
+      }).catch(function (err) {
+        mounting = false;
+        msg.textContent = "Preview unavailable: " + err.message;
+        console.warn("[admin] GIS preview failed to mount:", err);
+      });
+    }
+    function refresh() {
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(doMount, 400);
+    }
+    doMount();
+    return {
+      getInstance: function () { return mounting ? null : instance; },
+      refresh: refresh,
+      destroy: function () {
+        destroyed = true;
+        if (debounceTimer) clearTimeout(debounceTimer);
+        if (instance) { try { instance.destroy(); } catch (_e) {} instance = null; }
+      }
+    };
+  }
+
+  /* GIS map/tour editors need the pane wider than the normal 880px column
+     (a form + a live preview side by side) -- select() clears this back to
+     normal on every pane switch, same discipline as preDirtyHook. */
+  function setPaneWide(wide) {
+    if (paneEl) paneEl.classList.toggle("adm-pane-wide", !!wide);
+  }
+
+  /* A {center,zoom} | {bbox} view, per 04-SPEC's view schema, used for a
+     map's default view, a bookmark's view, and a tour step's view alike.
+     opts.withCapture adds a "Set from current preview" button that reads
+     opts.getPreviewInstance().getState(). */
+  function fView(parent, obj, key, opts) {
+    opts = opts || {};
+    if (!obj[key] || typeof obj[key] !== "object") obj[key] = { center: [29.740394, -91.635827], zoom: 10 };
+    var view = obj[key];
+    var wrap = el("div", "adm-viewbox");
+    var modeWrap = el("div", "adm-field half");
+    modeWrap.appendChild(el("label", "adm-label", "View shape"));
+    var modeSel = el("select", "adm-select");
+    [["center", "Center + zoom"], ["bbox", "Bounding box"]].forEach(function (o) {
+      var opt = el("option", null, o[1]); opt.value = o[0]; modeSel.appendChild(opt);
+    });
+    modeSel.value = Array.isArray(view.bbox) ? "bbox" : "center";
+    modeWrap.appendChild(modeSel);
+    wrap.appendChild(modeWrap);
+    var fieldsZone = el("div");
+    wrap.appendChild(fieldsZone);
+
+    function drawFields() {
+      fieldsZone.innerHTML = "";
+      if (modeSel.value === "bbox") {
+        if (!Array.isArray(view.bbox)) view.bbox = [[29.31, -92.10], [30.17, -91.17]];
+        delete view.center; delete view.zoom;
+        fNumber(fieldsZone, "South lat", view.bbox[0], 0, { half: true, step: 0.0001 });
+        fNumber(fieldsZone, "West lng", view.bbox[0], 1, { half: true, step: 0.0001 });
+        fNumber(fieldsZone, "North lat", view.bbox[1], 0, { half: true, step: 0.0001 });
+        fNumber(fieldsZone, "East lng", view.bbox[1], 1, { half: true, step: 0.0001 });
+      } else {
+        if (!Array.isArray(view.center)) view.center = [29.740394, -91.635827];
+        if (view.zoom == null) view.zoom = 10;
+        delete view.bbox;
+        fNumber(fieldsZone, "Center lat", view.center, 0, { half: true, step: 0.0001 });
+        fNumber(fieldsZone, "Center lng", view.center, 1, { half: true, step: 0.0001 });
+        fNumber(fieldsZone, "Zoom", view, "zoom", { half: true, step: 1, min: 0, max: 22 });
+      }
+      if (opts.withCapture) {
+        var capBtn = el("button", "adm-btn adm-btn-small", "📍 Set from current preview");
+        capBtn.type = "button";
+        capBtn.addEventListener("click", function () {
+          var inst = opts.getPreviewInstance && opts.getPreviewInstance();
+          if (!inst) { alert("Preview isn't ready yet — wait a moment and try again."); return; }
+          var st = inst.getState();
+          view.center = [st.c[0], st.c[1]]; view.zoom = st.z;
+          delete view.bbox;
+          markDirty();
+          modeSel.value = "center";
+          drawFields();
+          if (opts.onCapture) opts.onCapture();
+        });
+        fieldsZone.appendChild(capBtn);
+      }
+    }
+    modeSel.addEventListener("change", function () { markDirty(); drawFields(); });
+    drawFields();
+    parent.appendChild(wrap);
+  }
+
+  /* A plain [[s,w],[n,e]] bounds field with no mode toggle (view.maxBounds). */
+  function fBoundsRaw(parent, label, obj, key, opts) {
+    opts = opts || {};
+    var wrap = el("div", "adm-field");
+    wrap.appendChild(el("label", "adm-label", label));
+    var row = el("div", "adm-boundsrow");
+    if (!Array.isArray(obj[key])) obj[key] = [[29.31, -92.10], [30.17, -91.17]];
+    var b = obj[key];
+    [["S", b[0], 0], ["W", b[0], 1], ["N", b[1], 0], ["E", b[1], 1]].forEach(function (t) {
+      var mini = el("div", "adm-boundsfield");
+      mini.appendChild(el("span", "adm-boundslabel", t[0]));
+      var input = el("input", "adm-input"); input.type = "number"; input.step = "0.0001";
+      input.value = t[1][t[2]];
+      input.addEventListener("input", function () { t[1][t[2]] = parseFloat(input.value); markDirty(); });
+      mini.appendChild(input);
+      row.appendChild(mini);
+    });
+    wrap.appendChild(row);
+    if (opts.hint) wrap.appendChild(el("p", "adm-hint", opts.hint));
+    parent.appendChild(wrap);
+  }
+
+  /* A comma-separated list of integers, for a layer's esriDynamic "layers"
+     sublayer-index array (04-SPEC §4: "layers": [0, 1]). */
+  function fIndexList(parent, label, obj, key, opts) {
+    opts = opts || {};
+    var wrap = el("div", "adm-field" + (opts.half ? " half" : ""));
+    wrap.appendChild(el("label", "adm-label", label));
+    var input = el("input", "adm-input"); input.type = "text";
+    input.value = Array.isArray(obj[key]) ? obj[key].join(", ") : "";
+    input.addEventListener("input", function () {
+      obj[key] = input.value.split(",").map(function (s) { return parseInt(s.trim(), 10); })
+        .filter(function (n) { return !isNaN(n); });
+      markDirty();
+    });
+    wrap.appendChild(input);
+    if (opts.hint) wrap.appendChild(el("p", "adm-hint", opts.hint));
+    parent.appendChild(wrap);
+  }
+
+  /* ============================================================
+     LAYER EDITOR  (06-SPEC §4 — "the big one")
+     ============================================================ */
+  var SOURCE_TYPE_OPTIONS = [
+    ["esriDynamic", "ArcGIS map service (image)"],
+    ["esriFeature", "ArcGIS feature layer (clickable data)"],
+    ["esriImage", "ArcGIS imagery service"],
+    ["geojson", "GeoJSON file in this site"],
+    ["tileXYZ", "Tiled basemap (XYZ)"],
+    ["wms", "WMS service"]
+  ];
+
+  function nextLayerZIndex(mapDoc) {
+    var max = 0;
+    (mapDoc.layers || []).forEach(function (l) { if (typeof l.zIndex === "number" && l.zIndex > max) max = l.zIndex; });
+    return max + 10;
+  }
+
+  function layerSkeleton(mapDoc) {
+    return {
+      id: "layer-" + Math.random().toString(36).slice(2, 8),
+      title: "New layer", group: (mapDoc.groups && mapDoc.groups[0]) ? mapDoc.groups[0].id : "",
+      sourceType: "esriFeature", sourceRef: "", url: "", layerId: 0,
+      visible: false, opacity: 1, zIndex: nextLayerZIndex(mapDoc),
+      legend: { mode: "auto" }, legendItems: [],
+      queryable: true, popup: { title: "", fields: [], linkField: null },
+      style: { color: "#c49a2a", weight: 1.5, fillColor: "#c49a2a", fillOpacity: 0.18, dashArray: null, pointRadius: 5, classify: null },
+      cluster: false, labels: { field: null, minZoom: 14 },
+      clipToParish: true, attribution: "", description: "", updated: "", timeField: null
+    };
+  }
+
+  function testArcgisConnection(url, statusEl) {
+    if (!url) { statusEl.textContent = "Enter a service URL first."; return; }
+    statusEl.textContent = "Testing…"; statusEl.style.color = "";
+    fetch(url.replace(/\/$/, "") + "?f=json").then(function (res) {
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    }).then(function (data) {
+      if (data.error) throw new Error(data.error.message || ("code " + data.error.code));
+      var name = data.serviceDescription || data.mapName || data.name || "(unnamed service)";
+      var subCount = Array.isArray(data.layers) ? data.layers.length : (data.fields ? 1 : 0);
+      var wkid = data.spatialReference && (data.spatialReference.latestWkid || data.spatialReference.wkid);
+      statusEl.textContent = "✓ " + name + " — " + subCount + " sublayer(s)" +
+        (wkid ? ", SRS " + wkid : "") + ". CORS allowed this request.";
+    }).catch(function (err) {
+      statusEl.textContent = "✗ Couldn't reach this service directly from the browser (" + err.message + "). " +
+        "This usually means CORS is blocking cross-origin access — try “ArcGIS map service (image)”, " +
+        "which loads images and doesn't need CORS.";
+      statusEl.style.color = "var(--adm-danger)";
+    });
+  }
+
+  function loadFieldsFromService(layer, onDone) {
+    var sub = layer.sourceType === "esriFeature" ? layer.layerId
+      : (Array.isArray(layer.layers) && layer.layers.length ? layer.layers[0] : 0);
+    var url = (layer.url || "").replace(/\/$/, "") + "/" + sub + "?f=pjson";
+    fetch(url).then(function (res) {
+      if (!res.ok) throw new Error("HTTP " + res.status);
+      return res.json();
+    }).then(function (data) {
+      if (data.error) throw new Error(data.error.message || ("code " + data.error.code));
+      if (!layer.popup) layer.popup = { title: "", fields: [], linkField: null };
+      if (!Array.isArray(layer.popup.fields)) layer.popup.fields = [];
+      var existing = {}; layer.popup.fields.forEach(function (f) { existing[f.name] = true; });
+      var added = 0;
+      (data.fields || []).forEach(function (f) {
+        if (/^(OBJECTID|FID|Shape|GlobalID)/i.test(f.name)) return;
+        if (existing[f.name]) return;
+        layer.popup.fields.push({ name: f.name, label: f.alias || f.name });
+        added++;
+      });
+      markDirty();
+      alert(added ? ("Added " + added + " field(s) from the service.")
+        : "No new fields found (all fields already listed, or the service returned none).");
+      onDone();
+    }).catch(function (err) { alert("Couldn't load fields: " + err.message); });
+  }
+
+  /* layer.sourceRef points at a data/gis/sources.json candidateLayers[].sourceId
+     -- an entry *inside* that one document, not a document of its own -- so
+     this can't be a plain fDocPicker (which filters window.DTS_CONTENT.docs
+     by _type, and there's only ever one gisSources document). */
+  function sourceRefPicker(parent, label, layer, opts) {
+    opts = opts || {};
+    var wrap = el("div", "adm-field");
+    wrap.appendChild(el("label", "adm-label", label));
+    var sel = el("select", "adm-select");
+    var noneOpt = el("option", null, "— none —"); noneOpt.value = ""; sel.appendChild(noneOpt);
+    var sourcesFile = gisSourcesFile();
+    var candidates = (sourcesFile && Array.isArray(docs[sourcesFile].candidateLayers)) ? docs[sourcesFile].candidateLayers : [];
+    candidates.forEach(function (c) {
+      var opt = el("option", null, c.sourceId + (c.feedsGroup ? " (" + c.feedsGroup + ")" : ""));
+      opt.value = c.sourceId; sel.appendChild(opt);
+    });
+    sel.value = layer.sourceRef || "";
+    sel.addEventListener("change", function () { layer.sourceRef = sel.value || null; markDirty(); });
+    wrap.appendChild(sel);
+    if (opts.hint) wrap.appendChild(el("p", "adm-hint", opts.hint));
+    parent.appendChild(wrap);
+  }
+
+  function layerEditor(card, layer, mapDoc, onStructural) {
+    fText(card, "Title", layer, "title", { half: true });
+
+    var idWrap = el("div", "adm-field half");
+    idWrap.appendChild(el("label", "adm-label", "Short id"));
+    var idInput = el("input", "adm-input"); idInput.type = "text"; idInput.value = layer.id || "";
+    var idMsg = el("p", "adm-hint", "");
+    function validateLayerId() {
+      var v = idInput.value.trim();
+      var ok = /^[a-z0-9-]{1,40}$/.test(v);
+      var dupe = ok && (mapDoc.layers || []).some(function (o) { return o !== layer && o.id === v; });
+      idMsg.textContent = !ok ? "Letters, numbers and hyphens only." : dupe ? "Another layer already uses this id." : "";
+    }
+    idInput.addEventListener("input", function () { layer.id = idInput.value; markDirty(); validateLayerId(); onStructural(); });
+    validateLayerId();
+    idWrap.appendChild(idInput); idWrap.appendChild(idMsg);
+    card.appendChild(idWrap);
+
+    var groupWrap = el("div", "adm-field half");
+    groupWrap.appendChild(el("label", "adm-label", "Group"));
+    var groupSel = el("select", "adm-select");
+    (mapDoc.groups || []).forEach(function (g) { var opt = el("option", null, g.title); opt.value = g.id; groupSel.appendChild(opt); });
+    groupSel.value = layer.group || "";
+    groupSel.addEventListener("change", function () { layer.group = groupSel.value; markDirty(); });
+    groupWrap.appendChild(groupSel);
+    card.appendChild(groupWrap);
+
+    var sourceFieldsZone = el("div");
+    var typeWrap = el("div", "adm-field half");
+    typeWrap.appendChild(el("label", "adm-label", "Source type"));
+    var typeSel = el("select", "adm-select");
+    SOURCE_TYPE_OPTIONS.forEach(function (o) { var opt = el("option", null, o[1]); opt.value = o[0]; typeSel.appendChild(opt); });
+    typeSel.value = layer.sourceType;
+    typeSel.addEventListener("change", function () { layer.sourceType = typeSel.value; markDirty(); onStructural(); drawSourceFields(); });
+    typeWrap.appendChild(typeSel);
+    card.appendChild(typeWrap);
+    card.appendChild(sourceFieldsZone);
+
+    var popupFieldsZone = el("div");
+    var testStatus = el("p", "adm-hint", "");
+
+    function drawSourceFields() {
+      sourceFieldsZone.innerHTML = "";
+      fText(sourceFieldsZone, "Service / file URL", layer, "url", { placeholder: "https://…/MapServer or data/gis/layers/….geojson" });
+      var isEsri = layer.sourceType === "esriDynamic" || layer.sourceType === "esriFeature" || layer.sourceType === "esriImage";
+      if (layer.sourceType === "esriDynamic") {
+        fIndexList(sourceFieldsZone, "Sublayers (comma-separated indexes)", layer, "layers", { half: true });
+      } else if (layer.sourceType === "esriFeature") {
+        fNumber(sourceFieldsZone, "Sublayer index", layer, "layerId", { half: true, min: 0, step: 1 });
+      }
+      if (isEsri) {
+        var btnRow = el("div", "adm-btnrow");
+        var testBtn = el("button", "adm-btn adm-btn-small", "Test connection");
+        testBtn.type = "button";
+        testBtn.addEventListener("click", function () { testArcgisConnection(layer.url, testStatus); });
+        btnRow.appendChild(testBtn);
+        if (layer.sourceType !== "esriImage") {
+          var loadBtn = el("button", "adm-btn adm-btn-small", "Load fields from service");
+          loadBtn.type = "button";
+          loadBtn.addEventListener("click", function () { loadFieldsFromService(layer, drawPopupFields); });
+          btnRow.appendChild(loadBtn);
+        }
+        sourceFieldsZone.appendChild(btnRow);
+        sourceFieldsZone.appendChild(testStatus);
+      }
+      sourceRefPicker(sourceFieldsZone, "Data source (provenance)", layer,
+        { hint: "One of the entries in the Data sources editor's Candidate layers list." });
+    }
+    drawSourceFields();
+
+    fCheck(card, "Visible by default", layer, "visible");
+    fRange(card, "Opacity", layer, "opacity", { min: 0, max: 1, step: 0.05 });
+    fNumber(card, "Zoom range — min", layer, "minZoom", { half: true, min: 0, max: 22, step: 1 });
+    fNumber(card, "Zoom range — max", layer, "maxZoom", { half: true, min: 0, max: 22, step: 1 });
+    fCheck(card, "Clip to Iberia Parish", layer, "clipToParish");
+
+    var legendWrap = el("div", "adm-field half");
+    legendWrap.appendChild(el("label", "adm-label", "Legend"));
+    var legendSel = el("select", "adm-select");
+    [["auto", "Automatic from the service / style"], ["none", "None"], ["custom", "Custom"]].forEach(function (o) {
+      var opt = el("option", null, o[1]); opt.value = o[0]; legendSel.appendChild(opt);
+    });
+    if (!layer.legend) layer.legend = { mode: "auto" };
+    legendSel.value = layer.legend.mode || "auto";
+    var legendItemsZone = el("div");
+    legendSel.addEventListener("change", function () {
+      layer.legend.mode = legendSel.value; markDirty(); drawLegendItems();
+    });
+    legendWrap.appendChild(legendSel);
+    card.appendChild(legendWrap);
+    card.appendChild(legendItemsZone);
+    function drawLegendItems() {
+      legendItemsZone.innerHTML = "";
+      if (layer.legend.mode !== "custom") return;
+      if (!Array.isArray(layer.legendItems)) layer.legendItems = [];
+      fList(legendItemsZone, "Legend rows", layer.legendItems, function (row, item) {
+        fText(row, "Label", item, "label", { half: true });
+        fColor(row, "Color", item, "color");
+      }, function () { return { label: "", color: "#c49a2a" }; }, "+ Add row");
+    }
+    drawLegendItems();
+
+    fCheck(card, "Clickable (show details on click)", layer, "queryable");
+    if (!layer.popup) layer.popup = { title: "", fields: [], linkField: null };
+    fText(card, "Popup title (e.g. {ZONE})", layer.popup, "title", { hint: "Curly braces pull a field's raw value, e.g. {ZONE}." });
+    card.appendChild(popupFieldsZone);
+    function drawPopupFields() {
+      popupFieldsZone.innerHTML = "";
+      if (!Array.isArray(layer.popup.fields)) layer.popup.fields = [];
+      fListOrdered(popupFieldsZone, "Fields to show", layer.popup.fields, function (row, item) {
+        fText(row, "Field name", item, "name", { half: true });
+        fText(row, "Shown as", item, "label", { half: true });
+        fSelect(row, "Format", item, "format", [["", "Plain text"], ["number", "Number"], ["date", "Date"]], { half: true });
+        fText(row, "Suffix (e.g. “ ft”)", item, "suffix", { half: true });
+      }, function () { return { name: "", label: "" }; }, "+ Add field");
+    }
+    drawPopupFields();
+
+    var styleBox = section(card, "Style (vector layers only)");
+    if (!layer.style) layer.style = { color: "#c49a2a", weight: 1.5, fillColor: "#c49a2a", fillOpacity: 0.18, dashArray: null, pointRadius: 5, classify: null };
+    fColor(styleBox, "Line color", layer.style, "color");
+    fNumber(styleBox, "Line width", layer.style, "weight", { half: true, min: 0, step: 0.5 });
+    fColor(styleBox, "Fill color", layer.style, "fillColor");
+    fRange(styleBox, "Fill opacity", layer.style, "fillOpacity", { min: 0, max: 1, step: 0.05 });
+    fNumber(styleBox, "Point radius (point layers)", layer.style, "pointRadius", { half: true, min: 1, step: 1 });
+
+    fText(card, "Description", layer, "description", { textarea: true, rows: 2 });
+    fText(card, "Attribution", layer, "attribution");
+    fText(card, "Last updated", layer, "updated", { placeholder: "YYYY-MM-DD", half: true });
+  }
+
+  /* ============================================================
+     MAP EDITOR — remaining sections  (06-SPEC §4)
+     ============================================================ */
+  function groupsEditor(parent, mapDoc, onStructural) {
+    var box = section(parent, "Layer groups",
+      "Groups are containers for layers in the layer panel. Deleting one asks where its layers should go.");
+    if (!Array.isArray(mapDoc.groups)) mapDoc.groups = [];
+    fListOrdered(box, "Groups", mapDoc.groups, function (card, item) {
+      fText(card, "Title", item, "title", { half: true });
+      fCheck(card, "Open by default", item, "open");
+    }, function () {
+      return { id: "group-" + Math.random().toString(36).slice(2, 8), title: "New group", open: false };
+    }, "+ Add group", {
+      beforeRemove: function (item) {
+        var affected = (mapDoc.layers || []).filter(function (l) { return l.group === item.id; });
+        if (!affected.length) return true;
+        var remaining = mapDoc.groups.filter(function (g) { return g !== item; });
+        if (!remaining.length) {
+          alert("Can't remove the last group while " + affected.length + " layer(s) still use it. Add another group first.");
+          return false;
+        }
+        var choices = remaining.map(function (g, i) { return (i + 1) + ". " + g.title; }).join("\n");
+        var pick = prompt(affected.length + " layer(s) are in “" + item.title + "”. Move them to which group?\n" + choices, "1");
+        var idx = parseInt(pick, 10) - 1;
+        if (!(idx >= 0 && idx < remaining.length)) { alert("Cancelled — group not removed."); return false; }
+        affected.forEach(function (l) { l.group = remaining[idx].id; });
+        onStructural();
+        return true;
+      },
+      onChange: onStructural
+    });
+  }
+
+  function basemapsEditor(parent, mapDoc, onStructural) {
+    var box = section(parent, "Basemaps");
+    if (!Array.isArray(mapDoc.basemaps)) mapDoc.basemaps = [];
+    fListOrdered(box, "Basemaps", mapDoc.basemaps, function (card, item) {
+      fText(card, "Title", item, "title", { half: true });
+      fText(card, "Short id", item, "id", { half: true, hint: "Referenced by tour steps' basemap field." });
+      var typeWrap = el("div", "adm-field half");
+      typeWrap.appendChild(el("label", "adm-label", "Type"));
+      var typeSel = el("select", "adm-select");
+      [["tileXYZ", "Tiled (XYZ)"], ["esriImage", "ArcGIS image service"], ["wms", "WMS"], ["none", "No basemap"]].forEach(function (o) {
+        var opt = el("option", null, o[1]); opt.value = o[0]; typeSel.appendChild(opt);
+      });
+      typeSel.value = item.type || "tileXYZ";
+      typeSel.addEventListener("change", function () { item.type = typeSel.value; markDirty(); onStructural(); });
+      typeWrap.appendChild(typeSel);
+      card.appendChild(typeWrap);
+      if (item.type !== "none") {
+        fText(card, "URL", item, "url", { placeholder: "https://…/{z}/{x}/{y}.png" });
+        fText(card, "Attribution", item, "attribution");
+      }
+      var defWrap = el("div", "adm-field adm-check");
+      var defLab = el("label", "adm-checklabel");
+      var defRadio = el("input"); defRadio.type = "radio"; defRadio.name = "admBasemapDefault";
+      defRadio.checked = !!item.default;
+      defRadio.addEventListener("change", function () {
+        mapDoc.basemaps.forEach(function (o) { o.default = (o === item); });
+        markDirty(); onStructural();
+      });
+      defLab.appendChild(defRadio);
+      defLab.appendChild(document.createTextNode(" Default basemap"));
+      defWrap.appendChild(defLab);
+      card.appendChild(defWrap);
+    }, function () {
+      return { id: "basemap-" + Math.random().toString(36).slice(2, 8), title: "New basemap", type: "tileXYZ", url: "", attribution: "" };
+    }, "+ Add basemap", {
+      beforeRemove: function () {
+        if (mapDoc.basemaps.length <= 1) { alert("A map needs at least one basemap."); return false; }
+        return true;
+      },
+      onChange: onStructural
+    });
+  }
+
+  var TOOL_DESCRIPTIONS = {
+    layerPanel: "Grouped layer list with visibility, opacity and zoom-to-extent.",
+    basemapSwitcher: "Lets visitors change the base imagery/street map.",
+    legend: "Auto-built swatches for currently visible layers.",
+    identify: "Click a feature to see its details in a popup.",
+    attributeTable: "A sortable, filterable table of a layer's rows.",
+    filter: "Build a field/operator/value query against a layer.",
+    measure: "Distance and area measurement.",
+    draw: "Point/line/polygon/rectangle/text annotation.",
+    coordinates: "Live lat/lng readout and go-to-coordinates.",
+    search: "Feature and place search, parish-limited.",
+    geolocate: "One-shot “where am I” with an accuracy circle.",
+    bookmarks: "Jump to the named places authored below.",
+    swipe: "Drag a divider to compare two layers.",
+    timeline: "Scrub through time-stepped layers.",
+    print: "Print-styled full-page map view.",
+    exportData: "Download visible features as GeoJSON/CSV.",
+    share: "Copy a link that restores the current map state.",
+    fullscreen: "Expand the map to fill the screen.",
+    scaleBar: "Always-on scale bar.",
+    miniMap: "A small locator inset map."
+  };
+  function toolLabel(key) {
+    return key.replace(/([A-Z])/g, " $1").replace(/^./, function (c) { return c.toUpperCase(); });
+  }
+  function toolsEditor(parent, mapDoc) {
+    var box = section(parent, "Tools", "Each tool is optional — turn off anything this map doesn't need. Defaults to on.");
+    if (!mapDoc.tools) mapDoc.tools = {};
+    var grid = el("div", "adm-toolgrid");
+    Object.keys(TOOL_DESCRIPTIONS).forEach(function (key) {
+      if (mapDoc.tools[key] == null) mapDoc.tools[key] = true;
+      var item = el("div", "adm-toolitem");
+      fCheck(item, toolLabel(key), mapDoc.tools, key, TOOL_DESCRIPTIONS[key]);
+      grid.appendChild(item);
+    });
+    box.appendChild(grid);
+  }
+
+  function bookmarksEditor(parent, mapDoc, getPreviewInstance) {
+    var box = section(parent, "Bookmarks");
+    if (!Array.isArray(mapDoc.bookmarks)) mapDoc.bookmarks = [];
+    fListOrdered(box, "Bookmarks", mapDoc.bookmarks, function (card, item) {
+      fText(card, "Title", item, "title", { half: true });
+      fText(card, "Short id", item, "id", { half: true });
+      fView(card, item, "view", { withCapture: true, getPreviewInstance: getPreviewInstance });
+    }, function () {
+      return { id: "bookmark-" + Math.random().toString(36).slice(2, 8), title: "New bookmark",
+               view: { center: mapDoc.view.center.slice(), zoom: mapDoc.view.zoom } };
+    }, "+ Add bookmark");
+  }
+
+  function toursSectionForMap(parent, mapFile) {
+    var m = docs[mapFile];
+    var box = section(parent, "Guided tours");
+    var tours = gisTourFiles(m.id);
+    if (!tours.length) box.appendChild(el("p", "adm-hint", "No tours yet."));
+    tours.forEach(function (tf) {
+      var row = el("div", "adm-listitem");
+      var bar = el("div", "adm-itembar");
+      bar.appendChild(el("span", "adm-itemtitle", docs[tf].title));
+      var btns = el("div", "adm-itembtns");
+      var openBtn = el("button", "adm-btn adm-btn-small", "Edit");
+      openBtn.type = "button";
+      openBtn.addEventListener("click", function () { select("gistour:" + tf); });
+      var delBtn = el("button", "adm-btn adm-btn-ghost adm-btn-small", "Delete");
+      delBtn.type = "button";
+      delBtn.addEventListener("click", function () { deleteGisTour(tf); });
+      btns.appendChild(openBtn); btns.appendChild(delBtn);
+      bar.appendChild(btns);
+      row.appendChild(bar);
+      box.appendChild(row);
+    });
+    var defWrap = el("div", "adm-field");
+    defWrap.appendChild(el("label", "adm-label", "Default tour (auto-opens once per session)"));
+    var defSel = el("select", "adm-select");
+    var noneOpt = el("option", null, "— None —"); noneOpt.value = ""; defSel.appendChild(noneOpt);
+    tours.forEach(function (tf) { var opt = el("option", null, docs[tf].title); opt.value = docs[tf].id; defSel.appendChild(opt); });
+    defSel.value = m.defaultTour || "";
+    defSel.addEventListener("change", function () { m.defaultTour = defSel.value || null; markDirty(); });
+    defWrap.appendChild(defSel);
+    box.appendChild(defWrap);
+    var addBtn = el("button", "adm-btn adm-btn-small", "+ New tour");
+    addBtn.type = "button";
+    addBtn.addEventListener("click", function () { addGisTour(mapFile); });
+    box.appendChild(addBtn);
+  }
+
+  function editGisMap(pane, file) {
+    var m = docs[file];
+    if (!m) return;
+    setPaneWide(true);
+
+    var split = el("div", "adm-gissplit");
+    var formCol = el("div", "adm-gisform");
+    var previewCol = el("div", "adm-gispreview-col");
+    split.appendChild(formCol); split.appendChild(previewCol);
+    pane.appendChild(split);
+
+    var preview = gisPreviewPanel(previewCol, function () { return m; });
+    currentGisPreview = preview;
+    function structural() { preview.refresh(); }
+
+    var s1 = section(formCol, "Map — " + m.title);
+    fText(s1, "Title", m, "title", { half: true });
+    var idWrap = el("div", "adm-field half");
+    idWrap.appendChild(el("label", "adm-label", "Id (read-only)"));
+    var idShow = el("input", "adm-input"); idShow.type = "text"; idShow.value = m.id; idShow.disabled = true;
+    idWrap.appendChild(idShow);
+    s1.appendChild(idWrap);
+    fText(s1, "Subtitle", m, "subtitle");
+    fText(s1, "Attribution", m, "attribution");
+
+    var s2 = section(formCol, "Default view");
+    fView(s2, m, "view", { withCapture: true, getPreviewInstance: preview.getInstance });
+    fNumber(s2, "Min zoom", m.view, "minZoom", { half: true, min: 0, max: 22, step: 1 });
+    fNumber(s2, "Max zoom", m.view, "maxZoom", { half: true, min: 0, max: 22, step: 1 });
+    fBoundsRaw(s2, "Max bounds", m.view, "maxBounds", { hint: "The envelope panning is restricted to, when the checkbox below is on." });
+    fCheck(s2, "Restrict panning to bounds", m.view, "restrictToBounds");
+
+    var s3 = section(formCol, "Parish boundary");
+    var boundaryWrap = el("div", "adm-field");
+    boundaryWrap.appendChild(el("label", "adm-label", "Boundary layer"));
+    var boundarySel = el("select", "adm-select");
+    function refreshBoundaryOptions() {
+      boundarySel.innerHTML = "";
+      (m.layers || []).forEach(function (ld) { var opt = el("option", null, ld.title); opt.value = ld.id; boundarySel.appendChild(opt); });
+      boundarySel.value = m.boundary.layerId || "";
+    }
+    refreshBoundaryOptions();
+    boundarySel.addEventListener("change", function () { m.boundary.layerId = boundarySel.value; markDirty(); structural(); });
+    boundaryWrap.appendChild(boundarySel);
+    s3.appendChild(boundaryWrap);
+    fCheck(s3, "Dim everything outside the parish", m.boundary, "showMask");
+    fRange(s3, "Mask opacity", m.boundary, "maskOpacity", { min: 0, max: 1, step: 0.05 });
+
+    basemapsEditor(formCol, m, structural);
+    groupsEditor(formCol, m, structural);
+
+    var s6 = section(formCol, "Layers");
+    if (!Array.isArray(m.layers)) m.layers = [];
+    function layersChanged() { structural(); refreshBoundaryOptions(); }
+    fListOrdered(s6, "Layers", m.layers, function (card, layer) {
+      layerEditor(card, layer, m, layersChanged);
+    }, function () { return layerSkeleton(m); }, "+ Add layer", { swapKeys: ["zIndex"], onChange: layersChanged });
+
+    toolsEditor(formCol, m);
+    bookmarksEditor(formCol, m, preview.getInstance);
+    toursSectionForMap(formCol, file);
+
+    var danger = section(formCol, "Danger zone");
+    var delBtn = el("button", "adm-btn adm-btn-danger", "Delete this map");
+    delBtn.type = "button";
+    delBtn.addEventListener("click", function () { deleteGisMap(file); });
+    danger.appendChild(delBtn);
+  }
+
+  /* ============================================================
+     TOUR EDITOR  (06-SPEC §5 / 05-SPEC §1)
+     ============================================================ */
+  function ctaActionEditor(parent, label, cta, mapDoc, currentTourFile) {
+    var wrap = el("div", "adm-field");
+    wrap.appendChild(el("label", "adm-label", label));
+    var kindSel = el("select", "adm-select");
+    [["openLayerPanel", "Open the layer panel"], ["openAttributeTable", "Open the attribute table"],
+     ["startTour", "Start another tour"], ["link", "Open a link"], ["exit", "Exit the tour"]].forEach(function (o) {
+      var opt = el("option", null, o[1]); opt.value = o[0]; kindSel.appendChild(opt);
+    });
+    var raw = cta.action || "openLayerPanel";
+    var sep = raw.indexOf(":");
+    var kind = sep !== -1 ? raw.slice(0, sep) : raw;
+    var param = sep !== -1 ? raw.slice(sep + 1) : "";
+    kindSel.value = kind;
+    wrap.appendChild(kindSel);
+    var paramZone = el("div");
+    wrap.appendChild(paramZone);
+
+    function drawParam() {
+      paramZone.innerHTML = "";
+      if (kindSel.value === "startTour") {
+        var tourSel = el("select", "adm-select");
+        gisTourFiles(mapDoc && mapDoc.id).filter(function (tf) { return tf !== currentTourFile; }).forEach(function (tf) {
+          var opt = el("option", null, docs[tf].title); opt.value = docs[tf].id; tourSel.appendChild(opt);
+        });
+        if (!tourSel.options.length) { paramZone.appendChild(el("p", "adm-hint", "No other tours on this map yet.")); return; }
+        tourSel.value = param || tourSel.options[0].value;
+        cta.action = "startTour:" + tourSel.value;
+        tourSel.addEventListener("change", function () { cta.action = "startTour:" + tourSel.value; markDirty(); });
+        paramZone.appendChild(tourSel);
+      } else if (kindSel.value === "link") {
+        var urlIn = el("input", "adm-input"); urlIn.type = "text"; urlIn.placeholder = "https://…"; urlIn.value = param;
+        urlIn.addEventListener("input", function () { cta.action = "link:" + urlIn.value; markDirty(); });
+        paramZone.appendChild(urlIn);
+      } else {
+        cta.action = kindSel.value;
+      }
+    }
+    kindSel.addEventListener("change", function () { markDirty(); drawParam(); });
+    drawParam();
+    parent.appendChild(wrap);
+  }
+
+  /* Drives the preview exactly the way js/gis/gis-tour.js's own applyStep()
+     drives the real map -- through the same §5 public API only (clear
+     highlight, off then on then opacity, basemap, view, highlight) -- never
+     a hand-rolled shortcut through getState()/applyState()'s diff-against-
+     defaults semantics, which isn't equivalent to a full step apply. */
+  function previewTourStep(inst, step, mapDoc) {
+    if (!inst || !mapDoc) return;
+    inst.clearHighlight();
+    var hideAll = step.layers && Array.isArray(step.layers.off) && step.layers.off.indexOf("*") !== -1;
+    if (hideAll) (mapDoc.layers || []).forEach(function (def) { inst.setLayerVisible(def.id, false); });
+    else if (step.layers && Array.isArray(step.layers.off)) step.layers.off.forEach(function (id) { inst.setLayerVisible(id, false); });
+    if (step.layers && Array.isArray(step.layers.on)) step.layers.on.forEach(function (id) { inst.setLayerVisible(id, true); });
+    if (step.layers && step.layers.opacity) {
+      Object.keys(step.layers.opacity).forEach(function (id) { inst.setLayerOpacity(id, step.layers.opacity[id]); });
+    }
+    if (step.basemap) inst.setBasemap(step.basemap);
+    if (step.view) inst.setView(step.view);
+    if (step.highlight) {
+      inst.highlight(step.highlight.layerId,
+        step.highlight.objectIds ? { objectIds: step.highlight.objectIds } : { where: step.highlight.where });
+    }
+  }
+
+  function tourStepEditor(card, step, mapDoc, getPreviewInstance, redraw) {
+    fText(card, "Title", step, "title", { half: true });
+    var idWrap = el("div", "adm-field half");
+    idWrap.appendChild(el("label", "adm-label", "Short id"));
+    var idIn = el("input", "adm-input"); idIn.type = "text"; idIn.value = step.id || "";
+    idIn.addEventListener("input", function () { step.id = idIn.value; markDirty(); });
+    idWrap.appendChild(idIn);
+    card.appendChild(idWrap);
+
+    var bodyInput = fText(card, "Body text", step, "body", { textarea: true, rows: 3 });
+    var counter = el("p", "adm-hint", "");
+    function updateCounter() {
+      var words = (step.body || "").trim().split(/\s+/).filter(Boolean).length;
+      counter.textContent = words + " word" + (words === 1 ? "" : "s") + " — keep under ~55, the card is narrow.";
+      counter.style.color = words > 55 ? "var(--adm-danger)" : "";
+    }
+    bodyInput.addEventListener("input", updateCounter);
+    updateCounter();
+    card.appendChild(counter);
+
+    if (!step.layers) step.layers = { on: [], off: ["*"] };
+    fView(card, step, "view", {});
+
+    var captureBox = el("div", "adm-capturebox");
+    var capBtn = el("button", "adm-btn adm-btn-small", "📍 Capture current view");
+    capBtn.type = "button";
+    capBtn.title = "Drive the preview map to what this step should show, then click. Saves the position, zoom, visible layers and basemap.";
+    capBtn.addEventListener("click", function () {
+      var inst = getPreviewInstance && getPreviewInstance();
+      if (!inst || !mapDoc) { alert("Preview isn't ready yet — wait a moment and try again."); return; }
+      var st = inst.getState();
+      step.view = { center: [st.c[0], st.c[1]], zoom: st.z };
+      step.basemap = st.b;
+      var hideAll = step.layers && Array.isArray(step.layers.off) && step.layers.off.indexOf("*") !== -1;
+      var vis = {}, opacity = {};
+      (mapDoc.layers || []).forEach(function (def) {
+        var pair = st.l && st.l[def.id];
+        vis[def.id] = pair ? !!pair[0] : !!def.visible;
+        if (pair && typeof pair[1] === "number") opacity[def.id] = pair[1];
+      });
+      step.layers = { on: Object.keys(vis).filter(function (id) { return vis[id]; }), off: hideAll ? ["*"] : [] };
+      if (Object.keys(opacity).length) step.layers.opacity = opacity;
+      markDirty();
+      redraw();
+    });
+    captureBox.appendChild(capBtn);
+    var previewBtn = el("button", "adm-btn adm-btn-small adm-btn-ghost", "Preview this step");
+    previewBtn.type = "button";
+    previewBtn.addEventListener("click", function () {
+      var inst = getPreviewInstance && getPreviewInstance();
+      if (!inst) { alert("Preview isn't ready yet."); return; }
+      previewTourStep(inst, step, mapDoc);
+    });
+    captureBox.appendChild(previewBtn);
+    card.appendChild(captureBox);
+    var savedInfo = el("p", "adm-hint",
+      (step.layers.on || []).length + " layer(s) on" + (step.basemap ? " · basemap " + step.basemap : "") +
+      (step.layers.off && step.layers.off.indexOf("*") !== -1 ? "" : " · other layers left as-is"));
+    card.appendChild(savedInfo);
+
+    var hideOthersWrap = el("div", "adm-field adm-check");
+    var hideOthersLab = el("label", "adm-checklabel");
+    var hideOthersCheck = el("input"); hideOthersCheck.type = "checkbox";
+    hideOthersCheck.checked = Array.isArray(step.layers.off) && step.layers.off.indexOf("*") !== -1;
+    hideOthersCheck.addEventListener("change", function () {
+      step.layers.off = hideOthersCheck.checked ? ["*"] : [];
+      markDirty();
+    });
+    hideOthersLab.appendChild(hideOthersCheck);
+    hideOthersLab.appendChild(document.createTextNode(" Hide all other layers"));
+    hideOthersWrap.appendChild(hideOthersLab);
+    card.appendChild(hideOthersWrap);
+
+    var layersWrap = el("div", "adm-field");
+    layersWrap.appendChild(el("label", "adm-label", "Layers on for this step"));
+    var grid = el("div", "adm-toolgrid");
+    (mapDoc ? mapDoc.layers : []).forEach(function (def) {
+      var item = el("div");
+      var lab = el("label", "adm-checklabel");
+      var cb = el("input"); cb.type = "checkbox";
+      cb.checked = step.layers.on.indexOf(def.id) !== -1;
+      cb.addEventListener("change", function () {
+        var i = step.layers.on.indexOf(def.id);
+        if (cb.checked && i === -1) step.layers.on.push(def.id);
+        else if (!cb.checked && i !== -1) step.layers.on.splice(i, 1);
+        markDirty();
+      });
+      lab.appendChild(cb); lab.appendChild(document.createTextNode(" " + def.title));
+      item.appendChild(lab); grid.appendChild(item);
+    });
+    layersWrap.appendChild(grid);
+    card.appendChild(layersWrap);
+
+    var highlightWrap = el("div", "adm-field half");
+    highlightWrap.appendChild(el("label", "adm-label", "Highlight"));
+    var hlSel = el("select", "adm-select");
+    var noneOpt = el("option", null, "None"); noneOpt.value = ""; hlSel.appendChild(noneOpt);
+    (mapDoc ? mapDoc.layers : []).forEach(function (def) { var opt = el("option", null, def.title); opt.value = def.id; hlSel.appendChild(opt); });
+    hlSel.value = step.highlight ? step.highlight.layerId : "";
+    highlightWrap.appendChild(hlSel);
+    card.appendChild(highlightWrap);
+    var hlWhereZone = el("div");
+    card.appendChild(hlWhereZone);
+    function drawHlWhere() {
+      hlWhereZone.innerHTML = "";
+      if (!hlSel.value) { step.highlight = null; return; }
+      if (!step.highlight || step.highlight.layerId !== hlSel.value) step.highlight = { layerId: hlSel.value, where: "1=1" };
+      fText(hlWhereZone, "Where clause (e.g. 1=1 for everything)", step.highlight, "where", { half: true });
+    }
+    hlSel.addEventListener("change", function () { markDirty(); drawHlWhere(); });
+    drawHlWhere();
+
+    var mediaZone = el("div");
+    card.appendChild(mediaZone);
+    function drawMedia() {
+      mediaZone.innerHTML = "";
+      if (!step.media) {
+        var addImgBtn = el("button", "adm-btn adm-btn-small", "+ Add image (optional)");
+        addImgBtn.type = "button";
+        addImgBtn.addEventListener("click", function () {
+          step.media = { _type: "image", source: { kind: "path", value: "" }, alt: "" };
+          markDirty(); drawMedia();
+        });
+        mediaZone.appendChild(addImgBtn);
+        return;
+      }
+      fSource(mediaZone, "Image", step.media.source, { imagePreview: true });
+      fText(mediaZone, "Alt text", step.media, "alt", { half: true });
+      var rmBtn = el("button", "adm-btn adm-btn-ghost adm-btn-small", "Remove image");
+      rmBtn.type = "button";
+      rmBtn.addEventListener("click", function () { step.media = null; markDirty(); drawMedia(); });
+      mediaZone.appendChild(rmBtn);
+    }
+    drawMedia();
+  }
+
+  function editGisTour(pane, file) {
+    var t = docs[file];
+    if (!t) return;
+    setPaneWide(true);
+
+    var split = el("div", "adm-gissplit");
+    var formCol = el("div", "adm-gisform");
+    var previewCol = el("div", "adm-gispreview-col");
+    split.appendChild(formCol); split.appendChild(previewCol);
+    pane.appendChild(split);
+
+    var mapFile = Object.keys(docs).filter(function (f) { return docs[f] && docs[f]._type === "gisMap" && docs[f].id === t.mapId; })[0];
+    var mapDoc = mapFile ? docs[mapFile] : null;
+    var preview = null;
+    if (mapDoc) {
+      preview = gisPreviewPanel(previewCol, function () { return mapDoc; });
+      currentGisPreview = preview;
+    } else {
+      previewCol.appendChild(el("p", "adm-hint", "This tour's map (“" + t.mapId + "”) doesn't exist — pick a valid map below."));
+    }
+
+    var s1 = section(formCol, "Tour — " + t.title);
+    fText(s1, "Title", t, "title", { half: true });
+    var idWrap = el("div", "adm-field half");
+    idWrap.appendChild(el("label", "adm-label", "Id (read-only)"));
+    var idShow = el("input", "adm-input"); idShow.type = "text"; idShow.value = t.id; idShow.disabled = true;
+    idWrap.appendChild(idShow);
+    s1.appendChild(idWrap);
+    var mapSel = fDocPicker(s1, "Map", t, "mapId", "gisMap", { hint: "Changing this reloads the preview against the new map." });
+    mapSel.addEventListener("change", function () { select("gistour:" + file); });
+    fText(s1, "Intro text", t, "intro", { textarea: true, rows: 2 });
+    fCheck(s1, "Start automatically the first time someone opens the map", t, "autoStart");
+    fCheck(s1, "Advance steps automatically", t, "autoAdvance");
+    fNumber(s1, "Default seconds per step", t, "defaultDuration", { half: true, min: 3, max: 120, step: 1 });
+    fSelect(s1, "Card position", t, "position",
+      [["left", "Left"], ["right", "Right"], ["bottom", "Bottom (forced on mobile regardless)"]], { half: true });
+    fCheck(s1, "Show progress dots", t, "showProgress");
+
+    var s2 = section(formCol, "Steps");
+    if (!Array.isArray(t.steps)) t.steps = [];
+    var stepsHandle = fListOrdered(s2, "Steps", t.steps, function (card, step) {
+      tourStepEditor(card, step, mapDoc, preview && preview.getInstance, function () { stepsHandle.redraw(); });
+    }, function () {
+      return {
+        id: "step-" + Math.random().toString(36).slice(2, 8), title: "New step", body: "",
+        view: mapDoc ? { center: mapDoc.view.center.slice(), zoom: mapDoc.view.zoom } : { center: [29.740394, -91.635827], zoom: 10 },
+        basemap: null, layers: { on: [], off: ["*"] }, highlight: null, media: null, duration: null
+      };
+    }, "+ Add step");
+
+    var s3 = section(formCol, "Ending");
+    if (!t.outro) t.outro = { title: "", body: "", cta: { label: "", action: "openLayerPanel" } };
+    fText(s3, "Title", t.outro, "title", { half: true });
+    fText(s3, "Text", t.outro, "body", { textarea: true, rows: 3 });
+    if (!t.outro.cta) t.outro.cta = { label: "", action: "openLayerPanel" };
+    fText(s3, "Button label", t.outro.cta, "label", { half: true });
+    ctaActionEditor(s3, "Button action", t.outro.cta, mapDoc, file);
+
+    var danger = section(formCol, "Danger zone");
+    var delBtn = el("button", "adm-btn adm-btn-danger", "Delete this tour");
+    delBtn.type = "button";
+    delBtn.addEventListener("click", function () { deleteGisTour(file); });
+    danger.appendChild(delBtn);
+  }
+
+  /* ============================================================
+     DATA SOURCES EDITOR  (06-SPEC §6)
+     ------------------------------------------------------------
+     06-SPEC's field list (Source id/name/organisation/landing page,
+     an Access enum, Retrieval method, feature count…) describes an
+     idealized schema that doesn't match the real, already-shipped
+     data/gis/sources.json — that file is Phase 0's actual verification
+     record (candidateLayers[] with sourceId/feedsGroup/publisher/
+     serviceEndpoint/access/cors/harvested/harvestNotes/…, plus
+     corsSpike/platformNotes/openQuestions). Per this project's own
+     "extend, don't reshape" rule, this editor works the real fields
+     directly rather than forcing them into the spec's idealized shape.
+     corsSpike and platformNotes are Phase 0 point-in-time findings, not
+     day-to-day editorial content — shown read-only; a direct JSON edit
+     remains the escape hatch if one ever needs to change.
+     ============================================================ */
+  function editGisSources(pane, file) {
+    var s = docs[file];
+    if (!s) return;
+
+    var s1 = section(pane, "Data sources — " + (s.id || "gis sources"),
+      "The provenance registry behind every GIS layer's attribution and legal status. " +
+      "The harvest script (tools/gis-harvest.mjs) and docs/GIS-DATA-SOURCES.md both read this file.");
+    fText(s1, "Last verified", s, "lastVerified", { half: true, placeholder: "YYYY-MM-DD" });
+    fText(s1, "Verified by", s, "verifiedBy", { half: true });
+
+    var s2 = section(pane, "Candidate layers", "One entry per real-world data source.");
+    if (!Array.isArray(s.candidateLayers)) s.candidateLayers = [];
+    fListOrdered(s2, "Sources", s.candidateLayers, function (card, item) {
+      fText(card, "Source id", item, "sourceId", { half: true });
+      fText(card, "Feeds group", item, "feedsGroup", { half: true });
+      fText(card, "Organisation / publisher", item, "publisher", { half: true });
+      fText(card, "Service type", item, "serviceType", { half: true });
+      fText(card, "Service endpoint (URL)", item, "serviceEndpoint");
+      fText(card, "Access", item, "access", { half: true, hint: "Free text, e.g. “public, no token”." });
+      fText(card, "CORS", item, "cors", { half: true, hint: "e.g. “verified pass” or “assumed pass”." });
+      fText(card, "Native SRS", item, "nativeSRS", { half: true });
+      fText(card, "Recommended source type", item, "recommendedSourceType", { half: true });
+      fText(card, "Iberia filter method", item, "iberiaFilter");
+      fText(card, "Attribution note", item, "attribution", { textarea: true, rows: 2 });
+      fCheck(card, "Harvested to a local snapshot", item, "harvested");
+      if (item.harvested) {
+        if (Array.isArray(item.harvestedFiles)) {
+          fStringList(card, "Harvested files", item.harvestedFiles);
+        } else {
+          fText(card, "Harvested file", item, "harvestedFile", { placeholder: "data/gis/layers/….geojson" });
+        }
+        fText(card, "Harvest notes", item, "harvestNotes", { textarea: true, rows: 3 });
+      }
+      fText(card, "Notes", item, "notes", { textarea: true, rows: 2 });
+    }, function () {
+      return { sourceId: "", feedsGroup: "", publisher: "", serviceEndpoint: "", serviceType: "",
+               access: "", cors: "", recommendedSourceType: "", iberiaFilter: "", attribution: "",
+               harvested: false, notes: "" };
+    }, "+ Add source");
+
+    var s3 = section(pane, "Open questions", "Anything still pending human follow-up (terms of use, judgment calls).");
+    if (!Array.isArray(s.openQuestions)) s.openQuestions = [];
+    fList(s3, "Open questions", s.openQuestions, function (card, item) {
+      fText(card, "Id", item, "id", { half: true });
+      fText(card, "Owner", item, "owner", { half: true });
+      fText(card, "Question", item, "question", { textarea: true, rows: 2 });
+      fText(card, "Status", item, "status", { textarea: true, rows: 2 });
+      if (!Array.isArray(item.blocksLayers)) item.blocksLayers = [];
+      fStringList(card, "Blocks layers", item.blocksLayers);
+    }, function () {
+      return { id: "", question: "", owner: "", status: "unresolved", blocksLayers: [] };
+    }, "+ Add open question");
+
+    if (s.corsSpike || s.platformNotes) {
+      var s4 = section(pane, "Phase 0 findings (read-only)",
+        "The CORS spike and platform notes recorded when this map was first scoped — a point-in-time " +
+        "verification record, not day-to-day editorial content. Edit the JSON directly if this ever needs to change.");
+      if (s.corsSpike && s.corsSpike.conclusion) s4.appendChild(el("p", "adm-hint", s.corsSpike.conclusion));
+      if (s.platformNotes) {
+        Object.keys(s.platformNotes).forEach(function (k) {
+          var note = s.platformNotes[k];
+          if (note && note.conclusion) s4.appendChild(el("p", "adm-hint", k + ": " + note.conclusion));
+        });
+      }
+    }
+
+    var s5 = section(pane, "Export");
+    var exportBtn = el("button", "adm-btn", "Export sources document");
+    exportBtn.type = "button";
+    exportBtn.title = "Downloads a Markdown file generated from this document, for review before updating docs/GIS-DATA-SOURCES.md.";
+    exportBtn.addEventListener("click", function () {
+      var md = generateSourcesMarkdown(s);
+      triggerDownload(URL.createObjectURL(new Blob([md], { type: "text/markdown" })), "GIS-DATA-SOURCES.md");
+    });
+    s5.appendChild(exportBtn);
+  }
+
+  function generateSourcesMarkdown(s) {
+    var lines = [];
+    lines.push("# GIS Data Sources — Iberia Parish / Gulf Futures Challenge");
+    lines.push("");
+    lines.push("Generated from `data/gis/sources.json` via the Admin Board's Data sources editor. " +
+      "Verified " + (s.lastVerified || "—") + ".");
+    lines.push("");
+    if (s.corsSpike) {
+      lines.push("## The CORS spike");
+      lines.push("");
+      lines.push(s.corsSpike.summary || "");
+      lines.push("");
+      if (s.corsSpike.conclusion) { lines.push("**Conclusion:** " + s.corsSpike.conclusion); lines.push(""); }
+    }
+    lines.push("## Candidate layers");
+    lines.push("");
+    lines.push("| Source id | Group | Endpoint | CORS | Recommended type | Harvested | Notes |");
+    lines.push("|---|---|---|---|---|---|---|");
+    (s.candidateLayers || []).forEach(function (c) {
+      lines.push("| `" + (c.sourceId || "") + "` | " + (c.feedsGroup || "") + " | " + (c.serviceEndpoint || "") +
+        " | " + (c.cors || "") + " | " + (c.recommendedSourceType || "") + " | " +
+        (c.harvested ? "yes" : "no") + " | " + (c.notes || "").replace(/\n/g, " ").replace(/\|/g, "/") + " |");
+    });
+    lines.push("");
+    if (s.openQuestions && s.openQuestions.length) {
+      lines.push("## Open questions");
+      lines.push("");
+      s.openQuestions.forEach(function (q) {
+        lines.push("- **" + (q.id || "") + "** (" + (q.status || "unresolved") + ", owner: " + (q.owner || "—") + "): " + (q.question || ""));
+      });
+      lines.push("");
+    }
+    return lines.join("\n") + "\n";
+  }
+
+  /* ============================================================
      SAVE DRAFT / DISCARD / EXPORT
      ============================================================ */
   function saveDraft(reload) {
@@ -690,6 +2176,37 @@
     window.location.reload();
   }
 
+  /* Every gisMap layer whose sourceType is "geojson" pointing at a harvested
+     snapshot under data/gis/layers/ (06-SPEC §8). Those files are never in
+     DTS_CONTENT.docs/localStorage (04-SPEC §1's size warning), so export is
+     the only path that ships them at all -- fetched from disk fresh here. */
+  function collectHarvestedLayerUrls() {
+    var urls = {};
+    Object.keys(docs).forEach(function (f) {
+      var d = docs[f];
+      if (!d || d._type !== "gisMap") return;
+      (d.layers || []).forEach(function (l) {
+        if (l.sourceType === "geojson" && typeof l.url === "string" && l.url.indexOf("data/gis/layers/") === 0) {
+          urls[l.url] = true;
+        }
+      });
+    });
+    return Object.keys(urls);
+  }
+
+  function fetchHarvestedLayers(urls) {
+    return Promise.all(urls.map(function (u) {
+      return fetch(u).then(function (res) {
+        if (!res.ok) throw new Error(u + " -- HTTP " + res.status);
+        return res.text();
+      }).then(function (text) {
+        return { url: u, text: text };
+      }).catch(function (err) {
+        throw new Error(u + " -- " + (err && err.message ? err.message : "fetch failed"));
+      });
+    }));
+  }
+
   function exportData() {
     // Bump the version stamp so every published doc gets a fresh
     // ?v=... URL in content-loader.js -- this is what lets those
@@ -700,20 +2217,35 @@
     Object.keys(docs).forEach(function (f) {
       files[f] = JSON.stringify(docs[f], null, 2) + "\n";
     });
-    // Try to zip (JSZip from cdnjs); fall back to individual downloads.
-    loadJSZip().then(function (JSZip) {
-      var zip = new JSZip();
-      var root = zip.folder("data");
-      Object.keys(files).forEach(function (f) { root.file(f, files[f]); });
-      return zip.generateAsync({ type: "blob" }).then(function (blob) {
-        triggerDownload(URL.createObjectURL(blob), "data.zip");
+
+    var harvestedUrls = collectHarvestedLayerUrls();
+    fetchHarvestedLayers(harvestedUrls).then(function (layerFiles) {
+      // Try to zip (JSZip from cdnjs); fall back to individual downloads.
+      return loadJSZip().then(function (JSZip) {
+        var zip = new JSZip();
+        var root = zip.folder("data");
+        Object.keys(files).forEach(function (f) { root.file(f, files[f]); });
+        layerFiles.forEach(function (lf) { root.file(lf.url.replace(/^data\//, ""), lf.text); });
+        return zip.generateAsync({ type: "blob" }).then(function (blob) {
+          triggerDownload(URL.createObjectURL(blob), "data.zip");
+        });
+      }).catch(function () {
+        Object.keys(files).forEach(function (f) {
+          var blob = new Blob([files[f]], { type: "application/json" });
+          triggerDownload(URL.createObjectURL(blob), f.replace(/\//g, "__"));
+        });
+        layerFiles.forEach(function (lf) {
+          var blob = new Blob([lf.text], { type: "application/geo+json" });
+          triggerDownload(URL.createObjectURL(blob), lf.url.replace(/\//g, "__"));
+        });
+        alert("Zip library unavailable — files downloaded individually" +
+          (layerFiles.length ? (", including " + layerFiles.length + " harvested GIS layer file(s)") : "") +
+          ". Filenames use \u201c__\u201d for folders (projects__campus.json → data/projects/campus.json).");
       });
-    }).catch(function () {
-      Object.keys(files).forEach(function (f) {
-        var blob = new Blob([files[f]], { type: "application/json" });
-        triggerDownload(URL.createObjectURL(blob), f.replace(/\//g, "__"));
-      });
-      alert("Zip library unavailable — files downloaded individually. Filenames use \u201c__\u201d for folders (projects__campus.json → data/projects/campus.json).");
+    }).catch(function (err) {
+      // Fail loudly (06-SPEC §8): never ship a data/ folder silently missing a layer snapshot.
+      alert("Export stopped — couldn't fetch " + harvestedUrls.length + " harvested GIS layer file(s) this export needs:\n\n" +
+        err.message + "\n\nNo data.zip was produced. Fix the missing file(s) (or the map referencing them) and try again.");
     });
   }
 
@@ -836,6 +2368,21 @@
     add.type = "button";
     add.addEventListener("click", addProject);
     navEl.appendChild(add);
+
+    navEl.appendChild(el("p", "adm-navhead", "GIS MAPS"));
+    gisMapFiles().forEach(function (mf) {
+      navBtn(docs[mf].title, "gismap:" + mf, true);
+      gisTourFiles(docs[mf].id).forEach(function (tf) {
+        navBtn(docs[tf].title, "gistour:" + tf, true);
+      });
+    });
+    var addMap = el("button", "adm-btn adm-btn-small adm-addproject", "+ New map");
+    addMap.type = "button";
+    addMap.addEventListener("click", addGisMap);
+    navEl.appendChild(addMap);
+    var sourcesFile = gisSourcesFile();
+    if (sourcesFile) navBtn("Data sources", "gissources:" + sourcesFile);
+
     highlightNav();
   }
 
@@ -848,6 +2395,9 @@
 
   function select(key) {
     activeKey = key;
+    preDirtyHook = null;   // never let a hook from the previous pane fire against this one
+    setPaneWide(false);    // only gismap:/gistour: panes widen it back
+    if (currentGisPreview) { currentGisPreview.destroy(); currentGisPreview = null; }
     highlightNav();
     paneEl.innerHTML = "";
     if (key === "home") editHome(paneEl);
@@ -858,6 +2408,21 @@
     else if (key.indexOf("project:") === 0) {
       var file = key.slice(8);
       if (docs[file]) editProject(paneEl, file);
+      else select("home");
+    }
+    else if (key.indexOf("gismap:") === 0) {
+      var mapFile = key.slice(7);
+      if (docs[mapFile]) editGisMap(paneEl, mapFile);
+      else select("home");
+    }
+    else if (key.indexOf("gistour:") === 0) {
+      var tourFile = key.slice(8);
+      if (docs[tourFile]) editGisTour(paneEl, tourFile);
+      else select("home");
+    }
+    else if (key.indexOf("gissources:") === 0) {
+      var sourcesFile = key.slice(11);
+      if (docs[sourcesFile]) editGisSources(paneEl, sourcesFile);
       else select("home");
     }
     paneEl.scrollTop = 0;
