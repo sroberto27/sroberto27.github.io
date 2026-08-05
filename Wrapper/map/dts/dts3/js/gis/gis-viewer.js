@@ -28,6 +28,13 @@
     return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }
 
+  // Basemaps must render below every data layer. Data layer zIndex values
+  // (see iberia-coastal.json) start at 5, so 1 stays under all of them --
+  // without an explicit pane, Leaflet puts tile/image layers in its own
+  // default tilePane (zIndex 200), which sits above every custom data-layer
+  // pane and swallows both the visuals and the pointer events.
+  const BASEMAP_ZINDEX = 1;
+
   function featureRowId(f) {
     if (f.id != null) return f.id;
     const props = f.properties || {};
@@ -248,9 +255,13 @@
     });
   }
 
-  function buildBasemap(def) {
-    if (def.type === "tileXYZ") return buildTileLayer(def, {});
-    if (def.type === "esriImage") return buildEsriImageDataLayer(def, {}).leaflet;
+  function buildBasemap(def, ctx) {
+    if (def.type === "tileXYZ") return buildTileLayer(def, ctx || {});
+    if (def.type === "esriImage") return buildEsriImageDataLayer(def, ctx || {}).leaflet;
+    // "No basemap" -- an empty layer, so setBasemap()'s ordinary add/remove
+    // flow (and the basemap switcher's <select>) don't need a special case
+    // for it. No pane/tiles/attribution of its own to worry about.
+    if (def.type === "none") return L.layerGroup();
     throw new Error('Unsupported basemap type "' + def.type + '"');
   }
 
@@ -376,7 +387,7 @@
       if (basemapLayers[id]) return basemapLayers[id];
       const def = basemapDefs[id];
       if (!def) throw new Error('Unknown basemap "' + id + '"');
-      const layer = buildBasemap(def);
+      const layer = buildBasemap(def, { pane: ensurePane(map, BASEMAP_ZINDEX) });
       basemapLayers[id] = layer;
       return layer;
     }
@@ -425,9 +436,19 @@
       return true;
     }
 
+    // Real design change, requested live: the Layers-panel checkbox and the
+    // Timeline used to be ANDed together here (a time-stepped layer only
+    // ever showed if both its own `visible` flag AND the current timeline
+    // step agreed) -- confusing in practice, since checking a shoreline's
+    // box did nothing unless the Timeline happened to already be on that
+    // exact year. The two are now fully independent: this function only
+    // ever looks at `entry.visible` (the checkbox's own single source of
+    // truth); the Timeline drives that same flag directly, via
+    // setLayerVisible(), when it moves -- see applyTimeFilters() below --
+    // rather than gating visibility behind a second, hidden condition.
     function syncLayerToMap(entry) {
       if (!entry.leaflet) return;
-      const shouldShow = entry.visible && isInZoomRange(entry.def) && isTimeVisible(entry);
+      const shouldShow = entry.visible && isInZoomRange(entry.def);
       const isShown = map.hasLayer(entry.leaflet);
       if (shouldShow && !isShown) entry.leaflet.addTo(map);
       if (!shouldShow && isShown) map.removeLayer(entry.leaflet);
@@ -509,7 +530,7 @@
         entry.setFilter = built.setFilter || null;
         entry.status = "ready";
         applyPendingFilter(entry); // re-applies a filter set by applyState() before this layer finished loading
-        if (typeof entry.leaflet.setOpacity === "function") entry.leaflet.setOpacity(entry.opacity);
+        applyOpacityToLeaflet(entry);
         // esri-leaflet layers build synchronously but fetch lazily -- a bad
         // service surfaces here, not as a constructor throw (§11).
         if (typeof entry.leaflet.on === "function") {
@@ -591,11 +612,39 @@
       emit("layerchange", { id: id, visible: entry.visible });
     }
 
+    // geojson/esriFeature layers have no setOpacity() -- only tile/image
+    // layers do. Their "opacity" has to move fillOpacity instead, scaled
+    // against the layer's own authored fillOpacity (not overwritten outright)
+    // so a slider left at its default 1 reproduces the authored look exactly.
+    // Mirrors the same fillOpacity-default fallback buildGeoJsonLayer's
+    // styleFor() and gis-esri.js's baseStyle()/pointToLayer already use, so
+    // this never has to know def.style beyond what those already establish.
+    // Known limitation, not chased here: esri-leaflet's FeatureLayer re-runs
+    // its own per-feature `style` callback on internal _redraw() (e.g. a
+    // feature spanning more than one query tile re-encountered on pan/zoom --
+    // see buildFeature()'s own real-bug note in gis-esri.js), which would
+    // reset a vector layer's opacity back to its authored default; the style
+    // callback itself has no reference to this instance's live opacity state.
+    function baseFillOpacityFor(def) {
+      const styleOpts = def.style || {};
+      if (typeof styleOpts.fillOpacity === "number") return styleOpts.fillOpacity;
+      return typeof styleOpts.pointRadius === "number" ? 0.6 : 0.18;
+    }
+
+    function applyOpacityToLeaflet(entry) {
+      if (!entry.leaflet) return;
+      if (typeof entry.leaflet.setOpacity === "function") {
+        entry.leaflet.setOpacity(entry.opacity);
+      } else if (typeof entry.leaflet.setStyle === "function") {
+        entry.leaflet.setStyle({ opacity: entry.opacity, fillOpacity: baseFillOpacityFor(entry.def) * entry.opacity });
+      }
+    }
+
     function setLayerOpacity(id, opacity) {
       const entry = layers[id];
       if (!entry) { console.warn('[gis] setLayerOpacity: unknown layer "' + id + '"'); return; }
       entry.opacity = clamp(opacity, 0, 1);
-      if (entry.leaflet && typeof entry.leaflet.setOpacity === "function") entry.leaflet.setOpacity(entry.opacity);
+      applyOpacityToLeaflet(entry);
       emit("layerchange", { id: id, opacity: entry.opacity });
     }
 
@@ -891,7 +940,18 @@
       }).addTo(drawGroup);
     }
 
-    function rectCorners(a, b) { return [[a.lat, a.lng], [a.lat, b.lng], [b.lat, b.lng], [b.lat, a.lng]]; }
+    // Real bug, found live testing (crash reported as Leaflet's own
+    // _projectLatlngs failing on `undefined` several frames deep): this
+    // returned plain [lat,lng] arrays, but its only caller, finishDrawSession(),
+    // treats every non-"point" type's input as LatLng-*objects* (reading
+    // p.lat/p.lng) -- true for line/polygon, whose points are real e.latlng
+    // objects from map clicks, but not for a plain array, where .lat/.lng
+    // are undefined. Returning real L.LatLng instances here instead keeps
+    // finishDrawSession's generic pts.map() correct for every draw type
+    // without a rectangle-specific special case.
+    function rectCorners(a, b) {
+      return [L.latLng(a.lat, a.lng), L.latLng(a.lat, b.lng), L.latLng(b.lat, b.lng), L.latLng(b.lat, a.lng)];
+    }
 
     function finishDrawSession(pts) {
       const type = drawSession.type, color = drawSession.color;
@@ -1023,25 +1083,36 @@
     let timeStepIndex = 0;
     let timePlayTimer = null;
     function timeSteps() { return (mapDoc.timeSeries && Array.isArray(mapDoc.timeSeries.steps)) ? mapDoc.timeSeries.steps : []; }
-    function isTimeVisible(entry) {
-      if (!entry.def.timeStep) return true;
-      const steps = timeSteps();
-      if (!steps.length) return true;
-      const step = steps[timeStepIndex];
-      return !!step && entry.def.timeStep === step.id;
-    }
+    // The Timeline drives a timeStep layer's own `visible` flag directly, the
+    // same flag the Layers-panel checkbox controls -- not a separate hidden
+    // gate (see syncLayerToMap()'s own note). Moving the Timeline turns the
+    // matching year on and every other timeStep layer off, exactly once per
+    // move; from then on the checkbox is free to override it independently,
+    // same as any other layer, until the Timeline moves again.
     function applyTimeFilters() {
       const steps = timeSteps();
       const step = steps[timeStepIndex];
       Object.keys(layers).forEach(function (id) {
         const entry = layers[id];
-        syncLayerToMap(entry); // re-evaluates visibility including isTimeVisible()
-        if (step && entry.def.timeField && entry.leaflet && typeof entry.leaflet.setTimeRange === "function") {
+        if (entry.def.timeStep) {
+          setLayerVisible(id, !!step && entry.def.timeStep === step.id);
+        } else if (step && entry.def.timeField && entry.leaflet && typeof entry.leaflet.setTimeRange === "function") {
           const t = step.date ? new Date(step.date).getTime() : null;
           if (t != null && !isNaN(t)) entry.leaflet.setTimeRange(t, t);
         }
       });
     }
+    // Seed the timeline's own starting selection (step 0) into each timeStep
+    // layer's `visible` flag once, here rather than up where `layers` is
+    // first built -- setLayerVisible() (called via applyTimeFilters() above)
+    // reads swipeLayerId, a `let` not declared until further up this same
+    // function; calling it before that line executes threw a ReferenceError
+    // (temporal dead zone) that aborted mount() entirely. Layers haven't
+    // started loading yet regardless of textual position -- buildLayer()'s
+    // own .then() callbacks are async and can't run until this synchronous
+    // function body finishes -- so this still lands before any layer's first
+    // paint, exactly as intended.
+    applyTimeFilters();
     function emitTimeChange() {
       const step = timeSteps()[timeStepIndex];
       emit("timechange", { index: timeStepIndex, stepId: step ? step.id : null, label: step ? step.label : null, playing: !!timePlayTimer });
@@ -1188,17 +1259,34 @@
 
     function findTour(id) { return tourList.find(function (t) { return t.id === id; }); }
 
-    function applyLayersDirective(directive) {
-      if (!directive) return;
-      const off = directive.off || [];
-      if (off.indexOf("*") !== -1) {
-        Object.keys(layers).forEach(function (id) { setLayerVisible(id, false); });
-      } else {
-        off.forEach(function (id) { setLayerVisible(id, false); });
+    // Resolves the *absolute* on/off layer state a tour step should show, by
+    // replaying every step's own on/off directive from step 0 through the
+    // target index -- rather than applying only the target step's own
+    // directive against whatever the map's current, possibly off-script-
+    // drifted, state happens to be. A step's `off` list only names the
+    // layers *that step* turns off (the previous step's own `on` set), not
+    // "every layer this tour doesn't currently want on" -- a layer toggled
+    // on manually, outside the tour's own declared deltas, was never
+    // accounted for and survived a "Back to step N" restore untouched. Real
+    // bug, found from live testing: the off-script pill correctly restored
+    // view/basemap but left an extraneously-toggled layer on. Every
+    // authored tour's own step 0 already declares `off: ["*"]`, so the
+    // replay's first pass always seeds an explicit false for every layer id
+    // -- later steps only ever narrow that down, never leaving a gap.
+    function resolveTourLayerState(steps, uptoIndex) {
+      const state = {};
+      for (let i = 0; i <= uptoIndex; i++) {
+        const directive = steps[i] && steps[i].layers;
+        if (!directive) continue;
+        const off = directive.off || [];
+        if (off.indexOf("*") !== -1) {
+          Object.keys(layers).forEach(function (id) { state[id] = false; });
+        } else {
+          off.forEach(function (id) { state[id] = false; });
+        }
+        (directive.on || []).forEach(function (id) { state[id] = true; });
       }
-      (directive.on || []).forEach(function (id) { setLayerVisible(id, true); });
-      const opacity = directive.opacity || {};
-      Object.keys(opacity).forEach(function (id) { setLayerOpacity(id, opacity[id]); });
+      return state;
     }
 
     function applyStep(index) {
@@ -1209,7 +1297,10 @@
       const i = clamp(index, 0, steps.length - 1);
       const step = steps[i];
       clearHighlight();
-      applyLayersDirective(step.layers);
+      const layerState = resolveTourLayerState(steps, i);
+      Object.keys(layerState).forEach(function (id) { setLayerVisible(id, layerState[id]); });
+      const opacity = (step.layers && step.layers.opacity) || {};
+      Object.keys(opacity).forEach(function (id) { setLayerOpacity(id, opacity[id]); });
       if (step.basemap) setBasemap(step.basemap);
       setView(step.view);
       if (step.highlight) highlight(step.highlight.layerId, step.highlight, { color: "#f0c75e" });

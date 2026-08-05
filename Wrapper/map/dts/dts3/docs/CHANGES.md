@@ -2,6 +2,110 @@
 
 Newest first.
 
+## GIS Phase 4 gate — testing fixes
+
+Per `docs/plans/gis/GIS-FULL-SYSTEM-TESTING.md`, the human's own manual pass against
+Phases 1-4 (filled in for real, every checked box and Comments line their own words, not
+re-derived). This entry is the fix pass that followed it, all confirmed live against the
+real `iberia-coastal` map document. Phase 4 is now gated.
+
+- **Root cause, fixed first (drove several of the Fails below):** `js/gis/gis-viewer.js`'s
+  `buildBasemap()` built every basemap with no `pane` option, landing it in Leaflet's
+  default `tilePane` (zIndex 200) -- above every data layer's own custom pane (this map's
+  layer `zIndex` values only run 5-90). The basemap always rendered on top, visually and
+  for pointer events (a tile `<img>` sitting above a vector path swallows clicks meant for
+  it). Fixed with a dedicated low-zIndex basemap pane (`BASEMAP_ZINDEX = 1`).
+- **Opacity slider was a no-op on every vector layer:** `setLayerOpacity()` only ever
+  called `.setOpacity()`, which tile/image layers have and `L.geoJSON`/esri-leaflet vector
+  layers don't. Now falls back to `.setStyle({opacity, fillOpacity})`, scaled against the
+  layer's own authored `fillOpacity` so the default slider position still matches the
+  original look.
+- **Legend didn't match what's on the map, two distinct bugs:** the style-based swatch
+  fallback always drew a fully opaque square regardless of the layer's real `fillOpacity`
+  (e.g. `parish-boundary`'s thin, near-invisible fill rendering as a solid gold block); and,
+  more consequentially, every `esriFeature` layer's legend was fetched live from the ArcGIS
+  *service's own* renderer (`legendRowsForArcgis`) even though `gis-esri.js`'s
+  `buildFeature()` always overrides rendering with this map's own `def.style` -- confirmed
+  live via a screenshot showing hydrography's legend with separate "Lateral"/"Main" icons
+  the map never actually draws (one flat blue line, no such split), and critical-facilities/
+  fire-stations showing the service's own star/pin icons instead of this map's solid circle
+  markers. Now only `esriDynamic` (server-rendered images, no client style option at all)
+  uses the live service legend; everything else reflects `def.style` directly.
+- **Identify popups never appeared, attribute-table row clicks and feature-search results
+  didn't navigate:** two separate bugs, not one. The popup failure was downstream of the
+  basemap z-order bug above (clicks were landing on the basemap tile, not the feature
+  underneath). The navigation failure was `gis-esri.js` calling a chainable query method,
+  `q.objectIds(...)`, that doesn't exist on vendored esri-leaflet 3.0.19's `Query` --
+  confirmed directly against the real service, both by hand-replicating the exact combined
+  query esri-leaflet builds (works fine over plain `curl`) and by decoding the vendored
+  bundle's own setter-name mapping table, which showed the real method is `featureIds(...)`
+  (it sets the REST param actually named `objectIds` internally). The thrown `TypeError`
+  was swallowed by a `.catch()` into a console warning, so it looked like nothing happened.
+- **Attribute table listed every queryable layer, not just visible ones:** `queryableDefs`
+  was filtered once at construction and never re-filtered by visibility. Rebuilt into
+  `renderTableTabs()`, re-run on panel open and on every visibility-changing `layerchange`
+  event while the panel is open (same reactive pattern `renderLegend()` already used).
+- **Off-script "Back to step N" pill restored view/basemap but not the full layer state:**
+  each tour step's `layers` directive only lists what *that step* turns on/off (a relative
+  delta), so a layer toggled on manually outside the tour's own deltas was never accounted
+  for on restore. `gis-tour.js`'s own off-script *detection* already replayed every step
+  from 0 to compute the "expected" state (a comment there even said so), but
+  `gis-viewer.js`'s `applyStep()` never did the same replay for the *restore* side. Fixed
+  with `resolveTourLayerState()`, mirroring that same replay, so both sides now agree.
+- **Rectangle draw threw inside Leaflet, not a basemap-visibility illusion:**
+  `rectCorners()` returned plain `[lat,lng]` arrays, but its only caller,
+  `finishDrawSession()`, treats every non-"point" type's input as LatLng-*objects* (reading
+  `.lat`/`.lng`) -- correct for line/polygon (real `e.latlng` clicks) but not for a plain
+  array. The rectangle silently became four `[undefined,undefined]` coordinates until
+  Leaflet actually tried to project them, throwing several frames deep. Fixed by having
+  `rectCorners()` return real `L.LatLng` instances.
+- **Toolbar buttons clipped off-screen at 360px:** `.dts-gis-toolbar` (a single-row flex
+  box, no width limit, `overflow:hidden`) had no responsive rule at all, unlike every other
+  GIS panel in this file -- narrow viewports silently lost the earliest-added buttons
+  (layers, basemap, legend, filter) with no wrap, scroll, or overflow affordance. Now wraps
+  at the same `760px` breakpoint the panels already dock-to-bottom-sheet at (which is why
+  wrapping is safe -- nothing else needs the space below the toolbar at that width). The
+  geolocate toast, positioned at the same coordinates, needed a matching nudge.
+- **Timeline and the Layers-panel checkbox fought each other, human's own design call, not
+  a bug report:** a time-stepped layer used to need *both* its own `visible` flag *and* the
+  current Timeline step to agree before it would show -- checking a shoreline's box did
+  nothing unless the Timeline happened to already be on that exact year, which the human
+  read (reasonably) as "Timeline is broken" and "shorelines don't display." Decoupled per
+  their explicit request: `syncLayerToMap()` now only ever looks at the checkbox's own
+  `visible` flag; the Timeline drives that same flag directly via `setLayerVisible()` when
+  it moves, instead of gating behind a second, hidden condition. Real bug introduced and
+  caught in the same pass: the first attempt seeded this at mount by calling
+  `applyTimeFilters()` too early, before `swipeLayerId` (a `let` declared later in the same
+  function) had been assigned -- a temporal-dead-zone `ReferenceError` that aborted
+  `mount()` entirely ("The map couldn't load"). Fixed by moving the seed call down past that
+  declaration; timing is unaffected since `loadLayer()`'s own layer-adding work is async and
+  can't run before this synchronous function body finishes regardless of textual order.
+- **Basemap redesign, human's own explicit request, not a bug:** dropped "Dark" entirely,
+  made "Streets" the default, kept "Aerial 2024," and added a "No basemap" option (a new
+  `type: "none"` basemap, an empty `L.layerGroup()`). Removing "Dark" broke the guided
+  tour's first step, which had it hardcoded (`"basemap": "dark"`) -- caught by grep across
+  the repo before it could resurface later, updated to `"streets"`.
+- **Added a genuinely open, globally-covering satellite basemap, human's own request:**
+  EOX Sentinel-2 cloudless (Copernicus Sentinel-2 imagery, CC-BY 4.0, no API key) --
+  confirmed live with real tile fetches both at a global test coordinate and one covering
+  Iberia Parish specifically. Coarser resolution (~10m) than the parish's own EagleView
+  flight, by nature of being satellite rather than aerial photography, but it's the one
+  basemap option that shows something anywhere in the world, not just this parish.
+- **Confirmed not bugs, no fix made:** the "Subsidence (2023 model)" layer's muted gray
+  appearance is the CPRA service's own real grayscale renderer -- decoded its live
+  `/legend?f=pjson` swatch directly and confirmed R=G=B at every step of the ramp, white to
+  near-black, no color at all. Swipe compare (6.1 in the testing doc) clips correctly at
+  the extremes (confirmed real imagery vs. real imagery, not the same thing twice) but
+  showed a black/white no-data mismatch when tested somewhere the two aerial services don't
+  both have real coverage; **deferred, not chased further this pass** -- next step if
+  picked back up is re-testing at a location both services are confirmed (via direct
+  service queries this session) to have real photography for.
+- Every fix verified live in Chrome against the real `iberia-coastal` map document this
+  session, plus direct `curl` calls against the real ArcGIS/CPRA/EOX services themselves
+  where a fix's root cause needed confirming server-side vs. client-side (the `featureIds`
+  bug, the subsidence grayscale renderer, the EOX satellite basemap, the aerial-imagery
+  coverage-gap question).
+
 ## GIS Phase 4 — guided tours
 
 Per `docs/plans/gis/09-BUILD-PLAN.md` Phase 4 / `05-SPEC-guided-tours.md`. All of tasks

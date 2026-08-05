@@ -117,7 +117,15 @@
         let q = layer.query();
         if (ctx && ctx.envelopeBounds) q = q.intersects(ctx.envelopeBounds); // §8 defence 2
         if (selector && selector.where) q = q.where(selector.where);
-        if (selector && selector.objectIds) q = q.objectIds(selector.objectIds);
+        // Real bug, found live testing: vendored esri-leaflet 3.0.19's Query
+        // has no objectIds() method at all -- it exposes featureIds(...),
+        // which sets the REST param actually named "objectIds" internally.
+        // Calling the (nonexistent) .objectIds() threw a TypeError that this
+        // function's own Promise wrapper turned into a silent rejection --
+        // zoomToFeature()'s .catch() logged a console warning and returned
+        // false, so a feature-search result or an attribute-table row click
+        // against any esriFeature layer looked like it simply did nothing.
+        if (selector && selector.objectIds) q = q.featureIds(selector.objectIds);
         q.run(function (error, featureCollection) {
           if (error) reject(error); else resolve(featureCollection);
         });

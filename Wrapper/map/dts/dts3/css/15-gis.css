@@ -131,6 +131,21 @@
   font:600 11.5px var(--sans); padding:0 8px; height:32px; max-width:130px; cursor:pointer;
 }
 
+/* Real bug, found live: with 15+ 32px buttons plus the basemap select, the
+   toolbar (a single-row flex box with no width limit, positioned via
+   right:10px) overflowed off the left edge of a narrow viewport with
+   overflow:hidden silently clipping the earliest-added buttons (layers,
+   basemap, legend, filter) -- no wrap, no scroll, no overflow indicator.
+   Wrapping onto multiple rows is safe here specifically because panels
+   already dock to a bottom sheet at this same breakpoint (below), freeing
+   the space under the toolbar that extra wrapped rows need. */
+@media (max-width:760px){
+  .dts-gis-toolbar{
+    flex-wrap:wrap; max-width:calc(100% - 20px); justify-content:flex-end;
+  }
+  .dts-gis-basemap-select{ max-width:96px; }
+}
+
 /* ---------- panels (desktop: docked; mobile: bottom sheet) ---------- */
 .dts-gis-panel{
   position:absolute; top:48px; right:10px;
@@ -439,6 +454,13 @@
 }
 .dts-gis-toast-action:hover,
 .dts-gis-toast-action:focus{ border-color:var(--gold); }
+
+/* The toolbar wraps to multiple rows at this same breakpoint (see its own
+   rules above) -- nudge the toast down so it doesn't sit under a wrapped
+   second row. */
+@media (max-width:760px){
+  .dts-gis-toast{ top:84px; }
+}
 
 /* ---------- search ---------- */
 .dts-gis-search-input{

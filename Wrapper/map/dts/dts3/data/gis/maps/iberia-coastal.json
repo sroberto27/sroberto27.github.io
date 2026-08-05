@@ -23,11 +23,11 @@
 
   "basemaps": [
     {
-      "id": "dark",
-      "title": "Dark",
+      "id": "streets",
+      "title": "Streets",
       "type": "tileXYZ",
-      "url": "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-      "attribution": "&copy; OpenStreetMap contributors &copy; CARTO",
+      "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+      "attribution": "&copy; OpenStreetMap contributors",
       "default": true
     },
     {
@@ -38,11 +38,16 @@
       "attribution": "Iberia Parish GIS — attribution wording pending confirmation (see data/gis/sources.json openQuestions.iberia-terms-of-use)"
     },
     {
-      "id": "streets",
-      "title": "Streets",
+      "id": "satellite-global",
+      "title": "Satellite (global)",
       "type": "tileXYZ",
-      "url": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
-      "attribution": "&copy; OpenStreetMap contributors"
+      "url": "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/g/{z}/{y}/{x}.jpg",
+      "attribution": "Sentinel-2 cloudless by <a href=\"https://s2maps.eu\" target=\"_blank\" rel=\"noopener\">EOX IT Services GmbH</a> (contains modified Copernicus Sentinel data 2020)"
+    },
+    {
+      "id": "none",
+      "title": "No basemap",
+      "type": "none"
     }
   ],
 

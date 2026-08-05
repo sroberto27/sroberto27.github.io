@@ -282,9 +282,21 @@
       }));
     }
 
+    // Real bug, found from live testing: this fallback swatch always drew a
+    // flat, fully-opaque colored square, regardless of the layer's actual
+    // rendered fillOpacity -- for a layer like parish-boundary (a thin gold
+    // outline over a near-invisible 0.03 fill), the legend showed a solid
+    // gold block that looked nothing like what was actually on the map.
+    // Mirrors the same fillOpacity-default fallback setLayerOpacity() (in
+    // gis-viewer.js) and baseStyle()/pointToLayer (in gis-esri.js and this
+    // file's own buildGeoJsonLayer) already use, so all three stay in sync
+    // with what a layer actually looks like when rendered.
     function legendRowsForStyle(def) {
       const style = def.style || {};
-      return Promise.resolve([{ label: def.title || def.id, color: style.color || style.fillColor || "#c49a2a" }]);
+      const color = style.color || style.fillColor || "#c49a2a";
+      const fillOpacity = typeof style.fillOpacity === "number" ? style.fillOpacity
+        : (typeof style.pointRadius === "number" ? 0.6 : 0.18);
+      return Promise.resolve([{ label: def.title || def.id, color: color, fillOpacity: fillOpacity, strokeColor: style.color || color }]);
     }
 
     function legendRowsForArcgis(def) {
@@ -302,17 +314,41 @@
       });
     }
 
+    // Real bug, found live (screenshot from a real session): esriFeature
+    // layers were showing the ArcGIS *service's* own legend -- its own
+    // renderer categories, icons, and colors -- even though gis-esri.js's
+    // buildFeature() always overrides rendering with this map's own def.style
+    // (a plain style function, confirmed in gis-esri.js's baseStyle()).
+    // Concretely: the live service's own hydrography legend shows separate
+    // "Lateral"/"Main" icons, but this map draws every segment as one flat
+    // #4fb3d9 line with no such distinction; critical-facilities/fire-stations
+    // showed the service's own star/pin icons while the map draws solid
+    // circle markers in this layer's own configured color. esriDynamic is
+    // the one sourceType with no client-side style option at all -- it's a
+    // server-rendered image -- so the service's own legend is the only
+    // honest source for it and stays on this path.
     function legendRowsFor(def) {
       const mode = (def.legend && def.legend.mode) || "auto";
       if (mode === "none") return Promise.resolve([]);
       if (mode === "custom") return legendRowsForCustom(def);
-      if (def.sourceType === "esriDynamic" || def.sourceType === "esriFeature") return legendRowsForArcgis(def);
+      if (def.sourceType === "esriDynamic") return legendRowsForArcgis(def);
       return legendRowsForStyle(def);
+    }
+
+    // #rrggbb + 0-1 alpha -> rgba(), so a swatch's fill can actually be
+    // faded to match a layer's real fillOpacity instead of always opaque.
+    function hexToRgba(hex, alpha) {
+      const m = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex || "");
+      if (!m) return hex;
+      return "rgba(" + parseInt(m[1], 16) + "," + parseInt(m[2], 16) + "," + parseInt(m[3], 16) + "," + alpha + ")";
     }
 
     function buildLegendSwatch(row) {
       if (row.swatch) return el("img", { class: "dts-gis-legend-swatch", src: row.swatch, alt: "" });
-      return el("span", { class: "dts-gis-legend-swatch", style: "background:" + (row.color || "#c49a2a") });
+      const color = row.color || "#c49a2a";
+      const fill = typeof row.fillOpacity === "number" ? hexToRgba(color, row.fillOpacity) : color;
+      const border = "1.5px solid " + (row.strokeColor || color);
+      return el("span", { class: "dts-gis-legend-swatch", style: "background:" + fill + "; border:" + border });
     }
 
     function renderLegend() {
@@ -692,6 +728,7 @@
        viewport -- distinct from the docked/bottom-sheet .dts-gis-panel used
        by layers/legend/filter) ---- */
     let renderAttributeTable = function () {};
+    let renderTableTabs = function () {};
     let tableActiveLayerId = queryableDefs.length ? queryableDefs[0].id : null;
 
     if (tools.attributeTable !== false && queryableDefs.length && instance._queryLayer) {
@@ -702,22 +739,36 @@
       });
       toolbar.appendChild(tableBtn);
 
+      // One tab per *currently visible* queryable layer, not every queryable
+      // layer on the map (real bug: this used to build the tab list once,
+      // from the full queryableDefs set, at construction time). Rebuilt on
+      // panel open and on every "layerchange" visibility flip while the
+      // panel is open -- same reactive pattern renderLegend() already uses.
       const tableTabs = el("div", { class: "dts-gis-table-tabs", role: "tablist", "aria-label": "Layer" });
-      if (queryableDefs.length > 1) {
-        queryableDefs.forEach(function (def) {
-          const tab = el("button", {
-            type: "button", class: "dts-gis-table-tab", role: "tab",
-            "aria-selected": def.id === tableActiveLayerId ? "true" : "false", text: def.title || def.id
+      renderTableTabs = function () {
+        const visibleDefs = queryableDefs.filter(function (def) { return state.layers[def.id].visible; });
+        if (!visibleDefs.some(function (d) { return d.id === tableActiveLayerId; })) {
+          tableActiveLayerId = visibleDefs.length ? visibleDefs[0].id : null;
+          tableSort.field = null;
+        }
+        tableTabs.textContent = "";
+        if (visibleDefs.length > 1) {
+          visibleDefs.forEach(function (def) {
+            const tab = el("button", {
+              type: "button", class: "dts-gis-table-tab", role: "tab",
+              "aria-selected": def.id === tableActiveLayerId ? "true" : "false", text: def.title || def.id
+            });
+            tab.addEventListener("click", function () {
+              tableActiveLayerId = def.id;
+              tableSort.field = null;
+              Array.prototype.forEach.call(tableTabs.children, function (t) { t.setAttribute("aria-selected", t === tab ? "true" : "false"); });
+              renderAttributeTable();
+            });
+            tableTabs.appendChild(tab);
           });
-          tab.addEventListener("click", function () {
-            tableActiveLayerId = def.id;
-            tableSort.field = null;
-            Array.prototype.forEach.call(tableTabs.children, function (t) { t.setAttribute("aria-selected", t === tab ? "true" : "false"); });
-            renderAttributeTable();
-          });
-          tableTabs.appendChild(tab);
-        });
-      }
+        }
+        renderAttributeTable();
+      };
 
       const filterInput = el("input", { type: "search", class: "dts-gis-table-filter", placeholder: "Filter rows", "aria-label": "Filter table rows" });
       const statusEl = el("span", { class: "dts-gis-table-status", role: "status" });
@@ -782,7 +833,12 @@
 
       renderAttributeTable = function () {
         const def = queryableDefs.find(function (d) { return d.id === tableActiveLayerId; });
-        if (!def) return;
+        if (!def) {
+          tableScroll.textContent = "";
+          tableScroll.appendChild(el("p", { class: "dts-gis-table-empty", text: "Turn on a queryable layer to see its attribute table." }));
+          statusEl.textContent = "";
+          return;
+        }
         statusEl.textContent = "Loading…";
         Promise.all([queryRows(def), fieldsForLayer(def)]).then(function (results) {
           const rows = results[0], fields = results[1];
@@ -828,7 +884,7 @@
         tableScroll
       ]);
       tableDrawer.querySelector(".dts-gis-panel-close").addEventListener("click", closePanel);
-      registerPanel("table", tableBtn, tableDrawer, renderAttributeTable);
+      registerPanel("table", tableBtn, tableDrawer, renderTableTabs);
     }
 
     /* ================= bookmarks (task 3.9) =================
@@ -1852,6 +1908,7 @@
         ref.root.classList.toggle("is-unavailable", s.status === "unavailable");
       }
       if (openPanel === "legend") renderLegend();
+      if (openPanel === "table" && typeof detail.visible === "boolean") renderTableTabs();
       if ("filter" in detail) {
         state.filters[detail.id] = detail.filter;
         renderChips();

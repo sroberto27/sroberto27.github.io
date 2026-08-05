@@ -17,7 +17,7 @@
       "title": "Where we are",
       "body": "Iberia Parish runs from the sugarcane country north of New Iberia down to the open water of Vermilion Bay. Nearly half the parish is wetland.",
       "view": { "center": [29.740394, -91.635827], "zoom": 10 },
-      "basemap": "dark",
+      "basemap": "streets",
       "layers": { "on": ["parish-boundary"], "off": ["*"] },
       "highlight": { "layerId": "parish-boundary", "where": "1=1" },
       "media": null,
