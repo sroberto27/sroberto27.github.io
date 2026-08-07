@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Equirectangular VR Enhancer</title>
+<meta name="description" content="Automatically enhance 360° equirectangular photos for VR headset viewing — entirely in your browser, nothing ever uploaded." />
+<link rel="stylesheet" href="styles.css" />
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js"
+  }
+}
+</script>
+</head>
+<body>
+<div class="app">
+
+  <header class="site-header">
+    <div class="brand">
+      <span class="brand-mark" aria-hidden="true">◐</span>
+      <span class="brand-name">Equirectangular VR Enhancer</span>
+    </div>
+    <p class="tagline">One-click 360° photo enhancement, tuned for headset viewing.</p>
+  </header>
+
+  <main>
+
+    <!-- Upload -->
+    <section id="upload-section" class="panel">
+      <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Upload a 360 equirectangular image">
+        <input type="file" id="fileInput" accept="image/jpeg,image/png,image/webp" hidden />
+        <div class="dropzone-inner">
+          <svg class="dropzone-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3a1 1 0 0 1 1 1v9.6l2.9-2.9a1 1 0 1 1 1.4 1.4l-4.6 4.6a1 1 0 0 1-1.4 0L6.7 12a1 1 0 1 1 1.4-1.4l2.9 2.9V4a1 1 0 0 1 1-1Z"/><path d="M5 16a1 1 0 0 1 1 1v2a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2a1 1 0 1 1 2 0v2a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3v-2a1 1 0 0 1 1-1Z"/></svg>
+          <p class="dropzone-title">Drop a 360° equirectangular image here</p>
+          <p class="dropzone-sub">or click to choose a file · JPG, PNG, WebP</p>
+        </div>
+      </div>
+      <p class="privacy-note">
+        <svg viewBox="0 0 24 24" class="lock-icon" aria-hidden="true"><path d="M12 2a4 4 0 0 0-4 4v3H7a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-9a2 2 0 0 0-2-2h-1V6a4 4 0 0 0-4-4Zm-2 7V6a2 2 0 1 1 4 0v3Zm2 4a1.5 1.5 0 0 1 1 2.62V17a1 1 0 1 1-2 0v-1.38A1.5 1.5 0 0 1 12 13Z"/></svg>
+        <strong>Your image never leaves this device.</strong> Every step — analysis, denoising, sharpening, upscaling — runs locally in your browser using WebGL. Nothing is uploaded, ever.
+      </p>
+    </section>
+
+    <!-- Stage selection -->
+    <section id="stages-section" class="panel hidden">
+      <h2 class="panel-title">Choose what to run</h2>
+      <p class="stages-sub">Stages run in this order; each enabled stage builds on the last one you keep checked.</p>
+
+      <ul class="stage-list">
+        <li class="stage-item">
+          <label class="stage-label">
+            <input type="checkbox" id="stage1Check" checked />
+            <span class="stage-name">Traditional Enhancement</span>
+            <span class="stage-badge stage-badge-fast">Fast, no downloads</span>
+          </label>
+          <p class="stage-desc">Denoise, white balance, contrast, latitude-aware sharpening, and seam blending — the existing one-click pipeline.</p>
+        </li>
+        <li class="stage-item">
+          <label class="stage-label">
+            <input type="checkbox" id="stage2Check" />
+            <span class="stage-name">AI Cleanup — remove tripod/photographer</span>
+            <span class="stage-badge stage-badge-ai">AI · ~208MB model</span>
+          </label>
+          <p class="stage-desc">Uses LaMa inpainting to automatically erase whatever's sitting at the nadir (bottom pole) of ground-mounted 360 shots. Only targets that region — not arbitrary objects elsewhere.</p>
+        </li>
+        <li class="stage-item">
+          <label class="stage-label">
+            <input type="checkbox" id="stage3Check" />
+            <span class="stage-name">AI Detail Boost — neural upscale</span>
+            <span class="stage-badge stage-badge-ai">AI · ~64MB model</span>
+          </label>
+          <p class="stage-desc">Real-ESRGAN reconstructs genuine detail at 4x resolution, tiled across the panorama, in place of a plain bicubic upscale.</p>
+        </li>
+        <li class="stage-item">
+          <label class="stage-label">
+            <input type="checkbox" id="stage4Check" />
+            <span class="stage-name">Generate VR 3D — stereo pair</span>
+            <span class="stage-badge stage-badge-ai">AI · ~27MB model</span>
+          </label>
+          <p class="stage-desc">Depth Anything V2 estimates depth, then synthesizes a left/right eye pair for true stereo 3D viewing. Produces a stacked top/bottom file instead of a single flat image.</p>
+        </li>
+      </ul>
+
+      <div class="download-row">
+        <button id="runBtn" class="btn btn-primary">Run pipeline</button>
+        <button id="stagesResetBtn" class="btn btn-ghost">Choose different image</button>
+      </div>
+    </section>
+
+    <div id="runtimeWarnings" class="stage-warnings hidden"></div>
+
+    <!-- Progress -->
+    <section id="progress-section" class="panel hidden">
+      <h2 class="panel-title">Enhancing your panorama…</h2>
+      <ol id="progressList" class="progress-list"></ol>
+      <div class="progress-bar-track"><div id="progressBarFill" class="progress-bar-fill"></div></div>
+      <p id="progressSubStatus" class="progress-sub-status"></p>
+    </section>
+
+    <!-- Results -->
+    <section id="results-section" class="panel hidden">
+      <h2 class="panel-title">Compare</h2>
+
+      <div class="view-tabs" role="tablist">
+        <button class="view-tab active" data-view="slider" role="tab" aria-selected="true">Flat before/after</button>
+        <button class="view-tab" data-view="vr" role="tab" aria-selected="false">360° viewer</button>
+        <button class="view-tab" data-view="editor" role="tab" aria-selected="false">Editor Mode</button>
+      </div>
+
+      <div id="sliderView" class="view-pane">
+        <div id="compareSlider" class="compare-slider">
+          <img id="compareAfter" class="compare-img compare-after" alt="Enhanced panorama" draggable="false" />
+          <div id="compareBeforeWrap" class="compare-before-wrap">
+            <img id="compareBefore" class="compare-img compare-before" alt="Original panorama" draggable="false" />
+          </div>
+          <div id="compareHandle" class="compare-handle" aria-hidden="true">
+            <div class="compare-handle-line"></div>
+            <div class="compare-handle-grip">↔</div>
+          </div>
+        </div>
+        <div class="compare-labels"><span>Original</span><span>Enhanced</span></div>
+      </div>
+
+      <div id="vrView" class="view-pane hidden">
+        <div id="vrToggleRow" class="vr-toggle-row">
+          <button id="vrToggleBtn" class="btn btn-secondary">Showing: <strong id="vrToggleLabel">Enhanced</strong></button>
+          <button id="anaglyphToggleBtn" class="btn btn-secondary hidden">Anaglyph 3D: <strong id="anaglyphLabel">Off</strong></button>
+          <span class="vr-hint">Drag to look around · scroll or pinch to zoom</span>
+        </div>
+        <p id="anaglyphHint" class="vr-hint anaglyph-hint hidden">Red/cyan glasses give a rough sanity check only — view the downloaded file in a real headset for the actual stereo effect.</p>
+        <div id="vrCanvasWrap" class="vr-canvas-wrap">
+          <canvas id="vrCanvas"></canvas>
+        </div>
+      </div>
+
+      <div id="editorView" class="view-pane hidden">
+        <div class="editor-layout">
+          <div class="editor-canvas-col">
+            <div class="editor-toolbar" role="toolbar" aria-label="AI-assisted selection tools">
+              <button class="btn btn-secondary tool-btn active" data-tool="none">Pointer</button>
+              <button class="btn btn-secondary tool-btn" data-tool="brush">Brush Select</button>
+              <button class="btn btn-secondary tool-btn" data-tool="lasso">Lasso Select</button>
+              <button class="btn btn-secondary tool-btn" data-tool="smart">Depth Smart-Select</button>
+              <button class="btn btn-secondary tool-btn" data-tool="region">Regional Detail Boost</button>
+            </div>
+            <label id="brushSizeRow" class="brush-size-row hidden">Brush size
+              <input type="range" id="brushSizeSlider" min="4" max="140" value="28" />
+            </label>
+            <div id="editorCanvasWrap" class="editor-canvas-wrap">
+              <canvas id="editorCanvas"></canvas>
+              <canvas id="editorOverlayCanvas"></canvas>
+            </div>
+            <div id="editorActionRow" class="editor-action-row hidden">
+              <span id="editorActionStatus" class="editor-action-status"></span>
+              <button id="editorConfirmBtn" class="btn btn-primary">Confirm</button>
+              <button id="editorCancelBtn" class="btn btn-ghost">Cancel</button>
+            </div>
+            <p class="vr-hint">Brush/drag to select · double-click to close a lasso · selections crossing the left/right seam are handled automatically.</p>
+          </div>
+
+          <div class="editor-controls-col">
+            <div class="editor-controls-header">
+              <button id="editorResetAutoBtn" class="btn btn-secondary">Reset to auto</button>
+              <button id="editorResetOrigBtn" class="btn btn-ghost">Reset to original</button>
+            </div>
+
+            <div class="editor-slider-group">
+              <div class="editor-slider-row">
+                <label for="sldRecenter">Recenter (yaw)<span class="slider-tag" id="tagRecenter">manual</span></label>
+                <input type="range" id="sldRecenter" min="-180" max="180" value="0" step="1" />
+                <span class="slider-value" id="valRecenter">0°</span>
+              </div>
+              <div class="editor-slider-row">
+                <label for="sldExposure">Exposure<span class="slider-tag" id="tagExposure">manual</span></label>
+                <input type="range" id="sldExposure" min="-100" max="100" value="0" step="1" />
+                <span class="slider-value" id="valExposure">0</span>
+              </div>
+              <div class="editor-slider-row">
+                <label for="sldContrast">Contrast<span class="slider-tag" id="tagContrast">auto</span></label>
+                <input type="range" id="sldContrast" min="-100" max="100" value="0" step="1" />
+                <span class="slider-value" id="valContrast">0</span>
+              </div>
+              <div class="editor-slider-row">
+                <label for="sldHighlights">Highlights<span class="slider-tag" id="tagHighlights">manual</span></label>
+                <input type="range" id="sldHighlights" min="-100" max="100" value="0" step="1" />
+                <span class="slider-value" id="valHighlights">0</span>
+              </div>
+              <div class="editor-slider-row">
+                <label for="sldShadows">Shadows<span class="slider-tag" id="tagShadows">manual</span></label>
+                <input type="range" id="sldShadows" min="-100" max="100" value="0" step="1" />
+                <span class="slider-value" id="valShadows">0</span>
+              </div>
+              <div class="editor-slider-row">
+                <label for="sldTemp">Temperature<span class="slider-tag" id="tagTemp">manual</span></label>
+                <input type="range" id="sldTemp" min="-100" max="100" value="0" step="1" />
+                <span class="slider-value" id="valTemp">0</span>
+              </div>
+              <div class="editor-slider-row">
+                <label for="sldTint">Tint<span class="slider-tag" id="tagTint">manual</span></label>
+                <input type="range" id="sldTint" min="-100" max="100" value="0" step="1" />
+                <span class="slider-value" id="valTint">0</span>
+              </div>
+              <div class="editor-slider-row">
+                <label for="sldSaturation">Saturation / vibrance<span class="slider-tag" id="tagSaturation">auto</span></label>
+                <input type="range" id="sldSaturation" min="-100" max="100" value="0" step="1" />
+                <span class="slider-value" id="valSaturation">0</span>
+              </div>
+              <div class="editor-slider-row">
+                <label for="sldSharpen">Sharpening<span class="slider-tag" id="tagSharpen">auto</span></label>
+                <input type="range" id="sldSharpen" min="0" max="150" value="0" step="1" />
+                <span class="slider-value" id="valSharpen">0</span>
+              </div>
+              <div class="editor-slider-row">
+                <label for="sldDenoise">Denoise<span class="slider-tag" id="tagDenoise">auto</span></label>
+                <input type="range" id="sldDenoise" min="0" max="100" value="0" step="1" />
+                <span class="slider-value" id="valDenoise">0</span>
+              </div>
+              <div id="stereoStrengthRow" class="editor-slider-row hidden">
+                <label for="sldStereo">Stereo depth strength<span class="slider-tag">manual</span></label>
+                <input type="range" id="sldStereo" min="20" max="300" value="100" step="5" />
+                <span class="slider-value" id="valStereo">100%</span>
+              </div>
+            </div>
+
+            <div class="editor-analysis">
+              <h3>Analysis</h3>
+              <div class="editor-stats-grid" id="editorStatsGrid"></div>
+              <canvas id="histogramCanvas" width="256" height="100" class="editor-graph"></canvas>
+              <p class="editor-graph-label">RGB / luminance histogram</p>
+              <canvas id="latitudeCanvas" width="256" height="80" class="editor-graph"></canvas>
+              <p class="editor-graph-label">Average brightness by latitude (top → bottom)</p>
+              <button id="depthToggleBtn" class="btn btn-secondary">Show depth map</button>
+              <img id="depthPreviewImg" class="depth-preview hidden" alt="Estimated depth map" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="summaryBox" class="summary-box">
+        <h3>What changed</h3>
+        <p id="summaryText"></p>
+      </div>
+
+      <div class="download-row">
+        <button id="downloadBtn" class="btn btn-primary">Download enhanced image</button>
+        <button id="resetBtn" class="btn btn-ghost">Enhance another image</button>
+      </div>
+      <p id="downloadNote" class="download-note"></p>
+    </section>
+
+    <section id="error-section" class="panel error-panel hidden">
+      <p id="errorText"></p>
+      <button id="errorResetBtn" class="btn btn-secondary">Try again</button>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>Runs 100% client-side in WebGL2. No uploads, no accounts, no tracking of your images.</p>
+  </footer>
+
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
