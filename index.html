@@ -639,6 +639,14 @@
       object-fit: cover;
       border-radius: 50%;
     }
+
+    .profile-video-circle {
+      width: 200px;
+      height: 200px;
+      object-fit: cover;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
       .profile-text-col {
           background-color: rgba(255, 255, 255, 0.75);
           padding: 10px 7.2px;
@@ -709,6 +717,10 @@
       .profile-row {
         flex-direction: column;
         text-align: center;
+      }
+      .profile-video-circle {
+        width: 150px;
+        height: 150px;
       }
       .profile-text-col blockquote {
         font-size: 1.2rem;
@@ -1713,7 +1725,7 @@
                 </blockquote>
                 <button onclick="window.open('https://onedrive.live.com/?id=7219CC51454B85E2%21s9f32a1b48dfa443fb987783a970e364b&cid=7219cc51454b85e2&ithint=file%2Cpdf&redeem=aHR0cHM6Ly8xZHJ2Lm1zL2IvYy83MjE5Y2M1MTQ1NGI4NWUyL0ViU2hNcF82alQ5RXVZZDRPcGNPTmtzQklyQ2QyR1hwWGM2dGdxVlV2bmY5OWc%5FZT1hYzZ2OFI', '_blank')">SEE MY RESUME</button>
             </div>
-
+            <video class="profile-video-circle" src="AIroro2.0.mp4" autoplay muted loop playsinline></video>
         </div>
 
         <!-- Horizontal Divider / Separator -->
