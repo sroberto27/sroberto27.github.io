@@ -640,12 +640,78 @@
       border-radius: 50%;
     }
 
-    .profile-video-circle {
+    .profile-video-wrap {
       width: 200px;
       height: 200px;
+      flex-shrink: 0;
+      position: relative;
+    }
+
+    .profile-video-circle {
+      width: 100%;
+      height: 100%;
       object-fit: cover;
       border-radius: 50%;
-      flex-shrink: 0;
+      cursor: pointer;
+      transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+
+    .profile-video-circle:hover {
+      transform: scale(1.15);
+    }
+
+    .profile-video-circle.expanded {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      width: min(80vw, 80vh);
+      height: min(80vw, 80vh);
+      transform: translate(-50%, -50%);
+      z-index: 2001;
+      cursor: default;
+    }
+
+    .profile-video-circle.expanded:hover {
+      transform: translate(-50%, -50%);
+    }
+
+    .video-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(30, 30, 30, 0.85);
+      z-index: 2000;
+      display: none;
+    }
+
+    .video-backdrop.active {
+      display: block;
+    }
+
+    .video-close-btn {
+      position: fixed;
+      top: 24px;
+      right: 24px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255, 255, 255, 0.9);
+      color: #222;
+      font-size: 26px;
+      line-height: 1;
+      cursor: pointer;
+      z-index: 2002;
+      display: none;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .video-close-btn.active {
+      display: flex;
+    }
+
+    .video-close-btn:hover {
+      background: #fff;
     }
       .profile-text-col {
           background-color: rgba(255, 255, 255, 0.75);
@@ -718,7 +784,7 @@
         flex-direction: column;
         text-align: center;
       }
-      .profile-video-circle {
+      .profile-video-wrap {
         width: 150px;
         height: 150px;
       }
@@ -1725,8 +1791,12 @@
                 </blockquote>
                 <button onclick="window.open('https://onedrive.live.com/?id=7219CC51454B85E2%21s9f32a1b48dfa443fb987783a970e364b&cid=7219cc51454b85e2&ithint=file%2Cpdf&redeem=aHR0cHM6Ly8xZHJ2Lm1zL2IvYy83MjE5Y2M1MTQ1NGI4NWUyL0ViU2hNcF82alQ5RXVZZDRPcGNPTmtzQklyQ2QyR1hwWGM2dGdxVlV2bmY5OWc%5FZT1hYzZ2OFI', '_blank')">SEE MY RESUME</button>
             </div>
-            <video class="profile-video-circle" data-src="AIroro2.0.mp4" muted loop playsinline preload="none"></video>
+            <div class="profile-video-wrap">
+                <video class="profile-video-circle" data-src="AIroro2.0.mp4" muted loop playsinline preload="none"></video>
+            </div>
         </div>
+        <div class="video-backdrop"></div>
+        <button class="video-close-btn" aria-label="Close video">&times;</button>
 
         <!-- Horizontal Divider / Separator -->
         <div class="info-divider"></div>
@@ -1814,6 +1884,40 @@
                 });
             }, { threshold: 0.25 });
             loadVideo.observe(bioPanel);
+        }
+
+        // Click the bio video circle to expand it fullscreen with audio; close via X, backdrop, or Escape
+        const videoBackdrop = document.querySelector('.video-backdrop');
+        const videoCloseBtn = document.querySelector('.video-close-btn');
+        if (bioVideo && videoBackdrop && videoCloseBtn) {
+            function openBioVideo() {
+                if (!bioVideo.getAttribute('src')) {
+                    bioVideo.src = bioVideo.dataset.src;
+                }
+                bioVideo.classList.add('expanded');
+                videoBackdrop.classList.add('active');
+                videoCloseBtn.classList.add('active');
+                bioVideo.muted = false;
+                bioVideo.play();
+                document.body.style.overflow = 'hidden';
+            }
+
+            function closeBioVideo() {
+                bioVideo.classList.remove('expanded');
+                videoBackdrop.classList.remove('active');
+                videoCloseBtn.classList.remove('active');
+                bioVideo.muted = true;
+                document.body.style.overflow = '';
+            }
+
+            bioVideo.addEventListener('click', () => {
+                if (!bioVideo.classList.contains('expanded')) openBioVideo();
+            });
+            videoCloseBtn.addEventListener('click', closeBioVideo);
+            videoBackdrop.addEventListener('click', closeBioVideo);
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && bioVideo.classList.contains('expanded')) closeBioVideo();
+            });
         }
     </script>
 
