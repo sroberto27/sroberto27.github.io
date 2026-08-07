@@ -1,0 +1,104 @@
+{
+  "_id": "gis.tour.cpra-stumpy-bayou",
+  "_type": "gisTour",
+  "id": "cpra-stumpy-bayou",
+  "mapId": "iberia-coastal",
+  "title": "Stumpy Bayou Flood Protection (TV-0095)",
+  "intro": "A three-stop look at this CPRA project: where it is, what it changes, and its status and funding.",
+  "autoStart": false,
+  "autoAdvance": false,
+  "defaultDuration": 12,
+  "showProgress": true,
+  "position": "left",
+  "steps": [
+    {
+      "id": "where",
+      "title": "Where it's at",
+      "body": "This project is at Stumpy Bayou in Iberia Parish and the low-lying wetlands around it.",
+      "view": {
+        "center": [
+          29.885497,
+          -91.765816
+        ],
+        "zoom": 15
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": [
+          "*"
+        ]
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0095'"
+      },
+      "media": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/gis/cpra/cpra-stumpy-bayou-aerial.jpg"
+        },
+        "alt": "Aerial view of Stumpy Bayou and the surrounding wetlands in Iberia Parish (2024 aerial imagery)."
+      },
+      "duration": null
+    },
+    {
+      "id": "what",
+      "title": "What it is changing",
+      "body": "Uncontrolled tidal water and storm runoff have been backing up into Stumpy Bayou, leaving upstream areas flooded for long stretches and letting salt water creep into fresh marsh. CPRA is engineering and building a water control structure to hold back the tide while still allowing rainwater to drain, cutting down on flooding for the surrounding community.",
+      "view": {
+        "center": [
+          29.885497,
+          -91.765816
+        ],
+        "zoom": 15
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0095'"
+      },
+      "media": null,
+      "duration": null
+    },
+    {
+      "id": "timeline",
+      "title": "Timeline / Completion Date",
+      "body": "Project Status: Headed to Bid (the project is preparing to accept construction bids before construction starts). Estimated Cost: $8,415,526 (about $8.4 million). Funding Source: State of Louisiana.",
+      "view": {
+        "center": [
+          29.885497,
+          -91.765816
+        ],
+        "zoom": 15
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0095'"
+      },
+      "media": null,
+      "duration": null
+    }
+  ],
+  "outro": {
+    "title": "Explore other Iberia Parish CPRA projects",
+    "body": "Click any other CPRA project pin on the map for its own details, or open the layer panel to see everything else this map shows.",
+    "cta": {
+      "label": "Open the layer panel",
+      "action": "openLayerPanel"
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "_id": "gis.featuretour.cpra-port-road-bridge",
+  "_type": "gisFeatureTour",
+  "id": "cpra-port-road-bridge",
+  "mapId": "iberia-coastal",
+  "layerId": "cpra-projects-points",
+  "featureKey": {
+    "field": "Project_Status_List.Project_ID",
+    "value": "TV-0028"
+  },
+  "enabled": true,
+  "tourId": "cpra-port-road-bridge"
+}

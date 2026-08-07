@@ -1,0 +1,104 @@
+{
+  "_id": "gis.tour.cpra-little-valley-bayou",
+  "_type": "gisTour",
+  "id": "cpra-little-valley-bayou",
+  "mapId": "iberia-coastal",
+  "title": "Little Valley Bayou Water Control Structure (TV-0092)",
+  "intro": "A three-stop look at this CPRA project: where it is, what it changes, and its status and funding.",
+  "autoStart": false,
+  "autoAdvance": false,
+  "defaultDuration": 12,
+  "showProgress": true,
+  "position": "left",
+  "steps": [
+    {
+      "id": "where",
+      "title": "Where it's at",
+      "body": "This project is at Little Valley Bayou in Iberia Parish.",
+      "view": {
+        "center": [
+          29.895226,
+          -91.780175
+        ],
+        "zoom": 15
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": [
+          "*"
+        ]
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0092'"
+      },
+      "media": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/gis/cpra/cpra-little-valley-bayou-aerial.jpg"
+        },
+        "alt": "Aerial view of Little Valley Bayou and the surrounding farmland and marsh, Iberia Parish (2024 aerial imagery)."
+      },
+      "duration": null
+    },
+    {
+      "id": "what",
+      "title": "What it is changing",
+      "body": "Without a control structure, the bayou’s headwaters and nearby marshes take on unchecked tidal water, raising water levels upstream and increasing flood risk. CPRA is engineering, designing, and building a water control structure to regulate tidal and storm-surge intrusion while still letting rainwater drain freely, reducing flood risk for the surrounding community.",
+      "view": {
+        "center": [
+          29.895226,
+          -91.780175
+        ],
+        "zoom": 15
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0092'"
+      },
+      "media": null,
+      "duration": null
+    },
+    {
+      "id": "timeline",
+      "title": "Timeline / Completion Date",
+      "body": "Project Status: Headed to Bid (the project is preparing to accept construction bids). Estimated Cost: $6,286,569. Funding Source: State of Louisiana.",
+      "view": {
+        "center": [
+          29.895226,
+          -91.780175
+        ],
+        "zoom": 15
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0092'"
+      },
+      "media": null,
+      "duration": null
+    }
+  ],
+  "outro": {
+    "title": "Explore other Iberia Parish CPRA projects",
+    "body": "Click any other CPRA project pin on the map for its own details, or open the layer panel to see everything else this map shows.",
+    "cta": {
+      "label": "Open the layer panel",
+      "action": "openLayerPanel"
+    }
+  }
+}

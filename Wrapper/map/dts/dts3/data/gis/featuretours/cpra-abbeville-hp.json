@@ -1,0 +1,13 @@
+{
+  "_id": "gis.featuretour.cpra-abbeville-hp",
+  "_type": "gisFeatureTour",
+  "id": "cpra-abbeville-hp",
+  "mapId": "iberia-coastal",
+  "layerId": "cpra-projects-points",
+  "featureKey": {
+    "field": "Project_Status_List.Project_ID",
+    "value": "TV-0108"
+  },
+  "enabled": true,
+  "tourId": "cpra-abbeville-hp"
+}

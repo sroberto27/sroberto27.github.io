@@ -202,6 +202,19 @@
       "notes": "Statewide project inventory. Cross-check the Iberia-specific subset against data/gis/iberia-cpra-factsheet.json (task 0.5 — resolved 2026-08-02)."
     },
     {
+      "sourceId": "cpra-outreach-projects-points",
+      "feedsGroup": "Coastal projects (CPRA)",
+      "publisher": "Louisiana CPRA",
+      "serviceEndpoint": "https://cimsgeo.coastal.louisiana.gov/arcgis/rest/services/outreach/Outreach_Projects_Layer_New/MapServer/0",
+      "serviceType": "ArcGIS FeatureServer/MapServer 10.81, geometryType esriGeometryPoint (\"CPRA_Points\" / AGOL title \"CPRA Projects (Center Points)\", AGOL item 20422ab8cbce407a8970d2fc549272ae)",
+      "access": "public, no token",
+      "cors": "verified pass — queried directly 2026-08-07 (where=Project_Status_List.Parish LIKE '%Iberia%' returned 13 real features)",
+      "recommendedSourceType": "esriFeature",
+      "iberiaFilter": "Project_Status_List.Parish LIKE '%Iberia%' -- applied server-side via the layer's own `where`, not a client-side post-filter of the statewide set. 13 real features returned for Iberia Parish as of 2026-08-07.",
+      "harvested": false,
+      "notes": "Distinct from cpra-coastal-projects above (cimsgeo3.coastal.louisiana.gov/.../prot_rest/CPRA_Projects, a different, polygon-geometry 'CPRA_Polys' footprints service with no Parish field at all). This is the point/pin service the CPRA Iberia Parish guided-tours feature (docs/plans/gis/CPRA-IBERIA-GIS-TOURS-TESTING.md) uses -- clicking a pin is what a data/gis/featuretours/*.json association keys off of. Same joined-view field-name prefixing (Project_Status_List.*) as the other CPRA services on this server. objectIdField/globalIdField both report null (?f=json) -- Project_Status_List.Project_ID (CPRA's own stable business key, e.g. \"TV-0031\") is the identity field used for feature-tour association, not an ArcGIS OBJECTID. Five of the 13 Iberia features have approved educational tour content sourced from docs/plans/gis/CPRA PROJECT TOUR INFORMATION.docx: TV-0031, TV-0028, TV-0030, TV-0094, TV-0095."
+    },
+    {
       "sourceId": "cpra-master-plan-2023",
       "feedsGroup": "Coastal projects (CPRA) / scenario projections",
       "publisher": "Louisiana CPRA",

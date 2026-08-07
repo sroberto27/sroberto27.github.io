@@ -1,0 +1,13 @@
+{
+  "_id": "gis.featuretour.cpra-little-valley-bayou",
+  "_type": "gisFeatureTour",
+  "id": "cpra-little-valley-bayou",
+  "mapId": "iberia-coastal",
+  "layerId": "cpra-projects-points",
+  "featureKey": {
+    "field": "Project_Status_List.Project_ID",
+    "value": "TV-0092"
+  },
+  "enabled": true,
+  "tourId": "cpra-little-valley-bayou"
+}

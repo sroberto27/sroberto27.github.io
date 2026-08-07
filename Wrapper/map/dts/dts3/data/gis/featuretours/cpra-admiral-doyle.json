@@ -1,0 +1,13 @@
+{
+  "_id": "gis.featuretour.cpra-admiral-doyle",
+  "_type": "gisFeatureTour",
+  "id": "cpra-admiral-doyle",
+  "mapId": "iberia-coastal",
+  "layerId": "cpra-projects-points",
+  "featureKey": {
+    "field": "Project_Status_List.Project_ID",
+    "value": "TV-0031"
+  },
+  "enabled": true,
+  "tourId": "cpra-admiral-doyle"
+}

@@ -959,10 +959,26 @@
     return gisEnginePromise;
   }
 
+  function featureToursForMap(mapDoc) {
+    return Object.keys(cfg.gisFeatureTours || {})
+      .map((id) => cfg.gisFeatureTours[id])
+      .filter((ft) => ft && ft.mapId === mapDoc.id && ft.enabled !== false);
+  }
+
   function toursForMap(mapDoc) {
-    return (Array.isArray(mapDoc.tours) ? mapDoc.tours : [])
+    const listedIds = Array.isArray(mapDoc.tours) ? mapDoc.tours : [];
+    const listed = listedIds.map((id) => cfg.gisTours && cfg.gisTours[id]).filter(Boolean);
+    // A feature tour's own tourId also has to be in the set instance.startTour()
+    // resolves against (gis-viewer.js's findTour reads only opts.tours) even
+    // though it's deliberately left out of mapDoc.tours -- that array drives
+    // the map-level "Guided tours" button/autostart, which a per-feature tour
+    // must not appear in or compete with.
+    const extra = featureToursForMap(mapDoc)
+      .map((ft) => ft.tourId)
+      .filter((id) => id && listedIds.indexOf(id) === -1)
       .map((id) => cfg.gisTours && cfg.gisTours[id])
       .filter(Boolean);
+    return listed.concat(extra);
   }
 
   /* Never evicts the map currently on screen. */
@@ -1057,7 +1073,7 @@
           pane.remove();
           return;
         }
-        const toolsInstance = window.DTSGisTools ? DTSGisTools.mount(pane, mapDoc, instance, { tours: tours, hasStateParam: !!stateParam }) : null;
+        const toolsInstance = window.DTSGisTools ? DTSGisTools.mount(pane, mapDoc, instance, { tours: tours, featureTours: featureToursForMap(mapDoc), hasStateParam: !!stateParam }) : null;
         gisCache.set(mapId, { pane, instance, toolsInstance, lastUsed: Date.now() });
         evictGisIfOverCap();
         if (loading) loading.classList.add("is-hidden");

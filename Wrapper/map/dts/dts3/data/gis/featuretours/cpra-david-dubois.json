@@ -1,0 +1,13 @@
+{
+  "_id": "gis.featuretour.cpra-david-dubois",
+  "_type": "gisFeatureTour",
+  "id": "cpra-david-dubois",
+  "mapId": "iberia-coastal",
+  "layerId": "cpra-projects-points",
+  "featureKey": {
+    "field": "Project_Status_List.Project_ID",
+    "value": "TV-0030"
+  },
+  "enabled": true,
+  "tourId": "cpra-david-dubois"
+}

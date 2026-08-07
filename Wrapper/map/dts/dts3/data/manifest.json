@@ -1,7 +1,7 @@
 {
   "_type": "contentManifest",
   "schemaVersion": "1.0.0",
-  "contentVersion": "2026-07-25T00-00-00Z",
+  "contentVersion": "2026-08-14T00-00-00Z",
   "generatedFrom": "js/config.js, js/clients.js, index.html (July 2026)",
   "description": "Index of every content document in /data. The site loader and the future Admin Board (mini CMS) both read this file to discover content. Add a new document = add its file and register it here.",
   "mediaConvention": {
@@ -201,6 +201,136 @@
         "file": "gis/tours/iberia-coastal-intro.json",
         "type": "gisTour",
         "id": "gis.tour.iberia-coastal-intro"
+      },
+      {
+        "file": "gis/tours/cpra-admiral-doyle.json",
+        "type": "gisTour",
+        "id": "gis.tour.cpra-admiral-doyle"
+      },
+      {
+        "file": "gis/featuretours/cpra-admiral-doyle.json",
+        "type": "gisFeatureTour",
+        "id": "gis.featuretour.cpra-admiral-doyle"
+      },
+      {
+        "file": "gis/tours/cpra-port-road-bridge.json",
+        "type": "gisTour",
+        "id": "gis.tour.cpra-port-road-bridge"
+      },
+      {
+        "file": "gis/featuretours/cpra-port-road-bridge.json",
+        "type": "gisFeatureTour",
+        "id": "gis.featuretour.cpra-port-road-bridge"
+      },
+      {
+        "file": "gis/tours/cpra-david-dubois.json",
+        "type": "gisTour",
+        "id": "gis.tour.cpra-david-dubois"
+      },
+      {
+        "file": "gis/featuretours/cpra-david-dubois.json",
+        "type": "gisFeatureTour",
+        "id": "gis.featuretour.cpra-david-dubois"
+      },
+      {
+        "file": "gis/tours/cpra-rutton-rill.json",
+        "type": "gisTour",
+        "id": "gis.tour.cpra-rutton-rill"
+      },
+      {
+        "file": "gis/featuretours/cpra-rutton-rill.json",
+        "type": "gisFeatureTour",
+        "id": "gis.featuretour.cpra-rutton-rill"
+      },
+      {
+        "file": "gis/tours/cpra-stumpy-bayou.json",
+        "type": "gisTour",
+        "id": "gis.tour.cpra-stumpy-bayou"
+      },
+      {
+        "file": "gis/featuretours/cpra-stumpy-bayou.json",
+        "type": "gisFeatureTour",
+        "id": "gis.featuretour.cpra-stumpy-bayou"
+      },
+      {
+        "file": "gis/tours/cpra-ciap-bamm.json",
+        "type": "gisTour",
+        "id": "gis.tour.cpra-ciap-bamm"
+      },
+      {
+        "file": "gis/featuretours/cpra-ciap-bamm.json",
+        "type": "gisFeatureTour",
+        "id": "gis.featuretour.cpra-ciap-bamm"
+      },
+      {
+        "file": "gis/tours/cpra-non-rock-shoreline.json",
+        "type": "gisTour",
+        "id": "gis.tour.cpra-non-rock-shoreline"
+      },
+      {
+        "file": "gis/featuretours/cpra-non-rock-shoreline.json",
+        "type": "gisFeatureTour",
+        "id": "gis.featuretour.cpra-non-rock-shoreline"
+      },
+      {
+        "file": "gis/tours/cpra-east-marsh-island.json",
+        "type": "gisTour",
+        "id": "gis.tour.cpra-east-marsh-island"
+      },
+      {
+        "file": "gis/featuretours/cpra-east-marsh-island.json",
+        "type": "gisFeatureTour",
+        "id": "gis.featuretour.cpra-east-marsh-island"
+      },
+      {
+        "file": "gis/tours/cpra-cypremort-point.json",
+        "type": "gisTour",
+        "id": "gis.tour.cpra-cypremort-point"
+      },
+      {
+        "file": "gis/featuretours/cpra-cypremort-point.json",
+        "type": "gisFeatureTour",
+        "id": "gis.featuretour.cpra-cypremort-point"
+      },
+      {
+        "file": "gis/tours/cpra-little-valley-bayou.json",
+        "type": "gisTour",
+        "id": "gis.tour.cpra-little-valley-bayou"
+      },
+      {
+        "file": "gis/featuretours/cpra-little-valley-bayou.json",
+        "type": "gisFeatureTour",
+        "id": "gis.featuretour.cpra-little-valley-bayou"
+      },
+      {
+        "file": "gis/tours/cpra-iberia-st-mary-levee.json",
+        "type": "gisTour",
+        "id": "gis.tour.cpra-iberia-st-mary-levee"
+      },
+      {
+        "file": "gis/featuretours/cpra-iberia-st-mary-levee.json",
+        "type": "gisFeatureTour",
+        "id": "gis.featuretour.cpra-iberia-st-mary-levee"
+      },
+      {
+        "file": "gis/tours/cpra-big-bayou-pigeon.json",
+        "type": "gisTour",
+        "id": "gis.tour.cpra-big-bayou-pigeon"
+      },
+      {
+        "file": "gis/featuretours/cpra-big-bayou-pigeon.json",
+        "type": "gisFeatureTour",
+        "id": "gis.featuretour.cpra-big-bayou-pigeon"
+      },
+      {
+        "file": "gis/tours/cpra-abbeville-hp.json",
+        "type": "gisTour",
+        "id": "gis.tour.cpra-abbeville-hp"
+      },
+      {
+        "file": "gis/featuretours/cpra-abbeville-hp.json",
+        "type": "gisFeatureTour",
+        "id": "gis.featuretour.cpra-abbeville-hp"
       }
     ]
   }

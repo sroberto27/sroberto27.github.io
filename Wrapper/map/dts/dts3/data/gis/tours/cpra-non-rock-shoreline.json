@@ -1,0 +1,104 @@
+{
+  "_id": "gis.tour.cpra-non-rock-shoreline",
+  "_type": "gisTour",
+  "id": "cpra-non-rock-shoreline",
+  "mapId": "iberia-coastal",
+  "title": "Non-Rock Alternatives to Shoreline Protection Demonstration (LA-0016)",
+  "intro": "A three-stop look at this CPRA project: where it is, what it changes, and its status and funding.",
+  "autoStart": false,
+  "autoAdvance": false,
+  "defaultDuration": 12,
+  "showProgress": true,
+  "position": "left",
+  "steps": [
+    {
+      "id": "where",
+      "title": "Where it's at",
+      "body": "This project is along the eastern shoreline of Vermilion Bay, on Shark Island in Iberia Parish.",
+      "view": {
+        "center": [
+          29.779366,
+          -91.854079
+        ],
+        "zoom": 14
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": [
+          "*"
+        ]
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'LA-0016'"
+      },
+      "media": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/gis/cpra/cpra-non-rock-shoreline-aerial.jpg"
+        },
+        "alt": "Aerial view of Shark Island's shoreline on Vermilion Bay, Iberia Parish (2024 aerial imagery)."
+      },
+      "duration": null
+    },
+    {
+      "id": "what",
+      "title": "What it is changing",
+      "body": "Rock is the usual way to armor an eroding shoreline, but it does not work everywhere — some sites have soil too soft, or are too hard to reach, for standard rock revetments. This project tested several non-rock alternatives to protect the shoreline from erosion, with the results used to guide future coastal restoration choices statewide.",
+      "view": {
+        "center": [
+          29.779366,
+          -91.854079
+        ],
+        "zoom": 14
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'LA-0016'"
+      },
+      "media": null,
+      "duration": null
+    },
+    {
+      "id": "timeline",
+      "title": "Timeline / Completion Date",
+      "body": "Project Status: Completed. Estimated Cost: $7,358,699 ($916,305 in state dollars). Funding Source: Coastal Wetlands Planning, Protection and Restoration Act (CWPPRA).",
+      "view": {
+        "center": [
+          29.779366,
+          -91.854079
+        ],
+        "zoom": 14
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'LA-0016'"
+      },
+      "media": null,
+      "duration": null
+    }
+  ],
+  "outro": {
+    "title": "Explore other Iberia Parish CPRA projects",
+    "body": "Click any other CPRA project pin on the map for its own details, or open the layer panel to see everything else this map shows.",
+    "cta": {
+      "label": "Open the layer panel",
+      "action": "openLayerPanel"
+    }
+  }
+}

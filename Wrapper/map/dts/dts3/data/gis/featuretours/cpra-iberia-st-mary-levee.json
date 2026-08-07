@@ -1,0 +1,13 @@
+{
+  "_id": "gis.featuretour.cpra-iberia-st-mary-levee",
+  "_type": "gisFeatureTour",
+  "id": "cpra-iberia-st-mary-levee",
+  "mapId": "iberia-coastal",
+  "layerId": "cpra-projects-points",
+  "featureKey": {
+    "field": "Project_Status_List.Project_ID",
+    "value": "TV-0102"
+  },
+  "enabled": true,
+  "tourId": "cpra-iberia-st-mary-levee"
+}

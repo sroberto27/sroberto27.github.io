@@ -1,0 +1,13 @@
+{
+  "_id": "gis.featuretour.cpra-rutton-rill",
+  "_type": "gisFeatureTour",
+  "id": "cpra-rutton-rill",
+  "mapId": "iberia-coastal",
+  "layerId": "cpra-projects-points",
+  "featureKey": {
+    "field": "Project_Status_List.Project_ID",
+    "value": "TV-0094"
+  },
+  "enabled": true,
+  "tourId": "cpra-rutton-rill"
+}

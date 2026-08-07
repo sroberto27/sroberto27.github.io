@@ -31,6 +31,29 @@
     return !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
   }
 
+  // Step media (task: "at least one media per tour"). A plain <video src>
+  // only ever plays a direct file -- it can't embed a YouTube/Vimeo watch
+  // page, which is how virtually all real-world project video is actually
+  // hosted. Auto-detected from the author's own pasted URL (no new CMS
+  // field/provider dropdown needed -- js/admin.js's existing fSource() URL
+  // input already accepts any of these unchanged) rather than a separate
+  // authored "provider" field, so there is exactly one place a mismatch
+  // between the field and the URL could ever happen: nowhere.
+  const EMBED_PATTERNS = [
+    { provider: "youtube", re: /(?:youtube\.com\/watch\?v=|youtube\.com\/embed\/|youtu\.be\/)([\w-]{6,})/i,
+      embed: function (id) { return "https://www.youtube-nocookie.com/embed/" + id; } },
+    { provider: "vimeo", re: /vimeo\.com\/(?:video\/)?(\d+)/i,
+      embed: function (id) { return "https://player.vimeo.com/video/" + id; } }
+  ];
+  function embedInfoFor(url) {
+    if (!url) return null;
+    for (let i = 0; i < EMBED_PATTERNS.length; i++) {
+      const m = url.match(EMBED_PATTERNS[i].re);
+      if (m) return { provider: EMBED_PATTERNS[i].provider, embedUrl: EMBED_PATTERNS[i].embed(m[1]) };
+    }
+    return null;
+  }
+
   const ICON_CLOSE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>';
   const ICON_CHEVRON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>';
 
@@ -207,7 +230,17 @@
     function mediaEl(media) {
       if (!media || !media.source) return null;
       const src = media.source.value;
+      if (!src) return null;
       if (media._type === "video") {
+        const embed = embedInfoFor(src);
+        if (embed) {
+          return el("iframe", {
+            src: embed.embedUrl, class: "dts-gis-tour-media-el is-embed",
+            title: media.alt || "Project video", loading: "lazy",
+            allow: "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture",
+            allowfullscreen: ""
+          });
+        }
         return el("video", { src: src, class: "dts-gis-tour-media-el", controls: "", playsinline: "" });
       }
       return el("img", { src: src, alt: media.alt || "", class: "dts-gis-tour-media-el" });

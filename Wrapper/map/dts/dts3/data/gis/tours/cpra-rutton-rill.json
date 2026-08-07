@@ -1,0 +1,104 @@
+{
+  "_id": "gis.tour.cpra-rutton-rill",
+  "_type": "gisTour",
+  "id": "cpra-rutton-rill",
+  "mapId": "iberia-coastal",
+  "title": "Rutton Rill Road Flood Protection (TV-0094)",
+  "intro": "A three-stop look at this CPRA project: where it is, what it changes, and its status and funding.",
+  "autoStart": false,
+  "autoAdvance": false,
+  "defaultDuration": 12,
+  "showProgress": true,
+  "position": "left",
+  "steps": [
+    {
+      "id": "where",
+      "title": "Where it's at",
+      "body": "This project is at Rutton Rill Road in Iberia Parish, in the low-lying Chenière Plain region.",
+      "view": {
+        "center": [
+          29.888845,
+          -91.770678
+        ],
+        "zoom": 15
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": [
+          "*"
+        ]
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0094'"
+      },
+      "media": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/gis/cpra/cpra-rutton-rill-aerial.jpg"
+        },
+        "alt": "Aerial view of the Rutton Rill Road drainage corridor in Iberia Parish (2024 aerial imagery)."
+      },
+      "duration": null
+    },
+    {
+      "id": "what",
+      "title": "What it is changing",
+      "body": "Right now there is no structure to hold back tidal water at Rutton Rill Road, so high tides and storm surge can push water upstream and flood the area. CPRA is designing and building a water control structure that will hold back that tidal surge while still letting rainwater drain out after storms, reducing flooding for nearby homes, farmland, and wetlands.",
+      "view": {
+        "center": [
+          29.888845,
+          -91.770678
+        ],
+        "zoom": 15
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0094'"
+      },
+      "media": null,
+      "duration": null
+    },
+    {
+      "id": "timeline",
+      "title": "Timeline / Completion Date",
+      "body": "Project Status: Headed to Bid (the project is preparing to accept construction bids before work begins). Estimated Cost: $3,928,864 (about $3.9 million). Funding Source: State of Louisiana.",
+      "view": {
+        "center": [
+          29.888845,
+          -91.770678
+        ],
+        "zoom": 15
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0094'"
+      },
+      "media": null,
+      "duration": null
+    }
+  ],
+  "outro": {
+    "title": "Explore other Iberia Parish CPRA projects",
+    "body": "Click any other CPRA project pin on the map for its own details, or open the layer panel to see everything else this map shows.",
+    "cta": {
+      "label": "Open the layer panel",
+      "action": "openLayerPanel"
+    }
+  }
+}

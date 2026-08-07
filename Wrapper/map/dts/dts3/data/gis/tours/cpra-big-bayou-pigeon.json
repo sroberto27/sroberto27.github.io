@@ -1,0 +1,104 @@
+{
+  "_id": "gis.tour.cpra-big-bayou-pigeon",
+  "_type": "gisTour",
+  "id": "cpra-big-bayou-pigeon",
+  "mapId": "iberia-coastal",
+  "title": "Big Bayou Pigeon Depth Restoration (AT-0039)",
+  "intro": "A three-stop look at this CPRA project: where it is, what it changes, and its status and funding.",
+  "autoStart": false,
+  "autoAdvance": false,
+  "defaultDuration": 12,
+  "showProgress": true,
+  "position": "left",
+  "steps": [
+    {
+      "id": "where",
+      "title": "Where it's at",
+      "body": "This project is at Big Bayou Pigeon, along the Iberia–Iberville parish line.",
+      "view": {
+        "center": [
+          30.058449,
+          -91.336332
+        ],
+        "zoom": 14
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": [
+          "*"
+        ]
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'AT-0039'"
+      },
+      "media": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/gis/cpra/cpra-big-bayou-pigeon-aerial.jpg"
+        },
+        "alt": "Aerial view of Big Bayou Pigeon winding through wetlands along the Iberia-Iberville parish line (2024 aerial imagery)."
+      },
+      "duration": null
+    },
+    {
+      "id": "what",
+      "title": "What it is changing",
+      "body": "CPRA has not yet published a detailed public description of this project’s design. It is currently in the engineering and design phase; check CPRA’s Coastal Information Management System (CIMS) for the latest project status as more information becomes available.",
+      "view": {
+        "center": [
+          30.058449,
+          -91.336332
+        ],
+        "zoom": 14
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'AT-0039'"
+      },
+      "media": null,
+      "duration": null
+    },
+    {
+      "id": "timeline",
+      "title": "Timeline / Completion Date",
+      "body": "Project Status: In Engineering & Design. Estimated Cost: $500,000. Funding Source: State of Louisiana.",
+      "view": {
+        "center": [
+          30.058449,
+          -91.336332
+        ],
+        "zoom": 14
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'AT-0039'"
+      },
+      "media": null,
+      "duration": null
+    }
+  ],
+  "outro": {
+    "title": "Explore other Iberia Parish CPRA projects",
+    "body": "Click any other CPRA project pin on the map for its own details, or open the layer panel to see everything else this map shows.",
+    "cta": {
+      "label": "Open the layer panel",
+      "action": "openLayerPanel"
+    }
+  }
+}

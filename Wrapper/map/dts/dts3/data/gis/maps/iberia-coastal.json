@@ -208,6 +208,34 @@
       "description": "CPRA coastal protection and restoration project footprints (statewide service, shown here within Iberia Parish only). Note: this is a joined ArcGIS view — its own field names carry table-qualified prefixes (e.g. \"Project_Status_List.Project_Name\"), a real service quirk left to the engine's default \"show all fields with aliases\" popup fallback rather than a guessed exact-name mapping."
     },
     {
+      "id": "cpra-projects-points",
+      "title": "CPRA projects (Iberia Parish)",
+      "group": "coastal",
+      "sourceType": "esriFeature",
+      "sourceRef": "cpra-outreach-projects-points",
+      "url": "https://cimsgeo.coastal.louisiana.gov/arcgis/rest/services/outreach/Outreach_Projects_Layer_New/MapServer",
+      "layerId": 0,
+      "where": "Project_Status_List.Parish LIKE '%Iberia%'",
+      "visible": false,
+      "opacity": 1,
+      "zIndex": 95,
+      "legend": { "mode": "auto" },
+      "queryable": true,
+      "style": { "color": "#3fae5c", "fillColor": "#3fae5c", "pointRadius": 7 },
+      "popup": {
+        "title": "{Project_Status_List.Project_Name}",
+        "fields": [
+          { "name": "Project_Status_List.CPRA_Project_Type", "label": "Project type" },
+          { "name": "Project_Status_List.CPRA_Project_Phase", "label": "Status" },
+          { "name": "Project_Status_List.Estimated_Cost", "label": "Estimated cost" },
+          { "name": "Project_Status_List.CPRA_Program", "label": "Funding program" }
+        ]
+      },
+      "attribution": "Louisiana CPRA — attribution wording pending confirmation (see data/gis/sources.json openQuestions.cpra-cims-terms-of-use)",
+      "description": "CPRA project center points (public 'CPRA Projects (Center Points)' service, AGOL item 20422ab8cbce407a8970d2fc549272ae), filtered server-side to Iberia Parish via the where clause above. Distinct from the cpra-projects layer above, which is a different, statewide polygon-footprints service (CPRA_Polys, no Parish field, can't be attribute-filtered) -- this layer is point geometry and is what a per-project guided tour (see data/gis/featuretours/) attaches to. Same joined-view field-prefixing quirk as cpra-projects (Project_Status_List.*), and this service reports no objectIdField/globalIdField at all -- Project_Status_List.Project_ID (CPRA's own stable business key, e.g. \"TV-0031\") is used for feature identity here, not an ArcGIS OBJECTID. Known limitation, not chased further: the Filter tool's setWhere() replaces this layer's where entirely rather than ANDing with it, so a visitor using Filter on this specific layer could temporarily see non-Iberia projects until the filter is cleared or the map reloads. zIndex is deliberately 95, not the ~20 a 'coastal' group layer would otherwise get: parish-boundary (zIndex 90, always visible, a filled -- if nearly-transparent -- interactive polygon covering the whole parish) sits on its own canvas pane under this map's preferCanvas engine, and Leaflet's canvas click dispatch only ever tests the topmost pane's shapes -- a miss there does not fall through to lower panes. Below 90, this layer's pins would never receive a click at all. Do not lower this back into the group's normal z-order without addressing that click-routing behavior first (see js/gis/gis-viewer.js's buildParishMask() comment for the same issue on the dim mask, fixed via pointer-events, and the CHANGES.md entry documenting this as a broader, not-yet-fixed limitation for every other layer below parish-boundary).",
+      "updated": "2026-08-07"
+    },
+    {
       "id": "cpra-master-plan-2023",
       "title": "2023 Coastal Master Plan — restoration projects",
       "group": "coastal-change",

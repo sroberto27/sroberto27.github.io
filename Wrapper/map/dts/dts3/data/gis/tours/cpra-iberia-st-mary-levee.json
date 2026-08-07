@@ -1,0 +1,104 @@
+{
+  "_id": "gis.tour.cpra-iberia-st-mary-levee",
+  "_type": "gisTour",
+  "id": "cpra-iberia-st-mary-levee",
+  "mapId": "iberia-coastal",
+  "title": "Iberia/St. Mary Upland Levee (TV-0102)",
+  "intro": "A three-stop look at this CPRA project: where it is, what it changes, and its status and funding.",
+  "autoStart": false,
+  "autoAdvance": false,
+  "defaultDuration": 12,
+  "showProgress": true,
+  "position": "left",
+  "steps": [
+    {
+      "id": "where",
+      "title": "Where it's at",
+      "body": "This project spans Iberia and St. Mary Parishes, between the Delcambre Canal and the Charenton Canal.",
+      "view": {
+        "center": [
+          29.930556,
+          -91.910666
+        ],
+        "zoom": 12
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": [
+          "*"
+        ]
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0102'"
+      },
+      "media": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/gis/cpra/cpra-iberia-st-mary-levee-aerial.jpg"
+        },
+        "alt": "Aerial view of the corridor between the Delcambre and Charenton Canals, Iberia/St. Mary Parishes (2024 aerial imagery)."
+      },
+      "duration": null
+    },
+    {
+      "id": "what",
+      "title": "What it is changing",
+      "body": "Low-lying communities along this corridor face growing risk from storm surge and tidal flooding with no engineered barrier to stop it. This large-scale project is designing an earthen levee system — with T-walls, barge gates, and pump stations — to protect roughly 140,000 acres and reduce flood damage for homes and businesses in both parishes.",
+      "view": {
+        "center": [
+          29.930556,
+          -91.910666
+        ],
+        "zoom": 12
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0102'"
+      },
+      "media": null,
+      "duration": null
+    },
+    {
+      "id": "timeline",
+      "title": "Timeline / Completion Date",
+      "body": "Project Status: In Engineering & Design. Estimated Cost: $15,000,000. Funding Source: Gulf of Mexico Energy Security Act (GOMESA).",
+      "view": {
+        "center": [
+          29.930556,
+          -91.910666
+        ],
+        "zoom": 12
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0102'"
+      },
+      "media": null,
+      "duration": null
+    }
+  ],
+  "outro": {
+    "title": "Explore other Iberia Parish CPRA projects",
+    "body": "Click any other CPRA project pin on the map for its own details, or open the layer panel to see everything else this map shows.",
+    "cta": {
+      "label": "Open the layer panel",
+      "action": "openLayerPanel"
+    }
+  }
+}

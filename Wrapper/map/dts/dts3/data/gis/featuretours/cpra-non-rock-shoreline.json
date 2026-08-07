@@ -1,0 +1,13 @@
+{
+  "_id": "gis.featuretour.cpra-non-rock-shoreline",
+  "_type": "gisFeatureTour",
+  "id": "cpra-non-rock-shoreline",
+  "mapId": "iberia-coastal",
+  "layerId": "cpra-projects-points",
+  "featureKey": {
+    "field": "Project_Status_List.Project_ID",
+    "value": "LA-0016"
+  },
+  "enabled": true,
+  "tourId": "cpra-non-rock-shoreline"
+}

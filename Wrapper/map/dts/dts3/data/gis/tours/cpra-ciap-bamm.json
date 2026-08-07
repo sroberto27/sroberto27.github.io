@@ -1,0 +1,104 @@
+{
+  "_id": "gis.tour.cpra-ciap-bamm",
+  "_type": "gisTour",
+  "id": "cpra-ciap-bamm",
+  "mapId": "iberia-coastal",
+  "title": "CIAP Performance Evaluation Borrow Area Management and Monitoring (LA-0012-7)",
+  "intro": "A three-stop look at this CPRA project: where it is, what it changes, and its status and funding.",
+  "autoStart": false,
+  "autoAdvance": false,
+  "defaultDuration": 12,
+  "showProgress": true,
+  "position": "left",
+  "steps": [
+    {
+      "id": "where",
+      "title": "Where it's at",
+      "body": "This research project covers several “borrow areas” — sites where sediment was dug up to help build other restoration projects — across coastal Louisiana, including sites tied to Iberia Parish. (This project's benefit area spans several parishes, so its map location isn't a single Iberia Parish site -- the view above shows the parish generally rather than zooming to a specific point.)",
+      "view": {
+        "center": [
+          29.740394,
+          -91.635827
+        ],
+        "zoom": 10
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": [
+          "*"
+        ]
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'LA-0012-7'"
+      },
+      "media": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/gis/cpra/cpra-ciap-bamm-aerial.jpg"
+        },
+        "alt": "Aerial view of New Iberia, the Iberia Parish seat, along Bayou Teche (2024 aerial imagery). This research project's own benefit area spans several parishes, so this shows the parish generally."
+      },
+      "duration": null
+    },
+    {
+      "id": "what",
+      "title": "What it is changing",
+      "body": "When crews dig up sand and mud to rebuild marsh elsewhere, the resulting pits change over time. This project studied how those borrow pits fill back in and change shape, and whether the dredging affected water quality, so future restoration projects can be planned more responsibly.",
+      "view": {
+        "center": [
+          29.740394,
+          -91.635827
+        ],
+        "zoom": 10
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'LA-0012-7'"
+      },
+      "media": null,
+      "duration": null
+    },
+    {
+      "id": "timeline",
+      "title": "Timeline / Completion Date",
+      "body": "Project Status: Completed. Estimated Cost: $813,512, all state dollars. Funding Source: Coastal Impact Assistance Program (CIAP).",
+      "view": {
+        "center": [
+          29.740394,
+          -91.635827
+        ],
+        "zoom": 10
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'LA-0012-7'"
+      },
+      "media": null,
+      "duration": null
+    }
+  ],
+  "outro": {
+    "title": "Explore other Iberia Parish CPRA projects",
+    "body": "Click any other CPRA project pin on the map for its own details, or open the layer panel to see everything else this map shows.",
+    "cta": {
+      "label": "Open the layer panel",
+      "action": "openLayerPanel"
+    }
+  }
+}

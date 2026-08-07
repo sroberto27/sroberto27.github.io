@@ -1,0 +1,13 @@
+{
+  "_id": "gis.featuretour.cpra-cypremort-point",
+  "_type": "gisFeatureTour",
+  "id": "cpra-cypremort-point",
+  "mapId": "iberia-coastal",
+  "layerId": "cpra-projects-points",
+  "featureKey": {
+    "field": "Project_Status_List.Project_ID",
+    "value": "TV-0081"
+  },
+  "enabled": true,
+  "tourId": "cpra-cypremort-point"
+}

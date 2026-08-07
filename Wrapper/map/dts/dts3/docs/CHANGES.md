@@ -2,6 +2,433 @@
 
 Newest first.
 
+## CPRA Iberia GIS tours — main tour's final step, and a second click-blocking bug
+
+Per the human's own follow-up: (1) the parish-wide tour's last step now
+turns on `cpra-projects-points` (and off the old footprints layer),
+explains the layer, and invites exploring individual project pins — so a
+finished tour leaves the map on exactly `parish-boundary` +
+`cpra-projects-points`, verified by replaying the full 6-step layer-state
+chain with a script (mirrors `resolveTourLayerState()`): confirmed the
+end state is exactly those two layers, nothing else. (2) The human then
+reported CPRA pins stop being clickable both during the main tour's new
+last step and after finishing any individual project tour.
+
+- **Root cause, same class of bug as the dim-mask fix earlier in this
+  file:** `highlightGroup` (`gis-viewer.js`, the layer group every tour
+  step's `highlight` draws into) was created with no `pane` option at all.
+  Under this map's `preferCanvas:true`, that put every highlight ring in
+  Leaflet's *default* `overlayPane` (zIndex 400) — above every data-layer
+  pane (max 95) — and left it fully interactive by default. Once any
+  step's highlight had rendered even once, that pane's canvas became the
+  browser's actual click target for the whole map; a miss on it (anywhere
+  not exactly on the thin highlight ring) becomes a generic, untargeted map
+  click that never reaches a real layer's own canvas underneath.
+  **Confirmed why it outlives the tour that caused it:** reaching a tour's
+  outro screen doesn't clear anything at the engine level (only an
+  explicit exit call does, and even that isn't reached just by letting a
+  tour finish) — `clearHighlight()` only ever runs again at the *next*
+  `applyStep()` call, so a project tour finished by reading through to the
+  end, not exiting, leaves its last highlight (and the click-blocking
+  pane) in place indefinitely.
+- **Fix:** `highlightGroup`'s shapes now render in their own dedicated pane
+  with `pointer-events:none` set directly on it (the browser skips it
+  entirely, same fix as the dim mask), plus `interactive:false` on the
+  shapes themselves — the highlight ring was never meant to be its own
+  click target. Visual stacking is unaffected (still zIndex 300, above
+  every data layer); only its interactivity changes.
+- **Verification:** the layer-state replay for the new last step was
+  checked by script, not eyeballed. The pane/pointer-events mechanism
+  itself is the exact same one already used (and already reasoned through
+  against the real Leaflet dispatch code) for the dim-mask fix earlier —
+  not re-derived from scratch. `node --check` clean. **Not yet confirmed
+  live:** that pins are actually clickable during and after both the main
+  tour's last step and an individual project tour — left for the human's
+  own retest, same as the outstanding items already in
+  `docs/plans/gis/CPRA-IBERIA-GIS-TOURS-TESTING.md`.
+
+## CPRA Iberia GIS tours — step media (aerial photos + video embed support)
+
+Per the human's own ask, after first assessing feasibility (not implementing
+blind): every one of the 13 CPRA tours now has at least one real, verified
+image on its "Where it's at" step; `js/gis/gis-tour.js` and `js/admin.js`
+gained YouTube/Vimeo embed support for step video, even though no real video
+source material exists for these specific 13 projects (the human's explicit
+choice, to be ready if real CPRA video turns up later).
+
+- **Assessed before implementing, with real searches, not assumed:**
+  ground-level photos genuinely exist and are verifiable for only one of the
+  13 projects (Cypremort Point State Park — official Louisiana State Parks /
+  Louisiana Office of Tourism coverage of its new marsh boardwalk). Searched
+  specifically for the flood-protection structures (Rutton Rill, Stumpy
+  Bayou, Little Valley Bayou) and the shoreline demo — only technical
+  PDFs/federal register notices exist, no photos. A small, single bridge
+  replacement (Port Road) returned nothing project-specific at all. Did not
+  force a stock or generic image onto any of these — an unverifiable photo
+  presented as a specific project would misrepresent it, which is worse than
+  no photo.
+- **Real, reliable fallback used for all 13**: a real, on-demand aerial photo
+  centered on each project's own live-verified coordinate, pulled from
+  Iberia Parish's own 2024 imagery service — the same service this map
+  already uses as its "Aerial 2024" basemap, not a new trust dependency.
+  Every one of the 13 was fetched and visually confirmed (not just checked
+  for HTTP 200) before use. **Real finding:** Iberia's own imagery service
+  doesn't have full-parish coverage — a first attempt at `LA-0012-7`'s own
+  (off-map, Barataria-area) coordinate and at central Iberia Parish both
+  returned blank tiles; Esri's public World Imagery service (globally
+  covered, no key required) was used as a fallback for that one project,
+  centered on New Iberia itself as an honest "this is Iberia Parish"
+  substitute, since the project's true location isn't a meaningful single
+  site anyway (documented in that tour's own step text already). The
+  Cypremort Point and Big Bayou Pigeon aerials were each re-fetched once
+  after the first attempt returned a tile more than half black (a real
+  imagery-tile-boundary artifact, not fabricated data) — both now fully
+  populated.
+- **Real usage-rights flag, not silently assumed:** the one ground photo
+  (Cypremort Point's boardwalk) is credited on its source page to "Louisiana
+  Office of Tourism," republished on a local travel blog (iberiatravel.com)
+  — official government-sourced content, but its actual redistribution
+  terms for a third-party commercial site were not confirmed. Marked
+  "pending confirmation" in both the tour's `alt` text and the DOCX caption,
+  the same pattern this project already uses for the CPRA/Iberia GIS data
+  ToS questions in `data/gis/sources.json` — but this is a distinct,
+  photography-specific rights question, not covered by the prior GIS-data
+  go-ahead, and should be confirmed before public launch.
+- **`js/gis/gis-tour.js`**: `mediaEl()` now auto-detects a YouTube or Vimeo
+  URL in `step.media.source.value` (regex-matched, not a new authored
+  `provider` field — the existing URL is the only source of truth, so there
+  is nowhere for a field and a URL to disagree) and renders a lazy-loaded
+  `<iframe>` embed instead of a `<video src>` tag, which can only ever play
+  a direct file and cannot embed either provider's watch-page URL. Backward
+  compatible: a direct video file URL still renders as `<video>` exactly as
+  before. `css/15-gis.css` gained a 16:9 aspect-ratio rule for the embed
+  case (iframes have no intrinsic size, unlike `img`/`video`).
+- **`js/admin.js`**: `tourStepEditor()`'s media section previously could
+  only ever add an image (`+ Add image (optional)`, hardcoded `_type:
+  "image"`) — there was no way to author video media at all. Added a
+  parallel `+ Add video (optional)` path using the same existing `fSource()`
+  field (path/URL toggle, already supported — no new field builder needed)
+  with a hint explaining that a YouTube/Vimeo link embeds automatically.
+- **13 real images added**: `assets/gis/cpra/*-aerial.jpg` (13, ~45-140KB
+  each) + `cpra-cypremort-point-boardwalk.jpg`, referenced from each tour's
+  first step (`step.media`) and embedded directly into
+  `docs/plans/gis/CPRA PROJECT TOUR INFORMATION.docx` (14 inline images,
+  each captioned) per the human's explicit ask to add them to the document
+  too, not just reference them from the site.
+- **Verification performed:** every image was actually fetched and viewed
+  (not just HTTP-200-checked) before being used, including re-fetching two
+  that initially returned mostly-blank tiles. Every tour's `step.media`
+  cross-checked by script: valid `_type`, non-empty source value, and (for
+  `path`-kind sources) the referenced file actually exists on disk — all 14
+  entries clean. `node --check` clean on both edited `.js` files. The
+  YouTube/Vimeo URL-detection regex was tested directly against real watch/
+  short/embed URL formats for both providers, confirming correct embed-URL
+  construction, and against non-video URLs (an ArcGIS export URL, a local
+  image path) to confirm no false positives. **Not yet confirmed live:**
+  actual rendering of the aerial photos and the Cypremort Point ground photo
+  in a real browser, and (since no real video exists yet to test with) the
+  YouTube/Vimeo embed path has only been verified by direct regex/URL
+  construction, not by watching a real embedded video play in the tour card.
+
+## CPRA Iberia GIS tours — expanded from 5 to all 13 real Iberia projects
+
+Per the human's own follow-up: the original 5-project scope only covered
+projects with pre-approved content in the original
+`docs/plans/gis/CPRA PROJECT TOUR INFORMATION.docx`. The human asked whether
+that really matched "the 13 points in the CPRA GIS project data" and asked
+for the DOCX itself to be updated — in its original format — to cover the
+rest, using the real CIMS Iberia Parish factsheet as an additional source,
+and to make every project's 3-step tour more didactic and community-facing.
+
+- **Source note:** `cims.coastal.louisiana.gov/robots.txt` disallows all
+  automated access (`Disallow: /`) — confirmed live, matching this project's
+  own Phase 0 note ("robots.txt disallows automated fetch; transcribe
+  manually"). The human pasted the real Iberia Parish factsheet page content
+  directly rather than have it fetched; that pasted content, cross-checked
+  against the real ArcGIS service's own descriptive fields
+  (`LOCATION`/`OBJECTIVE`/`ISSUEADDR`/`GOALS`/`Project_Description`, queried
+  live), is the source for the 8 newly-added projects' content.
+- **Real finding, not previously flagged:** the factsheet actually lists 20
+  distinct CPRA projects touching Iberia Parish, not 13 — 7 of them
+  (`AT-0036`, `AT-0012`, `AT-0030`, `TV-0054`, `TV-0086`, `TV-0087`,
+  `AT-0026`) do not exist as features in the `outreach/
+  Outreach_Projects_Layer_New` point service at all — confirmed live,
+  querying each by `Project_ID` directly returns zero features, regardless
+  of the `Parish` attribute. These are basin/region-scale studies or
+  projects not yet geocoded into this specific point layer; there is no map
+  feature to attach a tour to, so they're out of scope for this
+  feature-tour mechanism (not silently dropped — flagged here). The DOCX and
+  tours below cover exactly the 13 real, mappable Iberia Parish points.
+- **`docs/plans/gis/CPRA PROJECT TOUR INFORMATION.docx` rewritten**, same
+  format as the original (title, then per-project: bold name, "Where it's
+  at", "What it is changing", "Timeline / Completion Date" with Project
+  Status/Estimated Cost/Funding Source) — built with `python-docx` from a
+  single Python data structure that also generates the JSON tours below, so
+  the two can't drift out of sync. All 13 real Iberia Parish projects are
+  now covered (the original 5 rewritten in the same more plain-language,
+  community-facing voice as the 8 new ones, per the human's explicit ask).
+  Real cost/funding figures cross-checked against both the factsheet and the
+  live ArcGIS attributes (they agree, e.g. Rutton Rill's $3,928,864 matches
+  the original "$3.9 million" rounding). Two projects (`AT-0039` Big Bayou
+  Pigeon, `TV-0108` Abbeville and Vicinity HP) have no published project
+  description in either the factsheet or the ArcGIS service's own
+  descriptive fields — confirmed both report "N/A" — so `AT-0039`'s "What
+  it is changing" says so honestly ("CPRA has not yet published a detailed
+  public description...") rather than inventing one; `TV-0108` does have
+  real content, sourced from the factsheet's own "2023 Master Plan Projects"
+  section (`Abbeville and Vicinity (292)`, the same project tracked under
+  the master-plan scenario), explicitly labeled as the long-range concept
+  and not a finalized design, per this project's existing sourcing-caution
+  convention for master-plan-derived content.
+- **8 new `gisTour` + `gisFeatureTour` document pairs** added following the
+  exact pattern of the original 5 (`data/gis/tours/cpra-{ciap-bamm,
+  non-rock-shoreline,east-marsh-island,cypremort-point,little-valley-bayou,
+  iberia-st-mary-levee,big-bayou-pigeon,abbeville-hp}.json` + matching
+  `data/gis/featuretours/*.json`), registered in `data/manifest.json`. Real
+  step view coordinates for all 13 (including the original 5, re-derived to
+  confirm) converted from each feature's own live Web Mercator geometry.
+  **Real finding, handled deliberately:** `LA-0012-7`'s (CIAP Performance
+  Evaluation Borrow Area Management and Monitoring) actual map point falls
+  outside both Iberia Parish and this map's own `maxBounds` (a multi-parish
+  benefit-area study, plotted near Barataria Basin) — confirmed live via its
+  real geometry. Rather than set an unreachable step `view` (the exact
+  clamping bug already documented and fixed in this project's Phase 4 gate
+  entry for two other steps), this tour's steps use the map's own
+  already-verified-safe default parish view, with the caveat stated plainly
+  in the tour's own "Where it's at" text.
+- **Verification performed:** every `Project_ID` cross-checked live against
+  the real ArcGIS service (still the same 13 for Iberia; the 7 factsheet-only
+  projects confirmed absent from the point service by direct per-ID query);
+  every `mapId`/`tourId`/`layerId`/`featureKey.value` cross-reference across
+  all 13 tours + 13 feature tours validated by script against the real files
+  on disk, including confirming `featureKey.value`s match the real 13
+  `Project_ID`s exactly (no extras, none missing); all new/edited JSON
+  validated. **Not yet confirmed live:** the actual tour content/playback in
+  a real browser — `docs/plans/gis/CPRA-IBERIA-GIS-TOURS-TESTING.md` §3 has
+  been expanded to all 13 for the human's own retest; §2's and §5's earlier,
+  already-recorded results (from the original 5-project round) were left
+  untouched, per instruction, rather than reinterpreted against the new
+  scope.
+
+## CPRA Iberia GIS tours — human testing fix pass (mask/pane click blocking)
+
+Per the human's own manual pass against
+`docs/plans/gis/CPRA-IBERIA-GIS-TOURS-TESTING.md` §2 (filled in for real,
+their own words) — every one of its 6 tests failed with the same symptom:
+clicking any pin on the new `cpra-projects-points` layer, matched to a tour
+or not, "does not activate anything." Section 1 (map/layer loading, 4 tests)
+passed cleanly; sections 3-7 were left untested, correctly, since the human
+noted they couldn't proceed past a non-functional click. This entry is the
+fix pass that followed, not a re-run of the human's own checklist — see that
+document's own `Claude Fix` notes (their PASS/FAIL marks are untouched).
+
+- **Root cause, found by reading the vendored `leaflet.js` dispatch code
+  directly, not guessed from the symptom:** two compounding, pre-existing
+  issues, neither introduced by this feature's own new layer:
+  1. `js/gis/gis-viewer.js`'s `buildParishMask()` (Phase 3, task 3.8) builds
+     the "dim everything outside the parish" overlay in its own pane at
+     zIndex 450 — above every data layer — with `interactive:false`. That
+     option only excludes the mask from its *own* canvas's internal hit
+     test; it does not stop that canvas's DOM element from being the
+     browser's actual click target. This map's `preferCanvas:true` gives
+     every distinct zIndex pane (`ensurePane()`, keyed by zIndex) its own
+     `<canvas>`, and Leaflet's canvas click dispatch — confirmed directly in
+     `vendor/leaflet/leaflet.js` (`L.Canvas#_onClick` always calls
+     `_fireEvent`, hit or miss; `L.Map#_fireDOMEvent` with no hit layer falls
+     back to `_findEventTargets`, which never inspects a *different* pane's
+     canvas) — only ever tests the one canvas element the browser actually
+     dispatched the click to. A miss there becomes a generic, untargeted map
+     click and never falls through to any lower pane. The always-on mask has
+     been silently swallowing every click on this entire map since Phase 3;
+     it was never caught earlier because whatever session confirmed identify
+     popups working (Phase 3/4 gate) most likely did so before the mask's
+     own separate, slower `entry.query({})` fetch had finished and been
+     added to the map, or via the attribute table / search / highlight
+     paths, none of which go through a real map click at all.
+  2. Even with the mask fixed, `parish-boundary` itself (zIndex 90, always
+     visible, a genuinely interactive filled polygon covering the entire
+     parish) sits above every other data layer, including the new
+     `cpra-projects-points` (previously zIndex 21), and would win the exact
+     same way.
+- **Fix:** `buildParishMask()` now sets `pointer-events:none` directly on the
+  mask's own dedicated pane element right after creating it, so the browser
+  skips its canvas entirely and the click reaches whatever's actually drawn
+  underneath — restoring the "cosmetic only" behavior `interactive:false`
+  already documented as the intent, with zero effect on anything else (that
+  pane holds nothing but the mask). `cpra-projects-points`'s `zIndex` was
+  raised from 21 to 95 (above `parish-boundary`'s 90) so its own pins'
+  canvas is the one that actually receives clicks on them; documented inline
+  in the layer's own `description` so a future edit doesn't "normalize" it
+  back into the group's ordinary z-order without understanding why.
+- **Real, separate, smaller bug also found and fixed while investigating:**
+  `js/gis/gis-tools.js`'s `renderTemplate()` used `/\{(\w+)\}/g` to
+  substitute popup-title placeholders — `\w` doesn't match `.`, so a title
+  referencing a joined ArcGIS view's table-qualified field name (this map's
+  own established convention for the CPRA services, e.g.
+  `{Project_Status_List.Project_Name}`) never matched at all; the literal,
+  unsubstituted placeholder text would have rendered instead of the project
+  name. Fixed to `/\{([\w.]+)\}/g`. Confirmed by reading the regex against a
+  real field name from the live service response, not by observing it fail
+  live (this bug is orthogonal to the click-blocking one above and would
+  only have been visible once a popup could open at all).
+- **Not a new fix, a scoping note:** the same mask/pane click-blocking
+  mechanism above also affects every *other* existing point/vector layer
+  whose zIndex sits below `parish-boundary`'s 90 (`critical-facilities` 52,
+  `fire-stations` 50, `port-canals` 37, `hydrography` 35, `cpra-projects` 20,
+  `cpra-master-plan-2023` 22) whenever `parish-boundary` — always visible by
+  default — is on screen. Deliberately **not** fixed this pass: reordering
+  those z-indexes is a broader, map-wide behavioral change well outside the
+  scope of "why don't the new CPRA pins respond to clicks," and none of them
+  were reported as failing in this round's testing. Flagged here rather than
+  silently left for someone to rediscover as a "new" bug later, and as a
+  real, separate follow-up worth its own testing pass if picked up.
+- **Verification performed:** the actual root cause was confirmed by reading
+  the real (if minified) `vendor/leaflet/leaflet.js` dispatch code directly,
+  not inferred from the symptom. A jsdom-based headless test (real network,
+  real vendored Leaflet + esri-leaflet + this repo's own `js/gis/gis-esri.js`)
+  confirmed the underlying feature-query/click-propagation mechanism works
+  correctly end-to-end for the real CPRA service and its `Project_ID`-keyed
+  feature identity when not blocked by an overlapping pane. A second jsdom
+  test running the full `DTSGis.mount()` pipeline against the pre-existing
+  `critical-facilities` layer showed the identical "zero rendered markers"
+  result as the new layer — confirmed to be a jsdom limitation
+  (`HTMLCanvasElement.getContext()` is unimplemented without a separate
+  native `canvas` package — checked directly), not a real-app difference,
+  matching this project's own already-documented Phase 5 jsdom-harness gap
+  ("cannot render CSS, Leaflet, or real network calls"). The
+  `pointer-events:none` mechanism itself needed no Leaflet-specific
+  verification (standard, spec-level browser behavior); confirmed only that
+  the exact JS API used (`el.style.pointerEvents = "none"`) sets and
+  serializes correctly. **Not yet confirmed live:** the actual click →
+  popup → "Start guided tour" behavior in a real browser, and everything in
+  `CPRA-IBERIA-GIS-TOURS-TESTING.md` §§3-7 that depended on it — left for
+  the human's own retest, per this project's verification approach; nothing
+  here is claimed as functionally PASS until they confirm it.
+
+## CPRA Iberia Parish GIS project tours + general CMS-managed feature tours
+
+Additive to the already-gated GIS Phase 5, not a new numbered phase — one new
+document type (`gisFeatureTour`) inside the existing GIS family, no new
+engine/CMS category. Built per the plan approved this session; see
+`docs/plans/gis/CPRA-IBERIA-GIS-TOURS-TESTING.md` for the human's manual pass.
+
+- **Real ArcGIS service identified and queried live**, resolved from the AGOL
+  item id `20422ab8cbce407a8970d2fc549272ae` via
+  `arcgis.com/sharing/rest/content/items/<id>?f=json`:
+  `cimsgeo.coastal.louisiana.gov/arcgis/rest/services/outreach/Outreach_Projects_Layer_New/MapServer/0`
+  ("CPRA_Points" / "CPRA Projects (Center Points)"), point geometry, public,
+  no token. **Confirmed distinct from the `cpra-projects` layer already
+  shipped in `data/gis/maps/iberia-coastal.json`** since Phase 3
+  (`cimsgeo3.coastal.louisiana.gov/.../prot_rest/CPRA_Projects`, layer name
+  `CPRA_Polys`, polygon footprints, no `Parish` field at all — confirmed live
+  by querying its own `?f=json`, so it can't be attribute-filtered to Iberia).
+  The existing footprints layer is untouched; a new `cpra-projects-points`
+  layer was added for the point/pin service the request specifically asked
+  for.
+- **Iberia Parish filter, applied server-side**: `Project_Status_List.Parish
+  LIKE '%Iberia%'`, baked into the new layer's `where` field and enforced by
+  a one-line addition to `js/gis/gis-esri.js`'s `buildFeature()`
+  (`if (def.where) opts.where = def.where;` — esri-leaflet's own
+  `FeatureLayer` constructor option, applied on every request the layer
+  itself makes, not a client-side post-filter of the statewide set). Queried
+  live: **13 real Iberia Parish features** as of 2026-08-07 (not a
+  predetermined count — this is what the service actually returns). **Known,
+  accepted limitation, documented in the layer's own `description` and in
+  `data/gis/sources.json`, not chased further:** the map's existing Filter
+  tool calls esri-leaflet's `setWhere()`, which replaces a layer's active
+  `where` entirely rather than ANDing with the baked-in one — a visitor using
+  Filter on this specific layer could temporarily see non-Iberia projects
+  until the filter is cleared.
+- **DOCX ↔ GIS matching**, all 5 confirmed by name and the service's own
+  `Project_Status_List.Project_ID` (CPRA's stable business key — used
+  instead of an ArcGIS OBJECTID because this joined-view service reports
+  `objectIdField: null`, confirmed live): Admiral Doyle Drive → `TV-0031`,
+  Port Road Bridge → `TV-0028`, David Dubois Road Bridge → `TV-0030`, Rutton
+  Rill Rd → `TV-0094`, Stumpy Bayou → `TV-0095`. No unresolved matches. The
+  other 8 of the 13 Iberia features have no DOCX content and get no tour —
+  they still render as ordinary clickable pins.
+- **New `gisFeatureTour` document type** — a small association record
+  (`mapId`, `layerId`, `featureKey: {field, value}`, `enabled`, `tourId`),
+  sibling to `gisMap`/`gisTour`, registered in the same `data/manifest.json`
+  `gis` array. Deliberately kept separate from `gisTour` itself (a real
+  design decision confirmed with the human before implementation, not
+  assumed): the actual tour content is an ordinary `gisTour` document with
+  ordinary steps, reusing the tour engine and its CMS editor unchanged; only
+  the "which feature triggers this" association is new. This means every
+  existing tour picker (the map's own `tours[]`/`defaultTour`, the outro
+  CTA's `startTour` dropdown, a project experience's `tourId`) needed zero
+  changes — a feature tour simply never appears in `mapDoc.tours[]`.
+  `js/content-loader.js` gained one more raw pass-through mapping
+  (`cfg.gisFeatureTours`), mirroring the existing `gisMap`/`gisTour` pattern
+  exactly.
+- **Runtime wiring**: `js/app.js`'s `toursForMap()` now also folds in every
+  enabled feature tour's `tourId` (deduped against the map's own listed
+  tours) — required because `gis-viewer.js`'s `startTour()` and
+  `gis-tour.js`'s own `tourDocs` lookup both only resolve against
+  `opts.tours`; without this, `instance.startTour()` for a feature tour
+  would silently no-op. A separate new `featureToursForMap()` resolves the
+  association docs themselves, passed only to `DTSGisTools.mount()` (the
+  module that already owns the identify popup) as `opts.featureTours`.
+  `js/gis/gis-tools.js` builds a small `layerId → {field, byValue}` index
+  from it and, in `buildPopupSection()`, adds a "Start guided tour" button
+  to the popup when the clicked feature's attribute matches — calling
+  `instance.startTour(tourId)` directly rather than through
+  `gis-tour.js`'s own `startTour()` wrapper (which requires the tour to be
+  in its own `tourDocs`, populated from `opts.tours` — already satisfied by
+  the `toursForMap()` change above, so this works via the ordinary
+  `"tourstep"` event listener, same as any other tour start).
+- **CMS**: `js/admin.js` gained `gisFeatureTourFiles()`,
+  `addGisFeatureTour()`, `deleteGisFeatureTour()`, a new "Feature tours"
+  section inside `editGisMap()`, and a new `editGisFeatureTour()` pane
+  (layer picker, a "📍 Pick from map" one-shot `identify`-event listener on
+  the live preview with manual field/value fallback, enabled toggle, tour
+  picker, "+ Create tour for this feature"). `addGisTour()`'s skeleton was
+  factored into `newGisTourSkeleton()` (identical output, no behavior
+  change) so "+ Create tour for this feature" can create a normal `gisTour`
+  document without the side effect of auto-adding it to the map's own
+  `tours[]` list (which `addGisTour()` deliberately still does, for its own
+  normal callers). `deleteGisTour()` gained a guard mirroring
+  `deleteGisMap()`'s existing pattern: deleting a tour referenced by a
+  feature tour now names it in the confirm dialog and unlinks (doesn't
+  delete) the association. `deleteGisMap()` now also cascades feature-tour
+  deletion, named in its own confirm dialog, alongside its existing
+  guided-tour cascade.
+- **Content**: 5 new `gisTour` documents
+  (`data/gis/tours/cpra-{admiral-doyle,port-road-bridge,david-dubois,
+  rutton-rill,stumpy-bayou}.json`), 3 steps each (Where it's at / What it is
+  changing / Timeline), and 5 new `gisFeatureTour` documents
+  (`data/gis/featuretours/*.json`). All step body text is copied verbatim
+  from `docs/plans/gis/CPRA PROJECT TOUR INFORMATION.docx` — no additional
+  descriptions, impacts, or dates were added from the ArcGIS data or any
+  other source. Step view centers are the real project coordinates
+  (converted from the service's own Web Mercator geometry, confirmed live).
+  Each step highlights its own project via `where:
+  "Project_Status_List.Project_ID = '<id>'"` — the engine already supports
+  both `where` and `objectIds` highlight selectors end-to-end (confirmed by
+  reading `js/gis/gis-viewer.js`'s `applyStep()`/`highlight()` and
+  `js/gis/gis-esri.js`'s `query()`, and by reading `js/admin.js`'s own
+  `previewTourStep()`, which already branches on `step.highlight.objectIds`)
+  — `where` on the stable `Project_ID` business key was used rather than
+  `objectIds`, consistent with the `objectIdField: null` service quirk
+  above; no admin UI was added for `objectIds` since nothing in this feature
+  needs it.
+- **Verification performed, and what's left**: confirmed directly — the real
+  ArcGIS query and its 13-feature/5-match result (`curl`, live); every
+  `mapId`/`tourId`/`layerId` cross-reference in the new JSON via a small
+  Python script; valid JSON on every new/edited file; `node --check` on
+  every edited `.js` file. **Not yet confirmed live** (left for
+  `docs/plans/gis/CPRA-IBERIA-GIS-TOURS-TESTING.md`, per this project's
+  post-Phase-4 verification approach): real pin rendering/click behavior,
+  the popup's "Start guided tour" button, actual tour playback and map
+  focus per step, the CMS "Pick from map" click-to-pick flow, mobile
+  rendering, and a full regression pass.
+- No `docs/GIS-DATA-SOURCES.md` update — that file doesn't exist in the repo
+  despite being referenced as a Phase 0 deliverable; a new
+  `cpra-outreach-projects-points` entry was added to the real
+  `data/gis/sources.json` instead (`candidateLayers[]`, same shape as its
+  siblings), which is what `js/admin.js`'s `sourceRefPicker()` and the new
+  layer's own `sourceRef` field actually read.
+
 ## GIS Phase 5 — CMS
 
 Per `docs/plans/gis/09-BUILD-PLAN.md` Phase 5 / `06-SPEC-cms-admin.md`, tasks 5.1–5.9.

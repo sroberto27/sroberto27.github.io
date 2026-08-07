@@ -1,0 +1,104 @@
+{
+  "_id": "gis.tour.cpra-admiral-doyle",
+  "_type": "gisTour",
+  "id": "cpra-admiral-doyle",
+  "mapId": "iberia-coastal",
+  "title": "Acadiana Regional Airport Street Improvements – Admiral Doyle Drive (TV-0031)",
+  "intro": "A three-stop look at this CPRA project: where it is, what it changes, and its status and funding.",
+  "autoStart": false,
+  "autoAdvance": false,
+  "defaultDuration": 12,
+  "showProgress": true,
+  "position": "left",
+  "steps": [
+    {
+      "id": "where",
+      "title": "Where it's at",
+      "body": "This project is on Admiral Doyle Drive in Iberia Parish, the road leading to the Acadiana Regional Airport, covering the stretch from the intersection with LA-3212 to the end of the existing four-lane roadway.",
+      "view": {
+        "center": [
+          30.051283,
+          -91.876081
+        ],
+        "zoom": 15
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": [
+          "*"
+        ]
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0031'"
+      },
+      "media": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/gis/cpra/cpra-admiral-doyle-aerial.jpg"
+        },
+        "alt": "Aerial view of Admiral Doyle Drive near the Acadiana Regional Airport, Iberia Parish (2024 aerial imagery)."
+      },
+      "duration": null
+    },
+    {
+      "id": "what",
+      "title": "What it is changing",
+      "body": "The old roadway was only 24 feet wide with two sharp curves that created safety hazards. Crews repaved and realigned about a mile of road and replaced part of the grass median with concrete, making the route safer for airport traffic, Port of Iberia trucks, residents, and emergency vehicles.",
+      "view": {
+        "center": [
+          30.051283,
+          -91.876081
+        ],
+        "zoom": 15
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0031'"
+      },
+      "media": null,
+      "duration": null
+    },
+    {
+      "id": "timeline",
+      "title": "Timeline / Completion Date",
+      "body": "Project Status: Completed. Estimated Cost: $1,114,972 (about $1.1 million). Funding Source: Coastal Impact Assistance Program (CIAP).",
+      "view": {
+        "center": [
+          30.051283,
+          -91.876081
+        ],
+        "zoom": 15
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0031'"
+      },
+      "media": null,
+      "duration": null
+    }
+  ],
+  "outro": {
+    "title": "Explore other Iberia Parish CPRA projects",
+    "body": "Click any other CPRA project pin on the map for its own details, or open the layer panel to see everything else this map shows.",
+    "cta": {
+      "label": "Open the layer panel",
+      "action": "openLayerPanel"
+    }
+  }
+}

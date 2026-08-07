@@ -1,0 +1,104 @@
+{
+  "_id": "gis.tour.cpra-port-road-bridge",
+  "_type": "gisTour",
+  "id": "cpra-port-road-bridge",
+  "mapId": "iberia-coastal",
+  "title": "Port of Iberia Bridge Replacement – Port Road Over Commercial Canal (TV-0028)",
+  "intro": "A three-stop look at this CPRA project: where it is, what it changes, and its status and funding.",
+  "autoStart": false,
+  "autoAdvance": false,
+  "defaultDuration": 12,
+  "showProgress": true,
+  "position": "left",
+  "steps": [
+    {
+      "id": "where",
+      "title": "Where it's at",
+      "body": "This project is on Port Road in Iberia Parish, where it crosses Commercial Canal near the Port of Iberia.",
+      "view": {
+        "center": [
+          29.948854,
+          -91.83745
+        ],
+        "zoom": 15
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": [
+          "*"
+        ]
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0028'"
+      },
+      "media": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/gis/cpra/cpra-port-road-bridge-aerial.jpg"
+        },
+        "alt": "Aerial view of Port Road and the Port of Iberia area where it crosses Commercial Canal (2024 aerial imagery)."
+      },
+      "duration": null
+    },
+    {
+      "id": "what",
+      "title": "What it is changing",
+      "body": "The old bridge was a timber-and-precast structure in extremely poor condition. It was replaced with a new pre-cast concrete bridge built to safely carry the heavy daily traffic — employees, residents, and commercial trucks — that depends on this route to reach the Port of Iberia.",
+      "view": {
+        "center": [
+          29.948854,
+          -91.83745
+        ],
+        "zoom": 15
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0028'"
+      },
+      "media": null,
+      "duration": null
+    },
+    {
+      "id": "timeline",
+      "title": "Timeline / Completion Date",
+      "body": "Project Status: Completed. Estimated Cost: $625,792. Funding Source: Coastal Impact Assistance Program (CIAP).",
+      "view": {
+        "center": [
+          29.948854,
+          -91.83745
+        ],
+        "zoom": 15
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0028'"
+      },
+      "media": null,
+      "duration": null
+    }
+  ],
+  "outro": {
+    "title": "Explore other Iberia Parish CPRA projects",
+    "body": "Click any other CPRA project pin on the map for its own details, or open the layer panel to see everything else this map shows.",
+    "cta": {
+      "label": "Open the layer panel",
+      "action": "openLayerPanel"
+    }
+  }
+}

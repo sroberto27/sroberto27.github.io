@@ -200,6 +200,12 @@
     docsByType(content, "gisMap").forEach(function (m) { cfg.gisMaps[m.id] = m; });
     cfg.gisTours = {};
     docsByType(content, "gisTour").forEach(function (t) { cfg.gisTours[t.id] = t; });
+    // gisFeatureTour: which single map feature (by a stable attribute key,
+    // not an ArcGIS internal OBJECTID -- some services don't report one)
+    // opens which gisTour on click. Same raw pass-through as gisMap/gisTour
+    // above -- js/app.js/js/gis/gis-tools.js read this schema directly.
+    cfg.gisFeatureTours = {};
+    docsByType(content, "gisFeatureTour").forEach(function (t) { cfg.gisFeatureTours[t.id] = t; });
 
     if (faq && faq.items) cfg.answers = faq.items;
     if (funFacts && funFacts.facts) cfg.funFacts = funFacts.facts;

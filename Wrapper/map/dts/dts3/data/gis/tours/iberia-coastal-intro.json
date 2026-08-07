@@ -64,11 +64,11 @@
       "duration": null
     },
     {
-      "id": "future",
-      "title": "What fifty years looks like",
-      "body": "The 2023 Coastal Master Plan's restoration projects and subsidence model, clipped to the parish. These are modelled scenarios of what may happen — not a forecast or a guarantee.",
+      "id": "projects",
+      "title": "CPRA projects here in Iberia Parish",
+      "body": "Every real CPRA coastal protection and restoration project touching Iberia Parish — built, underway, or still in design — is mapped here as its own point. Click any pin to see where it is, what it's changing, and its status and funding. Several have a full guided tour of their own, right from the pin.",
       "view": { "center": [29.740394, -91.635827], "zoom": 10 },
-      "layers": { "on": ["cpra-master-plan-2023", "subsidence"], "off": ["cpra-projects"] },
+      "layers": { "on": ["cpra-projects-points"], "off": ["cpra-projects"] },
       "highlight": null,
       "media": null,
       "duration": null

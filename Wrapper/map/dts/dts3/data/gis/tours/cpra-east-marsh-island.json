@@ -1,0 +1,104 @@
+{
+  "_id": "gis.tour.cpra-east-marsh-island",
+  "_type": "gisTour",
+  "id": "cpra-east-marsh-island",
+  "mapId": "iberia-coastal",
+  "title": "East Marsh Island Marsh Creation (TV-0021)",
+  "intro": "A three-stop look at this CPRA project: where it is, what it changes, and its status and funding.",
+  "autoStart": false,
+  "autoAdvance": false,
+  "defaultDuration": 12,
+  "showProgress": true,
+  "position": "left",
+  "steps": [
+    {
+      "id": "where",
+      "title": "Where it's at",
+      "body": "This project is at the east end of Marsh Island Wildlife Refuge, southeast of Lake Sand in Iberia Parish.",
+      "view": {
+        "center": [
+          29.545109,
+          -91.740796
+        ],
+        "zoom": 13
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": [
+          "*"
+        ]
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0021'"
+      },
+      "media": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/gis/cpra/cpra-east-marsh-island-aerial.jpg"
+        },
+        "alt": "Aerial view of the east end of Marsh Island Wildlife Refuge, Iberia Parish (2024 aerial imagery)."
+      },
+      "duration": null
+    },
+    {
+      "id": "what",
+      "title": "What it is changing",
+      "body": "Hurricane Lili in 2002 turned large stretches of interior marsh on Marsh Island into open water. Crews pumped in 3.8 million cubic yards of dredged sediment to rebuild about 362 acres of brackish marsh, then used leftover funds to create or nourish 500 more acres — restoring wildlife habitat and a storm buffer for the parish.",
+      "view": {
+        "center": [
+          29.545109,
+          -91.740796
+        ],
+        "zoom": 13
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0021'"
+      },
+      "media": null,
+      "duration": null
+    },
+    {
+      "id": "timeline",
+      "title": "Timeline / Completion Date",
+      "body": "Project Status: Completed. Estimated Cost: $21,215,936 ($3,404,633 in state dollars). Funding Source: Coastal Wetlands Planning, Protection and Restoration Act (CWPPRA).",
+      "view": {
+        "center": [
+          29.545109,
+          -91.740796
+        ],
+        "zoom": 13
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0021'"
+      },
+      "media": null,
+      "duration": null
+    }
+  ],
+  "outro": {
+    "title": "Explore other Iberia Parish CPRA projects",
+    "body": "Click any other CPRA project pin on the map for its own details, or open the layer panel to see everything else this map shows.",
+    "cta": {
+      "label": "Open the layer panel",
+      "action": "openLayerPanel"
+    }
+  }
+}

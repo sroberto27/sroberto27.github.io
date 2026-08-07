@@ -1,0 +1,13 @@
+{
+  "_id": "gis.featuretour.cpra-east-marsh-island",
+  "_type": "gisFeatureTour",
+  "id": "cpra-east-marsh-island",
+  "mapId": "iberia-coastal",
+  "layerId": "cpra-projects-points",
+  "featureKey": {
+    "field": "Project_Status_List.Project_ID",
+    "value": "TV-0021"
+  },
+  "enabled": true,
+  "tourId": "cpra-east-marsh-island"
+}

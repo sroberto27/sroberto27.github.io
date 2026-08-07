@@ -491,6 +491,32 @@
         }
         const worldRing = [L.latLng(85, -180), L.latLng(85, 180), L.latLng(-85, 180), L.latLng(-85, -180)];
         const maskPane = ensurePane(map, 450); // above ordinary data-layer panes, below markers/popups
+        // Real bug, found while investigating a live report that clicking
+        // any point/vector layer stopped producing an identify popup:
+        // `interactive:false` only keeps this polygon out of ITS OWN
+        // canvas's hit-test loop (Leaflet's L.Canvas#_onClick) -- it does
+        // NOT stop that canvas's DOM element from being the browser's
+        // actual click target. Since map.options.preferCanvas gives every
+        // distinct pane (ensurePane, keyed by zIndex) its own <canvas>, and
+        // this mask's pane (450) sits above every data-layer pane (max 90)
+        // and visually covers the whole map, its canvas was the one and
+        // only element the browser ever dispatched a map click to. A miss
+        // on it (nothing interactive registered there) becomes a plain,
+        // untargeted map click (L.Map#_fireDOMEvent's fallback), which
+        // never falls through to test the real, lower-paned data layers'
+        // own canvases at all -- so no vector layer's click handler
+        // (gis-viewer.js's own "click" listener, attached per layer in
+        // loadLayer()) ever ran while the mask was on screen. Confirmed by
+        // reading Leaflet's own dispatch code (L.Canvas#_onClick always
+        // calls _fireEvent, hit or miss; L.Map#_fireDOMEvent only consults
+        // the layers list it's given, never a lower pane's own renderer).
+        // Explicit `pointer-events:none` on this one dedicated pane (used
+        // by nothing but this mask) makes the browser skip its canvas
+        // entirely, letting the click reach whatever's actually drawn
+        // underneath -- restoring the "cosmetic only" behavior the
+        // `interactive:false` option already documented as the intent.
+        const maskPaneEl = map.getPane(maskPane);
+        if (maskPaneEl) maskPaneEl.style.pointerEvents = "none";
         const mask = L.polygon([worldRing].concat(rings), {
           pane: maskPane,
           stroke: false,
@@ -1142,6 +1168,25 @@
     }
 
     /* ---- highlight ---- */
+    // Real bug, found live: this had no `pane` option at all, so under
+    // preferCanvas every highlight ring landed in Leaflet's *default*
+    // overlayPane (zIndex 400) -- above every data-layer pane (max 95) and
+    // interactive by default. Same failure mode already fixed once for the
+    // boundary dim mask (buildParishMask(), above): a topmost, interactive
+    // canvas is the only one a browser click can ever reach, so once any
+    // tour step's highlight had been shown even once, every later click on
+    // any point/vector layer silently hit the empty highlight pane instead
+    // -- and since neither exiting a tour by reaching its outro screen nor
+    // starting a different tour clears an old highlight until that new
+    // tour's own first step runs, a finished project tour could leave the
+    // whole map's click-to-identify broken behind it. Fixed the same way:
+    // a dedicated pane with pointer-events:none (the browser skips it
+    // entirely, so a click always reaches the real feature underneath),
+    // plus interactive:false on the drawn shapes themselves -- the
+    // highlight ring was never meant to be its own separate click target.
+    const highlightPane = ensurePane(map, 300);
+    const highlightPaneEl = map.getPane(highlightPane);
+    if (highlightPaneEl) highlightPaneEl.style.pointerEvents = "none";
     const highlightGroup = L.layerGroup().addTo(map);
     function clearHighlight() { highlightGroup.clearLayers(); }
 
@@ -1155,8 +1200,10 @@
       const s = Object.assign({ color: "#c49a2a", weight: 3, fillOpacity: 0.08 }, style || {});
       return L.geoJSON(geojson, {
         style: s,
+        pane: highlightPane,
+        interactive: false,
         pointToLayer: function (feature, latlng) {
-          return L.circleMarker(latlng, { radius: 8, color: s.color, weight: s.weight, fillColor: s.color, fillOpacity: 0.35 });
+          return L.circleMarker(latlng, { radius: 8, color: s.color, weight: s.weight, fillColor: s.color, fillOpacity: 0.35, pane: highlightPane, interactive: false });
         }
       }).addTo(highlightGroup);
     }

@@ -1,0 +1,111 @@
+{
+  "_id": "gis.tour.cpra-cypremort-point",
+  "_type": "gisTour",
+  "id": "cpra-cypremort-point",
+  "mapId": "iberia-coastal",
+  "title": "Cypremort Point State Park Improvements (TV-0081)",
+  "intro": "A three-stop look at this CPRA project: where it is, what it changes, and its status and funding.",
+  "autoStart": false,
+  "autoAdvance": false,
+  "defaultDuration": 12,
+  "showProgress": true,
+  "position": "left",
+  "steps": [
+    {
+      "id": "where",
+      "title": "Where it's at",
+      "body": "This project is at Cypremort Point State Park, about 1.5 miles northeast of Cypremort Point in Vermilion Bay, spanning St. Mary and Iberia Parishes.",
+      "view": {
+        "center": [
+          29.733688,
+          -91.851749
+        ],
+        "zoom": 14
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": [
+          "*"
+        ]
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0081'"
+      },
+      "media": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/gis/cpra/cpra-cypremort-point-aerial.jpg"
+        },
+        "alt": "Aerial view of Cypremort Point and the surrounding marsh, Iberia/St. Mary Parishes (2024 aerial imagery)."
+      },
+      "duration": null
+    },
+    {
+      "id": "what",
+      "title": "What it is changing",
+      "body": "Repeated flooding had damaged park roads and parking, and the rock jetty and public beach needed work. The project reinforced the Quintana Canal rock embankment, restored the public beach, built a new marsh boardwalk, repaired flood-damaged roads, and added an RV campground with up to 30 pull-through sites — expanding recreation and education opportunities for the community.",
+      "view": {
+        "center": [
+          29.733688,
+          -91.851749
+        ],
+        "zoom": 14
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0081'"
+      },
+      "media": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/gis/cpra/cpra-cypremort-point-boardwalk.jpg"
+        },
+        "alt": "The new marsh boardwalk at Cypremort Point State Park. Photo: Louisiana Office of Tourism, via iberiatravel.com (attribution/usage pending confirmation, same as this project's other pending-confirmation media)."
+      },
+      "duration": null
+    },
+    {
+      "id": "timeline",
+      "title": "Timeline / Completion Date",
+      "body": "Project Status: Completed. Estimated Cost: $5,577,338, all state dollars. Funding Source: Natural Resource Damage Assessment (NRDA).",
+      "view": {
+        "center": [
+          29.733688,
+          -91.851749
+        ],
+        "zoom": 14
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0081'"
+      },
+      "media": null,
+      "duration": null
+    }
+  ],
+  "outro": {
+    "title": "Explore other Iberia Parish CPRA projects",
+    "body": "Click any other CPRA project pin on the map for its own details, or open the layer panel to see everything else this map shows.",
+    "cta": {
+      "label": "Open the layer panel",
+      "action": "openLayerPanel"
+    }
+  }
+}

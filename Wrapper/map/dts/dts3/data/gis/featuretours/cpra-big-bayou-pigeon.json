@@ -1,0 +1,13 @@
+{
+  "_id": "gis.featuretour.cpra-big-bayou-pigeon",
+  "_type": "gisFeatureTour",
+  "id": "cpra-big-bayou-pigeon",
+  "mapId": "iberia-coastal",
+  "layerId": "cpra-projects-points",
+  "featureKey": {
+    "field": "Project_Status_List.Project_ID",
+    "value": "AT-0039"
+  },
+  "enabled": true,
+  "tourId": "cpra-big-bayou-pigeon"
+}

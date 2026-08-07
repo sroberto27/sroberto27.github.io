@@ -275,6 +275,15 @@
 .dts-gis-popup-row{ display:flex; align-items:baseline; justify-content:space-between; gap:12px; padding:1.5px 0; font-size:11.5px; }
 .dts-gis-popup-key{ color:var(--faint); flex:none; }
 .dts-gis-popup-val{ color:var(--ink); text-align:right; }
+.dts-gis-popup-tourbtn{
+  display:flex; align-items:center; gap:6px; width:100%; margin-top:8px;
+  appearance:none; border:1px solid var(--gold); border-radius:8px; background:transparent;
+  color:var(--gold-bright); font-size:11.5px; font-weight:600; letter-spacing:.01em;
+  padding:6px 8px; cursor:pointer;
+}
+.dts-gis-popup-tourbtn svg{ width:14px; height:14px; flex:none; }
+.dts-gis-popup-tourbtn:hover,
+.dts-gis-popup-tourbtn:focus{ background:var(--gold); color:var(--bg-deep, #111); }
 
 /* ============================================================
    Filter chips + filter panel + attribute table (task 3.8)
@@ -650,6 +659,8 @@
 .dts-gis-tour-media{ margin:0 0 10px; border-radius:8px; overflow:hidden; }
 .dts-gis-tour-media[hidden]{ display:none; }
 .dts-gis-tour-media-el{ width:100%; display:block; }
+/* YouTube/Vimeo iframe embeds have no intrinsic size, unlike img/video. */
+.dts-gis-tour-media-el.is-embed{ aspect-ratio:16/9; height:auto; border:0; }
 
 .dts-gis-tour-pill{
   appearance:none; display:block; width:100%; margin:0 0 10px;

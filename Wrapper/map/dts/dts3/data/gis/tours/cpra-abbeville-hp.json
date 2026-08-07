@@ -1,0 +1,104 @@
+{
+  "_id": "gis.tour.cpra-abbeville-hp",
+  "_type": "gisTour",
+  "id": "cpra-abbeville-hp",
+  "mapId": "iberia-coastal",
+  "title": "Abbeville and Vicinity Hurricane Protection (TV-0108)",
+  "intro": "A three-stop look at this CPRA project: where it is, what it changes, and its status and funding.",
+  "autoStart": false,
+  "autoAdvance": false,
+  "defaultDuration": 12,
+  "showProgress": true,
+  "position": "left",
+  "steps": [
+    {
+      "id": "where",
+      "title": "Where it's at",
+      "body": "This project covers the area south of Delcambre, Erath, and Abbeville, roughly following Highway 330 (Vermilion and Iberia Parishes).",
+      "view": {
+        "center": [
+          29.882852,
+          -92.077998
+        ],
+        "zoom": 12
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": [
+          "*"
+        ]
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0108'"
+      },
+      "media": {
+        "_type": "image",
+        "source": {
+          "kind": "path",
+          "value": "assets/gis/cpra/cpra-abbeville-hp-aerial.jpg"
+        },
+        "alt": "Aerial view of farmland south of Delcambre, Erath, and Abbeville, along the Iberia-Vermilion parish line (satellite imagery)."
+      },
+      "duration": null
+    },
+    {
+      "id": "what",
+      "title": "What it is changing",
+      "body": "Communities in this low-lying corridor face growing storm surge risk. CPRA’s long-range 2023 Coastal Master Plan envisions a levee here reaching 15.5 to 20 feet in elevation, with earthen levee, T-wall, and gated sections, to reduce flood risk for the community. This project is still in early planning; the master plan figures describe the long-term concept, not a finalized design.",
+      "view": {
+        "center": [
+          29.882852,
+          -92.077998
+        ],
+        "zoom": 12
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0108'"
+      },
+      "media": null,
+      "duration": null
+    },
+    {
+      "id": "timeline",
+      "title": "Timeline / Completion Date",
+      "body": "Project Status: In Planning. Estimated Cost: $1,100,000. Funding Source: Gulf of Mexico Energy Security Act (GOMESA).",
+      "view": {
+        "center": [
+          29.882852,
+          -92.077998
+        ],
+        "zoom": 12
+      },
+      "layers": {
+        "on": [
+          "cpra-projects-points"
+        ],
+        "off": []
+      },
+      "highlight": {
+        "layerId": "cpra-projects-points",
+        "where": "Project_Status_List.Project_ID = 'TV-0108'"
+      },
+      "media": null,
+      "duration": null
+    }
+  ],
+  "outro": {
+    "title": "Explore other Iberia Parish CPRA projects",
+    "body": "Click any other CPRA project pin on the map for its own details, or open the layer panel to see everything else this map shows.",
+    "cta": {
+      "label": "Open the layer panel",
+      "action": "openLayerPanel"
+    }
+  }
+}

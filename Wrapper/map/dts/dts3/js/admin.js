@@ -1035,10 +1035,16 @@
       });
     });
     var tourFiles = gisTourFiles(m.id);
+    var featureTourFiles = gisFeatureTourFiles(m.id);
     var msg = "Delete “" + m.title + "”?";
     if (refs.length) msg += "\n\nStill referenced by: " + refs.join(", ") + ". Those experiences will be removed too.";
     if (tourFiles.length) msg += "\n\nIts " + tourFiles.length + " guided tour(s) will also be deleted.";
+    if (featureTourFiles.length) msg += "\n\nIts " + featureTourFiles.length + " feature tour association(s) will also be deleted.";
     if (!confirm(msg)) return;
+    featureTourFiles.forEach(function (ff) {
+      delete docs[ff];
+      content.manifest.documents.gis = content.manifest.documents.gis.filter(function (e) { return e.file !== ff; });
+    });
     tourFiles.forEach(function (tf) {
       delete docs[tf];
       content.manifest.documents.gis = content.manifest.documents.gis.filter(function (e) { return e.file !== tf; });
@@ -1054,16 +1060,8 @@
     markDirty(); buildNav(); select("home");
   }
 
-  function addGisTour(mapFile) {
-    var mapDoc = docs[mapFile];
-    if (!mapDoc) return;
-    var id = prompt("Short id for the new tour (letters/numbers/hyphens):");
-    if (!id) return;
-    id = id.toLowerCase().replace(/[^a-z0-9-]/g, "");
-    if (!id) return alert("That id isn't usable.");
-    var file = "gis/tours/" + id + ".json";
-    if (docs[file]) return alert("A tour with that id already exists.");
-    docs[file] = {
+  function newGisTourSkeleton(mapDoc, id) {
+    return {
       _id: "gis.tour." + id, _type: "gisTour", id: id, mapId: mapDoc.id,
       title: "New tour", intro: "",
       autoStart: false, autoAdvance: false, defaultDuration: 12,
@@ -1073,6 +1071,18 @@
                body: "Every layer used in this tour is in the layer panel.",
                cta: { label: "Open the layer panel", action: "openLayerPanel" } }
     };
+  }
+
+  function addGisTour(mapFile) {
+    var mapDoc = docs[mapFile];
+    if (!mapDoc) return;
+    var id = prompt("Short id for the new tour (letters/numbers/hyphens):");
+    if (!id) return;
+    id = id.toLowerCase().replace(/[^a-z0-9-]/g, "");
+    if (!id) return alert("That id isn't usable.");
+    var file = "gis/tours/" + id + ".json";
+    if (docs[file]) return alert("A tour with that id already exists.");
+    docs[file] = newGisTourSkeleton(mapDoc, id);
     content.manifest.documents.gis.push({ file: file, type: "gisTour", id: "gis.tour." + id });
     if (!Array.isArray(mapDoc.tours)) mapDoc.tours = [];
     mapDoc.tours.push(id);
@@ -1082,7 +1092,11 @@
   function deleteGisTour(file) {
     var t = docs[file];
     if (!t) return;
-    if (!confirm("Delete “" + t.title + "”?")) return;
+    var featureRefs = gisFeatureTourFiles().filter(function (ff) { return docs[ff].tourId === t.id; });
+    var msg = "Delete “" + t.title + "”?";
+    if (featureRefs.length) msg += "\n\nStill referenced by " + featureRefs.length + " feature tour association(s) — they'll be unlinked (tourId cleared), not deleted.";
+    if (!confirm(msg)) return;
+    featureRefs.forEach(function (ff) { docs[ff].tourId = null; });
     gisMapFiles().forEach(function (mf) {
       var m = docs[mf];
       if (Array.isArray(m.tours)) m.tours = m.tours.filter(function (id) { return id !== t.id; });
@@ -1096,6 +1110,53 @@
     delete docs[file];
     content.manifest.documents.gis = content.manifest.documents.gis.filter(function (e) { return e.file !== file; });
     markDirty(); buildNav(); select("gismap:gis/maps/" + t.mapId + ".json");
+  }
+
+  /* ============================================================
+     GIS FEATURE TOURS  -- a small association type, sibling to
+     gisMap/gisTour: which single clicked feature (by a stable
+     attribute key -- some ArcGIS services, including CPRA's, report
+     no objectIdField at all, so this deliberately isn't an ArcGIS
+     OBJECTID) opens which ordinary gisTour. Kept separate from
+     gisTour itself so the map-level tour pickers (Guided tours
+     toolbar button, "Default tour", the "Start another tour" CTA,
+     a project experience's own tourId) never have to filter
+     feature-scoped tours out of a list meant for whole-map tours.
+     ============================================================ */
+  function gisFeatureTourFiles(mapId) {
+    return Object.keys(docs).filter(function (f) {
+      return docs[f] && docs[f]._type === "gisFeatureTour" && (!mapId || docs[f].mapId === mapId);
+    }).sort(function (a, b) { return (docs[a].id || "").localeCompare(docs[b].id || ""); });
+  }
+
+  function addGisFeatureTour(mapFile) {
+    var mapDoc = docs[mapFile];
+    if (!mapDoc) return;
+    var id = prompt("Short id for the new feature tour (letters/numbers/hyphens, e.g. cpra-admiral-doyle):");
+    if (!id) return;
+    id = id.toLowerCase().replace(/[^a-z0-9-]/g, "");
+    if (!id) return alert("That id isn't usable.");
+    var file = "gis/featuretours/" + id + ".json";
+    if (docs[file]) return alert("A feature tour with that id already exists.");
+    var firstLayer = (mapDoc.layers || [])[0];
+    docs[file] = {
+      _id: "gis.featuretour." + id, _type: "gisFeatureTour", id: id,
+      mapId: mapDoc.id, layerId: firstLayer ? firstLayer.id : "",
+      featureKey: { field: "", value: "" },
+      enabled: true, tourId: null
+    };
+    content.manifest.documents.gis.push({ file: file, type: "gisFeatureTour", id: "gis.featuretour." + id });
+    markDirty(); buildNav(); select("gisfeaturetour:" + file);
+  }
+
+  function deleteGisFeatureTour(file) {
+    var ft = docs[file];
+    if (!ft) return;
+    if (!confirm("Delete this feature tour association? The linked tour itself (if any) is not deleted, just unlinked from this feature.")) return;
+    var mapId = ft.mapId;
+    delete docs[file];
+    content.manifest.documents.gis = content.manifest.documents.gis.filter(function (e) { return e.file !== file; });
+    markDirty(); buildNav(); select("gismap:gis/maps/" + mapId + ".json");
   }
 
   /* ============================================================
@@ -1687,6 +1748,41 @@
     box.appendChild(addBtn);
   }
 
+  function featureToursSectionForMap(parent, mapFile) {
+    var m = docs[mapFile];
+    var box = section(parent, "Feature tours",
+      "A tour that starts when someone clicks one specific feature on the map (e.g. one CPRA project pin), instead of the whole-map tour above.");
+    var ftFiles = gisFeatureTourFiles(m.id);
+    if (!ftFiles.length) box.appendChild(el("p", "adm-hint", "No feature tours yet."));
+    ftFiles.forEach(function (ff) {
+      var ft = docs[ff];
+      var layerDef = (m.layers || []).find(function (l) { return l.id === ft.layerId; });
+      var tourFile = gisTourFiles(m.id).filter(function (tf) { return docs[tf].id === ft.tourId; })[0];
+      var row = el("div", "adm-listitem");
+      var bar = el("div", "adm-itembar");
+      var label = (tourFile ? docs[tourFile].title : "(no tour linked)") +
+        " — " + (layerDef ? layerDef.title : ft.layerId || "?") +
+        " = " + (ft.featureKey && ft.featureKey.value || "?") +
+        (ft.enabled === false ? " (disabled)" : "");
+      bar.appendChild(el("span", "adm-itemtitle", label));
+      var btns = el("div", "adm-itembtns");
+      var openBtn = el("button", "adm-btn adm-btn-small", "Edit");
+      openBtn.type = "button";
+      openBtn.addEventListener("click", function () { select("gisfeaturetour:" + ff); });
+      var delBtn = el("button", "adm-btn adm-btn-ghost adm-btn-small", "Delete");
+      delBtn.type = "button";
+      delBtn.addEventListener("click", function () { deleteGisFeatureTour(ff); });
+      btns.appendChild(openBtn); btns.appendChild(delBtn);
+      bar.appendChild(btns);
+      row.appendChild(bar);
+      box.appendChild(row);
+    });
+    var addBtn = el("button", "adm-btn adm-btn-small", "+ New feature tour");
+    addBtn.type = "button";
+    addBtn.addEventListener("click", function () { addGisFeatureTour(mapFile); });
+    box.appendChild(addBtn);
+  }
+
   function editGisMap(pane, file) {
     var m = docs[file];
     if (!m) return;
@@ -1748,6 +1844,7 @@
     toolsEditor(formCol, m);
     bookmarksEditor(formCol, m, preview.getInstance);
     toursSectionForMap(formCol, file);
+    featureToursSectionForMap(formCol, file);
 
     var danger = section(formCol, "Danger zone");
     var delBtn = el("button", "adm-btn adm-btn-danger", "Delete this map");
@@ -1948,6 +2045,24 @@
           markDirty(); drawMedia();
         });
         mediaZone.appendChild(addImgBtn);
+        var addVidBtn = el("button", "adm-btn adm-btn-small adm-btn-ghost", "+ Add video (optional)");
+        addVidBtn.type = "button";
+        addVidBtn.addEventListener("click", function () {
+          step.media = { _type: "video", source: { kind: "url", value: "" }, alt: "" };
+          markDirty(); drawMedia();
+        });
+        mediaZone.appendChild(addVidBtn);
+        return;
+      }
+      if (step.media._type === "video") {
+        fSource(mediaZone, "Video", step.media.source, {
+          hint: "A YouTube or Vimeo watch link embeds automatically (js/gis/gis-tour.js detects it from the URL — no separate provider field). Anything else is played as a direct video file."
+        });
+        fText(mediaZone, "Title (for screen readers)", step.media, "alt", { half: true });
+        var rmVidBtn = el("button", "adm-btn adm-btn-ghost adm-btn-small", "Remove video");
+        rmVidBtn.type = "button";
+        rmVidBtn.addEventListener("click", function () { step.media = null; markDirty(); drawMedia(); });
+        mediaZone.appendChild(rmVidBtn);
         return;
       }
       fSource(mediaZone, "Image", step.media.source, { imagePreview: true });
@@ -2022,6 +2137,124 @@
     var delBtn = el("button", "adm-btn adm-btn-danger", "Delete this tour");
     delBtn.type = "button";
     delBtn.addEventListener("click", function () { deleteGisTour(file); });
+    danger.appendChild(delBtn);
+  }
+
+  /* ============================================================
+     FEATURE TOUR EDITOR
+     ------------------------------------------------------------
+     The association editor: which layer + attribute field/value
+     (not an ArcGIS OBJECTID -- some services, including CPRA's,
+     don't report an objectIdField) opens which ordinary gisTour.
+     "Pick from map" arms a one-shot listener on the live preview's
+     own "identify" event (the same event js/gis/gis-tools.js's
+     popup already reacts to -- this doesn't compete with it, it
+     just also listens) so an editor can click a real feature
+     instead of typing a field name and value by hand.
+     ============================================================ */
+  function editGisFeatureTour(pane, file) {
+    var ft = docs[file];
+    if (!ft) return;
+    setPaneWide(true);
+
+    var split = el("div", "adm-gissplit");
+    var formCol = el("div", "adm-gisform");
+    var previewCol = el("div", "adm-gispreview-col");
+    split.appendChild(formCol); split.appendChild(previewCol);
+    pane.appendChild(split);
+
+    var mapFile = Object.keys(docs).filter(function (f) { return docs[f] && docs[f]._type === "gisMap" && docs[f].id === ft.mapId; })[0];
+    var mapDoc = mapFile ? docs[mapFile] : null;
+    var preview = null;
+    if (mapDoc) {
+      preview = gisPreviewPanel(previewCol, function () { return mapDoc; });
+      currentGisPreview = preview;
+    } else {
+      previewCol.appendChild(el("p", "adm-hint", "This feature tour's map (“" + ft.mapId + "”) doesn't exist."));
+    }
+
+    var s1 = section(formCol, "Feature tour");
+    var idWrap = el("div", "adm-field half");
+    idWrap.appendChild(el("label", "adm-label", "Id (read-only)"));
+    var idShow = el("input", "adm-input"); idShow.type = "text"; idShow.value = ft.id; idShow.disabled = true;
+    idWrap.appendChild(idShow);
+    s1.appendChild(idWrap);
+    fCheck(s1, "Enabled", ft, "enabled");
+
+    var layerWrap = el("div", "adm-field");
+    layerWrap.appendChild(el("label", "adm-label", "Layer"));
+    var layerSel = el("select", "adm-select");
+    (mapDoc ? mapDoc.layers : []).forEach(function (def) { var opt = el("option", null, def.title); opt.value = def.id; layerSel.appendChild(opt); });
+    layerSel.value = ft.layerId || "";
+    layerSel.addEventListener("change", function () { ft.layerId = layerSel.value; markDirty(); });
+    layerWrap.appendChild(layerSel);
+    s1.appendChild(layerWrap);
+
+    if (!ft.featureKey) ft.featureKey = { field: "", value: "" };
+    var pickWrap = el("div", "adm-field");
+    pickWrap.appendChild(el("label", "adm-label", "Feature (which map feature opens this tour)"));
+    var pickBtn = el("button", "adm-btn adm-btn-small", "📍 Pick from map");
+    pickBtn.type = "button";
+    var pickStatus = el("p", "adm-hint", "");
+    var offPick = null;
+    var fieldIn, valueIn;
+    pickBtn.addEventListener("click", function () {
+      var inst = preview && preview.getInstance && preview.getInstance();
+      if (!inst) { alert("Preview isn't ready yet — wait a moment and try again."); return; }
+      if (offPick) { offPick(); offPick = null; }
+      pickStatus.textContent = "Click a feature on the preview map…";
+      offPick = inst.on("identify", function (detail) {
+        pickStatus.textContent = "";
+        if (offPick) { offPick(); offPick = null; }
+        var hits = (detail && detail.hits) || [];
+        var hit = hits.filter(function (h) { return h.layerId === ft.layerId; })[0] || hits[0];
+        if (!hit) { pickStatus.textContent = "That click didn't hit a feature — try again."; return; }
+        var keys = Object.keys(hit.properties || {});
+        var guess = keys.filter(function (k) { return /project_id/i.test(k); })[0] || keys[0];
+        if (!guess) { pickStatus.textContent = "That feature has no usable attributes."; return; }
+        ft.featureKey.field = guess;
+        ft.featureKey.value = String(hit.properties[guess]);
+        fieldIn.value = ft.featureKey.field;
+        valueIn.value = ft.featureKey.value;
+        markDirty();
+      });
+    });
+    pickWrap.appendChild(pickBtn);
+    pickWrap.appendChild(pickStatus);
+    s1.appendChild(pickWrap);
+    fieldIn = fText(s1, "Field name (e.g. Project_Status_List.Project_ID)", ft.featureKey, "field", { half: true });
+    valueIn = fText(s1, "Value (e.g. TV-0031)", ft.featureKey, "value", { half: true });
+
+    var tourWrap = el("div", "adm-field");
+    tourWrap.appendChild(el("label", "adm-label", "Guided tour"));
+    var tourSel = el("select", "adm-select");
+    var noneOpt = el("option", null, "— None —"); noneOpt.value = ""; tourSel.appendChild(noneOpt);
+    gisTourFiles(ft.mapId).forEach(function (tf) { var opt = el("option", null, docs[tf].title); opt.value = docs[tf].id; tourSel.appendChild(opt); });
+    tourSel.value = ft.tourId || "";
+    tourSel.addEventListener("change", function () { ft.tourId = tourSel.value || null; markDirty(); });
+    tourWrap.appendChild(tourSel);
+    s1.appendChild(tourWrap);
+    var createTourBtn = el("button", "adm-btn adm-btn-small adm-btn-ghost", "+ Create tour for this feature");
+    createTourBtn.type = "button";
+    createTourBtn.addEventListener("click", function () {
+      if (!mapFile) return;
+      var id = prompt("Short id for the new tour (letters/numbers/hyphens):");
+      if (!id) return;
+      id = id.toLowerCase().replace(/[^a-z0-9-]/g, "");
+      if (!id) return alert("That id isn't usable.");
+      var tourFile = "gis/tours/" + id + ".json";
+      if (docs[tourFile]) return alert("A tour with that id already exists.");
+      docs[tourFile] = newGisTourSkeleton(mapDoc, id);
+      content.manifest.documents.gis.push({ file: tourFile, type: "gisTour", id: "gis.tour." + id });
+      ft.tourId = id;
+      markDirty(); buildNav(); select("gisfeaturetour:" + file);
+    });
+    s1.appendChild(createTourBtn);
+
+    var danger = section(formCol, "Danger zone");
+    var delBtn = el("button", "adm-btn adm-btn-danger", "Delete this feature tour");
+    delBtn.type = "button";
+    delBtn.addEventListener("click", function () { deleteGisFeatureTour(file); });
     danger.appendChild(delBtn);
   }
 
@@ -2418,6 +2651,11 @@
     else if (key.indexOf("gistour:") === 0) {
       var tourFile = key.slice(8);
       if (docs[tourFile]) editGisTour(paneEl, tourFile);
+      else select("home");
+    }
+    else if (key.indexOf("gisfeaturetour:") === 0) {
+      var featureTourFile = key.slice(15);
+      if (docs[featureTourFile]) editGisFeatureTour(paneEl, featureTourFile);
       else select("home");
     }
     else if (key.indexOf("gissources:") === 0) {

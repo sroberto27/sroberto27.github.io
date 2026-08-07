@@ -65,6 +65,35 @@
     const layerDefs = Array.isArray(mapDoc.layers) ? mapDoc.layers : [];
     const offListeners = [];
 
+    /* ---- feature tours: which single clicked feature (by a stable
+       attribute key, e.g. a CPRA project's own Project_ID -- not an
+       ArcGIS OBJECTID, which some joined services don't even report)
+       opens which gisTour. opts.featureTours is the same shape js/app.js's
+       featureToursForMap() already resolves for DTSGisTools.mount() --
+       this file only builds a small layerId->value->doc lookup from it,
+       consumed by the identify popup below. The tour doc itself always
+       rides in opts.tours too (js/app.js's toursForMap() folds it in),
+       so instance.startTour(tourId) resolves it the same way any other
+       tour does. */
+    const featureToursAvailable = Array.isArray(opts.featureTours) ? opts.featureTours : [];
+    const featureTourIndex = {};
+    featureToursAvailable.forEach(function (ft) {
+      if (!ft || !ft.layerId || !ft.featureKey || !ft.featureKey.field || !ft.tourId) return;
+      if (!featureTourIndex[ft.layerId]) featureTourIndex[ft.layerId] = { field: ft.featureKey.field, byValue: {} };
+      featureTourIndex[ft.layerId].byValue[String(ft.featureKey.value)] = ft;
+    });
+    function featureTourForHit(hit) {
+      const entry = featureTourIndex[hit.layerId];
+      if (!entry) return null;
+      const raw = hit.properties ? hit.properties[entry.field] : undefined;
+      if (raw === null || raw === undefined) return null;
+      return entry.byValue[String(raw)] || null;
+    }
+    function tourTitleFor(tourId) {
+      const doc = (Array.isArray(opts.tours) ? opts.tours : []).find(function (t) { return t.id === tourId; });
+      return doc ? doc.title : "";
+    }
+
     /* ---- local state model, seeded from the static doc + getState(),
        kept in sync via events -- never read off a Leaflet object ---- */
     const initial = instance.getState();
@@ -435,8 +464,13 @@
       return String(raw);
     }
 
+    // Real bug, found live: \w+ doesn't match a dot, so a popup title
+    // referencing a joined-view's table-qualified field name (e.g.
+    // "{Project_Status_List.Project_Name}", the CPRA services' own real
+    // field-naming convention) never matched at all -- the literal
+    // placeholder text rendered unsubstituted instead of the value.
     function renderTemplate(tpl, props) {
-      return tpl.replace(/\{(\w+)\}/g, function (m, key) {
+      return tpl.replace(/\{([\w.]+)\}/g, function (m, key) {
         return (key in props) ? String(props[key]) : "";
       });
     }
@@ -460,6 +494,7 @@
       const props = hit.properties || {};
       const popupCfg = (def && def.popup) || {};
       const title = popupCfg.title ? renderTemplate(popupCfg.title, props) : (def ? (def.title || def.id) : "Feature");
+      const featureTour = featureTourForHit(hit);
       return fieldsForHit(hit, def).then(function (fields) {
         const rows = fields.map(function (f) {
           return el("div", { class: "dts-gis-popup-row" }, [
@@ -467,7 +502,20 @@
             el("span", { class: "dts-gis-popup-val", text: formatFieldValue(f, props[f.name]) })
           ]);
         });
-        return el("div", { class: "dts-gis-popup-section" }, [el("h4", { text: title })].concat(rows));
+        const children = [el("h4", { text: title })].concat(rows);
+        if (featureTour) {
+          const tourTitle = tourTitleFor(featureTour.tourId);
+          const tourBtn = el("button", {
+            class: "dts-gis-popup-tourbtn", type: "button",
+            html: ICONS.tour + '<span>Start guided tour' + (tourTitle ? ": " + tourTitle : "") + "</span>"
+          });
+          tourBtn.addEventListener("click", function () {
+            closePopup();
+            instance.startTour(featureTour.tourId);
+          });
+          children.push(tourBtn);
+        }
+        return el("div", { class: "dts-gis-popup-section" }, children);
       });
     }
 

@@ -109,6 +109,11 @@
     if (typeof def.minZoom === "number") opts.minZoom = def.minZoom;
     if (typeof def.maxZoom === "number") opts.maxZoom = def.maxZoom;
     if (ctx && ctx.pane) opts.pane = ctx.pane;
+    // Server-side default filter (e.g. a statewide service scoped to one
+    // parish by attribute) -- esri-leaflet's own FeatureLayer constructor
+    // option, applied on every request the layer itself makes, not a
+    // client-side post-filter of a full statewide fetch.
+    if (def.where) opts.where = def.where;
 
     const layer = L.esri.featureLayer(opts);
 
