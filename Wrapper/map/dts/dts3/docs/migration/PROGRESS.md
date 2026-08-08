@@ -12,7 +12,7 @@ identity/access model each phase from 3 onward implements is defined in
 | 3 — Supabase (dev): org/access schema + RLS + dummy seed | **done** | project `DTSdev` (`wsqvzyfvxjenqvqjpqjv`, region `us-west-2`) | schema/RLS/functions/seed verified by direct query; access backfill applied + validated; adversarial RLS check (SELECT + write-path) all pass |
 | 4 — Client auth swap + resource gating | **DONE** — full manual checklist passed, including both post-fix retests | https://dts-website-4cu.pages.dev | Every checklist item passed except forgot-password (item 14 — blocked on the deferred SMTP setup, an account/infra gap, not a code issue; retest once §7 is done). All real bugs found during testing (resource-key decode, gating-UX auto-prompt, locked-placeholder-not-restored, cross-tab sign-in sync, sign-out not revoking cached access) fixed and user-confirmed live, not just deployed. |
 | 5 — Admin auth swap (site_role) | **DONE** | https://dts-website-4cu.pages.dev (deployed, `b693ed64...`) | user ran all 6 local checks pre-deploy (site_admin→board, org_admin→portal/no board, plain user→portal, draft/preview/discard, zip export, real sign-out) — all PASS; not yet re-confirmed on the dev URL |
-| 5b — CMS access editors + org management | **in progress — Checkpoint A done** (nav sections + Organizations/Users/Access screens + org-admin panel still to come) | https://dts-website-4cu.pages.dev (deployed, `05fa51de...`) | Functions verified end-to-end against real dev Supabase AND the real deployed site; admin.js UI not yet click-tested |
+| 5b — CMS access editors + org management | **in progress — Checkpoint A DONE, user-confirmed live** (nav sections + Organizations/Users/Access screens + org-admin panel still to come) | https://dts-website-4cu.pages.dev (deployed, `05fa51de...`) | Functions verified end-to-end (local + deployed); admin.js UI confirmed live by user |
 | 6 — Content pipeline (public/protected split) | not started | — | — |
 | 7 — Lead form | not started | — | — |
 | 8 — Builds (org/user entitlement-gated) | not started | — | — |
@@ -108,9 +108,10 @@ identity/access model each phase from 3 onward implements is defined in
   dynamic `:id` segment extraction) worked; a separate script hit the real
   deployed URL end to end (search/grant/list/revoke as testadmin, 403 as
   testuser) and all 6 assertions passed, again with no test data left
-  behind. **Not yet verified: the actual admin.js UI in a browser** — the
-  dropdown/picker DOM code can't be exercised by a Node script the way the
-  Functions could; needs the user's live click-through.
+  behind. **User confirmed the admin.js UI live, dev URL** — project/
+  experience/link/GIS-map access dropdowns, the entitlement picker
+  (search, grant, list, revoke) on a Restricted row, and Save draft &
+  preview all worked. **Checkpoint A is fully done.**
 
 - 2026-08-08 — **Phase 5 is DONE — user ran all 6 local checks, all PASS**
   (site_admin → Admin Board directly; org_admin → ordinary portal, board
