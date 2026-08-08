@@ -11,7 +11,7 @@ identity/access model each phase from 3 onward implements is defined in
 | 2 — Scrub secrets | done, except item 6 (GitHub repo privacy — deferred to domain cutover) | https://dts-website-4cu.pages.dev | secrets confirmed gone from live deploy; demo sign-in now localhost-only by design |
 | 3 — Supabase (dev): org/access schema + RLS + dummy seed | **done** | project `DTSdev` (`wsqvzyfvxjenqvqjpqjv`, region `us-west-2`) | schema/RLS/functions/seed verified by direct query; access backfill applied + validated; adversarial RLS check (SELECT + write-path) all pass |
 | 4 — Client auth swap + resource gating | **DONE** — full manual checklist passed, including both post-fix retests | https://dts-website-4cu.pages.dev | Every checklist item passed except forgot-password (item 14 — blocked on the deferred SMTP setup, an account/infra gap, not a code issue; retest once §7 is done). All real bugs found during testing (resource-key decode, gating-UX auto-prompt, locked-placeholder-not-restored, cross-tab sign-in sync, sign-out not revoking cached access) fixed and user-confirmed live, not just deployed. |
-| 5 — Admin auth swap (site_role) | **DONE** | https://dts-website-4cu.pages.dev (not yet redeployed with this phase's changes) | user ran all 6 local checks (site_admin→board, org_admin→portal/no board, plain user→portal, draft/preview/discard, zip export, real sign-out) — all PASS |
+| 5 — Admin auth swap (site_role) | **DONE** | https://dts-website-4cu.pages.dev (deployed, `b693ed64...`) | user ran all 6 local checks pre-deploy (site_admin→board, org_admin→portal/no board, plain user→portal, draft/preview/discard, zip export, real sign-out) — all PASS; not yet re-confirmed on the dev URL |
 | 5b — CMS access editors + org management | not started | — | — |
 | 6 — Content pipeline (public/protected split) | not started | — | — |
 | 7 — Lead form | not started | — | — |
@@ -37,11 +37,27 @@ identity/access model each phase from 3 onward implements is defined in
   row for `client` resources too). See Open questions below for the fix and
   its live verification. Not yet committed — see next entry once it is.
 
-  **User asked to stop testing via `python3 -m http.server` going
-  forward and test only against the dev Cloudflare URL from here on** — not
-  yet acted on this session (this phase's changes, plus the `checkAccess()`
-  fix above, aren't deployed yet). Next session/step: rebuild the deploy
-  staging directory and redeploy before any further testing.
+  **User asked to stop testing via `python3 -m http.server` going forward
+  and test only against the dev Cloudflare URL from here on** — acted on the
+  same session: rebuilt the deploy staging directory from scratch (fresh
+  robocopy, same exclusions as every prior phase's deploy —
+  `.git`/`.claude`/`node_modules`/`.wrangler`/`docs/migration`/`scripts`/
+  `supabase`/`.env`/`.env.example`/`README-MIGRATION.md`/the two unused
+  oversized Backrooms `.usdz` files — confirmed via `Test-Path`, not
+  assumed), ran `scripts/strip-public-data.mjs` against it (7 files
+  stripped, 34 GIS documents/layers removed entirely), and redeployed:
+  https://b693ed64.dts-website-4cu.pages.dev (stable alias:
+  https://dts-website-4cu.pages.dev). **Verified live, not just by exit
+  code:** `js/app.js`/`js/admin.js` on the deployed site carry the new code
+  (`DTS_ACCESS`, `site_admin` routing, zero `adminAccounts` references); and
+  — since a Cloudflare Pages 200 can be its SPA-style fallback rather than a
+  real file — confirmed `/.env` and `/docs/migration/PROGRESS.md` both
+  return exactly `index.html`'s own byte count (56,316), i.e. the fallback,
+  not a real leaked file. **Not yet re-run on the dev URL:** the 6-item
+  checklist above was run locally, before this deploy — worth a quick
+  re-confirm on https://dts-website-4cu.pages.dev now that it's live there,
+  though nothing in the diff between local and deployed should change the
+  outcome.
 
 - 2026-08-08 — Ran `/migrate-phase5`. Deleted the entire old ADMIN
   AUTHENTICATION block in `js/admin.js` (`adminAccounts`, `registerAdmins`,
