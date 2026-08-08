@@ -215,6 +215,20 @@ textarea.adm-input { resize: vertical; min-height: 60px; }
 .adm-boundslabel { font-size: 11px; color: var(--adm-dim); font-weight: 700; width: 1em; }
 .adm-boundsfield .adm-input { width: auto; flex: 1; }
 
+/* ---------- entitlement picker (Phase 5b) ---------- */
+.adm-entitlements {
+  margin: 10px 0 4px; padding: 10px 12px;
+  background: var(--adm-panel); border: 1px dashed var(--adm-line);
+  border-radius: 10px;
+}
+.adm-entitlements .adm-listitem { padding: 8px 10px; margin: 0 0 6px; }
+.adm-entitlements .adm-itembar { margin-bottom: 0; }
+.adm-entitlement-search { display: flex; gap: 8px; margin: 6px 0; }
+.adm-entitlement-type { width: 140px; flex: none; }
+.adm-entitlement-results {
+  display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 2px;
+}
+
 /* ---------- floating return chip ---------- */
 .adm-chip {
   position: fixed; right: 14px; bottom: 14px; z-index: 3900;
@@ -236,6 +250,8 @@ textarea.adm-input { resize: vertical; min-height: 60px; }
   .adm-field.half { display: block; width: auto; }
   .adm-field.half + .adm-field.half { margin-left: 0; }
   .adm-pane { padding: 14px 14px 80px; }
+  .adm-entitlement-search { flex-direction: column; }
+  .adm-entitlement-type { width: auto; }
 
   /* The Admin Board is a desktop tool in practice (06-SPEC §7) -- on phones
      the live preview collapses to a button that opens it fullscreen instead

@@ -12,7 +12,7 @@ identity/access model each phase from 3 onward implements is defined in
 | 3 — Supabase (dev): org/access schema + RLS + dummy seed | **done** | project `DTSdev` (`wsqvzyfvxjenqvqjpqjv`, region `us-west-2`) | schema/RLS/functions/seed verified by direct query; access backfill applied + validated; adversarial RLS check (SELECT + write-path) all pass |
 | 4 — Client auth swap + resource gating | **DONE** — full manual checklist passed, including both post-fix retests | https://dts-website-4cu.pages.dev | Every checklist item passed except forgot-password (item 14 — blocked on the deferred SMTP setup, an account/infra gap, not a code issue; retest once §7 is done). All real bugs found during testing (resource-key decode, gating-UX auto-prompt, locked-placeholder-not-restored, cross-tab sign-in sync, sign-out not revoking cached access) fixed and user-confirmed live, not just deployed. |
 | 5 — Admin auth swap (site_role) | **DONE** | https://dts-website-4cu.pages.dev (deployed, `b693ed64...`) | user ran all 6 local checks pre-deploy (site_admin→board, org_admin→portal/no board, plain user→portal, draft/preview/discard, zip export, real sign-out) — all PASS; not yet re-confirmed on the dev URL |
-| 5b — CMS access editors + org management | not started | — | — |
+| 5b — CMS access editors + org management | **in progress — Checkpoint A done** (nav sections + Organizations/Users/Access screens + org-admin panel still to come) | not yet deployed | Functions verified end-to-end against real dev Supabase (see session log); admin.js UI not yet click-tested |
 | 6 — Content pipeline (public/protected split) | not started | — | — |
 | 7 — Lead form | not started | — | — |
 | 8 — Builds (org/user entitlement-gated) | not started | — | — |
@@ -21,6 +21,89 @@ identity/access model each phase from 3 onward implements is defined in
 
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
+
+- 2026-08-08 — Started `/migrate-phase5b`. Planned as three checkpoints
+  (A: nav + access editors + entitlement picker; B: Organizations/Users
+  screens + Functions; C: org-admin panel + adversarial test), approved by
+  the user before writing code. **Checkpoint A done, committed separately
+  from B/C.**
+
+  **Two real findings during planning, before any code was written:**
+  1. `admin_audit` has NO client insert policy at all (only the service
+     role can write it, confirmed reading
+     `supabase/migrations/20260807220100_rls_policies.sql`) — since every
+     mutation this phase adds needs an audit row, this forces ALL of it
+     (not just the ones the phase file explicitly called "Function") through
+     Cloudflare Functions using the service role, even the org_admin
+     membership writes RLS's own `is_org_admin(org_id)` policy would
+     otherwise allow directly from the client. A two-step "client writes,
+     then separately calls an audit-log endpoint" design was rejected
+     because a skipped or failed second call would leave the mutation
+     unaudited — the audit trail has to be structurally inescapable, not
+     client-optional.
+  2. The phase file's step 7 assumes Phase 5 already added a "Manage your
+     team" portal entry point for org_admin. It didn't — checked
+     `index.html` directly: `#portalManage` is still the static placeholder
+     ("Twin management tools are handled with your DTS project lead...")
+     from before this migration. Checkpoint C will build the org-admin panel
+     into this existing view rather than inventing a new one.
+
+  **Checkpoint A — shared backend + entitlement editor:**
+  `functions/_lib/access.js`: exported `pgrst`/`isSiteAdmin` (previously
+  module-private) and extended `pgrst()` to support POST/PATCH/DELETE with
+  a body (previously GET-only), backward compatible with every existing
+  caller. New `functions/_lib/admin.js`: `requireSiteAdmin()`,
+  `requireOrgAdminOf()`/`isOrgAdmin()` (built now for Checkpoint C's reuse,
+  since they're tiny and the natural extension of `isSiteAdmin()`'s own
+  pattern), `writeAudit()` (the one place every mutation's `admin_audit` row
+  gets written), and `gotrue()` (the GoTrue Admin API wrapper — `auth.users`
+  isn't exposed via PostgREST, only the `public` schema is, so anything
+  touching real accounts goes through this instead of `pgrst()`).
+
+  New Functions: `functions/api/admin/entitlements.js` (GET list by
+  `resource_key` with resolved org-name/user-email labels, POST grant),
+  `functions/api/admin/entitlements/[id].js` (DELETE revoke),
+  `functions/api/admin/search.js` (org-name / user-email lookup, backs
+  every picker — sanitizes the query term against PostgREST's own filter
+  mini-syntax characters `, ( ) *` first, since they'd otherwise let a
+  search term reshape the query it's embedded in).
+
+  `js/admin.js`: `accessLevelField()` (a thin wrapper around the existing
+  `fSelect()` — deliberately NOT a new field-builder primitive, reuses
+  `fSelect`'s own "unset shows the first option, only writes on real
+  interaction" behavior so untouched documents' export diff stays
+  unchanged) added to the project editor (top-level, no "inherit" — a bare
+  `project.<id>` key is never itself gated per `ACCESS-MODEL.md` §4, so this
+  field never shows an entitlement picker, only sets the default children
+  inherit), each `experiences[]` row (threaded `project` through
+  `renderExperienceItem()`, previously not passed), each `links[]` row (using
+  `fList`'s already-passed 0-based index for the position-based `link-<n>`
+  key — flagged inline in the new field's own hint that removing an earlier
+  link shifts every link after it, a pre-existing fragility in how link
+  identity works, not something this phase fixes), and the GIS map editor
+  (top-level, resourceKey `gismap.<id>`, DOES get a picker — a GIS map is a
+  whole-document gate directly checked by the resolver, unlike a project's
+  own default). New `entitlementPicker()`: the one editor surface in the
+  whole board that talks to a live API instead of `window.DTS_CONTENT.docs`
+  and never calls `markDirty()`, since `resource_entitlements` lives in
+  Postgres, never `/data` (`ACCESS-MODEL.md` §5).
+
+  **Verified end-to-end against the real dev Supabase project — calling the
+  actual exported Function handlers, not reimplementations, with real
+  minted sessions** (a new reusable test harness, `mint-session.mjs` — uses
+  the Admin API's generate_link + verify redirect dance to get a real
+  access token for a seeded test account WITHOUT ever touching or needing
+  to know its password, safe to reuse against accounts the user is actively
+  testing with themselves): `testadmin` (site_admin) can search orgs/users,
+  grant an entitlement to a real org, see it listed with the correct
+  resolved label, and revoke it; `testuser` (plain registered) gets 403 on
+  every one of those calls; both the grant and the revoke wrote the
+  expected `admin_audit` rows with correct `action`/`target_type`/
+  `target_id`/`before`/`after`. All 10 assertions passed, no test data left
+  behind (the test's own grant was revoked as its last step). **Not yet
+  verified: the actual admin.js UI in a browser** — the dropdown/picker DOM
+  code can't be exercised by a Node script the way the Functions could;
+  needs the user's live click-through once deployed.
 
 - 2026-08-08 — **Phase 5 is DONE — user ran all 6 local checks, all PASS**
   (site_admin → Admin Board directly; org_admin → ordinary portal, board

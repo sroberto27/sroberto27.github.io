@@ -35,18 +35,30 @@ export async function verifyUser(request, env) {
   }
 }
 
-async function pgrst(env, queryPath) {
+// opts.method defaults to GET (the only mode every existing caller in this
+// file uses). opts.body/opts.prefer are for the Phase 5b admin Functions
+// (functions/_lib/admin.js), which need POST/PATCH/DELETE against
+// PostgREST -- service role bypasses RLS entirely for all of these, same as
+// the read-only queries below.
+export async function pgrst(env, queryPath, opts) {
+  opts = opts || {};
   const resp = await fetch(`${env.SUPABASE_URL}/rest/v1/${queryPath}`, {
+    method: opts.method || "GET",
     headers: {
       apikey: env.SUPABASE_SERVICE_ROLE_KEY,
       Authorization: `Bearer ${env.SUPABASE_SERVICE_ROLE_KEY}`,
+      ...(opts.body ? { "content-type": "application/json" } : {}),
+      ...(opts.method && opts.method !== "GET" ? { Prefer: opts.prefer || "return=representation" } : {}),
     },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
   });
   if (!resp.ok) throw new Error(`PostgREST ${resp.status}: ${await resp.text()}`);
-  return await resp.json();
+  if (resp.status === 204) return null;
+  const text = await resp.text();
+  return text ? JSON.parse(text) : null;
 }
 
-async function isSiteAdmin(userId, env) {
+export async function isSiteAdmin(userId, env) {
   const rows = await pgrst(env, `profiles?user_id=eq.${userId}&select=site_role&limit=1`);
   return rows.length > 0 && rows[0].site_role === "site_admin";
 }

@@ -437,6 +437,178 @@
     return s;
   }
 
+  /* ============================================================
+     ACCESS LEVELS  (Phase 5b — 07-SPEC / ACCESS-MODEL.md §5)
+     ------------------------------------------------------------
+     Access is CMS content: it lives in /data, is edited here, and flows
+     through the normal draft -> export/publish path like any other field.
+     WHO holds a "restricted" resource does NOT -- that lives only in
+     Postgres (resource_entitlements), so entitlementPicker() below is the
+     one editor surface in this whole board that talks to a live API
+     instead of window.DTS_CONTENT.docs, and never calls markDirty().
+     ============================================================ */
+  var ACCESS_TOP_OPTIONS = [
+    ["registered", "Registered — any signed-in visitor"],
+    ["public", "Public — no sign-in required"],
+    ["client", "Client — any active org member"],
+    ["restricted", "Restricted — specific grant required"]
+  ];
+  var ACCESS_CHILD_OPTIONS = [
+    ["inherit", "Inherit from project"],
+    ["public", "Public — no sign-in required"],
+    ["registered", "Registered — any signed-in visitor"],
+    ["client", "Client — any active org member"],
+    ["restricted", "Restricted — specific grant required"]
+  ];
+
+  /* Same resolution formula as functions/api/resource/[key].js's own
+     resolveExperienceTarget() and scripts/strip-public-data.mjs's resolve()
+     -- kept in sync deliberately, not re-derived. UI-only: decides whether
+     to show the entitlement picker, never an access decision itself (that
+     only ever happens server-side). */
+  function resolveAccessLevel(ownAccess, projectAccess) {
+    if (ownAccess && ownAccess !== "inherit") return ownAccess;
+    return projectAccess || "registered";
+  }
+
+  /* Attaches the caller's own Supabase session token, the same one
+     js/app.js's fetchResource() sends -- these admin Functions verify
+     site_admin server-side from it, same as every other gate. */
+  function adminFetch(path, opts) {
+    opts = opts || {};
+    var headers = {};
+    var session = window.DTS_ACCESS && window.DTS_ACCESS.session;
+    if (session && session.accessToken) headers.Authorization = "Bearer " + session.accessToken;
+    if (opts.body) headers["content-type"] = "application/json";
+    return fetch(path, {
+      method: opts.method || "GET",
+      headers: headers,
+      body: opts.body ? JSON.stringify(opts.body) : undefined
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (data) {
+        return { ok: r.ok, status: r.status, data: data };
+      });
+    });
+  }
+
+  /* Live grant/revoke UI for one resource_key. getResourceKey is a
+     function, not a string, because the underlying key can change while
+     this row is open (an experience/link's id is still being typed). */
+  function entitlementPicker(parent, getResourceKey) {
+    var box = el("div", "adm-entitlements");
+    box.appendChild(el("p", "adm-label", "Who has access"));
+    var listZone = el("div", "adm-listitems");
+    box.appendChild(listZone);
+    var status = el("p", "adm-hint", "");
+    box.appendChild(status);
+
+    var searchRow = el("div", "adm-entitlement-search");
+    var typeSel = el("select", "adm-select adm-entitlement-type");
+    [["org", "Organization"], ["user", "User"]].forEach(function (o) {
+      var opt = el("option", null, o[1]); opt.value = o[0]; typeSel.appendChild(opt);
+    });
+    var q = el("input", "adm-input"); q.type = "text"; q.placeholder = "Search by name or email…";
+    var resultsBox = el("div", "adm-entitlement-results");
+    searchRow.appendChild(typeSel); searchRow.appendChild(q);
+    box.appendChild(searchRow);
+    box.appendChild(resultsBox);
+
+    var searchTimer = null;
+    function runSearch() {
+      var term = q.value.trim();
+      resultsBox.innerHTML = "";
+      if (term.length < 2) return;
+      adminFetch("/api/admin/search?type=" + typeSel.value + "&q=" + encodeURIComponent(term)).then(function (res) {
+        resultsBox.innerHTML = "";
+        if (!res.ok) { resultsBox.appendChild(el("p", "adm-hint", "Search failed.")); return; }
+        var results = res.data.results || [];
+        if (!results.length) { resultsBox.appendChild(el("p", "adm-hint", "No matches.")); return; }
+        results.forEach(function (r) {
+          var btn = el("button", "adm-btn adm-btn-small", "+ " + r.label);
+          btn.type = "button";
+          btn.addEventListener("click", function () { grant(typeSel.value, r.id); });
+          resultsBox.appendChild(btn);
+        });
+      });
+    }
+    q.addEventListener("input", function () {
+      if (searchTimer) clearTimeout(searchTimer);
+      searchTimer = setTimeout(runSearch, 300);
+    });
+    typeSel.addEventListener("change", function () { resultsBox.innerHTML = ""; q.value = ""; });
+
+    function draw() {
+      listZone.innerHTML = "";
+      status.textContent = "Loading…";
+      adminFetch("/api/admin/entitlements?resource_key=" + encodeURIComponent(getResourceKey())).then(function (res) {
+        if (!res.ok) { status.textContent = "Couldn’t load current grants: " + (res.data.error || res.status); return; }
+        status.textContent = "";
+        var rows = res.data.entitlements || [];
+        if (!rows.length) { listZone.appendChild(el("p", "adm-hint", "No one is specifically entitled yet.")); return; }
+        rows.forEach(function (r) {
+          var item = el("div", "adm-listitem");
+          var bar = el("div", "adm-itembar");
+          bar.appendChild(el("span", "adm-itemtitle", (r.subjectType === "org" ? "Org: " : "User: ") + r.label));
+          var del = el("button", "adm-btn adm-btn-ghost adm-btn-small", "Revoke");
+          del.type = "button";
+          del.addEventListener("click", function () { revoke(r.id); });
+          bar.appendChild(del);
+          item.appendChild(bar);
+          listZone.appendChild(item);
+        });
+      });
+    }
+    function grant(subjectType, subjectId) {
+      status.textContent = "Granting…";
+      adminFetch("/api/admin/entitlements", {
+        method: "POST",
+        body: { resourceKey: getResourceKey(), subjectType: subjectType, subjectId: subjectId }
+      }).then(function (res) {
+        if (!res.ok) { status.textContent = "Couldn’t grant: " + (res.data.error || res.status); return; }
+        q.value = ""; resultsBox.innerHTML = "";
+        draw();
+      });
+    }
+    function revoke(id) {
+      status.textContent = "Revoking…";
+      adminFetch("/api/admin/entitlements/" + id, { method: "DELETE" }).then(function (res) {
+        if (!res.ok) { status.textContent = "Couldn’t revoke: " + (res.data.error || res.status); return; }
+        draw();
+      });
+    }
+    draw();
+    parent.appendChild(box);
+    return { refresh: draw };
+  }
+
+  /* Access-level dropdown, paired with the live entitlement picker when
+     the row's RESOLVED level is "restricted". opts.top skips "inherit"
+     (a project/GIS map document has nothing to inherit from). opts.resourceKey
+     (a live getter) is what actually gets entitlements attached to it --
+     omit it to never show a picker, which is deliberate for a project's own
+     top-level field: a bare project.<id> key is never itself gated
+     (ACCESS-MODEL.md §4), only whatever specific child resourceKey a guest
+     requests is, so there is nothing to attach an entitlement to at that
+     level. opts.projectAccess (child rows only, a live getter) is used
+     purely to decide whether to show the picker when this row is set to
+     "inherit" -- the real resolution always happens server-side regardless. */
+  function accessLevelField(parent, obj, key, opts) {
+    opts = opts || {};
+    var options = opts.top ? ACCESS_TOP_OPTIONS : ACCESS_CHILD_OPTIONS;
+    var pickerZone = el("div");
+    function refreshPicker() {
+      pickerZone.innerHTML = "";
+      if (!opts.resourceKey) return;
+      var resolved = opts.top ? (obj[key] || "registered")
+        : resolveAccessLevel(obj[key], opts.projectAccess ? opts.projectAccess() : undefined);
+      if (resolved !== "restricted") return;
+      entitlementPicker(pickerZone, opts.resourceKey);
+    }
+    fSelect(parent, opts.label || "Access level", obj, key, options, { hint: opts.hint, onChange: refreshPicker });
+    parent.appendChild(pickerZone);
+    refreshPicker();
+  }
+
   /* Per-hexagon media editor: a type dropdown that swaps in the
      fields for image / video / 3D model. Edits h.media in place
      (the canonical shape content-loader.js and hex-media.js read). */
@@ -690,7 +862,7 @@
     return item;
   }
 
-  function renderExperienceItem(card, item, i, arr, redraw) {
+  function renderExperienceItem(card, item, i, arr, project, redraw) {
     var typeWrap = el("div", "adm-field half");
     typeWrap.appendChild(el("label", "adm-label", "Type"));
     var typeSel = el("select", "adm-select");
@@ -757,6 +929,11 @@
       checkMismatch();
     }
 
+    accessLevelField(card, item, "access", {
+      projectAccess: function () { return project.access; },
+      resourceKey: function () { return "project." + project.id + ":" + (item.id || ""); }
+    });
+
     var defWrap = el("div", "adm-field adm-check");
     var defLab = el("label", "adm-checklabel");
     var defRadio = el("input"); defRadio.type = "radio"; defRadio.name = "admExpDefault";
@@ -801,7 +978,7 @@
     preDirtyHook = commitIfNeeded;
 
     var listHandle = fListOrdered(box, "Experiences", arr, function (card, item, i) {
-      renderExperienceItem(card, item, i, arr, function () { listHandle.redraw(); });
+      renderExperienceItem(card, item, i, arr, project, function () { listHandle.redraw(); });
     }, function () {
       return experienceSkeleton("treedis");
     }, "+ Add experience");
@@ -827,6 +1004,11 @@
     fText(s1, "Overview", p, "overview", { textarea: true, rows: 4 });
     fText(s1, "Captured with", p, "capturedWith", { half: true });
     fText(s1, "Platform", p, "platform", { half: true });
+    accessLevelField(s1, p, "access", {
+      top: true,
+      label: "Default access level",
+      hint: "Applies to any experience or link below set to “Inherit from project.” The project's own title/overview/gallery are always public regardless of this."
+    });
 
     var s2 = section(pane, "Featured project");
     fText(s2, "Name", p.project, "name");
@@ -837,9 +1019,14 @@
     experiencesEditor(pane, p);
 
     var s3 = section(pane, "Related links", "Chips under the experience — tours, videos, Matterport links.");
-    fList(s3, "Links", p.links, function (card, item) {
+    fList(s3, "Links", p.links, function (card, item, i) {
       fText(card, "Label", item, "label");
       fText(card, "URL", item, "url", { placeholder: "https://…" });
+      accessLevelField(card, item, "access", {
+        projectAccess: function () { return p.access; },
+        resourceKey: function () { return "project." + p.id + ":link-" + (i + 1); },
+        hint: "A link's gated identity is its position in this list (link-1, link-2, …) — removing an earlier link shifts every link after it, along with any entitlements already granted to that position."
+      });
     }, function () { return { _type: "link", label: "New link", url: "https://", kind: "external" }; }, "+ Add link");
 
     var s4 = section(pane, "Image gallery");
@@ -1755,6 +1942,12 @@
     s1.appendChild(idWrap);
     fText(s1, "Subtitle", m, "subtitle");
     fText(s1, "Attribution", m, "attribution");
+    accessLevelField(s1, m, "access", {
+      top: true,
+      label: "Access level",
+      resourceKey: function () { return "gismap." + m.id; },
+      hint: "A GIS map is a whole-document gate (ACCESS-MODEL.md §5) — this covers the map itself, every guided tour on it, and its local layer files together, not just the project experience that links to it."
+    });
 
     var s2 = section(formCol, "Default view");
     fView(s2, m, "view", { withCapture: true, getPreviewInstance: preview.getInstance });
