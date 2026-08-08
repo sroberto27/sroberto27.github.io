@@ -1,0 +1,12 @@
+name = "dts-website"
+compatibility_date = "2026-08-07"
+
+# Cloudflare Pages, Direct Upload — no git connection, no build step.
+# Deploys the site root as static assets: `npx wrangler pages deploy .`
+#
+# Deliberately no account_id here (golden rule 3, WORKFLOW.md): the account
+# is resolved from the authenticated `wrangler login` / CLOUDFLARE_API_TOKEN
+# in the environment, never hardcoded in a committed file.
+#
+# R2 bucket bindings, Functions config, and other account-specific wiring
+# are added in later phases (6/8) once those pieces exist.

@@ -1,33 +1,15 @@
 /* ============================================================
    Client access directory ("Access Your Twin")
    ------------------------------------------------------------
-   Simple sign-in for returning clients. The directory is a
-   published Google Sheet read as CSV — no backend, no database.
-   Edit the sheet; the site reflects it on the next load.
-
-   Sheet setup:
-   1. Create a Google Sheet with this header row (order and case
-      don't matter):
-        access_id | access_code | client | project | twin_url | sweep_id | notes
-      One row per twin. A client with several twins gets one row
-      per twin, all sharing the same access_id + access_code and
-      an identical client name.
-   2. File ▸ Share ▸ Publish to web ▸ pick the tab ▸ CSV ▸ Publish.
-   3. Paste the published URL into `sheetCsvUrl` below.
-
-   Security note: a published sheet is publicly readable to anyone
-   with the CSV link, so access_code is a light members-only gate,
-   not real security. Never put genuinely sensitive data in the
-   sheet. To upgrade later, replace authenticate() in js/app.js
-   with a real auth provider — nothing else needs to change.
-
-   If sheetCsvUrl is empty or unreachable, the built-in demo
-   directory below is used (try demo / 1234).
+   The Google-Sheet-backed directory was retired in the migration's
+   Phase 2 (docs/migration/): the published sheet leaked every
+   client's access_id/access_code in plaintext to anyone with the
+   CSV link. Real auth is rebuilt on Supabase in Phase 4
+   (js/app.js authenticate()) — until then, sign-in only works via
+   the demo directory below, and only on localhost, so production
+   never exposes even the demo credentials.
    ============================================================ */
 window.DTS_CLIENTS = {
-  /* Published-CSV URL. Leave "" to use the demo directory. */
-  sheetCsvUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vSGRuZefJU28qXSgyLWSmLWUh2akMcZiV16fCN_89aKpTmpg4GdHZTouhenlt3stjPDCLp99v4_fTVV/pub?gid=602775609&single=true&output=csv",
-
   /* Sign-in window copy. */
   ui: {
     title: "Welcome Back!",
@@ -39,8 +21,8 @@ window.DTS_CLIENTS = {
     offlineNote: "Demo directory in use — connect a Google Sheet in js/clients.js to manage real clients."
   },
 
-  /* Fallback directory used when the sheet is unset or unreachable. */
-  demoDirectory: [
+  /* Dev-only fallback directory — never active outside localhost. */
+  demoDirectory: (typeof location !== "undefined" && location.hostname === "localhost") ? [
     { access_id: "demo", access_code: "1234",
       client: "Demo Client", project: "Showcase Twin",
       twin_url: "https://spaces.dtsxr.com/tour/4fb22059", sweep_id: "",
@@ -53,5 +35,5 @@ window.DTS_CLIENTS = {
       client: "Acme Hotels", project: "Rooftop Venue",
       twin_url: "https://spaces.dtsxr.com/tour/4fb22059", sweep_id: "",
       notes: "Rooftop capture." }
-  ]
+  ] : []
 };

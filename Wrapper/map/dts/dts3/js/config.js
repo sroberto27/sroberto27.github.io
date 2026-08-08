@@ -151,7 +151,13 @@ window.DTS_CONFIG = {
      Without a key, forms fall back to a pre-filled mailto: link.
      ============================================================ */
   lead: {
-    accessKey: "b825431d-56a9-4ee5-9042-72bb7685f8c3",   // Web3Forms access key
+    /* No key here — see docs/migration/PROGRESS.md (Phase 2). This is the
+       /data-unreachable fallback only; the real key (pending rotation in
+       Phase 7) lives in data/site/lead.json, the normal path. An
+       empty key here correctly degrades to the mailto: fallback
+       (js/app.js:2107) rather than exposing a second live copy of the
+       credential in a file that isn't even a <script> tag in index.html. */
+    accessKey: "",
     /* Destination inbox for leads (production: hello@dtsxr.com). */
     ownerEmail: "robertoenrique2710@hotmail.com",
     subjectPrefix: "DTS Website Lead",
