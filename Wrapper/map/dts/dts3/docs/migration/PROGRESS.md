@@ -10,6 +10,7 @@ identity/access model each phase from 3 onward implements is defined in
 | 1 — Cloudflare foundation | done | **https://dts-website-4cu.pages.dev** (stable — always latest; per-deploy hash URLs like `987a897b...` change every redeploy, don't bookmark those) | deterministic checks pass; user confirmed tour, lead forms, demo sign-in, mobile |
 | 2 — Scrub secrets | done, except item 6 (GitHub repo privacy — deferred to domain cutover) | https://dts-website-4cu.pages.dev | secrets confirmed gone from live deploy; demo sign-in now localhost-only by design |
 | 3 — Supabase (dev): org/access schema + RLS + dummy seed | **done** | project `DTSdev` (`wsqvzyfvxjenqvqjpqjv`, region `us-west-2`) | schema/RLS/functions/seed verified by direct query; access backfill applied + validated; adversarial RLS check (SELECT + write-path) all pass |
+| 4 — Client auth swap + resource gating | done, API-level verified; interactive UI checks pending user | https://dts-website-4cu.pages.dev | all curl/API checks pass on the live deploy; sign-in flow, destination preservation, reload persistence, tour-no-reload, mobile, lead form NOT yet verified — see below |
 | 4 — Client auth swap + resource gating | not started | — | — |
 | 5 — Admin auth swap (site_role) | not started | — | — |
 | 5b — CMS access editors + org management | not started | — | — |
@@ -21,6 +22,112 @@ identity/access model each phase from 3 onward implements is defined in
 
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
+
+- 2026-08-08 — Ran `/migrate-phase4` end to end (the security-critical
+  phase). Built and tested infrastructure BEFORE touching app.js, then
+  built app.js on top of an already-validated backend.
+
+  **Infrastructure:** confirmed empirically (not assumed) that R2 bindings
+  work with the existing Direct Upload deploy once `wrangler.toml` has
+  `pages_build_output_dir` set. Seeded `dts-content`'s `data/source/`
+  prefix with unstripped project/GIS data (`scripts/upload-source-to-r2.mjs`,
+  new). Wrote `scripts/strip-public-data.mjs` (new) for the public-facing
+  strip Phase 6 will later formalize.
+
+  **Real bugs found and fixed before they ever shipped, each verified
+  independently after fixing, not just assumed correct:**
+  1. `strip-public-data.mjs` initially missed 8/15 gated projects — video
+     experiences use nested `embed`/`watch` source objects in raw /data,
+     not the flat `embedUrl`/`watchUrl` the *converted* DTS_CONFIG shape
+     uses. Confirmed by reading a real raw document (`civic.json`), not
+     assumed from the converted shape.
+  2. The `config.js` strip's first version used regex string-matching and
+     shipped a real bug: it "protected" a DIFFERENT project's tourUrl
+     because it happened to share the homepage's tour ID string. Rewrote
+     to operate on the parsed object graph via `vm` — fields identified by
+     structural position, never by string content.
+  3. `gfc.json`'s GIS map had no `access` field of its own (only the
+     project-side experience pointer got one from Phase 3's backfill) —
+     added `"access": "registered"` to `data/gis/maps/iberia-coastal.json`
+     directly, re-uploaded to R2.
+  4. The resolver's GIS payload originally spread computed `tours`/
+     `featureTours` (full objects) directly over `mapDoc`, silently
+     overwriting `mapDoc.tours` — which the RAW document already carries
+     as an array of ID STRINGS that `js/app.js`'s `toursForMap()` looks up
+     against a global `cfg.gisTours` map. Caught by tracing the actual
+     client consumer before shipping, not by assuming the naming implied
+     the right shape. Fixed: `{mapDoc, tours, featureTours}` as separate
+     keys; the client populates `cfg.gisTours`/`cfg.gisFeatureTours` itself,
+     the same keying `buildConfig()` already uses for public maps.
+  5. **A real "three places" gap, not yet caught by anything:**
+     `content-loader.js`'s `convertExperience()` and the project/links
+     mapping in `buildConfig()` never mapped the `access` field through to
+     `DTS_CONFIG` at all — Phase 3's backfill added it to `/data`, but step
+     2 of the rule (map it in `buildConfig()`) was never done. Didn't
+     manifest as a live bug only because every real resource today happens
+     to resolve to `registered` either way — but `computeAccessibleResources()`
+     (the portal's "All Apps" list) genuinely needs `node.access`/`ex.access`
+     client-side to work correctly once ANY resource is ever `client` or
+     `restricted`. Fixed: `access` now flows through
+     `convertExperience()`, the project-level `ex`, and links (which also
+     needed a stable `id` — `link-<1-based-index>`, matching the resolver's
+     convention — since they never had one).
+  6. The deploy staging build accidentally swept in `node_modules` (from
+     installing `@supabase/supabase-js` for the migration tooling
+     scripts) — caught by checking the staging directory's actual contents
+     before deploying, not assumed clean. Excluded `node_modules/`,
+     `package.json`, `scripts/`, and `supabase/` from the public deploy —
+     none are needed there, and the latter two reveal internal
+     implementation details (exact RLS policies, resource_key formats,
+     R2 path structure) with no benefit to shipping them.
+
+  **app.js**: deleted `loadDirectory`/`parseCSV`/`normalizeRow`/old
+  `authenticate` (~120 lines); new `authenticate` via
+  `supabase.auth.signInWithPassword`; session restore on boot (fire-and-
+  forget, never blocks initial paint); `dts:signed-in` event dispatch;
+  real forgot-password flow; `resolveExperienceNode`/`resolveGisMapById`/
+  `fetchResource` as the gating layer, integrated into `showExperience()`
+  (now async, with a race guard matching the pattern `mountGis()` already
+  used for its own async mount); `buildExampleLinks()` rewritten so a
+  gated link renders as a resolve-then-open button instead of a raw
+  `<a href>` a guest could just read out of the page source; portal
+  redesigned around `computeAccessibleResources()` (scans `cfg.examples`,
+  cross-references the user's own entitlements, readable client-side
+  under RLS as "your own") since the old `session.twins[]` model doesn't
+  exist anymore. `mountTreedis`/`mountVideo`/`mountGis` themselves:
+  ZERO changes, exactly as planned — the gating layer sits at the mount
+  boundary, not inside them.
+
+  `index.html`: supabase-js CDN + `js/supabase-init.js` (the only
+  account-specific values in a committed file, by design) before
+  `content-loader.js`; `js/clients.js` deleted entirely (fully dead code
+  after Phase 2); "Login In" → "Log In"; Remember-me checkbox removed
+  (the underlying logic is gone). `_headers`: Supabase URL added to
+  `connect-src` (https + wss).
+
+  **Verified on the live deployed site (API-level, via curl with real
+  Supabase tokens for testuser/testorgadmin/testmember) — not just
+  locally:** registered resource resolves with real target for a signed-in
+  user, 401 for a guest; the `automotive` link-1 leak is closed end to
+  end (real BMW X1 tour URL only returned to an authenticated request);
+  the two-step GIS resolve works (`project.gfc:map` → `{mapId, tourId}`
+  → `gismap.iberia-coastal` → full doc with 14 tours + 13 feature tours);
+  the GIS layer proxy streams real geojson to an authenticated user, 401
+  to a guest; `js/config.js` on the live deploy has exactly 1 `tourUrl`
+  (the homepage) and 0 `embedUrl`/`watchUrl`; the GIS map document and a
+  local layer file are both confirmed absent from the public deploy
+  (checked actual response body/size against `index.html`'s real byte
+  count, not status code alone — Cloudflare's SPA-style fallback returns
+  200 for genuinely-missing paths).
+
+  **NOT yet verified — needs the user, per the project's manual-testing
+  convention:** the sign-in FORM flow (does clicking a gated tile actually
+  open the login form, not just the API returning 401), destination
+  preservation after login, session persisting across a reload, sign-out,
+  forgot-password actually sending, the GIS map rendering correctly in
+  the browser (tours/feature tours/layers visually working, not just the
+  API returning correct data), the full README regression checklist
+  (tour must not reload, lead form, mobile drawer).
 
 - 2026-08-08 — Ran `/migrate-phase3` step 8 (adversarial RLS check) —
   **Phase 3 is now fully DONE.** Wrote a scripted check that signs in as

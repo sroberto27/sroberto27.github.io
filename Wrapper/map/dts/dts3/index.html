@@ -682,11 +682,10 @@
       <svg viewBox="0 0 24 24" width="22" height="22"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
     </button>
 
-    <!-- Sign-in view: brand block, Email + Password, Remember me /
-         Forgot password?, gold "Login In", and a Contact Us line for
-         new clients. The Email field maps onto the directory's
-         access_id and the password onto its access_code
-         (see js/clients.js). -->
+    <!-- Sign-in view: brand block, Email + Password, Forgot password?,
+         gold "Log In", and a Contact Us line for new clients. Backed by
+         Supabase Auth (js/supabase-init.js) -- see app.js's
+         authenticate(). -->
     <div class="access-view" id="accessSignin">
       <div class="access-brand" aria-hidden="true">
         <img src="assets/CubeLogo.png" alt="" class="access-brand-cube" />
@@ -708,13 +707,10 @@
           <input id="accessCode" name="access_code" type="password" autocomplete="current-password" required />
         </div>
         <div class="access-row">
-          <label class="access-remember">
-            <input type="checkbox" id="accessRemember" /> Remember me
-          </label>
           <button class="access-forgot" id="accessForgot" type="button">Forgot password?</button>
         </div>
         <p class="form-error" id="accessError" hidden></p>
-        <button class="form-submit access-submit" id="accessSubmit" type="submit">Login In</button>
+        <button class="form-submit access-submit" id="accessSubmit" type="submit">Log In</button>
         <p class="access-signup">
           Don’t have an account
           <button class="access-contact-link" id="accessContact" type="button">Contact Us</button>
@@ -874,7 +870,9 @@
 
 
 
-<!-- Scripts: clients.js defines a fallback global, then the Treedis
+<!-- Scripts: the Supabase client (js/supabase-init.js -- the only
+     account-specific values in a committed file, by design: a public
+     project URL + anon key) initializes first, then the Treedis
      bridge, then content-loader.js hydrates DTS_CONFIG from the /data
      JSON documents (or the Admin Board's draft) and injects app.js,
      smoke-depth.js, vision-pro-spatial.js, and hex-media.js once
@@ -882,7 +880,8 @@
      browser is in an admin context (see content-loader.js). js/config.js
      is NOT loaded here: content-loader.js pulls it in dynamically, and
      only as a fallback if /data itself fails to load. Keep this order. -->
-<script src="js/clients.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/supabase-init.js"></script>
 <script src="js/tour-bridge.js"></script>
 <script src="js/content-loader.js"></script>
 <script src="js/intro-typewriter.js"></script>

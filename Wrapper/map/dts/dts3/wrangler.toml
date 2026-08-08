@@ -1,5 +1,10 @@
 name = "dts-website"
 compatibility_date = "2026-08-07"
+pages_build_output_dir = "."
+
+[[r2_buckets]]
+binding = "DTS_CONTENT"
+bucket_name = "dts-content"
 
 # Cloudflare Pages, Direct Upload — no git connection, no build step.
 # Deploys the site root as static assets: `npx wrangler pages deploy .`

@@ -2,6 +2,7 @@
   "_id": "gis.maps.iberia-coastal",
   "_type": "gisMap",
   "id": "iberia-coastal",
+  "access": "registered",
   "title": "Iberia Parish — Coastal Resilience",
   "subtitle": "Land change, flood risk, infrastructure and CPRA projects",
   "attribution": "Iberia Parish GIS · CPRA / LSU LaSARD · FEMA",

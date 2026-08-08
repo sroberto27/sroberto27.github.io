@@ -94,7 +94,7 @@
   function convertExperience(m, i) {
     if (!m || !m._type) return undefined;
     var base = { id: m.id || (m._type + (i ? "-" + (i + 1) : "")),
-                 label: m.label || "", default: !!m.default };
+                 label: m.label || "", default: !!m.default, access: m.access };
     if (m._type === "treedis") {
       return Object.assign(base, { type: "treedis", tourUrl: m.tourUrl || "",
         origin: m.origin || "https://spaces.dtsxr.com", sweepId: m.sweepId || null });
@@ -119,6 +119,7 @@
     var contact  = docs["pages/contact.json"];
     var faq      = docs["faq/answers.json"];
     var funFacts = docs["faq/fun-facts.json"];
+    var access   = docs["access/access.json"];
 
     if (settings) {
       cfg.brand = {
@@ -152,6 +153,12 @@
                                  submitLabel: f.submitLabel, fields: f.fields };
       });
     }
+    if (access) {
+      // Sign-in form copy only (title/labels/error text) -- access.json
+      // carries no credentials since Phase 2; auth itself is Supabase
+      // (js/supabase-init.js + app.js authenticate()).
+      cfg.accessUi = access.ui || {};
+    }
 
     var sectors = docsByType(content, "sector").sort(function (a, b) {
       return (a.order || 0) - (b.order || 0);
@@ -177,9 +184,16 @@
       projects.forEach(function (p) {
         var ex = {
           sector: p.sectorId, title: p.title, tagline: p.tagline,
-          overview: p.overview, project: p.project,
+          overview: p.overview, project: p.project, access: p.access,
           capturedWith: p.capturedWith, platform: p.platform,
-          links: (p.links || []).map(function (l) { return { label: l.label, url: l.url }; }),
+          links: (p.links || []).map(function (l, i) {
+            // link-<1-based index>: matches the resource_key convention
+            // functions/api/resource/[key].js resolves against (see
+            // ACCESS-MODEL.md §4) -- position-based since links don't
+            // carry an authored id of their own yet.
+            return { id: "link-" + (i + 1), label: l.label, url: l.url,
+                     kind: l.kind, access: l.access };
+          }),
           gallery: (p.gallery || []).map(function (g) {
             return { src: srcValue(g.source), alt: g.alt || "" };
           }),

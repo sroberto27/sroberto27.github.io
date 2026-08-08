@@ -1168,7 +1168,7 @@
      `default`, or the first one. Pure mount/switch: callers own the URL
      sync (openExample()'s own trailing syncURL for a project open/swap;
      the tab click handler's own replaceState for an in-place tab switch). */
-  function showExperience(ex, expId) {
+  async function showExperience(ex, expId) {
     const list = ex.experiences || [];
     const target = list.find((e) => e.id === expId)
                 || list.find((e) => e.default)
@@ -1189,17 +1189,36 @@
     }
 
     activeExperienceId = target.id;
-
-    if (target.type === "treedis") mountTreedis(target, slot, loading);
-    else if (target.type === "vimeo") mountVideo(target, slot, loading);
-    else if (target.type === "gis")  mountGis(target, ex, slot, loading);
-
+    syncStageTabs(list, target.id);
     // A GIS pane has no "open in new tab" target — the button fullscreens
     // the map in place instead. Recomputed on every call, so switching
     // back to a tour/video tab restores the usual label automatically.
     if (enterBtn) enterBtn.textContent = target.type === "gis" ? "Full screen map" : "Enter Twin";
 
-    syncStageTabs(list, target.id);
+    if (loading) loading.classList.remove("is-hidden");
+    const resolved = await resolveExperienceNode(target.id, target);
+    // The reader may have switched tabs again while this was in flight —
+    // don't let a stale resolve mount something nobody is looking at
+    // anymore (same guard mountGis already uses for its own async mount).
+    if (activeExperienceId !== target.id) return;
+    if (!resolved.ok) {
+      if (loading) loading.classList.add("is-hidden");
+      handleResolveFailure(resolved);
+      return;
+    }
+
+    if (target.type === "treedis") mountTreedis(target, slot, loading);
+    else if (target.type === "vimeo") mountVideo(target, slot, loading);
+    else if (target.type === "gis") {
+      const gisResolved = await resolveGisMapById(target.mapId);
+      if (activeExperienceId !== target.id) return;
+      if (!gisResolved.ok) {
+        if (loading) loading.classList.add("is-hidden");
+        handleResolveFailure(gisResolved);
+        return;
+      }
+      mountGis(target, ex, slot, loading);
+    }
   }
 
   /* Fullscreen the example's live experience pane.
@@ -1370,16 +1389,35 @@
     label.className = "example-links-label";
     label.textContent = "More from this project";
     wrap.appendChild(label);
+    const icon =
+      '<svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M10 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
     links.forEach((lk) => {
-      const a = document.createElement("a");
-      a.className = "example-link-chip";
-      a.href = lk.url;
-      a.target = "_blank";
-      a.rel = "noopener noreferrer";
-      a.innerHTML =
-        '<svg viewBox="0 0 24 24" width="12" height="12" aria-hidden="true"><path d="M14 4h6v6M20 4l-9 9M10 5H6a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
-        escapeHTML(lk.label || lk.url);
-      wrap.appendChild(a);
+      // A link with its url already present is public (never stripped) —
+      // a plain <a>, exactly as before. One WITHOUT a url was stripped
+      // because it's gated (automotive/campus's treedis links are the
+      // real case today) — render a locked tile that resolves-then-opens
+      // on click instead of a raw href a guest could just read out of
+      // the page source.
+      if (lk.url) {
+        const a = document.createElement("a");
+        a.className = "example-link-chip";
+        a.href = lk.url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.innerHTML = icon + escapeHTML(lk.label || lk.url);
+        wrap.appendChild(a);
+        return;
+      }
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "example-link-chip example-link-chip-locked";
+      btn.innerHTML = icon + escapeHTML(lk.label || "Locked");
+      btn.addEventListener("click", async () => {
+        const resolved = await resolveExperienceNode(lk.id, lk);
+        if (!resolved.ok) { handleResolveFailure(resolved); return; }
+        window.open(lk.url, "_blank", "noopener");
+      });
+      wrap.appendChild(btn);
     });
   }
 
@@ -1514,37 +1552,21 @@
   }
 
   /* ============================================================
-     ACCESS YOUR TWIN  (returning-client sign-in via Google Sheet)
+     ACCESS YOUR TWIN  (Supabase Auth)
      ------------------------------------------------------------
-     Reads a published-CSV directory (or the built-in demo
-     directory), matches access_id + access_code, then shows a
-     small dashboard listing every twin that login owns and opens
-     the chosen one in the experience overlay.
+     access.session shape once signed in:
+       { user: {id, email}, accessToken, siteRole, orgs: [{id, slug, name, orgRole}] }
+     Real resource access levels are enforced server-side by
+     functions/api/resource/[key].js — this module's job is auth
+     (sign in/out/restore) plus the resolve-then-open flow that
+     calls that Function. See docs/migration/ACCESS-MODEL.md.
      ============================================================ */
-  const access = { directory: null, loading: null, session: null };
+  const access = { session: null, pendingResourceKey: null, resolvedGisMaps: new Set() };
 
   function openAccess() {
-    // Reset to the sign-in view each open (unless already signed in).
     $("#accessError").hidden = true;
-    const cfgC = window.DTS_CLIENTS || {};
-    const ui = cfgC.ui || {};
-    /* The Email field maps onto the directory's access_id and the
-       Password onto its access_code (see js/clients.js). */
+    const ui = cfg.accessUi || {};
     $("#accessIntro").textContent = ui.intro || "";
-
-    const offline = !cfgC.sheetCsvUrl;
-    const note = $("#accessOfflineNote");
-    note.hidden = !offline;
-    if (offline) note.textContent = ui.offlineNote || "";
-
-    /* Remember me — prefill the last used ID if the user opted in. */
-    try {
-      const remembered = localStorage.getItem("dts_access_id");
-      if (remembered && !$("#accessId").value) {
-        $("#accessId").value = remembered;
-        $("#accessRemember").checked = true;
-      }
-    } catch (_) { /* storage unavailable — fine */ }
 
     // A signed-in client goes straight back to their portal.
     if (access.session) { openPortal(access.session); return; }
@@ -1554,9 +1576,6 @@
     ov.classList.add("is-open");
     ov.setAttribute("aria-hidden", "false");
     setTimeout(() => $("#accessId").focus(), 60);
-
-    // Warm the directory in the background.
-    loadDirectory().catch(() => {});
   }
 
   function closeAccess() {
@@ -1565,83 +1584,90 @@
     ov.setAttribute("aria-hidden", "true");
   }
 
-  /* Fetch + parse the published CSV once; cache it. Falls back to the
-     demo directory if no URL is set or the fetch fails. */
-  function loadDirectory() {
-    if (access.directory) return Promise.resolve(access.directory);
-    if (access.loading) return access.loading;
-    const cfgC = window.DTS_CLIENTS || {};
-
-    if (!cfgC.sheetCsvUrl) {
-      access.directory = (cfgC.demoDirectory || []).map(normalizeRow);
-      return Promise.resolve(access.directory);
+  /* ============================================================
+     RESOURCE RESOLUTION  (the actual gate)
+     ------------------------------------------------------------
+     The browser never decides access — it asks
+     functions/api/resource/[key].js and gets back either the real
+     target or 401/403. See ACCESS-MODEL.md §3-5.
+     ============================================================ */
+  async function fetchResource(resourceKey) {
+    const headers = {};
+    if (access.session && access.session.accessToken) {
+      headers.Authorization = "Bearer " + access.session.accessToken;
     }
-
-    access.loading = fetch(cfgC.sheetCsvUrl, { cache: "no-store" })
-      .then((r) => { if (!r.ok) throw new Error("sheet " + r.status); return r.text(); })
-      .then((text) => {
-        access.directory = parseCSV(text).map(normalizeRow);
-        return access.directory;
-      })
-      .catch((err) => {
-        console.warn("[access] sheet fetch failed, using demo directory:", err);
-        access.directory = (cfgC.demoDirectory || []).map(normalizeRow);
-        return access.directory;
-      });
-    return access.loading;
-  }
-
-  /* Minimal CSV parser: handles quoted fields, commas, and CRLF.
-     Returns an array of row objects keyed by lower-cased header. */
-  function parseCSV(text) {
-    const rows = [];
-    let field = "", row = [], inQuotes = false;
-    for (let i = 0; i < text.length; i++) {
-      const ch = text[i], next = text[i + 1];
-      if (inQuotes) {
-        if (ch === '"' && next === '"') { field += '"'; i++; }
-        else if (ch === '"') inQuotes = false;
-        else field += ch;
-      } else if (ch === '"') inQuotes = true;
-      else if (ch === ",") { row.push(field); field = ""; }
-      else if (ch === "\n") { row.push(field); rows.push(row); row = []; field = ""; }
-      else if (ch === "\r") { /* skip */ }
-      else field += ch;
+    let resp;
+    try {
+      resp = await fetch("/api/resource/" + encodeURIComponent(resourceKey), { headers });
+    } catch (_) {
+      return { ok: false, reason: "error", resourceKey };
     }
-    if (field.length || row.length) { row.push(field); rows.push(row); }
-    if (!rows.length) return [];
-    const headers = rows.shift().map((h) => h.trim().toLowerCase());
-    return rows
-      .filter((r) => r.some((c) => c.trim() !== ""))
-      .map((r) => {
-        const obj = {};
-        headers.forEach((h, i) => (obj[h] = (r[i] || "").trim()));
-        return obj;
-      });
+    if (resp.status === 401) return { ok: false, reason: "signin", resourceKey };
+    if (resp.status === 403) return { ok: false, reason: "denied", resourceKey };
+    if (!resp.ok) return { ok: false, reason: "error", resourceKey };
+    const data = await resp.json();
+    return { ok: true, data, resourceKey };
   }
 
-  function normalizeRow(r) {
-    return {
-      access_id:   (r.access_id   || r.id        || "").trim(),
-      access_code: (r.access_code || r.code      || "").trim(),
-      client:      (r.client      || r.name      || "Your organization").trim(),
-      project:     (r.project     || r.twin      || "Your digital twin").trim(),
-      twin_url:    (r.twin_url    || r.url       || cfg.treedis.tourUrl).trim(),
-      sweep_id:    (r.sweep_id    || r.sweep     || "").trim(),
-      notes:       (r.notes       || "").trim()
-    };
+  /* Resolves one experience/link node in place. If it already carries its
+     real target (a public resource, never stripped from DTS_CONFIG), this
+     makes ZERO network calls — the common case stays exactly as fast as
+     before gating existed. */
+  async function resolveExperienceNode(expId, node) {
+    if (node.tourUrl || node.embedUrl || node.watchUrl || node.mapId || node.url) {
+      return { ok: true };
+    }
+    const resourceKey = "project." + activeExampleId + ":" + expId;
+    const result = await fetchResource(resourceKey);
+    if (!result.ok) return result;
+    Object.assign(node, result.data);
+    return { ok: true };
   }
 
-  /* ── Swap THIS function to plug in a real auth provider later. ──
-     Returns ALL rows matching the login (a client can own several
-     twins, stored as one row per twin sharing the same id + code). */
-  function authenticate(id, code) {
-    const dir = access.directory || [];
-    const wantId = (id || "").trim().toLowerCase();
-    const wantCode = (code || "").trim();
-    return dir.filter((row) =>
-      row.access_id.toLowerCase() === wantId && row.access_code === wantCode
-    );
+  /* Resolves a GIS map, populating cfg.gisMaps/cfg.gisTours/
+     cfg.gisFeatureTours exactly the way buildConfig() populates them for
+     a public map — mountGis()/toursForMap()/featureToursForMap() need
+     zero changes because of that. */
+  async function resolveGisMapById(mapId) {
+    const existing = cfg.gisMaps && cfg.gisMaps[mapId];
+    if (access.resolvedGisMaps.has(mapId) || (existing && existing.layers)) {
+      return { ok: true };
+    }
+    const result = await fetchResource("gismap." + mapId);
+    if (!result.ok) return result;
+
+    cfg.gisMaps = cfg.gisMaps || {};
+    cfg.gisTours = cfg.gisTours || {};
+    cfg.gisFeatureTours = cfg.gisFeatureTours || {};
+    cfg.gisMaps[mapId] = result.data.mapDoc;
+    (result.data.tours || []).forEach((t) => { cfg.gisTours[t.id] = t; });
+    (result.data.featureTours || []).forEach((ft) => { cfg.gisFeatureTours[ft.id] = ft; });
+    access.resolvedGisMaps.add(mapId);
+    return { ok: true };
+  }
+
+  /* Shared failure handling for a blocked resolve: 401 opens the sign-in
+     form and remembers what was being asked for so a successful login
+     re-opens it; 403 tells the guest to ask their DTS contact. */
+  function handleResolveFailure(result) {
+    if (result.reason === "signin") {
+      access.pendingResourceKey = result.resourceKey;
+      openAccess();
+    } else if (result.reason === "denied") {
+      window.alert("You don't have access to this resource yet. Ask your DTS contact for access.");
+    } else {
+      console.warn("[dts] resource resolution failed:", result.resourceKey);
+    }
+  }
+
+  /* Re-opens whatever the guest originally asked for, now that they're
+     signed in — used by submitAccess()'s destination-preservation path.
+     Only project experiences are round-trippable this way today (a GIS
+     map's own key isn't tied to a specific project window to reopen). */
+  function openResourceByKey(resourceKey) {
+    const m = /^project\.([^:]+):(.+)$/.exec(resourceKey);
+    if (m) { openExample(m[1], null, m[2]); return; }
+    openPortal(access.session);
   }
 
   async function submitAccess(e) {
@@ -1651,62 +1677,161 @@
     const label = btn.textContent;
     btn.disabled = true; btn.textContent = "Checking…";
 
-    await loadDirectory();
-    const matches = authenticate($("#accessId").value, $("#accessCode").value);
+    const { data, error } = await window.DTS_SUPABASE.auth.signInWithPassword({
+      email: $("#accessId").value.trim(),
+      password: $("#accessCode").value
+    });
 
     btn.disabled = false; btn.textContent = label;
 
-    if (!matches.length) {
-      const ui = (window.DTS_CLIENTS || {}).ui || {};
-      $("#accessError").textContent = ui.error || "We couldn't find a twin for that ID and code.";
+    if (error) {
+      const ui = cfg.accessUi || {};
+      $("#accessError").textContent = ui.error ||
+        "We couldn't find a twin for that email and password. Check your welcome email, or contact the DTS team.";
       $("#accessError").hidden = false;
       return;
     }
-    // One login → one client name, one or more twins.
-    access.session = { client: matches[0].client, twins: matches };
-    try {
-      if ($("#accessRemember").checked) {
-        localStorage.setItem("dts_access_id", $("#accessId").value.trim());
-      } else {
-        localStorage.removeItem("dts_access_id");
-      }
-    } catch (_) { /* storage unavailable — fine */ }
+
     $("#accessCode").value = "";
+    await buildSessionFromAuth(data.session);
+    document.dispatchEvent(new CustomEvent("dts:signed-in", { detail: { session: access.session } }));
+
+    // Destination preservation: a gated resource sent the guest here —
+    // re-open exactly what they originally asked for instead of the portal.
+    if (access.pendingResourceKey) {
+      const key = access.pendingResourceKey;
+      access.pendingResourceKey = null;
+      closeAccess();
+      openResourceByKey(key);
+      return;
+    }
+
     openPortal(access.session);
+  }
+
+  /* Builds access.session from a live Supabase Auth session: the user's
+     own site_role (profiles) and org memberships (organization_members
+     joined to organizations) — both readable under RLS as "your own
+     rows", no service role needed here. */
+  async function buildSessionFromAuth(authSession) {
+    if (!authSession) { access.session = null; return; }
+    const sb = window.DTS_SUPABASE;
+    const user = authSession.user;
+
+    const [{ data: profile }, { data: memberships }] = await Promise.all([
+      sb.from("profiles").select("site_role").eq("user_id", user.id).maybeSingle(),
+      sb.from("organization_members")
+        .select("org_id, org_role, organizations(slug, name)")
+        .eq("user_id", user.id).eq("status", "active")
+    ]);
+
+    access.session = {
+      user: { id: user.id, email: user.email },
+      accessToken: authSession.access_token,
+      siteRole: (profile && profile.site_role) || "user",
+      orgs: (memberships || []).map((m) => ({
+        id: m.org_id, slug: m.organizations.slug, name: m.organizations.name, orgRole: m.org_role
+      }))
+    };
+  }
+
+  /* On boot: restore an existing Supabase session (if any) so reload no
+     longer signs clients out. Fire-and-forget from boot() — never blocks
+     initial paint on a network round trip. */
+  async function restoreSession() {
+    const { data } = await window.DTS_SUPABASE.auth.getSession();
+    if (!data || !data.session) return;
+    await buildSessionFromAuth(data.session);
+    document.dispatchEvent(new CustomEvent("dts:signed-in", { detail: { session: access.session } }));
+  }
+
+  function submitForgotPassword(email) {
+    if (!email) return;
+    window.DTS_SUPABASE.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + window.location.pathname
+    });
   }
 
   /* ============================================================
      CLIENT PORTAL  (post-login)
-     Full-screen layer: MENU / client name / Sign out header, a
-     HOME tile view, an "All APPS" list built from the client's
-     twins, and a tile menu overlay.
+     ------------------------------------------------------------
+     "All Apps" lists every resource the signed-in user can reach
+     right now: every registered experience/link (any signed-in
+     user), every client-level one (if they belong to an org), and
+     every restricted one they hold a direct or org entitlement
+     for. There's no server-side "list my resources" endpoint —
+     access levels are public data (cfg.examples already has them
+     for anything not yet resolved), so this scans cfg.examples and
+     cross-references the user's own entitlements (readable
+     client-side under RLS as "your own").
      ============================================================ */
-  function openPortal(session) {
-    closeAccess();
-    $("#portalClientName").textContent = session.client;
+  function resolveOwnAccess(ownAccess, projectAccess) {
+    if (ownAccess && ownAccess !== "inherit") return ownAccess;
+    if (projectAccess) return projectAccess;
+    return "registered";
+  }
 
-    /* HOME — the primary twin as the big tile plus shortcuts into
-       the other portal views. */
+  async function computeAccessibleResources(session) {
+    const orgIds = session.orgs.map((o) => o.id);
+    const restrictedKeys = new Set();
+    if (session.siteRole !== "site_admin") {
+      const sb = window.DTS_SUPABASE;
+      const { data } = await sb.from("resource_entitlements").select("resource_key, subject_type, subject_id");
+      (data || []).forEach((row) => {
+        if (row.subject_type === "user" && row.subject_id === session.user.id) restrictedKeys.add(row.resource_key);
+        if (row.subject_type === "org" && orgIds.indexOf(row.subject_id) !== -1) restrictedKeys.add(row.resource_key);
+      });
+    }
+
+    const items = [];
+    Object.keys(cfg.examples || {}).forEach((projectId) => {
+      const ex = cfg.examples[projectId];
+      const nodes = (Array.isArray(ex.experiences) && ex.experiences.length) ? ex.experiences : (ex.media ? [ex.media] : []);
+      nodes.forEach((node) => {
+        const level = resolveOwnAccess(node.access, ex.access);
+        const resourceKey = "project." + projectId + ":" + (node.id || node._type);
+        const reachable =
+          level === "public" || level === "registered" ||
+          (level === "client" && orgIds.length > 0) ||
+          (level === "restricted" && (session.siteRole === "site_admin" || restrictedKeys.has(resourceKey)));
+        if (reachable && level !== "public") {
+          items.push({ projectId: projectId, expId: node.id || node._type, title: ex.title, label: node.label || ex.title, resourceKey: resourceKey });
+        }
+      });
+    });
+    return items;
+  }
+
+  async function openPortal(session) {
+    closeAccess();
+    $("#portalClientName").textContent = session.orgs.length ? session.orgs[0].name : session.user.email;
+
+    const items = await computeAccessibleResources(session);
+
+    /* HOME — the first accessible resource as the big tile plus
+       shortcuts into the other portal views. */
     const tiles = $("#portalHomeTiles");
     tiles.innerHTML = "";
-    const primary = session.twins[0];
-    const big = document.createElement("button");
-    big.type = "button";
-    big.className = "portal-tile portal-tile-primary";
-    big.innerHTML =
-      '<span class="portal-tile-kicker">YOUR TWIN</span>' +
-      '<span class="portal-tile-title">' + escapeHTML(primary.project) + '</span>' +
-      '<span class="portal-tile-cta">Open the twin</span>';
-    big.addEventListener("click", () => { closePortal(false); openTwin(primary); });
-    tiles.appendChild(big);
+    if (items.length) {
+      const primary = items[0];
+      const big = document.createElement("button");
+      big.type = "button";
+      big.className = "portal-tile portal-tile-primary";
+      big.innerHTML =
+        '<span class="portal-tile-kicker">YOUR TWIN</span>' +
+        '<span class="portal-tile-title">' + escapeHTML(primary.title) + '</span>' +
+        '<span class="portal-tile-cta">Open the twin</span>';
+      big.addEventListener("click", () => { closePortal(false); openExample(primary.projectId, null, primary.expId); });
+      tiles.appendChild(big);
+    }
 
     const apps = document.createElement("button");
     apps.type = "button";
     apps.className = "portal-tile portal-tile-small";
     apps.innerHTML =
       '<span class="portal-tile-title">All Apps</span>' +
-      '<span class="portal-tile-sub">' + session.twins.length +
-      (session.twins.length === 1 ? " app" : " apps") + '</span>';
+      '<span class="portal-tile-sub">' + items.length +
+      (items.length === 1 ? " app" : " apps") + '</span>';
     apps.addEventListener("click", () => showPortalView("apps"));
     tiles.appendChild(apps);
 
@@ -1730,21 +1855,20 @@
     manage.addEventListener("click", () => showPortalView("manage"));
     tiles.appendChild(manage);
 
-    /* ALL APPS — one card per twin. */
+    /* ALL APPS — one card per accessible resource. */
     const list = $("#portalAppsList");
     list.innerHTML = "";
-    session.twins.forEach((rec) => {
+    items.forEach((item) => {
       const card = document.createElement("button");
       card.type = "button";
       card.className = "portal-app";
       card.innerHTML =
         '<span class="portal-app-media">' +
-          '<span class="portal-app-media-label">' + escapeHTML(rec.client) + '</span>' +
+          '<span class="portal-app-media-label">' + escapeHTML(item.title) + '</span>' +
           '<span class="portal-app-duration">Live twin</span>' +
         '</span>' +
-        '<span class="portal-app-title">' + escapeHTML(rec.project) + '</span>' +
-        (rec.notes ? '<span class="portal-app-note">' + escapeHTML(rec.notes) + '</span>' : '');
-      card.addEventListener("click", () => { closePortal(false); openTwin(rec); });
+        '<span class="portal-app-title">' + escapeHTML(item.label) + '</span>';
+      card.addEventListener("click", () => { closePortal(false); openExample(item.projectId, null, item.expId); });
       list.appendChild(card);
     });
 
@@ -1801,49 +1925,12 @@
   }
 
   function signOut() {
+    window.DTS_SUPABASE.auth.signOut();
     closePortal(true);
     $("#accessSignin").hidden = false;
     $("#accessId").value = "";
     $("#accessCode").value = "";
     $("#accessError").hidden = true;
-  }
-
-  /* Compare tour URLs ignoring cosmetic differences (trailing slash,
-     hash) so we only reload the iframe when the tour truly changes. */
-  function normalizeTourUrl(u) {
-    return (u || "").trim().split("#")[0].replace(/\/+$/, "");
-  }
-
-  /* Open a specific twin record in the experience overlay. If the twin
-     is on the same Treedis origin we reuse the live iframe and just
-     navigate; otherwise we open its URL in a new tab. */
-  function openTwin(rec) {
-    if (!rec) return;
-    closeAccess();
-
-    const sameOrigin = rec.twin_url &&
-      rec.twin_url.indexOf(cfg.treedis.origin) === 0;
-
-    if (sameOrigin && treedisIframe) {
-      goHome();            // the twin layer lives on the home shell
-      openExperience();
-      /* Load this record's tour into the live iframe only if it
-         differs from what's currently loaded. */
-      if (rec.twin_url &&
-          normalizeTourUrl(treedisIframe.src) !== normalizeTourUrl(rec.twin_url)) {
-        if (typeof TourBridge.reset === "function") TourBridge.reset();
-        treedisIframe.src = rec.twin_url;
-      }
-      if (rec.sweep_id) {
-        if (TourBridge.isReady) TourBridge.navigateToSweep(rec.sweep_id);
-        else pendingExampleSweep = rec.sweep_id;  // fires on TourReady
-      }
-    } else if (rec.twin_url) {
-      window.open(rec.twin_url, "_blank", "noopener");
-    } else {
-      goHome();
-      openExperience();
-    }
   }
 
   /* ============================================================
@@ -2438,9 +2525,16 @@
 
     // Sign-in extras
     $("#accessForgot").addEventListener("click", () => {
+      const email = $("#accessId").value.trim();
       const err = $("#accessError");
-      err.textContent =
-        "Contact your DTS project lead and we'll reset your access right away.";
+      if (!email) {
+        err.textContent = "Enter your email above first, then tap Forgot password? again.";
+        err.hidden = false;
+        $("#accessId").focus();
+        return;
+      }
+      submitForgotPassword(email);
+      err.textContent = "If that email has an account, a reset link is on its way.";
       err.hidden = false;
     });
     $("#accessContact").addEventListener("click", () => {
@@ -2519,6 +2613,7 @@
     initSwipe();
     initBackground();
     startTreedis();              // embed the live experience right away
+    restoreSession();            // fire-and-forget — never blocks initial paint
     cyclePrompt();
     setInterval(cyclePrompt, 3200);
   }
