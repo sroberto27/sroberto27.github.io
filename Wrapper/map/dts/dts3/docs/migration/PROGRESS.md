@@ -12,7 +12,7 @@ identity/access model each phase from 3 onward implements is defined in
 | 3 — Supabase (dev): org/access schema + RLS + dummy seed | **done** | project `DTSdev` (`wsqvzyfvxjenqvqjpqjv`, region `us-west-2`) | schema/RLS/functions/seed verified by direct query; access backfill applied + validated; adversarial RLS check (SELECT + write-path) all pass |
 | 4 — Client auth swap + resource gating | **DONE** — full manual checklist passed, including both post-fix retests | https://dts-website-4cu.pages.dev | Every checklist item passed except forgot-password (item 14 — blocked on the deferred SMTP setup, an account/infra gap, not a code issue; retest once §7 is done). All real bugs found during testing (resource-key decode, gating-UX auto-prompt, locked-placeholder-not-restored, cross-tab sign-in sync, sign-out not revoking cached access) fixed and user-confirmed live, not just deployed. |
 | 5 — Admin auth swap (site_role) | **DONE** | https://dts-website-4cu.pages.dev (deployed, `b693ed64...`) | user ran all 6 local checks pre-deploy (site_admin→board, org_admin→portal/no board, plain user→portal, draft/preview/discard, zip export, real sign-out) — all PASS; not yet re-confirmed on the dev URL |
-| 5b — CMS access editors + org management | **in progress — Checkpoint A DONE, user-confirmed live** (nav sections + Organizations/Users/Access screens + org-admin panel still to come) | https://dts-website-4cu.pages.dev (deployed, `05fa51de...`) | Functions verified end-to-end (local + deployed); admin.js UI confirmed live by user |
+| 5b — CMS access editors + org management | **in progress — Checkpoints A + B done** (org-admin panel + adversarial test still to come as Checkpoint C) | not yet deployed with Checkpoint B | Checkpoint A confirmed live by user; Checkpoint B Functions verified end-to-end (22 assertions), admin.js UI not yet click-tested |
 | 6 — Content pipeline (public/protected split) | not started | — | — |
 | 7 — Lead form | not started | — | — |
 | 8 — Builds (org/user entitlement-gated) | not started | — | — |
@@ -21,6 +21,74 @@ identity/access model each phase from 3 onward implements is defined in
 
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
+
+- 2026-08-08 — **Phase 5b Checkpoint B done** (Organizations + Users
+  screens, the org_admin membership Function pulled forward from
+  Checkpoint C since the Users screen needs it too, and the three
+  `site_admin` nav sections — Organizations/Users/Access — all wired at
+  once rather than as empty stubs).
+
+  **A real, pre-existing gating bug found and fixed before building
+  "disable an organization" — verified live, not assumed:** confirmed with
+  a throwaway org that `functions/_lib/access.js`'s `hasActiveOrgMembership()`
+  and `hasEntitlement()` only ever checked the MEMBERSHIP row's own
+  `status`, never the organization's own `status` — a member of a
+  `disabled` org kept full `client`-level access and org-entitlement
+  access with zero enforcement, making "disable" purely cosmetic. Fixed
+  with `activeOrgIdsFor()`, using PostgREST's `!inner` embed + dot-filter
+  syntax to require both the membership AND the organization it points to
+  to be active (verified the exact syntax works against real Supabase
+  before committing to it as the fix). Re-verified through the real
+  exported `checkAccess()` (not a reimplementation): a member of an active
+  org gets `client` access, loses it the instant the org is disabled,
+  regains it on reactivation — plus the existing `testadmin`/`testuser`
+  regression cases still pass unchanged.
+
+  **New Functions** (`site_admin` unless noted): `functions/api/admin/
+  organizations.js` (list/create) + `organizations/[id].js` (rename/
+  status — "disable" is a status PATCH, never a DELETE; deleting an org
+  isn't exposed anywhere, matching the phase file's own verb list of
+  "list, create, rename, disable"), `functions/api/admin/users.js` (list
+  with resolved `site_role`+memberships, create via the GoTrue Admin API
+  with an admin-chosen password per the earlier decision — dev has no
+  working invite email) + `users/[id].js` (site_role change, ban/unban for
+  disable/reactivate — GoTrue has no permanent-ban sentinel, `876000h`
+  ~100 years is the documented pattern), and `functions/api/org/
+  members.js` (`org_admin` of the specific org OR `site_admin` — list/add-
+  existing-user/change-role/remove). `organization.create`/
+  `organization.update`/`user.create` are additive extensions to
+  `ACCESS-MODEL.md` §7's action vocabulary, which never enumerated an
+  action for the organization/user row itself (only membership/role/
+  entitlement changes within one) — a gap found while building these,
+  not a disagreement with the spec.
+
+  **`js/admin.js`**: `editOrganizations()`, `editUsers()`, and
+  `editAccessIndex()` (a read-only enumeration of every `resource_key` in
+  the system, computed client-side from `window.DTS_CONTENT.docs` the same
+  way `strip-public-data.mjs` does — no new Function needed for the
+  listing itself, only for a Restricted row's entitlement picker, reusing
+  Checkpoint A's component unchanged) plus their "ADMIN" nav section. No
+  extra `site_admin` gating needed in the nav itself — the whole board only
+  ever opens for a `site_admin` session per Phase 5's routing.
+
+  **Verified end-to-end against the real dev Supabase project, calling the
+  actual exported handlers, 22 assertions, all pass, no test data left
+  behind:** org create/list/rename/disable and denial for a plain user;
+  user create/list, promote/demote `site_role` (checked against the real
+  `profiles` row, not just the response), disable/reactivate verified with
+  REAL password sign-in attempts before and after (not just checking the
+  API response) — a disabled account genuinely can't sign in, a
+  reactivated one can again; every `org/members.js` action including the
+  **adversarial cross-org boundary** (`testorgadmin`, real `org_admin` at
+  Acme and a plain `member` at Beta, can add/promote/remove members at
+  Acme but gets 403 attempting the identical actions at Beta by supplying
+  Beta's `org_id` directly) — this is the exact security property
+  Checkpoint C's own adversarial test asks for, already confirmed here
+  since the endpoint is shared; and `admin_audit` rows for every one of
+  `organization.create/update`, `user.create`, `site_role.change`,
+  `account.disable/reactivate`, `membership.add/remove`, `org_role.change`.
+  **Not yet verified: the admin.js UI in a browser** — needs the user's
+  live click-through once deployed.
 
 - 2026-08-08 — Started `/migrate-phase5b`. Planned as three checkpoints
   (A: nav + access editors + entitlement picker; B: Organizations/Users

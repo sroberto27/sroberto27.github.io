@@ -63,9 +63,24 @@ export async function isSiteAdmin(userId, env) {
   return rows.length > 0 && rows[0].site_role === "site_admin";
 }
 
+// Requires the ORGANIZATION's own status to be active too (PostgREST's
+// !inner embed + dot-filter on the embedded table), not just the membership
+// row's status -- found while building the Phase 5b "disable an
+// organization" feature and verified live before this fix existed: a
+// disabled org's still-"active" membership rows previously kept granting
+// client-level access with zero enforcement, making "disable" purely
+// cosmetic. See docs/migration/PROGRESS.md for the reproduction.
+async function activeOrgIdsFor(userId, env) {
+  const rows = await pgrst(
+    env,
+    `organization_members?select=org_id,organizations!inner(status)&user_id=eq.${userId}&status=eq.active&organizations.status=eq.active`
+  );
+  return rows.map((r) => r.org_id);
+}
+
 async function hasActiveOrgMembership(userId, env) {
-  const rows = await pgrst(env, `organization_members?user_id=eq.${userId}&status=eq.active&select=org_id&limit=1`);
-  return rows.length > 0;
+  const orgIds = await activeOrgIdsFor(userId, env);
+  return orgIds.length > 0;
 }
 
 async function hasEntitlement(userId, resourceKey, env) {
@@ -75,8 +90,7 @@ async function hasEntitlement(userId, resourceKey, env) {
   );
   if (directRows.length) return true;
 
-  const memberships = await pgrst(env, `organization_members?user_id=eq.${userId}&status=eq.active&select=org_id`);
-  const orgIds = memberships.map((m) => m.org_id);
+  const orgIds = await activeOrgIdsFor(userId, env);
   if (!orgIds.length) return false;
 
   const orFilter = orgIds.map((id) => `subject_id.eq.${id}`).join(",");

@@ -2528,6 +2528,306 @@
   }
 
   /* ============================================================
+     ORGANIZATIONS / USERS / ACCESS  (Phase 5b — site_admin only)
+     ------------------------------------------------------------
+     Like the entitlement picker, none of these three screens go through
+     the draft/export path — organizations, memberships, and site_role all
+     live in Postgres (ACCESS-MODEL.md §2), never /data. Every mutation
+     calls a functions/api/admin/* Function using the service role, which
+     writes the matching admin_audit row itself (§7) -- never a client-side
+     insert, since admin_audit has no client insert policy at all.
+     ============================================================ */
+  function editOrganizations(pane) {
+    var box = section(pane, "Organizations",
+      "Every client organization in the system. Disabling one revokes client-level access for its members immediately — membership and entitlement rows are kept, not deleted, so reactivating restores everything.");
+    var listZone = el("div", "adm-listitems");
+    box.appendChild(listZone);
+    var status = el("p", "adm-hint", "");
+    box.appendChild(status);
+
+    function draw() {
+      listZone.innerHTML = "";
+      status.textContent = "Loading…";
+      adminFetch("/api/admin/organizations").then(function (res) {
+        if (!res.ok) { status.textContent = "Couldn’t load organizations: " + (res.data.error || res.status); return; }
+        status.textContent = "";
+        var orgs = res.data.organizations || [];
+        if (!orgs.length) { listZone.appendChild(el("p", "adm-hint", "No organizations yet.")); return; }
+        orgs.forEach(function (org) { listZone.appendChild(orgRow(org)); });
+      });
+    }
+
+    function orgRow(org) {
+      var card = el("div", "adm-listitem");
+      var bar = el("div", "adm-itembar");
+      bar.appendChild(el("span", "adm-itemtitle",
+        org.name + " (" + org.slug + ")" + (org.status !== "active" ? " — disabled" : "")));
+      var toggle = el("button", "adm-btn adm-btn-ghost adm-btn-small", org.status === "active" ? "Disable" : "Reactivate");
+      toggle.type = "button";
+      toggle.addEventListener("click", function () {
+        var next = org.status === "active" ? "disabled" : "active";
+        if (next === "disabled" && !confirm(
+          "Disable “" + org.name + "”? Its members immediately lose client-level access. " +
+          "Membership and entitlement rows are kept, not deleted — reactivate any time to restore them."
+        )) return;
+        status.textContent = "Saving…";
+        adminFetch("/api/admin/organizations/" + org.id, { method: "PATCH", body: { status: next } }).then(function (res) {
+          if (!res.ok) { status.textContent = "Couldn’t update: " + (res.data.error || res.status); return; }
+          draw();
+        });
+      });
+      bar.appendChild(toggle);
+      card.appendChild(bar);
+
+      var editRow = el("div", "adm-entitlement-search");
+      var nameIn = el("input", "adm-input"); nameIn.type = "text"; nameIn.value = org.name;
+      var slugIn = el("input", "adm-input"); slugIn.type = "text"; slugIn.value = org.slug;
+      var saveBtn = el("button", "adm-btn adm-btn-small", "Save");
+      saveBtn.type = "button";
+      saveBtn.addEventListener("click", function () {
+        var name = nameIn.value.trim(), slug = slugIn.value.trim();
+        if (name === org.name && slug === org.slug) return;
+        status.textContent = "Saving…";
+        adminFetch("/api/admin/organizations/" + org.id, { method: "PATCH", body: { name: name, slug: slug } }).then(function (res) {
+          if (!res.ok) { status.textContent = "Couldn’t update: " + (res.data.error || res.status); return; }
+          draw();
+        });
+      });
+      editRow.appendChild(nameIn); editRow.appendChild(slugIn); editRow.appendChild(saveBtn);
+      card.appendChild(editRow);
+      return card;
+    }
+
+    var addBox = section(pane, "New organization");
+    var newName = el("input", "adm-input"); newName.type = "text"; newName.placeholder = "Organization name";
+    var newSlug = el("input", "adm-input"); newSlug.type = "text"; newSlug.placeholder = "url-slug";
+    var addBtn = el("button", "adm-btn adm-btn-gold adm-btn-small", "+ Create organization");
+    addBtn.type = "button";
+    addBtn.addEventListener("click", function () {
+      var name = newName.value.trim(), slug = newSlug.value.trim();
+      if (!name || !slug) { status.textContent = "Name and slug are both required."; return; }
+      status.textContent = "Creating…";
+      adminFetch("/api/admin/organizations", { method: "POST", body: { name: name, slug: slug } }).then(function (res) {
+        if (!res.ok) { status.textContent = "Couldn’t create: " + (res.data.error || res.status); return; }
+        newName.value = ""; newSlug.value = "";
+        draw();
+      });
+    });
+    var addRow = el("div", "adm-entitlement-search");
+    addRow.appendChild(newName); addRow.appendChild(newSlug); addRow.appendChild(addBtn);
+    addBox.appendChild(addRow);
+
+    draw();
+  }
+
+  function editUsers(pane) {
+    var box = section(pane, "Users",
+      "Every account in the system. Promote or demote site_admin, disable or reactivate a login, and manage which organizations someone belongs to and with what role.");
+    var listZone = el("div", "adm-listitems");
+    box.appendChild(listZone);
+    var status = el("p", "adm-hint", "");
+    box.appendChild(status);
+
+    function draw() {
+      listZone.innerHTML = "";
+      status.textContent = "Loading…";
+      adminFetch("/api/admin/users").then(function (res) {
+        if (!res.ok) { status.textContent = "Couldn’t load users: " + (res.data.error || res.status); return; }
+        status.textContent = "";
+        var users = res.data.users || [];
+        if (!users.length) { listZone.appendChild(el("p", "adm-hint", "No users yet.")); return; }
+        users.forEach(function (u) { listZone.appendChild(userRow(u)); });
+      });
+    }
+
+    function userRow(u) {
+      var card = el("div", "adm-listitem");
+      var bar = el("div", "adm-itembar");
+      var title = u.email + (u.siteRole === "site_admin" ? " — site_admin" : "") + (u.disabled ? " — disabled" : "");
+      bar.appendChild(el("span", "adm-itemtitle", title));
+      var btns = el("div", "adm-itembtns");
+
+      var roleBtn = el("button", "adm-btn adm-btn-ghost adm-btn-small",
+        u.siteRole === "site_admin" ? "Demote to user" : "Promote to site_admin");
+      roleBtn.type = "button";
+      roleBtn.addEventListener("click", function () {
+        var next = u.siteRole === "site_admin" ? "user" : "site_admin";
+        if (!confirm((next === "site_admin" ? "Grant" : "Remove") + " site_admin for " + u.email + "?")) return;
+        status.textContent = "Saving…";
+        adminFetch("/api/admin/users/" + u.id, { method: "PATCH", body: { siteRole: next } }).then(function (res) {
+          if (!res.ok) { status.textContent = "Couldn’t update: " + (res.data.error || res.status); return; }
+          draw();
+        });
+      });
+      btns.appendChild(roleBtn);
+
+      var disableBtn = el("button", "adm-btn adm-btn-ghost adm-btn-small", u.disabled ? "Reactivate" : "Disable");
+      disableBtn.type = "button";
+      disableBtn.addEventListener("click", function () {
+        var next = !u.disabled;
+        if (next && !confirm("Disable the login for " + u.email + "? They won’t be able to sign in until reactivated.")) return;
+        status.textContent = "Saving…";
+        adminFetch("/api/admin/users/" + u.id, { method: "PATCH", body: { disabled: next } }).then(function (res) {
+          if (!res.ok) { status.textContent = "Couldn’t update: " + (res.data.error || res.status); return; }
+          draw();
+        });
+      });
+      btns.appendChild(disableBtn);
+      bar.appendChild(btns);
+      card.appendChild(bar);
+
+      (u.memberships || []).forEach(function (m) {
+        var row = el("div", "adm-entitlement-search");
+        row.appendChild(el("span", "adm-hint",
+          m.orgName + " — " + m.orgRole + (m.status !== "active" ? " (" + m.status + ")" : "")));
+        var toggleRole = el("button", "adm-btn adm-btn-ghost adm-btn-small",
+          m.orgRole === "org_admin" ? "Make member" : "Make org_admin");
+        toggleRole.type = "button";
+        toggleRole.addEventListener("click", function () {
+          var nextRole = m.orgRole === "org_admin" ? "member" : "org_admin";
+          status.textContent = "Saving…";
+          adminFetch("/api/org/members", { method: "PATCH", body: { orgId: m.orgId, userId: u.id, orgRole: nextRole } })
+            .then(function (res) {
+              if (!res.ok) { status.textContent = "Couldn’t update: " + (res.data.error || res.status); return; }
+              draw();
+            });
+        });
+        var removeBtn = el("button", "adm-btn adm-btn-ghost adm-btn-small", "Remove");
+        removeBtn.type = "button";
+        removeBtn.addEventListener("click", function () {
+          if (!confirm("Remove " + u.email + " from " + m.orgName + "?")) return;
+          status.textContent = "Saving…";
+          adminFetch("/api/org/members?org_id=" + m.orgId + "&user_id=" + u.id, { method: "DELETE" }).then(function (res) {
+            if (!res.ok) { status.textContent = "Couldn’t remove: " + (res.data.error || res.status); return; }
+            draw();
+          });
+        });
+        row.appendChild(toggleRole); row.appendChild(removeBtn);
+        card.appendChild(row);
+      });
+
+      var addRow = el("div", "adm-entitlement-search");
+      var orgQ = el("input", "adm-input"); orgQ.type = "text"; orgQ.placeholder = "Add to organization — search by name…";
+      var roleSel = el("select", "adm-select adm-entitlement-type");
+      [["member", "Member"], ["org_admin", "Org admin"]].forEach(function (o) {
+        var opt = el("option", null, o[1]); opt.value = o[0]; roleSel.appendChild(opt);
+      });
+      addRow.appendChild(orgQ); addRow.appendChild(roleSel);
+      card.appendChild(addRow);
+      var orgResults = el("div", "adm-entitlement-results");
+      card.appendChild(orgResults);
+      var searchTimer = null;
+      orgQ.addEventListener("input", function () {
+        if (searchTimer) clearTimeout(searchTimer);
+        searchTimer = setTimeout(function () {
+          var term = orgQ.value.trim();
+          orgResults.innerHTML = "";
+          if (term.length < 2) return;
+          adminFetch("/api/admin/search?type=org&q=" + encodeURIComponent(term)).then(function (res) {
+            orgResults.innerHTML = "";
+            if (!res.ok) return;
+            (res.data.results || []).forEach(function (r) {
+              var btn = el("button", "adm-btn adm-btn-small", "+ " + r.label);
+              btn.type = "button";
+              btn.addEventListener("click", function () {
+                status.textContent = "Adding…";
+                adminFetch("/api/org/members", { method: "POST", body: { orgId: r.id, email: u.email, orgRole: roleSel.value } })
+                  .then(function (res2) {
+                    if (!res2.ok) { status.textContent = "Couldn’t add: " + (res2.data.error || res2.status); return; }
+                    orgQ.value = ""; orgResults.innerHTML = "";
+                    draw();
+                  });
+              });
+              orgResults.appendChild(btn);
+            });
+          });
+        }, 300);
+      });
+
+      return card;
+    }
+
+    var addBox = section(pane, "New user",
+      "Dev-only: you set the password directly here — there’s no working invite-email delivery until custom SMTP is configured (see ACCOUNT-SETUP-AND-HANDOFF.md §7).");
+    var newEmail = el("input", "adm-input"); newEmail.type = "email"; newEmail.placeholder = "email@example.com";
+    var newPassword = el("input", "adm-input"); newPassword.type = "text"; newPassword.placeholder = "Temporary password (8+ characters)";
+    var createBtn = el("button", "adm-btn adm-btn-gold adm-btn-small", "+ Create user");
+    createBtn.type = "button";
+    createBtn.addEventListener("click", function () {
+      var email = newEmail.value.trim(), password = newPassword.value;
+      if (!email || password.length < 8) { status.textContent = "A valid email and an 8+ character password are both required."; return; }
+      status.textContent = "Creating…";
+      adminFetch("/api/admin/users", { method: "POST", body: { email: email, password: password } }).then(function (res) {
+        if (!res.ok) { status.textContent = "Couldn’t create: " + (res.data.error || res.status); return; }
+        newEmail.value = ""; newPassword.value = "";
+        draw();
+      });
+    });
+    var createRow = el("div", "adm-entitlement-search");
+    createRow.appendChild(newEmail); createRow.appendChild(newPassword); createRow.appendChild(createBtn);
+    addBox.appendChild(createRow);
+
+    draw();
+  }
+
+  /* Walks the same documents strip-public-data.mjs and the Phase 4 resolver
+     already treat as the source of every resource_key in the system --
+     purely a client-side read of window.DTS_CONTENT.docs (already loaded),
+     no new Function needed for the listing itself. */
+  function enumerateResourceKeys() {
+    var items = [];
+    projectFiles().forEach(function (pf) {
+      var p = docs[pf];
+      if (Array.isArray(p.experiences) && p.experiences.length) {
+        p.experiences.forEach(function (ex) {
+          items.push({
+            resourceKey: "project." + p.id + ":" + ex.id,
+            label: p.title + " — " + (ex.label || ex.id),
+            level: resolveAccessLevel(ex.access, p.access)
+          });
+        });
+      } else if (p.media && p.media._type) {
+        items.push({
+          resourceKey: "project." + p.id + ":" + p.media._type,
+          label: p.title + " — " + p.media._type,
+          level: resolveAccessLevel(p.media.access, p.access)
+        });
+      }
+      (p.links || []).forEach(function (link, i) {
+        items.push({
+          resourceKey: "project." + p.id + ":link-" + (i + 1),
+          label: p.title + " — " + (link.label || ("link " + (i + 1))),
+          level: resolveAccessLevel(link.access, p.access)
+        });
+      });
+    });
+    gisMapFiles().forEach(function (mf) {
+      var m = docs[mf];
+      items.push({ resourceKey: "gismap." + m.id, label: "GIS map — " + m.title, level: m.access || "registered" });
+    });
+    return items;
+  }
+
+  function editAccessIndex(pane) {
+    var box = section(pane, "Access",
+      "A read-only index of every gated resource in the system, resolved to its actual level — a debugging view over what's otherwise scattered across every project and GIS map editor. To change a level, edit it on the project/GIS map itself; a Restricted row's picker here writes live, same as everywhere else.");
+    var items = enumerateResourceKeys();
+    if (!items.length) { box.appendChild(el("p", "adm-hint", "Nothing gated yet.")); return; }
+    items.forEach(function (item) {
+      var card = el("div", "adm-listitem");
+      var bar = el("div", "adm-itembar");
+      bar.appendChild(el("span", "adm-itemtitle", item.label));
+      bar.appendChild(el("span", "adm-hint", item.level));
+      card.appendChild(bar);
+      card.appendChild(el("p", "adm-hint", item.resourceKey));
+      if (item.level === "restricted") {
+        entitlementPicker(card, function () { return item.resourceKey; });
+      }
+      box.appendChild(card);
+    });
+  }
+
+  /* ============================================================
      SAVE DRAFT / DISCARD / EXPORT
      ============================================================ */
   function saveDraft(reload) {
@@ -2760,6 +3060,15 @@
     var sourcesFile = gisSourcesFile();
     if (sourcesFile) navBtn("Data sources", "gissources:" + sourcesFile);
 
+    // No extra site_admin check needed here -- js/admin.js's whole board
+    // only ever opens for a site_admin session in the first place (see
+    // Phase 5's dts:signed-in routing), so anyone who can see this nav at
+    // all already has the role every screen under it requires.
+    navEl.appendChild(el("p", "adm-navhead", "ADMIN"));
+    navBtn("Organizations", "organizations");
+    navBtn("Users", "users");
+    navBtn("Access", "access");
+
     highlightNav();
   }
 
@@ -2807,6 +3116,9 @@
       if (docs[sourcesFile]) editGisSources(paneEl, sourcesFile);
       else select("home");
     }
+    else if (key === "organizations") editOrganizations(paneEl);
+    else if (key === "users") editUsers(paneEl);
+    else if (key === "access") editAccessIndex(paneEl);
     paneEl.scrollTop = 0;
   }
 
