@@ -798,9 +798,14 @@
       <div class="portal-apps-list" id="portalAppsList"><!-- injected --></div>
     </section>
 
-    <!-- MANAGE / SUPPORT — minimal placeholder panels. -->
+    <!-- MANAGE / SUPPORT — minimal placeholder panels. portalOrgAdmin is
+         injected by js/app.js's renderOrgAdminPanel(), populated only when
+         the signed-in user is org_admin of at least one organization
+         (Phase 5b) — empty and hidden for everyone else, in which case
+         this is still just the DTS-lead placeholder it always was. -->
     <section class="portal-view portal-simple" id="portalManage" aria-label="Manage" hidden>
       <h2 class="portal-apps-title">Manage</h2>
+      <div class="portal-orgadmin" id="portalOrgAdmin" hidden></div>
       <p class="portal-simple-body">Twin management tools are handled with your DTS project lead. Reach out any time and we’ll take care of it.</p>
     </section>
     <section class="portal-view portal-simple" id="portalSupport" aria-label="Support" hidden>

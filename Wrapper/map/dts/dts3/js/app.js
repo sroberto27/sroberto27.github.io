@@ -2118,6 +2118,8 @@
       list.appendChild(card);
     });
 
+    renderOrgAdminPanel(session);
+
     showPortalView("home");
     closePortalMenu();
     const layer = $("#portalLayer");
@@ -2168,6 +2170,168 @@
     return String(s == null ? "" : s)
       .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+  }
+
+  /* ============================================================
+     ORG-ADMIN TEAM PANEL  (Phase 5b — client portal's Manage tab)
+     ------------------------------------------------------------
+     Separate from js/admin.js's Admin Board entirely — this is client-
+     portal surface, scoped to the caller's own organization(s), reachable
+     only by org_role "org_admin" (never site_admin's CMS). Every mutation
+     calls functions/api/org/members.js or invite.js, which re-derive the
+     caller's real org_admin status for the SPECIFIC org_id in the request
+     server-side (never trusted from the client) — see ACCESS-MODEL.md §8.
+     ============================================================ */
+  function orgAdminFetch(path, opts) {
+    opts = opts || {};
+    const headers = {};
+    if (access.session && access.session.accessToken) headers.Authorization = "Bearer " + access.session.accessToken;
+    if (opts.body) headers["content-type"] = "application/json";
+    return fetch(path, { method: opts.method || "GET", headers, body: opts.body ? JSON.stringify(opts.body) : undefined })
+      .then((r) => r.json().catch(() => ({})).then((data) => ({ ok: r.ok, status: r.status, data })));
+  }
+
+  function renderOrgAdminPanel(session) {
+    const box = $("#portalOrgAdmin");
+    if (!box) return;
+    const orgAdminOrgs = (session.orgs || []).filter((o) => o.orgRole === "org_admin");
+    if (!orgAdminOrgs.length) { box.hidden = true; box.innerHTML = ""; return; }
+    box.hidden = false;
+    box.innerHTML = "";
+    orgAdminOrgs.forEach((org) => box.appendChild(orgAdminOrgPanel(org)));
+  }
+
+  function orgAdminOrgPanel(org) {
+    const wrap = document.createElement("div");
+    wrap.className = "portal-orgadmin-org";
+    wrap.innerHTML =
+      '<h3 class="portal-orgadmin-title">' + escapeHTML(org.name) + '</h3>' +
+      '<p class="portal-orgadmin-status"></p>' +
+      '<div class="portal-orgadmin-members"></div>' +
+      '<div class="portal-orgadmin-form"></div>' +
+      '<div class="portal-orgadmin-form"></div>' +
+      '<div class="portal-orgadmin-entitlements"></div>';
+
+    const statusEl = wrap.querySelector(".portal-orgadmin-status");
+    const membersEl = wrap.querySelector(".portal-orgadmin-members");
+    const forms = wrap.querySelectorAll(".portal-orgadmin-form");
+    const addFormEl = forms[0];
+    const inviteFormEl = forms[1];
+    const entitlementsEl = wrap.querySelector(".portal-orgadmin-entitlements");
+
+    function setStatus(text) { statusEl.textContent = text || ""; }
+
+    function loadMembers() {
+      membersEl.innerHTML = '<p class="portal-orgadmin-hint">Loading…</p>';
+      orgAdminFetch("/api/org/members?org_id=" + org.id).then((res) => {
+        if (!res.ok) { membersEl.innerHTML = '<p class="portal-orgadmin-hint">Couldn’t load members.</p>'; return; }
+        membersEl.innerHTML = "";
+        (res.data.members || []).forEach((m) => membersEl.appendChild(memberRow(m)));
+      });
+    }
+
+    function memberRow(m) {
+      const row = document.createElement("div");
+      row.className = "portal-orgadmin-member";
+      const label = document.createElement("span");
+      label.textContent = m.email + " — " + m.orgRole;
+      row.appendChild(label);
+
+      const toggleBtn = document.createElement("button");
+      toggleBtn.type = "button"; toggleBtn.className = "portal-orgadmin-btn";
+      toggleBtn.textContent = m.orgRole === "org_admin" ? "Make member" : "Make org admin";
+      toggleBtn.addEventListener("click", () => {
+        setStatus("Saving…");
+        orgAdminFetch("/api/org/members", {
+          method: "PATCH",
+          body: { orgId: org.id, userId: m.userId, orgRole: m.orgRole === "org_admin" ? "member" : "org_admin" },
+        }).then((res) => {
+          if (!res.ok) { setStatus(res.data.error || "Couldn’t update."); return; }
+          setStatus(""); loadMembers();
+        });
+      });
+      row.appendChild(toggleBtn);
+
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button"; removeBtn.className = "portal-orgadmin-btn";
+      removeBtn.textContent = "Remove";
+      removeBtn.addEventListener("click", () => {
+        if (!window.confirm("Remove " + m.email + " from " + org.name + "?")) return;
+        setStatus("Saving…");
+        orgAdminFetch("/api/org/members?org_id=" + org.id + "&user_id=" + m.userId, { method: "DELETE" }).then((res) => {
+          if (!res.ok) { setStatus(res.data.error || "Couldn’t remove."); return; }
+          setStatus(""); loadMembers();
+        });
+      });
+      row.appendChild(removeBtn);
+      return row;
+    }
+
+    // Add an existing account by email.
+    addFormEl.innerHTML = '<p class="portal-orgadmin-label">Add an existing teammate</p>';
+    const addEmail = document.createElement("input");
+    addEmail.type = "email"; addEmail.placeholder = "Their email"; addEmail.className = "portal-orgadmin-input";
+    const addBtn = document.createElement("button");
+    addBtn.type = "button"; addBtn.className = "portal-orgadmin-btn"; addBtn.textContent = "+ Add";
+    addBtn.addEventListener("click", () => {
+      const email = addEmail.value.trim();
+      if (!email) return;
+      setStatus("Adding…");
+      orgAdminFetch("/api/org/members", { method: "POST", body: { orgId: org.id, email, orgRole: "member" } }).then((res) => {
+        if (!res.ok) { setStatus(res.data.error || "Couldn’t add."); return; }
+        addEmail.value = ""; setStatus(""); loadMembers();
+      });
+    });
+    addFormEl.appendChild(addEmail); addFormEl.appendChild(addBtn);
+
+    // Invite a brand-new account (dev: sets the password directly -- no
+    // working invite-email delivery until custom SMTP is configured).
+    inviteFormEl.innerHTML = '<p class="portal-orgadmin-label">Invite someone new</p>';
+    const inviteEmail = document.createElement("input");
+    inviteEmail.type = "email"; inviteEmail.placeholder = "New teammate’s email"; inviteEmail.className = "portal-orgadmin-input";
+    const invitePassword = document.createElement("input");
+    invitePassword.type = "text"; invitePassword.placeholder = "Temporary password (8+ characters)"; invitePassword.className = "portal-orgadmin-input";
+    const inviteBtn = document.createElement("button");
+    inviteBtn.type = "button"; inviteBtn.className = "portal-orgadmin-btn"; inviteBtn.textContent = "+ Invite";
+    inviteBtn.addEventListener("click", () => {
+      const email = inviteEmail.value.trim(), password = invitePassword.value;
+      if (!email || password.length < 8) { setStatus("A valid email and an 8+ character password are both required."); return; }
+      setStatus("Inviting…");
+      orgAdminFetch("/api/org/invite", { method: "POST", body: { orgId: org.id, email, password, orgRole: "member" } }).then((res) => {
+        if (!res.ok) { setStatus(res.data.error || "Couldn’t invite."); return; }
+        inviteEmail.value = ""; invitePassword.value = ""; setStatus(""); loadMembers();
+      });
+    });
+    inviteFormEl.appendChild(inviteEmail); inviteFormEl.appendChild(invitePassword); inviteFormEl.appendChild(inviteBtn);
+
+    // Read-only: resources entitled to this org. A direct client-side
+    // Supabase read, not a Function call -- resource_entitlements' own RLS
+    // policy already allows "the entitled subject, or a member of the
+    // entitled org" to SELECT it, exactly the scope needed here, so there
+    // is nothing a server-side re-check would add for a read.
+    async function loadEntitlements() {
+      entitlementsEl.innerHTML = '<p class="portal-orgadmin-hint">Loading…</p>';
+      const { data, error } = await window.DTS_SUPABASE
+        .from("resource_entitlements")
+        .select("resource_key, created_at")
+        .eq("subject_type", "org")
+        .eq("subject_id", org.id);
+      if (error) { entitlementsEl.innerHTML = '<p class="portal-orgadmin-hint">Couldn’t load entitlements.</p>'; return; }
+      entitlementsEl.innerHTML = '<p class="portal-orgadmin-label">Resources entitled to ' + escapeHTML(org.name) + '</p>';
+      if (!data.length) {
+        const p = document.createElement("p"); p.className = "portal-orgadmin-hint"; p.textContent = "None yet.";
+        entitlementsEl.appendChild(p);
+        return;
+      }
+      data.forEach((row) => {
+        const p = document.createElement("p"); p.className = "portal-orgadmin-hint"; p.textContent = row.resource_key;
+        entitlementsEl.appendChild(p);
+      });
+    }
+
+    loadMembers();
+    loadEntitlements();
+    return wrap;
   }
 
   function signOut() {

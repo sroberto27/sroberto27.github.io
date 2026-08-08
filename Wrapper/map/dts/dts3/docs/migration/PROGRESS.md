@@ -12,7 +12,7 @@ identity/access model each phase from 3 onward implements is defined in
 | 3 — Supabase (dev): org/access schema + RLS + dummy seed | **done** | project `DTSdev` (`wsqvzyfvxjenqvqjpqjv`, region `us-west-2`) | schema/RLS/functions/seed verified by direct query; access backfill applied + validated; adversarial RLS check (SELECT + write-path) all pass |
 | 4 — Client auth swap + resource gating | **DONE** — full manual checklist passed, including both post-fix retests | https://dts-website-4cu.pages.dev | Every checklist item passed except forgot-password (item 14 — blocked on the deferred SMTP setup, an account/infra gap, not a code issue; retest once §7 is done). All real bugs found during testing (resource-key decode, gating-UX auto-prompt, locked-placeholder-not-restored, cross-tab sign-in sync, sign-out not revoking cached access) fixed and user-confirmed live, not just deployed. |
 | 5 — Admin auth swap (site_role) | **DONE** | https://dts-website-4cu.pages.dev (deployed, `b693ed64...`) | user ran all 6 local checks pre-deploy (site_admin→board, org_admin→portal/no board, plain user→portal, draft/preview/discard, zip export, real sign-out) — all PASS; not yet re-confirmed on the dev URL |
-| 5b — CMS access editors + org management | **in progress — Checkpoints A + B DONE, both user-confirmed live** (org-admin panel + formal adversarial write-up left as Checkpoint C — the core adversarial property is already proven in Checkpoint B's tests) | https://dts-website-4cu.pages.dev (deployed, `ac9f971e...`) | Checkpoints A + B fully confirmed live by user |
+| 5b — CMS access editors + org management | **in progress — Checkpoints A + B done, user-confirmed live; Checkpoint C (org-admin panel) code complete, Functions verified, not yet deployed/UI-tested** | not yet deployed with Checkpoint C | Checkpoints A + B fully confirmed live; Checkpoint C's invite.js verified end-to-end (6 assertions) |
 | 6 — Content pipeline (public/protected split) | not started | — | — |
 | 7 — Lead form | not started | — | — |
 | 8 — Builds (org/user entitlement-gated) | not started | — | — |
@@ -21,6 +21,48 @@ identity/access model each phase from 3 onward implements is defined in
 
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
+
+- 2026-08-08 — **Phase 5b Checkpoint C done.** New
+  `functions/api/org/invite.js`: creates a brand-new account (dev: the
+  inviting org_admin sets a temporary password directly, same reasoning
+  as `functions/api/admin/users.js` — no working invite-email delivery
+  until custom SMTP) already bound to the org as `member`, distinct from
+  `org/members.js`'s POST (existing accounts only). Rate-limited
+  server-side (`ACCESS-MODEL.md` §8) using `admin_audit` itself as the
+  ledger — 20 `invite.send` rows per actor per rolling hour, no new table
+  — and audited as `invite.send`, a distinct action from `user.create`
+  since it's simultaneously an account creation and a membership grant.
+
+  **`js/app.js`**: built the org-admin team panel into the existing,
+  previously-static `#portalManage` view (`renderOrgAdminPanel()`,
+  called from `openPortal()`) — one panel per organization where
+  `session.orgs[].orgRole === "org_admin"`, hidden entirely for anyone
+  else. Member list, add-existing-by-email, invite-new, remove, and a
+  member↔org_admin role toggle, all calling `org/members.js`/`invite.js`.
+  The "resources entitled to this org" view is a **direct client-side
+  Supabase read**, not a Function call — `resource_entitlements`'s own
+  RLS policy already allows "the entitled subject, or a member of the
+  entitled org" to `SELECT` it, exactly the scope needed, so a
+  server-side re-check would add nothing. New `.portal-orgadmin*` CSS in
+  `css/09-mobile.css`, matching the existing dark portal-card styling.
+  This is entirely separate from `js/admin.js`'s Admin Board — an
+  `org_admin` never sees the CMS, only this portal panel, per Phase 5's
+  routing.
+
+  **Verified end-to-end against the real dev Supabase project, calling
+  the actual exported `invite.js`, 6 assertions, all pass, no test data
+  left behind:** the adversarial cross-org case (`testorgadmin` at Acme
+  attempting to invite someone at Beta) 403s; a real invite creates a
+  working account (confirmed with an actual password sign-in attempt,
+  not just the API response) and an active membership row; inviting an
+  already-existing email is rejected (409); and the rate limit itself —
+  seeded 20 synthetic `invite.send` rows for the actor, confirmed the
+  21st real attempt within the hour gets 429. The core adversarial
+  membership-write property (`org/members.js`) was already proven in
+  Checkpoint B's own test run, since the endpoint is shared.
+  **Not yet verified: the portal panel UI in a browser** — needs the
+  user's live click-through, including confirming a plain `member`
+  (`testmember`) sees no org-admin panel at all.
 
 - 2026-08-08 — **Phase 5b Checkpoint B done** (Organizations + Users
   screens, the org_admin membership Function pulled forward from
