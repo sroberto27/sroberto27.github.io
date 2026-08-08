@@ -12,7 +12,7 @@ identity/access model each phase from 3 onward implements is defined in
 | 3 — Supabase (dev): org/access schema + RLS + dummy seed | **done** | project `DTSdev` (`wsqvzyfvxjenqvqjpqjv`, region `us-west-2`) | schema/RLS/functions/seed verified by direct query; access backfill applied + validated; adversarial RLS check (SELECT + write-path) all pass |
 | 4 — Client auth swap + resource gating | **DONE** — full manual checklist passed, including both post-fix retests | https://dts-website-4cu.pages.dev | Every checklist item passed except forgot-password (item 14 — blocked on the deferred SMTP setup, an account/infra gap, not a code issue; retest once §7 is done). All real bugs found during testing (resource-key decode, gating-UX auto-prompt, locked-placeholder-not-restored, cross-tab sign-in sync, sign-out not revoking cached access) fixed and user-confirmed live, not just deployed. |
 | 5 — Admin auth swap (site_role) | **DONE** | https://dts-website-4cu.pages.dev (deployed, `b693ed64...`) | user ran all 6 local checks pre-deploy (site_admin→board, org_admin→portal/no board, plain user→portal, draft/preview/discard, zip export, real sign-out) — all PASS; not yet re-confirmed on the dev URL |
-| 5b — CMS access editors + org management | **in progress — Checkpoint A done** (nav sections + Organizations/Users/Access screens + org-admin panel still to come) | not yet deployed | Functions verified end-to-end against real dev Supabase (see session log); admin.js UI not yet click-tested |
+| 5b — CMS access editors + org management | **in progress — Checkpoint A done** (nav sections + Organizations/Users/Access screens + org-admin panel still to come) | https://dts-website-4cu.pages.dev (deployed, `05fa51de...`) | Functions verified end-to-end against real dev Supabase AND the real deployed site; admin.js UI not yet click-tested |
 | 6 — Content pipeline (public/protected split) | not started | — | — |
 | 7 — Lead form | not started | — | — |
 | 8 — Builds (org/user entitlement-gated) | not started | — | — |
@@ -100,10 +100,17 @@ identity/access model each phase from 3 onward implements is defined in
   every one of those calls; both the grant and the revoke wrote the
   expected `admin_audit` rows with correct `action`/`target_type`/
   `target_id`/`before`/`after`. All 10 assertions passed, no test data left
-  behind (the test's own grant was revoked as its last step). **Not yet
-  verified: the actual admin.js UI in a browser** — the dropdown/picker DOM
-  code can't be exercised by a Node script the way the Functions could;
-  needs the user's live click-through once deployed.
+  behind (the test's own grant was revoked as its last step). **Re-verified
+  against the real DEPLOYED site** (https://05fa51de.dts-website-4cu.pages.dev,
+  stable alias https://dts-website-4cu.pages.dev) — the local test only
+  proved the handler logic was correct, not that Cloudflare Pages' own
+  routing (specifically `functions/api/admin/entitlements/[id].js`'s
+  dynamic `:id` segment extraction) worked; a separate script hit the real
+  deployed URL end to end (search/grant/list/revoke as testadmin, 403 as
+  testuser) and all 6 assertions passed, again with no test data left
+  behind. **Not yet verified: the actual admin.js UI in a browser** — the
+  dropdown/picker DOM code can't be exercised by a Node script the way the
+  Functions could; needs the user's live click-through.
 
 - 2026-08-08 — **Phase 5 is DONE — user ran all 6 local checks, all PASS**
   (site_admin → Admin Board directly; org_admin → ordinary portal, board
