@@ -2,6 +2,39 @@
 
 Newest first.
 
+## Cloudflare migration — gating UX: no more surprise sign-in prompts
+
+Follow-up to the resolver-bug fix below. Opening a project window used to
+immediately fetch and gate its default experience, popping the sign-in form
+before the reader had tried to view anything — jarring, and made it look
+like browsing itself required an account. `showExperience()` now only
+resolves a gated experience on an explicit view attempt (clicking a new
+locked placeholder in the stage, or "Enter Twin"/"Full screen map"); opening
+a project, switching tabs, or following a deep link just shows the project
+(and, for the now-public videos, plays them) with a "Sign in to view this
+experience" tile standing in for anything still gated. Destination
+preservation and the client portal's own resource cards still resolve
+immediately, since clicking those already is the explicit view attempt.
+Also added a subtitle to the sign-in form explaining why it's asking
+("Log in for full, free access...") and a close (X) control on the client
+portal that returns to the site without signing out. See
+`docs/migration/PROGRESS.md` (2026-08-08 entry) for the full breakdown.
+
+## Cloudflare migration — resource-gate resolver bug, and video access reclassification
+
+Real-world testing (deployed Cloudflare Pages preview) found that every gated
+experience/link showed a blank pane with no login prompt, for guests and
+signed-in users alike. Root cause: `js/app.js`'s `fetchResource()`
+`encodeURIComponent()`s the resource key before requesting
+`/api/resource/<key>` (`:` becomes `%3A`); Cloudflare Pages does not
+percent-decode dynamic route segments, so `parseResourceKey()` never found
+the colon separator and 400'd before the access check ever ran. Fixed by
+decoding `params.key` in `functions/api/resource/[key].js`. Also reclassified
+the 9 Vimeo-only project experiences (no Treedis, no GIS) from `registered`
+to `public` per an explicit access-model change. See
+`docs/migration/PROGRESS.md` (2026-08-08 entry) for full detail, verification,
+and a known follow-up gap in `js/config.js`'s fallback strip step.
+
 ## CPRA Iberia GIS tours — main tour's final step, and a second click-blocking bug
 
 Per the human's own follow-up: (1) the parish-wide tour's last step now

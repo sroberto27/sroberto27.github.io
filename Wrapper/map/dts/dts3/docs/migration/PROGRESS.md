@@ -10,9 +10,8 @@ identity/access model each phase from 3 onward implements is defined in
 | 1 — Cloudflare foundation | done | **https://dts-website-4cu.pages.dev** (stable — always latest; per-deploy hash URLs like `987a897b...` change every redeploy, don't bookmark those) | deterministic checks pass; user confirmed tour, lead forms, demo sign-in, mobile |
 | 2 — Scrub secrets | done, except item 6 (GitHub repo privacy — deferred to domain cutover) | https://dts-website-4cu.pages.dev | secrets confirmed gone from live deploy; demo sign-in now localhost-only by design |
 | 3 — Supabase (dev): org/access schema + RLS + dummy seed | **done** | project `DTSdev` (`wsqvzyfvxjenqvqjpqjv`, region `us-west-2`) | schema/RLS/functions/seed verified by direct query; access backfill applied + validated; adversarial RLS check (SELECT + write-path) all pass |
-| 4 — Client auth swap + resource gating | done, API-level verified; interactive UI checks pending user | https://dts-website-4cu.pages.dev | all curl/API checks pass on the live deploy; sign-in flow, destination preservation, reload persistence, tour-no-reload, mobile, lead form NOT yet verified — see below |
-| 4 — Client auth swap + resource gating | not started | — | — |
-| 5 — Admin auth swap (site_role) | not started | — | — |
+| 4 — Client auth swap + resource gating | **DONE** — full manual checklist passed, including both post-fix retests | https://dts-website-4cu.pages.dev | Every checklist item passed except forgot-password (item 14 — blocked on the deferred SMTP setup, an account/infra gap, not a code issue; retest once §7 is done). All real bugs found during testing (resource-key decode, gating-UX auto-prompt, locked-placeholder-not-restored, cross-tab sign-in sync, sign-out not revoking cached access) fixed and user-confirmed live, not just deployed. |
+| 5 — Admin auth swap (site_role) | code complete, **needs user's manual test pass** | https://dts-website-4cu.pages.dev (not yet redeployed with this phase's changes) | not yet tested live |
 | 5b — CMS access editors + org management | not started | — | — |
 | 6 — Content pipeline (public/protected split) | not started | — | — |
 | 7 — Lead form | not started | — | — |
@@ -22,6 +21,436 @@ identity/access model each phase from 3 onward implements is defined in
 
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
+
+- 2026-08-08 — Ran `/migrate-phase5`. Deleted the entire old ADMIN
+  AUTHENTICATION block in `js/admin.js` (`adminAccounts`, `registerAdmins`,
+  the `access.json`/Google-Sheet admin-account sources, `splitCSV`,
+  `isAdminLogin`, and the capture-phase `submit` interceptor) — Supabase
+  requires an async round trip before any role is known, so credential-based
+  capture-phase interception is structurally impossible now, not just
+  replaced by preference.
+
+  **New routing, built on Phase 4's existing `dts:signed-in` event** (which
+  already carried `session.siteRole` and `session.orgs[].orgRole` as
+  genuinely separate fields — no schema change needed, confirming
+  `ACCESS-MODEL.md` §1's axes were already respected end to end):
+  `admin.js` listens for `dts:signed-in` and opens the Admin Board only when
+  `siteRole === "site_admin"`; every other signed-in user (including
+  `org_admin`) is untouched, since `app.js` already routes them to the
+  ordinary client portal. `org_admin`'s "Manage your team" affordance stays
+  deferred to Phase 5b exactly as planned — nothing in this phase adds it.
+
+  **Two real gaps found by tracing the actual call path before writing any
+  code, not assumed from the phase file's literal wording, both flagged for
+  approval before implementing:**
+  1. `app.js`'s `finishSignIn()`/`restoreSession()` called `openPortal()`
+     unconditionally after every sign-in — with no per-role branch, a
+     `site_admin` login would have opened BOTH the Admin Board (from
+     `admin.js`'s new listener) AND the client portal in the same dispatch,
+     since the event fires before that call. Fixed by making `app.js` itself
+     skip portal/pending-resource resumption when `siteRole === "site_admin"`
+     — their destination is entirely `admin.js`'s to decide. Also fixed
+     `openAccess()`, which had the same unconditional-`openPortal()` bug for
+     an already-signed-in admin re-opening the sign-in form.
+  2. **A real race, reproduced by tracing script load order, not
+     hypothetical:** `admin.js` is lazy-loaded via a separate `<script>` tag
+     (content-loader.js's `isAdminContext()` — unchanged this phase — loads
+     it eagerly whenever a draft exists in localStorage, which Save draft &
+     preview's reload always triggers). `restoreSession()`'s `getSession()`
+     read resolves from local storage, no network call, so it can easily
+     dispatch `dts:signed-in` before a network-loaded `admin.js` has even
+     registered its listener. The OLD design never had this problem — its
+     chip-on-reload check was fully synchronous. Fixed by exposing
+     `window.DTS_ACCESS = access` (same by-reference pattern as
+     `window.DTS_CONFIG`/`DTS_CONTENT`) so `admin.js`, once loaded, can
+     synchronously check for an already-existing `site_admin` session
+     instead of depending on winning the race to register in time.
+
+  **Preserved the Save & Preview UX deliberately, not just structurally:**
+  the `dts:signed-in` event now carries a `restored` flag (`false` from a
+  real just-now sign-in submit via `finishSignIn()`, `true` from
+  `restoreSession()`'s page-load/reload path). `admin.js` opens the board
+  directly only when `restored:false`; on `restored:true` it just shows the
+  floating chip — otherwise every reload while signed in as `site_admin`
+  (including the one Save & Preview itself triggers) would have thrown the
+  reader straight back into the editor instead of letting them see the live
+  preview, defeating the feature's whole purpose.
+
+  **`dtsAdminSession` dropped entirely** (per this phase's explicit
+  instruction — a deliberate, approved deviation from `CLAUDE.md`'s
+  do-not-break list, superseded by the real Supabase session now being the
+  session). `closeBoard(true)` ("Sign out") now calls the real
+  `window.DTS_SUPABASE.auth.signOut()` + a full reload — the same pattern
+  `app.js`'s own `signOut()` uses, for the same reason established during
+  Phase 4 testing (in-place-mutated experience/GIS caches have no clean
+  "undo"; a reload is the only reliable way to guarantee a signed-out
+  session can't still reach anything). `dtsAdminDraft` is untouched.
+
+  **A real gap found incidentally while reading the resource resolver for
+  this phase, NOT fixed here (out of Phase 5's scope, and Phase 4 is already
+  closed/tested) — flagged for whenever it becomes live-relevant:**
+  `functions/_lib/access.js`'s `checkAccess()` has no `site_admin` bypass at
+  all — a `restricted`-level resource still requires a real
+  `resource_entitlements` row for a `site_admin`, contradicting
+  `ACCESS-MODEL.md` §8's table ("Open restricted resources entitled to
+  them... yes (all)" for `site_admin`). Zero live impact today — nothing in
+  `/data` is currently `client` or `restricted` (Phase 3's backfill only
+  ever set `public`/`registered`) — but this will matter the moment any
+  resource (or a Phase 8 download) becomes `restricted`, since a `site_admin`
+  would get a false 403 instead of the site-wide access the spec promises.
+  Worth a small, standalone fix (an `is_site_admin` check added to
+  `checkAccess()`, mirroring the DB-side function used elsewhere) before
+  Phase 8 ships, or whenever the first real `restricted` resource is
+  authored.
+
+  **Verified by reading the code and syntax-checking both files
+  (`node --check`) — not yet verified live.** Every other claim in this
+  entry is a "confirmed by reading the code" claim, not a live one. **Not
+  yet deployed** to the Cloudflare dev URL — this phase's instructions
+  stop at "test, update PROGRESS.md" and don't call for a redeploy, and
+  Supabase auth behaves identically local vs. deployed, so the user can
+  test via `python3 -m http.server 8000` per `CLAUDE.md`'s local-dev
+  instructions if that's preferred over a redeploy first. **Needs the
+  user's live pass**, sign-in as each seeded dummy account
+  (`testadmin@example.com` → Admin Board should open directly;
+  `testorgadmin@example.com` → ordinary portal, Admin Board must NOT open
+  under any path; `testuser@example.com` → ordinary portal, no admin
+  affordance anywhere), plus Save draft & preview → discard, and the zip
+  export escape hatch, still working unchanged.
+
+- 2026-08-08 — **Phase 4 is DONE.** Both outstanding retests passed:
+  cross-tab sign-in sync (verified via a same-tab-vs-other-tab plain login,
+  since the original email-based retest hit the same known 2/hour rate
+  limit — same code path either way, `onAuthStateChange` doesn't
+  distinguish how the other tab's session was established) and sign-out
+  actually revoking cached access (confirmed a previously-viewed gated
+  experience correctly re-locks after sign-out, without a manual reload).
+  Every item in the manual checklist has now passed except forgot-password
+  (item 14), which stays blocked on the deferred custom-SMTP setup — an
+  account/infrastructure gap already fully documented, not a code issue,
+  and not a blocker for calling Phase 4 complete. Next: `/migrate-phase5`.
+
+- 2026-08-08 — **Item 14 (forgot-password) root-caused — confirmed from the
+  user's own Supabase dashboard screenshot, not guessed.** Authentication →
+  Rate Limits showed "Rate limit for sending emails: 2 emails/h" —
+  Supabase's documented built-in-email default, shared project-wide across
+  every auth email type (confirmed against Supabase's own docs via
+  WebFetch, not assumed from memory). Not a code bug. The user's earlier
+  successful signup-confirmation email almost certainly used the hour's
+  quota before the password-reset request that failed.
+  **Deferred, same as OAuth** — the real fix (custom SMTP via a provider
+  like Resend) requires a verified domain, and the user doesn't have DNS
+  access to one available right now. Documented for later, and — unlike
+  OAuth — flagged as NOT optional at production handoff, since Supabase
+  itself documents the built-in service as unsuitable for production and
+  this affects password reset regardless of whether self-registration or
+  OAuth ship: new `ACCOUNT-SETUP-AND-HANDOFF.md` §7 (dev setup steps once a
+  domain is available), a new row 10 in its Quick checklist, a new
+  inventory row 11 in `migrate-handoff.md` step 1 marked explicitly
+  non-skippable, and an addition to migrate-handoff step 2 / Part 3 step 4
+  (production Supabase) requiring it be done during that step, not
+  deferred to production the way it was in dev.
+  **Known testing constraint until this is fixed:** the whole dev project
+  shares 2 auth emails/hour — don't chain signup/reset attempts within the
+  same hour and mistake the shared cap for a new bug.
+
+- 2026-08-08 — **User ran the full verification checklist — 23/25 passed,
+  2 real bugs found, both fixed.**
+  1. **Cross-tab sign-up confirmation never reached the original tab.**
+     Reported as: sign up, get the "check your email" note, confirm the
+     email in a NEW tab (which correctly signs in there) — but the
+     ORIGINAL tab's form just sits there still showing the sign-up fields,
+     with no indication anything happened. Root cause: there was no
+     `supabase.auth.onAuthStateChange()` listener anywhere in `js/app.js` —
+     the only session checks were the one-shot `getSession()` in
+     `restoreSession()` (boot only) and the direct calls inside
+     `submitAccess()` (that tab's own submit only). Neither could ever
+     learn about a session established in a DIFFERENT tab. Fixed: added an
+     `onAuthStateChange` listener that calls the existing `finishSignIn()`
+     for any `SIGNED_IN` event this tab didn't cause itself — guarded with
+     a `localAuthInFlight` flag (set for the duration of `submitAccess()`
+     and `restoreSession()`) so the normal same-tab paths never get
+     double-handled by both their own direct call AND the listener.
+  2. **Signing out didn't actually revoke client-side access until a
+     manual reload.** Real security-relevant bug, not cosmetic:
+     `resolveExperienceNode()`'s whole design is to skip the network
+     entirely once a node already carries its real target (`Object.assign`
+     mutates the shared `cfg.examples[...]` node in place on first
+     resolve) — `signOut()` cleared `access.session` but never undid any
+     of those mutations, nor `access.resolvedGisMaps`/`cfg.gisMaps`, so
+     anything resolved earlier in the session stayed reachable client-side
+     after logout with zero server round-trip to catch it. There's no
+     clean "undo" for those in-place mutations, so the fix is a full
+     `window.location.reload()` after `auth.signOut()` completes — the
+     only way to guarantee every trace is actually gone. (The same
+     `onAuthStateChange` listener now also nulls `access.session` on a
+     `SIGNED_OUT` event from elsewhere, e.g. a token revoked in another
+     tab — a smaller, complementary fix, though the reload is what
+     actually closes the exploit.)
+  Both verified via curl that the fix is live (`onAuthStateChange`,
+  `localAuthInFlight` present in the deployed `js/app.js`); **not yet
+  re-verified live in a browser** — needs the user's re-test.
+  **Also**: item 14 (forgot-password) failed — no email arrived. Root
+  cause not yet determined; `submitForgotPassword()` was silently
+  swallowing the actual Supabase response either way (deliberately, so the
+  UI never leaks whether an email has an account) — added
+  `console.warn()` logging of the real error so a future failure is at
+  least diagnosable instead of just "nothing arrived". Most likely
+  candidates, none yet confirmed: the Supabase Redirect URLs allow-list
+  item flagged in the self-registration entry below was never confirmed
+  done (`resetPasswordForEmail`'s `redirectTo` would be rejected if so);
+  Supabase free-tier auth email rate limits (shared bucket with the
+  signup-confirmation email that DID arrive successfully); or the email
+  landed in spam. Needs the user to check Supabase Dashboard →
+  Authentication → Logs and Rate Limits, and their spam folder, since none
+  of this is visible from the deployed code alone.
+  Redeployed: https://82e97b22.dts-website-4cu.pages.dev (stable alias:
+  https://dts-website-4cu.pages.dev).
+
+- 2026-08-08 — **Google/Microsoft OAuth deferred; handoff docs restructured
+  around a credential-inventory gate.** User confirmed they'll set up the
+  Google/Microsoft OAuth apps later (still under their own personal accounts
+  first, per the self-registration entry below — not the client's, this
+  early) and chose to leave the "Continue with Google/Microsoft" buttons
+  visible on the live site in the meantime (they'll show a Supabase
+  "provider not enabled" error if clicked until the providers are
+  configured — known, not a bug).
+  Separately, the user asked that gathering ALL client account access
+  (Cloudflare, Supabase, OAuth if it's launching, domain/DNS, the real
+  client list) become the explicit FIRST step of `/migrate-handoff`, not
+  something discovered mid-process. Restructured both handoff documents:
+  `.claude/commands/migrate-handoff.md` gained a new step 1 — a 10-row
+  credential/access table covering every external account this migration
+  now touches, framed as a hard gate ("don't start step 2 until every row
+  is either in hand or explicitly deferred") — and every later step
+  renumbered (2-8) to make room, including a new step 5 for the
+  Google/Microsoft OAuth production setup (skippable, with the deferral
+  noted in `PROGRESS.md`, exactly as decided here). `docs/migration/
+  ACCOUNT-SETUP-AND-HANDOFF.md`'s Part 1 gained a new §6 (dev-account OAuth
+  setup steps, under the user's own accounts) and Part 3's step-by-step
+  walkthrough was restructured to lead with the same credential-inventory
+  step, with cross-references fixed throughout (step numbers had shifted).
+  No code changed this entry — documentation/process only.
+
+- 2026-08-08 — **Self-registration added** — user asked whether guests could
+  create their own account (email/password, or Google/Microsoft), and
+  clarified this was never actually specified anywhere in the migration kit;
+  the model built through Phase 4 assumed every account is created by DTS
+  staff. A genuine, approved extension, not a correction.
+  **The database already supported this with zero schema change** — confirmed
+  by reading `supabase/migrations/20260807220000_core_schema.sql`:
+  `handle_new_user()` already fires on every new `auth.users` row (however it
+  was created — password sign-up or OAuth) and inserts a `profiles` row with
+  `site_role='user'`, exactly the "registered" tier per `ACCESS-MODEL.md` §3.
+  Only the client UI and Supabase Auth provider config were missing.
+  **Built:** a Log In ⇄ Create Account mode toggle in the existing sign-in
+  form (`setAccessMode()` in `js/app.js`) reusing the same fields/submit
+  handler; `submitAccess()` branches to `supabase.auth.signUp()` in signup
+  mode, with a client-side password-confirmation check first. Per the user's
+  choice, email confirmation is required — `signUp()` returns no session in
+  that case, so the form shows a "check your email" success note and drops
+  back to login mode rather than pretending to sign the reader in.
+  Google + Microsoft "Continue with…" buttons call
+  `supabase.auth.signInWithOAuth({provider:"google"|"azure"})`. Since OAuth is
+  a full-page redirect away and back (not a fetch), `access.pendingResourceKey`
+  (in-memory) would be lost across that navigation — `signInWithOAuth()` now
+  persists it to `sessionStorage` first, and `restoreSession()` (which already
+  runs on every boot) checks for that marker on return and resumes either the
+  original gated resource or the portal, but ONLY when the marker is present —
+  an ordinary page load with an already-existing session still does nothing
+  automatically, unchanged from before. No CSP change needed: OAuth's
+  redirects are top-level navigation, which CSP's `connect-src`/`script-src`
+  don't govern. New CSS: `.access-oauth-row`/`.access-oauth-btn`/
+  `.access-divider` (`css/09-mobile.css`), `.form-success-note`
+  (`css/04-overlays.css`).
+  **Verified via curl against the live deploy:** the new form fields/buttons
+  (`accessGoogle`, `accessMicrosoft`, `accessModeToggle`, `accessConfirmField`)
+  and JS functions (`signInWithOAuth`, `setAccessMode`, `finishSignIn`) are
+  present in the deployed `index.html`/`js/app.js`. **NOT yet verified live**
+  — needs the user's own click-through, same as the rest of this phase's
+  outstanding checklist.
+  **Requires external setup ONLY the user can do, before this fully works —
+  none of it is optional, and one item retroactively affects an already-
+  shipped feature:**
+  1. Supabase Dashboard → Authentication → Providers → Email → confirm
+     "Confirm email" is ON (should already be Supabase's project default,
+     but never explicitly verified this session).
+  2. Supabase Dashboard → Authentication → URL Configuration → **Redirect
+     URLs allow-list.** Add `https://dts-website-4cu.pages.dev/*` (site's
+     `redirectTo`/`emailRedirectTo` is always `location.origin +
+     location.pathname`, so one entry covers sign-up confirmation, OAuth
+     return, AND the existing forgot-password flow). **This was never
+     confirmed done for forgot-password either** (`docs/migration/
+     PROGRESS.md` has no record of it) — worth checking now since an
+     un-whitelisted redirect would silently break all three.
+  3. Google OAuth: Google Cloud Console → APIs & Services → Credentials →
+     Create OAuth client ID (Web application) → Authorized redirect URI
+     `https://wsqvzyfvxjenqvqjpqjv.supabase.co/auth/v1/callback` → copy
+     Client ID + Secret → Supabase Dashboard → Authentication → Providers →
+     Google → enable, paste both, save.
+  4. Microsoft OAuth: Azure Portal → Azure Active Directory → App
+     registrations → New registration, redirect URI (Web)
+     `https://wsqvzyfvxjenqvqjpqjv.supabase.co/auth/v1/callback` → New client
+     secret → Supabase Dashboard → Authentication → Providers → Azure →
+     enable, paste Application (client) ID + secret + tenant URL, save.
+  Until 3/4 are done, clicking those buttons will show a Supabase
+  provider-not-enabled error — expected, not a bug.
+  Redeployed: https://d55645ed.dts-website-4cu.pages.dev (stable alias:
+  https://dts-website-4cu.pages.dev).
+
+- 2026-08-08 — **UX follow-up requested after the resolver-bug fix**, three
+  changes to how gating actually feels to a visitor (no access-model change,
+  all client-side + one new portal control):
+  1. **Sign-in form now explains itself.** Added
+     `.access-brand-note` under the "Grounded in Human Experience." tagline
+     in the login panel: "Log in for full, free access to our immersive
+     platform and interactive maps." (`index.html`, `css/09-mobile.css`,
+     `css/11-desktop.css`).
+  2. **Gated experiences no longer auto-prompt sign-in just from opening a
+     project window.** This was the biggest change. Previously
+     `showExperience()` unconditionally called `resolveExperienceNode()` the
+     instant a project window opened — for a `registered` Treedis/GIS
+     experience, that meant an immediate 401 → sign-in form, even though the
+     reader hadn't tried to view anything yet. Now `showExperience()` takes
+     an `opts.resolveNow` flag: by default (opening a project card, a deep
+     link, back/forward, a stage-tab switch) it does NOT resolve — a gated,
+     not-yet-resolved experience renders a new locked placeholder inside
+     `#exStageSlot` ("Sign in to view this experience/video/map", clickable)
+     instead of either a blank pane or an auto-popped login form. Only two
+     things actually trigger a resolve: clicking that placeholder, or
+     clicking "Enter Twin"/"Full screen map" — both explicit view attempts,
+     which is where the sign-in prompt is now allowed to appear (a 401 from
+     `resolveExperienceNode` still opens the existing sign-in form exactly as
+     before). `resolveNow:true` is also passed by destination-preservation
+     (`openResourceByKey`, post-login reopen) and the portal's own resource
+     cards, since a click there already IS the explicit view attempt — it
+     just happened before the sign-in interruption. A `public` experience
+     (the 9 Vimeo videos, and anything already resolved earlier this
+     session) is unaffected — `experienceIsAvailable()` short-circuits it
+     straight to the existing zero-network-call auto-mount path, so it still
+     "just plays" on window open, per the earlier fix. New CSS:
+     `.example-locked-placeholder` in `css/06-example-window.css`.
+  3. **Client portal now has a close (X) control.** `openPortal()`'s
+     `#portalLayer` previously only closed via Escape or sign-out (which also
+     clears the session) — added `#portalClose` next to "Sign out" in the
+     topbar, wired to the existing `closePortal(false)` (closes the board,
+     keeps the session, same function Escape already used) so a signed-in
+     visitor can back out to the site without being signed out.
+  **Verified by reading the code path (not assumed):** confirmed
+  `resolveExperienceNode`'s existing zero-fetch shortcut
+  (`node.tourUrl||embedUrl||watchUrl||mapId||url`) is exactly the right
+  predicate for "already available, don't gate" and reused it unchanged as
+  `experienceIsAvailable()`, so the public-video fast path added earlier this
+  session needed no further change. **Verified against the real deployed
+  site via curl:** the login subtitle text, `id="portalClose"`, and the new
+  `experienceIsAvailable`/`showLockedPlaceholder`/`resolveNow` functions are
+  all present in the live `index.html`/`js/app.js`
+  (https://dts-website-4cu.pages.dev). **NOT yet verified live in a
+  browser** — the Claude-in-Chrome extension was disconnected at the point
+  this needed checking; the actual click-through (does the placeholder
+  really appear instead of a blank pane, does clicking it really pop sign-in,
+  does the portal X really work) is left to the user's manual pass, alongside
+  the rest of the outstanding Phase 4 checklist below.
+  Redeployed: https://03e1cdf2.dts-website-4cu.pages.dev (stable alias:
+  https://dts-website-4cu.pages.dev).
+
+  **User caught a real follow-on bug from their own click-through, before
+  finishing the rest of the verification pass:** closing the sign-in form
+  (the X, after clicking the locked placeholder) left the stage with
+  nothing clickable at all — not locked, not open — recoverable only by
+  reopening the project or switching tabs away and back. Root cause:
+  `showExperience()`'s failure branches (`resolveExperienceNode` 401/403,
+  and the GIS second-step failure) called `handleResolveFailure()` to open
+  the sign-in form but never put the locked placeholder back afterward —
+  it had already been hidden at the top of the same call (the unconditional
+  `hideLockedPlaceholder()` that runs before deciding whether to show it
+  again). Fixed: both failure branches now re-show the locked placeholder
+  (`if (!experienceIsAvailable(target)) showLockedPlaceholder(slot, target)`)
+  before returning, so dismissing the sign-in form leaves the reader back
+  at the same clickable "Sign in to view this…" tile, able to retry.
+  Verified via curl that the fix is live
+  (`js/app.js` contains the new "Still not available" comment marker).
+  Redeployed: https://c049950a.dts-website-4cu.pages.dev (stable alias:
+  https://dts-website-4cu.pages.dev). Still needs the user's live click
+  confirmation, same as the rest of this entry.
+
+- 2026-08-08 — **User reported Phase 4 broken in real testing**, contradicting
+  the prior session's "API-level verified" status: clicking a gated experience
+  (automotive Treedis tour) showed a completely blank experience pane with NO
+  login prompt, for BOTH guests and signed-in `testorgadmin`; user also
+  reported public/registered videos not showing for guests at all, and could
+  not sign in from the portal. Confirmed not a caching issue (user hard-
+  refreshed and tried incognito, same result).
+
+  **Root cause, found by reproducing live in-browser (Claude-in-Chrome) then
+  isolating with direct `fetch()` calls from the page console:**
+  `fetchResource()` in `js/app.js` calls `encodeURIComponent(resourceKey)`
+  before requesting `/api/resource/<key>` — turning `project.automotive:treedis`
+  into `project.automotive%3Atreedis`. Cloudflare Pages does NOT percent-decode
+  dynamic route segments (confirmed empirically: a raw, unencoded colon in the
+  URL correctly hit `parseResourceKey()`'s colon split and returned 401; the
+  `%3A`-encoded form returned 400 "unrecognized resource key"). Since
+  `parseResourceKey()` runs BEFORE the auth check, this 400 happened
+  identically for guests and signed-in users, for EVERY gated experience/link
+  — exactly matching the reported symptom. The client's `handleResolveFailure()`
+  only `console.warn`s on an unrecognized "error" reason (vs. opening the
+  sign-in form for a real 401), so nothing was visible in the UI at all — a
+  silent failure, not a crash.
+
+  **Fixed** in `functions/api/resource/[key].js`: decode `params.key` via
+  `decodeURIComponent()` as the first line of `onRequestGet` (a no-op if the
+  segment ever arrives already-decoded, so this is safe regardless of exactly
+  how Cloudflare is or isn't decoding). Verified by curl (encoded key now
+  returns 401 "sign-in required", stable across repeated requests) AND live in
+  the browser: the "Welcome Back!" sign-in form now correctly opens over the
+  automotive project window for a guest, matching the intended design for the
+  first time.
+
+  **Also addressed the user's separate point 0 ("videos should be open access
+  to any user even not registered")** — a real reversal of the `registered`
+  default `ACCESS-MODEL.md` §6 set for all Treedis+Vimeo experiences, but the
+  user stated it plainly as an explicit requirement, not an open question.
+  Changed `media.access` from `"registered"` to `"public"` on the 9 Vimeo-only
+  project documents (`civic`, `foodsafety`, `healthcare`, `healthfac`,
+  `municipal`, `nonprofit`, `sustain`, `workforce`, `workplace.json`) —
+  Treedis and GIS experiences are untouched and remain `registered`, matching
+  "not a treedis experience or a map" in the user's own wording. Re-uploaded
+  all `data/source/` documents to R2 (`upload-source-to-r2.mjs`, idempotent)
+  so the server-side resolver stays consistent even though the client no
+  longer calls it for these (public resources short-circuit client-side with
+  zero network calls, by existing design in `resolveExperienceNode()`).
+  Verified via curl: `civic.json`'s published document now carries its real
+  `embedUrl`/`watchUrl` directly (no strip) with `access:"public"`; a gated
+  project (`automotive`) is confirmed still stripped/gated exactly as before.
+
+  **Known gap surfaced, not fixed (out of scope for this pass):**
+  `js/config.js` (the `/data`-unreachable fallback) has never carried any
+  `access` field at all and `strip-public-data.mjs`'s config.js-stripping
+  step unconditionally deletes every example's `embedUrl`/`watchUrl`/
+  `tourUrl` regardless of access level. This means if `/data` ever fails to
+  load and the site falls back to `config.js`, the 9 now-public videos would
+  incorrectly appear gated in that fallback path (they did before this
+  change too — this isn't a regression, just a pre-existing gap made visible
+  by the videos becoming public in the primary `/data` path). Not fixed
+  because it only matters in a rare degraded-mode fallback, not the bug the
+  user reported. Needs: an `access` field added to `config.js`'s per-example
+  media, and `strip-public-data.mjs`'s config.js section updated to honor it
+  the same way the `/data` section already does.
+
+  Rebuilt the deploy staging directory from scratch (fresh `robocopy` +
+  `strip-public-data.mjs`, same exclusions as before plus the two oversized
+  unused Backrooms `.usdz` files, which the fresh copy re-included and which
+  still exceed Cloudflare's 25 MiB file cap). Redeployed:
+  https://ea8f2b35.dts-website-4cu.pages.dev (stable alias:
+  https://dts-website-4cu.pages.dev).
+
+  **Still NOT yet verified — needs the user:** the full sign-in FORM flow
+  beyond the login prompt appearing (actually signing in, destination
+  preservation, reload persistence, sign-out, forgot-password), the GIS map
+  rendering visually, and the full README regression checklist. These are
+  the same items flagged as outstanding in the previous session's entry —
+  this session only fixed the blocking bug that prevented testing them at
+  all, it did not newly verify them.
 
 - 2026-08-08 — Ran `/migrate-phase4` end to end (the security-critical
   phase). Built and tested infrastructure BEFORE touching app.js, then
@@ -485,6 +914,14 @@ identity/access model each phase from 3 onward implements is defined in
   updated the migration-kit instructions. Nothing has been executed.
 
 ## Open questions / blockers
+- **`checkAccess()` has no `site_admin` bypass for `restricted` resources**
+  (found reading `functions/_lib/access.js` during Phase 5; not fixed there —
+  out of scope, Phase 4 already closed). Contradicts `ACCESS-MODEL.md` §8
+  ("site_admin: yes (all)" for restricted resources) — a `site_admin` with no
+  direct/org entitlement would get a false 403. Zero live impact today (no
+  `/data` resource is currently `client`/`restricted`), but fix before Phase
+  8 (downloads use the same `restricted` path) or before the first real
+  `restricted` resource is authored, whichever comes first.
 - **RESOLVED — `assets/ToolBox.glb` compressed and redeployed** (38.15 MB →
   11.46 MB; see session log for the exact method). **Still needs the user to
   visually confirm the compressed textures look acceptable at the hex-4
@@ -529,6 +966,17 @@ identity/access model each phase from 3 onward implements is defined in
   RE-verified whenever `config.js` is regenerated, since `CLAUDE.md` directs
   keeping it in sync with `/data` and that sync is what would re-add the
   URLs. Verify with `USER-ACCESS-MIGRATION-TESTING.md` test 5d.
+- **`js/config.js` has no `access` field anywhere and its strip step is
+  access-blind** — `strip-public-data.mjs`'s config.js section unconditionally
+  strips every example's `tourUrl`/`embedUrl`/`watchUrl`, regardless of the
+  real access level in `/data`. Harmless while everything was `registered`
+  (that's the correct strip either way), but now that 9 Vimeo experiences are
+  `public` in `/data` (see 2026-08-08 session entry), the fallback is
+  stricter than the real data — only matters if `/data` fails to load AND the
+  site falls back to `config.js` AND a guest opens one of those 9 videos in
+  that degraded state. Needs an `access` field added to `config.js` per
+  example and the strip step updated to check it, mirroring the `/data`
+  logic already in the same script.
 - Whether an `org_admin`'s invite should be restricted to specific email
   domains — currently unrestricted (DTS issues client addresses on its own
   domain), rate-limited + audited server-side. Revisit at Phase 5b if abuse

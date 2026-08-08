@@ -7,7 +7,13 @@ import { json, getSourceJson, verifyUser, checkAccess } from "../../_lib/access.
 
 export async function onRequestGet(context) {
   const { request, params, env } = context;
-  const key = params.key;
+  // Cloudflare Pages does not percent-decode dynamic route segments, and
+  // fetchResource() in js/app.js encodeURIComponent()s the resource key
+  // before requesting it (":" -> "%3A") -- without this decode, every
+  // project.<id>:<expId> key fails parseResourceKey()'s colon split and
+  // 400s before the access check ever runs, for guests and signed-in users
+  // alike. decodeURIComponent() is a no-op on an already-decoded key.
+  const key = decodeURIComponent(params.key);
 
   const parsed = parseResourceKey(key);
   if (!parsed) return json({ error: "unrecognized resource key" }, 400);

@@ -73,6 +73,69 @@ client's. Nothing here costs money except an optional domain — see
    publicly in `data/site/lead.json` and is being rotated, not reused.
 2. You can do this any time before Phase 7 — it's not urgent this early.
 
+### 6. Google & Microsoft OAuth (before self-registration can offer social login)
+
+Added when self-registration shipped — not part of the original phase plan,
+so it's not tied to a phase number. On YOUR personal Google/Microsoft
+accounts, same as everything else in this section.
+
+1. **Google**: Google Cloud Console → APIs & Services → Credentials → Create
+   OAuth client ID (Web application) → Authorized redirect URI
+   `https://<your-dev-project-ref>.supabase.co/auth/v1/callback` → copy the
+   Client ID + Secret → Supabase Dashboard → Authentication → Providers →
+   Google → enable, paste both. Expect Google's "unverified app" warning
+   during testing — click through, or add yourself as a test user; this is
+   expected at dev stage, not a bug.
+2. **Microsoft**: Azure Portal → Azure Active Directory → App registrations →
+   New registration → same redirect URI → Certificates & secrets → New
+   client secret → Supabase Dashboard → Authentication → Providers → Azure →
+   enable, paste Client ID + Secret + tenant URL.
+3. Also confirm (this one's shared with the existing forgot-password flow,
+   so worth checking regardless): Supabase Dashboard → Authentication → URL
+   Configuration → Redirect URLs includes your dev site's origin
+   (`https://<your-pages-project>.pages.dev/*`).
+4. **These do NOT transfer at handoff** — see Part 3 below. The client's
+   production Supabase project has a different URL, so the redirect URI
+   changes and both OAuth apps must be recreated under the client's own
+   Google/Microsoft accounts, not copied from yours.
+
+### 7. Custom SMTP (before forgot-password/signup-confirmation is reliable)
+
+Found needed on 2026-08-08: the forgot-password flow (built in Phase 4, not
+new) silently failed in testing. Root cause, confirmed from the dashboard —
+Supabase Dashboard → Authentication → Rate Limits → "Rate limit for sending
+emails" was **2 emails/hour, for the entire project, shared across every
+auth email type** (signup confirmation, password recovery, magic links).
+This is Supabase's documented built-in-email default and it is explicitly
+"unsuitable for production" per their own docs — not a code bug, and not
+optional to fix before real users rely on password reset.
+
+**Requires DNS access to a real domain you can add records to — deferred on
+2026-08-08 because that wasn't available yet.** When it is:
+
+1. Create a free account with an SMTP provider — Resend is what Supabase's
+   own docs use as the example (`smtp.resend.com`, ports 25/465/587/2465/2587,
+   username `resend`, password = your Resend API key), but any of
+   AWS SES / Postmark / SendGrid / ZeptoMail / Brevo works the same way.
+2. **Verify a domain** with that provider — add the SPF/DKIM DNS records
+   they give you at wherever that domain's DNS is hosted. Required before
+   the provider will send anything; this is the step that was blocked.
+3. Generate an API key / SMTP password from the provider.
+4. Supabase Dashboard → Authentication → Emails → SMTP Settings: enable
+   custom SMTP, fill in host/port/username/password, a sender email at the
+   verified domain (e.g. `no-reply@dtsxr.com`), and a sender name
+   ("Digital Twin Studios").
+5. **Also revisit** Authentication → Rate Limits → "Rate limit for sending
+   emails" afterward — Supabase applies a new default of 30/hour once
+   custom SMTP is active, but the field itself may still show the old
+   value and need raising manually; don't assume it auto-updated.
+6. Re-test both signup confirmation and forgot-password.
+
+**Until this is done**, dev testing has a real constraint: the whole
+project shares 2 auth emails/hour — don't chain multiple signup/reset
+attempts within the same hour and read a second failure as a new bug; it's
+very likely just the same cap.
+
 ### Where these values actually go
 
 All of the above (except passwords/tokens, which stay in a git-ignored
@@ -92,6 +155,9 @@ an actual key or password in that file, in a commit, or in this document.
 | 5 | Cloudflare scoped API token + Account ID | Phase 1 / 6 / 8 | Free |
 | 6 | Google Sheet owner access | Phase 2 | Free |
 | 7 | Web3Forms new key | Phase 7 | Free |
+| 8 | Google OAuth client (Cloud Console) | Self-registration | Free |
+| 9 | Microsoft OAuth app (Azure Portal) | Self-registration | Free (Azure AD app registration itself; no Azure subscription needed) |
+| 10 | Custom SMTP provider + a verified domain (DNS access) | Reliable forgot-password/signup-confirmation (Phase 4) | Free tier on most providers (Resend, etc.) |
 
 None of this is required to run `/migrate-start` — Step 0 is read-only
 verification against the existing code.
@@ -198,10 +264,38 @@ earlier phases, which run mostly unattended).
 
 ### What actually has to happen, step by step
 
-1. **Client creates their own Cloudflare account** (if they don't have one)
+This list mirrors `/migrate-handoff`'s step order, spelled out in more
+detail — that file's own step 1 folds "client creates accounts" and the
+collaborator-vs-self-service decision into the same up-front gate as the
+credential inventory (steps 2-3 below), so the numbering isn't identical
+between the two, just the order. `migrate-handoff.md` is the authoritative
+one Claude actually follows; this is the plain-language walkthrough.
+
+1. **Credential & access inventory — the FIRST step, before anything else
+   moves.** Before any account gets touched, confirm you actually have (or
+   have explicitly deferred) every item below. `migrate-handoff.md` step 1
+   has the full table with exact locations; the short version:
+   - Client's Cloudflare account access + a scoped API token (Pages:Edit,
+     R2:Edit) + Account ID.
+   - Client's Supabase account access + project URL, anon key, service role
+     key, project ref, DB password, and an account-level access token.
+   - A decision on Web3Forms — stay on DTS's own account, or move to the
+     client's? Don't assume.
+   - **Only if self-registration's social login is going live now**: Google
+     Cloud Console access and Azure Portal access under the client's own
+     accounts (see §6 above for what each provides).
+   - Domain registrar / DNS access for the real domain.
+   - The real client list — companies, staff, and who's `org_admin` at each
+     one — from the client directly, never guessed from old sheet data.
+   - **The collaborator-vs-self-service decision** (see step 2 below) made
+     explicitly, not assumed.
+   Treat this as a hard gate: don't start step 2 until every row is either
+   in hand or knowingly deferred with the user's sign-off (OAuth is the
+   obvious current example — see the 2026-08-08 `PROGRESS.md` entry).
+2. **Client creates their own Cloudflare account** (if they don't have one)
    and their own Supabase account. This is genuinely theirs going forward —
    billing, ownership, everything.
-2. **Client grants access for the handoff run.** Someone needs to run the
+3. **Client grants access for the handoff run.** Someone needs to run the
    automated steps (create the Supabase project, push the schema, upload
    content, set secrets) against the client's accounts. Two ways this
    typically goes — decide which fits before you start:
@@ -216,23 +310,36 @@ earlier phases, which run mostly unattended).
      control or gets committed.
    Either is fine; the kit doesn't assume one over the other. Decide it with
    the client before running `/migrate-handoff`, since it changes who clicks
-   what in step 3 below.
-3. **Production Supabase.** A new Supabase project is created inside the
+   what in step 4 below.
+4. **Production Supabase.** A new Supabase project is created inside the
    CLIENT's org (not yours). The exact same
    `supabase/migrations/*.sql` files that ran on your dev project get re-run
    against it — same schema, same RLS, same tables. Upgrade to Supabase Pro
    ($25/mo, billed to the CLIENT) at this point to remove the free tier's
-   7-day pause before real users start logging in.
-4. **Production Cloudflare.** A new Pages project + the two R2 buckets
+   7-day pause before real users start logging in. **Also set up custom
+   SMTP now** (§7 above, against the client's provider account and verified
+   domain) — unlike OAuth this isn't optional, Supabase's built-in email is
+   capped at 2/hour project-wide and password reset won't work reliably for
+   real users without it.
+5. **Production Cloudflare.** A new Pages project + the two R2 buckets
    (`dts-content`, `dts-builds`) are created in the CLIENT's Cloudflare
    account. The same site files and the same split `/data` content
    (`data/current/` + `data/source/`) get uploaded. All secrets — Cloudflare
    API token, Web3Forms key, Supabase service key — are generated FRESH on
    the client's side. Nothing is copied over from your dev secrets, ever.
-5. **Re-point config.** `js/supabase-init.js` gets edited to the client's
+6. **Re-point config.** `js/supabase-init.js` gets edited to the client's
    project URL + anon key. That one file edit, plus the fresh secrets in
-   step 4, is the entire account swap — no other code changes.
-6. **Real organizations and users.** This is the first time
+   step 5, is the entire account swap — no other code changes.
+7. **Google/Microsoft OAuth, if self-registration's social login is going
+   live with this handoff — otherwise skip and note the deferral.** The
+   client's new Supabase project has a different callback URL, so both OAuth
+   apps have to be recreated from scratch under the CLIENT's own Google
+   Cloud / Azure accounts (§6 above walks through the same steps) — the dev
+   ones registered under your personal accounts are never reused or copied
+   over. Also move Google's OAuth consent screen from Testing to Published
+   (or complete the client's own verification) so real users don't hit the
+   "unverified app" warning in production.
+8. **Real organizations and users.** This is the first time
    `scripts/import-clients.mjs` (written back in Phase 3, dormant until now)
    actually runs, and it runs against the CLIENT's project with the CLIENT's
    real client list — creating real organizations, real memberships, real
@@ -240,22 +347,25 @@ earlier phases, which run mostly unattended).
    out, specifically to catch things like the same company appearing under
    two slightly different spellings in the source list (see
    `ACCESS-MODEL.md` and `migrate-handoff.md` for the exact safeguard).
-7. **Domain.** The real domain gets pointed at the client's Pages project (or
+9. **Domain.** The real domain gets pointed at the client's Pages project (or
    migrated into their Cloudflare account outright), coordinated so DNS and
    email don't go down mid-switch.
-8. **Final checks, then live.** A full regression pass on the production
-   domain, a real client test login, a real build download, a lead send.
-   `PROGRESS.md` gets marked LIVE.
+10. **Final checks, then live.** A full regression pass on the production
+    domain, a real client test login, a real build download, a lead send.
+    `PROGRESS.md` gets marked LIVE.
 
 ### What does NOT transfer, on purpose
 
 - **Your dev Supabase Auth users and passwords** — the dummy `testuser@`,
   `testadmin@`, etc. accounts stay on your personal dev project and never
-  touch the client's. Real client accounts are created fresh in step 6.
+  touch the client's. Real client accounts are created fresh in step 8.
 - **Any secret** — Cloudflare token, Web3Forms key, Supabase service key.
   Every one is regenerated on the client's side. Copying a dev secret into
   production would mean your personal account can still act on the client's
   live data after handoff, which defeats the point of handing off.
+- **Your dev Google/Microsoft OAuth apps** — registered under your personal
+  Google Cloud/Azure accounts for testing; recreated fresh under the
+  client's accounts at step 7 above, same reasoning as any other secret.
 
 ### What it costs the client, going forward
 
@@ -272,6 +382,6 @@ these shift.
 Whether you (the developer) keep any ongoing access to the client's
 production accounts after handoff — to ship future fixes, or not — isn't
 something the migration kit decides for you; it's a business arrangement with
-the client. If you want continued access, say so before step 2 above so it's
+the client. If you want continued access, say so before step 3 above so it's
 set up as a deliberate, named collaborator grant rather than an afterthought
 of however the handoff happened to go.

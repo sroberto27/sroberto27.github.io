@@ -66,6 +66,27 @@
 }
 .example-gis-placeholder[hidden]{ display:none; }
 
+/* Gated experience/map, not yet resolved — shown instead of auto-prompting
+   for sign-in the moment the project window opens. Only clicking this (or
+   "Enter Twin") triggers the actual resolve + sign-in prompt. */
+.example-locked-placeholder{
+  appearance:none; position:absolute; inset:0; width:100%;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:10px; cursor:pointer;
+  background:radial-gradient(120% 120% at 50% 0%, #16203400, #0a1018);
+  border:0; color:var(--muted); font-family:var(--sans);
+  transition:color .18s ease;
+}
+.example-locked-placeholder:hover{ color:var(--ink); }
+.example-locked-placeholder[hidden]{ display:none; }
+.example-locked-icon{
+  width:34px; height:34px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.06); border:1px solid var(--line-soft);
+}
+.example-locked-icon svg{ width:16px; height:16px; }
+.example-locked-text{ font-size:13px; font-weight:600; }
+
 .example-loading{
   position:absolute; inset:0; display:flex; flex-direction:column;
   align-items:center; justify-content:center; gap:14px; color:var(--muted);

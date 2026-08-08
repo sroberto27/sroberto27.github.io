@@ -9,6 +9,11 @@ Grounded in the real code as of the reconciliation pass: `js/app.js`,
 `js/admin.js`, `js/content-loader.js`, `data/access/access.json`,
 `data/manifest.json`, and the 16 project documents under `data/projects/`.
 
+**Added since the reconciliation pass, still normative here:**
+self-registration (§10) — a `registered`-tier account is no longer only
+ever DTS-created. Read §10 before assuming every account arrives via
+import/invite.
+
 ---
 
 ## 1. Why not one `user_type`
@@ -339,3 +344,48 @@ afterward (share it, screenshot it, etc.). Making it unshareable after release
 would require Treedis-side support this project does not have. This is stated
 here so no later phase silently assumes stronger guarantees than the design
 provides.
+
+---
+
+## 10. Account creation paths
+
+Two ways an `auth.users` row (and its auto-provisioned `profiles` row —
+`handle_new_user()`, `supabase/migrations/20260807220000_core_schema.sql`)
+comes into existence. Both land at exactly the same place: `site_role='user'`,
+zero `organization_members` rows — the plain `registered` tier in the §8
+table, nothing more, regardless of which path created it.
+
+**1. DTS-created (the originally-assumed path).** Phase 5b's Admin Board (not
+yet built) or `scripts/import-clients.mjs` at Handoff. This is the ONLY path
+that can ever also create an `organization_members` row or grant
+`site_role='site_admin'` — self-registration (below) never does either.
+
+**2. Self-registration (added 2026-08-08, after the reconciliation pass —
+not in the original phased plan, an explicit approved extension).** A guest
+can create their own `registered`-tier account directly from the sign-in
+form, two ways:
+- **Email + password** — `supabase.auth.signUp()`. Email confirmation is
+  REQUIRED (a deliberate choice, not Supabase's default-off setting) — no
+  session exists until the confirmation link is clicked, so the form shows
+  a "check your email" note rather than pretending to sign the reader in.
+- **Google / Microsoft OAuth** — `supabase.auth.signInWithOAuth()`. First
+  sign-in auto-creates the account; there's no separate "sign up with
+  Google" action.
+
+Client-side, `js/app.js` handles both through the same `finishSignIn()` tail
+as password login, plus a `supabase.auth.onAuthStateChange()` listener so a
+sign-up confirmed in a DIFFERENT tab (or any other out-of-band session
+change) is picked up without a manual reload.
+
+**Operational status as of 2026-08-08 — check `PROGRESS.md`'s session log
+for anything more recent before relying on this:**
+- Google/Microsoft OAuth buttons are live in the UI but the providers are
+  NOT yet enabled in Supabase — deferred, clicking them currently errors.
+  Dev setup steps: `ACCOUNT-SETUP-AND-HANDOFF.md` §6.
+- Custom SMTP is NOT configured — Supabase's built-in email is capped at
+  2 messages/hour, PROJECT-WIDE, shared across signup confirmation and
+  password reset alike. Deferred (blocked on DNS access to a domain, not a
+  decision). Setup steps: `ACCOUNT-SETUP-AND-HANDOFF.md` §7. Treat this as
+  non-optional before Handoff, unlike OAuth — Supabase documents the
+  built-in service as unsuitable for production, independent of whether
+  self-registration or OAuth are in use.

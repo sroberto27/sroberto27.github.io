@@ -1,10 +1,16 @@
 /* ============================================================
    DTS Admin Board — mini CMS  (js/admin.js)
    ------------------------------------------------------------
-   Signing in through ACCESS YOUR TWIN with an admin account
-   (data/access.json → adminUsers, or a directory row whose
-   client is "admin") opens the Admin Board instead of the
-   client portal.
+   Signing in through ACCESS YOUR TWIN is the SAME Supabase login
+   every client uses (js/app.js's submitAccess()) — there is no
+   separate admin credential list anymore. Once app.js has a real
+   session it dispatches "dts:signed-in" with the signed-in user's
+   site_role; this module listens for that event and opens the
+   Admin Board only when site_role is "site_admin" (never for an
+   org_admin — that's a different axis entirely, see
+   docs/migration/ACCESS-MODEL.md §8). app.js itself skips opening
+   the client portal for a site_admin session, so this listener is
+   the only thing that gives that session somewhere to go.
 
    The board edits the raw documents in window.DTS_CONTENT
    (loaded by js/content-loader.js from /data). Editing model:
@@ -17,10 +23,6 @@
         /data folder). Replace the repo's data/ with it and
         push: that's publishing.
      4. DISCARD DRAFT — back to whatever is in /data on disk.
-
-   Requires no changes to js/app.js: an event listener in the
-   capture phase intercepts the sign-in submit before app.js
-   sees it when the credentials match an admin account.
    ============================================================ */
 (function () {
   "use strict";
@@ -30,7 +32,6 @@
   }
 
   var DRAFT_KEY = "dtsAdminDraft";
-  var SESSION_KEY = "dtsAdminSession";
   var content = window.DTS_CONTENT;          // live working set (edited in place)
   var docs = content.docs;
   var dirty = false;
@@ -51,81 +52,28 @@
   var $ = function (s, r) { return (r || document).querySelector(s); };
 
   /* ============================================================
-     ADMIN AUTHENTICATION
+     ADMIN AUTH ROUTING
+     ------------------------------------------------------------
+     No credentials or account list here — every sign-in goes
+     through the same Supabase form in js/app.js. This just reacts
+     once a real session exists: site_admin -> Admin Board, anyone
+     else -> untouched (app.js already sends them to the ordinary
+     client portal).
      ============================================================ */
-  var adminAccounts = [];
-
-  function registerAdmins(list) {
-    (list || []).forEach(function (a) {
-      if (a && a.access_id && a.access_code) {
-        adminAccounts.push({ id: String(a.access_id).toLowerCase().trim(),
-                             code: String(a.access_code).trim() });
-      }
-    });
-  }
-
-  // Source 1: data/access.json adminUsers
-  var accessDoc = docs["access/access.json"] || {};
-  registerAdmins(accessDoc.adminUsers);
-
-  // Source 2: Google-Sheet directory rows flagged as admin
-  (function preloadSheetAdmins() {
-    var url = (window.DTS_CLIENTS && window.DTS_CLIENTS.sheetCsvUrl) ||
-              (accessDoc.directorySource && accessDoc.directorySource.sheetCsvUrl);
-    if (!url) return;
-    fetch(url, { cache: "no-store" })
-      .then(function (r) { return r.ok ? r.text() : ""; })
-      .then(function (text) {
-        if (!text) return;
-        var lines = text.split(/\r?\n/).filter(function (l) { return l.trim(); });
-        var headers = splitCSV(lines.shift()).map(function (h) { return h.trim().toLowerCase(); });
-        lines.forEach(function (line) {
-          var cells = splitCSV(line), row = {};
-          headers.forEach(function (h, i) { row[h] = (cells[i] || "").trim(); });
-          var isAdmin = (row.client || "").toLowerCase() === "admin" ||
-                        (row.notes || "").toLowerCase().indexOf("admin") !== -1 &&
-                        (row.twin_url || "").toLowerCase() === "all";
-          if (isAdmin) registerAdmins([row]);
-        });
-      })
-      .catch(function () { /* sheet unreachable — access.json admins still work */ });
-  })();
-
-  function splitCSV(line) {
-    var out = [], field = "", q = false;
-    for (var i = 0; i < line.length; i++) {
-      var ch = line[i];
-      if (q) {
-        if (ch === '"' && line[i + 1] === '"') { field += '"'; i++; }
-        else if (ch === '"') q = false;
-        else field += ch;
-      } else if (ch === '"') q = true;
-      else if (ch === ",") { out.push(field); field = ""; }
-      else field += ch;
-    }
-    out.push(field);
-    return out;
-  }
-
-  function isAdminLogin(id, code) {
-    id = String(id || "").toLowerCase().trim();
-    code = String(code || "").trim();
-    return adminAccounts.some(function (a) { return a.id === id && a.code === code; });
-  }
-
-  // Intercept the Access Your Twin submit BEFORE app.js (capture phase).
-  document.addEventListener("submit", function (e) {
-    if (!e.target || e.target.id !== "accessForm") return;
-    var id = ($("#accessId") || {}).value, code = ($("#accessCode") || {}).value;
-    if (!isAdminLogin(id, code)) return;   // normal clients fall through to app.js
-    e.preventDefault();
-    e.stopImmediatePropagation();
-    try { sessionStorage.setItem(SESSION_KEY, "1"); } catch (_) {}
+  document.addEventListener("dts:signed-in", function (e) {
+    var session = e.detail && e.detail.session;
+    if (!session || session.siteRole !== "site_admin") return;
     var ov = $("#accessOverlay");
     if (ov) { ov.classList.remove("is-open"); ov.setAttribute("aria-hidden", "true"); }
-    var codeInput = $("#accessCode"); if (codeInput) codeInput.value = "";
-    openBoard();
-  }, true);
+    // restored: true means this came from restoreSession() finding an
+    // already-existing session on page load (including the reload Save
+    // draft & preview triggers) -- offer the chip, don't yank the reader
+    // straight back into the editor over whatever they reloaded to see.
+    // restored: false is a real, just-now sign-in submit -- go straight in,
+    // same as the old capture-phase intercept did.
+    if (e.detail.restored) showChip();
+    else openBoard();
+  });
 
   /* ============================================================
      SMALL DOM HELPERS
@@ -2515,8 +2463,11 @@
     board.classList.remove("is-open");
     document.body.classList.remove("adm-lock");
     if (signOut) {
-      try { sessionStorage.removeItem(SESSION_KEY); } catch (_) {}
-      var chip = $("#admChip"); if (chip) chip.remove();
+      // The Supabase session IS the session now -- same full-reload sign-out
+      // js/app.js's own signOut() uses, and for the same reason: it's the
+      // only reliable way to guarantee every trace of the session is gone
+      // client-side, not just this board's own state.
+      window.DTS_SUPABASE.auth.signOut().finally(function () { window.location.reload(); });
     } else showChip();
   }
 
@@ -2677,8 +2628,17 @@
     document.body.appendChild(chip);
   }
 
-  // Returning from a Save & Preview reload: offer the chip right away.
-  try {
-    if (sessionStorage.getItem(SESSION_KEY) === "1") showChip();
-  } catch (_) {}
+  // Covers a site_admin session that already existed the moment this
+  // script finished loading -- most importantly the Save & Preview reload
+  // (content-loader.js loads admin.js eagerly whenever a draft exists in
+  // localStorage), where js/app.js's restoreSession() can resolve and
+  // dispatch "dts:signed-in" before this network-loaded script has even
+  // registered the listener above. Reads window.DTS_ACCESS synchronously
+  // (a live reference to app.js's own access object, not a snapshot) so
+  // there's no race to lose: by the time this line runs, app.js and every
+  // script before this one in the load order have already finished.
+  if (window.DTS_ACCESS && window.DTS_ACCESS.session &&
+      window.DTS_ACCESS.session.siteRole === "site_admin") {
+    showChip();
+  }
 })();

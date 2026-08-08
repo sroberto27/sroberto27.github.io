@@ -733,7 +733,7 @@
   let activeExampleId = null;
   let activeExperienceId = null;   // id of the active tab within the open example
 
-  function openExample(cardId, evidenceLabel, expId) {
+  function openExample(cardId, evidenceLabel, expId, showOpts) {
     const ex = cfg.examples && cfg.examples[cardId];
     if (!ex) { console.warn("[dts] no example for", cardId); return; }
 
@@ -806,7 +806,7 @@
     // Priority: the example's own experiences[] (tabbed if 2+) > the
     // shared showcase iframe navigated to a sweep, for legacy projects
     // that carry no media/experiences at all.
-    showExperience(ex, expId);
+    showExperience(ex, expId, showOpts);
 
     const ov = $("#exampleOverlay");
     ov.classList.add("is-open");
@@ -1164,11 +1164,71 @@
     if (hadFocus && activeBtn) activeBtn.focus();
   }
 
+  /* True once an experience can be mounted with zero network calls — either
+     it was always public (real target already on the node) or it was
+     resolved earlier this session (Object.assign in resolveExperienceNode
+     mutates the node in place; a GIS map's own resolve is tracked in
+     access.resolvedGisMaps/cfg.gisMaps since the mapId itself is a second,
+     separate resource). Drives the locked-placeholder gate below — never
+     assumed, always re-checked against the live node/cache. */
+  function experienceIsAvailable(target) {
+    if (target.tourUrl || target.embedUrl || target.watchUrl || target.url) return true;
+    if (target.type === "gis" && target.mapId) {
+      const existing = cfg.gisMaps && cfg.gisMaps[target.mapId];
+      return access.resolvedGisMaps.has(target.mapId) || !!(existing && existing.layers);
+    }
+    return false;
+  }
+
+  function lockGlyph() {
+    return '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="9" rx="2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
+  }
+
+  /* Shown in #exStageSlot for a gated, not-yet-resolved experience instead
+     of auto-resolving (which would silently fire the sign-in prompt the
+     instant a guest opens the project window — see the 2026-08-08 fix).
+     Clicking it is the explicit "I want to view this" action that DOES
+     trigger a resolve, same as "Enter Twin". */
+  function showLockedPlaceholder(slot, target) {
+    let el = document.getElementById("exLocked");
+    if (!el) {
+      el = document.createElement("button");
+      el.type = "button";
+      el.id = "exLocked";
+      el.className = "example-locked-placeholder";
+      el.addEventListener("click", () => {
+        const ex = cfg.examples && cfg.examples[activeExampleId];
+        if (ex) showExperience(ex, activeExperienceId, { resolveNow: true });
+      });
+    }
+    if (el.parentNode !== slot) slot.appendChild(el);
+    const noun = target.type === "gis" ? "map" : target.type === "vimeo" ? "video" : "experience";
+    el.innerHTML =
+      '<span class="example-locked-icon">' + lockGlyph() + "</span>" +
+      '<span class="example-locked-text">Sign in to view this ' + noun + "</span>";
+    el.hidden = false;
+  }
+  function hideLockedPlaceholder() {
+    const el = document.getElementById("exLocked");
+    if (el) el.hidden = true;
+  }
+
   /* expId is optional — omit it to fall back to the experience marked
      `default`, or the first one. Pure mount/switch: callers own the URL
      sync (openExample()'s own trailing syncURL for a project open/swap;
-     the tab click handler's own replaceState for an in-place tab switch). */
-  async function showExperience(ex, expId) {
+     the tab click handler's own replaceState for an in-place tab switch).
+
+     opts.resolveNow forces an immediate resolve (and, for a gated target,
+     the sign-in prompt) even though the target isn't available yet —
+     used only where the reader already took an explicit action asking for
+     THIS experience (destination preservation after login, a portal card
+     click, the locked placeholder itself, "Enter Twin"). Every other
+     caller (opening a project card, a tab switch, a deep link, back/
+     forward) omits it, so just opening a project window never pops the
+     sign-in form on its own — only trying to actually view a gated pane
+     does. */
+  async function showExperience(ex, expId, opts) {
+    const resolveNow = !!(opts && opts.resolveNow);
     const list = ex.experiences || [];
     const target = list.find((e) => e.id === expId)
                 || list.find((e) => e.default)
@@ -1179,6 +1239,7 @@
     const enterBtn = $("#exEnter");
 
     suspendExperience(activeExperienceId);
+    hideLockedPlaceholder();
 
     if (!target) {
       activeExperienceId = null;
@@ -1195,6 +1256,12 @@
     // back to a tour/video tab restores the usual label automatically.
     if (enterBtn) enterBtn.textContent = target.type === "gis" ? "Full screen map" : "Enter Twin";
 
+    if (!resolveNow && !experienceIsAvailable(target)) {
+      if (loading) loading.classList.add("is-hidden");
+      showLockedPlaceholder(slot, target);
+      return;
+    }
+
     if (loading) loading.classList.remove("is-hidden");
     const resolved = await resolveExperienceNode(target.id, target);
     // The reader may have switched tabs again while this was in flight —
@@ -1204,6 +1271,10 @@
     if (!resolved.ok) {
       if (loading) loading.classList.add("is-hidden");
       handleResolveFailure(resolved);
+      // Still not available (closing the sign-in form doesn't retry it) —
+      // put the locked tile back so there's something to click again,
+      // rather than leaving the stage with no visible content at all.
+      if (!experienceIsAvailable(target)) showLockedPlaceholder(slot, target);
       return;
     }
 
@@ -1215,6 +1286,7 @@
       if (!gisResolved.ok) {
         if (loading) loading.classList.add("is-hidden");
         handleResolveFailure(gisResolved);
+        if (!experienceIsAvailable(target)) showLockedPlaceholder(slot, target);
         return;
       }
       mountGis(target, ex, slot, loading);
@@ -1562,14 +1634,72 @@
      calls that Function. See docs/migration/ACCESS-MODEL.md.
      ============================================================ */
   const access = { session: null, pendingResourceKey: null, resolvedGisMaps: new Set() };
+  // Exposed by reference (same pattern as window.DTS_CONFIG/DTS_CONTENT) so
+  // js/admin.js -- lazy-loaded via a separate <script> tag, sometimes well
+  // after a session has already been restored -- can synchronously check
+  // "is there already a site_admin session" the instant it finishes loading,
+  // instead of only finding out via the dts:signed-in event below, which it
+  // can easily lose the race to register a listener for in time to catch.
+  window.DTS_ACCESS = access;
+  const PENDING_RESOURCE_KEY_STORAGE = "dtsPendingResourceKey";
+  // True for the whole duration of a LOCAL sign-in action (submitAccess(),
+  // restoreSession()'s OAuth-return branch) that already calls
+  // finishSignIn() itself -- suppresses the listener below so a
+  // same-tab sign-in never gets handled twice.
+  let localAuthInFlight = false;
+
+  /* Supabase fires SIGNED_IN/SIGNED_OUT here for state changes this tab
+     didn't directly cause itself -- most importantly, confirming a
+     sign-up's email link in a SEPARATE tab. Without this, the original
+     tab's sign-in form just sits there still showing the sign-up fields
+     forever, with no way to know anything happened elsewhere (found in
+     testing 2026-08-08: "the old page... the log in is not detected
+     automatically"). supabase-js syncs sessions across tabs of the same
+     origin via localStorage + a storage-event listener it sets up
+     internally; this is what surfaces that sync to the UI. */
+  window.DTS_SUPABASE.auth.onAuthStateChange((event, session) => {
+    if (event === "SIGNED_OUT") { access.session = null; return; }
+    if (event !== "SIGNED_IN" || !session || localAuthInFlight) return;
+    if (access.session && access.session.user.id === session.user.id) return;
+    finishSignIn(session);
+  });
+
+  /* Toggles the sign-in form between "Log In" and "Create Account" — same
+     markup, same Supabase-backed submitAccess() handler underneath, just a
+     different Auth call and a couple of swapped labels/fields. OAuth
+     ("Continue with Google/Microsoft") isn't mode-dependent — Supabase
+     creates the account on first OAuth sign-in either way, so those buttons
+     stay visible in both modes. */
+  function setAccessMode(mode) {
+    access.mode = mode;
+    const isSignup = mode === "signup";
+    $("#accessError").hidden = true;
+    $("#accessSuccessNote").hidden = true;
+    $("#accessTitle").textContent = isSignup ? "Create Your Account" : "Welcome Back!";
+    $("#accessConfirmField").hidden = !isSignup;
+    $("#accessConfirm").required = isSignup;
+    $("#accessCode").setAttribute("autocomplete", isSignup ? "new-password" : "current-password");
+    $("#accessSubmit").textContent = isSignup ? "Create Account" : "Log In";
+    $("#accessForgot").hidden = isSignup;
+    $("#accessToggleLead").textContent = isSignup ? "Already have an account?" : "Don’t have an account?";
+    $("#accessModeToggle").textContent = isSignup ? "Log In" : "Create one";
+  }
 
   function openAccess() {
     $("#accessError").hidden = true;
     const ui = cfg.accessUi || {};
     $("#accessIntro").textContent = ui.intro || "";
+    setAccessMode("login");
 
-    // A signed-in client goes straight back to their portal.
-    if (access.session) { openPortal(access.session); return; }
+    // A signed-in client goes straight back to their portal; a signed-in
+    // site_admin has no portal at all -- js/admin.js's floating chip
+    // (already showing for an active site_admin session) is the way back
+    // in, so this is a deliberate no-op for them rather than forcing the
+    // wrong destination open.
+    if (access.session) {
+      if (access.session.siteRole !== "site_admin") openPortal(access.session);
+      return;
+    }
     $("#accessSignin").hidden = false;
 
     const ov = $("#accessOverlay");
@@ -1666,22 +1796,99 @@
      map's own key isn't tied to a specific project window to reopen). */
   function openResourceByKey(resourceKey) {
     const m = /^project\.([^:]+):(.+)$/.exec(resourceKey);
-    if (m) { openExample(m[1], null, m[2]); return; }
+    // resolveNow: the reader already clicked this exact experience once
+    // (that's how it became "pending" in the first place) — reopening it
+    // passively behind a locked placeholder would make login feel like it
+    // didn't work.
+    if (m) { openExample(m[1], null, m[2], { resolveNow: true }); return; }
+    openPortal(access.session);
+  }
+
+  /* Shared tail for both password sign-in and a same-tab (no redirect)
+     sign-up: rebuild access.session, notify admin.js's listener, then
+     either resume exactly what the guest originally asked for or fall
+     back to the portal — same destination-preservation submitAccess()
+     always did, just factored out so signUp()'s success path can reuse
+     it instead of duplicating it. */
+  async function finishSignIn(session) {
+    await buildSessionFromAuth(session);
+    document.dispatchEvent(new CustomEvent("dts:signed-in",
+      { detail: { session: access.session, restored: false } }));
+
+    // A site_admin has no client portal and no gated experience to resume
+    // into -- js/admin.js's own dts:signed-in listener owns their whole
+    // destination (the Admin Board), never this function.
+    if (access.session.siteRole === "site_admin") return;
+
+    if (access.pendingResourceKey) {
+      const key = access.pendingResourceKey;
+      access.pendingResourceKey = null;
+      closeAccess();
+      openResourceByKey(key);
+      return;
+    }
     openPortal(access.session);
   }
 
   async function submitAccess(e) {
     e.preventDefault();
     $("#accessError").hidden = true;
+    $("#accessSuccessNote").hidden = true;
     const btn = $("#accessSubmit");
     const label = btn.textContent;
-    btn.disabled = true; btn.textContent = "Checking…";
 
+    // Suppressed for the whole call (even the validation-error early
+    // returns, harmlessly) so the onAuthStateChange listener never
+    // double-handles a sign-in this function is already completing itself.
+    localAuthInFlight = true;
+    try {
+
+    if (access.mode === "signup") {
+      const email = $("#accessId").value.trim();
+      const password = $("#accessCode").value;
+      if (password !== $("#accessConfirm").value) {
+        $("#accessError").textContent = "Passwords don’t match.";
+        $("#accessError").hidden = false;
+        return;
+      }
+      btn.disabled = true; btn.textContent = "Creating…";
+      const { data, error } = await window.DTS_SUPABASE.auth.signUp({
+        email, password,
+        options: { emailRedirectTo: window.location.origin + window.location.pathname }
+      });
+      btn.disabled = false; btn.textContent = label;
+
+      if (error) {
+        $("#accessError").textContent = error.message ||
+          "We couldn't create that account. Try again, or contact the DTS team.";
+        $("#accessError").hidden = false;
+        return;
+      }
+
+      $("#accessCode").value = "";
+      $("#accessConfirm").value = "";
+
+      // Email confirmation is required (project setting) — signUp() never
+      // returns a usable session in that case. Tell the reader to check
+      // their inbox and drop them back on the login form for when they do.
+      if (!data.session) {
+        $("#accessSuccessNote").textContent =
+          "Account created — check your email for a confirmation link, then log in.";
+        $("#accessSuccessNote").hidden = false;
+        setAccessMode("login");
+        return;
+      }
+
+      // Confirmation disabled on this project — signed in immediately.
+      await finishSignIn(data.session);
+      return;
+    }
+
+    btn.disabled = true; btn.textContent = "Checking…";
     const { data, error } = await window.DTS_SUPABASE.auth.signInWithPassword({
       email: $("#accessId").value.trim(),
       password: $("#accessCode").value
     });
-
     btn.disabled = false; btn.textContent = label;
 
     if (error) {
@@ -1693,20 +1900,28 @@
     }
 
     $("#accessCode").value = "";
-    await buildSessionFromAuth(data.session);
-    document.dispatchEvent(new CustomEvent("dts:signed-in", { detail: { session: access.session } }));
-
-    // Destination preservation: a gated resource sent the guest here —
-    // re-open exactly what they originally asked for instead of the portal.
-    if (access.pendingResourceKey) {
-      const key = access.pendingResourceKey;
-      access.pendingResourceKey = null;
-      closeAccess();
-      openResourceByKey(key);
-      return;
+    await finishSignIn(data.session);
+    } finally {
+      localAuthInFlight = false;
     }
+  }
 
-    openPortal(access.session);
+  /* Google/Microsoft sign-in. Supabase's OAuth flow is a full-page
+     redirect away and back (accounts.google.com / login.microsoftonline.com
+     -> Supabase's callback -> redirectTo), so any in-memory JS state —
+     including access.pendingResourceKey — is gone by the time the reader
+     lands back here. Persist what to do next in sessionStorage before
+     navigating away; restoreSession() picks it up on the return trip (and
+     ONLY then — an ordinary page load with an already-existing session must
+     not auto-open the portal). First-time OAuth sign-in auto-creates the
+     account (same profiles-row trigger as signUp()) — there's no separate
+     "sign up with Google" action, the button works identically either way. */
+  function signInWithOAuth(provider) {
+    sessionStorage.setItem(PENDING_RESOURCE_KEY_STORAGE, access.pendingResourceKey || "portal");
+    window.DTS_SUPABASE.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: window.location.origin + window.location.pathname }
+    });
   }
 
   /* Builds access.session from a live Supabase Auth session: the user's
@@ -1737,18 +1952,49 @@
 
   /* On boot: restore an existing Supabase session (if any) so reload no
      longer signs clients out. Fire-and-forget from boot() — never blocks
-     initial paint on a network round trip. */
+     initial paint on a network round trip.
+
+     Also the landing point for an OAuth return trip (supabase-js's
+     detectSessionInUrl, on by default, has already turned the redirect's
+     URL fragment into a real session by the time getSession() resolves
+     here). Only THAT case should resume anything — an ordinary page load
+     that simply already had a session must stay silent, or every reload
+     would re-pop the portal on a signed-in visitor. The sessionStorage
+     marker signInWithOAuth() sets right before navigating away is what
+     tells the two apart. */
   async function restoreSession() {
-    const { data } = await window.DTS_SUPABASE.auth.getSession();
-    if (!data || !data.session) return;
-    await buildSessionFromAuth(data.session);
-    document.dispatchEvent(new CustomEvent("dts:signed-in", { detail: { session: access.session } }));
+    localAuthInFlight = true;
+    try {
+      const { data } = await window.DTS_SUPABASE.auth.getSession();
+      if (!data || !data.session) return;
+      await buildSessionFromAuth(data.session);
+      document.dispatchEvent(new CustomEvent("dts:signed-in",
+        { detail: { session: access.session, restored: true } }));
+
+      const returnTo = sessionStorage.getItem(PENDING_RESOURCE_KEY_STORAGE);
+      if (returnTo) sessionStorage.removeItem(PENDING_RESOURCE_KEY_STORAGE);
+      // Same as finishSignIn(): a site_admin's destination is the Admin
+      // Board, handled entirely by js/admin.js's own listener.
+      if (access.session.siteRole === "site_admin") return;
+      if (!returnTo) return;
+      access.pendingResourceKey = null;
+      if (returnTo === "portal") { openPortal(access.session); return; }
+      openResourceByKey(returnTo);
+    } finally {
+      localAuthInFlight = false;
+    }
   }
 
   function submitForgotPassword(email) {
     if (!email) return;
+    // The UI message stays generic either way (don't leak whether an
+    // email has an account) -- but log the real failure reason so a
+    // silent delivery problem (rate limit, unwhitelisted redirect URL,
+    // etc.) is actually diagnosable instead of just "no email arrived".
     window.DTS_SUPABASE.auth.resetPasswordForEmail(email, {
       redirectTo: window.location.origin + window.location.pathname
+    }).then(({ error }) => {
+      if (error) console.warn("[dts] forgot-password request failed:", error.message);
     });
   }
 
@@ -1821,7 +2067,7 @@
         '<span class="portal-tile-kicker">YOUR TWIN</span>' +
         '<span class="portal-tile-title">' + escapeHTML(primary.title) + '</span>' +
         '<span class="portal-tile-cta">Open the twin</span>';
-      big.addEventListener("click", () => { closePortal(false); openExample(primary.projectId, null, primary.expId); });
+      big.addEventListener("click", () => { closePortal(false); openExample(primary.projectId, null, primary.expId, { resolveNow: true }); });
       tiles.appendChild(big);
     }
 
@@ -1868,7 +2114,7 @@
           '<span class="portal-app-duration">Live twin</span>' +
         '</span>' +
         '<span class="portal-app-title">' + escapeHTML(item.label) + '</span>';
-      card.addEventListener("click", () => { closePortal(false); openExample(item.projectId, null, item.expId); });
+      card.addEventListener("click", () => { closePortal(false); openExample(item.projectId, null, item.expId, { resolveNow: true }); });
       list.appendChild(card);
     });
 
@@ -1925,12 +2171,22 @@
   }
 
   function signOut() {
-    window.DTS_SUPABASE.auth.signOut();
     closePortal(true);
     $("#accessSignin").hidden = false;
     $("#accessId").value = "";
     $("#accessCode").value = "";
     $("#accessError").hidden = true;
+    // A full reload, not just clearing access.session, is the only
+    // reliable way to actually revoke access client-side: every
+    // experience resolved this session had its real target written
+    // straight into the shared cfg node (resolveExperienceNode()'s
+    // Object.assign), and the GIS map/tour cache has no clean "undo" —
+    // without reloading, previously-viewed gated content stayed openable
+    // after sign-out with no server round trip to catch it (found in
+    // testing 2026-08-08).
+    window.DTS_SUPABASE.auth.signOut().finally(() => {
+      window.location.reload();
+    });
   }
 
   /* ============================================================
@@ -2429,7 +2685,16 @@
     });
     // "Enter Twin" — if the active example has its own experience,
     // open it in a new tab; otherwise open the shared showcase.
-    $("#exEnter").addEventListener("click", () => {
+    $("#exEnter").addEventListener("click", async () => {
+      // A gated experience isn't resolved until this explicit click (see
+      // showExperience()'s resolveNow gate) — resolve it now, which opens
+      // the sign-in form on a 401 instead of fullscreening a blank pane.
+      const ex = cfg.examples && cfg.examples[activeExampleId];
+      const target = ex && (ex.experiences || []).find((e) => e.id === activeExperienceId);
+      if (target && !experienceIsAvailable(target)) {
+        await showExperience(ex, activeExperienceId, { resolveNow: true });
+        if (!experienceIsAvailable(target)) return;
+      }
       // Fullscreen the live experience pane in place. The project window
       // stays open behind it and keeps its scroll position, so exiting
       // fullscreen returns the reader exactly where they were.
@@ -2515,6 +2780,7 @@
     // Client portal (post-login)
     $("#portalMenuBtn").addEventListener("click", togglePortalMenu);
     $("#portalSignout").addEventListener("click", signOut);
+    $("#portalClose").addEventListener("click", () => closePortal(false));
     $$("#portalMenu .portal-menu-tile").forEach((t) =>
       t.addEventListener("click", () => showPortalView(t.dataset.portalView))
     );
@@ -2543,6 +2809,12 @@
         || cfg.contact.ctas[0];
       if (discovery) openLeadForm(discovery.id, discovery.stage);
     });
+    $("#accessModeToggle").addEventListener("click", () => {
+      setAccessMode(access.mode === "signup" ? "login" : "signup");
+      setTimeout(() => $("#accessId").focus(), 30);
+    });
+    $("#accessGoogle").addEventListener("click", () => signInWithOAuth("google"));
+    $("#accessMicrosoft").addEventListener("click", () => signInWithOAuth("azure"));
 
     // Mobile slide-to-contact bar toggles cards ⇄ contact.
     $("#contactBar").addEventListener("click", () => {
