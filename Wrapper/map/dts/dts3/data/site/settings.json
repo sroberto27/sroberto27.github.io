@@ -29,7 +29,8 @@
     "tourUrl": "https://spaces.dtsxr.com/tour/4fb22059",
     "origin": "https://spaces.dtsxr.com",
     "homeSweepId": null,
-    "defaultTransitionTime": 1500
+    "defaultTransitionTime": 1500,
+    "access": "public"
   },
   "clientPortalUrl": "#access-your-twin",
   "visionPro": {

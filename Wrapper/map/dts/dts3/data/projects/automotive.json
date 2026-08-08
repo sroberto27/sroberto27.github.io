@@ -19,26 +19,30 @@
     "label": "Walk the Dealership",
     "tourUrl": "https://spaces.dtsxr.com/tour/fee23e79",
     "origin": "https://spaces.dtsxr.com",
-    "sweepId": null
+    "sweepId": null,
+    "access": "registered"
   },
   "links": [
     {
       "_type": "link",
       "label": "BMW X1 vehicle twin",
       "url": "https://spaces.dtsxr.com/tour/026593c5",
-      "kind": "treedis"
+      "kind": "treedis",
+      "access": "registered"
     },
     {
       "_type": "link",
       "label": "BMW X5 vehicle twin",
       "url": "https://spaces.dtsxr.com/tour/352ad07a",
-      "kind": "treedis"
+      "kind": "treedis",
+      "access": "registered"
     },
     {
       "_type": "link",
       "label": "BMW X7 vehicle twin",
       "url": "https://spaces.dtsxr.com/tour/bfab6d52",
-      "kind": "treedis"
+      "kind": "treedis",
+      "access": "registered"
     },
     {
       "_type": "link",

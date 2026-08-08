@@ -22,14 +22,16 @@
       "tourUrl": "https://spaces.dtsxr.com/tour/56111605",
       "origin": "https://spaces.dtsxr.com",
       "sweepId": null,
-      "default": true
+      "default": true,
+      "access": "registered"
     },
     {
       "_type": "gis",
       "id": "map",
       "label": "Parish map",
       "mapId": "iberia-coastal",
-      "tourId": "iberia-coastal-intro"
+      "tourId": "iberia-coastal-intro",
+      "access": "registered"
     }
   ],
   "links": [],

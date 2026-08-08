@@ -1,0 +1,12 @@
+{
+  "name": "dts-migration-tooling",
+  "private": true,
+  "type": "module",
+  "description": "Node scripts used only by the Cloudflare + Supabase migration (docs/migration/). The site itself stays vanilla JS with no runtime dependencies — this package.json is build/migration tooling only, never shipped to the browser.",
+  "scripts": {
+    "seed-dev": "node scripts/seed-dev.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
+  }
+}

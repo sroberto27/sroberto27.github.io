@@ -25,7 +25,8 @@
     "watch": {
       "kind": "url",
       "value": "https://vimeo.com/390616842"
-    }
+    },
+    "access": "registered"
   },
   "links": [
     {

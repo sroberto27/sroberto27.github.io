@@ -141,6 +141,11 @@
         "file": "projects/heritage.json",
         "type": "project",
         "id": "project.heritage"
+      },
+      {
+        "file": "projects/emergency.json",
+        "type": "project",
+        "id": "project.emergency"
       }
     ],
     "forms": [

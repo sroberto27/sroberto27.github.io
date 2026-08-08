@@ -19,14 +19,16 @@
     "label": "Explore the Virtual Campus",
     "tourUrl": "https://spaces.dtsxr.com/tour/8e4ca3fc",
     "origin": "https://spaces.dtsxr.com",
-    "sweepId": null
+    "sweepId": null,
+    "access": "registered"
   },
   "links": [
     {
       "_type": "link",
       "label": "SCSU Campus — VR-enabled tour",
       "url": "https://spaces.dtsxr.com/tour/scsu-campus-ade0f346",
-      "kind": "treedis"
+      "kind": "treedis",
+      "access": "registered"
     },
     {
       "_type": "link",

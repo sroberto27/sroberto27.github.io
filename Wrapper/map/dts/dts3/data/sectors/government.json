@@ -33,6 +33,11 @@
       "projectId": "civic",
       "title": "Civic Services",
       "text": "Libraries, transit, parks, civic engagement, accessibility."
+    },
+    {
+      "projectId": "emergency",
+      "title": "Safety & Emergency",
+      "text": "GOHSEP, FEMA PA documentation, disaster response twins."
     }
   ]
 }

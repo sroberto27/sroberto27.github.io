@@ -9,7 +9,7 @@ identity/access model each phase from 3 onward implements is defined in
 | 0 — Verify | done | `.gitignore` + `.env.example` scaffolded, approved | — |
 | 1 — Cloudflare foundation | done | **https://dts-website-4cu.pages.dev** (stable — always latest; per-deploy hash URLs like `987a897b...` change every redeploy, don't bookmark those) | deterministic checks pass; user confirmed tour, lead forms, demo sign-in, mobile |
 | 2 — Scrub secrets | done, except item 6 (GitHub repo privacy — deferred to domain cutover) | https://dts-website-4cu.pages.dev | secrets confirmed gone from live deploy; demo sign-in now localhost-only by design |
-| 3 — Supabase (dev): org/access schema + RLS + dummy seed | not started | — | — |
+| 3 — Supabase (dev): org/access schema + RLS + dummy seed | **done** | project `DTSdev` (`wsqvzyfvxjenqvqjpqjv`, region `us-west-2`) | schema/RLS/functions/seed verified by direct query; access backfill applied + validated; adversarial RLS check (SELECT + write-path) all pass |
 | 4 — Client auth swap + resource gating | not started | — | — |
 | 5 — Admin auth swap (site_role) | not started | — | — |
 | 5b — CMS access editors + org management | not started | — | — |
@@ -21,6 +21,146 @@ identity/access model each phase from 3 onward implements is defined in
 
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
+
+- 2026-08-08 — Ran `/migrate-phase3` step 8 (adversarial RLS check) —
+  **Phase 3 is now fully DONE.** Wrote a scripted check that signs in as
+  each dummy user with the ANON key (not service role, which bypasses RLS
+  entirely and would prove nothing) and queries what their own session can
+  actually see.
+  **Two false failures in the first run, both my own test-assertion bugs,
+  not real RLS problems — investigated each before accepting or dismissing
+  either:**
+  1. `testmember` "failed" a check expecting exactly 1 visible
+     `organization_members` row. The real count was 2. Investigated by
+     adding `user_id` to the query: the second row belonged to
+     `testorgadmin`, who is *also* a plain member of `beta-municipal`. This
+     is correct behavior under the "org members see their org's roster"
+     policy, not a leak — confirmed neither row was ever `acme-hotels`. Fixed
+     the assertion to check "every visible row is beta-municipal" instead of
+     an exact count that was wrong to begin with.
+  2. `testorgadmin` then "failed" two checks that had been passing — caused
+     by my own fix in (1) changing the row-string format (adding the
+     `user_id` suffix) without updating these two assertions' exact-match
+     comparisons. Fixed to use `.startsWith()`.
+  **After both fixes, every check passes** — `testadmin` (site_admin) sees
+  everything; `testuser` sees only their own direct entitlement and nothing
+  org-related; `testorgadmin` sees the full rosters/entitlements of both
+  orgs they belong to (Acme + Beta) and correctly does NOT see `testuser`'s
+  entitlement; `testmember` sees only Beta's data, never Acme's.
+  **Also added a write-path adversarial check** beyond what the phase file
+  literally asked for (SELECT-visibility only), since the infrastructure was
+  already built and this validates the exact mechanism Phase 5b's team
+  panel depends on: confirmed `testorgadmin` (org_admin at Acme, plain
+  member at Beta) CAN update their own membership row at Acme, and CANNOT
+  modify `testmember`'s row at Beta (RLS silently filters the UPDATE to
+  zero affected rows) — org_admin write scope is genuinely per-org, not
+  global, confirmed both directions, not just asserted from reading the
+  policy SQL.
+  Removed the temporary check script from the project directory afterward
+  (throwaway verification, was never meant to be committed).
+  Phase 3 complete. Next: `/migrate-phase4` — the security-critical client
+  auth swap + resource gating enforcement.
+
+- 2026-08-08 — Ran `/migrate-phase3` step 7. Wrote
+  `scripts/backfill-access.mjs` (defaults to dry-run/print-only; only writes
+  with `--apply`). **Caught a real bug in the script itself before showing
+  the plan for approval:** the first dry-run flagged all 15 real project
+  files as "NOT IN data/manifest.json", which was wrong — the manifest
+  stores project paths relative to `data/` (`"projects/campus.json"`, no
+  `data/` prefix), but the script compared against the prefixed form. Fixed
+  the comparison and re-ran before showing anything to the user, rather than
+  presenting a plan with a false flag on every single file.
+  **`emergency.json` decision — user chose to register it.** Read its actual
+  content for the first time this session (previously only knew it existed
+  and had no experience/media): a real, complete `government`-sector project
+  document (GOHSEP/FEMA PA documentation) that was simply never wired in. It
+  had no sector card either, which would have left it registered-but-
+  unreachable, so both were added: a card entry in `data/sectors/
+  government.json` and the manifest entry. Noted but NOT touched:
+  `government` sector's own `active` field is currently `false` (predates
+  this session, unrelated to the emergency.json question, out of scope for
+  this task — flagging only).
+  Applied the backfill (`--apply`) after review: `access: "public"` on the
+  homepage tour context (`data/site/settings.json` — documentation only,
+  nothing currently gates it), `access: "registered"` on all 14 legacy
+  `media` projects, both of `gfc.json`'s experiences (`tour` + `map`), and
+  the 4 leak links (3 in `automotive.json`, 1 in `campus.json`) — the vimeo
+  links in both files were correctly left untouched (spot-checked directly).
+  `heritage.json` correctly received no changes (nothing to gate) and
+  `emergency.json` correctly received none either (also nothing to gate,
+  registration alone was enough). Validated all 20 touched/read JSON files
+  parse correctly after writing, not just trusted the script's own "Done."
+  **Remaining in Phase 3:** step 8 (adversarial RLS check), step 9 (this
+  table row, once 8 is done).
+
+- 2026-08-08 — Ran `/migrate-phase3` steps 1-6. Supabase dev project
+  `DTSdev` (ref `wsqvzyfvxjenqvqjpqjv`, region `us-west-2`) created by the
+  user; `.env` filled with all 6 Supabase vars (never printed to chat — user
+  edited the file directly after being told not to paste secrets in-chat).
+  **Two real infrastructure bugs found and fixed, not routed around blindly:**
+  1. `supabase link` failed on a secondary "fetch API keys" step (a CLI
+     schema-validation error on a date field) — but the CORE link state
+     (project ref, org, Postgres version) was confirmed written correctly
+     regardless, so migrations proceeded via `supabase db push --db-url`
+     instead of depending on a full clean `link`.
+  2. `db.<ref>.supabase.co` (the "direct connection" host) only has an IPv6
+     DNS record, no IPv4 — confirmed via `nslookup`, not assumed. The
+     `aws-0-<region>.pooler.supabase.com` guess also failed ("tenant not
+     found") because the actual pooler cluster assignment was
+     `aws-1-us-west-2`, not `aws-0` — got the authoritative value from
+     Supabase's own Management API
+     (`GET /v1/projects/{ref}/config/database/pooler`) rather than guessing
+     further. **The working connection for this project:**
+     `postgresql://postgres.<ref>:<password>@aws-1-us-west-2.pooler.supabase.com:6543/postgres`
+     (transaction-mode session pooler, port 6543) — worth remembering for
+     any future phase that needs a direct DB connection to this project.
+  Wrote and applied 3 migrations (`supabase/migrations/`): core schema (7
+  tables per `ACCESS-MODEL.md` §2), RLS helper functions + deny-by-default
+  policies on every table, and a follow-up fix (see below). Verified by
+  direct SQL query (not just trusting `db push`'s success message): all 7
+  tables have `rowsecurity=true`; policy counts per table match exactly
+  what was written (profiles=2, organizations=4, organization_members=4,
+  resource_entitlements=4, client_apps=4, events=2, admin_audit=1); all 5
+  functions exist. (A 6th function, `rls_auto_enable`, also showed up —
+  that's Supabase's own automatic-RLS safety net from the "Enable automatic
+  RLS" project-creation checkbox, not something this migration wrote;
+  expected, not a bug.)
+  **Found and fixed a real bug in the migration's own `protect_site_role`
+  trigger**, confirmed empirically (queried `auth.uid()`/`auth.role()` on a
+  raw backend connection and got `null`/`null`) before touching anything: as
+  originally written, the trigger would have blocked even a legitimate
+  service-role/backend connection from ever setting the FIRST `site_admin`,
+  since `is_site_admin()` depends on `auth.uid()`, which is null outside a
+  PostgREST-mediated request. Fixed with an additive migration
+  (`20260807220200_fix_protect_site_role_bootstrap.sql`) allowing the change
+  when `auth.uid() is null` — safe because RLS already reduces any
+  unauthenticated PostgREST request on `profiles` to zero affected rows
+  before the trigger would ever see them, so this only opens the path that
+  backend/service connections already had on every other table anyway.
+  Wrote and ran `scripts/seed-dev.mjs`: 2 orgs (`acme-hotels`,
+  `beta-municipal`), 4 dummy users covering every role combination
+  including the multi-org case (`testorgadmin@example.com` = `org_admin`
+  at Acme + `member` at Beta simultaneously), 2 entitlements exercising
+  both `subject_type` paths (org-level: `project.gfc:map` -> acme-hotels;
+  user-level: `download.dummy-viewer-win` -> testuser), 1 `client_apps`
+  row. Verified by direct query, not just the script's own output. Dev
+  passwords were shown once in this session for testing purposes, never
+  written to any file.
+  Wrote (did NOT run) `scripts/import-clients.mjs` — defaults to
+  `--dry-run`, groups rows into organizations, flags near-duplicate client
+  names as a probable duplicate-org bug per `migrate-handoff.md`'s
+  safeguard, and explicitly refuses to guess two things that need a human
+  decision at handoff: who is `org_admin` per org (needs `--org-admins`
+  input, never inferred from the sheet) and the legacy-`twin_url`-to-real-
+  `resource_key` mapping (needs `--resource-map` input).
+  Added `package.json` + `scripts/` — Node tooling for migration scripts
+  only, separate from the site's own vanilla-JS runtime (no framework
+  introduced to the browser-facing code).
+  **Remaining in Phase 3:** step 7 (`scripts/backfill-access.mjs`, needs its
+  own diff-review approval since it writes to reviewed `/data` content, and
+  will surface the `emergency.json`-not-in-manifest question), step 8 (the
+  adversarial RLS check — confirm `testmember` genuinely cannot see Acme's
+  rows, etc.), step 9 (this table's Status column, once 7-8 are done).
 
 - 2026-08-07 — Ran `/migrate-phase2`. Traced every real consumer before
   editing (not just following the phase file's literal text):

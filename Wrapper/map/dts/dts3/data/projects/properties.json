@@ -19,7 +19,8 @@
     "label": "Explore Downtown Lafayette",
     "tourUrl": "https://spaces.dtsxr.com/tour/4fb22059",
     "origin": "https://spaces.dtsxr.com",
-    "sweepId": null
+    "sweepId": null,
+    "access": "registered"
   },
   "links": [
     {

@@ -19,7 +19,8 @@
     "label": "Explore the Solar Farm",
     "tourUrl": "https://spaces.dtsxr.com/tour/ea18f14b",
     "origin": "https://spaces.dtsxr.com",
-    "sweepId": null
+    "sweepId": null,
+    "access": "registered"
   },
   "links": [
     {
