@@ -951,6 +951,62 @@ identity/access model each phase from 3 onward implements is defined in
   updated the migration-kit instructions. Nothing has been executed.
 
 ## Open questions / blockers
+- **RESOLVED — CSP blocked arbitrary admin-authored external URLs across
+  every content-loading directive, not just images.** Started from a user
+  report: setting a home-page hexagon's image to an Adobe Stock CDN URL
+  (`t4.ftcdn.net`) via the Admin Board silently failed to load. Root cause,
+  confirmed by reading `js/hex-media.js:180` (`probe.src = value` for
+  `_type: "image"` — a plain `<img>`, subject to CSP): Phase 1's `img-src`
+  was a narrow allowlist (`'self' data: blob:` + three specific GIS
+  tile-server origins) that only ever enumerated origins in active use AT
+  THAT TIME — every hex/gallery image was a local asset path then. But the
+  CMS schema (`source: {kind:"path"|"url"}`) has always supported arbitrary
+  external URLs by design (`fSource()` in `js/admin.js`), so a fixed
+  per-origin allowlist can never keep pace with whatever host an editor
+  picks. Confirmed the image URL itself was fine (curl: 200,
+  `Access-Control-Allow-Origin: *`) — the CSP was the only blocker. Real
+  migration regression, not pre-existing: GitHub Pages served no CSP at all,
+  so external URLs "just worked" there.
+
+  **At the user's request, audited every other URL-loading path in the CMS
+  against the CSP before fixing anything, rather than patching only the one
+  reported case — found three more real gaps, same root cause:**
+  1. **External direct video files** (a client's own hosted `.mp4`, not
+     YouTube/Vimeo) — `media-src` wasn't in the CSP AT ALL, so it fell back
+     to `default-src 'self'` and silently blocked any non-local video `src`
+     (`js/hex-media.js:198`, `v.src = value` on a real `<video>` element).
+  2. **YouTube embeds** — confirmed two DIFFERENT YouTube embed hosts are
+     actually built by real, already-shipped code:
+     `js/hex-media.js`'s `embedUrls()` uses `www.youtube.com/embed/`;
+     `js/gis/gis-tour.js`'s tour-step video uses
+     `www.youtube-nocookie.com/embed/`. Neither was ever in `frame-src`
+     (only `spaces.dtsxr.com` + `player.vimeo.com` were) — Vimeo worked,
+     YouTube has been fully coded but silently broken this whole time.
+  3. **GIS layers/model URLs beyond what's already allowlisted** —
+     `connect-src`'s three GIS hostnames (`maps.iberiagov.net`,
+     `cimsgeo.coastal.louisiana.gov`, `cimsgeo3.coastal.louisiana.gov`) only
+     work because they happen to be Iberia Parish's own servers, already
+     known from Phase 1's reconnaissance. But the Admin Board's Layer editor
+     ("Test connection", "Load fields from service", "+ Add layer") and
+     `<model-viewer>` (fetches GLB files via `fetch()`/XHR internally,
+     confirmed by tracing `js/gis/gis-esri.js`/`gis-viewer.js`'s own
+     `fetch()` usage as the same mechanism) both explicitly support ANY
+     external ArcGIS/WMS/geojson service or GLB URL an admin supplies — a
+     different project/parish's GIS server, or an externally-hosted 3D
+     model, would be blocked out of the box.
+
+  **Fix, consistent across all four (approved by the user after reviewing
+  the full audit, not applied unilaterally):** broadened `img-src`
+  (already done), added `media-src 'self' https:` (previously absent
+  entirely), and broadened `frame-src`/`connect-src` to accept any `https:`
+  source, replacing their narrow per-origin allowlists. `script-src`/
+  `object-src 'none'`/`base-uri 'self'` are untouched and remain strict —
+  those are the actual XSS-relevant boundaries, and every one of these four
+  gaps is in content only `site_admin` can author (already maximally
+  trusted via this phase's own routing work), never guest-facing input.
+  `connect-src` keeps its explicit `wss://wsqvzyfvxjenqvqjpqjv.supabase.co`
+  entry since a bare `https:` source doesn't cover the `wss:` scheme
+  Supabase Realtime needs.
 - **RESOLVED — `checkAccess()` now bypasses `client`/`restricted` for
   `site_admin`.** Found reading `functions/_lib/access.js` during Phase 5;
   fixed the same session at the user's request. Added `isSiteAdmin(userId,
