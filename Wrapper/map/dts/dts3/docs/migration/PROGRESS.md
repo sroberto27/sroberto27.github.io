@@ -1006,7 +1006,17 @@ identity/access model each phase from 3 onward implements is defined in
   trusted via this phase's own routing work), never guest-facing input.
   `connect-src` keeps its explicit `wss://wsqvzyfvxjenqvqjpqjv.supabase.co`
   entry since a bare `https:` source doesn't cover the `wss:` scheme
-  Supabase Realtime needs.
+  Supabase Realtime needs. Redeployed: https://7d72e764.dts-website-4cu.pages.dev
+  (stable alias: https://dts-website-4cu.pages.dev). **Verified live** —
+  curled the deployed site's response headers and confirmed the new CSP
+  string is exactly what's being served, not just a successful `wrangler`
+  exit code. **Not yet confirmed in a real browser:** the original reported
+  case (the Adobe Stock hexagon image) and the three incidentally-found
+  gaps (external video file, YouTube embed, a non-Iberia GIS layer/external
+  GLB) are all fixed by reading/tracing the code and the CSP directive each
+  depends on, not by clicking through the Admin Board — worth a quick retry
+  of the original image edit plus a spot-check of one more type (e.g. a
+  YouTube link on a hex) to close the loop.
 - **RESOLVED — `checkAccess()` now bypasses `client`/`restricted` for
   `site_admin`.** Found reading `functions/_lib/access.js` during Phase 5;
   fixed the same session at the user's request. Added `isSiteAdmin(userId,
