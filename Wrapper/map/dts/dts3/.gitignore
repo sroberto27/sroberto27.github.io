@@ -1,0 +1,13 @@
+# Secrets — never committed, per docs/migration/AUTOMATION-AND-CREDENTIALS.md
+.env
+.env.*
+!.env.example
+
+# Migration tooling (introduced in later phases)
+node_modules/
+.wrangler/
+.supabase/
+
+# OS/editor cruft
+.DS_Store
+Thumbs.db
