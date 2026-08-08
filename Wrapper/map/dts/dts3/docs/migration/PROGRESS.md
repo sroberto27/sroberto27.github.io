@@ -11,7 +11,7 @@ identity/access model each phase from 3 onward implements is defined in
 | 2 — Scrub secrets | done, except item 6 (GitHub repo privacy — deferred to domain cutover) | https://dts-website-4cu.pages.dev | secrets confirmed gone from live deploy; demo sign-in now localhost-only by design |
 | 3 — Supabase (dev): org/access schema + RLS + dummy seed | **done** | project `DTSdev` (`wsqvzyfvxjenqvqjpqjv`, region `us-west-2`) | schema/RLS/functions/seed verified by direct query; access backfill applied + validated; adversarial RLS check (SELECT + write-path) all pass |
 | 4 — Client auth swap + resource gating | **DONE** — full manual checklist passed, including both post-fix retests | https://dts-website-4cu.pages.dev | Every checklist item passed except forgot-password (item 14 — blocked on the deferred SMTP setup, an account/infra gap, not a code issue; retest once §7 is done). All real bugs found during testing (resource-key decode, gating-UX auto-prompt, locked-placeholder-not-restored, cross-tab sign-in sync, sign-out not revoking cached access) fixed and user-confirmed live, not just deployed. |
-| 5 — Admin auth swap (site_role) | code complete, **needs user's manual test pass** | https://dts-website-4cu.pages.dev (not yet redeployed with this phase's changes) | not yet tested live |
+| 5 — Admin auth swap (site_role) | **DONE** | https://dts-website-4cu.pages.dev (not yet redeployed with this phase's changes) | user ran all 6 local checks (site_admin→board, org_admin→portal/no board, plain user→portal, draft/preview/discard, zip export, real sign-out) — all PASS |
 | 5b — CMS access editors + org management | not started | — | — |
 | 6 — Content pipeline (public/protected split) | not started | — | — |
 | 7 — Lead form | not started | — | — |
@@ -21,6 +21,27 @@ identity/access model each phase from 3 onward implements is defined in
 
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
+
+- 2026-08-08 — **Phase 5 is DONE — user ran all 6 local checks, all PASS**
+  (site_admin → Admin Board directly; org_admin → ordinary portal, board
+  never opens; plain registered user → ordinary portal, no admin
+  affordance; Save draft & preview → chip, not board, then discard; zip
+  export; real Sign out from inside the board actually ends the Supabase
+  session). Committed together with the previously-uncommitted Phase 4
+  follow-up work (`9d6af05d`).
+
+  **Also fixed, same session, at the user's request:** the `checkAccess()`
+  gap flagged in this entry's own Open questions section (site_admin had no
+  bypass for `client`/`restricted` resources at all, not just `restricted`
+  as first flagged — corrected after re-reading `ACCESS-MODEL.md` §8's table
+  row for `client` resources too). See Open questions below for the fix and
+  its live verification. Not yet committed — see next entry once it is.
+
+  **User asked to stop testing via `python3 -m http.server` going
+  forward and test only against the dev Cloudflare URL from here on** — not
+  yet acted on this session (this phase's changes, plus the `checkAccess()`
+  fix above, aren't deployed yet). Next session/step: rebuild the deploy
+  staging directory and redeploy before any further testing.
 
 - 2026-08-08 — Ran `/migrate-phase5`. Deleted the entire old ADMIN
   AUTHENTICATION block in `js/admin.js` (`adminAccounts`, `registerAdmins`,
@@ -914,14 +935,23 @@ identity/access model each phase from 3 onward implements is defined in
   updated the migration-kit instructions. Nothing has been executed.
 
 ## Open questions / blockers
-- **`checkAccess()` has no `site_admin` bypass for `restricted` resources**
-  (found reading `functions/_lib/access.js` during Phase 5; not fixed there —
-  out of scope, Phase 4 already closed). Contradicts `ACCESS-MODEL.md` §8
-  ("site_admin: yes (all)" for restricted resources) — a `site_admin` with no
-  direct/org entitlement would get a false 403. Zero live impact today (no
-  `/data` resource is currently `client`/`restricted`), but fix before Phase
-  8 (downloads use the same `restricted` path) or before the first real
-  `restricted` resource is authored, whichever comes first.
+- **RESOLVED — `checkAccess()` now bypasses `client`/`restricted` for
+  `site_admin`.** Found reading `functions/_lib/access.js` during Phase 5;
+  fixed the same session at the user's request. Added `isSiteAdmin(userId,
+  env)` (mirrors the `is_site_admin()` Postgres function's own semantics —
+  `profiles.site_role = 'site_admin'` — via the service-role REST query this
+  Function already uses for every other table, since it can't call a
+  per-request RLS function the way an authenticated PostgREST client can).
+  `checkAccess()` now checks it once for `client`/`restricted` before falling
+  through to the ordinary membership/entitlement checks; `public`/
+  `registered` are untouched (no extra query on the common path). **Verified
+  live against the real dev Supabase project, calling the actual exported
+  `checkAccess()` function (not a reimplementation)** with real
+  `testadmin`/`testuser` ids and a synthetic, deliberately nonexistent
+  resource key: `testadmin` (site_admin, zero org memberships, zero
+  entitlements) → `true` for both `client` and `restricted`; `testuser`
+  (plain registered, same zero memberships/entitlements) → `false` for both.
+  Confirms the bypass is role-driven, not accidentally permissive.
 - **RESOLVED — `assets/ToolBox.glb` compressed and redeployed** (38.15 MB →
   11.46 MB; see session log for the exact method). **Still needs the user to
   visually confirm the compressed textures look acceptable at the hex-4

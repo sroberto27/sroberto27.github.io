@@ -46,6 +46,11 @@ async function pgrst(env, queryPath) {
   return await resp.json();
 }
 
+async function isSiteAdmin(userId, env) {
+  const rows = await pgrst(env, `profiles?user_id=eq.${userId}&select=site_role&limit=1`);
+  return rows.length > 0 && rows[0].site_role === "site_admin";
+}
+
 async function hasActiveOrgMembership(userId, env) {
   const rows = await pgrst(env, `organization_members?user_id=eq.${userId}&status=eq.active&select=org_id&limit=1`);
   return rows.length > 0;
@@ -74,6 +79,14 @@ export async function checkAccess(level, userId, resourceKey, env) {
   if (level === "public") return true;
   if (!userId) return false; // registered/client/restricted all require SOME session
   if (level === "registered") return true;
+  // site_admin sees every client/restricted resource regardless of org
+  // membership or a specific entitlement row (ACCESS-MODEL.md §8: "Open
+  // client resources for own org" / "Open restricted resources entitled to
+  // them" -> "yes (all)" for site_admin) -- checked once here rather than
+  // duplicated into both branches below.
+  if (level === "client" || level === "restricted") {
+    if (await isSiteAdmin(userId, env)) return true;
+  }
   if (level === "client") return await hasActiveOrgMembership(userId, env);
   if (level === "restricted") return await hasEntitlement(userId, resourceKey, env);
   return false; // unrecognized level -- deny by default
