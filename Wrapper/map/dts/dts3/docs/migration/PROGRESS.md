@@ -12,7 +12,7 @@ identity/access model each phase from 3 onward implements is defined in
 | 3 — Supabase (dev): org/access schema + RLS + dummy seed | **done** | project `DTSdev` (`wsqvzyfvxjenqvqjpqjv`, region `us-west-2`) | schema/RLS/functions/seed verified by direct query; access backfill applied + validated; adversarial RLS check (SELECT + write-path) all pass |
 | 4 — Client auth swap + resource gating | **DONE** — full manual checklist passed, including both post-fix retests | https://dts-website-4cu.pages.dev | Every checklist item passed except forgot-password (item 14 — blocked on the deferred SMTP setup, an account/infra gap, not a code issue; retest once §7 is done). All real bugs found during testing (resource-key decode, gating-UX auto-prompt, locked-placeholder-not-restored, cross-tab sign-in sync, sign-out not revoking cached access) fixed and user-confirmed live, not just deployed. |
 | 5 — Admin auth swap (site_role) | **DONE** | https://dts-website-4cu.pages.dev (deployed, `b693ed64...`) | user ran all 6 local checks pre-deploy (site_admin→board, org_admin→portal/no board, plain user→portal, draft/preview/discard, zip export, real sign-out) — all PASS; not yet re-confirmed on the dev URL |
-| 5b — CMS access editors + org management | **in progress — Checkpoints A + B done, user-confirmed live; Checkpoint C deployed, Functions verified, UI not yet click-tested** | https://dts-website-4cu.pages.dev (deployed, `a30b1e22...`) | Checkpoints A + B fully confirmed live; Checkpoint C's invite.js verified end-to-end (local + deployed) |
+| 5b — CMS access editors + org management | **DONE** — all three checkpoints (A: access editors + entitlement picker; B: Organizations/Users/Access screens; C: org-admin team panel) complete and user-confirmed live | https://dts-website-4cu.pages.dev (deployed, `a30b1e22...`) | User confirmed all three checkpoints live, including the org-admin panel's full member management, the plain-`member`-sees-nothing case, and that `testadmin`'s Admin Board screens still work unchanged |
 | 6 — Content pipeline (public/protected split) | not started | — | — |
 | 7 — Lead form | not started | — | — |
 | 8 — Builds (org/user entitlement-gated) | not started | — | — |
@@ -21,6 +21,26 @@ identity/access model each phase from 3 onward implements is defined in
 
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
+
+- 2026-08-08 — **Phase 5b is DONE.** User confirmed Checkpoint C's portal
+  panel live: add-existing/invite-new/remove/role-toggle all worked for
+  `testorgadmin` at Acme Hotels, `testmember` (plain member, no org_admin
+  anywhere) correctly sees no org-admin panel at all, and `testadmin`'s
+  Admin Board (Organizations/Users/Access screens from Checkpoint B) is
+  unaffected. Combined with Checkpoints A and B's earlier live
+  confirmations, every acceptance point in step 9 of the phase file is
+  now satisfied: `site_admin` reaches and uses all three new nav
+  sections and can edit access levels on a real project; `org_admin`
+  sees only the team panel, scoped to their own org; a plain member sees
+  no admin surface; the adversarial cross-org test fails closed (proven
+  server-side across Checkpoints B and C, 28 combined automated
+  assertions); zip export and normal content editing are unchanged. Two
+  real bugs found and fixed along the way, both documented above in
+  their own checkpoint entries: `checkAccess()` had no `site_admin`
+  bypass for `client`/`restricted` resources (found in Phase 5, fixed
+  same session), and disabling an organization didn't actually revoke
+  `client`-level access until Checkpoint B's fix (`activeOrgIdsFor()`).
+  Next: `/migrate-phase6`.
 
 - 2026-08-08 — **Phase 5b Checkpoint C done.** New
   `functions/api/org/invite.js`: creates a brand-new account (dev: the
