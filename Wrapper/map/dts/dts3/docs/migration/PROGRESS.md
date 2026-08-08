@@ -12,7 +12,7 @@ identity/access model each phase from 3 onward implements is defined in
 | 3 — Supabase (dev): org/access schema + RLS + dummy seed | **done** | project `DTSdev` (`wsqvzyfvxjenqvqjpqjv`, region `us-west-2`) | schema/RLS/functions/seed verified by direct query; access backfill applied + validated; adversarial RLS check (SELECT + write-path) all pass |
 | 4 — Client auth swap + resource gating | **DONE** — full manual checklist passed, including both post-fix retests | https://dts-website-4cu.pages.dev | Every checklist item passed except forgot-password (item 14 — blocked on the deferred SMTP setup, an account/infra gap, not a code issue; retest once §7 is done). All real bugs found during testing (resource-key decode, gating-UX auto-prompt, locked-placeholder-not-restored, cross-tab sign-in sync, sign-out not revoking cached access) fixed and user-confirmed live, not just deployed. |
 | 5 — Admin auth swap (site_role) | **DONE** | https://dts-website-4cu.pages.dev (deployed, `b693ed64...`) | user ran all 6 local checks pre-deploy (site_admin→board, org_admin→portal/no board, plain user→portal, draft/preview/discard, zip export, real sign-out) — all PASS; not yet re-confirmed on the dev URL |
-| 5b — CMS access editors + org management | **in progress — Checkpoints A + B done** (org-admin panel + adversarial test still to come as Checkpoint C) | not yet deployed with Checkpoint B | Checkpoint A confirmed live by user; Checkpoint B Functions verified end-to-end (22 assertions), admin.js UI not yet click-tested |
+| 5b — CMS access editors + org management | **in progress — Checkpoints A + B done** (org-admin panel + adversarial test still to come as Checkpoint C) | https://dts-website-4cu.pages.dev (deployed, `ac9f971e...`) | Checkpoint A confirmed live by user; Checkpoint B Functions verified end-to-end (22 local + 5 deployed assertions), admin.js UI not yet click-tested |
 | 6 — Content pipeline (public/protected split) | not started | — | — |
 | 7 — Lead form | not started | — | — |
 | 8 — Builds (org/user entitlement-gated) | not started | — | — |
@@ -87,8 +87,13 @@ identity/access model each phase from 3 onward implements is defined in
   since the endpoint is shared; and `admin_audit` rows for every one of
   `organization.create/update`, `user.create`, `site_role.change`,
   `account.disable/reactivate`, `membership.add/remove`, `org_role.change`.
-  **Not yet verified: the admin.js UI in a browser** — needs the user's
-  live click-through once deployed.
+  **Redeployed and re-verified against the real deployed site**
+  (https://ac9f971e.dts-website-4cu.pages.dev, stable alias
+  https://dts-website-4cu.pages.dev) — spot-checked the two new dynamic
+  routes (`organizations/[id].js`, `users/[id].js`) plus `org/members.js`
+  through Cloudflare's own routing, all pass, cleaned up. **Not yet
+  verified: the admin.js UI in a browser** — needs the user's live
+  click-through.
 
 - 2026-08-08 — Started `/migrate-phase5b`. Planned as three checkpoints
   (A: nav + access editors + entitlement picker; B: Organizations/Users
