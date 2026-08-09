@@ -51,3 +51,44 @@ export async function onRequestPatch(context) {
 
   return json({ organization: updated }, 200);
 }
+
+export async function onRequestDelete(context) {
+  const { request, params, env } = context;
+  const auth = await requireSiteAdmin(request, env);
+  if (auth.response) return auth.response;
+
+  const id = params.id;
+  const existingRows = await pgrst(env, `organizations?id=eq.${id}&select=*`);
+  if (!existingRows.length) return json({ error: "not found" }, 404);
+  const existing = existingRows[0];
+
+  // organization_members.org_id cascades automatically (ON DELETE CASCADE,
+  // confirmed by reading the migration) -- no cleanup needed there. Three
+  // other columns reference organizations with NO cascade at all
+  // (admin_audit.org_id, events.org_id, resource_entitlements.subject_id
+  // when subject_type='org') -- same reasoning as the user-delete endpoint's
+  // own cleanup: null the audit/event link (history stays, the live
+  // reference doesn't), and explicitly delete org-held entitlements since
+  // subject_id is polymorphic and deliberately not a real foreign key.
+  await pgrst(env, `admin_audit?org_id=eq.${id}`, { method: "PATCH", body: { org_id: null } });
+  await pgrst(env, `events?org_id=eq.${id}`, { method: "PATCH", body: { org_id: null } });
+  await pgrst(env, `resource_entitlements?subject_type=eq.org&subject_id=eq.${id}`, { method: "DELETE", prefer: "return=minimal" });
+
+  await pgrst(env, `organizations?id=eq.${id}`, { method: "DELETE", prefer: "return=minimal" });
+
+  // orgId deliberately omitted (stays null) -- the org this row is ABOUT no
+  // longer exists the instant after this DELETE succeeds, and admin_audit.
+  // org_id has no cascade, so setting it here would immediately re-create
+  // the exact dangling reference the cleanup above just removed. The org's
+  // identity is preserved in `before` instead.
+  await writeAudit(env, {
+    actorUserId: auth.userId,
+    action: "organization.delete",
+    targetType: "organization",
+    targetId: id,
+    before: existing,
+    after: null,
+  });
+
+  return json({ ok: true }, 200);
+}

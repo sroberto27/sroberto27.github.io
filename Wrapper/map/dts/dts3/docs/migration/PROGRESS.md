@@ -22,6 +22,75 @@ identity/access model each phase from 3 onward implements is defined in
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
 
+- 2026-08-09 — **Admin Board delete-option audit, requested by the user
+  independent of any phase file** ("go through the CMS and add a remove
+  option to anything that would benefit from it... organizations, users,
+  maps, and others"). Surveyed the whole board first (an Explore agent
+  inventory) before changing anything, since the honest answer turned out to
+  be mixed: projects, GIS maps, GIS tours, GIS feature tours, and every
+  array-based sub-list (experiences/links/gallery/FAQ/fun facts/sector
+  cards) already had real delete, not just disable — nothing to add there.
+  Three genuine gaps found and fixed:
+
+  1. **Organizations** — real `DELETE /api/admin/organizations/:id` added.
+     Checked the actual FK constraints before writing anything (not
+     assumed): `organization_members.org_id` cascades automatically, but
+     `admin_audit.org_id`, `events.org_id`, and `resource_entitlements.
+     subject_id` (polymorphic, deliberately not a real FK per
+     ACCESS-MODEL.md §2) do not — a raw delete would either FK-violate on
+     any org with audit history, or silently orphan its entitlement grants.
+     Fixed by nulling the audit/event columns (history rows survive, just
+     lose the live link) and explicitly deleting org-held entitlements
+     before the org row itself. New audit verb `organization.delete`
+     (additive, same reasoning as `organization.create`/`update`).
+  2. **Users** — real `DELETE /api/admin/users/:id` added via the GoTrue
+     Admin API (never a raw Postgres delete on `auth.users`, matching how
+     creation already works). Same FK situation as orgs
+     (`resource_entitlements.granted_by`, `admin_audit.actor_user_id`,
+     `events.user_id`, all nullable/no-cascade — nulled before delete).
+     Two safety rails added that Disable never needed: a site_admin can't
+     delete their OWN account (blocks a mid-session self-lockout), and the
+     LAST remaining site_admin can't be deleted by anyone (would lock
+     everyone out of the board). New audit verb `user.delete`.
+  3. **Sectors (category pages)** — the one whole-document type with NO
+     add or delete at all (a fixed set until now). Added `addSector()`/
+     `deleteSector()` mirroring `addProject()`/`deleteProject()` exactly.
+     Delete is blocked outright (not cascaded) while any project still has
+     that `sectorId` — traced the real consumer first: `content-loader.js`
+     maps it into `cfg.examples[id].sector`, which `js/app.js`'s sector-view
+     rendering looks up directly (`cfg.categories.find(c => c.id ===
+     ex.sector)`) — a project left pointing at a deleted sector would
+     silently break that lookup on the LIVE site, not just look odd in the
+     admin nav, so this is deliberately never auto-cascaded the way a GIS
+     map's tours are. The admin is pointed at each project's own existing
+     Category dropdown to reassign first.
+
+  **Verified live against the real deployed site**
+  (https://1d8b2ad5.dts-website-4cu.pages.dev) via another throwaway
+  scripted harness, deleted after use, touching only throwaway accounts —
+  never `testadmin`/`testuser`/`testorgadmin`/`testmember` themselves, and
+  confirmed no lingering rows afterward: deleting a throwaway org
+  cascade-removed a real membership automatically and left zero dangling
+  entitlement rows; deleting a throwaway user (after promoting it to
+  site_admin) correctly blocked when it tried to delete ITSELF, a different
+  real site_admin (`testadmin`) could still delete it successfully, and
+  `testadmin` attempting to delete their OWN account was also correctly
+  blocked. **One limitation, stated plainly rather than glossed over:** the
+  "can't delete the LAST remaining site_admin" guard's count check is
+  correct by code reading, and its happy path (deleting one of several
+  site_admins) is live-verified, but actually triggering the block would
+  require reducing the shared dev project to a single site_admin first —
+  not something worth risking against the real dev environment just to
+  exercise a straightforward count comparison. Sectors add/delete is
+  client-side draft-only logic (recoverable via Discard Draft even if
+  wrong) — verified by `node --check` and tracing the real consumer, not
+  live-clicked.
+
+  **NOT yet verified — needs the user, in a browser:** the new Delete
+  buttons on Organizations/Users actually clicking through as expected, and
+  Sectors' new "+ Add category page" / "Delete this category page" — same
+  "not marked passed on their behalf" convention as every other phase.
+
 - 2026-08-09 — **Real Phase 8 gap found by the user's own manual testing pass,
   fixed same session.** Ran the full `docs/migration/PHASE8-BUILDS-TESTING.md`
   checklist against the live deploy: 12 of 13 passed. Test 8 failed — there

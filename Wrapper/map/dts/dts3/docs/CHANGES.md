@@ -2,6 +2,17 @@
 
 Newest first.
 
+## Admin Board — real delete added where Disable wasn't enough
+
+Organizations and Users now have a real, permanent Delete alongside the
+existing Disable (with a guard against deleting your own account or the
+last remaining site_admin). Category pages (sectors) can now be added and
+deleted too — previously a fixed set with no way to do either. Everything
+else in the CMS (projects, GIS maps/tours, and every list-style field)
+already had real delete; this closes the three gaps that didn't. See
+`docs/migration/PROGRESS.md` for the full detail, including the
+foreign-key cleanup needed to make Organization/User delete safe.
+
 ## Cloudflare migration — gated software downloads (Builds)
 
 A download is now just another `resource_key` (`download.<client_apps.key>`),

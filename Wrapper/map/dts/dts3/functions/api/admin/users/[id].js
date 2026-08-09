@@ -58,3 +58,64 @@ export async function onRequestPatch(context) {
   if (!Object.keys(result).length) return json({ error: "nothing to update" }, 400);
   return json(result, 200);
 }
+
+export async function onRequestDelete(context) {
+  const { request, params, env } = context;
+  const auth = await requireSiteAdmin(request, env);
+  if (auth.response) return auth.response;
+  const userId = params.id;
+
+  // Found missing entirely in Phase 8's follow-up audit of the Admin Board
+  // (only Disable existed anywhere for accounts). Two safety rails an admin
+  // Disable never needed: never let a signed-in site_admin delete their OWN
+  // account (their session would keep a valid token against a user that no
+  // longer exists), and never delete the LAST remaining site_admin (would
+  // lock everyone out of the Admin Board with no recovery path).
+  if (userId === auth.userId) return json({ error: "you can't delete your own account while signed in as it" }, 400);
+
+  let target;
+  try {
+    target = await gotrue(env, "/admin/users/" + userId);
+  } catch (_) {
+    return json({ error: "not found" }, 404);
+  }
+
+  const profileRows = await pgrst(env, `profiles?user_id=eq.${userId}&select=site_role`);
+  const siteRole = profileRows.length ? profileRows[0].site_role : "user";
+  if (siteRole === "site_admin") {
+    const admins = await pgrst(env, `profiles?site_role=eq.site_admin&select=user_id`);
+    if (admins.length <= 1) return json({ error: "can't delete the last remaining site_admin account" }, 400);
+  }
+
+  // auth.users(id) cascades automatically into profiles and
+  // organization_members (both declared ON DELETE CASCADE), but three other
+  // columns reference auth.users with NO cascade rule at all
+  // (admin_audit.actor_user_id, events.user_id, resource_entitlements.
+  // granted_by -- confirmed by reading the actual migration, not assumed) --
+  // deleting a user who has ever performed an admin action, triggered an
+  // event, or granted an entitlement would otherwise fail outright on a
+  // foreign-key violation. Nulling these preserves the historical rows
+  // (audit before/after snapshots still record what happened) while losing
+  // only the now-meaningless live link to a deleted account.
+  await pgrst(env, `admin_audit?actor_user_id=eq.${userId}`, { method: "PATCH", body: { actor_user_id: null } });
+  await pgrst(env, `events?user_id=eq.${userId}`, { method: "PATCH", body: { user_id: null } });
+  await pgrst(env, `resource_entitlements?granted_by=eq.${userId}`, { method: "PATCH", body: { granted_by: null } });
+  // subject_id is polymorphic (org OR user), so it's deliberately NOT a real
+  // foreign key (ACCESS-MODEL.md §2) -- a direct entitlement held BY this
+  // user would silently orphan rather than block the delete unless removed
+  // explicitly here.
+  await pgrst(env, `resource_entitlements?subject_type=eq.user&subject_id=eq.${userId}`, { method: "DELETE", prefer: "return=minimal" });
+
+  await gotrue(env, "/admin/users/" + userId, { method: "DELETE" });
+
+  await writeAudit(env, {
+    actorUserId: auth.userId,
+    action: "user.delete",
+    targetType: "user",
+    targetId: userId,
+    before: { email: target.email, site_role: siteRole },
+    after: null,
+  });
+
+  return json({ ok: true }, 200);
+}

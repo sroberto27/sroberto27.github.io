@@ -847,6 +847,65 @@
       var first = projectFiles()[0];
       return { projectId: first ? docs[first].id : "", title: "New card", text: "" };
     }, "+ Add card");
+
+    var danger = section(pane, "Danger zone");
+    var delBtn = el("button", "adm-btn adm-btn-danger", "Delete this category page");
+    delBtn.type = "button";
+    delBtn.addEventListener("click", function () { deleteSector(file); });
+    danger.appendChild(delBtn);
+  }
+
+  /* ============================================================
+     ADD / DELETE SECTORS (category pages)
+     ------------------------------------------------------------
+     Found missing entirely in the Phase 8 follow-up audit of the Admin
+     Board -- every other whole-document type already had both. A project's
+     sectorId flows through content-loader.js into cfg.examples[id].sector,
+     which js/app.js's sector-view rendering looks up directly
+     (cfg.categories.find(c => c.id === ex.sector)) -- a project left
+     pointing at a DELETED sector would silently break that lookup on the
+     live site, not just look odd in the admin nav (unlike a GIS map
+     reference, deleting a sector is never something to cascade into the
+     projects that use it). So deletion is blocked outright while any
+     project still has this sectorId, same shape as "empty a folder before
+     deleting it" -- reassign them first via each project's own Category
+     dropdown, already in editProject().
+     ============================================================ */
+  function addSector() {
+    var id = prompt("Short id for the new category page (letters/numbers only, e.g. hospitality):");
+    if (!id) return;
+    id = id.toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (!id) return alert("That id isn't usable.");
+    var file = "sectors/" + id + ".json";
+    if (docs[file]) return alert("A category page with that id already exists.");
+    var maxOrder = sectorFiles().reduce(function (max, f) { return Math.max(max, docs[f].order || 0); }, 0);
+    docs[file] = {
+      _id: "sector." + id, _type: "sector", id: id,
+      order: maxOrder + 1,
+      label: "New Category", navSub: "", blurb: "",
+      active: true, accent: "#E9B44C", kicker: id.toUpperCase(),
+      title: "New Category", sub: "", body: "",
+      cards: []
+    };
+    content.manifest.documents.sectors.push({ file: file, type: "sector", id: "sector." + id });
+    markDirty(); buildNav(); select("sector:" + file);
+  }
+
+  function deleteSector(file) {
+    var s = docs[file];
+    if (!s) return;
+    var referencing = projectFiles().filter(function (pf) { return docs[pf].sectorId === s.id; });
+    if (referencing.length) {
+      alert("Can't delete “" + s.label + "” -- " + referencing.length + " project(s) are still assigned to it: " +
+        referencing.map(function (pf) { return docs[pf].title; }).join(", ") +
+        ". Reassign them to another category first (each project's own Category dropdown), then delete this one.");
+      return;
+    }
+    if (!confirm("Delete the “" + s.label + "” category page permanently?")) return;
+    delete docs[file];
+    content.manifest.documents.sectors =
+      content.manifest.documents.sectors.filter(function (e) { return e.file !== file; });
+    markDirty(); buildNav(); select("home");
   }
 
   /* A fresh experiences[] item for the given type — same field shapes
@@ -2592,6 +2651,17 @@
         });
       });
       bar.appendChild(toggle);
+      var deleteBtn = el("button", "adm-btn adm-btn-ghost adm-btn-small", "Delete");
+      deleteBtn.type = "button";
+      deleteBtn.addEventListener("click", function () {
+        if (!confirm("Delete “" + org.name + "” permanently? This removes every member's access to it, any download/access grants held by it, and cannot be undone. Disable it instead if you might need it again.")) return;
+        status.textContent = "Deleting…";
+        adminFetch("/api/admin/organizations/" + org.id, { method: "DELETE" }).then(function (res) {
+          if (!res.ok) { status.textContent = "Couldn’t delete: " + (res.data.error || res.status); return; }
+          draw();
+        });
+      });
+      bar.appendChild(deleteBtn);
       card.appendChild(bar);
 
       var editRow = el("div", "adm-entitlement-search");
@@ -2688,6 +2758,18 @@
         });
       });
       btns.appendChild(disableBtn);
+
+      var deleteBtn = el("button", "adm-btn adm-btn-ghost adm-btn-small", "Delete");
+      deleteBtn.type = "button";
+      deleteBtn.addEventListener("click", function () {
+        if (!confirm("Delete " + u.email + " permanently? This removes their account, every organization membership, and any entitlement grants they hold, and cannot be undone. Disable it instead if you might need it again.")) return;
+        status.textContent = "Deleting…";
+        adminFetch("/api/admin/users/" + u.id, { method: "DELETE" }).then(function (res) {
+          if (!res.ok) { status.textContent = "Couldn’t delete: " + (res.data.error || res.status); return; }
+          draw();
+        });
+      });
+      btns.appendChild(deleteBtn);
       bar.appendChild(btns);
       card.appendChild(bar);
 
@@ -3271,6 +3353,10 @@
     navBtn("Fun facts", "funfacts");
     navEl.appendChild(el("p", "adm-navhead", "CATEGORY PAGES"));
     sectorFiles().forEach(function (f) { navBtn(docs[f].label, "sector:" + f); });
+    var addSectorBtn = el("button", "adm-btn adm-btn-small adm-addproject", "+ Add category page");
+    addSectorBtn.type = "button";
+    addSectorBtn.addEventListener("click", addSector);
+    navEl.appendChild(addSectorBtn);
     navEl.appendChild(el("p", "adm-navhead", "PROJECTS"));
     sectorFiles().forEach(function (sf) {
       var s = docs[sf];
