@@ -2,8 +2,8 @@
   "_id": "site.lead",
   "_type": "leadSettings",
   "provider": "web3forms",
-  "accessKey": "b825431d-56a9-4ee5-9042-72bb7685f8c3",
+  "accessKey": "81e0fad6-ed36-42e7-b055-f5ce2ac92a04",
   "ownerEmail": "robertoenrique2710@hotmail.com",
   "subjectPrefix": "DTS Website Lead",
-  "notes": "Delivery uses Web3Forms (https://web3forms.com). Without a key, forms fall back to a pre-filled mailto: link."
+  "notes": "Delivery uses Web3Forms (https://web3forms.com) directly from the browser. Web3Forms documents this access key as public/safe for client-side use (their own abuse protection, e.g. rate limiting, lives on their end) -- see docs/migration/PROGRESS.md's Phase 7 entry. A Cloudflare Turnstile widget gates the submit button client-side (no server-side token verification) as a lightweight bot deterrent. Without a key, forms fall back to a pre-filled mailto: link."
 }

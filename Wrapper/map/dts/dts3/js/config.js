@@ -143,21 +143,15 @@ window.DTS_CONFIG = {
   /* ============================================================
      LEAD CAPTURE — emails the owner on form submit
      ------------------------------------------------------------
-     Delivery uses Web3Forms (https://web3forms.com), which emails
-     submissions to a fixed address with no backend. Setup:
-       1. Register the owner's email at web3forms.com and copy the
-          access key.
-       2. Paste it into `accessKey` and set `ownerEmail` to match.
+     Delivery uses Web3Forms (https://web3forms.com) directly from the
+     browser -- Web3Forms documents this access key as public/safe for
+     client-side use (docs/migration/PROGRESS.md's Phase 7 entry). A
+     Turnstile widget gates the submit button client-side (no server-side
+     verification) as a lightweight bot deterrent.
      Without a key, forms fall back to a pre-filled mailto: link.
      ============================================================ */
   lead: {
-    /* No key here — see docs/migration/PROGRESS.md (Phase 2). This is the
-       /data-unreachable fallback only; the real key (pending rotation in
-       Phase 7) lives in data/site/lead.json, the normal path. An
-       empty key here correctly degrades to the mailto: fallback
-       (js/app.js:2107) rather than exposing a second live copy of the
-       credential in a file that isn't even a <script> tag in index.html. */
-    accessKey: "",
+    accessKey: "81e0fad6-ed36-42e7-b055-f5ce2ac92a04",
     /* Destination inbox for leads (production: hello@dtsxr.com). */
     ownerEmail: "robertoenrique2710@hotmail.com",
     subjectPrefix: "DTS Website Lead",

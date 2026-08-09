@@ -869,6 +869,7 @@
       <p class="form-intro" id="formIntro"></p>
       <form id="leadForm" novalidate>
         <div class="form-fields" id="formFields"><!-- injected --></div>
+        <div id="turnstileWidget" class="form-turnstile"></div>
         <p class="form-error" id="formError" hidden></p>
         <button class="form-submit" id="formSubmit" type="submit">Send</button>
         <p class="form-fineprint">
@@ -927,5 +928,11 @@
 <script src="js/content-loader.js"></script>
 <script src="js/intro-typewriter.js"></script>
 <script src="js/bg-video.js" defer></script>
+<!-- Phase 7 addition, appended -- never reorders the five above.
+     Turnstile's own script + the public sitekey init file (same pattern
+     as js/supabase-init.js). Explicit-render, not auto-render: js/app.js
+     calls turnstile.render() itself when the lead form opens. -->
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+<script src="js/turnstile-init.js"></script>
 </body>
 </html>

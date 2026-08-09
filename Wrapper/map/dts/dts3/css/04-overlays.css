@@ -115,6 +115,7 @@
 .form-field.invalid select,
 .form-field.invalid textarea{ border-color:#e0594f; }
 
+.form-turnstile{ margin:16px 0 0; }
 .form-error{ color:#f0857c; font-size:13px; margin:14px 0 0; }
 .form-success-note{ color:#8ce0a8; font-size:13px; margin:14px 0 0; line-height:1.5; }
 .form-submit{

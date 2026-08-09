@@ -2,6 +2,35 @@
 
 Newest first.
 
+## Cloudflare migration — lead form simplified back to client-side Web3Forms
+
+Reverted the server-side `/api/lead` proxy from the entry below after a real
+debugging chain (a submit-timing race, a PowerShell pipe silently corrupting
+secrets with a stray BOM character, then a Web3Forms rate limit from all the
+testing) — each bug was real and got fixed, but the underlying design was
+protecting a key that Web3Forms's own dashboard explicitly documents as
+"public, safe to use in client side code." Web3Forms's own abuse protection
+(confirmed live: they do rate-limit) covers what the server-side proxy was
+otherwise for. Lead delivery now calls Web3Forms directly from the browser
+again, exactly like before this phase started. Turnstile stays as a
+client-side gate on the submit button (real friction against unsophisticated
+bots) — only the server-side re-verification round trip was removed. See
+`docs/migration/PROGRESS.md`'s Phase 7 entries for the full chain.
+
+## Cloudflare migration — lead form goes server-side, Turnstile added, Web3Forms key rotated
+
+Lead delivery now goes through `functions/api/lead.js`: a Cloudflare
+Turnstile token is verified before anything reaches Web3Forms, and the
+Web3Forms access key lives only in a Pages secret, never in a committed
+file. The previously-exposed key (public in `data/site/lead.json` and git
+history since before this migration) is rotated to a new value. The
+mailto fallback is preserved — any failure (network, Function down, a
+rejected Turnstile token) falls through to it exactly as before. See
+`docs/migration/PROGRESS.md`'s Phase 7 entry for the full writeup,
+including a real secret-exposure mistake caught and fixed the same
+session (a CLI command's JSON output included a secret half I didn't
+anticipate, printed it, then immediately rotated that credential too).
+
 ## Cloudflare migration — critical fix: gated GIS docs were breaking the whole site's data load
 
 Found by real live testing right after the content-pipeline entry below:

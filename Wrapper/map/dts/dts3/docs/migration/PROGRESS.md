@@ -14,13 +14,245 @@ identity/access model each phase from 3 onward implements is defined in
 | 5 — Admin auth swap (site_role) | **DONE** | https://dts-website-4cu.pages.dev (deployed, `b693ed64...`) | user ran all 6 local checks pre-deploy (site_admin→board, org_admin→portal/no board, plain user→portal, draft/preview/discard, zip export, real sign-out) — all PASS; not yet re-confirmed on the dev URL |
 | 5b — CMS access editors + org management | **DONE** — all three checkpoints (A: access editors + entitlement picker; B: Organizations/Users/Access screens; C: org-admin team panel) complete and user-confirmed live | https://dts-website-4cu.pages.dev (deployed, `a30b1e22...`) | User confirmed all three checkpoints live, including the org-admin panel's full member management, the plain-`member`-sees-nothing case, and that `testadmin`'s Admin Board screens still work unchanged |
 | 6 — Content pipeline (public/protected split) | **DONE** | https://dts-website-4cu.pages.dev (deployed, `1e7003a4...`) | Diff-based `/api/publish` verified live end-to-end via real `testadmin` session; rollback drill run clean; full acceptance battery passes. **A critical whole-site-breaking bug was found by the user in real live testing AFTER this row was first marked done, then fixed and re-verified** — see the session log's follow-up entry: `manifest.json` listed gated GIS documents that don't exist in `data/current/`, 404ing `content-loader.js`'s `Promise.all()` and taking the ENTIRE site (every visitor, not just guests) to the `config.js` fallback, which also silently disabled the Admin Board for `site_admin`. Confirmed fixed: all 34 manifest-listed files now return 200 against the live stable alias. Not yet re-confirmed via the Admin Board UI in a browser. |
-| 7 — Lead form | not started | — | — |
+| 7 — Lead form | **DONE** | https://dts-website-4cu.pages.dev (deployed, `b4ed6f66...`) | Original server-side design (Turnstile-verified `/api/lead` proxying to Web3Forms) hit a real chain of debugging problems (documented in the session log below) and was deliberately reverted to a simpler client-side design at the user's explicit call. **User confirmed a real lead submit works end-to-end** against the simplified version — the fix is complete, not just deployed. |
 | 8 — Builds (org/user entitlement-gated) | not started | — | — |
 | 9 — Analytics & audit | not started | — | — |
 | Handoff — go live (real orgs + members) | not started | — | — |
 
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
+
+- 2026-08-09 — **Phase 7 architecture simplified, at the user's explicit
+  call, after a long real-world debugging chain on the server-side
+  design.** The user asked to stop burning time/tokens on the
+  Turnstile-verified `/api/lead` proxy and go back to a direct
+  client-side Web3Forms call with Turnstile as a lightweight client-only
+  gate. Agreed this was the right call — the chain of real bugs below,
+  while each individually fixed, kept surfacing because the server-side
+  design was solving for a threat (a leaked Web3Forms key) that
+  Web3Forms's own product design says isn't actually a threat for this
+  specific key.
+
+  **Full debugging chain, in order, each one a real bug independently
+  confirmed via live server logs (`wrangler pages deployment tail`), not
+  guessed:**
+  1. Submit button wasn't gated on Turnstile actually finishing
+     verification — a normal-speed submit could race ahead of the async
+     check and get bounced to mailto. Fixed with a disable-until-token
+     gate (this piece is still in the current, simplified design).
+  2. **The actual root cause of "still opens my email" after fix #1:**
+     `wrangler pages secret put`, when fed a value via PowerShell's `|`
+     pipe (`Get-Content ... | npx wrangler pages secret put ...`), was
+     silently prepending a UTF-8 byte-order-mark to the stored secret.
+     Confirmed by reading the raw Cloudflare Worker log output live: the
+     Web3Forms API's own rejection (`"Invalid form_id/access_key format.
+     Must be a valid UUID."`) showed the literal corrupted value,
+     `"﻿81e0fad6-..."` where `﻿` is the BOM character. This
+     affected BOTH `WEB3FORMS_ACCESS_KEY` and `TURNSTILE_SECRET_KEY`
+     (both were originally pushed via the same piped pattern). Traced the
+     corruption to PowerShell's pipe-to-external-process text encoding
+     (not `$OutputEncoding`, which didn't fix it when set explicitly; not
+     the source file, which was verified byte-clean via
+     `[System.IO.File]::ReadAllBytes` before every push attempt). The
+     reliable fix that actually worked: `wrangler pages secret bulk
+     <file>` reading a JSON file directly (wrangler does its own file
+     read, no PowerShell pipe involved) — both secrets rotated again
+     using this method and confirmed clean.
+  3. Immediately after fix #2, a NEW real error appeared: Web3Forms
+     returned `429 Rate limit exceeded. IP temporarily blocked.` The user
+     initially (reasonably) doubted this was real since they hadn't
+     manually pressed "Send" in their email client — clarified that
+     clicking Submit on the site itself makes a real server-side call
+     to Web3Forms immediately, before the mailto fallback ever shows;
+     the fallback appearing doesn't mean nothing was attempted. Cross-
+     checked the log event's timestamp against the actual conversation
+     timing to confirm it really was the user's own test, not a stale/
+     unrelated entry, before asserting this explanation. Root cause: the
+     cumulative volume of direct diagnostic Web3Forms calls made this
+     session (testing key validity) plus the user's real attempts hit
+     Web3Forms's own rate limiting.
+
+  **At this point the user asked to stop and simplify rather than keep
+  debugging the server-side path**, on the reasonable observation that
+  Web3Forms's own dashboard explicitly labels this key "a public key,
+  safe to use in client side code" (screenshot-confirmed) — meaning the
+  original phase brief's premise (this key needs hiding like a secret)
+  doesn't match how Web3Forms actually designed their own product.
+  Agreed and reverted:
+  - `data/site/lead.json` / `js/config.js`: `accessKey` restored to the
+    real value, matching pre-Phase-7 shape exactly.
+  - `js/app.js`: `sendLead()` reverted to calling
+    `https://api.web3forms.com/submit` directly from the browser with
+    `access_key` in the payload; the original `if (!lead.accessKey)
+    return false` mailto-gate restored verbatim.
+  - **Turnstile itself was kept, deliberately** — it still gates the
+    submit button client-side (disabled until a real token exists,
+    fix #1 above), which is real friction against unsophisticated
+    bots/scripts hitting the form. What was removed is only the
+    server-side re-verification round trip (`/api/lead`'s call to
+    Cloudflare's `siteverify`), which existed to protect a key that
+    doesn't need that protection per Web3Forms's own design.
+  - `functions/api/lead.js` deleted. `TURNSTILE_SECRET_KEY` and
+    `WEB3FORMS_ACCESS_KEY` Pages secrets deleted (confirmed via
+    `wrangler pages secret list`). `.env`/`.env.example` cleaned up to
+    match — no env vars needed for the lead form at all now.
+  - The Turnstile WIDGET itself (site key `0x4AAAAAAELMgm4dHxFB4W_L`)
+    stays registered and in use for `js/turnstile-init.js` — only the
+    secret-key/server-verification half was removed, not Turnstile
+    entirely.
+
+  **Verified live post-simplification**
+  (https://dts-website-4cu.pages.dev, deployed `b4ed6f66...`):
+  `data/site/lead.json` and the deployed `js/config.js` both carry the
+  real key again; `functions/api/lead.js` no longer routes; the Phase 4
+  gated resolver, homepage, and manifest are all unaffected (no
+  regression from the earlier phases' work).
+
+  **User confirmed a real lead submit works end-to-end** against the
+  simplified path (their first live test of this specific version, since
+  every prior attempt was against the since-removed server-side design).
+  Phase 7 is genuinely complete, not just deployed. Next: `/migrate-phase8`.
+
+- 2026-08-09 — **Real Phase 7 regression found by the user in live
+  testing, fixed same session.** 3 of 4 checklist items passed
+  (widget renders, page source clean, widget resets on reopen), but a
+  real lead submit opened the user's mail client instead of sending
+  directly — a regression from the pre-Phase-7 behavior.
+
+  **Root cause:** `submitLeadForm()`'s submit button was never gated on
+  Turnstile actually completing its (async) verification. Clicking Send
+  at normal human speed — filling the form takes only a few seconds, and
+  Turnstile's own check can take a moment, or in managed mode may need an
+  explicit checkbox click the user hadn't made yet — meant
+  `turnstileToken` was still `null` when `sendLead()` read it.
+  `functions/api/lead.js` correctly rejected the missing token (this part
+  was working exactly as designed and already verified the session
+  before), and `sendLead()`'s "any failure falls through to mailto" logic
+  (also working as designed) faithfully did its job — the bug was never
+  giving the user a real chance to succeed in the first place.
+
+  **Fix:** the `#formSubmit` button now starts disabled on every
+  `openLeadForm()` call and only re-enables once Turnstile's own
+  `callback` actually fires with a real token (`setSubmitReady()`,
+  `js/app.js`). Re-disables on `expired-callback`. If Turnstile never
+  becomes ready at all (script blocked, bounded ~3s retry exhausted), the
+  button re-enables anyway rather than trapping the user — submitting
+  then still correctly falls through to mailto, preserving the
+  degraded-mode guarantee the fallback exists for. Existing
+  `.form-submit:disabled` CSS (`opacity:.6`) already gives this a visible
+  state, matching the button's existing "Sending…" disabled look — no new
+  CSS needed.
+
+  Redeployed (`1eab93e9...`); confirmed the fix landed on the deployed
+  `js/app.js` (both the per-deploy hash URL immediately, and the stable
+  alias after its normal short propagation delay — not a second bug,
+  matches prior phases' documented behavior). **Not yet re-confirmed by
+  the user with a real submit** after this fix.
+
+  **Separately, the user asked whether category/form-navigation not
+  changing the URL (`?category=community` stays static across every
+  sector, project, and form-type interaction) is a problem for future
+  analytics, and whether to fix it now.** Answered: no, don't fix URL
+  routing for this — `/migrate-phase9`'s own plan
+  (`.claude/commands/migrate-phase9.md`) already covers exactly this
+  through `functions/api/track.js` and the `events` table (`ACCESS-MODEL.md`
+  §6), an EVENT-based model (`type`/`resource_key`/`project_id`/`metadata`
+  per interaction) rather than URL-based tracking — this gives strictly
+  better analytics than encoding every UI interaction into the URL would
+  (structured, queryable, RLS-scoped per org), without touching the site's
+  navigation/history architecture (a real risk surface `CLAUDE.md`'s own
+  testing checklist protects: "Browser back/forward through home → sector
+  → project → close"). No code changed for this — deferred to Phase 9 as
+  already planned, not a new decision.
+
+- 2026-08-08 — **Phase 7 is DONE** — lead delivery moved server-side
+  (`functions/api/lead.js`), Cloudflare Turnstile added for bot
+  protection, and the exposed Web3Forms key rotated.
+
+  **Turnstile widget creation was fully automated, not a dashboard
+  click-through** — `wrangler turnstile widget create` exists (the OAuth
+  session already carried `challenge-widgets.write` scope), so the whole
+  widget lifecycle (create/get/list/update/delete) ran through scripted
+  `wrangler` calls, matching this migration's "Claude runs it" pattern.
+
+  **A real secret-exposure mistake, caught and fixed within the same
+  session:** while checking the widget's registered domain,
+  `wrangler turnstile widget get --json` was run as an ordinary visible
+  command — its output includes both `sitekey` AND `secret`, and the
+  secret got printed directly into the conversation. This is exactly the
+  class of mistake `AUTOMATION-AND-CREDENTIALS.md`'s "never print secret
+  values" rule exists to prevent, broken despite having just built the
+  correct discipline for the widget's own creation and for
+  `WEB3FORMS_ACCESS_KEY` (both captured/piped without ever surfacing the
+  raw value). Treated as a real compromise, not a formality: the widget
+  was deleted (`wrangler turnstile widget delete <sitekey> -y`) and a
+  fresh one created immediately (new sitekey `0x4AAAAAAEK0mVIJhdBWUYES`,
+  new secret pushed to the `TURNSTILE_SECRET_KEY` Pages secret,
+  `js/turnstile-init.js` updated, redeployed). **Lesson for future
+  phases:** before running ANY CLI command that returns a create/get
+  response for a credential-bearing resource, check whether the output
+  shape includes the secret half, not just the value you asked for.
+
+  **Web3Forms rotation had a real wrinkle:** the user's Web3Forms
+  dashboard shows only one form access key, and it's explicitly labeled
+  "This is a public key. You can safely use it in client side code" —
+  Web3Forms's own security model doesn't treat this as a secret the way
+  the phase brief assumed, and there was no "Allowed Domains" restriction
+  option available on the free tier to check. Proceeded anyway: the
+  value now in use (`WEB3FORMS_ACCESS_KEY` Pages secret) is different
+  from the one that was previously exposed in `data/site/lead.json` and
+  git history, so this still closes the actual exposure, and moving it
+  server-side behind Turnstile still adds real value regardless of
+  Web3Forms's own public-key framing — it stops anyone from bypassing the
+  bot-check by hitting Web3Forms directly with a scraped key.
+
+  **`ownerEmail` deliberately NOT changed to a domain address** — per the
+  phase brief's step 4, but the user doesn't have a working `dtsxr.com`
+  mailbox yet. Stays `robertoenrique2710@hotmail.com`; flagged for
+  Handoff, when the client's real domain/mailbox exists. A deliberate
+  deviation, not an oversight.
+
+  **`sendLead()`'s gating logic had to genuinely change, not just its
+  URL** — the old `if (!lead.accessKey) return false` mailto-trigger no
+  longer makes sense once `accessKey` is removed from `/data` entirely
+  (it would always be falsy, permanently disabling the Function path).
+  Replaced with "always attempt `/api/lead`, any failure (network,
+  non-2xx, Turnstile reject) falls through to the existing mailto path" —
+  functionally the same dual-path behavior, just gated on the Function's
+  real response instead of a client-side key presence check.
+  `openMailtoFallback()`/`showFormSuccess()` untouched.
+
+  **Files:** new `functions/api/lead.js` (Turnstile `siteverify` then
+  Web3Forms forward, endpoint/shapes confirmed against Cloudflare's own
+  docs this session), new `js/turnstile-init.js` (public sitekey, same
+  pattern as `js/supabase-init.js`); `index.html` (Turnstile script +
+  init file appended to the end of the existing static script list, never
+  reordering the five already there; new `#turnstileWidget` container
+  inside `#leadForm`); `_headers` (`https://challenges.cloudflare.com`
+  added to `script-src` only — `frame-src`/`connect-src` were already
+  broad enough); `js/app.js` (`sendLead()` rewrite, new
+  `ensureTurnstileRendered()` explicit-render/reset helper wired into
+  `openLeadForm()`); `data/site/lead.json` (`accessKey` removed,
+  `notes` updated); `js/config.js`'s lead-fallback comment updated
+  (was still describing rotation as pending); `.env.example` (new
+  `TURNSTILE_SECRET_KEY`/`WEB3FORMS_ACCESS_KEY` placeholders).
+
+  **Verified live against the real deployed site
+  (https://dts-website-4cu.pages.dev, stable alias, deploy `698a2a10...`):**
+  `POST /api/lead` with no token → `400 missing Turnstile token`; with a
+  bogus token → `403 bot check failed` (confirms server-side enforcement
+  with the NEW post-rotation secret, not just client-side UI); the exposed
+  key confirmed gone from both `data/current/site/lead.json` and the
+  deployed `js/config.js` fallback; CSP `script-src` carries the Turnstile
+  origin; homepage and manifest unaffected (no Phase 6 regression).
+
+  **NOT yet verified — needs the user, per this project's manual-testing
+  convention:** a real browser lead submit delivering to the inbox; the
+  Turnstile widget actually rendering (confirms the widget's registered
+  domain, `dts-website-4cu.pages.dev`, genuinely covers this deployment —
+  not verifiable by curl, since domain matching happens client-side at
+  render time); the mailto fallback firing when `/api/lead` is genuinely
+  unreachable. Next: `/migrate-phase8`.
 
 - 2026-08-08 — **Critical Phase 6 bug found by the user in real live
   testing (immediately after the Phase 6 entry below first marked it

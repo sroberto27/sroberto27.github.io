@@ -2491,6 +2491,14 @@
     $("#formSubmit").textContent = def.submitLabel || "Send";
 
     buildFormFields(def.fields);
+    // Gate submission on Turnstile actually completing -- without this, a
+    // user who submits before the async verification finishes (or a
+    // managed-mode checkbox they haven't clicked yet) gets silently bounced
+    // to mailto with no explanation, which is what real testing caught:
+    // the button looked clickable, wasn't actually ready, and the server
+    // correctly rejected the missing token every time.
+    $("#formSubmit").disabled = true;
+    ensureTurnstileRendered();
 
     const ov = $("#formOverlay");
     ov.classList.add("is-open");
@@ -2607,8 +2615,17 @@
     }
   }
 
-  /* Try Web3Forms if a key is set; otherwise signal failure so the
-     mailto fallback kicks in. Returns true on a confirmed send. */
+  /* Phase 7 (simplified after real-world testing): Web3Forms documents
+     its access key as public/safe for client-side use -- their own abuse
+     protection (rate limiting, etc.) lives on their end, confirmed live
+     during testing. A server-side proxy Function added real complexity
+     (an extra secret to manage, Cloudflare-Worker-to-Web3Forms fetch
+     behavior differing from a real browser's) for security the key
+     itself doesn't actually need per Web3Forms's own design. Reverted to
+     calling Web3Forms directly; Turnstile stays as a client-side gate on
+     the submit button (see below) without a server verification round
+     trip. No key → mailto fallback, same as the original pre-Phase-7
+     design. Returns true on a confirmed send. */
   async function sendLead(data, def) {
     const lead = cfg.lead || {};
     if (!lead.accessKey) return false;   // no key → use mailto fallback
@@ -2617,7 +2634,6 @@
       access_key: lead.accessKey,
       subject: (lead.subjectPrefix || "DTS Lead") + " — " + (def.title || ""),
       from_name: data.name || "DTS Website",
-      // Web3Forms emails this address-set; the key controls routing.
       to: lead.ownerEmail || undefined
     });
 
@@ -2633,6 +2649,49 @@
       console.warn("[lead] Web3Forms send failed, using mailto:", err);
       return false;
     }
+  }
+
+  /* ---------- Turnstile (client-side bot gate) ----------
+     Explicit render (not the auto-render markup) so the SAME widget
+     instance can be reset between opens of this one shared #leadForm --
+     an expired/stale token from a previous open must never silently ride
+     along on a later submit. Rendered once; reset (not re-rendered) on
+     every subsequent open.
+
+     Client-side only: the submit button stays disabled until Turnstile
+     confirms, but nothing server-side re-verifies the token (see
+     sendLead() above) -- a deliberate simplification, not an oversight.
+     If Turnstile never becomes ready at all (script blocked, network
+     issue), the bounded retry below still re-enables the button after
+     ~3s rather than trapping the user. */
+  let turnstileWidgetId = null;
+
+  function setSubmitReady(ready) {
+    const btn = $("#formSubmit");
+    if (btn) btn.disabled = !ready;
+  }
+
+  function ensureTurnstileRendered(attempt) {
+    attempt = attempt || 0;
+    if (!window.turnstile) {
+      if (attempt < 20) { setTimeout(() => ensureTurnstileRendered(attempt + 1), 150); return; }
+      // Bounded retry exhausted (~3s) -- let the user submit anyway rather
+      // than trap them (script blocked/network issue, not the user's fault).
+      setSubmitReady(true);
+      return;
+    }
+    if (turnstileWidgetId !== null) {
+      window.turnstile.reset(turnstileWidgetId);
+      return;
+    }
+    const container = $("#turnstileWidget");
+    if (!container || !window.DTS_TURNSTILE_SITE_KEY) { setSubmitReady(true); return; }
+    turnstileWidgetId = window.turnstile.render(container, {
+      sitekey: window.DTS_TURNSTILE_SITE_KEY,
+      callback: () => setSubmitReady(true),
+      "expired-callback": () => setSubmitReady(false),
+      "error-callback": () => setSubmitReady(true)
+    });
   }
 
   /* mailto: fallback — opens the user's mail app pre-filled with all
