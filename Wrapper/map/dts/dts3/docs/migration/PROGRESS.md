@@ -13,7 +13,7 @@ identity/access model each phase from 3 onward implements is defined in
 | 4 — Client auth swap + resource gating | **DONE** — full manual checklist passed, including both post-fix retests | https://dts-website-4cu.pages.dev | Every checklist item passed except forgot-password (item 14 — blocked on the deferred SMTP setup, an account/infra gap, not a code issue; retest once §7 is done). All real bugs found during testing (resource-key decode, gating-UX auto-prompt, locked-placeholder-not-restored, cross-tab sign-in sync, sign-out not revoking cached access) fixed and user-confirmed live, not just deployed. |
 | 5 — Admin auth swap (site_role) | **DONE** | https://dts-website-4cu.pages.dev (deployed, `b693ed64...`) | user ran all 6 local checks pre-deploy (site_admin→board, org_admin→portal/no board, plain user→portal, draft/preview/discard, zip export, real sign-out) — all PASS; not yet re-confirmed on the dev URL |
 | 5b — CMS access editors + org management | **DONE** — all three checkpoints (A: access editors + entitlement picker; B: Organizations/Users/Access screens; C: org-admin team panel) complete and user-confirmed live | https://dts-website-4cu.pages.dev (deployed, `a30b1e22...`) | User confirmed all three checkpoints live, including the org-admin panel's full member management, the plain-`member`-sees-nothing case, and that `testadmin`'s Admin Board screens still work unchanged |
-| 6 — Content pipeline (public/protected split) | not started | — | — |
+| 6 — Content pipeline (public/protected split) | **DONE** | https://dts-website-4cu.pages.dev (deployed, `1e7003a4...`) | Diff-based `/api/publish` verified live end-to-end via real `testadmin` session; rollback drill run clean; full acceptance battery passes. **A critical whole-site-breaking bug was found by the user in real live testing AFTER this row was first marked done, then fixed and re-verified** — see the session log's follow-up entry: `manifest.json` listed gated GIS documents that don't exist in `data/current/`, 404ing `content-loader.js`'s `Promise.all()` and taking the ENTIRE site (every visitor, not just guests) to the `config.js` fallback, which also silently disabled the Admin Board for `site_admin`. Confirmed fixed: all 34 manifest-listed files now return 200 against the live stable alias. Not yet re-confirmed via the Admin Board UI in a browser. |
 | 7 — Lead form | not started | — | — |
 | 8 — Builds (org/user entitlement-gated) | not started | — | — |
 | 9 — Analytics & audit | not started | — | — |
@@ -21,6 +21,222 @@ identity/access model each phase from 3 onward implements is defined in
 
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
+
+- 2026-08-08 — **Critical Phase 6 bug found by the user in real live
+  testing (immediately after the Phase 6 entry below first marked it
+  done), fixed and re-verified same session.** The user reported the
+  stable alias homepage rendering the `config.js` fallback (hexagons
+  sourced from HTML, not `/data`) and a wall of console 404s for
+  `data/gis/tours/*.json` / `data/gis/featuretours/*.json`, plus
+  `testadmin@example.com` unable to reach the Admin Board at all.
+
+  **Root cause:** `js/content-loader.js`'s `loadContent()` (untouched by
+  design this whole phase, and correctly so) fetches EVERY file listed in
+  `manifest.json` via `Promise.all()` — a single rejected fetch rejects the
+  whole load, which `content-loader.js:445`'s `.catch()` turns into the
+  `js/config.js` fallback for literally everyone, not just guests. `data/
+  current/manifest.json` still listed all 14 `gisTour` + 13
+  `gisFeatureTour` documents as fetchable files, but Phase 6's own design
+  (correctly) never writes those files to `data/current/` at all when
+  their map is gated (`iberia-coastal` is `registered`, not `public`) —
+  the manifest was claiming files existed that `data/current/` didn't
+  actually have. Every page load 404'd on 27 files and fell back
+  wholesale. The Admin Board symptom was the same root cause one layer
+  down: `js/admin.js`'s own guard (`if (!window.DTS_CONTENT || ...)
+  return;`) disables the whole board the instant `/data` fails to load,
+  since the `config.js` fallback never populates `DTS_CONTENT`.
+
+  **Why this got past the phase's own acceptance testing:** every
+  acceptance check that session verified individual API paths in
+  isolation (curl one file, confirm its status/content) — never an actual
+  full end-to-end page load simulating `content-loader.js`'s real
+  `Promise.all()` behavior across every manifest-listed file at once. A
+  gated GIS tour correctly 404ing was the INTENDED, verified behavior in
+  isolation; the fact that its mere presence in the manifest poisoned the
+  entire site's data load was never exercised. Lesson for future phases:
+  isolated endpoint checks are not a substitute for at least one real
+  full-load simulation when a phase changes what a manifest-driven
+  `Promise.all()` loader depends on.
+
+  **Fix:** new `filterManifestForPublic(manifest, excludedFiles)` in
+  `functions/_lib/split-logic.js` — the public `data/current/manifest.json`
+  now excludes any document actually absent from `data/current/` (today:
+  a gated map's tours/featureTours); `data/source/manifest.json` stays the
+  full, unfiltered list. Applied in both `scripts/split-content.mjs`
+  (tracks excluded files while iterating each GIS group) and
+  `functions/api/publish.js` (tracks them independent of the diff-based
+  "changed" check — the manifest must reflect total current reality, not
+  just what this publish's delta touched, so an untouched-but-still-gated
+  tour is still correctly excluded).
+
+  **Fixed live immediately, in the right order:** re-ran
+  `scripts/upload-content.mjs` first (an R2 content write, not a site
+  deploy) to stop the bleeding — verified via a script that downloaded the
+  live manifest and fetched every one of its now-34 listed files (down
+  from 61), confirming all return 200 against the real stable alias
+  `https://dts-website-4cu.pages.dev` before touching any code deploy.
+  Then redeployed the code fix (`1e7003a4...`) so future publishes via the
+  Admin Board can't reintroduce this. Re-verified post-deploy: manifest
+  still correct, a gated project's stripped fields still absent, homepage
+  loads, the Phase 4 resolver still works.
+
+  **NOT yet re-confirmed by the user:** an actual browser reload showing
+  the real homepage content (not the fallback) and `testadmin` reaching
+  the Admin Board — the data-layer fix is proven via direct fetch
+  (identical to what `content-loader.js` does), but the user's own
+  original report is the one this fix needs to actually resolve; asked
+  them to hard-refresh and confirm.
+
+- 2026-08-08 — **Phase 6 is DONE** — `/data` moved into R2 (`data/current/`
+  public+stripped, `data/source/` private+full), instant publish via
+  `/api/publish`, and the formal public/protected split Phase 4 had to do
+  ad hoc.
+
+  **Scope corrections, confirmed against the real repo before planning, not
+  assumed from the phase brief:** the manifest actually holds 61 documents
+  (not 60) and 17 projects (not 16) — `data/projects/emergency.json` IS
+  registered (`git log` confirms it was added in the 2026-08-07 Phase 3
+  session, commit `a2453364`); the "Open questions" bullet in this file
+  still calling it undecided was stale bookkeeping, not current truth.
+  Treated as an ordinary manifest-driven project document (nothing to gate
+  — no experiences/media/links).
+
+  **Design:** `functions/_lib/split-logic.js` — one pure, dependency-free
+  module (`resolveAccessLevel`, `splitProjectDoc`, `splitGisDocSet`,
+  `isLocalGisLayer`) imported by BOTH `scripts/split-content.mjs` (CLI) and
+  `functions/api/publish.js` (live), so the two paths can't drift apart the
+  way Phase 4's ad hoc `strip-public-data.mjs` was always at risk of vs. a
+  hypothetical future Function. `js/config.js`'s strip (the "third leak
+  surface" `ACCESS-MODEL.md` flags) is now access-aware — cross-references
+  each example's id against the real `data/projects/<id>.json` instead of
+  blind-stripping everything, fixing a real pre-existing gap (the 9 public
+  Vimeo videos were being incorrectly stripped from the fallback). The
+  stripped result goes to a deploy-time-only staging file
+  (`.build/js/config.js`) — confirmed BEFORE writing anything that the
+  real, committed `js/config.js` still held all 16 real tour URLs, so the
+  strip function was written to never touch that file in place.
+
+  **Four real bugs found and fixed, each verified after fixing:**
+  1. `js/admin.js`'s existing `fetchHarvestedLayers()` did a plain
+     unauthenticated `fetch("data/gis/layers/...")` — a relative URL that
+     only worked because those files used to be static assets. Once local
+     layer files moved to `data/source/` (reachable only through Phase 4's
+     authenticated `/api/resource/gismap/[mapId]/layer/[layerId]` proxy),
+     this would have silently broken the zip-export escape hatch for any
+     gated map. Fixed to route through that proxy with the caller's own
+     Bearer token, same shape (`{url, text}`) preserved for every
+     downstream consumer.
+  2. The phase's own literal acceptance check (`grep -c spaces.dtsxr.com`
+     on `js/config.js` must equal 1) caught a real gap my first pass
+     missed: a gated example's `origin` field ("https://spaces.dtsxr.com",
+     paired with the stripped `tourUrl`) was left behind. Not
+     resource-identifying on its own, but still fails the literal check and
+     is never read from the stripped copy at runtime (a gated resolve
+     always returns tourUrl+origin together from `/api/resource`) — safe to
+     strip alongside `tourUrl`, fixed in both `split-logic.js`'s
+     `stripTarget()` and `split-content.mjs`'s separate config.js-specific
+     strip (which has its own inline copy of the same field list).
+  3. **The big one:** the first version of `/api/publish` wrote every
+     document unconditionally (current + source + a per-document snapshot)
+     — 150+ R2 operations for 61 documents in one Worker invocation.
+     Reproduced live against the real deployed site (not caught by
+     `node --check` or local testing): "Too many subrequests by single
+     Worker invocation." Confirmed via Cloudflare's own docs that the free
+     plan caps at 50 subrequests/invocation (paid: 10,000) — a real
+     `WORKFLOW.md` golden-rule-4 "stop and flag" moment, not something to
+     silently route around. Presented three free/paid options to the user;
+     they chose diff-based publish. Rewrote `/api/publish` around a
+     SHA-256 content-hash ledger (`data/source/_hashes.json`, ONE combined
+     object): every incoming document is hashed in-memory (free — only R2
+     reads/writes/deletes count as subrequests, not `crypto.subtle`), only
+     documents whose hash actually changed get written, and the snapshot
+     is now ONE combined object per publish instead of one-per-document.
+     `scripts/upload-content.mjs` gained `computeAndUploadHashManifest()`
+     so a CLI seed populates the SAME ledger the Function reads, using the
+     exact same canonical-JSON hashing convention (cross-verified Node's
+     `crypto` and Web Crypto's `subtle.digest` produce byte-identical SHA-256
+     hex for the same string before trusting this) — without this, the
+     first-ever publish after any CLI seed would treat all 61 documents as
+     "new" and blow the same limit right back open. Verified live with a
+     real minted `testadmin` session (Admin API `generate_link`+`verify`,
+     no password needed): a no-op publish correctly wrote only
+     `manifest.json` and skipped 66 unchanged documents; a real in-memory
+     tagline edit correctly wrote exactly 2 documents (manifest +
+     the changed one) and was live and verified via a direct fetch within
+     seconds; the mutated test value was immediately republished away with
+     the real content afterward, confirmed via a follow-up fetch.
+  4. Found while running the rollback drill: `scripts/split-content.mjs`'s
+     bottom `main().catch(...)` had no entry-point guard (unlike
+     `upload-content.mjs`, which was correctly guarded) — importing
+     `splitDataTree` from it (as `rollback-content.mjs` does) ALSO ran a
+     full, real `main()` against the live `/data` as an unwanted import-time
+     side effect. The first rollback run happened to upload the correct
+     content anyway, purely because the importing script's own explicit
+     `splitDataTree()` call ran second and overwrote the accidental output
+     before the upload step — correct by call-order luck, not by design.
+     Fixed with the same `pathToFileURL(process.argv[1])` guard pattern;
+     re-ran the rollback drill cleanly afterward (single split run, 0
+     failed uploads) rather than trusting the lucky first result.
+
+  **New/changed files:** `functions/_lib/split-logic.js` (new),
+  `functions/data/[[path]].js` (new — reads `data/current/<path>` from the
+  `DTS_CONTENT` R2 binding only, edge-cached via `caches.default`
+  cache-aside so `/api/publish`'s purge step has something to purge),
+  `functions/api/publish.js` (new — `requireSiteAdmin()` reused unchanged
+  from Phase 5b rather than introducing the phase brief's suggested local
+  JWKS verification as a second, inconsistent auth mechanism), `scripts/
+  split-content.mjs` (new, supersedes `strip-public-data.mjs`),
+  `scripts/upload-content.mjs` (new, supersedes the narrower
+  `upload-source-to-r2.mjs`), `scripts/rollback-content.mjs` (new),
+  `js/admin.js` ("Publish to site" button + `publishToSite()`, the
+  harvested-layers fix — `exportData()`'s zip path itself untouched,
+  still the fallback per `WORKFLOW.md` golden rule 7).
+
+  **Deliberate deviations from the phase brief, each with a stated
+  reason:** no new Cloudflare API token/secret for cache purging — the
+  Workers Cache API (`caches.default`) already covers it from inside the
+  Function, at zero extra credential surface. No local JWT/JWKS
+  verification in `/api/publish` — reused the exact `requireSiteAdmin()`
+  pattern every other admin Function already uses. Snapshots are one
+  combined object per publish, not one-per-document — required by the
+  subrequest-limit fix, and nothing outside this phase's own rollback
+  script reads the old per-file shape.
+
+  **Verified live against the real deployed site
+  (https://b829ebc7.dts-website-4cu.pages.dev, stable alias
+  https://dts-website-4cu.pages.dev), via curl and real minted sessions —
+  not just locally:** `data/current/projects/automotive.json` has no
+  `media.tourUrl` and no gated `links[].url` (public vimeo link intact);
+  `data/current/projects/civic.json`'s public video `media.embed.value` is
+  present unstripped; `data/current/gis/maps/iberia-coastal.json` is the
+  3-field public stub only; a gated tour and feature tour both 404; all 6
+  local layer geojson files 404; `data/source/` is unreachable through the
+  public `/data/*` route (404); `js/config.js`'s only `spaces.dtsxr.com`
+  references are the sanctioned public homepage tour (`tourUrl` + its
+  paired `origin`), zero elsewhere; the Phase 4 gated resolver
+  (`/api/resource/...`) still correctly returns "sign-in required" for a
+  guest, unaffected by this phase's routing change since it always read
+  `data/source/` directly; homepage loads with the expected byte count.
+
+  **Known limitation, not fixed this phase:** only `/api/publish` (the
+  Function path) purges Cloudflare's edge cache on write. The CLI paths
+  (`upload-content.mjs`, `rollback-content.mjs`) have no access to
+  `caches.default` (a Workers-runtime-only API) and don't purge — a CLI
+  seed or rollback could theoretically serve a previously-cached response
+  for up to the edge TTL (`s-maxage=300`, 5 minutes) before R2's new
+  content is reflected. Not observed in practice this session (every live
+  check after a CLI run showed correct, non-stale content), and low-risk
+  since CLI runs are infrequent bulk operations, not the everyday publish
+  path — worth a real fix (e.g. an explicit purge step using a Cloudflare
+  API token) before this matters in production.
+
+  **NOT yet verified — needs the user, per the project's manual-testing
+  convention:** the "Publish to site" button's actual click-through in the
+  Admin Board UI (API-level POST to `/api/publish` is proven, the button's
+  wiring in `admin.js` is proven by `node --check` and code reading, but
+  not by an actual click); the full README regression checklist (tour
+  reveal, lead form, sign-in, mobile drawer — none of this phase's changes
+  should affect them, but unconfirmed live). Next: `/migrate-phase7`.
 
 - 2026-08-08 — **Phase 5b is DONE.** User confirmed Checkpoint C's portal
   panel live: add-existing/invite-new/remove/role-toggle all worked for

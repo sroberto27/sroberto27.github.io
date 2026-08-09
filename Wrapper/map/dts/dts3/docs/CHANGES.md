@@ -2,6 +2,40 @@
 
 Newest first.
 
+## Cloudflare migration — critical fix: gated GIS docs were breaking the whole site's data load
+
+Found by real live testing right after the content-pipeline entry below:
+`manifest.json`'s public copy still listed gated GIS tour/feature-tour
+documents as fetchable files even though they're deliberately absent from
+`data/current/`. `js/content-loader.js`'s `Promise.all()` loader rejects the
+ENTIRE load on a single 404, so every page load fell back to `js/config.js`
+for every visitor — hexagons rendering from the HTML fallback instead of
+real data, and the Admin Board disabled outright (it bails out whenever
+`window.DTS_CONTENT` isn't populated). Fixed with `filterManifestForPublic()`
+— the public manifest now only lists files actually present in
+`data/current/`. Fixed live via an R2 content update before the code fix
+was even deployed. See `docs/migration/PROGRESS.md`'s follow-up Phase 6
+entry for the full root-cause writeup, including why the phase's own
+acceptance testing missed it.
+
+## Cloudflare migration — content pipeline: /data moved to R2, instant publish
+
+`/data` no longer ships as static files in the deploy — it lives in R2 as
+`data/current/` (public, stripped) and `data/source/` (private, full),
+served same-origin by `functions/data/[[path]].js` with zero changes to
+`js/content-loader.js`. A new "Publish to site" button in the Admin Board
+posts to `functions/api/publish.js` and goes live within seconds, no
+redeploy. Publish is diff-based (a SHA-256 content-hash ledger decides what
+actually changed) after the first unconditional version blew Cloudflare's
+50-subrequest-per-invocation free-tier ceiling on a real deploy. Also fixed
+a real regression the R2 move would have caused in the zip-export escape
+hatch (harvested GIS layer files now route through the authenticated proxy
+instead of a now-gone static path) and a leftover leak in `js/config.js`'s
+fallback strip (a gated example's `origin` field). See
+`docs/migration/PROGRESS.md` (2026-08-08 Phase 6 entry) for the full
+breakdown, including a real double-execution bug found while testing the
+rollback drill.
+
 ## Cloudflare migration — gating UX: no more surprise sign-in prompts
 
 Follow-up to the resolver-bug fix below. Opening a project window used to

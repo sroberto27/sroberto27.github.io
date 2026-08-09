@@ -2853,30 +2853,48 @@
   /* Every gisMap layer whose sourceType is "geojson" pointing at a harvested
      snapshot under data/gis/layers/ (06-SPEC §8). Those files are never in
      DTS_CONTENT.docs/localStorage (04-SPEC §1's size warning), so export is
-     the only path that ships them at all -- fetched from disk fresh here. */
+     the only path that ships them at all -- fetched fresh here.
+
+     Phase 6: these files are no longer static assets -- they live only in
+     R2's private data/source/ prefix (ACCESS-MODEL.md §5's local-layer-file
+     note), reachable only through the authenticated
+     functions/api/resource/gismap/[mapId]/layer/[layerId].js proxy Phase 4
+     already built. A plain fetch(l.url) against the old relative path would
+     404 the moment a map's layers aren't in data/current/ -- returns
+     {mapId, layerId, url} tuples (not bare urls) so fetchHarvestedLayers()
+     below can hit that proxy with the caller's own session token instead. */
   function collectHarvestedLayerUrls() {
-    var urls = {};
+    var seen = {};
+    var out = [];
     Object.keys(docs).forEach(function (f) {
       var d = docs[f];
       if (!d || d._type !== "gisMap") return;
       (d.layers || []).forEach(function (l) {
-        if (l.sourceType === "geojson" && typeof l.url === "string" && l.url.indexOf("data/gis/layers/") === 0) {
-          urls[l.url] = true;
+        if (l.sourceType === "geojson" && typeof l.url === "string" && l.url.indexOf("data/gis/layers/") === 0 && !seen[l.url]) {
+          seen[l.url] = true;
+          out.push({ mapId: d.id, layerId: l.id, url: l.url });
         }
       });
     });
-    return Object.keys(urls);
+    return out;
   }
 
-  function fetchHarvestedLayers(urls) {
-    return Promise.all(urls.map(function (u) {
-      return fetch(u).then(function (res) {
-        if (!res.ok) throw new Error(u + " -- HTTP " + res.status);
+  /* Same Bearer-token pattern as adminFetch() (admin.js:477), but returns
+     raw text rather than parsed JSON -- the geojson proxy streams the file
+     body directly, not a {ok,status,data} envelope. */
+  function fetchHarvestedLayers(layers) {
+    var session = window.DTS_ACCESS && window.DTS_ACCESS.session;
+    var headers = {};
+    if (session && session.accessToken) headers.Authorization = "Bearer " + session.accessToken;
+    return Promise.all(layers.map(function (l) {
+      var proxyPath = "/api/resource/gismap/" + encodeURIComponent(l.mapId) + "/layer/" + encodeURIComponent(l.layerId);
+      return fetch(proxyPath, { headers: headers }).then(function (res) {
+        if (!res.ok) throw new Error(l.url + " (" + proxyPath + ") -- HTTP " + res.status);
         return res.text();
       }).then(function (text) {
-        return { url: u, text: text };
+        return { url: l.url, text: text };
       }).catch(function (err) {
-        throw new Error(u + " -- " + (err && err.message ? err.message : "fetch failed"));
+        throw new Error(l.url + " -- " + (err && err.message ? err.message : "fetch failed"));
       });
     }));
   }
@@ -2920,6 +2938,41 @@
       // Fail loudly (06-SPEC §8): never ship a data/ folder silently missing a layer snapshot.
       alert("Export stopped — couldn't fetch " + harvestedUrls.length + " harvested GIS layer file(s) this export needs:\n\n" +
         err.message + "\n\nNo data.zip was produced. Fix the missing file(s) (or the map referencing them) and try again.");
+    });
+  }
+
+  /* Phase 6 -- instant publish via functions/api/publish.js, replacing the
+     "export zip, replace data/ by hand, redeploy" loop with one click. Sends
+     the exact same manifest/docs/harvested-layers content exportData() zips
+     up, as a POST instead of a download, authenticated the same way every
+     other Admin Board Function call already is (adminFetch()'s Bearer
+     token). The zip export itself is UNTOUCHED and stays available as the
+     fallback (WORKFLOW.md golden rule 7 -- "keep the escape hatch"). */
+  function publishToSite() {
+    if (!confirm("Publish this content live? This updates the site for every visitor within seconds.")) return;
+    content.manifest.contentVersion = new Date().toISOString().replace(/[:.]/g, "-");
+    var status = $("#admStatus");
+    if (status) status.textContent = "Publishing…";
+
+    var harvestedLayers = collectHarvestedLayerUrls();
+    fetchHarvestedLayers(harvestedLayers).then(function (layerFiles) {
+      return adminFetch("/api/publish", {
+        method: "POST",
+        body: { manifest: content.manifest, docs: docs, layers: layerFiles }
+      });
+    }).then(function (result) {
+      if (!result.ok) {
+        var msg = (result.data && result.data.error) || ("HTTP " + result.status);
+        if (status) status.textContent = "Publish failed.";
+        alert("Publish failed: " + msg);
+        return;
+      }
+      if (status) status.textContent = "Published " + result.data.publishedCount + " file(s).";
+      alert("Published live — " + result.data.publishedCount + " file(s) updated (snapshot " + result.data.snapshotId + ").");
+    }).catch(function (err) {
+      if (status) status.textContent = "Publish failed.";
+      alert("Publish stopped — couldn't fetch " + harvestedLayers.length + " harvested GIS layer file(s) this publish needs:\n\n" +
+        err.message + "\n\nNothing was published. Fix the missing file(s) (or the map referencing them) and try again.");
     });
   }
 
@@ -2981,6 +3034,10 @@
     bSave.type = "button";
     bSave.title = "Saves your edits in this browser and reloads the site so you can see them live.";
     bSave.addEventListener("click", function () { saveDraft(true); });
+    var bPublish = el("button", "adm-btn adm-btn-gold", "Publish to site");
+    bPublish.type = "button";
+    bPublish.title = "Publishes your edits live immediately -- no redeploy, no GitHub.";
+    bPublish.addEventListener("click", publishToSite);
     var bExport = el("button", "adm-btn", "Export data folder");
     bExport.type = "button";
     bExport.title = "Downloads data.zip — replace the site's data/ folder with it to publish.";
@@ -2995,7 +3052,7 @@
     bMin.type = "button";
     bMin.title = "Hide the board and look at the site — a small Admin chip brings you back.";
     bMin.addEventListener("click", function () { closeBoard(false); });
-    [bSave, bExport, bDiscard, bMin, bClose].forEach(function (b) { actions.appendChild(b); });
+    [bSave, bPublish, bExport, bDiscard, bMin, bClose].forEach(function (b) { actions.appendChild(b); });
     top.appendChild(actions);
     board.appendChild(top);
 
