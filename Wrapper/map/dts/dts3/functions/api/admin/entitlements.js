@@ -74,9 +74,15 @@ export async function onRequestPost(context) {
     body: { resource_key: resourceKey, subject_type: subjectType, subject_id: subjectId, granted_by: auth.userId },
   });
 
+  // ACCESS-MODEL.md §7 reserves a distinct "download.assign" verb (this
+  // Function is shared across every resource type -- project/gismap/download
+  // -- so it's the one place that can tell the difference); everything else
+  // still logs the generic "entitlement.grant" it always has. There's no
+  // symmetric "download.unassign" in the spec's vocabulary, so revoke below
+  // stays "entitlement.revoke" for every resource type, downloads included.
   await writeAudit(env, {
     actorUserId: auth.userId,
-    action: "entitlement.grant",
+    action: resourceKey.startsWith("download.") ? "download.assign" : "entitlement.grant",
     targetType: subjectType,
     targetId: subjectId,
     before: null,

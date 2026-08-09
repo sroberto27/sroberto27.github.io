@@ -2048,11 +2048,65 @@
     return items;
   }
 
+  /* Builds (Phase 8) live in Postgres (client_apps), never /data — a direct
+     client-side read, same reasoning renderOrgAdminPanel() already uses for
+     resource_entitlements: client_apps' own RLS policy
+     (client_apps_select) already scopes this to exactly what a signed-in
+     session should see (enabled=true; a disabled build is unavailable to
+     everyone, not just under-entitled sessions, so no further client-side
+     filtering is needed or attempted). The actual per-app access level is
+     never checked here — resolveOwnAccess()-style prediction would just be
+     a second, driftable copy of checkAccess(); every click still calls the
+     real, re-verified gate at /api/download/<key>, exactly like resolving
+     an experience never trusts a client-computed decision either. */
+  async function computeAccessibleDownloads() {
+    const sb = window.DTS_SUPABASE;
+    const { data } = await sb.from("client_apps").select("key, name, platform, version").eq("enabled", true);
+    return (data || []).map((app) => ({
+      key: app.key,
+      title: app.name,
+      label: app.platform + (app.version ? " " + app.version : ""),
+    }));
+  }
+
+  /* Authenticated download: the same fetch-with-bearer-token pattern as
+     fetchResource(), but the response body is the file itself, not JSON —
+     saved via a throwaway object URL/<a download> rather than navigating
+     the page to it (a plain navigation can't carry the Authorization
+     header /api/download/[key].js requires). */
+  async function downloadApp(key, label) {
+    const headers = {};
+    if (access.session && access.session.accessToken) headers.Authorization = "Bearer " + access.session.accessToken;
+    let resp;
+    try {
+      resp = await fetch("/api/download/" + encodeURIComponent(key), { headers });
+    } catch (_) {
+      window.alert("Download failed. Please try again.");
+      return;
+    }
+    if (resp.status === 401) { access.pendingResourceKey = null; openAccess(); return; }
+    if (resp.status === 403) { window.alert("You don't have access to this download yet. Ask your DTS contact for access."); return; }
+    if (!resp.ok) { window.alert("Download failed. Please try again."); return; }
+
+    const blob = await resp.blob();
+    const disposition = resp.headers.get("content-disposition") || "";
+    const match = /filename="([^"]+)"/.exec(disposition);
+    const filename = match ? match[1] : (label || key);
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+  }
+
   async function openPortal(session) {
     closeAccess();
     $("#portalClientName").textContent = session.orgs.length ? session.orgs[0].name : session.user.email;
 
     const items = await computeAccessibleResources(session);
+    const downloads = await computeAccessibleDownloads();
 
     /* HOME — the first accessible resource as the big tile plus
        shortcuts into the other portal views. */
@@ -2071,13 +2125,14 @@
       tiles.appendChild(big);
     }
 
+    const totalApps = items.length + downloads.length;
     const apps = document.createElement("button");
     apps.type = "button";
     apps.className = "portal-tile portal-tile-small";
     apps.innerHTML =
       '<span class="portal-tile-title">All Apps</span>' +
-      '<span class="portal-tile-sub">' + items.length +
-      (items.length === 1 ? " app" : " apps") + '</span>';
+      '<span class="portal-tile-sub">' + totalApps +
+      (totalApps === 1 ? " app" : " apps") + '</span>';
     apps.addEventListener("click", () => showPortalView("apps"));
     tiles.appendChild(apps);
 
@@ -2115,6 +2170,19 @@
         '</span>' +
         '<span class="portal-app-title">' + escapeHTML(item.label) + '</span>';
       card.addEventListener("click", () => { closePortal(false); openExample(item.projectId, null, item.expId, { resolveNow: true }); });
+      list.appendChild(card);
+    });
+    downloads.forEach((app) => {
+      const card = document.createElement("button");
+      card.type = "button";
+      card.className = "portal-app";
+      card.innerHTML =
+        '<span class="portal-app-media">' +
+          '<span class="portal-app-media-label">' + escapeHTML(app.title) + '</span>' +
+          '<span class="portal-app-duration">' + escapeHTML(app.label) + '</span>' +
+        '</span>' +
+        '<span class="portal-app-title">Download</span>';
+      card.addEventListener("click", () => downloadApp(app.key, app.title));
       list.appendChild(card);
     });
 

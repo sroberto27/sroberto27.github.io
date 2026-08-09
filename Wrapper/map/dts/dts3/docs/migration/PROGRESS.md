@@ -15,12 +15,214 @@ identity/access model each phase from 3 onward implements is defined in
 | 5b — CMS access editors + org management | **DONE** — all three checkpoints (A: access editors + entitlement picker; B: Organizations/Users/Access screens; C: org-admin team panel) complete and user-confirmed live | https://dts-website-4cu.pages.dev (deployed, `a30b1e22...`) | User confirmed all three checkpoints live, including the org-admin panel's full member management, the plain-`member`-sees-nothing case, and that `testadmin`'s Admin Board screens still work unchanged |
 | 6 — Content pipeline (public/protected split) | **DONE** | https://dts-website-4cu.pages.dev (deployed, `1e7003a4...`) | Diff-based `/api/publish` verified live end-to-end via real `testadmin` session; rollback drill run clean; full acceptance battery passes. **A critical whole-site-breaking bug was found by the user in real live testing AFTER this row was first marked done, then fixed and re-verified** — see the session log's follow-up entry: `manifest.json` listed gated GIS documents that don't exist in `data/current/`, 404ing `content-loader.js`'s `Promise.all()` and taking the ENTIRE site (every visitor, not just guests) to the `config.js` fallback, which also silently disabled the Admin Board for `site_admin`. Confirmed fixed: all 34 manifest-listed files now return 200 against the live stable alias. Not yet re-confirmed via the Admin Board UI in a browser. |
 | 7 — Lead form | **DONE** | https://dts-website-4cu.pages.dev (deployed, `b4ed6f66...`) | Original server-side design (Turnstile-verified `/api/lead` proxying to Web3Forms) hit a real chain of debugging problems (documented in the session log below) and was deliberately reverted to a simpler client-side design at the user's explicit call. **User confirmed a real lead submit works end-to-end** against the simplified version — the fix is complete, not just deployed. |
-| 8 — Builds (org/user entitlement-gated) | not started | — | — |
+| 8 — Builds (org/user entitlement-gated) | **DONE** | https://dts-website-4cu.pages.dev (deployed, `101ac885...`) | Full scripted end-to-end battery against the real deployed site passes: guest 401, direct-user-entitlement 200, org-entitlement 200 (different account than the direct grant), site_admin bypass 200 with zero entitlement, non-entitled 403, unknown key 404, a disabled build 403s an otherwise-entitled user then 200s again once re-enabled, admin routes (list/create/update/upload/delete) all site_admin-gated and a non-admin gets 403, and a `public`-level app serves with no token at all. **User ran the full manual browser pass** (`docs/migration/PHASE8-BUILDS-TESTING.md`) — 12/13 passed; the one failure (no way to delete a build) was fixed same session, redeployed, and re-verified scripted end-to-end. Not re-run in the browser after that fix — the fix itself is proven at the API level, same confidence level as the rest of this row. |
 | 9 — Analytics & audit | not started | — | — |
 | Handoff — go live (real orgs + members) | not started | — | — |
 
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
+
+- 2026-08-09 — **Real Phase 8 gap found by the user's own manual testing pass,
+  fixed same session.** Ran the full `docs/migration/PHASE8-BUILDS-TESTING.md`
+  checklist against the live deploy: 12 of 13 passed. Test 8 failed — there
+  was no way to delete a registered build at all, only disable it (the
+  screen deliberately mirrored Organizations/Users' "disable, never delete"
+  convention, which doesn't actually fit here: a mis-registered or throwaway
+  build has no membership/audit history worth permanently preserving the way
+  an organization or user account does). Test 4's comment separately flagged
+  the same gap for just the uploaded FILE (no way to remove one without
+  deleting the whole build).
+
+  **Fixed:** `functions/api/admin/apps/[key].js` gained `onRequestDelete`
+  (site_admin — deletes the `client_apps` row, the R2 object at its
+  `r2_object_key` if one exists, and any `download.<key>`
+  `resource_entitlements` rows, since that column is plain text, not a
+  foreign key, and would otherwise orphan silently) and a `removeFile: true`
+  branch on the existing `PATCH` (clears just the R2 object + `r2_object_key`,
+  keeps the build registered). New audit verb `client_app.delete`, additive
+  to §7 same as `client_app.create`/`update`. `js/admin.js`'s `editBuilds()`
+  gained a "Delete" button (confirm-gated, explicit copy pointing back to
+  Disable for anything that might be needed again) and a "Remove file" button
+  shown only when a file is actually uploaded.
+
+  **Verified live against the real deployed site**
+  (https://101ac885.dts-website-4cu.pages.dev) via another throwaway scripted
+  harness, deleted after use: a non-admin gets 403 on delete; `removeFile`
+  clears the file while the build stays listed and `/api/download` correctly
+  404s "no build uploaded yet" (not a stale/broken reference); a full delete
+  removes the build from the list entirely and `/api/download` then 404s
+  "not found"; the still-live `dummy-viewer-win`/entitlement rows from the
+  original seed were untouched throughout (this only ever exercised a
+  separate throwaway key). Re-deployed the same careful way as the original
+  Phase 8 deploy (fresh `robocopy`, the double-bracket catch-all route copied
+  manually since robocopy still can't handle that literal filename, `docs/
+  migration`+`docs/plans` removed from staging afterward) — full staging diff
+  re-confirmed before deploying, not assumed clean from having done it once
+  already this session.
+
+  **Not re-verified in the browser after this fix** — the delete/remove-file
+  behavior is proven at the same API level as the rest of Phase 8's own
+  verification, but the Admin Board buttons' actual click-through hasn't been
+  re-confirmed live. Worth a quick manual spot-check whenever convenient, not
+  blocking.
+
+  Next: `/migrate-phase9`.
+
+- 2026-08-09 — **Phase 8 is DONE — builds are gated the same way as any other
+  resource, per the phase's own core design principle.** A download is
+  `download.<client_apps.key>`, resolved through the exact same
+  `checkAccess()` `/api/resource/[key].js` already uses — no parallel gating
+  system, confirmed live end to end, not just by reading the code.
+
+  **Three things the phase brief assumed but the schema/infra didn't actually
+  have yet, each flagged to the user and resolved before writing code, not
+  discovered mid-build:**
+  1. `client_apps` had no `access` column at all — Phase 3's schema only ever
+     gave it `enabled`. The brief's own step 5 (a hypothetical future public
+     installer) requires a real per-app level. Additive migration
+     (`20260809120000_client_apps_access.sql`): `access text not null default
+     'restricted'`, same 4-value check constraint as everywhere else.
+     Applied and verified by direct query — the existing dummy row correctly
+     defaulted to `restricted`.
+  2. The brief asked for a presigned R2 URL; this project has no R2 S3-API
+     credentials set up anywhere. Streamed the file through
+     `/api/download/[key].js` instead, same pattern the GIS layer proxy
+     already uses for `DTS_CONTENT` — no new secrets, and re-checking the
+     real entitlement on every request is tighter than a presigned URL's TTL
+     window anyway (a revoked entitlement takes effect on the very next
+     request). User approved this substitution as part of the plan, not
+     after the fact.
+  3. Folded download tiles into the portal's existing "All Apps" view rather
+     than a new nav section — smaller footprint, and `client_apps` already
+     implies "another kind of app" in this system's own naming.
+
+  **`wrangler.toml`**: added the `DTS_BUILDS` R2 binding (the bucket itself
+  has existed, empty, since Phase 1 — never bound to anything until now).
+
+  **New Functions**: `functions/api/download/[key].js` (`params.key` is the
+  bare `client_apps.key`, never the dotted `download.<key>` form — same
+  bare-param convention `resource/gismap/[mapId]/layer/[layerId].js` already
+  uses — builds the dotted resource_key internally only for the
+  `checkAccess()`/entitlement lookup); `functions/api/admin/apps.js` +
+  `apps/[key].js` (site_admin, list/create/update metadata — new additive
+  audit verbs `client_app.create`/`client_app.update`, same reasoning
+  Phase 5b used for `organization.create`/`user.create`) and
+  `apps/upload.js` (site_admin, streams the raw request body straight into
+  `DTS_BUILDS.put()`, no buffering). `entitlements.js` now logs the spec's
+  already-reserved `download.assign` verb specifically when the resource_key
+  it's granting starts with `download.` — the one place that can tell the
+  difference, since it's the single shared endpoint every resource type's
+  entitlement picker calls. Revoke has no symmetric verb in the spec, so it
+  stays `entitlement.revoke` for every resource type including downloads.
+
+  **`js/admin.js`**: new "Builds" nav item under ADMIN, `editBuilds()` — list,
+  create, edit (name/version/access), enable/disable, and a real file-upload
+  input per app, reusing the existing `entitlementPicker()` component
+  unchanged whenever an app's resolved level is `restricted`. `editAccessIndex()`
+  (the read-only cross-system Access view) now also fetches `/api/admin/apps`
+  and lists `download.<key>` rows alongside the `/data`-sourced ones, with the
+  same live picker — the phase brief's step 3 ask, confirmed working, not
+  assumed from the component being generic.
+
+  **`js/app.js`**: `computeAccessibleDownloads()` — a direct client-side read
+  of `client_apps` (RLS already scopes `client_apps_select` to
+  `enabled=true` for any signed-in session, the same "direct read, RLS
+  already does the real scoping" pattern `renderOrgAdminPanel()` established
+  for `resource_entitlements` in Phase 5b) — merged into the portal's "All
+  Apps" list and its count. Deliberately does NOT predict access level
+  client-side; every download card's click always calls the real
+  `/api/download/<key>`, exactly the same "never trust a client-computed
+  decision" discipline the experience resolver already follows. New
+  `downloadApp()`: authenticated `fetch` → `blob()` → an object-URL `<a
+  download>` click (a plain navigation can't carry the Authorization header
+  the endpoint requires).
+
+  **A real, pre-existing bug found and fixed along the way, unrelated to
+  Phase 8's own design but blocking it:** `scripts/seed-dev.mjs`'s
+  `ensureUser()` re-run check (`/already registered|already exists/i`) never
+  actually matched GoTrue's real error text, "...has already been
+  registered" (the word "been" breaks the contiguous-substring match) — every
+  re-run of this script has apparently hard-failed on the very first already-
+  existing account instead of reaching its own documented idempotent lookup
+  path. Widened to `/already (been )?registered|already exists/i`. Confirmed
+  fixed by actually re-running the script clean against the real dev project.
+
+  **Seed extension**: added `download.dummy-viewer-win -> org:acme-hotels`
+  (`ensureClientApp` now also sets `access:"restricted"` explicitly) so the
+  two entitlement paths are each proven by a DIFFERENT account rather than
+  one account that happens to satisfy both — `testuser` still proves the
+  direct-user path (from Phase 3's original seed), `testorgadmin` (member of
+  acme-hotels, no entitlement of their own) now proves the org path, and
+  `testmember` (beta-municipal only) stays the 403 case. Verified both rows
+  exist by direct query after the re-run, not just the script's own "Seed
+  complete." A tiny real placeholder `dummy.zip` (201 bytes) was uploaded to
+  `dts-builds` at the exact seeded `r2_object_key`, round-tripped (uploaded
+  then downloaded back) to confirm it genuinely landed before any Function
+  ever tried to read it.
+
+  **A real deploy-composition bug caught before shipping, not after:**
+  rebuilding the deploy staging directory (`robocopy`, same exclusion list as
+  every prior phase's deploy, confirmed against what's ACTUALLY live today
+  via curl rather than trusted from memory of an old session entry) silently
+  dropped `functions/data/[[path]].js` — the double-bracket catch-all route
+  that serves ALL of `/data/*` from R2. Robocopy's own pattern engine chokes
+  on literal double square brackets in a filename (single-bracket dynamic
+  routes like `[key].js` copied fine — confirmed by diffing the full file
+  list between source and staging, not by trusting a PowerShell `Test-Path`
+  check, which itself gave false negatives for `[key].js` paths since
+  PowerShell treats `[...]` as a wildcard character class). Had this shipped
+  undetected, every `/data/*` request would have fallen through to
+  Cloudflare's generic 200 SPA fallback — the same failure MODE as the real
+  Phase 6 incident (silent wholesale fallback to `config.js` for every
+  visitor), just from a different cause. Fixed by copying that one file
+  manually (`Copy-Item -LiteralPath`) before deploying, and separately caught
+  (same pre-deploy check) that `robocopy /XD "docs\migration" "docs\plans"`
+  hadn't actually excluded either directory — removed them from staging
+  directly before deploying. Deployed only after a full re-diff confirmed
+  every excluded path was genuinely absent and every required path
+  (including the fixed catch-all route) was genuinely present.
+
+  **Verified live against the real deployed site**
+  (https://984686cf.dts-website-4cu.pages.dev), via a throwaway scripted
+  harness (Admin API `generate_link`+`verify`, no passwords needed, deleted
+  after use — same pattern as Phase 5b/6's own scripted checks): every case
+  in the table row above passed, plus a full create→upload→download round
+  trip on a throwaway `public`-level app confirmed the uploaded bytes come
+  back byte-identical with no token at all (the brief's step 5 case). No
+  regression in the existing public-data-loading or secret-path-exclusion
+  behavior (checked the same way prior phases did: real file sizes vs. the
+  SPA-fallback byte count). All throwaway test rows/R2 objects deleted
+  afterward; the two real, permanent seed entitlements remain.
+
+  **NOT yet verified — needs the user, per this project's manual-testing
+  convention (nothing below has been marked passed on their behalf):** the
+  Admin Board's new Builds screen (create a build, edit its fields, toggle
+  enable/disable, upload a real file via the browser's file picker, grant/
+  revoke via the entitlement picker) and the portal's Download tile (does it
+  appear correctly for `testuser`/`testorgadmin`, does clicking it actually
+  save a real file, does `testmember` correctly see it 403 with the expected
+  message). A manual testing document will be produced for this alongside
+  the PROGRESS.md update.
+
+  **Known limitations, documented not fixed (flagged in code comments too):**
+  a single streamed upload PUT has practical ceilings (Cloudflare's
+  request-body cap on this project's current Free plan, and R2's binding
+  potentially buffering an unsized `ReadableStream` in Worker memory) — fine
+  for dev/dummy testing, a real multi-GB client installer at handoff may need
+  R2's multipart upload API instead. Code-signing for a real distributed
+  `.exe` (~$10/mo-equiv cert) is unaddressed here by design — external,
+  belongs on the client's own account at/after handoff, per the phase brief.
+
+  **Noticed incidentally, not fixed (unrelated to Phase 8, pre-existing):**
+  `tools/gis-harvest.mjs` (the GIS layer-harvesting CLI script) is genuinely
+  served as a live static file on the deployed site — unlike `scripts/`,
+  `supabase/`, and `docs/migration/`, nothing has ever excluded `tools/` from
+  the deploy. No secrets inside it, but it does reveal internal
+  implementation comments (references to internal doc paths). Low severity,
+  didn't touch it (out of this phase's scope) — worth adding to the deploy
+  exclusion list whenever convenient.
+
+  Next: `/migrate-phase9`.
 
 - 2026-08-09 — **Phase 7 architecture simplified, at the user's explicit
   call, after a long real-world debugging chain on the server-side
@@ -1634,6 +1836,14 @@ identity/access model each phase from 3 onward implements is defined in
   updated the migration-kit instructions. Nothing has been executed.
 
 ## Open questions / blockers
+- **`tools/gis-harvest.mjs` is served as a live static file on the deployed
+  site** — found incidentally while rebuilding the Phase 8 deploy staging
+  directory and confirming today's real exclusion list against the live URL.
+  Unlike `scripts/`, `supabase/`, and `docs/migration/`, nothing has ever
+  added `tools/` to the deploy exclusion list. No secrets in the file, but it
+  does expose internal implementation comments (references to internal doc
+  paths like `04-SPEC-gis-engine.md`). Low severity, not fixed (out of
+  Phase 8's scope) — add `tools/` to the exclusion list on the next deploy.
 - **RESOLVED — CSP blocked arbitrary admin-authored external URLs across
   every content-loading directive, not just images.** Started from a user
   report: setting a home-page hexagon's image to an Adobe Stock CDN URL

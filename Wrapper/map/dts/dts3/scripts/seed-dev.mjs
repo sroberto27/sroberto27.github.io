@@ -35,7 +35,12 @@ async function ensureUser(email) {
   const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
   if (!error) return { id: data.user.id, password };
 
-  if (!/already registered|already exists/i.test(error.message)) {
+  // GoTrue's actual wording is "has already been registered" -- the "been"
+  // meant the original /already registered/ substring check never matched,
+  // so every re-run of this script hard-failed on the first existing user
+  // instead of reaching the idempotent lookup path below (found while
+  // re-running for Phase 8's org-level download entitlement).
+  if (!/already (been )?registered|already exists/i.test(error.message)) {
     throw new Error(`create user ${email}: ${error.message}`);
   }
   // Re-run case: user already exists from a prior seed attempt. Look it up,
@@ -84,6 +89,7 @@ async function ensureClientApp(key) {
     platform: "windows",
     version: "0.0.1-dev",
     r2_object_key: "builds/dummy-viewer-win/dummy.zip",
+    access: "restricted",
     enabled: true,
   });
   if (error) throw new Error(`client_app ${key}: ${error.message}`);
@@ -110,6 +116,12 @@ await ensureMembership(betaId, member1.id, "member");
 
 await ensureEntitlement("project.gfc:map", "org", acmeId, admin1.id);
 await ensureEntitlement("download.dummy-viewer-win", "user", user1.id, admin1.id);
+// Org-level grant, on a DIFFERENT account than the direct user grant above,
+// so the two entitlement paths (subject_type='user' vs 'org') are each
+// provably exercised by a distinct account rather than one account that
+// happens to satisfy both: testorgadmin (member of acme-hotels, no direct
+// entitlement of their own) can only reach this download via the org path.
+await ensureEntitlement("download.dummy-viewer-win", "org", acmeId, admin1.id);
 
 await ensureClientApp("dummy-viewer-win");
 
@@ -120,8 +132,9 @@ console.log("  testadmin@example.com    -> site_role=site_admin (no org membersh
 console.log("  testuser@example.com     -> registered only, no org membership");
 
 console.log("\nEntitlements:");
-console.log("  project.gfc:map          -> org:acme-hotels");
+console.log("  project.gfc:map           -> org:acme-hotels");
 console.log("  download.dummy-viewer-win -> user:testuser@example.com");
+console.log("  download.dummy-viewer-win -> org:acme-hotels (testorgadmin reaches it via this; testmember/beta-municipal does not)");
 
 console.log("\nClient apps: dummy-viewer-win (enabled)");
 

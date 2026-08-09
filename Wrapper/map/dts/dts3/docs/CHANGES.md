@@ -2,6 +2,22 @@
 
 Newest first.
 
+## Cloudflare migration — gated software downloads (Builds)
+
+A download is now just another `resource_key` (`download.<client_apps.key>`),
+gated through the exact same policy resolver every project/GIS-map experience
+already uses — not a separate system. New Admin Board "Builds" screen to
+register an app, edit its access level, upload a real file, delete a build or
+just remove its file, and grant/revoke who has it (reusing the same
+entitlement picker as everywhere else). The client portal's "All Apps" list
+now includes any download the signed-in account holds a real grant for —
+clicking one triggers an authenticated file save. See
+`docs/migration/PROGRESS.md`'s Phase 8 entries for the full detail, including
+a couple of things fixed along the way (a pre-existing dev-seed script bug, a
+deploy-staging bug that would have silently broken all `/data` loading had it
+shipped, and a missing delete capability found by the user's own manual
+testing pass).
+
 ## Cloudflare migration — lead form simplified back to client-side Web3Forms
 
 Reverted the server-side `/api/lead` proxy from the entry below after a real

@@ -491,6 +491,21 @@
     });
   }
 
+  /* Same auth pattern as adminFetch(), but for a raw binary body (a real
+     File from a <input type=file>) instead of a JSON one -- used only by
+     the Builds screen's upload button. */
+  function adminUpload(path, file) {
+    var headers = {};
+    var session = window.DTS_ACCESS && window.DTS_ACCESS.session;
+    if (session && session.accessToken) headers.Authorization = "Bearer " + session.accessToken;
+    headers["content-type"] = file.type || "application/octet-stream";
+    return fetch(path, { method: "POST", headers: headers, body: file }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (data) {
+        return { ok: r.ok, status: r.status, data: data };
+      });
+    });
+  }
+
   /* Live grant/revoke UI for one resource_key. getResourceKey is a
      function, not a string, because the underlying key can change while
      this row is open (an experience/link's id is still being typed). */
@@ -2770,6 +2785,157 @@
     draw();
   }
 
+  /* ============================================================
+     BUILDS  (Phase 8 — client_apps, ACCESS-MODEL.md §2/§4)
+     ------------------------------------------------------------
+     client_apps lives in Postgres, not /data -- like Organizations/Users,
+     this screen talks to a live API, never window.DTS_CONTENT.docs, and
+     never calls markDirty(). A download's resource_key (download.<key>) is
+     gated through the exact same entitlementPicker() component every
+     Restricted project experience or GIS map already uses.
+     ============================================================ */
+  var APP_ACCESS_OPTIONS = [
+    ["restricted", "Restricted — specific grant required"],
+    ["client", "Client — any active org member"],
+    ["registered", "Registered — any signed-in visitor"],
+    ["public", "Public — no sign-in required"]
+  ];
+
+  function editBuilds(pane) {
+    var box = section(pane, "Builds",
+      "Software distributed as an entitlement-gated download — the same grant/revoke mechanic as any Restricted experience or GIS map, keyed as download.<key>. This writes live: there's no draft/publish step, a saved change or a new file is immediately what /api/download serves.");
+    var listZone = el("div", "adm-listitems");
+    box.appendChild(listZone);
+    var status = el("p", "adm-hint", "");
+    box.appendChild(status);
+
+    function draw() {
+      listZone.innerHTML = "";
+      status.textContent = "Loading…";
+      adminFetch("/api/admin/apps").then(function (res) {
+        if (!res.ok) { status.textContent = "Couldn’t load builds: " + (res.data.error || res.status); return; }
+        status.textContent = "";
+        var apps = res.data.apps || [];
+        if (!apps.length) { listZone.appendChild(el("p", "adm-hint", "No builds registered yet.")); return; }
+        apps.forEach(function (app) { listZone.appendChild(appRow(app)); });
+      });
+    }
+
+    function appRow(app) {
+      var card = el("div", "adm-listitem");
+      var bar = el("div", "adm-itembar");
+      bar.appendChild(el("span", "adm-itemtitle",
+        app.name + " (" + app.platform + (app.version ? " " + app.version : "") + ")" + (app.enabled ? "" : " — disabled")));
+      var toggle = el("button", "adm-btn adm-btn-ghost adm-btn-small", app.enabled ? "Disable" : "Enable");
+      toggle.type = "button";
+      toggle.addEventListener("click", function () {
+        status.textContent = "Saving…";
+        adminFetch("/api/admin/apps/" + encodeURIComponent(app.key), { method: "PATCH", body: { enabled: !app.enabled } })
+          .then(function (res) {
+            if (!res.ok) { status.textContent = "Couldn’t update: " + (res.data.error || res.status); return; }
+            draw();
+          });
+      });
+      bar.appendChild(toggle);
+      var deleteBtn = el("button", "adm-btn adm-btn-ghost adm-btn-small", "Delete");
+      deleteBtn.type = "button";
+      deleteBtn.addEventListener("click", function () {
+        if (!confirm("Delete “" + app.name + "” permanently? This removes the build, its uploaded file, and any grants for it. This cannot be undone -- disable it instead if you might need it again.")) return;
+        status.textContent = "Deleting…";
+        adminFetch("/api/admin/apps/" + encodeURIComponent(app.key), { method: "DELETE" }).then(function (res) {
+          if (!res.ok) { status.textContent = "Couldn’t delete: " + (res.data.error || res.status); return; }
+          draw();
+        });
+      });
+      bar.appendChild(deleteBtn);
+      card.appendChild(bar);
+      card.appendChild(el("p", "adm-hint",
+        "download." + app.key + (app.r2_object_key ? "  ·  file: " + app.r2_object_key : "  ·  no file uploaded yet")));
+
+      var editRow = el("div", "adm-entitlement-search");
+      var nameIn = el("input", "adm-input"); nameIn.type = "text"; nameIn.value = app.name;
+      var versionIn = el("input", "adm-input"); versionIn.type = "text"; versionIn.value = app.version || ""; versionIn.placeholder = "version";
+      var accessSel = el("select", "adm-select");
+      APP_ACCESS_OPTIONS.forEach(function (o) {
+        var opt = el("option", null, o[1]); opt.value = o[0];
+        if (o[0] === app.access) opt.selected = true;
+        accessSel.appendChild(opt);
+      });
+      var saveBtn = el("button", "adm-btn adm-btn-small", "Save");
+      saveBtn.type = "button";
+      saveBtn.addEventListener("click", function () {
+        status.textContent = "Saving…";
+        adminFetch("/api/admin/apps/" + encodeURIComponent(app.key), {
+          method: "PATCH",
+          body: { name: nameIn.value.trim(), version: versionIn.value.trim(), access: accessSel.value }
+        }).then(function (res) {
+          if (!res.ok) { status.textContent = "Couldn’t update: " + (res.data.error || res.status); return; }
+          draw();
+        });
+      });
+      editRow.appendChild(nameIn); editRow.appendChild(versionIn); editRow.appendChild(accessSel); editRow.appendChild(saveBtn);
+      card.appendChild(editRow);
+
+      var uploadRow = el("div", "adm-entitlement-search");
+      var fileIn = el("input", "adm-input"); fileIn.type = "file";
+      var uploadBtn = el("button", "adm-btn adm-btn-small", "Upload file");
+      uploadBtn.type = "button";
+      uploadBtn.addEventListener("click", function () {
+        var file = fileIn.files && fileIn.files[0];
+        if (!file) { status.textContent = "Choose a file first."; return; }
+        status.textContent = "Uploading " + file.name + "…";
+        adminUpload("/api/admin/apps/upload?key=" + encodeURIComponent(app.key) + "&filename=" + encodeURIComponent(file.name), file)
+          .then(function (res) {
+            if (!res.ok) { status.textContent = "Upload failed: " + (res.data.error || res.status); return; }
+            status.textContent = "Uploaded.";
+            draw();
+          });
+      });
+      uploadRow.appendChild(fileIn); uploadRow.appendChild(uploadBtn);
+      if (app.r2_object_key) {
+        var removeFileBtn = el("button", "adm-btn adm-btn-ghost adm-btn-small", "Remove file");
+        removeFileBtn.type = "button";
+        removeFileBtn.addEventListener("click", function () {
+          if (!confirm("Remove the uploaded file for “" + app.name + "”? The build stays registered -- upload a new file any time.")) return;
+          status.textContent = "Removing file…";
+          adminFetch("/api/admin/apps/" + encodeURIComponent(app.key), { method: "PATCH", body: { removeFile: true } }).then(function (res) {
+            if (!res.ok) { status.textContent = "Couldn’t remove file: " + (res.data.error || res.status); return; }
+            draw();
+          });
+        });
+        uploadRow.appendChild(removeFileBtn);
+      }
+      card.appendChild(uploadRow);
+
+      if (app.access === "restricted") {
+        entitlementPicker(card, function () { return "download." + app.key; });
+      }
+      return card;
+    }
+
+    var addBox = section(pane, "New build");
+    var newKey = el("input", "adm-input"); newKey.type = "text"; newKey.placeholder = "key (e.g. acme-viewer-win)";
+    var newName = el("input", "adm-input"); newName.type = "text"; newName.placeholder = "Display name";
+    var newPlatform = el("input", "adm-input"); newPlatform.type = "text"; newPlatform.placeholder = "platform (e.g. windows)";
+    var addBtn = el("button", "adm-btn adm-btn-gold adm-btn-small", "+ Register build");
+    addBtn.type = "button";
+    addBtn.addEventListener("click", function () {
+      var key = newKey.value.trim(), name = newName.value.trim(), platform = newPlatform.value.trim();
+      if (!key || !name || !platform) { status.textContent = "Key, name, and platform are all required."; return; }
+      status.textContent = "Creating…";
+      adminFetch("/api/admin/apps", { method: "POST", body: { key: key, name: name, platform: platform } }).then(function (res) {
+        if (!res.ok) { status.textContent = "Couldn’t create: " + (res.data.error || res.status); return; }
+        newKey.value = ""; newName.value = ""; newPlatform.value = "";
+        draw();
+      });
+    });
+    var addRow = el("div", "adm-entitlement-search");
+    addRow.appendChild(newKey); addRow.appendChild(newName); addRow.appendChild(newPlatform); addRow.appendChild(addBtn);
+    addBox.appendChild(addRow);
+
+    draw();
+  }
+
   /* Walks the same documents strip-public-data.mjs and the Phase 4 resolver
      already treat as the source of every resource_key in the system --
      purely a client-side read of window.DTS_CONTENT.docs (already loaded),
@@ -2810,9 +2976,8 @@
 
   function editAccessIndex(pane) {
     var box = section(pane, "Access",
-      "A read-only index of every gated resource in the system, resolved to its actual level — a debugging view over what's otherwise scattered across every project and GIS map editor. To change a level, edit it on the project/GIS map itself; a Restricted row's picker here writes live, same as everywhere else.");
+      "A read-only index of every gated resource in the system, resolved to its actual level — a debugging view over what's otherwise scattered across every project/GIS map editor and the Builds screen. To change a level, edit it on the project/GIS map/build itself; a Restricted row's picker here writes live, same as everywhere else.");
     var items = enumerateResourceKeys();
-    if (!items.length) { box.appendChild(el("p", "adm-hint", "Nothing gated yet.")); return; }
     items.forEach(function (item) {
       var card = el("div", "adm-listitem");
       var bar = el("div", "adm-itembar");
@@ -2824,6 +2989,28 @@
         entitlementPicker(card, function () { return item.resourceKey; });
       }
       box.appendChild(card);
+    });
+
+    // Downloads (client_apps) live in Postgres, not /data -- fetched
+    // separately rather than folded into enumerateResourceKeys(), same
+    // reasoning entitlementPicker() itself already follows for talking to a
+    // live API instead of window.DTS_CONTENT.docs. Deliberately doesn't
+    // block the synchronous items above from rendering first.
+    adminFetch("/api/admin/apps").then(function (res) {
+      var apps = (res.ok && res.data.apps) || [];
+      if (!items.length && !apps.length) { box.appendChild(el("p", "adm-hint", "Nothing gated yet.")); return; }
+      apps.forEach(function (app) {
+        var card = el("div", "adm-listitem");
+        var bar = el("div", "adm-itembar");
+        bar.appendChild(el("span", "adm-itemtitle", "Download — " + app.name));
+        bar.appendChild(el("span", "adm-hint", app.access));
+        card.appendChild(bar);
+        card.appendChild(el("p", "adm-hint", "download." + app.key));
+        if (app.access === "restricted") {
+          entitlementPicker(card, function () { return "download." + app.key; });
+        }
+        box.appendChild(card);
+      });
     });
   }
 
@@ -3124,6 +3311,7 @@
     navEl.appendChild(el("p", "adm-navhead", "ADMIN"));
     navBtn("Organizations", "organizations");
     navBtn("Users", "users");
+    navBtn("Builds", "builds");
     navBtn("Access", "access");
 
     highlightNav();
@@ -3175,6 +3363,7 @@
     }
     else if (key === "organizations") editOrganizations(paneEl);
     else if (key === "users") editUsers(paneEl);
+    else if (key === "builds") editBuilds(paneEl);
     else if (key === "access") editAccessIndex(paneEl);
     paneEl.scrollTop = 0;
   }

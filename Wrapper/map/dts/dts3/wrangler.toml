@@ -6,6 +6,10 @@ pages_build_output_dir = "."
 binding = "DTS_CONTENT"
 bucket_name = "dts-content"
 
+[[r2_buckets]]
+binding = "DTS_BUILDS"
+bucket_name = "dts-builds"
+
 # Cloudflare Pages, Direct Upload — no git connection, no build step.
 # Deploys the site root as static assets: `npx wrangler pages deploy .`
 #
