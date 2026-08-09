@@ -42,6 +42,7 @@ Plan, then do:
    | 9 | Domain registrar / DNS access | Pointing the real domain at production | Wherever the client's domain is currently registered/hosted |
    | 10 | The real client list (companies, staff, who's `org_admin` per company) | Step 6's org/membership import | The client directly — never guessed from old sheet data |
    | 11 | Custom SMTP provider account + verified sending domain | Password reset / signup confirmation emails actually working | Client's (or DTS-managed) SMTP provider — see `ACCOUNT-SETUP-AND-HANDOFF.md` §7 |
+   | 12 | GA4 Measurement ID + Microsoft Clarity Project ID | Marketing tags (Phase 9) — both currently placeholder-empty in `js/analytics-init.js`, so neither tag loads on the dev site at all | Client's Google Analytics account (Admin → Data Streams) and clarity.microsoft.com — both free, not secrets, safe to paste directly once created |
 
    Items 7-8 only apply if OAuth is actually launching with this handoff —
    if the user is deferring Google/Microsoft sign-in (as decided

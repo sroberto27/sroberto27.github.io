@@ -321,6 +321,14 @@
   font-size:14px; line-height:1.6;
 }
 
+/* ---------- activity dashboard tile (Phase 9, client portal) ---------- */
+.portal-activity-chartwrap{
+  max-width:720px; margin:16px auto 0; padding:16px;
+  background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1);
+  border-radius:14px;
+}
+.portal-activity-chartwrap canvas{ width:100%; height:auto; display:block; }
+
 /* ---------- org-admin team panel (Phase 5b, client portal Manage tab) ---------- */
 .portal-orgadmin{ max-width:720px; margin:0 auto 20px; }
 .portal-orgadmin-org{

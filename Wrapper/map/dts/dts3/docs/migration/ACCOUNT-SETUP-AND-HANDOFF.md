@@ -136,6 +136,32 @@ project shares 2 auth emails/hour — don't chain multiple signup/reset
 attempts within the same hour and read a second failure as a new bug; it's
 very likely just the same cap.
 
+### 8. GA4 + Microsoft Clarity (before marketing tags actually load)
+
+Added in Phase 9. Both are free, both give you a public, non-secret ID (not
+a key that needs hiding) — the same pattern already used for the Turnstile
+sitekey and Supabase anon key. `js/analytics-init.js` ships with both IDs
+as empty strings, which is a deliberate no-op: `loadGA4()`/`loadClarity()`
+each check for a real id before ever injecting a script, so neither tag
+loads on the dev site until you fill these in — nothing to "turn off" if
+you'd rather wait until the client's own accounts exist at Handoff.
+
+1. **GA4**: analytics.google.com → Admin → create a property for the site
+   → Data Streams → add a Web stream → copy the **Measurement ID**
+   (`G-XXXXXXXXXX`).
+2. **Clarity**: clarity.microsoft.com → sign in (any Microsoft/Google/
+   Facebook account works) → New project → copy the **Project ID**.
+3. Paste both into `js/analytics-init.js`'s `ga4MeasurementId` /
+   `clarityProjectId` fields. Not secret — safe to commit directly, no
+   `.env` entry needed.
+4. Either tag only actually fires client-side after a real visitor clicks
+   **Accept** on the cookie-disclosure banner (`#cookie`) — Reject, or no
+   choice yet, means neither loads. See `js/app.js`'s COOKIE DISCLOSURE
+   section if this needs revisiting.
+5. **At Handoff, decide explicitly** whether these stay on DTS's own
+   accounts or move to the client's — same open question as Web3Forms
+   (item 6 above), don't assume either way.
+
 ### Where these values actually go
 
 All of the above (except passwords/tokens, which stay in a git-ignored
@@ -158,6 +184,7 @@ an actual key or password in that file, in a commit, or in this document.
 | 8 | Google OAuth client (Cloud Console) | Self-registration | Free |
 | 9 | Microsoft OAuth app (Azure Portal) | Self-registration | Free (Azure AD app registration itself; no Azure subscription needed) |
 | 10 | Custom SMTP provider + a verified domain (DNS access) | Reliable forgot-password/signup-confirmation (Phase 4) | Free tier on most providers (Resend, etc.) |
+| 11 | GA4 property (Measurement ID) + Microsoft Clarity project (Project ID) | Marketing tags actually loading (Phase 9) | Free |
 
 None of this is required to run `/migrate-start` — Step 0 is read-only
 verification against the existing code.
@@ -287,6 +314,9 @@ one Claude actually follows; this is the plain-language walkthrough.
    - Domain registrar / DNS access for the real domain.
    - The real client list — companies, staff, and who's `org_admin` at each
      one — from the client directly, never guessed from old sheet data.
+   - A GA4 Measurement ID and Microsoft Clarity Project ID, if marketing
+     tags are launching with this handoff (see §8 above) — both currently
+     placeholder-empty, so neither loads until filled in.
    - **The collaborator-vs-self-service decision** (see step 2 below) made
      explicitly, not assumed.
    Treat this as a hard gate: don't start step 2 until every row is either

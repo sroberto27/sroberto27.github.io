@@ -3097,6 +3097,38 @@
   }
 
   /* ============================================================
+     AUDIT  (Phase 9 -- ACCESS-MODEL.md §7)
+     ------------------------------------------------------------
+     Read-only. admin_audit has no client insert policy at all -- every
+     mutation Functions already write goes through the service role
+     (functions/_lib/admin.js's writeAudit()); this screen exists so that
+     trail is actually visible somewhere instead of only accumulating
+     unread, per the phase brief.
+     ============================================================ */
+  function editAuditLog(pane) {
+    var box = section(pane, "Audit",
+      "A read-only log of every administrative action taken in this system -- role changes, membership edits, access-policy edits, entitlement grants/revokes, account disable/reactivate, invites. Most recent first.");
+    box.appendChild(el("p", "adm-hint", "Loading…"));
+    adminFetch("/api/admin/audit?limit=200").then(function (res) {
+      box.innerHTML = "";
+      if (!res.ok) { box.appendChild(el("p", "adm-hint", "Couldn’t load the audit log.")); return; }
+      var entries = res.data.entries || [];
+      if (!entries.length) { box.appendChild(el("p", "adm-hint", "Nothing recorded yet.")); return; }
+      entries.forEach(function (entry) {
+        var card = el("div", "adm-listitem");
+        var bar = el("div", "adm-itembar");
+        bar.appendChild(el("span", "adm-itemtitle", entry.action));
+        bar.appendChild(el("span", "adm-hint", new Date(entry.occurredAt).toLocaleString()));
+        card.appendChild(bar);
+        var who = entry.actorEmail + (entry.targetType ? " → " + entry.targetType + (entry.targetId ? " " + entry.targetId : "") : "");
+        card.appendChild(el("p", "adm-hint", who));
+        card.appendChild(el("p", "adm-hint", "org: " + (entry.orgId || "—")));
+        box.appendChild(card);
+      });
+    });
+  }
+
+  /* ============================================================
      SAVE DRAFT / DISCARD / EXPORT
      ============================================================ */
   function saveDraft(reload) {
@@ -3399,6 +3431,7 @@
     navBtn("Users", "users");
     navBtn("Builds", "builds");
     navBtn("Access", "access");
+    navBtn("Audit", "audit");
 
     highlightNav();
   }
@@ -3451,6 +3484,7 @@
     else if (key === "users") editUsers(paneEl);
     else if (key === "builds") editBuilds(paneEl);
     else if (key === "access") editAccessIndex(paneEl);
+    else if (key === "audit") editAuditLog(paneEl);
     paneEl.scrollTop = 0;
   }
 

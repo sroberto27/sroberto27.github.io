@@ -243,14 +243,15 @@
     state.category = id;
     renderCategory(getCategory(id));
     // Always land on the cards panel when (re)entering a sector.
-    const track = $("#catTrack");
-    if (track) track.classList.remove("show-contact");
+    const catTrackEl = $("#catTrack");
+    if (catTrackEl) catTrackEl.classList.remove("show-contact");
     state.contactOpen = false;
     showView("category");
     updateNextLabel();
     syncSectorPager();
     syncDrawer();
     syncContactBar();
+    track("sector_view", { metadata: { sector: id } });
     if (!restoringFromHistory) syncURL(false);
   }
 
@@ -604,9 +605,19 @@
           } else if (cfg.treedis.homeSweepId) {
             TourBridge.navigateToSweep(cfg.treedis.homeSweepId);
           }
+          // Phase 9 tour-bridge instrumentation: observing only, per
+          // js/tour-bridge.js's own do-not-alter contract -- this is the
+          // ONE place TourBridge.initialize() exists at all (the single
+          // shared homepage iframe, CLAUDE.md's do-not-break rule); a
+          // per-project Treedis pane (mountTreedis) never touches the
+          // bridge, it just sets iframe.src.
+          track("experience_open", { metadata: { source: "homepage_demo", bridgeEvent: "TourReady" } });
         },
         onPoseChanged: function (sweepId) {
           // Hook point: react to where the user walked inside Treedis.
+          // Deliberately NOT wired to /api/track -- no §6 event type fits
+          // a per-movement signal, and firing one on every sweep change
+          // would be spam, not analytics.
           console.info("[dts] pose →", sweepId);
         }
       });
@@ -747,6 +758,7 @@
        instead of the category underneath all of them. */
     const isSwap = !!activeExampleId && activeExampleId !== cardId;
     activeExampleId = cardId;
+    track("project_view", { projectId: cardId, resourceKey: "project." + cardId });
 
     const cat = cfg.categories.find((c) => c.id === ex.sector) || getCategory(state.category);
 
@@ -886,6 +898,7 @@
     frame.hidden = false;
     if (loading) loading.classList.toggle("is-hidden", frame.src === target.tourUrl);
     if (target.tourUrl && frame.src !== target.tourUrl) frame.src = target.tourUrl;
+    track("experience_open", { resourceKey: "project." + activeExampleId + ":" + target.id, projectId: activeExampleId, metadata: { type: "treedis" } });
   }
 
   function mountVideo(target, slot, loading) {
@@ -897,6 +910,7 @@
     frame.hidden = false;
     if (loading) loading.classList.toggle("is-hidden", frame.src === url);
     if (url && frame.src !== url) frame.src = url;
+    track("experience_open", { resourceKey: "project." + activeExampleId + ":" + target.id, projectId: activeExampleId, metadata: { type: "vimeo" } });
   }
 
   /* No structured media at all (a legacy project with neither
@@ -1024,6 +1038,7 @@
     }
     hideGisError();
     activeGisMapId = mapId;
+    track("map_open", { resourceKey: "gismap." + mapId, projectId: activeExampleId, metadata: { mapId } });
 
     const cached = gisCache.get(mapId);
     if (cached) {
@@ -1113,6 +1128,7 @@
         // blank its src too.
         if (frame.dataset.kind === "vimeo") frame.src = "about:blank";
         frame.hidden = true;
+        track("experience_close", { resourceKey: "project." + activeExampleId + ":" + expId, projectId: activeExampleId, metadata: { type: frame.dataset.kind } });
       }
     }
     suspendActiveGis();
@@ -1207,6 +1223,7 @@
       '<span class="example-locked-icon">' + lockGlyph() + "</span>" +
       '<span class="example-locked-text">Sign in to view this ' + noun + "</span>";
     el.hidden = false;
+    track("experience_preview", { resourceKey: "project." + activeExampleId + ":" + target.id, projectId: activeExampleId, metadata: { type: target.type } });
   }
   function hideLockedPlaceholder() {
     const el = document.getElementById("exLocked");
@@ -1559,6 +1576,15 @@
   function closeExampleNow() {
     const wasOpen = !!activeExampleId;
     const ov = $("#exampleOverlay");
+    // Whichever treedis/vimeo tab was actually open when the window closes
+    // — fired before the teardown below removes the frame that carries
+    // dataset.kind and nulls the ids this needs.
+    if (wasOpen && activeExperienceId) {
+      const openFrame = document.getElementById(experienceFrameId(activeExperienceId));
+      if (openFrame) {
+        track("experience_close", { resourceKey: "project." + activeExampleId + ":" + activeExperienceId, projectId: activeExampleId, metadata: { type: openFrame.dataset.kind } });
+      }
+    }
     // Tear down every dedicated experience frame (one per experience id)
     // so a video doesn't keep playing behind the closed window, and the
     // next project opened starts from a clean slot.
@@ -1715,6 +1741,46 @@
   }
 
   /* ============================================================
+     ANALYTICS EVENTS  (Phase 9 — ACCESS-MODEL.md §6)
+     ------------------------------------------------------------
+     Fire-and-forget by design: never awaited by a caller, a slow or
+     failed /api/track call must never block or visibly affect the
+     feature it's observing. The Function itself (not this client code)
+     stamps user_id/org_id — see functions/api/track.js.
+     ============================================================ */
+  const ANON_ID_KEY = "dtsAnonId";
+
+  /* A locally-generated, non-PII id so a guest's events can be correlated
+     across a session without any account — only ever sent when there's no
+     real session to attribute the event to instead. */
+  function getAnonId() {
+    try {
+      let id = localStorage.getItem(ANON_ID_KEY);
+      if (!id) {
+        id = (window.crypto && crypto.randomUUID)
+          ? crypto.randomUUID()
+          : Date.now().toString(36) + Math.random().toString(36).slice(2);
+        localStorage.setItem(ANON_ID_KEY, id);
+      }
+      return id;
+    } catch (_) { return null; }
+  }
+
+  function track(type, opts) {
+    opts = opts || {};
+    const headers = { "content-type": "application/json" };
+    if (access.session && access.session.accessToken) headers.Authorization = "Bearer " + access.session.accessToken;
+    const body = { type };
+    if (opts.resourceKey) body.resource_key = opts.resourceKey;
+    if (opts.projectId) body.project_id = opts.projectId;
+    if (opts.metadata) body.metadata = opts.metadata;
+    if (!access.session) body.anon_id = getAnonId();
+    try {
+      fetch("/api/track", { method: "POST", headers, body: JSON.stringify(body) }).catch(() => {});
+    } catch (_) { /* analytics must never throw into a real feature path */ }
+  }
+
+  /* ============================================================
      RESOURCE RESOLUTION  (the actual gate)
      ------------------------------------------------------------
      The browser never decides access — it asks
@@ -1781,9 +1847,11 @@
      re-opens it; 403 tells the guest to ask their DTS contact. */
   function handleResolveFailure(result) {
     if (result.reason === "signin") {
+      track("login_gate", { resourceKey: result.resourceKey, metadata: { reason: "signin" } });
       access.pendingResourceKey = result.resourceKey;
       openAccess();
     } else if (result.reason === "denied") {
+      track("login_gate", { resourceKey: result.resourceKey, metadata: { reason: "denied" } });
       window.alert("You don't have access to this resource yet. Ask your DTS contact for access.");
     } else {
       console.warn("[dts] resource resolution failed:", result.resourceKey);
@@ -1810,10 +1878,14 @@
      back to the portal — same destination-preservation submitAccess()
      always did, just factored out so signUp()'s success path can reuse
      it instead of duplicating it. */
-  async function finishSignIn(session) {
+  async function finishSignIn(session, opts) {
     await buildSessionFromAuth(session);
     document.dispatchEvent(new CustomEvent("dts:signed-in",
       { detail: { session: access.session, restored: false } }));
+    // "register" for a signup whose confirmation was disabled (an
+    // immediate session) -- every other caller (plain password login,
+    // destination-preservation after a real login) is a real "login".
+    track((opts && opts.event) || "login");
 
     // A site_admin has no client portal and no gated experience to resume
     // into -- js/admin.js's own dts:signed-in listener owns their whole
@@ -1872,6 +1944,7 @@
       // returns a usable session in that case. Tell the reader to check
       // their inbox and drop them back on the login form for when they do.
       if (!data.session) {
+        track("register", { metadata: { confirmed: false } });
         $("#accessSuccessNote").textContent =
           "Account created — check your email for a confirmation link, then log in.";
         $("#accessSuccessNote").hidden = false;
@@ -1880,7 +1953,7 @@
       }
 
       // Confirmation disabled on this project — signed in immediately.
-      await finishSignIn(data.session);
+      await finishSignIn(data.session, { event: "register" });
       return;
     }
 
@@ -2075,6 +2148,8 @@
      the page to it (a plain navigation can't carry the Authorization
      header /api/download/[key].js requires). */
   async function downloadApp(key, label) {
+    const resourceKey = "download." + key;
+    track("download_start", { resourceKey });
     const headers = {};
     if (access.session && access.session.accessToken) headers.Authorization = "Bearer " + access.session.accessToken;
     let resp;
@@ -2099,6 +2174,7 @@
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 4000);
+    track("download_complete", { resourceKey });
   }
 
   async function openPortal(session) {
@@ -2176,6 +2252,7 @@
       const card = document.createElement("button");
       card.type = "button";
       card.className = "portal-app";
+      card.dataset.downloadKey = app.key;   // read by showPortalView() to fire download_view
       card.innerHTML =
         '<span class="portal-app-media">' +
           '<span class="portal-app-media-label">' + escapeHTML(app.title) + '</span>' +
@@ -2188,12 +2265,91 @@
 
     renderOrgAdminPanel(session);
 
+    // Activity tab: only meaningful for a session with >=1 active org --
+    // events_select RLS (is_org_member(org_id)) never returns a row for a
+    // plain registered user with no org, so there's nothing for that
+    // session to see here at all.
+    const hasOrg = !!(session.orgs && session.orgs.length);
+    [$("#portalNavActivity"), $("#portalMenuActivity")].forEach((btn) => { if (btn) btn.hidden = !hasOrg; });
+
     showPortalView("home");
     closePortalMenu();
     const layer = $("#portalLayer");
     layer.classList.add("is-open");
     layer.setAttribute("aria-hidden", "false");
     document.body.classList.add("portal-open");
+  }
+
+  /* ============================================================
+     ACTIVITY DASHBOARD TILE  (Phase 9 — client portal)
+     ------------------------------------------------------------
+     Direct client-side Supabase read of `events`, same "RLS is the real
+     scoping, not a client filter" reasoning renderOrgAdminPanel() already
+     uses for resource_entitlements (Phase 5b) — events_select only ever
+     returns rows for an org the signed-in user actively belongs to (or
+     every row, for site_admin, who never reaches this portal at all).
+     Chart.js is lazy-loaded, once, only when this view is actually opened.
+     ============================================================ */
+  let chartLibPromise = null;
+  function loadChartLib() {
+    if (window.Chart) return Promise.resolve();
+    if (chartLibPromise) return chartLibPromise;
+    chartLibPromise = new Promise((resolve, reject) => {
+      const s = document.createElement("script");
+      s.src = "https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js";
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error("Failed to load Chart.js"));
+      document.body.appendChild(s);
+    });
+    return chartLibPromise;
+  }
+
+  let activityChartInstance = null;
+
+  async function renderPortalActivity() {
+    if (!access.session || !access.session.orgs || !access.session.orgs.length) return;
+    const hint = $("#portalActivityHint");
+    const sb = window.DTS_SUPABASE;
+    const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    const { data, error } = await sb.from("events").select("type").gte("occurred_at", since);
+    if (error) {
+      if (hint) hint.textContent = "Couldn’t load activity right now.";
+      return;
+    }
+
+    const counts = {};
+    (data || []).forEach((row) => { counts[row.type] = (counts[row.type] || 0) + 1; });
+    const labels = Object.keys(counts).sort();
+
+    if (!labels.length) {
+      if (hint) hint.textContent = "No activity recorded for your organization in the last 30 days yet.";
+      return;
+    }
+    if (hint) hint.textContent = "Your organization's usage over the last 30 days.";
+
+    try {
+      await loadChartLib();
+    } catch (_) {
+      if (hint) hint.textContent = "Your organization's usage over the last 30 days. (Chart failed to load.)";
+      return;
+    }
+
+    const canvas = $("#portalActivityChart");
+    if (!canvas || !window.Chart) return;
+    if (activityChartInstance) { activityChartInstance.destroy(); activityChartInstance = null; }
+    activityChartInstance = new window.Chart(canvas, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{ label: "Events", data: labels.map((l) => counts[l]), backgroundColor: "#c9a44c" }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+      }
+    });
   }
 
   function closePortal(clearSession) {
@@ -2205,7 +2361,7 @@
   }
 
   function showPortalView(name) {
-    ["home", "apps", "manage", "support"].forEach((v) => {
+    ["home", "apps", "manage", "support", "activity"].forEach((v) => {
       const el = $("#portal" + v[0].toUpperCase() + v.slice(1));
       if (el) {
         el.hidden = v !== name;
@@ -2215,6 +2371,12 @@
     $$("#portalNav .portal-nav-link").forEach((b) =>
       b.classList.toggle("is-active", b.dataset.portalView === name)
     );
+    if (name === "apps") {
+      $$("#portalAppsList [data-download-key]").forEach((card) =>
+        track("download_view", { resourceKey: "download." + card.dataset.downloadKey })
+      );
+    }
+    if (name === "activity") renderPortalActivity();
     closePortalMenu();
   }
 
@@ -2440,6 +2602,9 @@
         "That one's not in our quick answers yet. Use Contact & Info (or ACCESS YOUR TWIN) and the DTS team will follow up directly.";
     }
     panel.hidden = false;
+    // metadata.query is the raw text, not PII by itself, but capped
+    // defensively -- a visitor could type anything into this box.
+    track("faq_search", { metadata: { query: q.slice(0, 200), matched: !!hit } });
   }
   function closeAnswer() { $("#qbarAnswer").hidden = true; }
 
@@ -2676,9 +2841,11 @@
     submitBtn.textContent = originalLabel;
 
     if (sent) {
+      track("lead_submit", { metadata: { formType: def.title || null } });
       showFormSuccess();
     } else {
       // Network/key failure → fall back to the user's mail app.
+      track("lead_fallback", { metadata: { formType: def.title || null } });
       openMailtoFallback(data, def);
     }
   }
@@ -2862,8 +3029,45 @@
 
   /* ============================================================
      COOKIE DISCLOSURE
+     ------------------------------------------------------------
+     Accept/Reject used to be functionally identical (both just hid the
+     banner, no choice was ever stored or read) -- found and fixed as part
+     of Phase 9 wiring in real marketing tags: GA4/Clarity must never load
+     before a real Accept, and Reject must actually mean "never load them,"
+     not just "hide the banner once." First-party product analytics
+     (/api/track, ACCESS-MODEL.md §6) is NOT gated by this -- it's DTS's
+     own operational data about its own product, not third-party tracking.
      ============================================================ */
+  const COOKIE_CONSENT_KEY = "dtsCookieConsent";   // "accepted" | "rejected"
+
+  function getCookieConsent() {
+    try { return localStorage.getItem(COOKIE_CONSENT_KEY); } catch (_) { return null; }
+  }
+  function setCookieConsent(value) {
+    try { localStorage.setItem(COOKIE_CONSENT_KEY, value); } catch (_) {}
+  }
   function dismissCookie() { $("#cookie").classList.add("is-hidden"); }
+
+  function acceptCookies() {
+    setCookieConsent("accepted");
+    dismissCookie();
+    if (window.DTS_ANALYTICS) window.DTS_ANALYTICS.loadIfConsented();
+  }
+  function rejectCookies() {
+    setCookieConsent("rejected");
+    dismissCookie();
+  }
+
+  /* Runs once on boot -- a returning visitor who already decided never
+     sees the banner flash, and an already-"accepted" visitor gets GA4/
+     Clarity loaded immediately rather than waiting for a click that will
+     never come. */
+  function initCookieConsent() {
+    const existing = getCookieConsent();
+    if (!existing) return;
+    dismissCookie();
+    if (existing === "accepted" && window.DTS_ANALYTICS) window.DTS_ANALYTICS.loadIfConsented();
+  }
 
   /* ============================================================
      ANIMATED SPATIAL BACKGROUND  (subtle network of points)
@@ -3147,8 +3351,8 @@
     $("#qbarAnswerClose").addEventListener("click", closeAnswer);
 
     // Cookie
-    $("#cookieAccept").addEventListener("click", dismissCookie);
-    $("#cookieReject").addEventListener("click", dismissCookie);
+    $("#cookieAccept").addEventListener("click", acceptCookies);
+    $("#cookieReject").addEventListener("click", rejectCookies);
   }
 
   /* ============================================================
@@ -3173,6 +3377,7 @@
     buildContact();
     restoreInitialStateFromURL();  // home / ?category=… / ?category=…&project=… → matching state; URL normalized via replaceState
     wire();
+    initCookieConsent();
     initSwipe();
     initBackground();
     startTreedis();              // embed the live experience right away

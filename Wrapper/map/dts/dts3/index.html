@@ -778,6 +778,11 @@
       <button class="portal-nav-link" data-portal-view="apps" type="button">APPS</button>
       <button class="portal-nav-link" data-portal-view="manage" type="button">Manage</button>
       <button class="portal-nav-link" data-portal-view="support" type="button">Support</button>
+      <!-- Phase 9 — hidden by default; js/app.js's openPortal() only
+           reveals this for a session with >=1 active org membership
+           (events RLS only ever returns rows for an org member, so this
+           tab has nothing to show anyone else). -->
+      <button class="portal-nav-link" id="portalNavActivity" data-portal-view="activity" type="button" hidden>Activity</button>
     </nav>
     <span class="portal-clientlogo" id="portalClientName">Client</span>
     <button class="portal-signout" id="portalSignout" type="button">Sign out</button>
@@ -812,6 +817,19 @@
       <h2 class="portal-apps-title">Support</h2>
       <p class="portal-simple-body">Need a hand? Email the DTS team and we’ll reply within one business day.</p>
     </section>
+
+    <!-- ACTIVITY — Phase 9 client dashboard tile. A direct client-side
+         Supabase read of `events` (js/app.js's renderPortalActivity()) —
+         RLS (is_org_member(org_id)) is the real scoping, not a client
+         filter. Chart.js is lazy-loaded only when this view is actually
+         opened. -->
+    <section class="portal-view portal-simple" id="portalActivity" aria-label="Activity" hidden>
+      <h2 class="portal-apps-title">Activity</h2>
+      <p class="portal-simple-body" id="portalActivityHint">Your organization's usage over the last 30 days.</p>
+      <div class="portal-activity-chartwrap">
+        <canvas id="portalActivityChart" width="600" height="280"></canvas>
+      </div>
+    </section>
   </main>
 
   <!-- Tile menu overlay: HOME / APPS / Manage / Support -->
@@ -824,6 +842,7 @@
       <button class="portal-menu-tile" data-portal-view="apps" type="button">APPS</button>
       <button class="portal-menu-tile" data-portal-view="manage" type="button">Manage</button>
       <button class="portal-menu-tile" data-portal-view="support" type="button">Support</button>
+      <button class="portal-menu-tile" id="portalMenuActivity" data-portal-view="activity" type="button" hidden>Activity</button>
     </div>
   </div>
 </div>
@@ -934,5 +953,10 @@
      calls turnstile.render() itself when the lead form opens. -->
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
 <script src="js/turnstile-init.js"></script>
+<!-- Phase 9 addition, appended -- never reorders anything above.
+     GA4 + Clarity themselves are NOT loaded here (no CDN <script> tag) --
+     js/analytics-init.js only holds config + injector functions; js/app.js
+     calls them conditionally, after real consent, per the cookie banner. -->
+<script src="js/analytics-init.js"></script>
 </body>
 </html>

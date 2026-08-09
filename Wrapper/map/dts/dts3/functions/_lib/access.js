@@ -70,7 +70,7 @@ export async function isSiteAdmin(userId, env) {
 // disabled org's still-"active" membership rows previously kept granting
 // client-level access with zero enforcement, making "disable" purely
 // cosmetic. See docs/migration/PROGRESS.md for the reproduction.
-async function activeOrgIdsFor(userId, env) {
+export async function activeOrgIdsFor(userId, env) {
   const rows = await pgrst(
     env,
     `organization_members?select=org_id,organizations!inner(status)&user_id=eq.${userId}&status=eq.active&organizations.status=eq.active`

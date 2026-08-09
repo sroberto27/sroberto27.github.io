@@ -2,6 +2,25 @@
 
 Newest first.
 
+## Analytics, audit trail, and marketing tags — dev build complete
+
+Product analytics (`/api/track` → the `events` table) now covers 15 event
+types across the whole visitor journey — project/experience views, gated
+sign-in prompts, downloads, lead form submissions, category browsing, and
+FAQ search — each stamped server-side with the real user/org, never trusted
+from the client. Client organizations get a small "Activity" tab in their
+portal (a Chart.js summary of their own usage, RLS-scoped so one
+organization can never see another's); `site_admin` gets a new read-only
+"Audit" screen surfacing the administrative trail earlier phases were
+already writing but nothing displayed. GA4 + Microsoft Clarity are wired in
+but inert (placeholder IDs) until the client's real accounts exist at
+Handoff. Along the way, fixed a real pre-existing gap: the cookie-consent
+banner's Accept/Reject buttons were functionally identical — now Reject
+actually prevents any tracking script from loading. See
+`docs/migration/PROGRESS.md`'s Phase 9 entry for the full detail, including
+two rounds of real verification (adversarial RLS checks against the live
+database, and scripted checks against the live deployed site).
+
 ## Admin Board — real delete added where Disable wasn't enough
 
 Organizations and Users now have a real, permanent Delete alongside the

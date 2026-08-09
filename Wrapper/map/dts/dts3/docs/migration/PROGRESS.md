@@ -16,11 +16,200 @@ identity/access model each phase from 3 onward implements is defined in
 | 6 — Content pipeline (public/protected split) | **DONE** | https://dts-website-4cu.pages.dev (deployed, `1e7003a4...`) | Diff-based `/api/publish` verified live end-to-end via real `testadmin` session; rollback drill run clean; full acceptance battery passes. **A critical whole-site-breaking bug was found by the user in real live testing AFTER this row was first marked done, then fixed and re-verified** — see the session log's follow-up entry: `manifest.json` listed gated GIS documents that don't exist in `data/current/`, 404ing `content-loader.js`'s `Promise.all()` and taking the ENTIRE site (every visitor, not just guests) to the `config.js` fallback, which also silently disabled the Admin Board for `site_admin`. Confirmed fixed: all 34 manifest-listed files now return 200 against the live stable alias. Not yet re-confirmed via the Admin Board UI in a browser. |
 | 7 — Lead form | **DONE** | https://dts-website-4cu.pages.dev (deployed, `b4ed6f66...`) | Original server-side design (Turnstile-verified `/api/lead` proxying to Web3Forms) hit a real chain of debugging problems (documented in the session log below) and was deliberately reverted to a simpler client-side design at the user's explicit call. **User confirmed a real lead submit works end-to-end** against the simplified version — the fix is complete, not just deployed. |
 | 8 — Builds (org/user entitlement-gated) | **DONE** | https://dts-website-4cu.pages.dev (deployed, `101ac885...`) | Full scripted end-to-end battery against the real deployed site passes: guest 401, direct-user-entitlement 200, org-entitlement 200 (different account than the direct grant), site_admin bypass 200 with zero entitlement, non-entitled 403, unknown key 404, a disabled build 403s an otherwise-entitled user then 200s again once re-enabled, admin routes (list/create/update/upload/delete) all site_admin-gated and a non-admin gets 403, and a `public`-level app serves with no token at all. **User ran the full manual browser pass** (`docs/migration/PHASE8-BUILDS-TESTING.md`) — 12/13 passed; the one failure (no way to delete a build) was fixed same session, redeployed, and re-verified scripted end-to-end. Not re-run in the browser after that fix — the fix itself is proven at the API level, same confidence level as the rest of this row. |
-| 9 — Analytics & audit | not started | — | — |
+| 9 — Analytics & audit | **DONE — dev build complete** | https://dts-website-4cu.pages.dev (deployed, `40291069...`) | 23 scripted assertions pass (8 adversarial RLS on `events`/`admin_audit` against real dev Supabase, 15 live against `/api/track`/`/api/admin/audit` on the real deployed site) + full deploy-staging exclusion diff. **User needs to run** `docs/migration/PHASE9-TESTING.md` (browser click-through: consent banner, Activity chart, Audit screen, event-instrumented flows, final README regression) — nothing in it marked passed on their behalf. |
 | Handoff — go live (real orgs + members) | not started | — | — |
 
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
+
+- 2026-08-09 — **Phase 9 is DONE — dev build complete.** Analytics events,
+  the client dashboard tile, the admin audit view, and marketing tags (with
+  a real pre-existing gap fixed along the way — the cookie consent banner).
+
+  **Three real product decisions made with the user before writing code,**
+  not assumed: (1) GA4 + Microsoft Clarity, both free, no permanent
+  Plausible-style paid tier needed — chosen after clarifying Clarity alone
+  gives session recordings/heatmaps but no traffic numbers, so it needed a
+  pairing; (2) both IDs shipped as placeholder-empty in `js/analytics-init.js`
+  since the user won't have the client's real GA4/Clarity accounts until
+  Handoff — deliberately built so nothing blocks on that, same pattern as
+  the OAuth/SMTP deferrals; (3) wire all 15 event types now (the 11 in
+  `ACCESS-MODEL.md` §6 plus 4 proposed and approved this session:
+  `lead_submit`/`lead_fallback`, `sector_view`, `faq_search`), not just the
+  7 the phase brief's task 2 named explicitly.
+
+  **A real, pre-existing gap found and fixed, not in the brief:**
+  `#cookieAccept`/`#cookieReject` were functionally identical — both just
+  hid the banner, no choice was ever stored or read anywhere
+  (`js/app.js`, confirmed by grep before assuming). Wiring in real GA4/
+  Clarity on top of a consent banner that didn't actually gate anything
+  would have made "Reject" a lie. Fixed: `dtsCookieConsent` in
+  `localStorage` (a new key, doesn't touch the two protected keys in
+  `CLAUDE.md`'s do-not-break list), GA4/Clarity only ever load after a real
+  Accept. First-party `/api/track` events are deliberately NOT gated by
+  this banner — they're DTS's own product analytics, not third-party
+  tracking, same category as the Supabase auth session itself.
+
+  **`functions/api/track.js`** (new): inserts into `events`
+  (`ACCESS-MODEL.md` §6). Validates `type` against the full 15-value
+  vocabulary application-side (`events.type` has no DB check constraint).
+  Stamps `user_id` from the verified JWT and rejects outright — not
+  silently drops — any request that tries to supply its own `user_id`/
+  `org_id`. **`org_id` resolution is a real judgment call, stated plainly
+  rather than glossed over:** this app has no org-switcher, so "the org
+  active in the session" only has an honest answer when the caller belongs
+  to exactly one active org; zero or more than one both resolve to `null`
+  rather than guess. Exported `activeOrgIdsFor()` from
+  `functions/_lib/access.js` (previously module-private) to reuse the exact
+  same active-membership logic `checkAccess()` already relies on, rather
+  than reimplementing it.
+
+  **15 call sites wired in `js/app.js`** via a new `track()`/`getAnonId()`
+  helper (fire-and-forget, never awaited, wrapped so a failed/slow
+  `/api/track` call can never block or visibly affect the feature it's
+  observing): `login_gate` (`handleResolveFailure`, both the signin and
+  denied branches), `experience_open`/`experience_close` (`mountTreedis`/
+  `mountVideo` open; `suspendExperience` for a tab switch and
+  `closeExampleNow` for the whole window close), `map_open` (`mountGis`,
+  keyed to the real `gismap.<mapId>` resource_key, not the experience
+  pointer), `project_view` (`openExample`), `experience_preview`
+  (`showLockedPlaceholder`), `login`/`register` (`finishSignIn`, now takes
+  an `opts.event` so the shared tail can tell a real login from a
+  confirmation-disabled signup's immediate session; the check-your-email
+  branch fires `register` directly since it never reaches `finishSignIn`
+  at all), `download_view`/`download_start`/`download_complete`
+  (`showPortalView`'s apps branch / `downloadApp`'s fetch start / its
+  success tail), `lead_submit`/`lead_fallback` (the existing sent/fallback
+  branch after `sendLead()`), `sector_view` (`openCategory`), `faq_search`
+  (`answerQuestion`, `{query, matched}`, query capped at 200 chars
+  defensively).
+
+  **A real naming collision caught before it could ship a runtime bug:**
+  `openCategory()` already had a local `const track = $("#catTrack")` (a
+  DOM element) that would have shadowed the new global `track()` function
+  for that entire function body and thrown a TDZ `ReferenceError` the
+  moment `track("sector_view", ...)` was added — caught by grepping for
+  `\btrack\b` across the whole file before assuming the name was free, not
+  discovered by running it. Renamed the local to `catTrackEl`.
+
+  **Tour-bridge instrumentation, observing only, per the do-not-alter
+  contract:** `js/tour-bridge.js`'s `TourBridge.initialize()` exists in
+  exactly ONE place in the whole codebase — the single shared homepage
+  iframe (`startTreedis()`) — confirmed by grep before assuming
+  `mountTreedis()`'s per-project Treedis panes also used it; they don't,
+  they just set `iframe.src` directly. So this phase's tour-bridge
+  instrumentation only ever applies to the homepage "Try a Digital Twin"
+  reveal: its existing `onReady` callback now also fires `experience_open`
+  with `metadata:{source:"homepage_demo"}`. `onPoseChanged` stays
+  console-only, deliberately — no §6 type fits a per-movement signal, and
+  firing one on every sweep change would be spam, not analytics. Zero
+  changes to `tour-bridge.js` itself, only to the callbacks `app.js` was
+  already passing into it.
+
+  **Client dashboard tile** (`js/app.js`, `index.html`, `css/09-mobile.css`):
+  new 5th portal nav tab, "Activity," hidden unless the session has ≥1
+  active org (`events_select`'s RLS never returns a row for anyone else,
+  so there's nothing to show). `renderPortalActivity()` is a direct
+  client-side Supabase read of `events` — same "RLS is the real scoping,
+  not a client filter" reasoning `renderOrgAdminPanel()` already
+  established in Phase 5b — aggregated into a Chart.js bar chart (counts by
+  type, last 30 days). Chart.js itself is lazy-loaded on first open
+  (`loadChartLib()`, same dynamically-appended-`<script>`-with-memoized-
+  promise pattern `loadGisEngine()` already uses for the GIS engine bundle)
+  from `cdn.jsdelivr.net`, already whitelisted in `_headers`' CSP for
+  supabase-js — no CSP change needed for the chart library itself.
+
+  **Admin audit view** (`functions/api/admin/audit.js`, new;
+  `js/admin.js`'s new "Audit" nav entry + `editAuditLog()`): site_admin
+  only, read-only, resolves `actor_user_id` → email the same way
+  `entitlements.js` already resolves subject labels (GoTrue Admin API
+  batch fetch, `auth.users` isn't reachable via PostgREST) — a Function,
+  not a direct client read, matching every OTHER Admin Board list screen's
+  established pattern (Organizations/Users/Entitlements), not a new one.
+
+  **Marketing tags**: new `js/analytics-init.js` (placeholder
+  `ga4MeasurementId`/`clarityProjectId`, both `""` today — `loadGA4()`/
+  `loadClarity()` are no-ops until a real id is set, so this deploys and
+  works today with nothing pending on the client's accounts existing).
+  Loaded at the very end of `index.html`'s script list, after Turnstile,
+  never reordering anything above it. `_headers` CSP: added
+  `googletagmanager.com` + `clarity.ms` to `script-src`; `connect-src`
+  already allowed any `https:` origin, so no change needed there.
+  `ACCESS-MODEL.md` §6 gets a dated addendum for the 4 new event types
+  (same convention as §10's self-registration addendum).
+  `docs/migration/ACCOUNT-SETUP-AND-HANDOFF.md` (new §8 + Quick checklist
+  row 11) and `.claude/commands/migrate-handoff.md` (new inventory row 12)
+  both updated so this doesn't get forgotten at Handoff, same as every
+  other deferred-credential item.
+
+  **Verified two ways, both real, neither hypothetical:**
+  1. **Adversarial RLS, directly against the real dev Supabase project**
+     (a throwaway scripted harness using the established `generateLink`+
+     `verifyOtp` mint-session pattern, deleted after use, zero rows left
+     behind): `testadmin` (site_admin) sees every marker row across both
+     orgs; `testorgadmin` (Acme + Beta) sees exactly those two orgs' rows;
+     **`testmember` (Beta only) sees ONLY Beta's row, never Acme's** — the
+     core adversarial property the phase brief's task 4 asked for,
+     confirmed server-side, not by reading the policy SQL and assuming;
+     `testuser` (no org) sees zero rows, including the anon/guest one;
+     `testadmin` can read `admin_audit`, `testmember` cannot (RLS filters
+     to zero rows); and confirmed `admin_audit` has no client insert path
+     at all — even `testadmin`'s own authenticated client session gets
+     rejected trying to insert directly, proving the service-role-only
+     write path is real, not just documented. 8/8 passed.
+  2. **Live against the real deployed site**, after a from-scratch,
+     explicitly-diffed deploy-staging rebuild (see below):
+     `/api/track` — a guest event lands with genuinely null `user_id`/
+     `org_id`; an invalid `type` 400s; a request that tries to supply its
+     own `user_id` OR `org_id` 400s (not silently dropped); `testmember`
+     (exactly 1 active org) gets `org_id` correctly stamped to Beta's real
+     id; `testorgadmin` (2 active orgs) gets `org_id` correctly stamped
+     `null` rather than a guess — confirmed by querying the actual inserted
+     rows via service role, not trusting the 201 response alone.
+     `/api/admin/audit` — no auth 401s, a non-admin 403s, `testadmin` gets
+     a real entries list with resolved actor emails, not raw UUIDs. 15/15
+     passed, all throwaway rows cleaned up after.
+
+  **Deploy-staging rebuilt from scratch and shown to the user before
+  running anything**, given `wrangler.toml`'s `pages_build_output_dir = "."`
+  didn't match the separate-staging-directory approach every prior
+  session's prose described, and three real staging bugs had already been
+  found in this exact step across Phases 6/8. Built in the scratchpad
+  directory (never inside the repo), every included folder diffed file-
+  for-file against the source (`functions/` — all 22 files including the
+  double-bracket `functions/data/[[path]].js` catch-all — matched exactly),
+  every excluded path (`data/`, `scripts/`, `supabase/`, `docs/`,
+  `node_modules/`, `.env`, `package.json`, `README*.md`, `CLAUDE.md`, the
+  `.docx`, the 2 oversized Backrooms `.usdz` files) confirmed genuinely
+  absent before deploying, not assumed. **One opportunistic fix, flagged as
+  a known gap in Phase 8's own entry and never acted on until now:**
+  `tools/gis-harvest.mjs` had been shipping live this whole migration —
+  added `tools/` to the exclusion list this session; confirmed post-deploy
+  it now returns the SPA-fallback byte count, not the real file. Also
+  reconfirmed no regression: homepage loads at its real byte count,
+  `/data/manifest.json` still serves the real (different-sized) public
+  manifest through the R2-backed Function, and `/.env`/`/scripts/...`/
+  `/docs/migration/...` all correctly return the fallback byte count, not a
+  real leaked file. Deployed: `https://40291069.dts-website-4cu.pages.dev`
+  (stable alias `https://dts-website-4cu.pages.dev`, propagates shortly).
+
+  **NOT yet verified — needs the user, per this project's manual-testing
+  convention:** everything in the new `docs/migration/PHASE9-TESTING.md` —
+  the consent banner's actual click-through, the Activity tab's chart
+  actually rendering in a browser, the Audit screen's real list rendering,
+  and a final full README regression pass. Nothing in it marked passed on
+  their behalf.
+
+  **Known limitation, documented not fixed:** `/api/track` has no rate
+  limiting of its own (unlike `invite.js`'s `admin_audit`-ledger-based
+  limiter) — it's a public, unauthenticated-allowed write endpoint. Not
+  addressed this phase since it wasn't in the brief and adding one wasn't
+  asked for; worth a real fix before real production traffic if abuse ever
+  becomes a concern, same "documented not fixed" treatment Phase 8 gave its
+  own known limitations.
+
+  Dev build (Phases 0-9) is now complete. Next: `/migrate-handoff`, only
+  when actually going live with the real client.
 
 - 2026-08-09 — **Admin Board delete-option audit, requested by the user
   independent of any phase file** ("go through the CMS and add a remove
@@ -2064,3 +2253,5 @@ identity/access model each phase from 3 onward implements is defined in
 - Domain (dev *.pages.dev or real): ____
 - Client Cloudflare account (handoff): ____
 - Client Supabase project (handoff): ____
+- GA4 Measurement ID: ____  (placeholder-empty in js/analytics-init.js until set)
+- Microsoft Clarity Project ID: ____  (placeholder-empty in js/analytics-init.js until set)

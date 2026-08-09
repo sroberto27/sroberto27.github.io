@@ -292,9 +292,24 @@ This resolution happens **only** inside `functions/api/resource/[key].js`
 `experience_open`, `experience_close`, `map_open`, `download_view`,
 `download_start`, `download_complete`.
 
-`org_id` on every row is the org active in the session at the time, stamped
-server-side — never accepted as a client-supplied field. Records what
-happened, never why.
+**Added in Phase 9, still normative here:** `lead_submit`, `lead_fallback`
+(the lead form had zero analytics before this — arguably the single
+highest-value gap on a marketing site), `sector_view` (category/sector
+navigation never changes the URL, so nothing else — not even a future GA4
+pageview — would ever see it happen), `faq_search` (the homepage "Ask a
+Question" bar, `#qbarInput`, is a real FAQ-matching feature, not decorative
+— logged with `metadata: {query, matched}`). `events.type` is a plain `text`
+column with no DB check constraint; the enum is enforced application-side in
+`functions/api/track.js`.
+
+`org_id` on every row is stamped server-side by `functions/api/track.js`,
+never accepted as a client-supplied field (a request that tries is rejected
+outright, not silently ignored). Because this app has no org-switcher and a
+session can belong to more than one organization at once (§1), "the org
+active in the session" only has an unambiguous answer when the caller has
+exactly one active org membership — that case gets stamped; zero or more
+than one both resolve to `null` rather than guess which org an event
+belongs to. Records what happened, never why.
 
 ---
 
