@@ -6,6 +6,24 @@
 // Env bindings required: DTS_CONTENT (R2). Env vars/secrets required:
 // SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY.
 
+// Every id (`org_id`, `user_id`, a route param, a body field) that gets
+// spliced into a pgrst() queryPath string MUST pass this first. Without it,
+// a value containing a literal "#" silently truncates the query string --
+// fetch()'s URL parsing treats everything from "#" onward as a fragment,
+// which is NEVER sent over HTTP. That's not cosmetic: when the truncated
+// clause was the one restricting a filter (e.g. "org_id=eq.X&role=eq.
+// org_admin&status=eq.active" losing everything after "org_id=eq.X"), the
+// request silently becomes far less restrictive than intended. Found live
+// in functions/_lib/admin.js's isOrgAdmin()/requireOrgAdminOf() and
+// functions/api/org/members.js -- see PROGRESS.md's session log. Every real
+// id in this schema is a Postgres uuid column, so requiring strict UUID
+// shape is both correct and sufficient (rejects "#" along with everything
+// else that isn't a real id).
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export function isUuid(value) {
+  return typeof value === "string" && UUID_RE.test(value);
+}
+
 export function json(body, status) {
   return new Response(JSON.stringify(body), {
     status,

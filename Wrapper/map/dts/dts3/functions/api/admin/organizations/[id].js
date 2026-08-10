@@ -3,7 +3,7 @@
 // see functions/_lib/access.js's activeOrgIdsFor() for what disabling
 // actually enforces at the gating layer).
 
-import { json, pgrst } from "../../../_lib/access.js";
+import { json, pgrst, isUuid } from "../../../_lib/access.js";
 import { requireSiteAdmin, writeAudit } from "../../../_lib/admin.js";
 
 export async function onRequestPatch(context) {
@@ -12,6 +12,7 @@ export async function onRequestPatch(context) {
   if (auth.response) return auth.response;
 
   const id = params.id;
+  if (!isUuid(id)) return json({ error: "id must be a valid id" }, 400);
   const existingRows = await pgrst(env, `organizations?id=eq.${id}&select=*`);
   if (!existingRows.length) return json({ error: "not found" }, 404);
   const existing = existingRows[0];
@@ -58,6 +59,7 @@ export async function onRequestDelete(context) {
   if (auth.response) return auth.response;
 
   const id = params.id;
+  if (!isUuid(id)) return json({ error: "id must be a valid id" }, 400);
   const existingRows = await pgrst(env, `organizations?id=eq.${id}&select=*`);
   if (!existingRows.length) return json({ error: "not found" }, 404);
   const existing = existingRows[0];

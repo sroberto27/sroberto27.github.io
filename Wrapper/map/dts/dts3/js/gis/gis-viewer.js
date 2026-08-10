@@ -905,11 +905,25 @@
       });
     }
 
+    // d.color, like d.text below, can arrive via applyState() from a share
+    // link someone else authored -- but it's concatenated into a style
+    // ATTRIBUTE VALUE, not text content, where HTML-escaping alone doesn't
+    // guarantee safety the way it does for d.text. A strict whitelist (hex
+    // code or a plain CSS color keyword) is the actual fix: anything that
+    // doesn't match falls back to the same default this always used for a
+    // missing color, rather than ever reaching the DOM unvalidated. Closes
+    // a real attribute-injection XSS confirmed via a crafted ?map= link
+    // (a literal `"` in color broke out of the style attribute) -- see
+    // PROGRESS.md's session log.
+    function sanitizeColor(c) {
+      return typeof c === "string" && /^#[0-9a-fA-F]{3,8}$|^[a-zA-Z]{1,20}$/.test(c) ? c : "#c49a2a";
+    }
+
     // Text labels render through a divIcon's innerHTML -- d.text can arrive
     // via applyState() from a share link someone else authored, so it must
     // be escaped here, not trusted as safe markup.
     function renderDrawingLayer(d) {
-      const color = d.color || "#c49a2a";
+      const color = sanitizeColor(d.color);
       if (d.type === "point") {
         return L.circleMarker(d.latlng, { radius: 6, color: color, weight: 2, fillColor: color, fillOpacity: 0.7 });
       }

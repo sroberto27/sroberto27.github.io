@@ -8,7 +8,7 @@
 // place as the mutation itself, not as a second, skippable client call.
 // See docs/migration/ACCESS-MODEL.md §7-8.
 
-import { pgrst, verifyUser, isSiteAdmin, json } from "./access.js";
+import { pgrst, verifyUser, isSiteAdmin, isUuid, json } from "./access.js";
 
 export async function requireSiteAdmin(request, env) {
   const userId = await verifyUser(request, env);
@@ -35,8 +35,13 @@ export async function isOrgAdmin(userId, orgId, env) {
 export async function requireOrgAdminOf(request, orgId, env) {
   const userId = await verifyUser(request, env);
   if (!userId) return { response: json({ error: "sign-in required" }, 401) };
+  // Checked before anything else, even the site_admin bypass below: every
+  // caller of this function goes on to splice orgId into a pgrst() filter
+  // itself, so an invalid orgId must never reach isOrgAdmin() (see
+  // access.js's isUuid() for exactly what this closes).
+  if (!isUuid(orgId)) return { response: json({ error: "orgId must be a valid id" }, 400) };
   if (await isSiteAdmin(userId, env)) return { userId };
-  if (!orgId || !(await isOrgAdmin(userId, orgId, env))) {
+  if (!(await isOrgAdmin(userId, orgId, env))) {
     return { response: json({ error: "org_admin of this organization required" }, 403) };
   }
   return { userId };

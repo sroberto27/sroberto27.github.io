@@ -22,6 +22,17 @@
 (function () {
   "use strict";
 
+  // Same helper gis-viewer.js already has (a separate IIFE, no shared scope
+  // to reuse it from). Needed here because buildPopupSection() below
+  // concatenates a CMS-authored tour title into an `html:` string -- unlike
+  // the row right above it, which correctly uses `text:` (DOM textContent,
+  // inherently safe) for the feature's own field values.
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+    });
+  }
+
   function el(tag, attrs, children) {
     const node = document.createElement(tag);
     Object.keys(attrs || {}).forEach(function (k) {
@@ -507,7 +518,7 @@
           const tourTitle = tourTitleFor(featureTour.tourId);
           const tourBtn = el("button", {
             class: "dts-gis-popup-tourbtn", type: "button",
-            html: ICONS.tour + '<span>Start guided tour' + (tourTitle ? ": " + tourTitle : "") + "</span>"
+            html: ICONS.tour + '<span>Start guided tour' + (tourTitle ? ": " + escapeHtml(tourTitle) : "") + "</span>"
           });
           tourBtn.addEventListener("click", function () {
             closePopup();

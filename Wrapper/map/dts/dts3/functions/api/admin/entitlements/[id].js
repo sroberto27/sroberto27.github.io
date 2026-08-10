@@ -1,6 +1,6 @@
 // functions/api/admin/entitlements/[id].js -- site_admin only. Revoke.
 
-import { json, pgrst } from "../../../_lib/access.js";
+import { json, pgrst, isUuid } from "../../../_lib/access.js";
 import { requireSiteAdmin, writeAudit } from "../../../_lib/admin.js";
 
 export async function onRequestDelete(context) {
@@ -9,6 +9,7 @@ export async function onRequestDelete(context) {
   if (auth.response) return auth.response;
 
   const id = params.id;
+  if (!isUuid(id)) return json({ error: "id must be a valid id" }, 400);
   const existing = await pgrst(env, `resource_entitlements?id=eq.${id}&select=*`);
   if (!existing.length) return json({ error: "not found" }, 404);
 

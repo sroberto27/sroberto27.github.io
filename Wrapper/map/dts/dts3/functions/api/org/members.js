@@ -11,7 +11,7 @@
 // invite.send audit handling, added in Checkpoint C. POST here only adds an
 // EXISTING account to an org.
 
-import { json, pgrst } from "../../_lib/access.js";
+import { json, pgrst, isUuid } from "../../_lib/access.js";
 import { requireOrgAdminOf, writeAudit, gotrue } from "../../_lib/admin.js";
 
 export async function onRequestGet(context) {
@@ -82,6 +82,10 @@ export async function onRequestPatch(context) {
   if (!orgId || !userId) return json({ error: "orgId and userId are required" }, 400);
   const auth = await requireOrgAdminOf(request, orgId, env);
   if (auth.response) return auth.response;
+  // orgId is validated inside requireOrgAdminOf() -- userId is a second,
+  // independent value spliced into the same pgrst() filters below, so it
+  // needs the same check (see access.js's isUuid() for why).
+  if (!isUuid(userId)) return json({ error: "userId must be a valid id" }, 400);
 
   if (body.orgRole !== "member" && body.orgRole !== "org_admin") return json({ error: "orgRole must be 'member' or 'org_admin'" }, 400);
 
@@ -114,6 +118,7 @@ export async function onRequestDelete(context) {
   if (!orgId || !userId) return json({ error: "org_id and user_id are required" }, 400);
   const auth = await requireOrgAdminOf(request, orgId, env);
   if (auth.response) return auth.response;
+  if (!isUuid(userId)) return json({ error: "user_id must be a valid id" }, 400);
 
   const existingRows = await pgrst(env, `organization_members?org_id=eq.${orgId}&user_id=eq.${userId}&select=*`);
   if (!existingRows.length) return json({ error: "not a member of this organization" }, 404);

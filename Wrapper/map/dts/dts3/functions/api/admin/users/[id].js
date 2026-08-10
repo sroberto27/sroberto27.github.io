@@ -4,7 +4,7 @@
 // gets its own admin_audit row per ACCESS-MODEL.md §7's separate action
 // names, not one combined entry.
 
-import { json, pgrst } from "../../../_lib/access.js";
+import { json, pgrst, isUuid } from "../../../_lib/access.js";
 import { requireSiteAdmin, writeAudit, gotrue } from "../../../_lib/admin.js";
 
 export async function onRequestPatch(context) {
@@ -12,6 +12,7 @@ export async function onRequestPatch(context) {
   const auth = await requireSiteAdmin(request, env);
   if (auth.response) return auth.response;
   const userId = params.id;
+  if (!isUuid(userId)) return json({ error: "id must be a valid id" }, 400);
 
   let body;
   try { body = await request.json(); } catch (_) { return json({ error: "invalid JSON body" }, 400); }
@@ -64,6 +65,7 @@ export async function onRequestDelete(context) {
   const auth = await requireSiteAdmin(request, env);
   if (auth.response) return auth.response;
   const userId = params.id;
+  if (!isUuid(userId)) return json({ error: "id must be a valid id" }, 400);
 
   // Found missing entirely in Phase 8's follow-up audit of the Admin Board
   // (only Disable existed anywhere for accounts). Two safety rails an admin

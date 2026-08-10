@@ -3,7 +3,7 @@
 // -- this is the one editor surface in the Admin Board that writes live
 // instead of through the draft/export path.
 
-import { json, pgrst } from "../../_lib/access.js";
+import { json, pgrst, isUuid } from "../../_lib/access.js";
 import { requireSiteAdmin, writeAudit, gotrue } from "../../_lib/admin.js";
 
 async function allUserEmails(env) {
@@ -58,6 +58,7 @@ export async function onRequestPost(context) {
   if (!resourceKey || (subjectType !== "org" && subjectType !== "user") || !subjectId) {
     return json({ error: "resourceKey, subjectType ('org'|'user'), and subjectId are required" }, 400);
   }
+  if (!isUuid(subjectId)) return json({ error: "subjectId must be a valid id" }, 400);
 
   // Confirm the subject actually exists before granting -- a typo'd id
   // would otherwise silently create a dangling, unusable entitlement row.
