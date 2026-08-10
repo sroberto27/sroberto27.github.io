@@ -22,6 +22,54 @@ identity/access model each phase from 3 onward implements is defined in
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
 
+- 2026-08-09 — **Admin Board documentation rewritten for depth, same
+  session, real user feedback on the just-shipped feature below.** The
+  user's complaint was specific and correct: the site_admin content
+  summarized what each screen was for rather than actually teaching someone
+  who doesn't know the system how to do things -- no click-by-click steps,
+  no exact button/field labels, no "what you need before you start."
+
+  **Rewrote all 14 `admin` topics in `js/help-content.js`** (~4x the content,
+  27,947 characters of HTML vs. the original terse version) using real
+  labels traced from the actual editor functions in `js/admin.js` --
+  `editHome`/`editContact`/`editFaq`/`editFunFacts`/`editSector`/
+  `addSector`/`editProject`/`addProject`/`editGisMap`/`layerEditor`/
+  `editOrganizations`/`editUsers`/`editBuilds`/`editAccessIndex`/
+  `entitlementPicker`/the top toolbar's six buttons -- read directly rather
+  than described from memory, so every button name quoted in the content
+  (\"Save draft & preview\", \"+ Add category page\", \"Test connection\",
+  \"Who has access\", etc.) is the literal real label. Structured with new
+  `<h4>` step-group headings, numbered `<ol>` steps, and a `.help-note`
+  callout style for \"before you start\" prerequisites (e.g. Builds needs
+  the real file ready first; GIS layers need the service URL; Users has no
+  working invite-email yet so you set the password directly) -- new to
+  `css/16-help.css` (`.dts-help-panebody h4/ol/li/.help-note`), verified
+  balanced by a scripted tag-count check (`<ol>`/`<li>`/`<h4>`/`<div>`/`<p>`/
+  `<strong>`/`<code>` open/close counts match in every topic, not just
+  visually skimmed) rather than trusted from writing it carefully.
+
+  Also newly explicit per topic, not implicit before: which screens write
+  live immediately with no draft/publish step at all (Organizations, Users,
+  Builds, Access) vs. which follow the ordinary draft → preview → publish
+  flow -- this distinction existed in the code before but was easy to miss
+  and is exactly the kind of thing someone new to the system would get
+  wrong.
+
+  All 14 topic ids kept identical to before (`overview`, `draft-workflow`,
+  `home`, `contact`, `faq`, `funfacts`, `sectors`, `projects`, `gis`,
+  `organizations`, `users`, `builds`, `access`, `audit`) — the
+  entitlement-picker's "?" contextual hint (`helpHintBtn("access", ...)`,
+  `js/admin.js`) still resolves correctly, confirmed by grep, not assumed.
+
+  **Verified:** `node --check` clean on every touched JS file; loaded
+  `help-content.js` in a real Node VM and confirmed all 14 admin topics
+  parse with non-empty `title`/`html` and matching id list; local
+  `http.server` re-confirms `index.html`/`js/help-content.js`/
+  `css/16-help.css` all still serve `200`. **Not verified:** still no live
+  browser pass (Chrome extension unavailable this session too) — how the
+  new headings/notes/lists actually render is unconfirmed, same gap as the
+  original feature.
+
 - 2026-08-09 — **In-app documentation for four audiences, requested by the
   user independent of any numbered phase** ("Add in-app documentation/manual
   for four audiences: site_admin, org_admin, member, and normal user"). Does

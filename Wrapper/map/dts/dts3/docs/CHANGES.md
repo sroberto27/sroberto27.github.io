@@ -21,6 +21,13 @@ and two new analytics event types (`help_topic_view`, `help_search`). See
 `docs/migration/HELP-DOCS-TESTING.md` for the manual testing checklist —
 nothing in this feature has been verified in a live browser yet.
 
+Following real feedback the same session, the Admin Board's Documentation
+content was rewritten from short summaries into genuine step-by-step
+tutorials — exact button/field labels traced from the real editors, numbered
+steps for every add/edit/delete flow, and "before you start" callouts for
+prerequisites (e.g. Builds needs the file ready, Users has no working
+invite-email yet).
+
 ## Analytics, audit trail, and marketing tags — dev build complete
 
 Product analytics (`/api/track` → the `events` table) now covers 15 event
