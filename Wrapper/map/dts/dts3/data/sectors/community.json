@@ -6,7 +6,7 @@
   "label": "Community",
   "navSub": "Community",
   "blurb": "Community represents the lived outcomes of those systems.",
-  "active": false,
+  "active": true,
   "accent": "#D27049",
   "kicker": "COMMUNITY",
   "title": "Civic & Social",

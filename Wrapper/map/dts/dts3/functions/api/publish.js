@@ -33,7 +33,7 @@
 // non-diffing version.
 
 import { requireSiteAdmin, writeAudit } from "../_lib/admin.js";
-import { json } from "../_lib/access.js";
+import { json, getSourceJson } from "../_lib/access.js";
 import { splitProjectDoc, splitGisDocSet, isLocalGisLayer, filterManifestForPublic } from "../_lib/split-logic.js";
 
 const HASH_MANIFEST_KEY = "data/source/_hashes.json";
@@ -108,7 +108,51 @@ export async function onRequestPost(context) {
   }
 
   const publishedCurrentPaths = []; // -> cache purge list at the end
-  let writtenCount = 0, skippedCount = 0;
+  let writtenCount = 0, skippedCount = 0, deletedCount = 0;
+
+  // ---- clean up documents removed since the last publish ----
+  // The main loop below only ever visits entries actually present in the
+  // INCOMING manifest -- a project/sector/gisMap deleted in the Admin Board
+  // (its manifest entry simply gone from this payload) was never diffed,
+  // never deleted, just silently skipped. Its old data/current/ AND
+  // data/source/ objects stayed in R2 exactly as last published --
+  // permanently public at their old, still-guessable URL, since
+  // functions/data/[[path]].js serves any path under data/current/ by
+  // direct key lookup with no manifest cross-check. Read the PREVIOUS
+  // manifest (data/source/'s copy, about to be overwritten below) to find
+  // what disappeared. First-ever publish has no previous manifest to diff
+  // against -- nothing to clean up yet.
+  const previousManifest = await getSourceJson(env, "manifest.json");
+  if (previousManifest) {
+    const previousEntries = [];
+    for (const category of Object.values(previousManifest.documents || {})) {
+      for (const entry of category) previousEntries.push(entry);
+    }
+    const removedEntries = previousEntries.filter((e) => !knownSet.has(e.file));
+    for (const entry of removedEntries) {
+      // A removed gisMap's own local (non-ArcGIS) layer files are a second,
+      // separate set of public objects nothing else will ever clean up --
+      // same "permanently public at a guessable URL" problem, one level
+      // deeper. Read its last-published full document (data/source/, since
+      // a gated map's data/current/ copy was only ever a stub) to find them
+      // before the document itself is deleted below.
+      if (entry.type === "gisMap") {
+        const oldMapDoc = await getSourceJson(env, entry.file);
+        for (const layer of (oldMapDoc && oldMapDoc.layers) || []) {
+          if (!isLocalGisLayer(layer)) continue;
+          const rel = layer.url.replace(/^data\//, "");
+          await del("data/source", rel);
+          await del("data/current", rel);
+          publishedCurrentPaths.push(rel);
+          deletedCount++;
+        }
+      }
+      await del("data/source", entry.file);
+      await del("data/current", entry.file);
+      publishedCurrentPaths.push(entry.file);
+      deletedCount++;
+    }
+  }
 
   // manifest.json's data/source/ copy is always the full, unfiltered list;
   // its data/current/ copy is written at the end, once excludedFromCurrent
@@ -252,8 +296,8 @@ export async function onRequestPost(context) {
     targetType: "data",
     targetId: snapshotId,
     before: null,
-    after: { writtenCount, skippedCount, snapshotId },
+    after: { writtenCount, skippedCount, deletedCount, snapshotId },
   });
 
-  return json({ ok: true, snapshotId, writtenCount, skippedCount }, 200);
+  return json({ ok: true, snapshotId, writtenCount, skippedCount, deletedCount }, 200);
 }

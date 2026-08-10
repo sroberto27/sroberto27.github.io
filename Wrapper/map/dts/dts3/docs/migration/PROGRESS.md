@@ -22,6 +22,185 @@ identity/access model each phase from 3 onward implements is defined in
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
 
+- 2026-08-10 — **Whole-project bug audit, requested by the user
+  independent of any feature work** ("verify the whole project looking for
+  possible bugs we overlooked"). Three parallel research agents each
+  covered a distinct area (access control/security across every Function;
+  the content pipeline and Admin Board's data integrity; client-side
+  `app.js`/the GIS engine, including a fresh look at the just-shipped
+  documentation feature) with explicit instructions to report only
+  concrete, file:line-referenced findings, not style nitpicks. **Every
+  finding below was independently re-verified by direct code reading and
+  live testing before being treated as real** — several of the fixes
+  turned up findings that needed correcting or ruling out along the way,
+  documented honestly rather than glossed over.
+
+  **1. CRITICAL — org membership auth bypass via URL-fragment truncation,
+  fixed and deployed first, ahead of everything else.** `functions/_lib/
+  admin.js`'s `isOrgAdmin()`/`requireOrgAdminOf()` and every mutation in
+  `functions/api/org/members.js`/`invite.js` built PostgREST filter
+  strings by raw-interpolating `orgId`/`userId` straight from the request
+  body/URL, never validated or encoded. Proved exploitable directly (not
+  just theorized): `fetch()` treats a literal `#` as a URL fragment and
+  never transmits anything after it, so `orgId: "<real-id>#"` silently
+  stripped `&org_role=eq.org_admin&status=eq.active` off the authorization
+  check's own filter (any membership row, even a disabled one, then
+  passed) AND stripped `&user_id=eq.` off the actual mutation filter in
+  `members.js` (a single PATCH would update every member of the target
+  org at once). Confirmed with a real `node -e` URL-parsing test showing
+  exactly this truncation before writing any fix.
+
+  Fixed with a single new `isUuid()` guard (`functions/_lib/access.js`,
+  every real id in this schema is a Postgres `uuid` column so this is both
+  correct and sufficient), applied at the one shared choke point
+  (`requireOrgAdminOf()`) plus explicit validation everywhere else an
+  externally-supplied id reaches a `pgrst()` filter (`members.js`'s
+  `userId`, and the same pattern — lower severity, already
+  site_admin-gated — in `organizations/[id].js`, `users/[id].js`,
+  `entitlements.js`, `entitlements/[id].js`).
+
+  Verified live against a real deploy with a real minted `testmember`
+  session (member of Beta Municipal, never org_admin anywhere):
+  the exact exploit payload now 400s before the auth check even runs; a
+  malformed id from a real org_admin's own request 400s too; the
+  legitimate flow (a real org_admin listing their own org's real members)
+  still returns 200 with the real member list, unaffected. One real
+  self-correction along the way: the first verification pass showed
+  confusing 404s and unrelated-looking 403s — turned out to be two
+  separate non-issues, not bugs: a transient edge-propagation delay
+  immediately after deploy (same class already seen once this migration,
+  resolved on retry), and the test script's own wrong assumption about
+  which org `testorgadmin` actually admins (`seed-dev.mjs`'s own console
+  log comment is stale — the real DB has them as org_admin of Beta
+  Municipal, member of Acme Hotels, the reverse of what the script prints).
+  Re-ran against the correct org and got a clean, fully consistent pass.
+
+  **2. HIGH — stored XSS via a shareable GIS map link.** `js/gis/
+  gis-viewer.js`'s `renderDrawingLayer()` escaped a drawing's `text` but
+  not its `color` — and `color` is concatenated into an HTML *attribute*
+  (a `style="color:..."` string), where escaping alone doesn't guarantee
+  safety the way it does for text content. Traced the full path a
+  malicious value takes end to end: `js/app.js:33-35` reads the `map` URL
+  query parameter with zero sanitization at page load → `DTSGis.mount()`
+  → `gis-viewer.js`'s `decodeStateParam`/`applyState` → `addDrawing()`,
+  which validates nothing beyond the drawing having a `type` → 
+  `renderDrawingLayer()`. A crafted `?map=<base64>` link could break out of
+  the attribute and run attacker JS in the site's own origin — a real
+  session-hijacking vector, reachable by anyone who clicks a link, not
+  requiring any account. Fixed with a strict whitelist (`sanitizeColor()`
+  — hex code or a plain CSS color keyword, anything else falls back to the
+  existing default) rather than just escaping, since a whitelist is the
+  actual correct fix for an attribute-value context. Related, lower
+  severity: `js/gis/gis-tools.js`'s feature-tour popup button concatenated
+  a CMS-authored tour title unescaped into `html:`, inconsistent with the
+  safe `text:` handling one line above it — needs a compromised/careless
+  site_admin account to trigger, but fires for every visitor who opens
+  that popup; fixed with the same `escapeHtml()` helper `gis-viewer.js`
+  already had (added a local copy, since these are separate IIFEs with no
+  shared scope). Swept both files for every other dynamic `html:`/
+  `innerHTML` site by hand afterward — everything else was either a static
+  developer-authored icon constant or an already-safe `text:`/
+  `textContent` use.
+
+  Both #1 and #2 deployed and verified live before moving on to anything
+  else, per the user's explicit instruction to fix the two critical/high
+  findings first and confirm them working before continuing.
+
+  **3. MEDIUM — deleted CMS documents were never actually deleted from
+  R2.** `functions/api/publish.js`'s main loop only ever visited manifest
+  entries present in the INCOMING payload — a project/sector/GIS map
+  deleted in the Admin Board (its manifest entry simply gone) was never
+  diffed, never removed, just silently skipped. Its old `data/current/`
+  AND `data/source/` objects (and, for a deleted GIS map, its harvested
+  local layer geojson files) stayed live and publicly fetchable forever at
+  their old, guessable URL — confirmed via `functions/data/[[path]].js`'s
+  own direct-R2-key lookup, which has no manifest cross-check at all.
+  Fixed by reading the PREVIOUS manifest (`data/source/manifest.json`,
+  about to be overwritten) at the top of every publish, diffing it against
+  the incoming one, and R2-deleting both copies of anything that dropped
+  out — plus, for a removed GIS map specifically, reading its last full
+  document first to find and delete its local layer files too before the
+  document itself goes. New `deletedCount` in the publish response/audit.
+  `scripts/upload-content.mjs` (the CLI-side seed/rollback tool) has the
+  identical gap and was NOT fixed — doing so needs R2's S3-compatible
+  listing API, which isn't configured (no access-key credentials, and the
+  installed `wrangler` version's `r2 object` command has no `list` at
+  all) — flagged clearly in a code comment instead of built around, given
+  this script is a rare, deliberate operator tool, not something a content
+  editor runs day to day.
+
+  **4. LOW — three small, independently-verified fixes.** `js/admin.js`'s
+  `publishToSite()` read `result.data.publishedCount`, a field that has
+  never existed — `/api/publish` returns `writtenCount`/`skippedCount`
+  (now also `deletedCount`) — so every successful publish showed
+  "Published undefined file(s)." Purely cosmetic (publishing itself always
+  worked); fixed to read the real fields. A stale local draft predating a
+  manifest category (this happened for real once already, when "gis" was
+  added) would throw a hard `TypeError` the instant any add/delete
+  function ran `content.manifest.documents.<category>.push()`/`.filter()`
+  against an undefined category — fixed with one normalization step where
+  `content`/`docs` are first established, guarding all ~13 call sites (and
+  any future one) at a single point instead of patching each individually.
+  A flagged asymmetry in the feature-tour editor's "+ Create tour for this
+  feature" shortcut (it doesn't register the new tour into `mapDoc.tours`
+  the way the normal add-tour path does) was investigated and **ruled
+  out** as a real bug — `js/app.js`'s `toursForMap()` has an explicit
+  comment confirming this is deliberate design (feature tours are meant to
+  stay out of the general tour picker) and already merges the tour back in
+  separately so it still resolves correctly when triggered by clicking the
+  feature. No change made.
+
+  **5. A "dead field" that turned out to be real, deliberately-set data —
+  stopped and asked before touching it, per CLAUDE.md's own working-style
+  rule.** `sector.active` was loaded/mapped in `content-loader.js`'s
+  `buildConfig()` but never consumed anywhere on the live site, and had no
+  editor control — looked like ordinary unfinished wiring. Before fixing
+  it that way, checked what the real sector documents actually contain:
+  `Community`, `Government` (the sector `project.gfc` — the Coastal
+  Resilience / Gulf Futures Challenge project this same session's earlier
+  bug-fix was about — belongs to), and `Industry` all had `active: false`
+  already set; only `Education` had `true`. Wiring the field up as
+  originally designed would have hidden 3 of the site's 4 sector nav
+  pillars the instant it deployed — a real, immediate, unrequested change
+  to production content, not a bug fix. Asked the user directly rather
+  than guessing at intent; they chose to wire it up AND reset all 4 to
+  `active: true` first, preserving today's visible behavior until someone
+  deliberately deactivates one later. Fixed: `data/sectors/{community,
+  government,industry}.json` reset to `active: true` in the repo (source
+  of truth); `content-loader.js`'s `buildConfig()` now filters
+  `cfg.categories` by `active !== false` once, at the source — every
+  consumer (pillars, mobile drawer, prev/next, deep-link validation) reads
+  that one already-filtered list, so nothing else needed to change;
+  `js/admin.js`'s `editSector()` gained the missing checkbox, with a hint
+  explaining that a project still assigned to a deactivated category isn't
+  reassigned automatically. The live R2 data was corrected through the
+  real (now doubly-verified) `/api/publish` pipeline itself, not a direct
+  patch — minted a real `testadmin` session, pulled the current full
+  content via the same session's `/api/admin/content` fix, flipped the 3
+  `active` fields, and published for real: `writtenCount: 4` (the 3
+  sectors + manifest itself), `deletedCount: 0` (confirms finding #3's new
+  cleanup logic didn't misfire on an unrelated publish), confirmed live
+  afterward that all 3 sectors' public documents now read `active: true`.
+
+  **Deployed in three stages, each verified live before moving to the
+  next** (per the user's explicit sequencing request): #1+#2 first
+  (`https://f7cee331.dts-website-4cu.pages.dev`), then #3-#5 together
+  (`https://9eded11b.dts-website-4cu.pages.dev`, stable alias propagating).
+  Standard byte-count regression battery (root, every excluded path,
+  `/data/manifest.json`, every touched JS file) re-run clean after each
+  deploy.
+
+  **NOT yet verified — needs the user, in a real browser:** the Admin
+  Board's new "Active (shown in site navigation)" checkbox actually
+  working end to end (toggle it off, confirm the sector really disappears
+  from the live pillars/drawer, toggle back on); that all 4 sector pillars
+  genuinely render on the homepage now, not just at the `/data` level;
+  general regression on the org_admin team panel (Manage tab) since that's
+  what the auth-bypass fix directly touches. Chrome browser automation was
+  unavailable all session — every check above is real (direct API calls,
+  real minted sessions, real R2 reads via `wrangler`), but none of it is a
+  screenshot of the actual UI.
+
 - 2026-08-09 — **Real bug found and fixed: the Admin Board could not see
   gated GIS maps/tours or gated project experiences at all**, reported by
   the user with screenshots (the GFC project's GIS-type experience showing

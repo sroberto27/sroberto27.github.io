@@ -6,7 +6,7 @@
   "label": "Industry",
   "navSub": "Company",
   "blurb": "Industry creates economic value.",
-  "active": false,
+  "active": true,
   "accent": "#2E8BFF",
   "kicker": "INDUSTRY",
   "title": "Commercial & Industrial",

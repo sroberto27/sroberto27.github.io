@@ -2,6 +2,25 @@
 
 Newest first.
 
+## Whole-project bug audit: one critical auth bypass fixed, plus four more
+
+A full audit found and fixed a critical authorization bypass — a crafted
+request could truncate a PostgREST filter mid-string (a literal `#` becomes
+a URL fragment that's never actually sent), letting any org member escalate
+themselves to org_admin and mass-mutate or wipe an entire organization's
+membership. Fixed with strict id validation everywhere an externally-supplied
+id reaches a database filter, verified live against a real exploit attempt
+before and after. Also fixed: a stored XSS reachable via a shareable GIS map
+link (an unescaped color value breaking out of an HTML attribute); deleted
+CMS content (a project, sector, or GIS map) staying permanently live and
+publicly fetchable in storage after "deletion" in the Admin Board; a cosmetic
+field-name mismatch that made every publish show "undefined" in its success
+message; and a real, previously-inert `active` toggle for category pages,
+now properly wired up after confirming with the user what the existing data
+actually meant, rather than guessing. See `docs/migration/PROGRESS.md`'s
+session log for the full trace, exploit proof, and live verification of
+every fix — nothing has been checked in an actual browser yet.
+
 ## Fix: Admin Board couldn't see gated GIS maps, tours, or gated experiences
 
 Real bug, found by the user: the Coastal Resilience / Gulf Futures Challenge

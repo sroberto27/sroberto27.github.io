@@ -6,7 +6,7 @@
   "label": "Government",
   "navSub": "City",
   "blurb": "Government provides structure and oversight.",
-  "active": false,
+  "active": true,
   "accent": "#34598F",
   "kicker": "GOVERNMENT",
   "title": "Public & Civic",

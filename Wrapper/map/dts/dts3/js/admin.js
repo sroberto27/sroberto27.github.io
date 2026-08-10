@@ -34,6 +34,18 @@
   var DRAFT_KEY = "dtsAdminDraft";
   var content = window.DTS_CONTENT;          // live working set (edited in place)
   var docs = content.docs;
+  // Defensive: a sufficiently stale local draft (saved before a manifest
+  // category existed -- this happened for real once already, when "gis"
+  // was added) would otherwise throw a hard TypeError the moment any add/
+  // delete function below does content.manifest.documents.<category>
+  // .push()/.filter() against a category that's simply undefined.
+  // Normalized once here, at the single point content/docs get established,
+  // rather than requiring a defensive `|| []` at each of the ~13 call sites
+  // individually (and every future one added the same way).
+  if (!content.manifest.documents) content.manifest.documents = {};
+  ["sectors", "projects", "gis"].forEach(function (category) {
+    if (!Array.isArray(content.manifest.documents[category])) content.manifest.documents[category] = [];
+  });
   var dirty = false;
   // One-shot hook an editor can register to run just before the very next
   // markDirty() -- used for legacy-shape migrations that must only happen on
@@ -824,6 +836,14 @@
     var s = docs[file];
     if (!s) return;
     var s1 = section(pane, "Category page — " + s.label);
+    // Previously loaded/computed (js/content-loader.js's buildConfig())
+    // but never actually consumed anywhere on the live site, AND with no
+    // control here to set it -- a genuinely dead field, now wired up.
+    fCheck(s1, "Active (shown in site navigation)", s, "active",
+      "Turning this off hides the category page everywhere on the live " +
+      "site -- pillars, mobile drawer, prev/next. Any project still " +
+      "assigned to it stays assigned (nothing is reassigned automatically) " +
+      "but won't be reachable through this category until it's active again.");
     fText(s1, "Menu label", s, "label", { half: true });
     fText(s1, "Menu sublabel", s, "navSub", { half: true });
     fText(s1, "Kicker", s, "kicker", { half: true });
@@ -3307,8 +3327,15 @@
         alert("Publish failed: " + msg);
         return;
       }
-      if (status) status.textContent = "Published " + result.data.publishedCount + " file(s).";
-      alert("Published live — " + result.data.publishedCount + " file(s) updated (snapshot " + result.data.snapshotId + ").");
+      // /api/publish's real response shape is {writtenCount, skippedCount,
+      // deletedCount, snapshotId} -- there has never been a "publishedCount"
+      // field (confirmed by reading publish.js itself, not assumed); this
+      // read a field that doesn't exist and showed "undefined" after every
+      // successful publish, purely cosmetic since publishing itself worked.
+      var summary = result.data.writtenCount + " file(s) updated" +
+        (result.data.deletedCount ? ", " + result.data.deletedCount + " removed" : "") + ".";
+      if (status) status.textContent = "Published — " + summary;
+      alert("Published live — " + summary + " (snapshot " + result.data.snapshotId + ").");
     }).catch(function (err) {
       if (status) status.textContent = "Publish failed.";
       alert("Publish stopped — couldn't fetch " + harvestedLayers.length + " harvested GIS layer file(s) this publish needs:\n\n" +

@@ -160,7 +160,17 @@
       cfg.accessUi = access.ui || {};
     }
 
-    var sectors = docsByType(content, "sector").sort(function (a, b) {
+    // active was loaded/mapped below (three-places rule, CLAUDE.md) but
+    // never actually consumed anywhere on the site -- every real sector
+    // document showed regardless of its value. Filtered here, once, at the
+    // source: every consumer of cfg.categories (pillars, mobile drawer,
+    // prev/next, deep-link validation -- js/app.js has many call sites)
+    // already just reads this one list, so nothing else needs to change.
+    // !== false (not === true) so a sector document that omits the field
+    // entirely still shows -- matches js/admin.js's addSector() default.
+    var sectors = docsByType(content, "sector").filter(function (s) {
+      return s.active !== false;
+    }).sort(function (a, b) {
       return (a.order || 0) - (b.order || 0);
     });
     if (sectors.length) {

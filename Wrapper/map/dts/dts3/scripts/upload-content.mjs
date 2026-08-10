@@ -54,6 +54,21 @@ async function walk(dirUrl, relPrefix, out) {
   }
 }
 
+// KNOWN LIMITATION, documented not fixed: this only ever PUTs whatever's in
+// the local staging tree -- it never deletes an R2 object that's no longer
+// present locally (e.g. a document removed from the repo's data/ folder
+// before re-running this script). functions/api/publish.js (the live,
+// user-facing publish path every real content edit actually goes through)
+// had the exact same gap and now cleans up removed documents automatically
+// -- see PROGRESS.md's session log. Doing the same here would need listing
+// existing R2 keys to diff against, which requires R2's S3-compatible API
+// (access-key credentials this project doesn't currently have configured,
+// not something `wrangler r2 object` exposes -- confirmed no `list`
+// subcommand exists in the installed wrangler version). Low real-world risk
+// since this script is a rare, deliberate, hands-on-keyboard operational
+// tool, not something a content editor ever runs day to day -- worth fixing
+// properly if that ever changes.
+//
 // Exported so scripts/rollback-content.mjs can reuse the exact same upload
 // mechanism against its own re-derived staging trees, instead of
 // duplicating the walk+put logic a second time.
