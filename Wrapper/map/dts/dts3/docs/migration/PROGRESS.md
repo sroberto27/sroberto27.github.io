@@ -22,6 +22,129 @@ identity/access model each phase from 3 onward implements is defined in
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
 
+- 2026-08-09 — **Real bug found and fixed: the Admin Board could not see
+  gated GIS maps/tours or gated project experiences at all**, reported by
+  the user with screenshots (the GFC project's GIS-type experience showing
+  an empty "Map" dropdown, GIS MAPS nav completely empty, the map's guided
+  tours nowhere to be found) — independent of the documentation feature
+  above, found while the user was exploring the just-shipped Documentation
+  screen.
+
+  **Root cause, traced by reading the real code and querying the live R2
+  bucket directly, not guessed:** two separate issues stacked on top of
+  each other.
+  1. Phase 6's `splitGisDocSet()` (`functions/_lib/split-logic.js`) builds
+     the public placeholder for a gated GIS map using
+     `PUBLIC_GIS_STUB_FIELDS = ["id", "title", "subtitle"]` — `_type` was
+     never included, confirmed live (`/data/gis/maps/iberia-coastal.json`
+     really did come back as just those three fields). Every consumer that
+     enumerates "all the GIS maps" filters by `_type === "gisMap"` —
+     `js/admin.js`'s `gisMapFiles()` (driving both the GIS MAPS nav and the
+     experience editor's "Map" dropdown) got zero matches as a result.
+  2. **The bigger issue:** `js/content-loader.js`'s `loadContent()` — the
+     ONE content-loading path for every visitor, admin included — only ever
+     fetches through `functions/data/[[path]].js`, which is hard-coded, by
+     its own explicit design comment, to read ONLY `data/current/` (the
+     public, stripped copy) and can never resolve `data/source/` (the full
+     copy `/api/publish` writes to). Nothing anywhere in
+     `functions/api/admin/` ever read `data/source/` back into the board.
+     So even with #1 fixed, the board would show a title-only stub, never
+     the map's real layers/view/tours, and any gated project experience's
+     real `tourUrl`/`mapId` stayed stripped too.
+
+  **Confirmed nothing was actually lost** — this was a client-visibility
+  bug, not data loss: `wrangler r2 object get` against the live
+  `data/source/manifest.json` returned the correct, full 61-file listing
+  (29 in the `gis` group: 1 map + 14 tours + 13 feature tours, matching the
+  repo's local `data/manifest.json` exactly), and a real tour document read
+  back with its genuine content intact.
+
+  **Fix 1:** added `"_type"` to `PUBLIC_GIS_STUB_FIELDS`
+  (`functions/_lib/split-logic.js`) — confirmed the real map document
+  actually carries `_type: "gisMap"` before assuming this was the missing
+  piece.
+
+  **Fix 2, the real one — a single combined "admin content bundle," not 61
+  separate reads:** `/api/publish` already hit Cloudflare's
+  ~50-subrequest-per-invocation ceiling once before at a similar document
+  count (its own file header documents "Too many subrequests" at 150+
+  operations for 61 docs) — a naive read of manifest + 61 docs (~62
+  operations) would hit the same wall, so this was designed around
+  up front rather than discovered the hard way again.
+  - `functions/api/publish.js`: one more `put("data/source",
+    "_latest.json", {manifest, docs, layers})` at the end of every publish
+    — a fixed key, always overwritten, same shape as the existing
+    timestamped `data/snapshots/<id>.json` this mirrors.
+  - New `functions/api/admin/content.js` (`GET`, `requireSiteAdmin()`-gated,
+    same helper every other admin Function already uses): one
+    `env.DTS_CONTENT.get()` read of that key, returns `{manifest, docs}`.
+    `data/source/*` is already unreachable through the public catch-all
+    route by construction, so this is the only way to reach it.
+  - `js/admin.js`: new `ensureFullContent()`, called at the top of
+    `openBoard()` before the nav/editors are built. Skips entirely when a
+    local draft is active (`content.fromDraft`) so it can never silently
+    overwrite a site_admin's own unsaved edits — if an existing draft was
+    itself saved while this bug was live, the fix is the existing "Discard
+    draft" recovery path, not a new mechanism. Replaces `content.manifest`
+    wholesale (not just merging `docs`), which matters:
+    `saveDraft()`/`publishToSite()`/`exportData()` all build their payload
+    from `content.manifest` directly, and `/api/publish` only processes
+    files actually listed in it — leaving the old 34-entry public manifest
+    in place would have silently dropped any edit to the 27 GIS tour/
+    feature-tour documents from ever publishing, even once the nav
+    correctly showed them. Mutates the same object `window.DTS_CONTENT`
+    already points to; never touches `window.DTS_CONFIG` (the legacy shape
+    `app.js` reads), so "View site" preview still correctly shows the site
+    exactly as a real visitor would, respecting gating — this fix only
+    changes what the editor sees.
+  - **One-time backfill, run directly against the live bucket, not shipped
+    as application code** (same "throwaway harness, not committed"
+    convention prior sessions used for direct Supabase/R2 work): read the
+    REAL live `data/source/manifest.json` + all 61 listed documents
+    straight from R2 (not the local repo copy, which could be stale
+    relative to whatever's actually been published live), assembled the
+    bundle, wrote it to `data/source/_latest.json` — needed once so the fix
+    works immediately without requiring a publish first, which the admin
+    couldn't meaningfully do while the board couldn't see the content in
+    the first place. Verified by reading it back: 61/61 docs, the map
+    document's real `layers`/`view`/`tours` all present.
+  - **Separately, with the user's explicit go-ahead for this specific
+    write** (flagged and confirmed before acting, since it directly
+    modifies live public-facing content): patched the ONE already-published
+    `data/current/gis/maps/iberia-coastal.json` object in R2 to add the
+    same `_type` field Fix 1's code change will produce on the next real
+    publish — otherwise that inconsistency would have sat live until
+    someone happened to publish again. Only the one field was added; the
+    `id`/`title`/`subtitle` values are byte-identical to what was already
+    live.
+
+  **Verified live, end to end, against the real deployed site**
+  (`https://5afe56f9.dts-website-4cu.pages.dev`) via a throwaway script
+  minting real sessions for the already-seeded `testadmin`/`testuser`
+  accounts (Admin API `generate_link`+`verify`, no passwords, no rows
+  created or left behind, same pattern prior sessions used): `GET
+  /api/admin/content` with no token → 401; with `testuser`'s token
+  (non-admin) → 403; with `testadmin`'s token → 200, manifest shows 61
+  files/29 gis entries, and the returned `iberia-coastal` document carries
+  its real `layers` (17), `view`, and `tours` (1) — not the stub. The
+  public `/data/gis/maps/iberia-coastal.json` now returns `_type:"gisMap"`
+  alongside its existing stub fields, confirmed both via a cache-busting
+  request (proves the R2 object itself is correct) and the canonical cached
+  URL (proves it's actually being served, not just written). Full
+  byte-count regression battery (root, every excluded path,
+  `/data/manifest.json`, `js/help.js`, `js/admin.js`) re-run clean
+  afterward — no regression from this session's changes.
+
+  **NOT yet verified — needs the user, in a real browser:** GIS MAPS now
+  actually listing `iberia-coastal` with its tours nested underneath in the
+  Admin Board's own nav, the GFC project's GIS experience's "Map" dropdown
+  actually showing and being selectable, opening the map in the board
+  actually rendering its real layers, and Save draft & preview / Publish
+  still working normally afterward with the fuller content set. Chrome
+  browser automation was unavailable all session — every check above is
+  real (direct API calls, real R2 reads, real minted sessions), but none of
+  it is a screenshot of the actual UI.
+
 - 2026-08-09 — **Admin Board documentation rewritten for depth, same
   session, real user feedback on the just-shipped feature below.** The
   user's complaint was specific and correct: the site_admin content

@@ -2,6 +2,24 @@
 
 Newest first.
 
+## Fix: Admin Board couldn't see gated GIS maps, tours, or gated experiences
+
+Real bug, found by the user: the Coastal Resilience / Gulf Futures Challenge
+project's GIS map and tour experience showed up empty in the Admin Board, and
+the GIS MAPS nav section had nothing in it at all. Root cause was two-fold —
+the public placeholder for a gated GIS map was missing its `_type` field
+(so anything that looks for "all the GIS maps" found none), and more
+fundamentally, the Admin Board never had a way to load the full, unstripped
+content at all: it used the exact same public-only content path every guest
+visitor gets, which by design can never reach the private copy `/api/publish`
+writes to. Nothing was actually lost — confirmed the real content was intact
+in storage the whole time — this was purely a blind spot in what the board
+could see. Fixed with a new site_admin-only endpoint that loads the real
+content once, right when a site_admin session opens the board, without ever
+touching what a real visitor sees. See `docs/migration/PROGRESS.md`'s session
+log for the full trace and live verification; a real browser click-through
+is still needed to close this out.
+
 ## In-app documentation for all four audiences (standalone feature)
 
 Added a help/documentation system covering everyone who touches the site:

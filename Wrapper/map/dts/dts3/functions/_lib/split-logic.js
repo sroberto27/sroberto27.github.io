@@ -90,7 +90,7 @@ export function splitProjectDoc(doc) {
 // once -- there is no per-field boundary to strip inside it, so a gated map
 // is either shipped in full or excluded wholesale and replaced with a
 // minimal public stub, never present with fields removed.
-const PUBLIC_GIS_STUB_FIELDS = ["id", "title", "subtitle"];
+const PUBLIC_GIS_STUB_FIELDS = ["_type", "id", "title", "subtitle"];
 
 export function splitGisDocSet({ mapDoc, tours, featureTours }) {
   const access = mapDoc.access || "registered";

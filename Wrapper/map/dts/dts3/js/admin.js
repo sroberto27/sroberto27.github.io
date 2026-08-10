@@ -3338,11 +3338,53 @@
      ============================================================ */
   var board = null, navEl = null, paneEl = null, activeKey = "home";
 
+  /* content-loader.js's loadContent() -- the one content-loading path for
+     every visitor, admin included -- only ever fetches the PUBLIC data set
+     (functions/data/[[path]].js is hard-coded to data/current/ only, by
+     design). Left alone, that means a site_admin sees the same gated GIS
+     maps/tours as wholesale-absent and the same gated project experience
+     fields as stripped that a guest would. This fetches the real, full set
+     from the new admin-only /api/admin/content endpoint and merges it in
+     BEFORE the board's nav/editors are ever built.
+
+     Skipped entirely whenever a local draft is active (content.fromDraft)
+     -- that's the site_admin's own in-progress, unsaved edits, and must
+     never be silently overwritten by a fresh server fetch. If an existing
+     draft was itself saved while this gap was live (so it's ALSO missing
+     GIS content), the fix is the same "Discard draft" recovery path that
+     already exists for every other draft problem, not a new mechanism. */
+  var fullContentPromise = null;
+  function ensureFullContent() {
+    if (content.fromDraft) return Promise.resolve();
+    if (fullContentPromise) return fullContentPromise;
+    fullContentPromise = adminFetch("/api/admin/content").then(function (res) {
+      if (!res.ok) {
+        console.warn("[admin] couldn't load full source content -- gated GIS maps/tours and gated experience targets may be missing or stub-only:", res.data && res.data.error);
+        return;
+      }
+      // Mutates the SAME objects window.DTS_CONTENT already points to
+      // (content/docs above are references, not copies) -- every already-
+      // established reference stays correct, nothing to reassign.
+      // Replacing content.manifest wholesale (not just merging docs) matters:
+      // saveDraft()/publishToSite()/exportData() all build their payload
+      // from content.manifest directly, and /api/publish only processes
+      // files actually listed in it -- the old public 34-entry manifest
+      // would silently drop any edit to the 27 GIS tour/feature-tour
+      // documents from ever being published, even once the nav correctly
+      // showed them.
+      content.manifest = res.data.manifest;
+      Object.keys(res.data.docs).forEach(function (f) { docs[f] = res.data.docs[f]; });
+    });
+    return fullContentPromise;
+  }
+
   function openBoard() {
-    if (!board) buildBoard();
-    board.classList.add("is-open");
-    document.body.classList.add("adm-lock");
-    select(activeKey);
+    ensureFullContent().then(function () {
+      if (!board) buildBoard();
+      board.classList.add("is-open");
+      document.body.classList.add("adm-lock");
+      select(activeKey);
+    });
   }
   function closeBoard(signOut) {
     if (dirty && !confirm("You have unsaved changes. Close anyway? (They stay in the editor until you reload.)")) return;

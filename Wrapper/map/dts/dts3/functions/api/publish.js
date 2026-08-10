@@ -230,6 +230,16 @@ export async function onRequestPost(context) {
   // not), so the next publish's diff is against true current state.
   await put("data/source", "_hashes.json", incomingHashes);
 
+  // Fixed key, always overwritten (unlike the timestamped snapshot above) --
+  // the one thing functions/api/admin/content.js reads so the Admin Board
+  // can load the FULL, unstripped document set (data/current/ is
+  // hard-coded public-only by functions/data/[[path]].js, by design, and
+  // was never readable by the board at all until this existed -- see
+  // PROGRESS.md's session log for the bug this fixes). A single combined
+  // object, not 61 separate R2 reads, for the same subrequest-ceiling
+  // reason this file's own header explains for writes.
+  await put("data/source", "_latest.json", { manifest, docs, layers: layerFiles });
+
   // Purge only what was actually (re)written or deleted.
   const origin = new URL(request.url).origin;
   await Promise.all(
