@@ -65,7 +65,10 @@ Required. Opening `index.html` over `file://` breaks `/data` loading and the sit
 silently falls back to `js/config.js`, which will make you chase a bug that isn't
 there.
 
-Deploying = pushing files. There is nothing to build.
+Deploying = pushing files. There is nothing to build. To redeploy to the dev
+Cloudflare Pages URL, follow `docs/migration/DEPLOY-STAGING.md` exactly — three
+real, separate deploy-staging bugs have shipped from improvising this step, all
+documented there so a fresh session doesn't rediscover them from scratch.
 
 ---
 
