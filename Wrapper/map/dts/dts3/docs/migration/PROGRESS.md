@@ -63,12 +63,31 @@ identity/access model each phase from 3 onward implements is defined in
 
   **Verified:** `node --check` clean on every touched JS file; loaded
   `help-content.js` in a real Node VM and confirmed all 14 admin topics
-  parse with non-empty `title`/`html` and matching id list; local
-  `http.server` re-confirms `index.html`/`js/help-content.js`/
-  `css/16-help.css` all still serve `200`. **Not verified:** still no live
-  browser pass (Chrome extension unavailable this session too) — how the
-  new headings/notes/lists actually render is unconfirmed, same gap as the
-  original feature.
+  parse with non-empty `title`/`html` and matching id list; a scripted
+  open/close tag-count check (`<ol>`/`<li>`/`<h4>`/`<div>`/`<p>`/`<strong>`/
+  `<code>`) confirms every topic's HTML is balanced, not just visually
+  skimmed; local `http.server` re-confirms `index.html`/`js/help-content.js`/
+  `css/16-help.css` all still serve `200`.
+
+  **Redeployed** (fresh staging rebuild + full diff/exclusion re-verify per
+  `DEPLOY-STAGING.md`, same as the prior deploy this session — nothing
+  skipped just because it was done once already):
+  `https://849d58f4.dts-website-4cu.pages.dev`. **One real finding, worth
+  recording plainly rather than glossed over:** the very first post-deploy
+  check of `/data/manifest.json` returned a stray `404` (with a mismatched
+  `Content-Type: text/html`, though the response body was actually the
+  correct real JSON) — investigated rather than dismissed: five immediate
+  retries all returned a clean `200`/5,043 bytes, matching the previous
+  deploy and the stable alias exactly, so this reads as a one-off edge-
+  propagation blip immediately after the fresh Functions bundle upload, not
+  a real regression — nothing in this session touched `functions/` or the
+  data pipeline. A full clean re-run of the whole byte-count battery (root,
+  every excluded path, the manifest route, both new help files) afterward
+  came back consistent and correct across the board.
+
+  **Still not verified:** no live browser pass (Chrome extension
+  unavailable this session too) — how the new headings/notes/lists actually
+  render is unconfirmed, same gap as the original feature.
 
 - 2026-08-09 — **In-app documentation for four audiences, requested by the
   user independent of any numbered phase** ("Add in-app documentation/manual
