@@ -2,6 +2,16 @@
 
 Newest first.
 
+## Admin Board: GIS map/tour nav now shows a real hierarchy
+
+The GIS MAPS list in the Admin Board's left nav used to render a map and
+every one of its tours as one flat, identically-styled list — with 14 tours
+under a single map, there was no way to tell at a glance which item was the
+map and which were its tours. Each map now gets its own bold row with a
+collapse/expand toggle, and its tours nest visibly underneath. Defaults to
+today's fully-expanded behavior, so nothing changes until an admin actually
+collapses one.
+
 ## Whole-project bug audit: one critical auth bypass fixed, plus four more
 
 A full audit found and fixed a critical authorization bypass — a crafted

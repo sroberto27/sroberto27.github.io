@@ -22,6 +22,41 @@ identity/access model each phase from 3 onward implements is defined in
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
 
+- 2026-08-10 — **Admin Board: GIS MAPS nav now shows real hierarchy,
+  requested by the user with a screenshot.** The left nav's GIS MAPS
+  section previously rendered a map and every one of its tours as one
+  flat list of identically-styled buttons (`buildNav()` called `navBtn()`
+  with `sub: true` for BOTH) — a map with several tours was
+  indistinguishable from any one of its own tours except by whichever
+  happened to be the active selection. Iberia Parish's 14 tours made this
+  concretely confusing in practice, not just in theory, and a second,
+  still-unrenamed "New map" placeholder sitting in the same flat list
+  made it worse.
+
+  Fixed: each map now renders in its own bold row (`map-parent` class,
+  `js/admin.js`/`css/13-admin.css`) with a collapse/expand toggle — shown
+  only when the map actually has tours, an aligned spacer otherwise so
+  the list doesn't jog left/right between maps with and without one.
+  Tours nest one indent level deeper than an ordinary `.sub` item
+  (`gis-tour-nested`, 30px vs. 20px). Collapse state
+  (`collapsedGisMaps`, keyed by map file) defaults to expanded for every
+  map — matches the board's prior always-flat behavior exactly, so
+  nothing changes for an admin who never touches a toggle — and is only
+  set once someone explicitly collapses one. `addGisTour()` and the
+  feature-tour editor's "+ Create tour for this feature" shortcut both
+  force their target map open before rebuilding the nav, so a tour just
+  created can never end up silently hidden behind a collapsed parent.
+  `navBtn()` gained an optional 4th `container` param (defaults to the
+  existing `navEl` behavior) so a map's button could be nested inside its
+  own row `<div>` — every other existing caller is unaffected.
+
+  **Verified:** `node --check` clean; local `http.server` confirms
+  `index.html`/`js/admin.js`/`css/13-admin.css` all still serve `200`.
+  **Not yet verified live** — Chrome browser automation was unavailable
+  this session too, so the actual visual hierarchy, the toggle's
+  rotate animation, and the auto-expand-on-create behavior are all
+  unconfirmed in a real browser.
+
 - 2026-08-10 — **Whole-project bug audit, requested by the user
   independent of any feature work** ("verify the whole project looking for
   possible bugs we overlooked"). Three parallel research agents each

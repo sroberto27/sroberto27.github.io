@@ -92,6 +92,27 @@ body.adm-lock { overflow: hidden; }
 }
 .adm-addproject { margin: 14px 6px 0; }
 
+/* ---------- GIS map / tour nav hierarchy ----------
+   A map and its own tours used to render as one flat, identically-styled
+   list -- indistinguishable from each other. A map's row gets its own
+   toggle + bolder label; its tours nest one step deeper than an ordinary
+   .sub item so the hierarchy reads at a glance. */
+.adm-navmaprow { display: flex; align-items: center; gap: 2px; }
+.adm-navmaprow .adm-navbtn { flex: 1; margin: 1px 0; }
+.adm-navbtn.map-parent { font-weight: 700; }
+.adm-navtoggle {
+  flex: none; width: 20px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  appearance: none; background: none; border: 0; cursor: pointer;
+  color: var(--adm-dim); font-size: 9px; border-radius: 5px;
+  transition: transform .15s ease, background .15s ease, color .15s ease;
+}
+.adm-navtoggle:hover { background: var(--adm-panel-2); color: var(--adm-text); }
+.adm-navtoggle.is-open { transform: rotate(90deg); }
+.adm-navtoggle-spacer { cursor: default; }
+.adm-navtoggle-spacer:hover { background: none; }
+.adm-navbtn.gis-tour-nested { padding-left: 30px; }
+
 .adm-pane {
   flex: 1; overflow-y: auto; padding: 20px 26px 80px;
   max-width: 880px;

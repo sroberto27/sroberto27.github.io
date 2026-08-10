@@ -1324,6 +1324,10 @@
     content.manifest.documents.gis.push({ file: file, type: "gisTour", id: "gis.tour." + id });
     if (!Array.isArray(mapDoc.tours)) mapDoc.tours = [];
     mapDoc.tours.push(id);
+    // Otherwise a map collapsed before "+ New tour" was clicked would hide
+    // the very tour just created from its own nav -- still selected and
+    // editable, just invisible in the list next to it.
+    collapsedGisMaps[mapFile] = false;
     markDirty(); buildNav(); select("gistour:" + file);
   }
 
@@ -2491,6 +2495,11 @@
       docs[tourFile] = newGisTourSkeleton(mapDoc, id);
       content.manifest.documents.gis.push({ file: tourFile, type: "gisTour", id: "gis.tour." + id });
       ft.tourId = id;
+      // gisTourFiles() (and so the nav) lists this new tour under mapFile by
+      // its own mapId regardless of the deliberate mapDoc.tours omission
+      // above -- if that map's nav group is currently collapsed, expand it
+      // so the tour just created isn't silently hidden there.
+      collapsedGisMaps[mapFile] = false;
       markDirty(); buildNav(); select("gisfeaturetour:" + file);
     });
     s1.appendChild(createTourBtn);
@@ -3364,6 +3373,12 @@
      BOARD SHELL
      ============================================================ */
   var board = null, navEl = null, paneEl = null, activeKey = "home";
+  // GIS MAPS nav hierarchy: a map's tours default to expanded (matches the
+  // board's prior always-flat behavior, so this never surprises an existing
+  // user on first load) -- only collapsed once someone explicitly clicks
+  // that map's own toggle. Keyed by map file, not map id, matching every
+  // other file-keyed lookup in this module.
+  var collapsedGisMaps = {};
 
   /* content-loader.js's loadContent() -- the one content-loading path for
      every visitor, admin included -- only ever fetches the PUBLIC data set
@@ -3474,12 +3489,12 @@
     buildNav();
   }
 
-  function navBtn(label, key, sub) {
+  function navBtn(label, key, sub, container) {
     var b = el("button", "adm-navbtn" + (sub ? " sub" : ""), label);
     b.type = "button";
     b.dataset.key = key;
     b.addEventListener("click", function () { select(key); });
-    navEl.appendChild(b);
+    (container || navEl).appendChild(b);
     return b;
   }
 
@@ -3517,11 +3532,40 @@
     navEl.appendChild(add);
 
     navEl.appendChild(el("p", "adm-navhead", "GIS MAPS"));
+    // A map and its own tours used to render as one flat, identically-styled
+    // list -- a map with several tours was indistinguishable from any one of
+    // them (real user-reported confusion, not a hypothetical). Each map now
+    // gets its own bold row plus a collapse/expand toggle (only when it
+    // actually has tours -- an empty map gets an aligned spacer instead of a
+    // dead-looking control), with its tours nested and indented underneath.
     gisMapFiles().forEach(function (mf) {
-      navBtn(docs[mf].title, "gismap:" + mf, true);
-      gisTourFiles(docs[mf].id).forEach(function (tf) {
-        navBtn(docs[tf].title, "gistour:" + tf, true);
-      });
+      var tourFiles = gisTourFiles(docs[mf].id);
+      var row = el("div", "adm-navmaprow");
+      if (tourFiles.length) {
+        var isOpen = !collapsedGisMaps[mf];
+        var toggle = el("button", "adm-navtoggle" + (isOpen ? " is-open" : ""), "▸");
+        toggle.type = "button";
+        toggle.setAttribute("aria-label", (isOpen ? "Collapse" : "Expand") + " " + (docs[mf].title || "map") + "’s tours");
+        toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        toggle.addEventListener("click", function (e) {
+          e.stopPropagation();
+          collapsedGisMaps[mf] = !collapsedGisMaps[mf];
+          buildNav();
+        });
+        row.appendChild(toggle);
+      } else {
+        row.appendChild(el("span", "adm-navtoggle adm-navtoggle-spacer"));
+      }
+      var mapBtn = navBtn(docs[mf].title, "gismap:" + mf, false, row);
+      mapBtn.classList.add("map-parent");
+      navEl.appendChild(row);
+
+      if (!collapsedGisMaps[mf]) {
+        tourFiles.forEach(function (tf) {
+          var tourBtn = navBtn(docs[tf].title, "gistour:" + tf, true);
+          tourBtn.classList.add("gis-tour-nested");
+        });
+      }
     });
     var addMap = el("button", "adm-btn adm-btn-small adm-addproject", "+ New map");
     addMap.type = "button";
