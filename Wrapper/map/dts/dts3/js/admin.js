@@ -51,6 +51,12 @@
 
   var $ = function (s, r) { return (r || document).querySelector(s); };
 
+  // In-app documentation (js/help.js, loaded before this file is ever
+  // injected -- guarded anyway, same convention as window.DTS_ANALYTICS
+  // guards elsewhere). Lets the "?" shortcut and any contextual hint below
+  // open this board's own Documentation screen.
+  if (window.DTSHelp) window.DTSHelp.registerOpener("admin", function () { select("help"); });
+
   /* ============================================================
      ADMIN AUTH ROUTING
      ------------------------------------------------------------
@@ -511,7 +517,10 @@
      this row is open (an experience/link's id is still being typed). */
   function entitlementPicker(parent, getResourceKey) {
     var box = el("div", "adm-entitlements");
-    box.appendChild(el("p", "adm-label", "Who has access"));
+    var labelRow = el("div", "adm-entitlement-labelrow");
+    labelRow.appendChild(el("p", "adm-label", "Who has access"));
+    labelRow.appendChild(helpHintBtn("access", "?"));
+    box.appendChild(labelRow);
     var listZone = el("div", "adm-listitems");
     box.appendChild(listZone);
     var status = el("p", "adm-hint", "");
@@ -3129,6 +3138,36 @@
   }
 
   /* ============================================================
+     DOCUMENTATION  (js/help-content.js + js/help.js's shared engine —
+     content is static, versioned in the codebase, deliberately NOT
+     CMS-editable: this documents how the code behaves, not something an
+     editor would change from here.)
+     ============================================================ */
+  function editHelp(pane) {
+    var box = section(pane, "Documentation",
+      "A reference for every screen in this board -- what each one does, and the delete-vs-disable/access-level rules that aren't always obvious from the UI alone.");
+    if (window.DTSHelp && window.DTS_HELP) {
+      window.DTSHelp.mount(box, window.DTS_HELP.admin, { audience: "admin" });
+    } else {
+      box.appendChild(el("p", "adm-hint", "Documentation failed to load."));
+    }
+  }
+
+  /* Small reusable "?" hint: jumps straight to one Documentation topic,
+     for the handful of controls that genuinely warrant it (kept narrow on
+     purpose -- see the entitlementPicker() use below). */
+  function helpHintBtn(topicId, label) {
+    var b = el("button", "adm-btn adm-btn-small adm-btn-ghost", label || "?");
+    b.type = "button";
+    b.title = "Open documentation";
+    b.addEventListener("click", function () {
+      if (window.DTSHelp) window.DTSHelp.requestTopic("admin", topicId);
+      select("help");
+    });
+    return b;
+  }
+
+  /* ============================================================
      SAVE DRAFT / DISCARD / EXPORT
      ============================================================ */
   function saveDraft(reload) {
@@ -3433,6 +3472,9 @@
     navBtn("Access", "access");
     navBtn("Audit", "audit");
 
+    navEl.appendChild(el("p", "adm-navhead", "HELP"));
+    navBtn("Documentation", "help");
+
     highlightNav();
   }
 
@@ -3485,6 +3527,7 @@
     else if (key === "builds") editBuilds(paneEl);
     else if (key === "access") editAccessIndex(paneEl);
     else if (key === "audit") editAuditLog(paneEl);
+    else if (key === "help") editHelp(paneEl);
     paneEl.scrollTop = 0;
   }
 

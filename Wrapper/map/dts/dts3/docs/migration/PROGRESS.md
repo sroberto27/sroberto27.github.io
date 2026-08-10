@@ -22,6 +22,110 @@ identity/access model each phase from 3 onward implements is defined in
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
 
+- 2026-08-09 — **In-app documentation for four audiences, requested by the
+  user independent of any numbered phase** ("Add in-app documentation/manual
+  for four audiences: site_admin, org_admin, member, and normal user"). Does
+  not block or require `/migrate-handoff`; must keep working unchanged after
+  the account-swap handoff — it's pure static content + client-side logic,
+  nothing account-specific anywhere in it.
+
+  **Resolved the four-tier request onto the real role model
+  (`ACCESS-MODEL.md` §1/§8) before building anything, confirmed with the
+  user in planning:** `site_admin` → the Admin Board; `org_admin`/`member` →
+  one portal Help tab, with org_admin's team-management topics layered ON
+  TOP of member topics (a superset, not a separate track — the exact
+  `orgRole === "org_admin"` filter `renderOrgAdminPanel()` already
+  established); `normal user` → NOT the same as `member` — guests AND any
+  signed-in visitor with no organization, reachable from anywhere via a new
+  floating icon, split by UI surface (marketing site vs. portal chrome) not
+  by identity, since a no-org registered account genuinely does land in the
+  portal too (`finishSignIn()` → `openPortal()` unconditionally once
+  `site_admin`/pending-resource cases are ruled out — traced the real call
+  path rather than assuming).
+
+  **Four design decisions, each pre-approved with a stated recommendation
+  and built exactly as recommended, no changes:** PDF export via
+  `@media print` + `window.print()` (browser-native, no new library) with a
+  genuinely clickable linked TOC in the output — the TOC entries are real
+  `<a href="#dts-help-...">` anchors intercepted for in-app clicks but left
+  as real links for print/PDF rendering, not literal buttons; content stored
+  static in the codebase (`js/help-content.js`), a **deliberate, flagged
+  exception** to CLAUDE.md's "belongs in /data" rule since this documents
+  code behavior, not editable content — confirmed this means the "three
+  places every time" `/data` rule (manifest → buildConfig → app.js) doesn't
+  apply at all here, nothing to register; diagrams as lightweight inline SVG
+  (two built: the four-level access ladder in the Admin Board's Access
+  topic, the invite flow in the org-admin Help topics), not screenshots;
+  search is client-side filter-only, no backend.
+
+  **One shared rendering engine, three mount points** — avoids three separate
+  TOC/search/print implementations. `js/help.js`'s `DTSHelp.mount(container,
+  topics, opts)` is called by: `js/admin.js`'s new `editHelp()` (new
+  `navBtn("Documentation", "help")` under a new HELP nav group, same
+  `navBtn()`/`select()` dispatcher pattern as every other screen); `js/app.js`'s
+  new `renderPortalHelp()` (new `data-portal-view="help"` tab, following the
+  Phase 9 Activity tab's exact pattern — the existing generic
+  `$$(...).forEach(b => b.addEventListener(...))` wiring picked up the new
+  buttons with zero new listener code); and `js/help.js`'s own floating-icon
+  overlay, fully self-contained (owns its own open/close, unlike the other
+  two which are opened by their host's existing navigation). Unlike the
+  Activity tab, the portal Help tab is **not** hidden for a no-org session —
+  it documents the portal itself, which applies regardless of org
+  membership.
+
+  **Two new one-line exports on `window`, same pattern as the existing
+  `window.DTS_ACCESS`/`DTS_CONFIG`/`DTS_CONTENT`:** `window.DTS_TRACK = track`
+  (`js/app.js`) so `help.js` — a separate, statically-loaded script that
+  parses before `app.js` even exists, since `app.js` is injected dynamically
+  by `content-loader.js` — can fire the two new analytics events without
+  reaching into `app.js`'s private closure. `window.DTSHelp.registerOpener()`
+  lets `admin.js`/`app.js` register how to reach THEIR OWN Help screen, so
+  the shared `?` keyboard shortcut (guarded against firing while typing in
+  any real input/textarea/contenteditable) can route to the right one based
+  on which body class (`adm-lock`/`portal-open`) is currently active, falling
+  back to the floating overlay otherwise. Both guarded
+  (`if (window.DTSHelp) …`) the same way `window.DTS_ANALYTICS` guards
+  already are, in case load order ever changes.
+
+  **New analytics event types, additive:** `help_topic_view`
+  (`{topicId, audience}`, fired once per topic opened across all three
+  surfaces) and `help_search` (`{query, matched}`, same 200-char cap and
+  shape as the existing `faq_search`) — added to `functions/api/track.js`'s
+  `EVENT_TYPES` set and `ACCESS-MODEL.md` §6's dated addendum, same
+  convention Phase 9 used for its own four additions.
+
+  **One narrow contextual "?" hint, deliberately not sprinkled everywhere:**
+  next to the entitlement picker's "Who has access" label (the concrete
+  example the request gave) — calls `DTSHelp.requestTopic("admin","access")`
+  then `select("help")`, landing directly on the Access topic rather than the
+  screen's default first topic.
+
+  **Floating icon placement is a calculated claim, not a guessed one, but
+  still needs a real look:** `position:fixed; left:14px; bottom:calc(var(--dock-h) + 14px)`
+  — clears the dockbar using its own real CSS variable (confirmed via
+  `css/01-base.css`) rather than guessing a pixel offset against the
+  dockbar's actual internal content (`.qbar` plus a `.sector-pager`, both
+  confirmed present via `css/08-responsive.css` before assuming the dockbar
+  was just the question bar), and sits opposite the bottom-right `.cookie`
+  card so neither can structurally overlap the other. Hidden outright via
+  `body.twin-active`/`body.portal-open`/`body.adm-lock` while any full-screen
+  context is open.
+
+  **NOT verified live at all this session — flagged plainly, not glossed
+  over:** the Chrome browser automation tool was unavailable (extension not
+  connected), so unlike every other phase's testing doc, nothing in
+  `docs/migration/HELP-DOCS-TESTING.md` has been spot-checked by the agent,
+  not even once. What *was* confirmed: `node --check` clean on all four new/
+  edited JS files, and a local `python3 -m http.server 8000` run confirming
+  `js/help.js`/`js/help-content.js`/`css/16-help.css` all serve `200` and
+  `index.html` still does after the edits. The floating icon's real on-screen
+  position, the PDF export's actual output, both diagrams actually rendering,
+  and every interactive behavior (search, deep links, the `?` shortcut, the
+  contextual hint, the first-visit hint's persistence) are all still
+  first-hand unverified. Redeploy to the dev Cloudflare URL per
+  `docs/migration/DEPLOY-STAGING.md` and a full manual pass are both still
+  needed before this can be called done.
+
 - 2026-08-09 — **Phase 9 is DONE — dev build complete.** Analytics events,
   the client dashboard tile, the admin audit view, and marketing tags (with
   a real pre-existing gap fixed along the way — the cookie consent banner).

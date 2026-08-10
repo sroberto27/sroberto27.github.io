@@ -2,6 +2,25 @@
 
 Newest first.
 
+## In-app documentation for all four audiences (standalone feature)
+
+Added a help/documentation system covering everyone who touches the site:
+`site_admin` gets a new "Documentation" screen in the Admin Board; signed-in
+client sessions get a "Help" tab in the portal (org admins see their
+team-management topics layered on top of the same member content, not a
+separate track); everyone else (guests, and any signed-in visitor with no
+organization) gets a small floating help icon reachable from anywhere on the
+public site. One shared engine (`js/help.js`) renders all three — search,
+a table of contents, and a "Print / Save as PDF" export with a real linked
+index — from static content (`js/help-content.js`) that's deliberately kept
+out of the CMS, since it documents how the code behaves rather than anything
+an editor would change. Also added: URL-based deep links to a specific topic,
+a `?` keyboard shortcut, an inline "?" hint next to the entitlement picker,
+and two new analytics event types (`help_topic_view`, `help_search`). See
+`docs/migration/PROGRESS.md`'s session log for the full detail and
+`docs/migration/HELP-DOCS-TESTING.md` for the manual testing checklist —
+nothing in this feature has been verified in a live browser yet.
+
 ## Analytics, audit trail, and marketing tags — dev build complete
 
 Product analytics (`/api/track` → the `events` table) now covers 15 event

@@ -26,6 +26,7 @@
   <link rel="stylesheet" href="css/13-admin.css" />
   <link rel="stylesheet" href="css/14-intro.css" />
   <link rel="stylesheet" href="css/15-gis.css" />
+  <link rel="stylesheet" href="css/16-help.css" />
   <!-- ============================================================
         INTRO CLOAK
         Hides the app before the browser's first paint so the intro
@@ -783,6 +784,14 @@
            (events RLS only ever returns rows for an org member, so this
            tab has nothing to show anyone else). -->
       <button class="portal-nav-link" id="portalNavActivity" data-portal-view="activity" type="button" hidden>Activity</button>
+      <!-- Standalone in-app documentation feature -- shown to every signed-in
+           portal session (unlike Activity above, not gated on having an
+           org: the tab documents the portal itself, which applies whether
+           or not you belong to an organization yet). js/help.js renders
+           into #portalHelp; js/app.js layers org-admin team-panel topics on
+           top of member topics only when the session actually has that
+           role (see renderPortalHelp()). -->
+      <button class="portal-nav-link" id="portalNavHelp" data-portal-view="help" type="button">Help</button>
     </nav>
     <span class="portal-clientlogo" id="portalClientName">Client</span>
     <button class="portal-signout" id="portalSignout" type="button">Sign out</button>
@@ -830,6 +839,15 @@
         <canvas id="portalActivityChart" width="600" height="280"></canvas>
       </div>
     </section>
+
+    <!-- HELP — standalone in-app documentation feature. js/help.js mounts
+         into #portalHelpBody; js/app.js's renderPortalHelp() picks the
+         topic set (member, plus org-admin team-panel topics layered on
+         when the session has that role). -->
+    <section class="portal-view portal-simple" id="portalHelp" aria-label="Help" hidden>
+      <h2 class="portal-apps-title">Help</h2>
+      <div id="portalHelpBody"><!-- injected --></div>
+    </section>
   </main>
 
   <!-- Tile menu overlay: HOME / APPS / Manage / Support -->
@@ -843,6 +861,7 @@
       <button class="portal-menu-tile" data-portal-view="manage" type="button">Manage</button>
       <button class="portal-menu-tile" data-portal-view="support" type="button">Support</button>
       <button class="portal-menu-tile" id="portalMenuActivity" data-portal-view="activity" type="button" hidden>Activity</button>
+      <button class="portal-menu-tile" data-portal-view="help" type="button">Help</button>
     </div>
   </div>
 </div>
@@ -929,7 +948,28 @@
   </div>
 </div>
 
-
+<!-- ============================================================
+     FLOATING HELP ICON — standalone in-app documentation feature.
+     Guests and any signed-in visitor with no organization (the client
+     portal has its own Help tab for a signed-in org session — see
+     #portalHelp above). Fully owned by js/help.js: fixed left, cleared
+     above the dockbar so it can never sit under the question bar, and
+     hidden automatically whenever the twin/portal/admin board is open
+     (css/16-help.css). Reachable from anywhere on the public site.
+     ============================================================ -->
+<button class="dts-help-fab" id="dtsHelpFab" type="button" aria-label="Open help">
+  <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9.2" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M9.3 9.3a2.7 2.7 0 1 1 3.6 2.55c-.7.26-1 .8-1 1.45v.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><circle cx="12" cy="16.6" r="1" fill="currentColor"/></svg>
+  <span class="dts-help-fab-tip">Need help?</span>
+</button>
+<div class="dts-help-overlay" id="dtsHelpOverlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Help">
+  <div class="dts-help-overlay-window">
+    <button class="dts-help-overlay-close" id="dtsHelpOverlayClose" type="button" aria-label="Close help">
+      <svg viewBox="0 0 24 24" width="16" height="16"><path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+    </button>
+    <h2 class="dts-help-overlay-title">Help</h2>
+    <div id="dtsHelpOverlayBody"><!-- injected by js/help.js --></div>
+  </div>
+</div>
 
 <!-- Scripts: the Supabase client (js/supabase-init.js -- the only
      account-specific values in a committed file, by design: a public
@@ -958,5 +998,14 @@
      js/analytics-init.js only holds config + injector functions; js/app.js
      calls them conditionally, after real consent, per the cookie banner. -->
 <script src="js/analytics-init.js"></script>
+<!-- Standalone in-app documentation feature, appended -- never reorders
+     anything above. Static content + the shared rendering engine that
+     js/admin.js's Documentation screen and js/app.js's portal Help tab
+     both also call into (window.DTSHelp/window.DTS_HELP). Loads before
+     app.js/admin.js exist (both are injected dynamically by
+     content-loader.js) -- see js/help.js's own header comment for how it
+     handles that ordering. -->
+<script src="js/help-content.js"></script>
+<script src="js/help.js"></script>
 </body>
 </html>

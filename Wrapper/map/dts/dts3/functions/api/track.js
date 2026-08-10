@@ -15,12 +15,15 @@ import { json, pgrst, verifyUser, activeOrgIdsFor } from "../_lib/access.js";
 // dated addendum): lead_submit/lead_fallback (the lead form had zero
 // analytics before this phase), sector_view (category nav never changes the
 // URL, so nothing else would ever see it), faq_search (the "Ask a Question"
-// bar is a real feature, not decorative).
+// bar is a real feature, not decorative). Two more added by the standalone
+// in-app documentation feature (own dated addendum): help_topic_view,
+// help_search.
 const EVENT_TYPES = new Set([
   "project_view", "experience_preview", "login_gate", "login", "register",
   "experience_open", "experience_close", "map_open",
   "download_view", "download_start", "download_complete",
   "lead_submit", "lead_fallback", "sector_view", "faq_search",
+  "help_topic_view", "help_search",
 ]);
 
 export async function onRequestPost(context) {

@@ -266,3 +266,12 @@ textarea.adm-input { resize: vertical; min-height: 60px; }
   }
   .adm-gispreview.is-expanded .adm-gispreview-map { height: auto; flex: 1; }
 }
+
+/* ---------- inline "?" documentation hints (see js/help.js) ---------- */
+.adm-entitlement-labelrow {
+  display: flex; align-items: center; gap: 8px; margin: 0 0 4px;
+}
+.adm-entitlement-labelrow .adm-label { margin: 0; }
+.adm-entitlement-labelrow .adm-btn-small {
+  padding: 1px 9px; border-radius: 50%; line-height: 1.6;
+}

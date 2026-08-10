@@ -302,6 +302,14 @@ Question" bar, `#qbarInput`, is a real FAQ-matching feature, not decorative
 column with no DB check constraint; the enum is enforced application-side in
 `functions/api/track.js`.
 
+**Added 2026-08-09, standalone in-app documentation feature (independent of
+the numbered phases), still normative here:** `help_topic_view`
+(`metadata: {topicId, audience}`, fired once per topic a visitor opens in any
+of the three help surfaces — the Admin Board's Documentation screen, the
+portal's Help tab, or the floating help icon), `help_search`
+(`metadata: {query, matched}`, same shape and 200-char query cap as
+`faq_search` above).
+
 `org_id` on every row is stamped server-side by `functions/api/track.js`,
 never accepted as a client-supplied field (a request that tries is rejected
 outright, not silently ignored). Because this app has no org-switcher and a

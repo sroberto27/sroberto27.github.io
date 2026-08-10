@@ -1667,6 +1667,18 @@
   // instead of only finding out via the dts:signed-in event below, which it
   // can easily lose the race to register a listener for in time to catch.
   window.DTS_ACCESS = access;
+  // Same reasoning, for js/help.js (also a static, independently-loaded
+  // script): its help_topic_view/help_search analytics calls need the real
+  // track() below, which is otherwise private to this closure. Exposed by
+  // reference, not a snapshot -- `track` is a hoisted function declaration,
+  // so this assignment is safe even though its definition appears later in
+  // this file.
+  window.DTS_TRACK = track;
+  // js/help.js loads before this script (appended, statically, early in
+  // index.html's list) and calls this synchronously as soon as it parses --
+  // guarded anyway, same convention as the window.DTS_ANALYTICS guards
+  // elsewhere, in case that ever changes.
+  if (window.DTSHelp) window.DTSHelp.registerOpener("portal", () => showPortalView("help"));
   const PENDING_RESOURCE_KEY_STORAGE = "dtsPendingResourceKey";
   // True for the whole duration of a LOCAL sign-in action (submitAccess(),
   // restoreSession()'s OAuth-return branch) that already calls
@@ -2361,7 +2373,7 @@
   }
 
   function showPortalView(name) {
-    ["home", "apps", "manage", "support", "activity"].forEach((v) => {
+    ["home", "apps", "manage", "support", "activity", "help"].forEach((v) => {
       const el = $("#portal" + v[0].toUpperCase() + v.slice(1));
       if (el) {
         el.hidden = v !== name;
@@ -2377,7 +2389,30 @@
       );
     }
     if (name === "activity") renderPortalActivity();
+    if (name === "help") renderPortalHelp();
     closePortalMenu();
+  }
+
+  /* ============================================================
+     HELP TAB — standalone in-app documentation feature (independent of
+     any numbered migration phase). Shown to every signed-in portal
+     session, unlike Activity above -- it documents the portal itself,
+     which applies whether or not the session belongs to an organization.
+     org-admin's team-panel topics are layered ON TOP of member topics
+     (a superset, never a separate track), using the exact same
+     `orgRole === "org_admin"` filter renderOrgAdminPanel() already uses.
+     ============================================================ */
+  let portalHelpMounted = false;
+  function renderPortalHelp() {
+    if (portalHelpMounted) return;
+    portalHelpMounted = true;
+    const body = $("#portalHelpBody");
+    if (!body || !window.DTSHelp || !window.DTS_HELP) return;
+    const isOrgAdmin = !!(access.session && access.session.orgs &&
+      access.session.orgs.some((o) => o.orgRole === "org_admin"));
+    const topics = (window.DTS_HELP.member || [])
+      .concat(isOrgAdmin ? (window.DTS_HELP.orgAdmin || []) : []);
+    window.DTSHelp.mount(body, topics, { audience: "portal" });
   }
 
   function openPortalMenu() {
