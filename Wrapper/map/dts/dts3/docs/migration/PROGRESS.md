@@ -122,9 +122,35 @@ identity/access model each phase from 3 onward implements is defined in
   position, the PDF export's actual output, both diagrams actually rendering,
   and every interactive behavior (search, deep links, the `?` shortcut, the
   contextual hint, the first-visit hint's persistence) are all still
-  first-hand unverified. Redeploy to the dev Cloudflare URL per
-  `docs/migration/DEPLOY-STAGING.md` and a full manual pass are both still
-  needed before this can be called done.
+  first-hand unverified.
+
+  **Redeployed following `docs/migration/DEPLOY-STAGING.md` exactly**
+  (staging directory built fresh in the scratchpad via Git Bash `cp -r`,
+  never `robocopy` — confirmed this handles the double-bracket
+  `functions/data/[[path]].js` catch-all with no manual copy step needed,
+  unlike prior phases' robocopy workaround). `functions/`/`css/`/`js/`
+  file lists diffed byte-identical against source before deploying;
+  `.build/js/config.js` (unchanged this session, project/GIS content
+  untouched) overlaid onto staged `js/config.js` as required; every
+  excluded path confirmed genuinely absent from staging before deploying,
+  not assumed. Deployed:
+  `https://f3329d93.dts-website-4cu.pages.dev` (stable alias
+  `https://dts-website-4cu.pages.dev`, propagates shortly). Post-deploy
+  byte-count check against the real deployed site: `/` and every excluded
+  path (`.env`, `scripts/seed-dev.mjs`, `docs/migration/PROGRESS.md`,
+  `tools/gis-harvest.mjs`, `CLAUDE.md`) all return exactly the same
+  62,275-byte SPA fallback; `/data/manifest.json` returns a genuinely
+  different, real size (5,043 bytes) — no regression. The three new help
+  files (`js/help.js`, `js/help-content.js`, `css/16-help.css`) each serve
+  their own real, distinct byte count, not the fallback — confirms the
+  deploy actually shipped them, not just that the deploy succeeded.
+
+  **Still not done: a live human pass.** The deploy is verified at the
+  file/byte level only, the same level of confidence as every check this
+  session — nothing about how this feature actually looks or behaves in a
+  browser has been confirmed. `docs/migration/HELP-DOCS-TESTING.md`'s 21
+  items are all still unchecked; needs the user to run through them
+  against the URL above before this can be called done.
 
 - 2026-08-09 — **Phase 9 is DONE — dev build complete.** Analytics events,
   the client dashboard tile, the admin audit view, and marketing tags (with
