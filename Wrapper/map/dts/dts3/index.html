@@ -49,13 +49,23 @@
      })();
    </script>
 
-  <!-- visionOS 26.5 spatial website environment (developer preview).
-       Visitors activate it from Safari's Page Menu, not through JavaScript. -->
-  <link
-    rel="spatial-backdrop"
-    type="model/vnd.usdz+zip"
-    href="models/DTS_Studio_Interior_VisionPro_V2.1.usdz"
-    alt="A film studio interior environment">
+  <!-- visionOS 26.5 spatial website environment (developer preview):
+       intentionally NOT a static tag here anymore. This used to be an
+       unconditional link rel="spatial-backdrop" in every visitor's head,
+       referencing a USDZ model by a filename that didn't even match what's
+       actually in models/ (an off-by-".1" typo). Confirmed live: every
+       iPhone/iPad/Mac Safari visitor, not just visionOS, would have
+       WebKit's real, native USDZ handling (the same engine AR Quick Look
+       uses since iOS 12) attempt to resolve a type="model/vnd.usdz+zip"
+       resource that 404'd to a full mislabeled HTML page, in head, before
+       almost anything else on the page. That's the leading explanation for
+       a real user-reported iPhone-only crash-loop ("A problem repeatedly
+       occurred") since Android has no USDZ handling at all and was
+       unaffected, which is exactly the asymmetry that pointed here.
+       js/vision-pro-spatial.js now injects this tag itself, with the
+       corrected filename, and only after confirming the visitor is
+       genuinely visionOS, not just any Safari — see that file for the
+       detection and why it's safe. -->
 </head>
 <body>
 <!-- ============================================================

@@ -2,6 +2,22 @@
 
 Newest first.
 
+## Fix: iPhone-only crash loop on the homepage
+
+Real bug, reported by the user with a screenshot of Safari's "A problem
+repeatedly occurred" page — the site would fail to load on iPhone,
+repeatedly, but loaded fine on Android every time. Traced to a static tag in
+`index.html`'s `<head>` for an experimental visionOS feature, sent to every
+visitor regardless of platform: it pointed at a 3D model file with a typo'd
+filename (so it 404'd to a mislabeled HTML page instead), using a MIME type
+that iOS/iPadOS/macOS Safari all have real native handling for — unlike
+Android, which has none. That asymmetry was the key clue. Fixed the typo and,
+more importantly, moved the tag out of static HTML entirely — it's now
+injected only for visitors confirmed to be on genuine visionOS hardware, so
+no ordinary iPhone/iPad/Mac visitor is ever exposed to it again regardless.
+Deployed and verified server-side; still needs a real iPhone to confirm the
+crash itself is gone.
+
 ## Admin Board: GIS map/tour nav now shows a real hierarchy
 
 The GIS MAPS list in the Admin Board's left nav used to render a map and

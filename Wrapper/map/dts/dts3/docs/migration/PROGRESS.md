@@ -22,6 +22,59 @@ identity/access model each phase from 3 onward implements is defined in
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
 
+- 2026-08-10 — **Real, live bug fixed: iPhone-only crash loop on the
+  homepage, reported by the user with a screenshot of Safari's "A problem
+  repeatedly occurred" page** (the loading progress would climb, reset to
+  0%, repeat several times, then fail outright — never reproduced on
+  Android). Traced to `index.html`'s `<head>`, which carried a static,
+  unconditional `<link rel="spatial-backdrop" type="model/vnd.usdz+zip"
+  href="models/DTS_Studio_Interior_VisionPro_V2.1.usdz">` (a visionOS 26.5
+  developer-preview feature) sent to every visitor regardless of platform.
+  Two real, confirmed problems, not just one: the filename had a typo
+  (`V2.1.usdz` vs. the real `V2.usdz` in `models/`) — confirmed live, that
+  URL 404'd to Cloudflare's generic HTML fallback, mislabeled with
+  `Content-Type: text/html`; and `type="model/vnd.usdz+zip"` is not inert
+  on Safari/WebKit specifically — iOS/iPadOS/macOS Safari all share
+  WebKit's real, native USDZ handling (the same engine AR Quick Look has
+  used since iOS 12), unlike Android, which has none at all. The leading
+  explanation: Safari-family browsers were attempting to resolve a
+  `<head>`-level resource claimed to be a 3D model but actually receiving
+  a full mislabeled HTML page — a plausible, well-evidenced crash trigger
+  for a binary-format parser, sitting in `<head>` before almost anything
+  else on the page. The Android-only-unaffected pattern was the single
+  strongest clue pointing here, since it's the one asymmetry that
+  specifically separates "any Safari, any platform" from "no USDZ
+  handling at all." **Explicitly caveated to the user throughout: this
+  could not be confirmed with certainty without an actual iPhone in
+  hand** — the diagnosis rests on well-grounded circumstantial evidence
+  (live-verified filename mismatch, live-verified content-type
+  mismatch, a real detection method sourced from a documented pattern
+  for exactly this problem, not invented from scratch), not a
+  reproduction.
+
+  **Fixed two ways, not just the filename typo:** corrected the filename,
+  AND removed the tag from static, unconditional HTML entirely —
+  `js/vision-pro-spatial.js` now injects it dynamically, only after a
+  new `isVisionOS()` check (three independent signals — UA containing
+  `"(Macintosh;"`, real `navigator.xr` support, and touch support — all
+  required, specifically so it can never match an ordinary iPhone/iPad/
+  Mac running plain Safari) confirms genuine visionOS hardware. Even if
+  the circumstantial USDZ-parsing theory turns out to be wrong, no
+  Safari-family visitor other than confirmed visionOS ever sees this tag
+  at all anymore, which removes the entire class of risk regardless.
+
+  **Verified live, deployed:** the static tag is confirmed gone from the
+  served HTML (the only remaining string match is inside this session's
+  own explanatory comment, never parsed as a real tag); the corrected
+  filename now resolves for real (`200`, 16,706,226 bytes, matching the
+  real file in `models/`); the new `isVisionOS()`/`injectSpatialBackdrop()`
+  code is confirmed present in the deployed `js/vision-pro-spatial.js`;
+  standard byte-count regression battery re-run clean. **NOT verified:**
+  an actual iPhone reload confirming the crash loop is genuinely gone —
+  Chrome browser automation was unavailable this session too, and even if
+  it weren't, it's Chromium-based and couldn't reproduce Safari/WebKit
+  behavior anyway. This needs the user's own iPhone to confirm.
+
 - 2026-08-10 — **Admin Board: GIS MAPS nav now shows real hierarchy,
   requested by the user with a screenshot.** The left nav's GIS MAPS
   section previously rendered a map and every one of its tours as one
