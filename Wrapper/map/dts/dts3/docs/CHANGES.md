@@ -2,6 +2,22 @@
 
 Newest first.
 
+## In-app help: APK sideload and Windows .exe install guides for every audience
+
+Two new topics in `js/help-content.js` — "Install on a Meta Quest headset
+(APK)" and "Run on a Windows PC (.exe)" — defined once and appended to the
+`admin`, `member`, and `guest` audience tracks (org admins inherit them via
+`member`), so every visitor sees the same instructions in their documentation
+surface: the Admin Board's Documentation screen, the portal's Help tab, and
+the guest floating help icon. Each topic opens with an inline-SVG step-flow
+infographic in the existing `help-diagram` style (theme-aware `currentColor`,
+prints via the existing Print / Save as PDF button), followed by detailed
+numbered steps and troubleshooting. The VR guide teaches the SideQuest path
+for Quest 2/3/3S/Pro (Developer Mode → SideQuest → USB debugging → install →
+Unknown Sources); the PC guide covers the zipped Unity build (Extract All,
+SmartScreen "More info → Run anyway", keep the `_Data` folder together). No
+other file touched; the help engine (`js/help.js`) is unchanged.
+
 ## Fix: iPhone-only crash loop on the homepage
 
 Real bug, reported by the user with a screenshot of Safari's "A problem

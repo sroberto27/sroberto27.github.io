@@ -868,3 +868,200 @@ window.DTS_HELP = {
     }
   ]
 };
+
+/* Shared install guides -- the APK / .exe instructions below are deliberately
+   the SAME document for every audience (guest floating icon, portal Help tab,
+   Admin Board Documentation screen), so they're defined once here and appended
+   to each track rather than pasted three times. orgAdmin is skipped on purpose:
+   it renders as a superset of `member`, so org admins already get these. */
+(function () {
+  var installTopics = [
+    {
+      id: "install-vr",
+      title: "Install on a Meta Quest headset (APK)",
+      keywords: ["apk", "sideload", "sidequest", "quest", "meta", "vr",
+        "headset", "developer mode", "unknown sources", "usb debugging",
+        "install", "update"],
+      html:
+        "<p>Some apps are delivered as an <code>.apk</code> file -- a full " +
+        "VR application you install directly onto a Meta Quest headset " +
+        "(Quest 2, 3, 3S, or Pro). Installing an app this way, without going " +
+        "through the Quest store, is called <em>sideloading</em>. It's safe " +
+        "and officially supported by Meta; the one-time setup takes about " +
+        "ten minutes, and every install or update after that takes about " +
+        "one.</p>" +
+        "<div class=\"help-diagram\" aria-hidden=\"true\">" +
+          "<svg viewBox=\"0 0 640 336\" role=\"img\" aria-label=\"Sideload flow: turn on Developer Mode, install SideQuest on a computer, connect the headset by USB and allow debugging, install the APK, then launch it from Unknown Sources in the Library.\">" +
+            "<defs><marker id=\"helpArrowVR\" viewBox=\"0 0 10 10\" refX=\"8\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0L10 5L0 10z\" fill=\"currentColor\"/></marker></defs>" +
+            "<g font-family=\"sans-serif\" font-size=\"12\" fill=\"currentColor\">" +
+              "<rect x=\"30\" y=\"4\" width=\"580\" height=\"52\" rx=\"8\" fill=\"none\" stroke=\"currentColor\"/>" +
+              "<text x=\"320\" y=\"26\" text-anchor=\"middle\" font-weight=\"700\">1. Turn on Developer Mode</text>" +
+              "<text x=\"320\" y=\"44\" text-anchor=\"middle\" font-size=\"10\">in the Meta Horizon phone app -- one time only</text>" +
+              "<line x1=\"320\" y1=\"56\" x2=\"320\" y2=\"68\" stroke=\"currentColor\" marker-end=\"url(#helpArrowVR)\"/>" +
+              "<rect x=\"30\" y=\"71\" width=\"580\" height=\"52\" rx=\"8\" fill=\"none\" stroke=\"currentColor\"/>" +
+              "<text x=\"320\" y=\"93\" text-anchor=\"middle\" font-weight=\"700\">2. Install SideQuest on a computer</text>" +
+              "<text x=\"320\" y=\"111\" text-anchor=\"middle\" font-size=\"10\">free desktop app from sidequestxr.com</text>" +
+              "<line x1=\"320\" y1=\"123\" x2=\"320\" y2=\"135\" stroke=\"currentColor\" marker-end=\"url(#helpArrowVR)\"/>" +
+              "<rect x=\"30\" y=\"138\" width=\"580\" height=\"52\" rx=\"8\" fill=\"none\" stroke=\"currentColor\"/>" +
+              "<text x=\"320\" y=\"160\" text-anchor=\"middle\" font-weight=\"700\">3. Plug the headset into the computer</text>" +
+              "<text x=\"320\" y=\"178\" text-anchor=\"middle\" font-size=\"10\">put it on and choose Allow USB debugging</text>" +
+              "<line x1=\"320\" y1=\"190\" x2=\"320\" y2=\"202\" stroke=\"currentColor\" marker-end=\"url(#helpArrowVR)\"/>" +
+              "<rect x=\"30\" y=\"205\" width=\"580\" height=\"52\" rx=\"8\" fill=\"none\" stroke=\"currentColor\"/>" +
+              "<text x=\"320\" y=\"227\" text-anchor=\"middle\" font-weight=\"700\">4. Install the APK with SideQuest</text>" +
+              "<text x=\"320\" y=\"245\" text-anchor=\"middle\" font-size=\"10\">the install-APK-from-folder button, top right</text>" +
+              "<line x1=\"320\" y1=\"257\" x2=\"320\" y2=\"269\" stroke=\"currentColor\" marker-end=\"url(#helpArrowVR)\"/>" +
+              "<rect x=\"30\" y=\"272\" width=\"580\" height=\"52\" rx=\"8\" fill=\"none\" stroke=\"currentColor\"/>" +
+              "<text x=\"320\" y=\"294\" text-anchor=\"middle\" font-weight=\"700\">5. Launch it in the headset</text>" +
+              "<text x=\"320\" y=\"312\" text-anchor=\"middle\" font-size=\"10\">Library, then the Unknown Sources filter</text>" +
+            "</g>" +
+          "</svg>" +
+        "</div>" +
+        "<h4>One-time setup (per headset)</h4>" +
+        "<ol>" +
+        "<li>On a computer, go to <strong>developer.meta.com</strong> and " +
+        "sign in with the <em>same Meta account the headset uses</em>. " +
+        "Create a developer \"organization\" (any name works) and follow " +
+        "the verification prompts -- it's free, and this is what unlocks " +
+        "the Developer Mode switch in the next step.</li>" +
+        "<li>On your phone, open the <strong>Meta Horizon</strong> app (the " +
+        "one used to set the headset up), go to <strong>Devices</strong>, " +
+        "pick your headset, open its settings, and switch " +
+        "<strong>Developer Mode</strong> on.</li>" +
+        "<li>Restart the headset.</li>" +
+        "<li>On the computer, download and install <strong>SideQuest</strong> " +
+        "from <strong>sidequestxr.com</strong> -- choose the version called " +
+        "<em>Advanced Installer</em> (Windows and Mac available).</li>" +
+        "</ol>" +
+        "<h4>Installing the app</h4>" +
+        "<ol>" +
+        "<li>Download the <code>.apk</code> from your portal onto that same " +
+        "computer.</li>" +
+        "<li>Connect the headset to the computer with a USB-C cable. The " +
+        "charging cable usually works -- it just has to be a data cable, " +
+        "not a charge-only one.</li>" +
+        "<li>Put the headset <em>on</em>: a prompt asks <strong>Allow USB " +
+        "debugging?</strong> Tick <em>Always allow from this computer</em> " +
+        "and choose <strong>Allow</strong>. (This only appears the first " +
+        "time per computer.)</li>" +
+        "<li>Open SideQuest -- the dot in the top-left corner turns " +
+        "<strong>green</strong> once the headset is connected.</li>" +
+        "<li>Click the <strong>Install APK file from folder</strong> button " +
+        "in SideQuest's top-right toolbar (a box with a downward arrow), " +
+        "pick the downloaded <code>.apk</code>, and wait for the " +
+        "\"task completed\" confirmation.</li>" +
+        "</ol>" +
+        "<h4>Finding and launching it</h4>" +
+        "<ol>" +
+        "<li>In the headset, open your <strong>Library</strong>.</li>" +
+        "<li>Click the category filter at the top (it usually says " +
+        "<em>All</em>) and choose <strong>Unknown Sources</strong>.</li>" +
+        "<li>Your app is listed there -- launch it. It stays installed; you " +
+        "don't need the computer again until an update.</li>" +
+        "</ol>" +
+        "<div class=\"help-note\"><strong>The app is never on the main " +
+        "Library shelf.</strong> Sideloaded apps always live under the " +
+        "<strong>Unknown Sources</strong> filter -- if you can't find the " +
+        "app, that filter is where it is.</div>" +
+        "<h4>Updating to a new version</h4>" +
+        "<p>Download the new <code>.apk</code> and install it exactly the " +
+        "same way -- it replaces the old version in place, keeping your " +
+        "place in the Library. If the install fails with an \"app not " +
+        "installed\" error, uninstall the old version first (in Unknown " +
+        "Sources, open the app's <strong>…</strong> menu and choose " +
+        "Uninstall), then install again.</p>" +
+        "<h4>If something doesn't work</h4>" +
+        "<ol>" +
+        "<li><strong>No \"Allow USB debugging\" prompt:</strong> make sure " +
+        "you actually put the headset on to look for it; if it's really " +
+        "not there, Developer Mode isn't on (or the headset wasn't " +
+        "restarted after enabling it), or the cable is charge-only -- try " +
+        "another USB-C cable or port.</li>" +
+        "<li><strong>Developer Mode switch missing or greyed out in the " +
+        "phone app:</strong> the developer-account verification from " +
+        "one-time-setup step 1 isn't finished yet.</li>" +
+        "<li><strong>SideQuest's dot stays red or yellow:</strong> click " +
+        "the dot itself -- SideQuest explains what it's unhappy about.</li>" +
+        "<li><strong>Install fails near the end:</strong> check the " +
+        "headset's free storage space.</li>" +
+        "</ol>"
+    },
+    {
+      id: "install-pc",
+      title: "Run on a Windows PC (.exe)",
+      keywords: ["exe", "windows", "pc", "desktop", "zip", "extract",
+        "smartscreen", "run anyway", "download", "install", "antivirus"],
+      html:
+        "<p>Windows apps are delivered as a <code>.zip</code> that contains " +
+        "the application (<code>.exe</code>) together with the data folders " +
+        "it needs. Nothing gets installed system-wide -- you unzip it and " +
+        "run it, and deleting the folder later removes it completely.</p>" +
+        "<div class=\"help-diagram\" aria-hidden=\"true\">" +
+          "<svg viewBox=\"0 0 640 100\" role=\"img\" aria-label=\"Windows flow: download the zip, right-click and Extract All, run the exe past the SmartScreen warning with More info then Run anyway, and keep the extracted folder together.\">" +
+            "<defs><marker id=\"helpArrowPC\" viewBox=\"0 0 10 10\" refX=\"8\" refY=\"5\" markerWidth=\"7\" markerHeight=\"7\" orient=\"auto-start-reverse\"><path d=\"M0 0L10 5L0 10z\" fill=\"currentColor\"/></marker></defs>" +
+            "<g font-family=\"sans-serif\" font-size=\"11\" fill=\"currentColor\">" +
+              "<rect x=\"6\" y=\"24\" width=\"140\" height=\"52\" rx=\"8\" fill=\"none\" stroke=\"currentColor\"/>" +
+              "<text x=\"76\" y=\"46\" text-anchor=\"middle\" font-weight=\"700\">1. Download</text>" +
+              "<text x=\"76\" y=\"62\" text-anchor=\"middle\" font-size=\"9\">the .zip from your portal</text>" +
+              "<line x1=\"146\" y1=\"50\" x2=\"160\" y2=\"50\" stroke=\"currentColor\" marker-end=\"url(#helpArrowPC)\"/>" +
+              "<rect x=\"166\" y=\"24\" width=\"140\" height=\"52\" rx=\"8\" fill=\"none\" stroke=\"currentColor\"/>" +
+              "<text x=\"236\" y=\"46\" text-anchor=\"middle\" font-weight=\"700\">2. Extract All</text>" +
+              "<text x=\"236\" y=\"62\" text-anchor=\"middle\" font-size=\"9\">right-click the zip</text>" +
+              "<line x1=\"306\" y1=\"50\" x2=\"320\" y2=\"50\" stroke=\"currentColor\" marker-end=\"url(#helpArrowPC)\"/>" +
+              "<rect x=\"326\" y=\"24\" width=\"140\" height=\"52\" rx=\"8\" fill=\"none\" stroke=\"currentColor\"/>" +
+              "<text x=\"396\" y=\"46\" text-anchor=\"middle\" font-weight=\"700\">3. Run the .exe</text>" +
+              "<text x=\"396\" y=\"62\" text-anchor=\"middle\" font-size=\"9\">More info, Run anyway</text>" +
+              "<line x1=\"466\" y1=\"50\" x2=\"480\" y2=\"50\" stroke=\"currentColor\" marker-end=\"url(#helpArrowPC)\"/>" +
+              "<rect x=\"486\" y=\"24\" width=\"140\" height=\"52\" rx=\"8\" fill=\"none\" stroke=\"currentColor\"/>" +
+              "<text x=\"556\" y=\"46\" text-anchor=\"middle\" font-weight=\"700\">4. That's it</text>" +
+              "<text x=\"556\" y=\"62\" text-anchor=\"middle\" font-size=\"9\">runs straight from the folder</text>" +
+            "</g>" +
+          "</svg>" +
+        "</div>" +
+        "<h4>Getting it running</h4>" +
+        "<ol>" +
+        "<li>Download the <code>.zip</code> from your portal.</li>" +
+        "<li>Right-click it and choose <strong>Extract All…</strong> " +
+        "Don't double-click the <code>.exe</code> while it's still inside " +
+        "the zip window -- it will fail or crash on launch, because the app " +
+        "can't see its data folder from in there.</li>" +
+        "<li>Open the extracted folder and double-click the " +
+        "<code>.exe</code>.</li>" +
+        "<li>The first time, Windows usually shows a blue <em>\"Windows " +
+        "protected your PC\"</em> box (SmartScreen). Click <strong>More " +
+        "info</strong>, then <strong>Run anyway</strong>. This warning is " +
+        "expected: it appears because the build isn't signed with a " +
+        "commercial certificate, not because anything is wrong with it -- " +
+        "and it only applies to builds you downloaded from your own " +
+        "portal.</li>" +
+        "</ol>" +
+        "<div class=\"help-note\"><strong>Keep the folder together.</strong> " +
+        "The <code>.exe</code> only works sitting next to the " +
+        "<code>_Data</code> folder and the other files it was extracted " +
+        "with. Move or copy the <em>whole folder</em>, never the .exe " +
+        "alone; for a desktop shortcut, right-click the .exe and choose " +
+        "<em>Send to → Desktop (create shortcut)</em> instead of moving " +
+        "the file.</div>" +
+        "<h4>If something doesn't work</h4>" +
+        "<ol>" +
+        "<li><strong>Black screen or instant crash on launch:</strong> " +
+        "almost always the .exe was separated from its folder, or run from " +
+        "inside the zip -- re-extract and run it from the extracted " +
+        "folder.</li>" +
+        "<li><strong>Antivirus quarantined the file:</strong> unsigned " +
+        "apps occasionally trigger a false positive. Restore it and add " +
+        "the folder to the exclusions list, or ask your IT team to.</li>" +
+        "<li><strong>It won't start at all on an older machine:</strong> " +
+        "a 64-bit Windows 10 or 11 PC is required, and a dedicated " +
+        "graphics card is recommended.</li>" +
+        "<li><strong>Quitting:</strong> if the app has no on-screen quit " +
+        "button, <strong>Alt+F4</strong> closes it.</li>" +
+        "</ol>"
+    }
+  ];
+
+  ["admin", "member", "guest"].forEach(function (audience) {
+    installTopics.forEach(function (topic) {
+      window.DTS_HELP[audience].push(topic);
+    });
+  });
+})();
