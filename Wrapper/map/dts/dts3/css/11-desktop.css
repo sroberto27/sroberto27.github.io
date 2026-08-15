@@ -147,13 +147,16 @@
   .example-stage .example-loading{ background:#a8a8a8; color:#333; }
   .example-stage .example-loading .spinner{ border-color:rgba(0,0,0,.15); border-top-color:#555; }
 }
-/* Gold circular close — pinned to the LEFT */
+/* Gold circular close — pinned to the LEFT.
+   z-index must clear the GIS engine's own chrome (toolbar/panels/tour
+   card top out at 1300 in css/15-gis.css) or a GIS map experience can
+   visually bury this button under its own UI. */
 #exampleOverlay .overlay-close{
   position:fixed;
   top:calc(50% - min(1040px, 96vh) / 2 + 14px);
   left:calc(max(1.25vw, (100vw - min(1860px, 97.5vw)) / 2) + 14px);
   right:auto;
-  z-index:7;
+  z-index:1400;
   flex:0 0 auto;
   box-sizing:border-box;
   width:40px; height:40px; aspect-ratio:1 / 1; border-radius:50%;

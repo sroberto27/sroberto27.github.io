@@ -136,9 +136,28 @@
       "zIndex": 25,
       "legend": { "mode": "auto" },
       "queryable": true,
-      "style": { "color": "#e0574a", "weight": 1.5, "fillColor": "#e0574a", "fillOpacity": 0.18 },
+      "style": {
+        "color": "#e0574a", "weight": 1.5, "fillColor": "#e0574a", "fillOpacity": 0.18,
+        "classify": {
+          "field": "FLD_ZONE",
+          "type": "category",
+          "categories": [
+            { "value": "A, ", "label": "Zone A", "color": "#47803c" },
+            { "value": "AE, ", "label": "Zone AE", "color": "#527c85" },
+            { "value": "AE,FLOODWAY", "label": "Zone AE — Floodway", "color": "#6b7e93" },
+            { "value": "VE, ", "label": "Zone VE", "color": "#80312f" },
+            { "value": "VE,FLOODWAY", "label": "Zone VE — Floodway", "color": "#6b7e93" },
+            { "value": "VE,RIVERINE FLOODWAY SHOWN IN COASTAL ZONE", "label": "Zone VE — Riverine Floodway (Coastal Zone)", "color": "#6b7e93" },
+            { "value": "0.2 PCT ANNUAL CHANCE FLOOD HAZARD, ", "label": "Zone X — 0.2% Annual Chance Flood Hazard", "color": "#73b273" },
+            { "value": "X,0.2 PCT ANNUAL CHANCE FLOOD HAZARD", "label": "Zone X — 0.2% Annual Chance Flood Hazard", "color": "#73b273" },
+            { "value": "X,AREA OF MINIMAL FLOOD HAZARD", "label": "Zone X — Minimal Flood Hazard", "color": "#d9a74c" },
+            { "value": "OPEN WATER, ", "label": "Open Water", "color": "#97dbf2" }
+          ],
+          "defaultColor": "#e0574a"
+        }
+      },
       "attribution": "FEMA / Iberia Parish GIS — attribution wording pending confirmation (see data/gis/sources.json openQuestions.iberia-terms-of-use)",
-      "description": "Effective FEMA base flood elevations and regulatory floodway extents."
+      "description": "Effective FEMA base flood elevations and regulatory floodway extents. Colors match the live service's own uniqueValue renderer on FLD_ZONE, pulled directly from https://maps.iberiagov.net/server/rest/services/Flood/BFE_with_Floodways_for_Public_Map/MapServer/1?f=pjson (2026-08-15); category labels are the FEMA zone codes cleaned up for display, category values are the raw FLD_ZONE strings verbatim (including the service's own trailing-comma/whitespace quirks) since classify matches on exact field value."
     },
     {
       "id": "critical-facilities",
@@ -204,9 +223,33 @@
       "zIndex": 20,
       "legend": { "mode": "auto" },
       "queryable": true,
-      "style": { "color": "#3fae5c", "weight": 1.5, "fillColor": "#3fae5c", "fillOpacity": 0.2 },
+      "style": {
+        "color": "#3fae5c", "weight": 1.5, "fillColor": "#3fae5c", "fillOpacity": 0.2,
+        "classify": {
+          "field": "Project_Status_List.CPRA_Project_Type",
+          "type": "category",
+          "categories": [
+            { "value": "BS", "label": "Bank Stabilization", "color": "#ffff00" },
+            { "value": "BH", "label": "Barrier Island/Headland Restoration", "color": "#e64c00" },
+            { "value": "FD", "label": "Freshwater Diversion", "color": "#005ce6" },
+            { "value": "HP", "label": "Hurricane Protection", "color": "#ff73df" },
+            { "value": "HR", "label": "Hydrologic Restoration", "color": "#00c5ff" },
+            { "value": "IN", "label": "Infrastructure", "color": "#6e6e6e" },
+            { "value": "MC", "label": "Marsh Creation", "color": "#aaff00" },
+            { "value": "OT", "label": "Other", "color": "#000000" },
+            { "value": "OR", "label": "Oyster Barrier Reef", "color": "#0070ff" },
+            { "value": "RU", "label": "Recreational Use", "color": "#4ce600" },
+            { "value": "RR", "label": "Ridge Restoration", "color": "#e69800" },
+            { "value": "SD", "label": "Sediment Diversion", "color": "#a87000" },
+            { "value": "SP", "label": "Shoreline Protection", "color": "#ff5500" },
+            { "value": "TE", "label": "Terrace", "color": "#ffff00" },
+            { "value": "VP", "label": "Vegetative Planting", "color": "#98e600" }
+          ],
+          "defaultColor": "#3fae5c"
+        }
+      },
       "attribution": "Louisiana CPRA — attribution wording pending confirmation (see data/gis/sources.json openQuestions.cpra-cims-terms-of-use)",
-      "description": "CPRA coastal protection and restoration project footprints (statewide service, shown here within Iberia Parish only). Note: this is a joined ArcGIS view — its own field names carry table-qualified prefixes (e.g. \"Project_Status_List.Project_Name\"), a real service quirk left to the engine's default \"show all fields with aliases\" popup fallback rather than a guessed exact-name mapping."
+      "description": "CPRA coastal protection and restoration project footprints (statewide service, shown here within Iberia Parish only). Colors and category labels match the live service's own uniqueValue renderer on Project_Status_List.CPRA_Project_Type, pulled directly from https://cimsgeo3.coastal.louisiana.gov/arcgis/rest/services/prot_rest/CPRA_Projects/MapServer/0?f=pjson (2026-08-15) -- \"Other\" and \"Vegetative Planting\" render with a fully transparent fill in the source service, so their category color here is the service's own outline color, not a fill. Note: this is a joined ArcGIS view — its own field names carry table-qualified prefixes (e.g. \"Project_Status_List.Project_Name\"), a real service quirk left to the engine's default \"show all fields with aliases\" popup fallback rather than a guessed exact-name mapping."
     },
     {
       "id": "cpra-projects-points",
@@ -258,9 +301,22 @@
           { "name": "ModelGroup", "label": "Model group" }
         ]
       },
-      "style": { "color": "#2e8b57", "weight": 1.5, "fillColor": "#2e8b57", "fillOpacity": 0.2 },
+      "style": {
+        "color": "#2e8b57", "weight": 1.5, "fillColor": "#2e8b57", "fillOpacity": 0.2,
+        "classify": {
+          "field": "ProjectTypeCode",
+          "type": "category",
+          "categories": [
+            { "value": "DI", "label": "Diversion", "color": "#ff5500" },
+            { "value": "LB", "label": "Landbridge", "color": "#409a0f" },
+            { "value": "MC", "label": "Marsh Creation", "color": "#e9ffbe" },
+            { "value": "IP", "label": "Marsh Creation", "color": "#e9ffbe" }
+          ],
+          "defaultColor": "#2e8b57"
+        }
+      },
       "attribution": "Louisiana CPRA — attribution wording pending confirmation (see data/gis/sources.json openQuestions.cpra-cims-terms-of-use)",
-      "description": "2023 Coastal Master Plan restoration project footprints, Restore & Protect track (statewide service, shown here within Iberia Parish only). Modelled scenario output, not a guarantee — label any UI copy built from this layer accordingly, per 05-SPEC's sourcing caution."
+      "description": "2023 Coastal Master Plan restoration project footprints, Restore & Protect track (statewide service, shown here within Iberia Parish only). Modelled scenario output, not a guarantee — label any UI copy built from this layer accordingly, per 05-SPEC's sourcing caution. Colors match the live service's own uniqueValue renderer on ProjectTypeCode, pulled directly from https://cimsgeo3.coastal.louisiana.gov/arcgis/rest/services/mp/MasterPlan2023_RP/MapServer/2?f=pjson (2026-08-15); \"DI\" renders with a fully transparent fill in the source service, so its category color here is the service's own outline color, not a fill. \"MC\" and \"IP\" are genuinely two distinct codes mapped to the same label and color in the source service, not a data-entry mistake here."
     },
     {
       "id": "subsidence",

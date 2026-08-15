@@ -947,7 +947,7 @@
         watch: { kind: "url", value: "https://vimeo.com/" }, default: false };
     }
     if (type === "gis") {
-      return { _type: "gis", id: "map", label: "Parish map",
+      return { _type: "gis", id: "map", label: "Parish Map",
         mapId: "", tourId: null, initialView: null, default: false };
     }
     return { _type: "treedis", id: "tour", label: "Explore the experience",

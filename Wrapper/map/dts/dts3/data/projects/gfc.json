@@ -28,7 +28,7 @@
     {
       "_type": "gis",
       "id": "map",
-      "label": "Parish map",
+      "label": "Parish Map",
       "mapId": "iberia-coastal",
       "tourId": "iberia-coastal-intro",
       "access": "registered"

@@ -2,6 +2,44 @@
 
 Newest first.
 
+## GIS map bug fixes: real category colors, matching legends, close button z-index, "Parish Map" label
+
+Three real bugs reported against the Parish Map GIS experience (`project.gfc`,
+map `iberia-coastal`), all confirmed against the live ArcGIS services or by
+reading the actual CSS cascade rather than guessed:
+
+- **Map colors didn't match the source data, and the legend only ever showed
+  one flat swatch per layer.** `buildFeature()` in `js/gis/gis-esri.js`
+  unconditionally overrode every `esriFeature` layer with a single flat color,
+  discarding the real ArcGIS service's own renderer — confirmed live: the
+  CPRA project-footprints, 2023 Coastal Master Plan, and FEMA base-flood-
+  elevation services all define real multi-category `uniqueValue` renderers
+  (15, 4, and 10 categories respectively), not flat colors. Added a
+  categorical mode to `classifiedColor()` (alongside the existing, previously
+  unused numeric-breaks mode), applied it on both the polygon/line and point-
+  marker style paths, authored the real category colors from each live
+  service into `data/gis/maps/iberia-coastal.json` (`cpra-projects`,
+  `cpra-master-plan-2023`, `bfe-floodways`), and taught
+  `legendRowsForStyle()` in `js/gis/gis-tools.js` to emit one legend row per
+  category instead of one flat row, so map and legend now agree and both
+  match the source data. `cpra-projects-points` was deliberately left
+  unchanged — its real renderer uses picture-marker icon symbols with no
+  extractable flat color, so no color could be pulled from the live service
+  without guessing.
+- **The project window's close button could be rendered underneath the GIS
+  engine's own chrome.** `#exampleOverlay .overlay-close` was `z-index:7`
+  while the GIS toolbar/legend/tour-card chrome runs `z-index:1150–1300` in
+  `css/15-gis.css` — and the tour card in particular docks at the same
+  `top:14px; left:14px` corner the close button targets, so a tour card could
+  sit directly on top of it. Raised the close button to `z-index:1400`.
+- **Tab label typo.** "Parish map" → "Parish Map" in `data/projects/gfc.json`
+  (the live label) and in `js/admin.js`'s default skeleton for new GIS
+  experiences (so future admin-created GIS tabs don't repeat it).
+
+Not yet deployed — needs the normal content publish/upload step
+(`DEPLOY-STAGING.md` / Admin Board publish) before these are live, and
+hasn't been eyeballed in a real browser yet.
+
 ## In-app help: APK sideload and Windows .exe install guides for every audience
 
 Two new topics in `js/help-content.js` — "Install on a Meta Quest headset

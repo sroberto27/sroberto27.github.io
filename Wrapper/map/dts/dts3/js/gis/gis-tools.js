@@ -333,9 +333,19 @@
     // with what a layer actually looks like when rendered.
     function legendRowsForStyle(def) {
       const style = def.style || {};
-      const color = style.color || style.fillColor || "#c49a2a";
       const fillOpacity = typeof style.fillOpacity === "number" ? style.fillOpacity
         : (typeof style.pointRadius === "number" ? 0.6 : 0.18);
+      // A categorized layer (style.classify.type === "category", real ArcGIS
+      // uniqueValue data -- see gis-esri.js's classifiedColor()) renders more
+      // than one color on the map, so its legend needs one row per category
+      // instead of the single flat swatch below, or the two would disagree
+      // exactly like the bug this fixes.
+      if (style.classify && style.classify.type === "category" && Array.isArray(style.classify.categories)) {
+        return Promise.resolve(style.classify.categories.map(function (c) {
+          return { label: c.label || c.value, color: c.color, fillOpacity: fillOpacity, strokeColor: c.color };
+        }));
+      }
+      const color = style.color || style.fillColor || "#c49a2a";
       return Promise.resolve([{ label: def.title || def.id, color: color, fillOpacity: fillOpacity, strokeColor: style.color || color }]);
     }
 

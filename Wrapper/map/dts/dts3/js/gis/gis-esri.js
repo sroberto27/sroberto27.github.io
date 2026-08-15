@@ -27,8 +27,19 @@
     };
   }
 
+  // Two classify shapes: numeric "breaks" (choropleth, value <= break[i])
+  // and categorical "category" (exact-match on a field's string value --
+  // e.g. ArcGIS's own uniqueValue renderers, which is what the real CPRA/
+  // FEMA services behind cpra-projects, cpra-master-plan-2023, and
+  // bfe-floodways actually use; see data/gis/maps/iberia-coastal.json).
   function classifiedColor(classify, value) {
-    if (!classify || !Array.isArray(classify.breaks)) return null;
+    if (!classify) return null;
+    if (classify.type === "category" && Array.isArray(classify.categories)) {
+      const hit = classify.categories.find(function (c) { return c.value === value; });
+      if (hit) return hit.color;
+      return classify.defaultColor || null;
+    }
+    if (!Array.isArray(classify.breaks)) return null;
     for (let i = 0; i < classify.breaks.length; i++) {
       if (value <= classify.breaks[i]) return classify.colors[i];
     }
@@ -91,11 +102,17 @@
     // for a vendored-library workaround.
     if (typeof styleOpts.pointRadius === "number") {
       opts.pointToLayer = function (feature, latlng) {
+        // Same classify lookup the polygon/line style() function above uses --
+        // this branch builds its own opts object instead of calling baseStyle(),
+        // so it needs the same override applied explicitly or a classified point
+        // layer would silently render every point in the flat fallback color.
+        const c = feature && feature.properties &&
+          classifiedColor(styleOpts.classify, feature.properties[styleOpts.classify && styleOpts.classify.field]);
         const pointOpts = {
           radius: styleOpts.pointRadius,
-          color: styleOpts.color || "#c49a2a",
+          color: c || styleOpts.color || "#c49a2a",
           weight: typeof styleOpts.weight === "number" ? styleOpts.weight : 1.5,
-          fillColor: styleOpts.fillColor || styleOpts.color || "#c49a2a",
+          fillColor: c || styleOpts.fillColor || styleOpts.color || "#c49a2a",
           fillOpacity: typeof styleOpts.fillOpacity === "number" ? styleOpts.fillOpacity : 0.6
         };
         // Same fix as gis-viewer.js's buildGeoJsonLayer: pane must be
