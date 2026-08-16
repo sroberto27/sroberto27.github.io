@@ -114,6 +114,7 @@
       state.layers[def.id] = {
         visible: diff ? !!diff[0] : !!def.visible,
         opacity: diff && typeof diff[1] === "number" ? diff[1] : (typeof def.opacity === "number" ? def.opacity : 1),
+        fillPattern: diff && typeof diff[2] === "string" ? diff[2] : "solid",
         status: "pending"
       };
     });
@@ -228,6 +229,20 @@
       if (rowRefs[id]) rowRefs[id].checkbox.checked = visible;
     }
 
+    // Same test gis-viewer.js's own isFillLayer() uses -- duplicated rather
+    // than imported since this file already treats the engine strictly as
+    // an event/API surface (see the file banner comment), never reaching
+    // into its internals directly.
+    function isFillLayer(def) {
+      const s = def.style || {};
+      return typeof s.pointRadius !== "number" && (typeof s.fillColor === "string" || typeof s.fillOpacity === "number");
+    }
+
+    function setLayerFillPattern(id, pattern) {
+      instance.setLayerFillPattern(id, pattern);
+      state.layers[id].fillPattern = pattern;
+    }
+
     function refreshZoomGate(id) {
       const ref = rowRefs[id];
       if (!ref) return;
@@ -262,6 +277,16 @@
         state.layers[def.id].opacity = v;
       });
 
+      let fillLabel = null;
+      if (isFillLayer(def)) {
+        const patterns = (window.DTSGis && window.DTSGis.FILL_PATTERNS) || [{ id: "solid", label: "Solid" }];
+        const fillSelect = el("select", { class: "dts-gis-layer-fill", "aria-label": "Fill pattern for " + (def.title || def.id) },
+          patterns.map(function (p) { return el("option", { value: p.id, text: p.label }); }));
+        fillSelect.value = s.fillPattern;
+        fillSelect.addEventListener("change", function () { setLayerFillPattern(def.id, fillSelect.value); });
+        fillLabel = el("label", { class: "dts-gis-layer-opacity" }, [document.createTextNode("Fill pattern"), fillSelect]);
+      }
+
       const zoomStatus = el("span", { class: "dts-gis-sr-status", role: "status" });
       const zoomBtn = el("button", { class: "dts-gis-layer-zoomto", type: "button" }, [
         el("span", { html: ICONS.target }), document.createTextNode(" Zoom to extent")
@@ -279,6 +304,7 @@
         def.description ? el("p", { class: "dts-gis-layer-desc", text: def.description }) : null,
         (def.attribution || def.updated) ? el("p", { class: "dts-gis-layer-meta", text: [def.attribution, def.updated].filter(Boolean).join(" · ") }) : null,
         el("label", { class: "dts-gis-layer-opacity" }, [document.createTextNode("Opacity"), opacityInput]),
+        fillLabel,
         zoomBtn,
         zoomStatus
       ]);

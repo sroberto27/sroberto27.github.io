@@ -204,11 +204,36 @@
     try { localStorage.setItem(HINT_KEY, "1"); } catch (_) {}
   }
 
+  // Real bug, reported live with a screenshot: css/16-help.css positioned
+  // the fab off the STATIC --dock-h grid-row token (a single-row height
+  // guess, clamp(56px,5vh,74px)), but css/08-responsive.css stacks THREE
+  // rows inside #dockbar on phone (dock-tabs, sector-pager, question bar --
+  // flex-direction:column) -- so the fab's real clearance need is much
+  // taller than --dock-h on mobile, and it landed on top of the sector
+  // pager's prev arrow. Measuring the real box instead of re-guessing a
+  // bigger static number keeps this correct if #dockbar's content ever
+  // changes again (a wrapped sector label, an added row, a font-scale
+  // difference) rather than silently drifting stale the same way.
+  function syncDockbarHeight() {
+    var dockbar = document.getElementById("dockbar");
+    if (!dockbar) return;
+    document.documentElement.style.setProperty("--dockbar-real-h", dockbar.offsetHeight + "px");
+  }
+
   function initFab() {
     var fab = document.getElementById("dtsHelpFab");
     var overlay = document.getElementById("dtsHelpOverlay");
     var closeBtn = document.getElementById("dtsHelpOverlayClose");
     if (!fab || !overlay) return;
+
+    syncDockbarHeight();
+    var dockbar = document.getElementById("dockbar");
+    if (dockbar && window.ResizeObserver) {
+      new ResizeObserver(syncDockbarHeight).observe(dockbar);
+    } else {
+      window.addEventListener("resize", syncDockbarHeight);
+      window.addEventListener("orientationchange", syncDockbarHeight);
+    }
 
     fab.addEventListener("click", openGuestOverlay);
     if (closeBtn) closeBtn.addEventListener("click", closeGuestOverlay);

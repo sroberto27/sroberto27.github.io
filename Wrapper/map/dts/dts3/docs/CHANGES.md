@@ -2,6 +2,86 @@
 
 Newest first.
 
+## Fix: mobile floating help icon overlapping the sector pager, and clipped card descriptions
+
+Two real bugs reported live with a screenshot, both mobile-only.
+
+**Help icon over the sector pager's back arrow.** `docs/migration/PROGRESS.md`
+had already flagged this exact spot as a risk during the original in-app-help
+build: the floating "?" icon's `bottom: calc(var(--dock-h) + 14px)` was
+positioned off `--dock-h`, a static single-row grid-track height
+(`clamp(56px,5vh,74px)`) — but on phone, `css/08-responsive.css` stacks
+*three* rows inside `#dockbar` (`dock-tabs`, `sector-pager`, the question bar,
+`flex-direction:column`), so the real footer is much taller than `--dock-h`
+alone accounts for, and the fab landed right on top of the sector pager's
+prev arrow. Fixed by having `js/help.js` measure `#dockbar`'s real rendered
+height with a `ResizeObserver` (kept current across resize/orientation
+change/content changes, not a one-time read) into a new `--dockbar-real-h`
+custom property, which `css/16-help.css` now prefers over the static
+`--dock-h` fallback.
+
+**Card descriptions cut off mid-word.** The mobile use-case cards
+(`.uc-card p`) had `-webkit-line-clamp:3` with no `text-overflow:ellipsis`
+alongside it — any description longer than 3 lines was hard-clipped with no
+truncation indicator, reading as broken rather than intentionally shortened.
+Root cause traced to the CSS Grid spec itself: a bare `1fr` track
+(`.cat-cards{ grid-auto-rows:1fr }`) normally has an automatic minimum equal
+to its content's min-content size, *unless* a grid item's own `overflow` is
+non-visible, which drops that item's sizing contribution to 0 — `.uc-card`'s
+own `overflow:hidden` was what let the row squeeze cards below their real
+content height. Removed both `overflow:hidden` on `.uc-card` and the
+line-clamp on its `<p>`; `.cat-cards`' own `overflow-y:auto` (already present
+for exactly this) now takes over if the grid genuinely needs more room than
+the viewport gives it, instead of any card silently losing text.
+
+Not yet confirmed live in a browser — both are traced against the real CSS
+cascade/spec behavior, not guessed, but unseen on an actual phone.
+
+## GIS maps: live per-layer fill-pattern control (solid/hollow/hatch)
+
+New feature, requested after the classify/legend fix above: every polygon
+layer whose style carries `fillColor`/`fillOpacity` (any esriFeature or
+geojson layer, not just Iberia's — engine-level, not map-specific) now gets
+a "Fill pattern" picker in its Layers-panel row (next to Opacity), letting
+any visitor switch between Solid, Hollow (outline only), Diagonal lines
+(both directions), Cross-hatch, Horizontal lines, and Vertical lines, live.
+It's a display preference, not CMS content — nothing in `/data` changed for
+this.
+
+Leaflet's Canvas renderer (this map's default, `preferCanvas:true`) can only
+paint a flat fill; a real hatch pattern needs SVG's `<pattern>` element.
+Rather than move the whole map to SVG, only polygon-fill-capable layers
+(`isFillLayer()`) are built through a dedicated SVG renderer scoped to their
+own zIndex pane — confirmed against the real service counts first
+(`cpra-projects` ~1000 features, `bfe-floodways` 271, `cpra-master-plan-2023`
+72 — all comfortably within SVG's range; points/lines/esriDynamic images/
+basemaps are untouched and stay on Canvas). Every fill layer pays that
+SVG-renderer cost once at build time, even while showing "solid" — Leaflet
+has no supported way to move an existing Path between renderer types after
+construction, and paying for it upfront is what makes a live pattern change
+a plain `setStyle()` call instead of a full layer rebuild (which would
+re-fetch from the source ArcGIS service). Traced directly against the
+vendored `leaflet.js`/`esri-leaflet.js` source to confirm `options.renderer`
+on a Path/FeatureLayer is the documented, highest-priority path Leaflet's own
+`getRenderer()` resolves — not assumed.
+
+One real ordering bug caught before it shipped: esri-leaflet's
+`FeatureLayer.setStyle()` overwrites `.options.style` with whatever was
+last passed — including the plain `{opacity, fillOpacity}` object the
+existing opacity slider already sends — so a pattern change built on
+`entry.leaflet.options.style` would have silently lost after any opacity
+adjustment. Fixed by having each layer-builder return its own `styleFn`
+reference (stored on the engine's layer registry, independent of
+`.options.style`) and re-asserting opacity right after every pattern
+change.
+
+Persisted in `getState()`/`applyState()` (`l[id]` gains a 3rd array slot)
+so a shared map link/URL preserves a visitor's chosen pattern the same way
+it already does opacity and visibility. Not yet confirmed live in a browser
+— the rendering, the click/identify passthrough on a patterned layer, and
+the opacity+pattern interaction are all traced against the real vendored
+source but not eyeballed on screen.
+
 ## GIS map bug fixes: real category colors, matching legends, close button z-index, "Parish Map" label
 
 Three real bugs reported against the Parish Map GIS experience (`project.gfc`,

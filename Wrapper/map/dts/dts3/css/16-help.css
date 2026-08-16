@@ -114,12 +114,19 @@
 
 /* ============================================================
    FLOATING HELP ICON — guests + no-org signed-in visitors.
-   Fixed left, cleared above the dockbar (var(--dock-h)) so it can
-   never sit under the question bar; opposite the bottom-right
-   .cookie card so neither can ever overlap the other.
+   Fixed left, cleared above the dockbar so it can never sit under the
+   question bar; opposite the bottom-right .cookie card so neither can
+   ever overlap the other.
+   --dockbar-real-h is js/help.js's own live measurement of #dockbar's
+   actual rendered height (a ResizeObserver, kept current across resize/
+   orientation change/content changes) -- --dock-h alone is just the grid
+   row's nominal single-row height and badly undershoots on phone, where
+   css/08-responsive.css stacks three rows (dock-tabs, sector-pager,
+   question bar) inside that same footer. --dock-h stays as the fallback
+   for the brief window before JS has run its first measurement.
    ============================================================ */
 .dts-help-fab {
-  position: fixed; left: 14px; bottom: calc(var(--dock-h, 64px) + 14px);
+  position: fixed; left: 14px; bottom: calc(var(--dockbar-real-h, var(--dock-h, 64px)) + 14px);
   z-index: 25;
   width: 46px; height: 46px; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
@@ -191,7 +198,7 @@ body.adm-lock .dts-help-fab { display: none; }
 }
 
 @media (max-width: 640px) {
-  .dts-help-fab { left: 10px; bottom: calc(var(--dock-h, 110px) + 10px); }
+  .dts-help-fab { left: 10px; bottom: calc(var(--dockbar-real-h, var(--dock-h, 110px)) + 10px); }
   .dts-help-overlay-window { padding: 18px; max-height: 92vh; }
 }
 

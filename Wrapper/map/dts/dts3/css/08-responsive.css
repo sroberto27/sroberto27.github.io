@@ -122,13 +122,22 @@
     overflow-y:auto;
     -webkit-overflow-scrolling:touch;
   }
-  .uc-card{ padding:14px; min-height:0; overflow:hidden; }
+  /* Real bug, reported live with a screenshot: -webkit-line-clamp:3 (no
+     text-overflow:ellipsis alongside it) hard-cut some cards' descriptions
+     mid-word with no truncation indicator at all -- looked broken, not
+     deliberately shortened. Per the CSS Grid spec, a bare `1fr` track's
+     automatic minimum is its content's min-content size UNLESS a grid
+     item's own overflow is non-visible, in which case that item's
+     contribution to sizing drops to 0 -- .uc-card's own overflow:hidden is
+     what let grid-auto-rows:1fr (above) squeeze cards below their real
+     content height in the first place. Dropping both here lets a card grow
+     to fit its real text, and .cat-cards' own overflow-y:auto (above) --
+     already there for exactly this -- takes over if the grid as a whole
+     then needs more room than the viewport gives it, instead of any one
+     card silently losing text. */
+  .uc-card{ padding:14px; min-height:0; }
   .uc-card h3{ font-size:12px; margin-bottom:6px; }
-  .uc-card p{
-    font-size:11.5px; line-height:1.4;
-    display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical;
-    overflow:hidden;
-  }
+  .uc-card p{ font-size:11.5px; line-height:1.4; }
 
   /* NOTE: the right-edge "Contact & Info" tab is intentionally shown
      on phone — see the full .contact-edge styling in 09-mobile.css,

@@ -74,9 +74,18 @@
         const style = baseStyle(styleOpts);
         const c = feature && feature.properties && classifiedColor(styleOpts.classify, feature.properties[styleOpts.classify && styleOpts.classify.field]);
         if (c) { style.color = c; style.fillColor = c; }
+        // Live fill-pattern control (gis-viewer.js) -- only ever set for
+        // polygon-fill-capable layers (isFillLayer() there), so this is a
+        // no-op for lines/points that reach this same style() function.
+        if (ctx && ctx.resolveFill) {
+          const paint = ctx.resolveFill(style.fillColor);
+          style.fill = paint.fill;
+          if (paint.fillColor) style.fillColor = paint.fillColor;
+        }
         return style;
       }
     };
+    if (ctx && ctx.renderer) opts.renderer = ctx.renderer;
     // Real bug, found live task 3.14 against the real Iberia hydrography
     // (polyline) layer: the vendored esri-leaflet 3.0.19 FeatureLayer's own
     // _redraw() unconditionally calls this.options.pointToLayer(feature,
@@ -164,7 +173,7 @@
       layer.setWhere(where || "1=1");
     };
 
-    return { leaflet: layer, query: query, setFilter: setFilter };
+    return { leaflet: layer, query: query, setFilter: setFilter, styleFn: opts.style };
   }
 
   /* ---- identify (task 3.7) -- esriDynamic only; esriFeature/geojson clicks

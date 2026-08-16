@@ -187,6 +187,11 @@
           for (let i = 0; i < classify.breaks.length; i++) { if (v <= classify.breaks[i]) { c = classify.colors[i]; break; } }
           style.color = c; style.fillColor = c;
         }
+        if (ctx && ctx.resolveFill) {
+          const paint = ctx.resolveFill(style.fillColor);
+          style.fill = paint.fill;
+          if (paint.fillColor) style.fillColor = paint.fillColor;
+        }
         return style;
       }
       const geoJsonOpts = {
@@ -216,6 +221,7 @@
         }
       };
       if (ctx && ctx.pane) geoJsonOpts.pane = ctx.pane;
+      if (ctx && ctx.renderer) geoJsonOpts.renderer = ctx.renderer;
       const leaflet = L.geoJSON(data, geoJsonOpts);
 
       // Filter/query-builder + attribute-table tasks (3.8) both need every
@@ -251,7 +257,7 @@
         });
       };
 
-      return { leaflet: leaflet, query: query, setFilter: setFilter };
+      return { leaflet: leaflet, query: query, setFilter: setFilter, styleFn: styleFor };
     });
   }
 
@@ -289,11 +295,114 @@
     return name;
   }
 
-  function buildLayer(def, map, view) {
+  /* ============================================================
+     Fill patterns -- live, per-layer, not CMS content (a visitor's own
+     display preference, same category as opacity). Leaflet's Canvas
+     renderer (this map's default, preferCanvas:true above) can only ever
+     paint a flat fillColor -- SVG's <pattern> element is the only way to
+     get a real diagonal/cross-hatch/etc. fill. Rather than move the whole
+     map to SVG (a real perf tradeoff against Canvas for layers like the
+     statewide, ~1000-feature CPRA_Projects service -- see 2026-08 session
+     notes), every polygon-fill-capable layer (isFillLayer() below) is
+     built once through a dedicated SVG renderer scoped to its own
+     zIndex pane, even while showing "solid" -- Leaflet has no supported
+     way to move an existing Path between renderer types after
+     construction, so paying that cost once at build time is what makes a
+     later live pattern change a plain setStyle() call instead of a full
+     layer rebuild (which would re-fetch from the source service). Every
+     other layer (points, lines, esriDynamic images, basemaps) is
+     untouched and stays on the default Canvas renderer.
+     ============================================================ */
+  function isFillLayer(def) {
+    const s = def.style || {};
+    return typeof s.pointRadius !== "number" &&
+      (typeof s.fillColor === "string" || typeof s.fillOpacity === "number");
+  }
+
+  // Cached ON the Leaflet map instance itself (like ensurePane()'s own
+  // pane registry lives on map.getPane()), not in a module-level object --
+  // so nothing leaks between separate mount()/destroy() cycles.
+  function ensureSvgRenderer(map, paneName) {
+    const key = paneName || "__default__";
+    map._dtsGisSvgRenderers = map._dtsGisSvgRenderers || {};
+    if (!map._dtsGisSvgRenderers[key]) {
+      map._dtsGisSvgRenderers[key] = L.svg(paneName ? { pane: paneName } : {}).addTo(map);
+    }
+    return map._dtsGisSvgRenderers[key];
+  }
+
+  const FILL_PATTERN_ROTATIONS = { diagonal: "-45", "diagonal-back": "45" };
+
+  // One <pattern> def per (type, color) actually used, appended once to
+  // the relevant SVG renderer's own <defs>. patternTransform:rotate() on a
+  // single vertical line gives both diagonal directions for free, instead
+  // of hand-computing seam-safe diagonal line coordinates.
+  function ensurePatternDef(map, paneName, type, color) {
+    const id = "dts-gis-pat-" + type + "-" + String(color).replace("#", "");
+    map._dtsGisPatternIds = map._dtsGisPatternIds || {};
+    if (map._dtsGisPatternIds[id]) return id;
+    const renderer = ensureSvgRenderer(map, paneName);
+    const svgEl = renderer._container;
+    if (!svgEl) return id; // renderer not yet attached to the DOM -- next call defines it for real
+    const NS = "http://www.w3.org/2000/svg";
+    let defs = svgEl.querySelector("defs");
+    if (!defs) {
+      defs = document.createElementNS(NS, "defs");
+      svgEl.insertBefore(defs, svgEl.firstChild);
+    }
+    const pattern = document.createElementNS(NS, "pattern");
+    pattern.setAttribute("id", id);
+    pattern.setAttribute("width", "8");
+    pattern.setAttribute("height", "8");
+    pattern.setAttribute("patternUnits", "userSpaceOnUse");
+    if (FILL_PATTERN_ROTATIONS[type]) pattern.setAttribute("patternTransform", "rotate(" + FILL_PATTERN_ROTATIONS[type] + ")");
+    function line(x1, y1, x2, y2) {
+      const l = document.createElementNS(NS, "line");
+      l.setAttribute("x1", x1); l.setAttribute("y1", y1);
+      l.setAttribute("x2", x2); l.setAttribute("y2", y2);
+      l.setAttribute("stroke", color);
+      l.setAttribute("stroke-width", "1.6");
+      return l;
+    }
+    if (type === "diagonal" || type === "diagonal-back" || type === "vertical") pattern.appendChild(line(2, -1, 2, 9));
+    else if (type === "horizontal") pattern.appendChild(line(-1, 2, 9, 2));
+    else if (type === "cross-hatch") { pattern.appendChild(line(2, -1, 2, 9)); pattern.appendChild(line(-1, 2, 9, 2)); }
+    defs.appendChild(pattern);
+    map._dtsGisPatternIds[id] = true;
+    return id;
+  }
+
+  function resolveFillPaint(map, paneName, pattern, color) {
+    if (!pattern || pattern === "solid") return { fill: true, fillColor: color };
+    if (pattern === "hollow") return { fill: false };
+    return { fill: true, fillColor: "url(#" + ensurePatternDef(map, paneName, pattern, color) + ")" };
+  }
+
+  const FILL_PATTERNS = [
+    { id: "solid", label: "Solid" },
+    { id: "hollow", label: "Hollow (outline only)" },
+    { id: "diagonal", label: "Diagonal lines" },
+    { id: "diagonal-back", label: "Diagonal lines (reverse)" },
+    { id: "cross-hatch", label: "Cross-hatch" },
+    { id: "horizontal", label: "Horizontal lines" },
+    { id: "vertical", label: "Vertical lines" }
+  ];
+
+  function buildLayer(def, map, view, getFillPattern) {
     const ctx = {
       envelopeBounds: view.maxBounds ? L.latLngBounds(view.maxBounds) : null,
       pane: ensurePane(map, def.zIndex)
     };
+    if (isFillLayer(def)) {
+      ctx.renderer = ensureSvgRenderer(map, ctx.pane);
+      // Reads getFillPattern() fresh on every call, not a value frozen at
+      // build time -- the same style() function keeps working correctly
+      // both for esri-leaflet's own internal re-renders (pan/zoom) and for
+      // setLayerFillPattern()'s explicit setStyle() re-run below.
+      ctx.resolveFill = function (color) {
+        return resolveFillPaint(map, ctx.pane, getFillPattern(), color);
+      };
+    }
     switch (def.sourceType) {
       case "esriDynamic": return Promise.resolve().then(function () { return requireEsri().buildDynamic(def, ctx); });
       case "esriFeature": return Promise.resolve().then(function () { return requireEsri().buildFeature(def, ctx); });
@@ -421,9 +530,11 @@
         def: def,
         visible: !!def.visible,
         opacity: typeof def.opacity === "number" ? def.opacity : 1,
+        fillPattern: "solid",
         leaflet: null,
         query: null,
         setFilter: null,
+        styleFn: null,
         filterConditions: null,
         status: "pending"
       };
@@ -550,10 +661,11 @@
     function loadLayer(id) {
       const entry = layers[id];
       entry.status = "loading";
-      buildLayer(entry.def, map, view).then(function (built) {
+      buildLayer(entry.def, map, view, function () { return entry.fillPattern; }).then(function (built) {
         entry.leaflet = built.leaflet;
         entry.query = built.query;
         entry.setFilter = built.setFilter || null;
+        entry.styleFn = built.styleFn || null;
         entry.status = "ready";
         applyPendingFilter(entry); // re-applies a filter set by applyState() before this layer finished loading
         applyOpacityToLeaflet(entry);
@@ -672,6 +784,29 @@
       entry.opacity = clamp(opacity, 0, 1);
       applyOpacityToLeaflet(entry);
       emit("layerchange", { id: id, opacity: entry.opacity });
+    }
+
+    // Live fill-pattern control (a visitor's own display preference, not
+    // CMS content -- see the big comment above isFillLayer()). Re-running
+    // entry.styleFn (captured once at build time, NOT read off
+    // entry.leaflet.options.style -- applyOpacityToLeaflet() below
+    // overwrites that with a plain {opacity,fillOpacity} object on every
+    // opacity change, per esri-leaflet's own setStyle()) recomputes every
+    // feature's color/pattern from scratch, including classify; the
+    // opacity reassert right after restores whatever the opacity slider
+    // was set to, so a pattern change can never silently undo it.
+    function setLayerFillPattern(id, pattern) {
+      const entry = layers[id];
+      if (!entry) { console.warn('[gis] setLayerFillPattern: unknown layer "' + id + '"'); return; }
+      if (!FILL_PATTERNS.some(function (p) { return p.id === pattern; })) {
+        console.warn('[gis] setLayerFillPattern: unknown pattern "' + pattern + '"'); return;
+      }
+      entry.fillPattern = pattern;
+      if (entry.leaflet && entry.styleFn && typeof entry.leaflet.setStyle === "function") {
+        entry.leaflet.setStyle(entry.styleFn);
+        applyOpacityToLeaflet(entry);
+      }
+      emit("layerchange", { id: id, fillPattern: entry.fillPattern });
     }
 
     /* ---- layer bounds: not part of the §5 public API (no Leaflet objects
@@ -1401,8 +1536,8 @@
         const def = entry.def;
         const defaultVisible = !!def.visible;
         const defaultOpacity = typeof def.opacity === "number" ? def.opacity : 1;
-        if (entry.visible !== defaultVisible || entry.opacity !== defaultOpacity) {
-          l[id] = [entry.visible ? 1 : 0, round(entry.opacity, 2)];
+        if (entry.visible !== defaultVisible || entry.opacity !== defaultOpacity || entry.fillPattern !== "solid") {
+          l[id] = [entry.visible ? 1 : 0, round(entry.opacity, 2), entry.fillPattern];
         }
         if (entry.filterConditions) f[id] = entry.filterConditions;
       });
@@ -1432,6 +1567,7 @@
             if (Array.isArray(pair)) {
               setLayerVisible(id, !!pair[0]);
               if (typeof pair[1] === "number") setLayerOpacity(id, pair[1]);
+              if (typeof pair[2] === "string") setLayerFillPattern(id, pair[2]);
             }
           });
         }
@@ -1489,6 +1625,7 @@
       setView: setView,
       setLayerVisible: setLayerVisible,
       setLayerOpacity: setLayerOpacity,
+      setLayerFillPattern: setLayerFillPattern,
       setBasemap: setBasemap,
       highlight: highlight,
       clearHighlight: clearHighlight,
@@ -1571,5 +1708,5 @@
     return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
   }
 
-  window.DTSGis = { mount: mount };
+  window.DTSGis = { mount: mount, FILL_PATTERNS: FILL_PATTERNS };
 })();
