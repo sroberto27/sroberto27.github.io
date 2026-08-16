@@ -22,6 +22,94 @@ identity/access model each phase from 3 onward implements is defined in
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
 
+- 2026-08-10 — **Documentation and file organization, getting ready for
+  handoff. No site code touched at all** — `functions/`, `js/`, `css/`,
+  `data/`, `index.html`, `_headers`, `wrangler.toml` all unchanged, confirmed
+  by `git status`. This was explicitly NOT the handoff itself; no account or
+  infra config was touched and `/migrate-handoff` was not run.
+
+  **New `docs/WEBSITE-STATE.md`** — the durable cold-read reference this log
+  never was. Someone (a future session, or another developer) can read it
+  instead of reconstructing the system from 2,800 lines of session log or from
+  every source file. Covers the stack and deploy model, the identity/access
+  model in practical terms, the content pipeline including the "three places
+  every time" rule, each subsystem and where its code lives, the do-not-break
+  list restated, known gaps, and current deployment status. Deliberately
+  summarizes-and-points for `DEPLOY-STAGING.md` and `ACCESS-MODEL.md` rather
+  than duplicating them — a second copy of a hard-won procedure is a copy that
+  drifts.
+
+  **New `docs/migration/FULL-SYSTEM-TESTING.md`** — 135 items, one pass over
+  the whole site, same established format (unchecked boxes, Pass/Fail/
+  Not-tested, a Comments line each), nothing pre-marked. Merges and dedupes
+  the four phase-testing documents, folds in `CLAUDE.md`'s standing regression
+  checklist, and puts **everything never verified in a browser** first, as
+  Part A: the auth-bypass fix's legitimate org_admin path, the GIS-link XSS
+  fix, the Admin Board finally seeing gated GIS maps/tours, the new collapse/
+  expand nav hierarchy, the in-app documentation across all four audiences,
+  the sector `active` toggle, and the iPhone fix that needs real hardware.
+
+  **New `docs/DTS-Documentation-Guide.docx`** — how to actually use all of the
+  above in future sessions, in Word format so it reads away from the repo:
+  which document answers which kind of question, the reading order for a cold
+  session, the deliberate two-step "human tests, then a later session fixes"
+  workflow and why it exists, and who updates each document when. Its main
+  content is **ten ready-to-paste prompt templates** (fresh session, handing
+  over the test pass, coming back with real results, adding a feature/field,
+  reporting a bug, deploying, whole-project audit, refreshing the docs, handoff
+  prep, onboarding a human developer), each front-loading the context this
+  project has repeatedly proven it needs. Plus a table of lines worth including
+  in almost any prompt paired with the real past failure each one prevents, an
+  anti-pattern table ("just deploy it", "clean up the file structure", "is it
+  done?"), and a quick reference for the dev URL, seeded accounts, the
+  do-not-break list, and the commit conventions. Generated with `python-docx`;
+  validated after writing (zip integrity, 17 parts, 222 paragraphs, 6 tables,
+  every heading present) rather than trusted from a successful save.
+
+  **File organization** (proposed and approved before executing, nothing
+  deleted): the four superseded testing docs moved to
+  `docs/migration/archive/` with a README explaining what's in each and which
+  two carry real recorded results; `README-MIGRATION.md` → `docs/migration/
+  README.md` and `DTS-Developer-Onboarding.docx` → `docs/`, which let
+  `DEPLOY-STAGING.md` drop two individual exclusion entries since `docs/` is
+  already excluded wholesale; new `docs/README.md` index; `CLAUDE.md`'s "Read
+  first" repointed at documents that actually exist.
+
+  **One real regression found while verifying against the live site, not
+  fixed here:** `https://dts-website-4cu.pages.dev/tools/gis-harvest.mjs`
+  returns `200` with **16,886 bytes** — byte-identical to the local file,
+  first line `// tools/gis-harvest.mjs` — not the 63,157-byte SPA fallback.
+  Phase 9's own entry below records adding `tools/` to the exclusion list AND
+  confirming the fallback byte count afterward, and `DEPLOY-STAGING.md` still
+  lists it under Exclude, so a later deploy (help-docs, the audit fixes, or the
+  visionOS fix) rebuilt staging without it. Low severity — no secrets, but it
+  exposes internal implementation comments and internal doc paths. **Needs a
+  redeploy to fix, not a file edit**, which is why it was recorded rather than
+  patched. Every other excluded path re-checked the same day (`/.env`,
+  `/scripts/seed-dev.mjs`, `/supabase/config.toml`, `/CLAUDE.md`,
+  `/docs/migration/PROGRESS.md`) correctly returns the fallback.
+
+  **Also confirmed live while writing this:** the visionOS fix from the entry
+  below really is deployed — the static `spatial-backdrop` tag is gone from the
+  served HTML (the one remaining string match is inside its own explanatory
+  comment) and `isVisionOS()` is present in the deployed
+  `js/vision-pro-spatial.js`.
+
+  **Two documentation-accuracy findings, recorded in `WEBSITE-STATE.md` §9:**
+  `README.md` is substantially stale (still describes Google-Sheet client
+  sign-in, `adminUsers` in `access.json`, `js/clients.js` which was deleted in
+  Phase 4, and GitHub Pages as the deploy target) — its architecture,
+  media-convention, schema, and TourBridge sections are still accurate; and the
+  GIS build package's numbered spec files (`04-SPEC-gis-engine.md`,
+  `06-SPEC-cms-admin.md`, its own `README.md`, `GIS-FULL-SYSTEM-TESTING.md`)
+  are cited throughout `docs/CHANGES.md` and `js/gis/gis-viewer.js` but **do not
+  exist and were never committed** — `git log --all` confirms. Only
+  `09-BUILD-PLAN.md` survives.
+
+  **Next: the human runs `docs/migration/FULL-SYSTEM-TESTING.md`.** Fixes for
+  whatever it flags belong in a separate, later pass, once real results exist —
+  nothing in it should be repaired speculatively beforehand.
+
 - 2026-08-10 — **Real, live bug fixed: iPhone-only crash loop on the
   homepage, reported by the user with a screenshot of Safari's "A problem
   repeatedly occurred" page** (the loading progress would climb, reset to

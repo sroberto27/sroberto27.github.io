@@ -136,6 +136,50 @@ Unknown Sources); the PC guide covers the zipped Unity build (Extract All,
 SmartScreen "More info → Run anyway", keep the `_Data` folder together). No
 other file touched; the help engine (`js/help.js`) is unchanged.
 
+## Documentation: a cold-read site reference, one consolidated test pass, and a docs tidy-up
+
+No site code changed — `functions/`, `js/`, `css/`, `data/`, `index.html`,
+`_headers`, and `wrangler.toml` are all untouched.
+
+New `docs/WEBSITE-STATE.md` is the file to read cold: tech stack and deploy
+model, the identity/access model in practical terms, the content pipeline
+(draft → publish → R2, and the "three places every time" rule), every major
+subsystem and where its code lives, the do-not-break list, known gaps, and
+current deployment status. It summarizes-and-points for anything with an
+authoritative doc of its own (`DEPLOY-STAGING.md`, `ACCESS-MODEL.md`) rather
+than making a second copy that can drift.
+
+New `docs/migration/FULL-SYSTEM-TESTING.md` replaces four separate phase-testing
+documents with one 135-item pass over the whole site, in the same established
+format (unchecked boxes, Pass/Fail/Not-tested, a Comments line each). Its first
+part is dedicated to everything from the 2026-08-09/10 audit-and-fix sessions
+that has never been seen in a real browser. The four superseded documents moved
+to `docs/migration/archive/` — kept, not deleted, since two carry real recorded
+results.
+
+New `docs/DTS-Documentation-Guide.docx` explains how to use all of the above in
+future sessions — reading order, which document answers which kind of question,
+the deliberate two-step "test, then fix" workflow, who updates what and when —
+plus ten ready-to-paste prompt templates (fresh session, handing over the test
+pass, coming back with results, adding a feature, reporting a bug, deploying,
+auditing, refreshing the docs, handoff prep, onboarding a human), a table of
+lines worth including in almost any prompt and the real failure each one
+prevents, an anti-pattern table, and a quick reference for accounts, test
+logins, the do-not-break list and commit conventions.
+
+New `docs/README.md` indexes everything. `README-MIGRATION.md` and the developer
+onboarding `.docx` moved out of the repo root into `docs/`, which shortens
+`DEPLOY-STAGING.md`'s exclusion list (that folder is already excluded wholesale).
+`CLAUDE.md`'s "Read first" section was repointed at documents that actually
+exist.
+
+**One real regression found while verifying against the live site:**
+`/tools/gis-harvest.mjs` is being served again — a real 16,886-byte file, not
+the SPA fallback. `tools/` was added to the deploy exclusion list in Phase 9 and
+confirmed fixed then, so a later deploy rebuilt staging without it. Low severity
+(no secrets, but internal implementation comments). Not fixed here — it needs a
+redeploy, not a file edit.
+
 ## Fix: iPhone-only crash loop on the homepage
 
 Real bug, reported by the user with a screenshot of Safari's "A problem

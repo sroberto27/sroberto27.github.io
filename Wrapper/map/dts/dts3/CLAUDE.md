@@ -8,11 +8,22 @@ Deployed as static files to GitHub Pages.
 
 ## Read first
 
+- `docs/WEBSITE-STATE.md` — **the cold-read reference.** How the site works
+  today: stack, deploy model, identity/access, content pipeline, every
+  subsystem, known gaps, current deployment status. Start here.
+- `docs/README.md` — index of every other document and what each is for.
 - `README.md` — architecture, content pipeline, document schemas, and the
-  **Do-not-break list**. It is accurate and it is binding.
-- `docs/plans/gis/` — the active build package: multi-experience project window,
-  GIS engine, guided tours, CMS editors, and the GFC (Iberia Parish) project.
-  Start at `docs/plans/gis/README.md`, then `09-BUILD-PLAN.md` for the phase order.
+  **Do-not-break list**. Its architecture, media-convention, schema, and
+  TourBridge sections are accurate and binding. Its **auth, deploy, and admin
+  sections predate the migration and are stale** (Google Sheet sign-in,
+  `js/clients.js`, GitHub Pages) — `docs/WEBSITE-STATE.md` wins where they
+  disagree.
+- `docs/plans/gis/09-BUILD-PLAN.md` — phase order for the GIS build package
+  (multi-experience project window, GIS engine, guided tours, CMS editors, the
+  GFC / Iberia Parish project). Note: the numbered `0x-SPEC-*.md` files and the
+  `README.md` this package's own text refers to are **not in the repo** and were
+  never committed — `09-BUILD-PLAN.md` is what survives. Don't spend time
+  hunting for the others.
 
 ---
 
@@ -132,7 +143,7 @@ means first, in this order:
    an extended Claude-in-Chrome session, unless they've asked for the opposite.
 4. At the end of a phase, instead of (or in addition to, if 3 already happened for a
    few specific things) an agent-driven browser pass, produce a manual testing
-   document in the same shape as `docs/plans/gis/GIS-FULL-SYSTEM-TESTING.md`
+   document in the same shape as `docs/migration/FULL-SYSTEM-TESTING.md`
    (unchecked boxes, a Comments line per test, Pass/Fail/Not-tested) for the human to
    run through themselves and report back. Don't mark anything passed on their behalf.
 

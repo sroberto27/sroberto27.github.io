@@ -43,9 +43,12 @@ check), `scripts/`, `supabase/`, `docs/` (both `migration/` and `plans/`),
 migration until this was written — a real, low-severity leak of internal
 comments, fixed by finally adding this exclusion), `.build`, `.claude`,
 `.wrangler`, `.env`, `.env.example`, `.gitignore`, `node_modules/`,
-`package.json`, `package-lock.json`, `README.md`, `README-MIGRATION.md`,
-`CLAUDE.md`, `DTS-Developer-Onboarding.docx`, the 2 oversized `.usdz` files
-above.
+`package.json`, `package-lock.json`, `README.md`, `CLAUDE.md`, the 2 oversized
+`.usdz` files above.
+
+(`README-MIGRATION.md` and `DTS-Developer-Onboarding.docx` used to be listed
+here individually; both now live under `docs/`, which is already excluded
+wholesale — one fewer thing to remember per deploy.)
 
 ## The verification, every time — don't skip, don't assume
 
