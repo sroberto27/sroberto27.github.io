@@ -2,6 +2,33 @@
 
 Newest first.
 
+## Fix: category cards overlapping on very short phones (375x667)
+
+Real regression from the previous mobile-cards fix (the one that removed
+`.uc-card`'s `overflow:hidden` and its description's `-webkit-line-clamp:3`
+to stop text being silently cut off) — on a genuinely short viewport like
+iPhone SE, `.cat-grid`'s two mobile rows (`.cat-intro` at `auto`, `.cat-cards`
+at `1fr`) left `.cat-cards` almost no room, since `.cat-intro` isn't capped
+to fit. Per the CSS Grid spec, a flexible (`fr`) track's automatic minimum
+comes from its content's min-content size *unless* the item's own overflow
+is non-visible — `.cat-cards` has `overflow-y:auto`, so it correctly
+contributed nothing upward and was allowed to collapse toward 0. But inside
+`.cat-cards`, its own `grid-auto-rows:1fr` rows, now holding cards with
+`overflow:visible`, resolved to ~0px each and collapsed to the same start
+position — so different rows' cards painted on top of each other instead of
+stacking.
+
+Two changes: `.cat-grid`'s `1fr` row for `.cat-cards` now has a `minmax(130px, …)`
+floor so it can never be squeezed toward 0 regardless of `.cat-intro`'s
+length, and a new very-short-phone tier (`max-height:700px`, mirroring the
+existing `min-height:740px` "roomier" tier at the opposite end) drops card
+descriptions to titles-only, which comfortably fit even that floor.
+
+Root cause traced through the real CSS Grid spec and the existing container
+chain, not guessed — but not confirmed live; the Claude-in-Chrome browser
+extension wasn't connected this session, so this hasn't been eyeballed on
+an actual rendered page.
+
 ## Fix: mobile floating help icon overlapping the sector pager, and clipped card descriptions
 
 Two real bugs reported live with a screenshot, both mobile-only.
