@@ -48,7 +48,7 @@
         <button class="tbtn" id="btnDuplicate" title="Duplicate location"><i class="fa-solid fa-copy"></i><span>Duplicate</span></button>
         <button class="tbtn tbtn--danger" id="btnDelete" title="Delete location"><i class="fa-solid fa-trash"></i><span>Delete</span></button>
         <span class="tbtn-sep"></span>
-        <button class="tbtn" id="btnExport" title="Export as JSON"><i class="fa-solid fa-download"></i><span>Export</span></button>
+        <button class="tbtn" id="btnExport" title="Export scout (ZIP / Folder / PDF / JSON)"><i class="fa-solid fa-download"></i><span>Export</span></button>
         <button class="tbtn" id="btnImport" title="Import JSON"><i class="fa-solid fa-upload"></i><span>Import</span></button>
         <input type="file" id="importFile" accept="application/json" hidden>
         <button class="tbtn" id="btnPrint" title="Print / Save PDF"><i class="fa-solid fa-print"></i><span>Print / PDF</span></button>
@@ -170,6 +170,27 @@
                   <label for="video-link" class="mini-label">Video link (optional)</label>
                   <input type="text" id="video-link" placeholder="Cloud storage / drive link">
                 </div>
+                <div class="photo-tools">
+                  <button type="button" class="tbtn tbtn--sm" id="btnVideoAttach">
+                    <i class="fa-solid fa-video"></i> Attach / Record Video
+                  </button>
+                  <input type="file" accept="video/*" hidden id="inputVideoAttach" capture="environment">
+                </div>
+                <div class="video-attachment" id="videoAttachment"></div>
+              </div>
+              <div class="doc-card">
+                <label class="group-label">360° Photo</label>
+                <div class="photo-tools">
+                  <button type="button" class="tbtn tbtn--sm" id="btn360Capture">
+                    <i class="fa-solid fa-camera-rotate"></i> Capture 360°
+                  </button>
+                  <button type="button" class="tbtn tbtn--sm" id="btn360Attach">
+                    <i class="fa-solid fa-upload"></i> Attach Existing 360°
+                  </button>
+                  <input type="file" accept="image/*" hidden id="input360Attach">
+                </div>
+                <div class="mobile-hint" id="pano360Hint"></div>
+                <div class="pano-strip" id="pano360Strip"></div>
               </div>
             </div>
           </div>
@@ -475,7 +496,7 @@
 
         <div class="bottom-actions">
           <button type="button" class="tbtn tbtn--primary" id="btnSaveBottom"><i class="fa-solid fa-floppy-disk"></i> Save Now</button>
-          <button type="button" class="tbtn" id="btnExportBottom"><i class="fa-solid fa-download"></i> Export JSON</button>
+          <button type="button" class="tbtn" id="btnExportBottom"><i class="fa-solid fa-download"></i> Export</button>
           <button type="button" class="tbtn" id="btnPrintBottom"><i class="fa-solid fa-print"></i> Print / PDF</button>
           <button type="button" class="tbtn" id="btnShareBottom"><i class="fa-solid fa-share-nodes"></i> Share</button>
         </div>
@@ -498,9 +519,42 @@
     </div>
   </div>
 
+  <!-- ============ EXPORT MODAL ============ -->
+  <div class="modal-backdrop" id="exportModalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="exportModalTitle">
+      <h3 id="exportModalTitle">Export Scout</h3>
+      <p>Choose how to export this location's checklist, photos, 360° panoramas, and video.</p>
+      <div class="export-options">
+        <button type="button" class="tbtn tbtn--block tbtn--primary" id="btnExportZip">
+          <i class="fa-solid fa-file-zipper"></i> Export Scout ZIP
+        </button>
+        <button type="button" class="tbtn tbtn--block" id="btnExportFolder">
+          <i class="fa-solid fa-folder-open"></i> Export Scout Folder
+        </button>
+        <button type="button" class="tbtn tbtn--block" id="btnExportPdf">
+          <i class="fa-solid fa-file-pdf"></i> Download PDF Report
+        </button>
+        <button type="button" class="tbtn tbtn--block" id="btnExportJson">
+          <i class="fa-solid fa-code"></i> Export Data JSON <span class="export-option-note">(no embedded photos/video)</span>
+        </button>
+      </div>
+      <div class="export-status" id="exportStatus"></div>
+      <div class="modal-actions">
+        <button class="tbtn" id="exportModalCancel">Close</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ============ TOASTS ============ -->
   <div class="toast-stack" id="toastStack"></div>
 
+  <script src="vendor/jszip.min.js"></script>
+  <script src="vendor/jspdf.umd.min.js"></script>
+  <script src="db.js"></script>
+  <script src="orientation.js"></script>
+  <script src="panorama-viewer.js"></script>
+  <script src="capture360.js"></script>
+  <script src="export.js"></script>
   <script src="app.js"></script>
 </body>
 

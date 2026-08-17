@@ -41,6 +41,11 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+/* Guards every future `display:` rule against the classic [hidden] pitfall:
+   any class selector with the same specificity as the UA [hidden] rule can
+   silently defeat el.hidden = true. Keep this !important. */
+[hidden] { display: none !important; }
+
 html {
   scroll-behavior: smooth;
   --sticky-offset: 150px; /* JS measures the real topbar+toolbar height and overrides this */
@@ -473,16 +478,37 @@ select {
 .chip:has(input:checked) { background: var(--brand-light); border-color: var(--brand); color: var(--brand); }
 
 /* Photo docs */
-.doc-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.doc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
 .doc-card { background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; }
-.photo-tools { margin-top: 10px; }
+.photo-tools { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
 .photo-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .photo-thumb { position: relative; width: 64px; height: 64px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); margin: 6px 6px 0 0; }
 .photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-thumb-broken {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  background: var(--surface); color: var(--text-faint); font-size: 18px;
+}
 .photo-thumb .rm {
   position: absolute; top: -6px; right: -6px; background: var(--danger); color: #fff; border: 2px solid var(--surface); border-radius: 50%; width: 26px; height: 26px;
   font-size: 11px; cursor: pointer; line-height: 1;
 }
+
+/* Video attachment card */
+.video-attachment { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.media-attach-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; }
+.media-attach-info { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text); }
+.media-attach-info i { color: var(--brand); }
+.media-attach-meta { color: var(--text-faint); font-weight: 500; font-size: 11.5px; }
+.media-attach-actions { display: flex; gap: 8px; margin-top: 8px; }
+.media-attach-preview { width: 100%; margin-top: 10px; border-radius: 6px; max-height: 240px; }
+
+/* 360 panorama card */
+.pano-strip { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.pano-card { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.pano-thumb { width: 100%; aspect-ratio: 2 / 1; object-fit: cover; display: block; background: var(--border); }
+.pano-card .photo-thumb-broken { width: 100%; aspect-ratio: 2 / 1; }
+.pano-card-actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; }
+.link-btn { background: none; border: none; color: var(--brand); font-weight: 700; cursor: pointer; padding: 0; font-size: inherit; text-decoration: underline; }
 
 /* ===================== BOTTOM ACTIONS ===================== */
 .bottom-actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; padding: 10px 0 30px; }
@@ -513,6 +539,73 @@ select {
 .toast.success { border-left-color: var(--success); }
 .toast.error { border-left-color: var(--danger); }
 @keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ===================== EXPORT MODAL ===================== */
+.export-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 6px; }
+.export-option-note { font-weight: 500; color: var(--text-faint); font-size: 11.5px; }
+.export-status { min-height: 18px; font-size: 12.5px; color: var(--text-muted); font-weight: 600; margin-top: 4px; }
+
+/* ===================== 360 PANORAMA VIEWER ===================== */
+.pano-viewer-overlay {
+  position: fixed; inset: 0; z-index: 300; background: #000;
+  display: flex; flex-direction: column;
+}
+.pano-viewer-topbar {
+  display: flex; align-items: center; justify-content: space-between; padding: 10px 14px;
+  background: rgba(0, 0, 0, .55); color: #fff; z-index: 2;
+}
+.pano-viewer-title { font-weight: 700; font-size: 14px; }
+.pano-viewer-stage { position: relative; flex: 1; overflow: hidden; }
+.pano-viewer-canvas { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+.pano-viewer-canvas:active { cursor: grabbing; }
+.pano-viewer-hint {
+  position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; color: rgba(255, 255, 255, .8);
+  font-size: 12.5px; font-weight: 600; pointer-events: none;
+}
+.pano-viewer-fallback-img { max-width: 100%; max-height: 100%; display: block; margin: 0 auto; }
+.pano-viewer-fallback-note { color: #fff; text-align: center; padding: 14px; font-size: 13px; }
+
+/* ===================== GUIDED 360 CAPTURE ===================== */
+.capture360-overlay { position: fixed; inset: 0; z-index: 300; background: #000; overflow: hidden; }
+.c360-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.c360-scrim, .c360-error, .c360-stitching {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; color: #fff; background: rgba(0, 0, 0, .55); text-align: center; padding: 24px;
+}
+.c360-scrim i, .c360-error i, .c360-stitching i { font-size: 28px; }
+.c360-error-msg { max-width: 320px; font-size: 14px; }
+.c360-hud { position: absolute; inset: 0; }
+.c360-topbar {
+  position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between;
+  padding: 14px; background: linear-gradient(rgba(0, 0, 0, .55), transparent);
+}
+.c360-counter { color: #fff; font-weight: 700; font-size: 14px; text-shadow: 0 1px 3px rgba(0, 0, 0, .6); }
+.c360-targets { position: absolute; inset: 0; pointer-events: none; }
+.c360-target {
+  position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, .75); display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 13px; transition: left .08s linear, top .08s linear;
+}
+.c360-target.active { border-color: #f5a623; box-shadow: 0 0 0 4px rgba(245, 166, 35, .25); }
+.c360-target.captured { border-color: var(--success); background: rgba(23, 163, 74, .35); }
+.c360-target.offscreen { border-style: dashed; background: rgba(0, 0, 0, .35); }
+.c360-reticle {
+  position: absolute; top: 50%; left: 50%; width: 60px; height: 60px; margin: -30px 0 0 -30px;
+  border: 3px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+}
+.c360-reticle-ring { width: 8px; height: 8px; border-radius: 50%; background: #fff; }
+.c360-reticle.aligned { border-color: #f5a623; }
+.c360-reticle.aligned .c360-reticle-ring { background: #f5a623; }
+.c360-instruction {
+  position: absolute; top: calc(50% + 70px); left: 0; right: 0; text-align: center; color: #fff;
+  font-weight: 700; font-size: 14px; text-shadow: 0 1px 3px rgba(0, 0, 0, .7); padding: 0 20px;
+}
+.c360-progress-track { position: absolute; bottom: 92px; left: 20px; right: 20px; height: 6px; border-radius: 6px; background: rgba(255, 255, 255, .25); overflow: hidden; }
+.c360-progress-fill { height: 100%; width: 0; background: var(--brand); border-radius: 6px; transition: width .2s; }
+.c360-controls { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; justify-content: center; gap: 12px; }
+.c360-capture { min-width: 140px; justify-content: center; }
+.c360-stitch-stage { font-size: 14px; font-weight: 700; }
+.c360-stitching .c360-progress-track { position: static; width: 240px; }
 
 /* ===================== RESPONSIVE ===================== */
 /* Tablets in portrait get the width back once the sidebar becomes a drawer,
@@ -565,11 +658,29 @@ select {
 /* ===================== PRINT ===================== */
 @media print {
   .topbar, .toolbar, .sidenav, .sidenav-backdrop, .bottom-actions, .toast-stack, .modal-backdrop, .photo-tools,
-  .input-with-btn .tbtn, #btnNoiseMeter, .mobile-hint { display: none !important; }
+  .input-with-btn .tbtn, #btnNoiseMeter, .mobile-hint,
+  .photo-thumb .rm, .media-attach-actions, .pano-card-actions, .video-attachment .tbtn,
+  .capture360-overlay, .pano-viewer-overlay, .export-modal, .c360-controls { display: none !important; }
   .app-shell { display: block; padding: 0; max-width: 100%; }
   body { background: #fff; }
   .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; margin-bottom: 14px; }
   input, select, textarea { border: 1px solid #ccc !important; color: #000 !important; }
   .switch { display: none; }
   .switch-row::after { content: attr(data-print-state); font-weight: 700; }
+
+  /* Photos: real inspection size, preserved aspect ratio, 2-up grid, no cropping */
+  .doc-grid { grid-template-columns: repeat(2, 1fr); }
+  .photo-strip { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .photo-thumb {
+    width: auto; height: auto; aspect-ratio: 4 / 3; border: 1px solid #ccc;
+    break-inside: avoid; page-break-inside: avoid;
+  }
+  .photo-thumb img { object-fit: contain; background: #f5f5f5; }
+
+  /* 360 panorama: full width, true 2:1 */
+  .pano-card { break-inside: avoid; page-break-inside: avoid; border: 1px solid #ccc; }
+  .pano-thumb { aspect-ratio: 2 / 1; object-fit: contain; background: #f5f5f5; width: 100%; }
+
+  .media-attach-card { break-inside: avoid; page-break-inside: avoid; border: 1px solid #ccc; }
+  .media-attach-preview { display: none !important; }
 }

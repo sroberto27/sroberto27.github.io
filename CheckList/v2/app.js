@@ -41,6 +41,8 @@
   const TOTAL_TRACKED_FIELDS = SECTION_META.reduce((sum, sec) => sum + sec.fields.length, 0);
 
   const PHOTO_KEYS = ['wide-angle', 'close-up'];
+  const MEDIA_CATEGORIES = ['wide-angle', 'close-up', 'panorama-360', 'video'];
+  const MEDIA_FIELD_SET = new Set(['wide-angle', 'close-up', 'video']); // presence toggles shown via the photo grid, not the text dump
 
   const STORAGE_LOCATIONS = 'lsc2_locations';
   const STORAGE_ACTIVE = 'lsc2_active';
@@ -51,6 +53,7 @@
   let activeId = null;
   let saveTimer = null;
   let pendingConfirm = null;
+  let mediaAvailable = false;
 
   /* ===================== HELPERS ===================== */
   const qs = (sel, root = document) => root.querySelector(sel);
@@ -65,10 +68,16 @@
       updatedAt: Date.now(),
       fields: {},
       touched: {},
-      photos: { 'wide-angle': [], 'close-up': [] },
+      media: { 'wide-angle': [], 'close-up': [], 'panorama-360': [], 'video': [] },
       rating: 0,
       status: ''
     };
+  }
+
+  function normalizeLocation(loc) {
+    loc.media = loc.media || { 'wide-angle': [], 'close-up': [], 'panorama-360': [], 'video': [] };
+    MEDIA_CATEGORIES.forEach(cat => { if (!Array.isArray(loc.media[cat])) loc.media[cat] = []; });
+    return loc;
   }
 
   function loadLocationsFromStorage() {
@@ -88,7 +97,8 @@
       localStorage.setItem(STORAGE_ACTIVE, activeId);
       return true;
     } catch (e) {
-      setSaveStatus('error', 'Storage full — remove some photos');
+      setSaveStatus('error', 'Storage full — remove some photos/video');
+      toast('Local storage is full. Free up space (remove photos or old locations) to keep saving.', 'error');
       return false;
     }
   }
@@ -170,15 +180,21 @@
     const loc = locations[id];
     if (!loc) return;
     activeId = id;
+    if (window.LSCMedia) window.LSCMedia.revokeAll(); // drop the previous location's object URLs
     applyFormData(loc.fields);
     qs('#overallStatus').value = loc.status || '';
     setStars(loc.rating || 0);
-    PHOTO_KEYS.forEach(renderPhotos);
+    PHOTO_KEYS.forEach(renderPhotoStrip);
+    renderPanoramaCard();
+    renderVideoAttachment();
     renderGeoStatus();
     renderNoiseStatus();
     populateLocationSelect();
     updateProgressUI();
     setSaveStatus('saved', 'All changes saved');
+    if (loc._photosMigrationPartial) {
+      toast('Some legacy photos for this location could not be migrated and were left in place.', 'error');
+    }
   }
 
   function switchLocation(id) {
@@ -298,22 +314,34 @@
     });
   }
 
-  /* ===================== PHOTOS ===================== */
-  function renderPhotos(key) {
-    const strip = qs(`#photos-${key}`);
-    if (!strip) return;
-    const loc = currentLocation();
-    const photos = (loc && loc.photos && loc.photos[key]) || [];
-    strip.innerHTML = '';
-    photos.forEach((src, idx) => {
-      const div = document.createElement('div');
-      div.className = 'photo-thumb';
-      div.innerHTML = `<img src="${src}" alt="Attached photo"><button type="button" class="rm" data-key="${key}" data-idx="${idx}" aria-label="Remove photo">✕</button>`;
-      strip.appendChild(div);
+  /* ===================== PHOTOS (wide-angle / close-up) ===================== */
+  function resizeImageToBlob(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          const maxW = 1600;
+          const scale = Math.min(1, maxW / img.width);
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(img.width * scale);
+          canvas.height = Math.round(img.height * scale);
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          canvas.toBlob(blob => {
+            if (!blob) { reject(new Error('encode failed')); return; }
+            resolve({ blob, width: canvas.width, height: canvas.height });
+          }, 'image/jpeg', 0.82);
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
     });
   }
 
-  function resizeImage(file) {
+  function resizeImageToDataUrl(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onerror = reject;
@@ -336,6 +364,36 @@
     });
   }
 
+  async function renderPhotoStrip(key) {
+    const strip = qs(`#photos-${key}`);
+    if (!strip) return;
+    const loc = currentLocation();
+    if (!loc) return;
+    strip.innerHTML = '';
+
+    // legacy fallback entries (only present when IndexedDB was unavailable at capture time)
+    const legacy = (loc.photos && loc.photos[key]) || [];
+    legacy.forEach((src, idx) => {
+      const div = document.createElement('div');
+      div.className = 'photo-thumb';
+      div.innerHTML = `<img src="${src}" alt="Attached photo"><button type="button" class="rm" data-legacy-key="${key}" data-idx="${idx}" aria-label="Remove photo">✕</button>`;
+      strip.appendChild(div);
+    });
+
+    const ids = loc.media[key] || [];
+    for (const id of ids) {
+      const url = await window.LSCMedia.getObjectUrlFor(id).catch(() => null);
+      const div = document.createElement('div');
+      div.className = 'photo-thumb';
+      if (url) {
+        div.innerHTML = `<img src="${url}" alt="Attached photo"><button type="button" class="rm" data-media-key="${key}" data-media-id="${id}" aria-label="Remove photo">✕</button>`;
+      } else {
+        div.innerHTML = `<div class="photo-thumb-broken" title="This photo could not be loaded">⚠</div><button type="button" class="rm" data-media-key="${key}" data-media-id="${id}" aria-label="Remove photo">✕</button>`;
+      }
+      strip.appendChild(div);
+    }
+  }
+
   function bindPhotoInputs() {
     qsa('.photo-add-btn').forEach(btn => {
       btn.addEventListener('click', () => {
@@ -349,32 +407,300 @@
         const loc = currentLocation();
         if (!loc) return;
         const files = Array.from(input.files || []);
+        let added = 0;
         for (const file of files) {
           try {
-            const dataUrl = await resizeImage(file);
-            loc.photos[key].push(dataUrl);
+            if (mediaAvailable) {
+              const { blob, width, height } = await resizeImageToBlob(file);
+              const id = await window.LSCMedia.putMedia({
+                locationId: loc.id, category: key, filename: `${key}_${Date.now()}_${added}.jpg`,
+                mime: 'image/jpeg', originalFilename: file.name, width, height, blob
+              });
+              loc.media[key].push(id);
+            } else {
+              const dataUrl = await resizeImageToDataUrl(file);
+              loc.photos = loc.photos || { 'wide-angle': [], 'close-up': [] };
+              loc.photos[key] = loc.photos[key] || [];
+              loc.photos[key].push(dataUrl);
+            }
+            added++;
           } catch (e) { /* skip unreadable file */ }
         }
-        if (files.length) {
+        if (added) {
           document.getElementById(key).checked = true;
           markTouched(key);
-          renderPhotos(key);
+          await renderPhotoStrip(key);
           scheduleSave();
+          toast(`${added} photo(s) attached`, 'success');
+        } else if (files.length) {
+          toast('Could not attach the selected photo(s)', 'error');
         }
         input.value = '';
       });
     });
     qsa('.photo-strip').forEach(strip => {
-      strip.addEventListener('click', e => {
+      strip.addEventListener('click', async e => {
         const btn = e.target.closest('.rm');
         if (!btn) return;
         const loc = currentLocation();
         if (!loc) return;
-        loc.photos[btn.dataset.key].splice(parseInt(btn.dataset.idx, 10), 1);
-        renderPhotos(btn.dataset.key);
+        if (btn.dataset.legacyKey) {
+          loc.photos[btn.dataset.legacyKey].splice(parseInt(btn.dataset.idx, 10), 1);
+        } else if (btn.dataset.mediaKey) {
+          const key = btn.dataset.mediaKey, id = btn.dataset.mediaId;
+          try { await window.LSCMedia.deleteMedia(id); } catch (err) { /* continue removing the reference regardless */ }
+          loc.media[key] = loc.media[key].filter(x => x !== id);
+        }
+        await renderPhotoStrip(btn.dataset.legacyKey || btn.dataset.mediaKey);
         scheduleSave();
       });
     });
+  }
+
+  /* ===================== VIDEO ATTACHMENT ===================== */
+  async function renderVideoAttachment() {
+    const box = qs('#videoAttachment');
+    if (!box) return;
+    const loc = currentLocation();
+    box.innerHTML = '';
+    const ids = (loc.media && loc.media.video) || [];
+    for (const id of ids) {
+      const rec = await window.LSCMedia.getMedia(id).catch(() => null);
+      if (!rec) continue;
+      const url = await window.LSCMedia.getObjectUrlFor(id).catch(() => null);
+      const card = document.createElement('div');
+      card.className = 'media-attach-card';
+      const sizeLabel = rec.blob && rec.blob.size ? (rec.blob.size > 1024 * 1024 ? (rec.blob.size / (1024 * 1024)).toFixed(1) + ' MB' : Math.round(rec.blob.size / 1024) + ' KB') : '';
+      card.innerHTML = `
+        <div class="media-attach-info"><i class="fa-solid fa-file-video"></i> <span>${rec.originalFilename || rec.filename}</span> <span class="media-attach-meta">${sizeLabel}</span></div>
+        <div class="media-attach-actions">
+          ${url ? `<button type="button" class="tbtn tbtn--sm video-play" data-url="${url}"><i class="fa-solid fa-play"></i> Play</button>` : ''}
+          <button type="button" class="tbtn tbtn--sm tbtn--danger video-remove" data-id="${id}"><i class="fa-solid fa-trash"></i> Remove</button>
+        </div>
+        <video class="media-attach-preview" hidden playsinline controls></video>`;
+      box.appendChild(card);
+    }
+    box.querySelectorAll('.video-play').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const card = btn.closest('.media-attach-card');
+        const video = card.querySelector('.media-attach-preview');
+        video.src = btn.dataset.url;
+        video.hidden = false;
+        video.play().catch(() => {});
+      });
+    });
+    box.querySelectorAll('.video-remove').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const loc2 = currentLocation();
+        try { await window.LSCMedia.deleteMedia(btn.dataset.id); } catch (e) { /* continue */ }
+        loc2.media.video = loc2.media.video.filter(x => x !== btn.dataset.id);
+        await renderVideoAttachment();
+        scheduleSave();
+        toast('Video removed', 'success');
+      });
+    });
+  }
+
+  function bindVideoAttach() {
+    const btn = qs('#btnVideoAttach');
+    const input = qs('#inputVideoAttach');
+    if (!btn || !input) return;
+    if (!mediaAvailable) {
+      btn.disabled = true;
+      btn.title = 'Video attachment needs browser storage that is not available here';
+      return;
+    }
+    btn.addEventListener('click', () => input.click());
+    input.addEventListener('change', async () => {
+      const file = input.files && input.files[0];
+      input.value = '';
+      if (!file) return;
+      const loc = currentLocation();
+      if (!loc) return;
+      if (file.size > 500 * 1024 * 1024) {
+        toast('That video is very large (>500MB) — attaching it anyway, but export/ZIP may be slow.', 'error');
+      }
+      try {
+        const id = await window.LSCMedia.putMedia({
+          locationId: loc.id, category: 'video', filename: file.name || 'video',
+          mime: file.type || 'video/mp4', originalFilename: file.name, blob: file
+        });
+        loc.media.video.push(id);
+        document.getElementById('video').checked = true;
+        markTouched('video');
+        await renderVideoAttachment();
+        scheduleSave();
+        toast('Video attached', 'success');
+      } catch (e) {
+        toast('Could not store that video — it may be too large for available storage.', 'error');
+      }
+    });
+  }
+
+  /* ===================== 360° PANORAMA ===================== */
+  async function renderPanoramaCard() {
+    const strip = qs('#pano360Strip');
+    const hint = qs('#pano360Hint');
+    if (!strip) return;
+    const loc = currentLocation();
+    strip.innerHTML = '';
+    if (hint) hint.innerHTML = '';
+
+    const ids = (loc.media && loc.media['panorama-360']) || [];
+    for (const id of ids) {
+      const rec = await window.LSCMedia.getMedia(id).catch(() => null);
+      if (!rec) continue;
+      const url = await window.LSCMedia.getObjectUrlFor(id).catch(() => null);
+      const card = document.createElement('div');
+      card.className = 'pano-card';
+      card.innerHTML = `
+        ${url ? `<img src="${url}" alt="360 panorama" class="pano-thumb">` : `<div class="photo-thumb-broken">⚠</div>`}
+        <div class="pano-card-actions">
+          <button type="button" class="tbtn tbtn--sm pano-view" data-id="${id}"><i class="fa-solid fa-street-view"></i> View 360°</button>
+          <button type="button" class="tbtn tbtn--sm pano-retake" data-id="${id}"><i class="fa-solid fa-arrows-rotate"></i> Retake</button>
+          <button type="button" class="tbtn tbtn--sm tbtn--danger pano-delete" data-id="${id}" data-session="${rec.sessionId || ''}"><i class="fa-solid fa-trash"></i> Delete</button>
+        </div>`;
+      strip.appendChild(card);
+    }
+
+    strip.querySelectorAll('.pano-view').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const url = await window.LSCMedia.getObjectUrlFor(btn.dataset.id);
+        if (url && window.LSCPanoViewer) window.LSCPanoViewer.open(url, { title: currentLocation().name });
+      });
+    });
+    strip.querySelectorAll('.pano-retake').forEach(btn => {
+      btn.addEventListener('click', () => startPanoramaCapture({ replaceId: btn.dataset.id }));
+    });
+    strip.querySelectorAll('.pano-delete').forEach(btn => {
+      btn.addEventListener('click', () => deletePanorama(btn.dataset.id, btn.dataset.session));
+    });
+
+    // surface any interrupted capture session (page reload / backgrounding mid-capture)
+    if (mediaAvailable && window.LSCMedia) {
+      try {
+        const all = await window.LSCMedia.getByLocation(loc.id);
+        const finishedSessionIds = new Set((await Promise.all(ids.map(id => window.LSCMedia.getMedia(id)))).filter(Boolean).map(r => r.sessionId).filter(Boolean));
+        const orphanSources = all.filter(r => r.category === 'panorama-360-source' && !finishedSessionIds.has(r.sessionId));
+        const bySession = {};
+        orphanSources.forEach(r => { (bySession[r.sessionId] = bySession[r.sessionId] || []).push(r); });
+        const sessionIds = Object.keys(bySession);
+        if (sessionIds.length && hint) {
+          const sid = sessionIds[0];
+          hint.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Incomplete 360° session found (${bySession[sid].length} photos). `;
+          const discardBtn = document.createElement('button');
+          discardBtn.type = 'button';
+          discardBtn.className = 'link-btn';
+          discardBtn.textContent = 'Discard it';
+          discardBtn.addEventListener('click', async () => {
+            await window.LSCMedia.deleteMany(bySession[sid].map(r => r.id));
+            renderPanoramaCard();
+            toast('Incomplete session discarded', 'success');
+          });
+          hint.appendChild(discardBtn);
+        }
+      } catch (e) { /* non-critical */ }
+    }
+  }
+
+  async function deletePanorama(id, sessionId) {
+    const loc = currentLocation();
+    const ok = await confirmAsync({ title: 'Delete Panorama', body: 'Delete this 360° panorama? Its source photos will also be removed.', confirmText: 'Delete', danger: true });
+    if (!ok) return;
+    try {
+      await window.LSCMedia.deleteMedia(id);
+      if (sessionId) {
+        const sources = (await window.LSCMedia.getBySession(sessionId)).filter(r => r.category === 'panorama-360-source');
+        await window.LSCMedia.deleteMany(sources.map(r => r.id));
+      }
+    } catch (e) { /* continue */ }
+    loc.media['panorama-360'] = loc.media['panorama-360'].filter(x => x !== id);
+    await renderPanoramaCard();
+    scheduleSave();
+    toast('Panorama deleted', 'success');
+  }
+
+  async function startPanoramaCapture(opts) {
+    opts = opts || {};
+    if (!mediaAvailable) { toast('360° capture needs browser storage that is not available here', 'error'); return; }
+    if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) {
+      toast('Camera access is not available on this device/browser', 'error');
+      return;
+    }
+    const loc = currentLocation();
+    const result = await window.LSCCapture360.start({ locationId: loc.id, toast, confirm: confirmAsync });
+    if (result.cancelled) return;
+
+    if (opts.replaceId) {
+      const old = await window.LSCMedia.getMedia(opts.replaceId).catch(() => null);
+      try { await window.LSCMedia.deleteMedia(opts.replaceId); } catch (e) { /* continue */ }
+      if (old && old.sessionId) {
+        const oldSources = (await window.LSCMedia.getBySession(old.sessionId)).filter(r => r.category === 'panorama-360-source');
+        await window.LSCMedia.deleteMany(oldSources.map(r => r.id));
+      }
+      loc.media['panorama-360'] = loc.media['panorama-360'].filter(x => x !== opts.replaceId);
+    }
+
+    if (result.stitched) {
+      loc.media['panorama-360'].push(result.panoramaMediaId);
+      await renderPanoramaCard();
+      scheduleSave();
+      toast('360° panorama created', 'success');
+    } else {
+      await renderPanoramaCard(); // still shows the "incomplete session" recovery hint for the saved sources
+      const reasonText = {
+        unsupported: 'Automatic stitching isn’t supported in this browser. Your 18 source photos were saved — they can be re-processed later or exported as a source set.',
+        'stitch-error': 'Stitching failed, but your source photos were saved and were not lost.',
+        'no-readable-sources': 'Could not read the captured photos back from storage — nothing to stitch.',
+        'encode-failed': 'The finished panorama could not be encoded, but your source photos were saved.',
+        'storage-failed': 'The finished panorama could not be saved (storage may be full), but your source photos were kept.',
+        'camera-interrupted': 'The camera was interrupted, but photos captured so far were saved.'
+      }[result.reason] || 'Stitching did not complete, but your source photos were saved.';
+      toast(reasonText, 'error');
+    }
+  }
+
+  function bind360() {
+    const captureBtn = qs('#btn360Capture');
+    const attachBtn = qs('#btn360Attach');
+    const attachInput = qs('#input360Attach');
+    if (captureBtn) {
+      if (!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia)) {
+        captureBtn.disabled = true;
+        captureBtn.title = 'Camera access is not available on this device/browser';
+      }
+      captureBtn.addEventListener('click', () => startPanoramaCapture());
+    }
+    if (attachBtn && attachInput) {
+      if (!mediaAvailable) {
+        attachBtn.disabled = true;
+        attachBtn.title = 'Attaching 360° images needs browser storage that is not available here';
+      } else {
+        attachBtn.addEventListener('click', () => attachInput.click());
+        attachInput.addEventListener('change', async () => {
+          const file = attachInput.files && attachInput.files[0];
+          attachInput.value = '';
+          if (!file) return;
+          const loc = currentLocation();
+          try {
+            const dims = await window.LSCMedia.imageDims(file);
+            if (dims.width && dims.height && Math.abs(dims.width / dims.height - 2) > 0.2) {
+              toast('That image doesn’t look like a standard 2:1 equirectangular panorama — attaching it anyway.', 'error');
+            }
+            const id = await window.LSCMedia.putMedia({
+              locationId: loc.id, category: 'panorama-360', filename: file.name || 'panorama.jpg',
+              mime: file.type || 'image/jpeg', originalFilename: file.name, width: dims.width, height: dims.height, blob: file
+            });
+            loc.media['panorama-360'].push(id);
+            await renderPanoramaCard();
+            scheduleSave();
+            toast('360° image attached', 'success');
+          } catch (e) {
+            toast('Could not attach that image', 'error');
+          }
+        });
+      }
+    }
   }
 
   /* ===================== COUNTERS ===================== */
@@ -445,6 +771,23 @@
     });
   }
 
+  // Promise-based confirm for modules (capture360, export) that can't hold a
+  // reference to app.js's callback-style showModal.
+  function confirmAsync({ title, body, confirmText, danger }) {
+    return new Promise(resolve => {
+      let settled = false;
+      showModal({ title, body, confirmText: confirmText || 'Confirm', danger, onConfirm: () => { settled = true; resolve(true); } });
+      const backdrop = qs('#modalBackdrop');
+      const obs = new MutationObserver(() => {
+        if (!backdrop.classList.contains('open')) {
+          if (!settled) { settled = true; resolve(false); }
+          obs.disconnect();
+        }
+      });
+      obs.observe(backdrop, { attributes: true, attributeFilter: ['class'] });
+    });
+  }
+
   /* ===================== TOAST ===================== */
   function toast(message, kind = 'info') {
     const stack = qs('#toastStack');
@@ -453,6 +796,35 @@
     el.textContent = message;
     stack.appendChild(el);
     setTimeout(() => el.remove(), 3200);
+  }
+
+  /* ===================== MEDIA DUPLICATION / CLEANUP ===================== */
+  async function duplicateLocationMedia(oldLoc, newLoc) {
+    if (!mediaAvailable) return;
+    const sessionRemap = {};
+    for (const cat of MEDIA_CATEGORIES) {
+      const newIds = [];
+      for (const id of oldLoc.media[cat] || []) {
+        const rec = await window.LSCMedia.getMedia(id).catch(() => null);
+        if (!rec) continue;
+        let newSessionId = null;
+        if (rec.sessionId) {
+          if (!sessionRemap[rec.sessionId]) sessionRemap[rec.sessionId] = 'pano_' + uid();
+          newSessionId = sessionRemap[rec.sessionId];
+        }
+        const newId = await window.LSCMedia.putMedia(Object.assign({}, rec, {
+          id: undefined, locationId: newLoc.id, sessionId: newSessionId
+        }));
+        newIds.push(newId);
+        if (rec.sessionId) {
+          const sources = (await window.LSCMedia.getBySession(rec.sessionId)).filter(r => r.category === 'panorama-360-source');
+          for (const s of sources) {
+            await window.LSCMedia.putMedia(Object.assign({}, s, { id: undefined, locationId: newLoc.id, sessionId: newSessionId }));
+          }
+        }
+      }
+      newLoc.media[cat] = newIds;
+    }
   }
 
   /* ===================== TOOLBAR ACTIONS ===================== */
@@ -503,14 +875,16 @@
         showInput: true,
         inputValue: `${loc.name} (Copy)`,
         confirmText: 'Duplicate',
-        onConfirm: name => {
+        onConfirm: async name => {
           if (!name) return;
           const clone = JSON.parse(JSON.stringify(loc));
           clone.id = uid();
           clone.name = name;
           clone.createdAt = Date.now();
           clone.updatedAt = Date.now();
+          clone.media = { 'wide-angle': [], 'close-up': [], 'panorama-360': [], 'video': [] };
           locations[clone.id] = clone;
+          await duplicateLocationMedia(loc, clone);
           persistLocations();
           loadLocationIntoForm(clone.id);
           toast('Location duplicated', 'success');
@@ -529,11 +903,13 @@
         body: `Delete "${loc.name}"? This cannot be undone.`,
         confirmText: 'Delete',
         danger: true,
-        onConfirm: () => {
-          delete locations[loc.id];
+        onConfirm: async () => {
+          const deletedId = loc.id;
+          delete locations[deletedId];
           const nextId = Object.keys(locations)[0];
           persistLocations();
           loadLocationIntoForm(nextId);
+          if (mediaAvailable) { try { await window.LSCMedia.deleteByLocation(deletedId); } catch (e) { /* ignore */ } }
           toast('Location deleted', 'success');
         }
       });
@@ -546,10 +922,12 @@
         body: `Erase all entered data for "${loc.name}"? The location itself will stay in your list.`,
         confirmText: 'Clear Data',
         danger: true,
-        onConfirm: () => {
+        onConfirm: async () => {
+          if (mediaAvailable) { try { await window.LSCMedia.deleteByLocation(loc.id); } catch (e) { /* ignore */ } }
           loc.fields = {};
           loc.touched = {};
-          loc.photos = { 'wide-angle': [], 'close-up': [] };
+          loc.photos = undefined;
+          loc.media = { 'wide-angle': [], 'close-up': [], 'panorama-360': [], 'video': [] };
           loc.rating = 0;
           loc.status = '';
           persistLocations();
@@ -559,7 +937,7 @@
       });
     });
 
-    const doExport = () => {
+    const doJsonExport = () => {
       const loc = currentLocation();
       Object.assign(loc.fields, collectFormData());
       const blob = new Blob([JSON.stringify(loc, null, 2)], { type: 'application/json' });
@@ -571,26 +949,86 @@
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
-      toast('Exported JSON', 'success');
+      toast('Exported data JSON', 'success');
     };
-    qs('#btnExport').addEventListener('click', doExport);
-    qs('#btnExportBottom').addEventListener('click', doExport);
+
+    function openExportDialog() {
+      qs('#exportStatus').textContent = '';
+      qs('#btnExportFolder').disabled = !window.LSCExport.folderExportSupported();
+      qs('#btnExportFolder').title = window.LSCExport.folderExportSupported() ? '' : 'Folder export is not supported by this browser. Use ZIP Export instead.';
+      qs('#exportModalBackdrop').classList.add('open');
+    }
+    function closeExportDialog() { qs('#exportModalBackdrop').classList.remove('open'); }
+
+    qs('#btnExport').addEventListener('click', openExportDialog);
+    qs('#btnExportBottom').addEventListener('click', openExportDialog);
+    qs('#exportModalCancel').addEventListener('click', closeExportDialog);
+    qs('#exportModalBackdrop').addEventListener('click', e => { if (e.target.id === 'exportModalBackdrop') closeExportDialog(); });
+
+    async function withExportStatus(label, fn) {
+      const status = qs('#exportStatus');
+      status.textContent = label;
+      try {
+        await fn();
+        status.textContent = '';
+        closeExportDialog();
+      } catch (e) {
+        status.textContent = '';
+        if (e && e.message === 'CANCELLED') return;
+        toast('Export failed: ' + (e && e.message ? e.message : 'unknown error'), 'error');
+      }
+    }
+
+    qs('#btnExportZip').addEventListener('click', () => {
+      const loc = currentLocation();
+      Object.assign(loc.fields, collectFormData());
+      withExportStatus('Building ZIP…', async () => {
+        await window.LSCExport.exportZip(loc);
+        toast('ZIP exported', 'success');
+      });
+    });
+    qs('#btnExportFolder').addEventListener('click', () => {
+      if (!window.LSCExport.folderExportSupported()) {
+        toast('Folder export is not supported by this browser. Use ZIP Export instead.', 'error');
+        return;
+      }
+      const loc = currentLocation();
+      Object.assign(loc.fields, collectFormData());
+      withExportStatus('Writing folder…', async () => {
+        await window.LSCExport.exportFolder(loc);
+        toast('Folder exported', 'success');
+      });
+    });
+    qs('#btnExportPdf').addEventListener('click', () => {
+      const loc = currentLocation();
+      Object.assign(loc.fields, collectFormData());
+      withExportStatus('Generating PDF…', async () => {
+        await window.LSCExport.exportPdfOnly(loc);
+        toast('PDF downloaded', 'success');
+      });
+    });
+    qs('#btnExportJson').addEventListener('click', () => { doJsonExport(); closeExportDialog(); });
 
     qs('#btnImport').addEventListener('click', () => qs('#importFile').click());
     qs('#importFile').addEventListener('change', e => {
       const file = e.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = () => {
+      reader.onload = async () => {
         try {
           const data = JSON.parse(reader.result);
           if (!data || typeof data !== 'object' || !data.fields) throw new Error('bad shape');
           const loc = blankLocation(data.name ? `${data.name} (Imported)` : 'Imported Location');
           loc.fields = data.fields || {};
           loc.touched = data.touched || {};
-          loc.photos = data.photos || { 'wide-angle': [], 'close-up': [] };
           loc.rating = data.rating || 0;
           loc.status = data.status || '';
+          normalizeLocation(loc);
+          if (data.media) MEDIA_CATEGORIES.forEach(cat => { if (Array.isArray(data.media[cat])) loc.media[cat] = data.media[cat]; });
+          if (data.photos) {
+            loc.photos = data.photos;
+            await window.LSCMedia.migrateLocationPhotos(loc);
+          }
           locations[loc.id] = loc;
           persistLocations();
           loadLocationIntoForm(loc.id);
@@ -908,12 +1346,24 @@
   }
 
   /* ===================== INIT ===================== */
-  function init() {
+  async function init() {
     initTheme();
+
+    mediaAvailable = window.LSCMedia ? await window.LSCMedia.checkAvailable() : false;
+    if (!mediaAvailable) {
+      toast('Photo/video storage (IndexedDB) is unavailable in this browser — photos will use a smaller legacy storage mode, and 360°/video attachment are disabled.', 'error');
+    }
 
     const stored = loadLocationsFromStorage();
     locations = stored || {};
     ensureAtLeastOneLocation();
+    Object.values(locations).forEach(normalizeLocation);
+
+    if (mediaAvailable) {
+      for (const loc of Object.values(locations)) {
+        if (loc.photos) await window.LSCMedia.migrateLocationPhotos(loc);
+      }
+    }
 
     const storedActive = localStorage.getItem(STORAGE_ACTIVE);
     activeId = (storedActive && locations[storedActive]) ? storedActive : Object.keys(locations)[0];
@@ -922,6 +1372,8 @@
     bindFormFields();
     bindCounters();
     bindPhotoInputs();
+    bindVideoAttach();
+    bind360();
     bindStars();
     bindModal();
     bindToolbar();
@@ -936,6 +1388,8 @@
     loadLocationIntoForm(activeId);
     persistLocations();
   }
+
+  window.LSCApp = { SECTION_META, MEDIA_FIELD_SET, MEDIA_CATEGORIES };
 
   document.addEventListener('DOMContentLoaded', init);
 })();
