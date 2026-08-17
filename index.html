@@ -1627,6 +1627,14 @@
          circle's own bounds. */
       .crtm-nav {
           position: relative;
+          /* Labels are pulled inward toward the arc via margin-left (up to
+             260px, see updateNavLabelOffsets) well past this element's own
+             ~110px flex box, into the horizontal space .crtm-main (the next
+             flex sibling) occupies. .crtm-main is transparent there so the
+             label still shows through, but without this it's the later
+             sibling in paint order and wins hit-testing, silently
+             swallowing clicks on the overflowing part of every label. */
+          z-index: 2;
           flex: 0 0 auto;
           width: max-content;
           max-width: 220px;
@@ -1639,6 +1647,18 @@
           display: flex;
           flex-direction: column;
           justify-content: space-between;
+          /* Must be flex-start, not the flex default (stretch): each item
+             also gets an inline margin-left (set by updateNavLabelOffsets,
+             below) that pulls it toward the arc. Under stretch, a button's
+             width is forced to (container width - its own margin-left), so
+             once that margin exceeds the container's own max-content width
+             (true for "camera"/"videos", pulled the furthest at 260px) the
+             box collapses to 0 width — the label still paints via overflow,
+             but there is no hit-testable button left under most of it,
+             making it unclickable except right at the left edge. flex-start
+             sizes each button to its own content instead, so it's never
+             narrower than the label it displays. */
+          align-items: flex-start;
           padding: 4px 0;
       }
 
@@ -2538,13 +2558,20 @@
               gap: 22px;
               margin-top: 22px;
           }
+          /* A 2-column grid, not flex-wrap: with flex-wrap, each item's own
+             rendered width (which varies with its label length) decides
+             where the line breaks, so the 4 items landed in a lopsided
+             1/2/1 layout instead of a tidy block. Grid fixes every item to
+             the same 2 columns regardless of label width. */
           .crtm-nav {
-              flex-direction: row;
-              flex-wrap: wrap;
+              display: grid;
+              grid-template-columns: repeat(2, minmax(0, 1fr));
+              align-items: start;
               width: auto;
+              max-width: none;
               height: auto;
               margin-top: 0;
-              gap: 10px 24px;
+              gap: 14px 18px;
               padding: 0;
           }
           .crtm-nav-arc-wrap { display: none; }
@@ -2823,7 +2850,7 @@
                     <button type="button" class="crtm-nav-item" data-mode="specifications" aria-current="false">
                         <span class="crtm-nav-item-inner">
                             <span class="crtm-nav-node" aria-hidden="true"></span>
-                            <span class="crtm-nav-label">Specifications</span>
+                            <span class="crtm-nav-label">Specs</span>
                         </span>
                     </button>
                     <button type="button" class="crtm-nav-item" data-mode="blogs" aria-current="false">
