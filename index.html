@@ -1393,8 +1393,27 @@
              every panel's content visually lives inside it, and the arc
              (sized from --crtm-oval-h below) always matches its curvature
              instead of drifting out of sync with whatever panel is active. */
-          --crtm-oval-w: clamp(760px, 64vw, 960px);
-          --crtm-oval-h: clamp(475px, 40vw, 600px);
+          /* Everything the row needs besides the oval itself: the nav
+             column (~110px) plus its gap to .crtm-main, plus the oval's own
+             padding-left (--crtm-oval-pad-mult * oval-h, see .crtm-main)
+             that clears the arc. Expressed algebraically (not just capped
+             at the interface's own max-width) because a plain vw-based
+             oval-w — sized only against the viewport — has no idea the nav
+             column and that padding are also competing for the same
+             .crtm-interface row: on ~1280-1730px laptop widths (13"/14"
+             MacBook Air/Pro and similar), the unconstrained oval-w + its
+             padding-left added up to MORE than the row actually had, and
+             the overflow was silently sliced off by this element's own
+             overflow-x:hidden instead of shrinking. */
+          --crtm-interface-max-w: clamp(980px, 82vw, 1460px);
+          --crtm-interface-pad: clamp(24px, 6vw, 64px);
+          --crtm-nav-reserve: 132px;
+          --crtm-oval-pad-mult: 0.38;
+          --crtm-oval-w: min(
+              clamp(760px, 64vw, 960px),
+              calc((var(--crtm-interface-max-w) - 2 * var(--crtm-interface-pad) - var(--crtm-nav-reserve)) / (1 + var(--crtm-oval-pad-mult) / 1.6))
+          );
+          --crtm-oval-h: calc(var(--crtm-oval-w) / 1.6);
           background: #000;
           padding: 0;
           /* Only clip horizontally — vertical overflow must stay scrollable
@@ -1555,9 +1574,9 @@
       .crtm-interface {
           position: relative;
           width: 100%;
-          max-width: clamp(980px, 82vw, 1460px);
+          max-width: var(--crtm-interface-max-w);
           margin: 0 auto;
-          padding: clamp(32px, 6vw, 64px) clamp(24px, 6vw, 64px) 56px;
+          padding: clamp(32px, 6vw, 64px) var(--crtm-interface-pad) 56px;
       }
 
       .crtm-brand {
@@ -1807,12 +1826,15 @@
          width near its tips, and content with a plain fixed padding could
          cross underneath/through the curve there (most visible with the
          Videos grid, whose fixed-width rows don't taper the way the curve
-         does). */
+         does). Multiplier lives in --crtm-oval-pad-mult (not hardcoded
+         here) because --crtm-oval-w's own fit calculation above needs the
+         same number to know how much room this padding will actually
+         claim. */
       .crtm-main {
           position: relative;
           flex: 1 1 auto;
           min-width: 0;
-          padding-left: calc(var(--crtm-oval-h) * 0.42);
+          padding-left: calc(var(--crtm-oval-h) * var(--crtm-oval-pad-mult));
       }
 
       .crtm-status {
