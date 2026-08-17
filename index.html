@@ -1249,7 +1249,13 @@
       }
 
 
-      /* --- SECTION: Cine ROro (#cinepi) --- */
+      /* ==========================================================
+         DISABLED — old Cine ROro section (#cinepi), superseded by the
+         Cine ROro Time Machine archive (#cine-roro-time-machine).
+         Commented out per request; kept for reference, not deleted.
+
+         SECTION: Cine ROro (#cinepi)
+
       #cinepi {
           background: url('Screenshot_2026-02-12_115846~2.jpg') no-repeat center center;
           background-size: cover;
@@ -1368,6 +1374,1251 @@
               font-size: 1rem;
           }
       }
+         ========================================================== */
+
+      /* ============================================================
+         SECTION: CINE RORO TIME MACHINE — Y2K RETRO INTERFACE
+         Entirely scoped under #cine-roro-time-machine / .crtm-* so it
+         cannot leak into, or be affected by, the rest of the site.
+         ============================================================ */
+
+      #cine-roro-time-machine {
+          --crtm-red: #e2231a;
+          --crtm-red-glow: rgba(226, 35, 26, 0.55);
+          --crtm-cyan: #2fe4ff;
+          --crtm-white: #f2f2f2;
+          /* One shared oval size used everywhere — the camMain hero photo,
+             the camera configuration grid, Specifications, Blogs, and the
+             Videos gallery are all framed by the SAME oval "screen", so
+             every panel's content visually lives inside it, and the arc
+             (sized from --crtm-oval-h below) always matches its curvature
+             instead of drifting out of sync with whatever panel is active. */
+          --crtm-oval-w: clamp(760px, 64vw, 960px);
+          --crtm-oval-h: clamp(475px, 40vw, 600px);
+          background: #000;
+          padding: 0;
+          /* Only clip horizontally — vertical overflow must stay scrollable
+             so tall panels (Specifications, etc.) are never cut off on short
+             mobile viewports. */
+          overflow-x: hidden;
+          overflow-y: visible;
+          display: block;
+          text-align: left;
+          min-height: 100vh;
+      }
+
+      /* Reset global button/iframe/anchor rules only inside this section.
+         :where() keeps the ID from adding specificity so the .crtm-* component
+         classes below can still override these base resets normally. The
+         :hover variant ONLY re-neutralizes `background` (what the global
+         site's `button:hover{background:#e65c00}` sets) — it must NOT repeat
+         `font: inherit` here, or every hovered button briefly loses its own
+         font-size to the inherited default, which shrank the wordmark on
+         hover and caused a hover/unhover flicker loop. */
+      :where(#cine-roro-time-machine) button {
+          background: none;
+          color: inherit;
+          padding: 0;
+          border: none;
+          font: inherit;
+          cursor: pointer;
+      }
+
+      :where(#cine-roro-time-machine) button:hover {
+          background: none;
+      }
+
+      :where(#cine-roro-time-machine) iframe {
+          width: 100%;
+          aspect-ratio: 16 / 9;
+          border: none;
+      }
+
+      :where(#cine-roro-time-machine) a {
+          color: var(--crtm-cyan);
+      }
+
+      #cine-roro-time-machine *:focus-visible {
+          outline: 2px solid var(--crtm-cyan);
+          outline-offset: 3px;
+      }
+
+      .crtm-sr-only {
+          position: absolute;
+          width: 1px; height: 1px;
+          padding: 0; margin: -1px;
+          overflow: hidden;
+          clip: rect(0,0,0,0);
+          white-space: nowrap;
+          border: 0;
+      }
+
+      /* Scrolling stays functional but the scrollbar itself never renders —
+         a visible track/thumb (even a dark-themed one) doesn't fit the
+         reference's chrome-free look. */
+      .crtm-content-oval-inner {
+          scrollbar-width: none;
+          -ms-overflow-style: none;
+      }
+
+      .crtm-content-oval-inner::-webkit-scrollbar {
+          display: none;
+      }
+
+      .crtm-shell {
+          position: relative;
+          width: 100%;
+          min-height: 100vh;
+          background: radial-gradient(ellipse at 70% 40%, #050608 0%, #000 65%);
+          color: var(--crtm-white);
+          font-family: "Manrope", Arial, sans-serif;
+          overflow-x: hidden;
+          overflow-y: visible;
+          display: flex;
+          /* Top-anchored like the reference (content pinned near the top,
+             negative space living below/around it) — not vertically
+             centered, which left it floating with wasted space above and
+             below. Horizontal centering is kept, per earlier request. */
+          align-items: flex-start;
+          justify-content: center;
+      }
+
+      /* Scanline / CRT texture */
+      .crtm-shell::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          background: repeating-linear-gradient(
+              to bottom,
+              rgba(255,255,255,0.035) 0px,
+              rgba(255,255,255,0.035) 1px,
+              transparent 2px,
+              transparent 3px
+          );
+          mix-blend-mode: overlay;
+          z-index: 5;
+      }
+
+      .crtm-shell::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          box-shadow: inset 0 0 160px rgba(0,0,0,0.9);
+          z-index: 6;
+      }
+
+      /* ---------- BOOT SEQUENCE (plays once per page view) ---------- */
+      .crtm-boot {
+          position: absolute;
+          inset: 0;
+          background: #000;
+          z-index: 50;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          opacity: 0;
+      }
+
+      .crtm-boot-active {
+          opacity: 1;
+          animation: crtmFlash 0.4s ease-out;
+      }
+
+      .crtm-boot-hide {
+          opacity: 0;
+          transition: opacity 0.5s ease;
+      }
+
+      .crtm-boot-line {
+          font-family: "Courier New", monospace;
+          font-size: 0.9rem;
+          letter-spacing: 0.08em;
+          color: var(--crtm-cyan);
+          text-shadow: 0 0 8px rgba(47,228,255,0.8);
+      }
+
+      @keyframes crtmFlash {
+          0% { background: #fff; }
+          15% { background: #000; }
+          30% { background: #fff; }
+          100% { background: #000; }
+      }
+
+      /* ---------- BRAND ---------- */
+      /* A "poster" composition (like the TopDawg reference) — sized to fit
+         its own content snugly (nav + arc + oval), not a wide box with
+         dead space to the right of the photo. The reference's oval nearly
+         reaches the poster's own edge; a wider max-width than this left a
+         large empty gutter that doesn't exist in the reference. */
+      .crtm-interface {
+          position: relative;
+          width: 100%;
+          max-width: clamp(980px, 82vw, 1460px);
+          margin: 0 auto;
+          padding: clamp(32px, 6vw, 64px) clamp(24px, 6vw, 64px) 56px;
+      }
+
+      .crtm-brand {
+          margin-bottom: 4px;
+      }
+
+      /* The button itself is the hover/click hit area and must never change
+         size — only the inner .crtm-wordmark-text visually scales on hover.
+         Scaling the button itself would shrink its own hit box, pushing the
+         cursor outside it, un-hovering it, growing it back, and re-hovering
+         it — an infinite flicker loop. Scaling an inner element instead
+         keeps the hit box constant (CSS transforms don't affect layout
+         size), so the animation is stable no matter where inside the
+         original box the cursor sits. */
+      .crtm-wordmark {
+          display: inline-block;
+          font-family: Arial, Helvetica, sans-serif;
+          font-weight: 900;
+          font-size: clamp(3rem, 7.5vw, 6.2rem);
+          line-height: 1;
+          text-align: left;
+      }
+
+      .crtm-wordmark-text {
+          display: inline-block;
+          color: var(--crtm-red);
+          text-shadow: 0 0 18px var(--crtm-red-glow), 0 0 2px rgba(0,0,0,0.8);
+          letter-spacing: -0.01em;
+          transform-origin: left center;
+          transition: transform 0.2s ease, text-shadow 0.2s ease;
+      }
+
+      .crtm-wordmark:hover .crtm-wordmark-text,
+      .crtm-wordmark:focus-visible .crtm-wordmark-text {
+          transform: scale(0.92);
+          text-shadow: 0 0 26px var(--crtm-red-glow), 0 0 2px rgba(0,0,0,0.8);
+      }
+
+      .crtm-brand-rule {
+          width: clamp(140px, 12vw, 220px);
+          height: 3px;
+          background: var(--crtm-white);
+          margin: 10px 0 9px;
+          opacity: 0.9;
+      }
+
+      .crtm-subtitle {
+          font-size: clamp(0.68rem, 0.9vw, 0.9rem);
+          letter-spacing: 0.08em;
+          color: var(--crtm-white);
+          opacity: 0.8;
+          text-transform: uppercase;
+      }
+
+      /* ---------- NAV / ARC + MAIN ROW ---------- */
+      .crtm-stage-row {
+          display: flex;
+          align-items: flex-start;
+          gap: 6px;
+          margin-top: clamp(28px, 4vw, 52px);
+      }
+
+      /* Height is derived from the SAME --crtm-oval-h as every panel's oval
+         (not an independent guess), plus a small overshoot — the
+         reference's arc actually starts above the circle's top and ends
+         slightly below its bottom, rather than clamping exactly to the
+         circle's own bounds. */
+      .crtm-nav {
+          position: relative;
+          flex: 0 0 auto;
+          width: max-content;
+          max-width: 220px;
+          white-space: nowrap;
+          height: calc(var(--crtm-oval-h) * 1.12);
+          /* Pulls the arc's top above the circle's top edge, matching the
+             reference (its arc starts near the subtitle line, before the
+             circle even begins) rather than starting flush with it. */
+          margin-top: -22px;
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+          padding: 4px 0;
+      }
+
+      /* Wrapper shares ONE coordinate box between the arc <svg> and the
+         spark — both positioned by percentage against this same box — so
+         the spark's percentage-based (left,top) always lands on the curve
+         itself, instead of being computed against .crtm-nav's unrelated
+         width like a plain left:100% would be. */
+      .crtm-nav-arc-wrap {
+          position: absolute;
+          top: 0;
+          left: 100%;
+          height: 100%;
+          aspect-ratio: 38 / 96;
+          pointer-events: none;
+      }
+
+      /* width/height 100% of the wrap (not an independent clamp) so the
+         viewBox — drawn from true ellipse geometry — is never stretched or
+         squashed out of its real proportions. That's what actually makes
+         this trace the oval's own curvature reliably, instead of an
+         unrelated decorative squiggle next to it. */
+      .crtm-nav-arc {
+          display: block;
+          width: 100%;
+          height: 100%;
+          overflow: visible;
+      }
+
+      /* A tapered filled sliver, not a constant-width stroke — thin at both
+         tips, widest at the middle of the bulge, matching the reference's
+         arc. SVG has no native variable-width stroke, so this is a closed
+         shape traced along the outer edge of the curve and back along an
+         inner offset edge, filled solid rather than stroked. */
+      .crtm-nav-arc path {
+          fill: rgba(255,255,255,0.55);
+          stroke: none;
+          filter: drop-shadow(0 0 4px rgba(255,255,255,0.15));
+      }
+
+      /* "Spark" — a bright glow that appears to flare off the arc at the
+         height of whichever nav item is currently active, matching the
+         reference's highlight-on-the-curve effect. Positioned via JS as a
+         (left%, top%) pair within .crtm-nav-arc-wrap, computed from the
+         same curve the path itself is drawn from, so it always lands ON
+         the line rather than at a fixed offset that only happens to work
+         for one item's height. */
+      .crtm-nav-spark {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 16px;
+          height: 16px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(220,245,255,0.55) 40%, transparent 72%);
+          box-shadow: 0 0 12px 4px rgba(255,255,255,0.5), 0 0 24px 10px rgba(47,228,255,0.35);
+          transform: translate(-50%, -50%);
+          pointer-events: none;
+          opacity: 0;
+          transition: left 0.3s ease, top 0.3s ease, opacity 0.25s ease;
+          animation: crtmSparkPulse 1.8s ease-in-out infinite;
+      }
+
+      .crtm-nav-spark.is-visible {
+          opacity: 1;
+      }
+
+      @keyframes crtmSparkPulse {
+          0%, 100% { transform: translate(-50%, -50%) scale(1); }
+          50% { transform: translate(-50%, -50%) scale(1.3); }
+      }
+
+      /* The button (.crtm-nav-item) is the hover/click hit area and must
+         never change size on hover — see the .crtm-wordmark comment above
+         for why. The "big to small" hover animation is applied to the inner
+         .crtm-nav-item-inner wrapper instead, which keeps the button's own
+         box constant and the animation flicker-free. */
+      .crtm-nav-item {
+          position: relative;
+          display: flex;
+          align-items: center;
+          text-align: left;
+          padding: 8px 0;
+          color: rgba(255,255,255,0.75);
+          font-family: "Manrope", Arial, sans-serif;
+          font-size: clamp(1rem, 1.3vw, 1.3rem);
+          font-weight: 500;
+          letter-spacing: 0.01em;
+      }
+
+      /* Each label's horizontal offset is computed and set inline by JS
+         (updateNavLabelOffsets) from the SAME curve sample table the arc
+         path and the spark are built from, so the text sits close to the
+         curve/spark at every height rather than an approximate static
+         guess. Reset to 0 on narrow layouts below, where the arc itself is
+         hidden and the nav becomes a horizontal row. */
+
+      .crtm-nav-item-inner {
+          display: inline-flex;
+          align-items: center;
+          gap: 12px;
+          transform-origin: left center;
+          transition: transform 0.2s ease;
+      }
+
+      .crtm-nav-item:hover .crtm-nav-item-inner,
+      .crtm-nav-item:focus-visible .crtm-nav-item-inner {
+          transform: scale(0.94);
+      }
+
+      .crtm-nav-node {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: transparent;
+          flex-shrink: 0;
+          transition: box-shadow 0.25s ease, background 0.25s ease, transform 0.25s ease;
+      }
+
+      .crtm-nav-item:hover .crtm-nav-node,
+      .crtm-nav-item:focus-visible .crtm-nav-node {
+          background: var(--crtm-cyan);
+          box-shadow: 0 0 10px 3px rgba(47,228,255,0.75);
+      }
+
+      .crtm-nav-item:hover .crtm-nav-label,
+      .crtm-nav-item:focus-visible .crtm-nav-label {
+          color: var(--crtm-cyan);
+      }
+
+      .crtm-nav-item.is-active .crtm-nav-node {
+          background: var(--crtm-white);
+          box-shadow: 0 0 10px 3px rgba(255,255,255,0.8);
+          transform: scale(1.2);
+      }
+
+      .crtm-nav-item.is-active .crtm-nav-label {
+          color: var(--crtm-white);
+          font-weight: 700;
+      }
+
+      /* ---------- MAIN VIEWING AREA / STATUS ---------- */
+      /* padding-left is derived from --crtm-oval-h (not an independent
+         guess) so it always clears the arc's rightmost reach — the arc is
+         absolutely positioned and can extend past nav's own flex-reserved
+         width near its tips, and content with a plain fixed padding could
+         cross underneath/through the curve there (most visible with the
+         Videos grid, whose fixed-width rows don't taper the way the curve
+         does). */
+      .crtm-main {
+          position: relative;
+          flex: 1 1 auto;
+          min-width: 0;
+          padding-left: calc(var(--crtm-oval-h) * 0.42);
+      }
+
+      .crtm-status {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          font-family: "Courier New", monospace;
+          font-size: 0.65rem;
+          letter-spacing: 0.08em;
+          color: rgba(255,255,255,0.5);
+          margin-bottom: 14px;
+          text-transform: uppercase;
+      }
+
+      .crtm-status-led {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: var(--crtm-red);
+          box-shadow: 0 0 6px 2px var(--crtm-red-glow);
+          animation: crtmBlink 2.4s ease-in-out infinite;
+      }
+
+      @keyframes crtmBlink {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.35; }
+      }
+
+      .crtm-panel { display: none; }
+      .crtm-panel:not([hidden]) { display: block; }
+      .crtm-subview { display: none; }
+      .crtm-subview:not([hidden]) { display: block; }
+
+      .crtm-panel-title {
+          font-family: "Courier New", monospace;
+          font-size: 0.75rem;
+          letter-spacing: 0.1em;
+          color: var(--crtm-white);
+          margin-bottom: 14px;
+          text-transform: uppercase;
+          border-bottom: 1px solid rgba(255,255,255,0.2);
+          padding-bottom: 8px;
+      }
+
+      /* ---------- CAMERA PANEL ----------
+         Three mutually-exclusive sub-views, swapped in place — mirrors the
+         reference site's behavior of a home portrait photo that is replaced
+         by a small product grid when "Products" is chosen. */
+      .crtm-camera-stage {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
+          min-height: clamp(260px, 27vw, 420px);
+      }
+
+      /* Oval frame — wider than tall, matching the reference's ellipse.
+         Split into two layers: the outer .crtm-hero-frame carries the soft
+         blurred glow (a box-shadow, which must NOT sit on an overflow:hidden
+         box or the box's own shadow gets clipped away), and the inner
+         .crtm-hero-frame-clip does the actual hard oval crop of the
+         cover-fit photo — matching the reference's blurred halo around a
+         crisp oval edge. */
+      .crtm-hero-frame {
+          position: relative;
+          width: var(--crtm-oval-w);
+          height: var(--crtm-oval-h);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: radial-gradient(ellipse, rgba(60,150,255,0.24) 0%, rgba(60,150,255,0.05) 55%, transparent 75%);
+          box-shadow:
+              0 0 46px 12px rgba(120,190,255,0.38),
+              0 0 100px 34px rgba(90,160,255,0.2);
+      }
+
+      /* Shared FOOTPRINT for every non-photo panel (camera grid, specs,
+         blogs, videos) — same width/height as .crtm-hero-frame so the arc
+         stays aligned with it, but deliberately NO visible oval (no border,
+         fill, or glow ring). The reference's Products page has no drawn
+         circle at all — items just float in black space, each with its own
+         soft glow (already on .crtm-gallery-frame / .crtm-video-tile-frame),
+         same as here. Only the home photo gets an actual drawn oval. */
+      .crtm-content-oval {
+          position: relative;
+          width: var(--crtm-oval-w);
+          height: var(--crtm-oval-h);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+      }
+
+      .crtm-content-oval-inner {
+          width: 82%;
+          max-height: 78%;
+          overflow-y: auto;
+          text-align: left;
+          padding-right: 6px;
+      }
+
+      .crtm-hero-frame-clip {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          overflow: hidden;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+      }
+
+      .crtm-hero-frame-clip::before {
+          content: "";
+          position: absolute;
+          inset: 6px;
+          border-radius: 50%;
+          border: 1px solid rgba(255,255,255,0.35);
+          box-shadow: 0 0 14px rgba(255,255,255,0.1);
+          pointer-events: none;
+          z-index: 2;
+      }
+
+      .crtm-hero-image {
+          position: relative;
+          z-index: 1;
+          max-width: 78%;
+          max-height: 78%;
+          width: auto;
+          object-fit: contain;
+          filter: drop-shadow(0 8px 20px rgba(0,0,0,0.7));
+      }
+
+      /* Used only on the home camMain.png shot — fills the oval edge to
+         edge like the reference's diver photo, instead of floating small
+         and letterboxed inside it. Camera product shots (grid + preview)
+         keep the default "contain" behavior above so they're never cropped. */
+      .crtm-hero-image--fill {
+          max-width: 100%;
+          max-height: 100%;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          filter: none;
+      }
+
+      .crtm-scanbar {
+          position: absolute;
+          left: 10%;
+          right: 10%;
+          height: 2px;
+          top: 14%;
+          background: linear-gradient(90deg, transparent, rgba(47,228,255,0.7), transparent);
+          animation: crtmScan 5s linear infinite;
+          z-index: 2;
+          opacity: 0.7;
+          border-radius: 50%;
+      }
+
+      @keyframes crtmScan {
+          0% { top: 10%; opacity: 0; }
+          10% { opacity: 0.7; }
+          90% { opacity: 0.7; }
+          100% { top: 86%; opacity: 0; }
+      }
+
+      .crtm-hero-caption {
+          margin-top: 12px;
+          font-family: "Courier New", monospace;
+          font-size: 0.62rem;
+          letter-spacing: 0.08em;
+          color: rgba(255,255,255,0.5);
+          text-transform: uppercase;
+      }
+
+      .crtm-camera-links {
+          margin-top: 10px;
+      }
+
+      .crtm-hero-credit {
+          margin-top: 22px;
+          font-family: "Courier New", monospace;
+          font-size: 0.6rem;
+          letter-spacing: 0.03em;
+          color: rgba(255,255,255,0.35);
+      }
+
+      .crtm-hero-credit a {
+          color: rgba(47,228,255,0.75);
+      }
+
+      .crtm-camera-links button {
+          font-family: "Courier New", monospace;
+          font-size: 0.62rem;
+          letter-spacing: 0.06em;
+          color: var(--crtm-cyan);
+          text-decoration: underline;
+          text-underline-offset: 2px;
+          text-transform: uppercase;
+      }
+
+      /* Scale the inner label, not the button — keeps the clickable hit box
+         a constant size so hover can't flicker. See .crtm-wordmark comment. */
+      .crtm-camera-links button .crtm-btn-text,
+      .crtm-reset-btn .crtm-btn-text {
+          display: inline-block;
+          transform-origin: left center;
+          transition: transform 0.2s ease;
+      }
+
+      .crtm-camera-links button:hover .crtm-btn-text,
+      .crtm-camera-links button:focus-visible .crtm-btn-text,
+      .crtm-reset-btn:hover .crtm-btn-text,
+      .crtm-reset-btn:focus-visible .crtm-btn-text {
+          transform: scale(0.94);
+      }
+
+      /* Product grid — plain photos + bold caption, no circular masking,
+         matching the reference Products page rather than a modern card UI.
+         Wraps to as many rows as needed and scrolls internally, so future
+         camera versions can be appended without redesigning the layout. */
+      .crtm-gallery {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: clamp(16px, 2.4vw, 30px) clamp(20px, 3vw, 40px);
+          width: 100%;
+      }
+
+      .crtm-gallery-item {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          text-align: center;
+          width: clamp(130px, 14vw, 190px);
+          padding: 6px;
+      }
+
+      /* Scales on hover instead of the button itself, so the tile's own
+         clickable footprint stays put and hover can't flicker. */
+      .crtm-gallery-item-inner {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          width: 100%;
+          transition: transform 0.2s ease;
+      }
+
+      .crtm-gallery-item:hover .crtm-gallery-item-inner,
+      .crtm-gallery-item:focus-visible .crtm-gallery-item-inner {
+          transform: scale(0.95);
+      }
+
+      .crtm-gallery-frame {
+          position: relative;
+          width: 100%;
+          height: clamp(100px, 11vw, 150px);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: radial-gradient(ellipse, rgba(255,255,255,0.16) 0%, rgba(255,255,255,0.04) 55%, transparent 78%);
+          border-radius: 50%;
+      }
+
+      .crtm-gallery-frame img {
+          max-width: 100%;
+          max-height: 100%;
+          object-fit: contain;
+          filter: drop-shadow(0 0 6px rgba(255,255,255,0.55)) drop-shadow(0 4px 10px rgba(0,0,0,0.6));
+          transition: filter 0.2s ease;
+      }
+
+      .crtm-gallery-item:hover .crtm-gallery-frame img,
+      .crtm-gallery-item:focus-visible .crtm-gallery-frame img {
+          filter: drop-shadow(0 0 10px rgba(47,228,255,0.75)) drop-shadow(0 4px 10px rgba(0,0,0,0.6));
+      }
+
+      .crtm-gallery-label {
+          font-family: "Manrope", Arial, sans-serif;
+          font-size: 0.7rem;
+          font-weight: 700;
+          color: rgba(255,255,255,0.75);
+      }
+
+      .crtm-gallery-item:hover .crtm-gallery-label,
+      .crtm-gallery-item:focus-visible .crtm-gallery-label {
+          color: var(--crtm-cyan);
+      }
+
+      .crtm-reset-btn {
+          margin: 18px 0 0;
+          display: block;
+          font-family: "Courier New", monospace;
+          font-size: 0.65rem;
+          letter-spacing: 0.06em;
+          color: var(--crtm-white);
+          border: 1px solid rgba(255,255,255,0.4);
+          border-radius: 3px;
+          padding: 7px 12px;
+          text-transform: uppercase;
+      }
+
+      .crtm-reset-btn:hover {
+          color: var(--crtm-cyan);
+          border-color: var(--crtm-cyan);
+      }
+
+      /* ---------- SPECIFICATIONS PANEL ---------- */
+
+      .crtm-spec-columns {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 30px;
+      }
+
+      .crtm-spec-block-title {
+          font-family: "Courier New", monospace;
+          font-size: 0.72rem;
+          letter-spacing: 0.08em;
+          color: var(--crtm-red);
+          margin-bottom: 12px;
+          text-transform: uppercase;
+      }
+
+      .crtm-spec-list div {
+          display: flex;
+          align-items: baseline;
+          gap: 8px;
+          font-family: "Courier New", monospace;
+          font-size: 0.78rem;
+          padding: 5px 0;
+      }
+
+      .crtm-spec-list dt {
+          color: rgba(255,255,255,0.55);
+          letter-spacing: 0.06em;
+          white-space: nowrap;
+      }
+
+      .crtm-spec-list dt::after {
+          content: "";
+          display: inline-block;
+          width: 40px;
+          border-bottom: 1px dotted rgba(255,255,255,0.3);
+          margin: 0 0 3px 6px;
+      }
+
+      .crtm-spec-list dd {
+          color: var(--crtm-white);
+          flex: 1;
+      }
+
+      .crtm-spec-footnote {
+          margin-top: 26px;
+          font-size: 0.78rem;
+          line-height: 1.6;
+          color: rgba(255,255,255,0.55);
+          max-width: 640px;
+          border-left: 2px solid var(--crtm-red);
+          padding-left: 14px;
+      }
+
+      /* ---------- BLOGS PANEL ---------- */
+      .crtm-blog-search-row {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 16px;
+          flex-wrap: wrap;
+      }
+
+      .crtm-blog-search {
+          background: rgba(255,255,255,0.05);
+          border: 1px solid rgba(255,255,255,0.3);
+          border-radius: 3px;
+          color: var(--crtm-white);
+          font-family: "Courier New", monospace;
+          font-size: 0.75rem;
+          letter-spacing: 0.05em;
+          padding: 8px 12px;
+          flex: 1;
+          max-width: 320px;
+      }
+
+      .crtm-blog-search:focus {
+          border-color: var(--crtm-cyan);
+          outline: none;
+      }
+
+      .crtm-blog-count {
+          font-family: "Courier New", monospace;
+          font-size: 0.65rem;
+          color: rgba(255,255,255,0.45);
+          letter-spacing: 0.06em;
+          white-space: nowrap;
+      }
+
+      .crtm-blog-list {
+          display: flex;
+          flex-direction: column;
+          gap: 14px;
+          padding-right: 6px;
+      }
+
+      .crtm-blog-entry {
+          display: flex;
+          gap: 14px;
+          align-items: center;
+          text-decoration: none;
+          padding: 10px;
+          border: 1px solid rgba(255,255,255,0.12);
+          border-radius: 4px;
+          background: rgba(255,255,255,0.02);
+          transition: border-color 0.2s ease, background 0.2s ease;
+      }
+
+      .crtm-blog-entry:hover,
+      .crtm-blog-entry:focus-visible {
+          border-color: var(--crtm-cyan);
+          background: rgba(47,228,255,0.06);
+      }
+
+      /* Round thumbnail — echoes the circular/oval motif used throughout
+         (hero photo, camera gallery) rather than a sharp square crop. */
+      .crtm-blog-thumb {
+          position: relative;
+          width: 64px;
+          height: 64px;
+          flex-shrink: 0;
+          overflow: hidden;
+          border-radius: 50%;
+          background: #000;
+      }
+
+      .crtm-blog-thumb img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+      }
+
+      .crtm-blog-entry--pending {
+          cursor: pointer;
+      }
+
+      .crtm-blog-entry--pending .crtm-blog-thumb img {
+          opacity: 0.5;
+          filter: grayscale(0.3);
+          transition: opacity 0.2s ease;
+      }
+
+      .crtm-blog-entry--pending:hover .crtm-blog-thumb img,
+      .crtm-blog-entry--pending:focus-visible .crtm-blog-thumb img {
+          opacity: 0.85;
+      }
+
+      .crtm-blog-badge {
+          position: absolute;
+          bottom: 7px;
+          left: 8px;
+          right: 8px;
+          background: rgba(0,0,0,0.75);
+          color: var(--crtm-red);
+          font-family: "Courier New", monospace;
+          font-size: 0.5rem;
+          letter-spacing: 0.05em;
+          text-align: center;
+          padding: 1px 0;
+          animation: crtmBlink 2.4s ease-in-out infinite;
+      }
+
+      .crtm-blog-title {
+          font-size: 0.85rem;
+          font-weight: 600;
+          color: var(--crtm-white);
+          margin-bottom: 3px;
+      }
+
+      .crtm-blog-desc {
+          font-size: 0.72rem;
+          color: rgba(255,255,255,0.55);
+          line-height: 1.4;
+          margin-bottom: 3px;
+      }
+
+      .crtm-blog-meta {
+          font-family: "Courier New", monospace;
+          font-size: 0.62rem;
+          letter-spacing: 0.05em;
+          color: rgba(255,255,255,0.4);
+          text-transform: uppercase;
+      }
+
+      .crtm-blog-feedback {
+          margin-top: 12px;
+          font-family: "Courier New", monospace;
+          font-size: 0.72rem;
+          letter-spacing: 0.06em;
+          color: var(--crtm-cyan);
+          min-height: 1em;
+      }
+
+      /* ---------- VIDEOS PANEL ----------
+         Same two-sub-view pattern as CAMERAS: a floating thumbnail gallery
+         (grid) and a vintage-chrome video player (player), swapped in place
+         rather than an always-visible viewer box. */
+      .crtm-video-gallery {
+          display: grid;
+          grid-template-columns: repeat(2, 1fr);
+          gap: clamp(16px, 2.4vw, 28px);
+          width: 100%;
+      }
+
+      .crtm-video-tile {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          text-align: center;
+      }
+
+      /* Scales on hover instead of the button itself — see .crtm-wordmark
+         comment for why the button's own box must stay a constant size. */
+      .crtm-video-tile-inner {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 8px;
+          width: 100%;
+          transition: transform 0.2s ease;
+      }
+
+      .crtm-video-tile:hover .crtm-video-tile-inner,
+      .crtm-video-tile:focus-visible .crtm-video-tile-inner {
+          transform: scale(0.95);
+      }
+
+      .crtm-video-tile-frame {
+          position: relative;
+          width: 100%;
+          aspect-ratio: 16 / 9;
+          border-radius: 10px;
+          overflow: hidden;
+          background: radial-gradient(ellipse, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.03) 60%, transparent 82%);
+      }
+
+      .crtm-video-tile-frame img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          opacity: 0.82;
+          filter: drop-shadow(0 0 8px rgba(255,255,255,0.4));
+          transition: opacity 0.2s ease, filter 0.2s ease;
+      }
+
+      .crtm-video-tile:hover .crtm-video-tile-frame img,
+      .crtm-video-tile:focus-visible .crtm-video-tile-frame img {
+          opacity: 1;
+          filter: drop-shadow(0 0 14px rgba(47,228,255,0.65));
+      }
+
+      .crtm-video-tile-play {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: var(--crtm-white);
+          font-size: 1.3rem;
+          text-shadow: 0 0 10px rgba(0,0,0,0.9);
+      }
+
+      .crtm-video-tile-label {
+          font-family: "Manrope", Arial, sans-serif;
+          font-size: 0.75rem;
+          font-weight: 700;
+          color: rgba(255,255,255,0.75);
+      }
+
+      .crtm-video-tile:hover .crtm-video-tile-label,
+      .crtm-video-tile:focus-visible .crtm-video-tile-label {
+          color: var(--crtm-cyan);
+      }
+
+      /* Vintage "console" video player — a bezel with a small CRT-style
+         status bar above the screen and a monospace playback line below. */
+      .crtm-video-player-frame {
+          width: 100%;
+          border: 1px solid rgba(255,255,255,0.3);
+          border-radius: 8px;
+          overflow: hidden;
+          background: #000;
+          box-shadow: 0 0 26px rgba(255,255,255,0.07);
+      }
+
+      .crtm-video-player-chrome {
+          display: flex;
+          align-items: center;
+          gap: 9px;
+          padding: 9px 14px;
+          border-bottom: 1px solid rgba(255,255,255,0.2);
+          font-family: "Courier New", monospace;
+          font-size: 0.68rem;
+          letter-spacing: 0.08em;
+          color: rgba(255,255,255,0.6);
+          text-transform: uppercase;
+      }
+
+      .crtm-video-player-dot {
+          width: 7px;
+          height: 7px;
+          border-radius: 50%;
+          background: var(--crtm-red);
+          box-shadow: 0 0 6px 2px var(--crtm-red-glow);
+          animation: crtmBlink 2.4s ease-in-out infinite;
+          flex-shrink: 0;
+      }
+
+      .crtm-video-player-title {
+          overflow: hidden;
+          text-overflow: ellipsis;
+          white-space: nowrap;
+      }
+
+      .crtm-video-player-screen {
+          position: relative;
+          width: 100%;
+          aspect-ratio: 16 / 9;
+          background: #000;
+      }
+
+      .crtm-video-player-screen iframe {
+          width: 100%;
+          height: 100%;
+          border: none;
+          display: block;
+      }
+
+      .crtm-video-now-playing {
+          font-family: "Courier New", monospace;
+          font-size: 0.66rem;
+          letter-spacing: 0.05em;
+          color: rgba(255,255,255,0.5);
+          padding: 8px 14px;
+          border-top: 1px solid rgba(255,255,255,0.12);
+      }
+
+      .crtm-video-player-actions {
+          display: flex;
+          gap: 14px;
+          flex-wrap: wrap;
+          margin-top: 18px;
+      }
+
+      /* ---------- PORTRAIT ROTATE SUGGESTION ----------
+         A small dismissible toast, NOT a blocking modal — the section
+         renders a usable compact layout in portrait on its own (see the
+         RESPONSIVE rules below); this just suggests landscape for the full
+         composition and lets the visitor dismiss it. */
+      .crtm-orientation-hint {
+          position: fixed;
+          left: 50%;
+          bottom: 18px;
+          transform: translateX(-50%);
+          z-index: 500;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          max-width: min(92vw, 380px);
+          padding: 10px 12px;
+          background: rgba(0,0,0,0.92);
+          border: 1px solid rgba(255,255,255,0.3);
+          box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+      }
+
+      .crtm-orientation-hint[hidden] { display: none; }
+
+      .crtm-orient-phone-mini {
+          width: 15px;
+          height: 24px;
+          border: 2px solid var(--crtm-cyan);
+          border-radius: 3px;
+          flex-shrink: 0;
+          animation: crtmRotatePhone 2.2s ease-in-out infinite;
+      }
+
+      @keyframes crtmRotatePhone {
+          0%, 20% { transform: rotate(0deg); }
+          50%, 70% { transform: rotate(90deg); }
+          100% { transform: rotate(90deg); }
+      }
+
+      .crtm-orientation-hint-text {
+          font-family: "Courier New", monospace;
+          font-size: 0.66rem;
+          letter-spacing: 0.02em;
+          line-height: 1.35;
+          color: var(--crtm-white);
+      }
+
+      .crtm-orientation-hint-text strong {
+          color: var(--crtm-cyan);
+      }
+
+      .crtm-orientation-hint-dismiss {
+          margin-left: auto;
+          flex-shrink: 0;
+          font-size: 1.1rem;
+          line-height: 1;
+          color: rgba(255,255,255,0.55);
+          padding: 2px 4px;
+      }
+
+      .crtm-orientation-hint-dismiss:hover,
+      .crtm-orientation-hint-dismiss:focus-visible {
+          color: var(--crtm-cyan);
+      }
+
+      /* ---------- RESPONSIVE ----------
+         Renders a genuinely usable, compact vertical layout on phones,
+         rather than relying on the desktop composition's larger clamp()
+         floors (which don't fit a ~360-430px-wide screen). */
+      @media (max-width: 760px) {
+          /* This is the actual root fix for content overflowing the phone
+             viewport: --crtm-oval-w/h drive .crtm-hero-frame AND
+             .crtm-content-oval (used by the camera grid, Specifications,
+             Blogs, and Videos) — left at their desktop clamp() values
+             (760-960px wide), the oval stayed full desktop width on a
+             ~400px phone screen regardless of how the rest of the layout
+             stacked, cutting content off past the right edge. */
+          #cine-roro-time-machine {
+              --crtm-oval-w: min(80vw, 320px);
+              --crtm-oval-h: min(58vw, 236px);
+          }
+          .crtm-interface {
+              padding: 26px 18px 40px;
+          }
+          .crtm-wordmark { font-size: clamp(2rem, 10vw, 2.8rem); }
+          .crtm-brand-rule { width: 100px; }
+          .crtm-subtitle { font-size: 0.62rem; }
+          .crtm-stage-row {
+              flex-direction: column;
+              gap: 22px;
+              margin-top: 22px;
+          }
+          .crtm-nav {
+              flex-direction: row;
+              flex-wrap: wrap;
+              width: auto;
+              height: auto;
+              margin-top: 0;
+              gap: 10px 24px;
+              padding: 0;
+          }
+          .crtm-nav-arc-wrap { display: none; }
+          .crtm-nav-item { font-size: 0.88rem; }
+          .crtm-nav-item[data-mode="camera"],
+          .crtm-nav-item[data-mode="videos"],
+          .crtm-nav-item[data-mode="specifications"],
+          .crtm-nav-item[data-mode="blogs"] {
+              margin-left: 0;
+          }
+          .crtm-main {
+              padding-left: 0;
+          }
+          /* .crtm-hero-frame keeps the compact --crtm-oval-h above (it's
+             just a circular photo). .crtm-content-oval is overridden taller
+             here, independently of the hero — it has no visible border on
+             these panels, so it's free to grow and give the camera grid,
+             specs, blogs, and video list room to actually show their
+             content instead of being cropped to the photo's short height. */
+          .crtm-content-oval {
+              height: min(115vw, 460px);
+          }
+          .crtm-content-oval-inner {
+              width: 90%;
+              max-height: 88%;
+          }
+          .crtm-gallery-item { width: clamp(90px, 34vw, 120px); }
+          .crtm-gallery-frame { height: clamp(66px, 24vw, 90px); }
+          .crtm-spec-columns {
+              grid-template-columns: 1fr;
+              gap: 22px;
+          }
+      }
+
+      /* Short/landscape phones: plenty of width, very little height — keep
+         the two-column layout (it fits) but shrink vertical rhythm so panels
+         like Specifications don't need excessive scrolling to reach the end. */
+      @media (max-height: 500px) and (orientation: landscape) {
+          /* Redefining the shared oval variables keeps the arc, the hero
+             oval, and every panel's oval "screen" matched to each other
+             here too, instead of hardcoding each one separately and
+             risking them drifting out of sync. */
+          #cine-roro-time-machine {
+              --crtm-oval-w: 280px;
+              --crtm-oval-h: 175px;
+          }
+          .crtm-interface {
+              padding-top: 14px;
+              padding-bottom: 20px;
+          }
+          .crtm-stage-row { margin-top: 12px; gap: 16px; }
+          .crtm-wordmark { font-size: clamp(1.4rem, 5vw, 1.9rem); }
+          .crtm-subtitle { font-size: 0.56rem; }
+          .crtm-brand-rule { width: 80px; margin: 6px 0 5px; }
+          .crtm-nav { gap: 6px 18px; }
+          .crtm-nav-item { font-size: 0.78rem; padding: 4px 0; }
+          .crtm-nav-item[data-mode="camera"],
+          .crtm-nav-item[data-mode="videos"] { margin-left: 8px; }
+          .crtm-nav-item[data-mode="specifications"],
+          .crtm-nav-item[data-mode="blogs"] { margin-left: 3px; }
+          .crtm-status { margin-bottom: 8px; }
+          .crtm-panel-title { margin-bottom: 10px; padding-bottom: 6px; }
+          .crtm-gallery-item { width: 88px; }
+          .crtm-gallery-frame { height: 60px; }
+          .crtm-video-player-frame { max-width: 380px; }
+      }
+
+      /* ---------- REDUCED MOTION ---------- */
+      @media (prefers-reduced-motion: reduce) {
+          #cine-roro-time-machine * {
+              animation: none !important;
+              transition: none !important;
+          }
+      }
 
   </style>
 
@@ -1385,7 +2636,9 @@
         <div class="nav-links">
             <a href="#intro">Home</a>
             <a href="#filmmaking">Filmmaking</a>
-            <a href="#cinepi">Cine ROro</a>
+            <!-- DISABLED: old Cine ROro section link, superseded by the archive below -->
+            <!-- <a href="#cinepi">Cine ROro</a> -->
+            <a href="#cine-roro-time-machine">Cine ROro Archive</a>
             <a href="#nursing">Nursing</a>
             <a href="#acuity">Acuity</a>
             <a href="#projects-solutions">Other Projects</a>
@@ -1476,7 +2729,9 @@
         </div>
     </section>
 
-    <!-- SECTION: CINE RORO — DIY CinePi Camera -->
+    <!-- DISABLED: old Cine ROro section (#cinepi), superseded by the Cine ROro
+         Time Machine archive (#cine-roro-time-machine) below. Commented out
+         per request; kept for reference, not deleted.
     <section id="cinepi" class="section">
         <div class="cinepi-wrapper">
 
@@ -1521,6 +2776,760 @@
 
         </div>
     </section>
+    -->
+
+    <!-- SECTION: CINE RORO TIME MACHINE — Y2K RETRO INTERFACE -->
+    <section id="cine-roro-time-machine" class="section crtm-section">
+        <div class="crtm-shell" id="crtmShell">
+
+            <!-- One-time boot flash, respects prefers-reduced-motion -->
+            <div class="crtm-boot" id="crtmBoot" aria-hidden="true">
+                <div class="crtm-boot-line">INITIALIZING CINE RORO ARCHIVE...</div>
+            </div>
+
+            <!-- Portrait rotate suggestion: a dismissible hint, not a blocker.
+                 The section itself renders a compact usable layout in
+                 portrait (see RESPONSIVE rules); this just recommends
+                 landscape for the full composition. Only active for this
+                 section, on narrow/portrait viewports. -->
+            <div class="crtm-orientation-hint" id="crtmOrientHint" role="status" aria-live="polite" hidden>
+                <span class="crtm-orient-phone-mini" aria-hidden="true"></span>
+                <span class="crtm-orientation-hint-text">Tip: rotate your device for the full <strong>Cine ROro</strong> retro experience.</span>
+                <button type="button" class="crtm-orientation-hint-dismiss" id="crtmOrientDismiss" aria-label="Dismiss rotate suggestion">&times;</button>
+            </div>
+
+            <div class="crtm-interface">
+
+                <div class="crtm-brand">
+                    <button type="button" class="crtm-wordmark" id="crtmLogoHome" aria-label="Return to Cine ROro home view"><span class="crtm-wordmark-text">Cine ROro</span></button>
+                    <div class="crtm-brand-rule"></div>
+                    <div class="crtm-subtitle">D I G I T A L&nbsp;&nbsp;C I N E M A&nbsp;&nbsp;S Y S T E M</div>
+                </div>
+
+                <div class="crtm-stage-row">
+                <nav class="crtm-nav" aria-label="Cine ROro archive navigation">
+                    <div class="crtm-nav-arc-wrap">
+                        <svg class="crtm-nav-arc" viewBox="0 0 38 96" preserveAspectRatio="none" aria-hidden="true">
+                            <path d="M26.045,10.28 Q34.29,3.81 26.645,10.28 Q19.00,16.75 14.225,24.285 Q9.45,31.82 7.825,39.91 Q6.20,48.00 7.825,56.09 Q9.45,64.18 14.225,71.715 Q19.00,79.25 26.645,85.72 Q34.29,92.19 26.045,85.72 Q17.80,79.25 12.585,71.715 Q7.37,64.18 5.585,56.09 Q3.80,48.00 5.585,39.91 Q7.37,31.82 12.585,24.285 Q17.80,16.75 26.045,10.28 Z" />
+                        </svg>
+                        <span class="crtm-nav-spark" id="crtmNavSpark" aria-hidden="true"></span>
+                    </div>
+                    <button type="button" class="crtm-nav-item" data-mode="camera" aria-current="false">
+                        <span class="crtm-nav-item-inner">
+                            <span class="crtm-nav-node" aria-hidden="true"></span>
+                            <span class="crtm-nav-label">Cameras</span>
+                        </span>
+                    </button>
+                    <button type="button" class="crtm-nav-item" data-mode="specifications" aria-current="false">
+                        <span class="crtm-nav-item-inner">
+                            <span class="crtm-nav-node" aria-hidden="true"></span>
+                            <span class="crtm-nav-label">Specifications</span>
+                        </span>
+                    </button>
+                    <button type="button" class="crtm-nav-item" data-mode="blogs" aria-current="false">
+                        <span class="crtm-nav-item-inner">
+                            <span class="crtm-nav-node" aria-hidden="true"></span>
+                            <span class="crtm-nav-label">Blogs</span>
+                        </span>
+                    </button>
+                    <button type="button" class="crtm-nav-item" data-mode="videos" aria-current="false">
+                        <span class="crtm-nav-item-inner">
+                            <span class="crtm-nav-node" aria-hidden="true"></span>
+                            <span class="crtm-nav-label">Videos</span>
+                        </span>
+                    </button>
+                </nav>
+
+                <div class="crtm-main" id="crtmMain">
+                    <div class="crtm-status">
+                        <span class="crtm-status-led" aria-hidden="true"></span>
+                        <span id="crtmStatusText">SYSTEM READY</span>
+                    </div>
+
+                    <!-- CAMERA PANEL -->
+                    <div class="crtm-panel" data-panel="camera" aria-labelledby="crtmCameraHeading">
+                        <h3 id="crtmCameraHeading" class="crtm-sr-only">Camera</h3>
+
+                        <!-- HOME sub-view: camMain.png, shown by default -->
+                        <div class="crtm-subview" data-subview="hero">
+                            <div class="crtm-camera-stage">
+                                <div class="crtm-hero-frame">
+                                    <div class="crtm-hero-frame-clip">
+                                        <img class="crtm-hero-image crtm-hero-image--fill" src="camMain.png" alt="Cine ROro DIY digital cinema camera — Raspberry Pi 5 based CinePi build">
+                                        <div class="crtm-scanbar" aria-hidden="true"></div>
+                                    </div>
+                                </div>
+                                <p class="crtm-hero-caption">Cine ROro Camera System — Select Mode</p>
+                                <div class="crtm-camera-links">
+                                    <button type="button" id="crtmViewGallery"><span class="crtm-btn-text">View Camera Configurations &raquo;</span></button>
+                                </div>
+                                <p class="crtm-hero-credit">Interface inspired by the 2001 TopDawg Video Systems archive — <a href="https://web.archive.org/web/20010518065139/http://www.topdawgvideo.com/" target="_blank" rel="noopener">link</a></p>
+                            </div>
+                        </div>
+
+                        <!-- GRID sub-view: camera configurations, equivalent to the reference "Products" page.
+                             Populated from the cineRoroCameraGallery array below so future camera
+                             versions can be added without touching this markup. -->
+                        <div class="crtm-subview" data-subview="grid" hidden>
+                            <div class="crtm-content-oval">
+                                <div class="crtm-content-oval-inner">
+                                    <div class="crtm-gallery" role="group" aria-label="Camera configuration gallery" id="crtmGalleryList"></div>
+                                </div>
+                            </div>
+                            <button type="button" class="crtm-reset-btn" id="crtmBackHome"><span class="crtm-btn-text">&laquo; Main View</span></button>
+                        </div>
+
+                        <!-- PREVIEW sub-view: enlarged selection from the grid -->
+                        <div class="crtm-subview" data-subview="preview" hidden>
+                            <div class="crtm-camera-stage">
+                                <div class="crtm-hero-frame">
+                                    <div class="crtm-hero-frame-clip">
+                                        <img class="crtm-hero-image" id="crtmPreviewImage" src="cam1.png" alt="">
+                                    </div>
+                                </div>
+                                <p class="crtm-hero-caption" id="crtmPreviewCaption"></p>
+                            </div>
+                            <button type="button" class="crtm-reset-btn" id="crtmBackGrid"><span class="crtm-btn-text">&laquo; Camera Views</span></button>
+                        </div>
+                    </div>
+
+                    <!-- SPECIFICATIONS PANEL -->
+                    <div class="crtm-panel" data-panel="specifications" hidden aria-labelledby="crtmSpecHeading">
+                        <div class="crtm-content-oval">
+                            <div class="crtm-content-oval-inner">
+                                <h3 id="crtmSpecHeading" class="crtm-panel-title">SYSTEM CONFIGURATION</h3>
+                                <div class="crtm-spec-columns">
+                                    <div class="crtm-spec-block">
+                                        <p class="crtm-spec-block-title">CINE RORO v1.2 — BASE BUILD</p>
+                                        <dl class="crtm-spec-list">
+                                            <div><dt>CAMERA</dt><dd>CinePi / Cinemate 3.2</dd></div>
+                                            <div><dt>PROCESSOR</dt><dd>Raspberry Pi 5 (8GB)</dd></div>
+                                            <div><dt>SENSOR</dt><dd>IMX477</dd></div>
+                                            <div><dt>LENS</dt><dd>Cosmicar 12.5mm TV Lens</dd></div>
+                                            <div><dt>POWER</dt><dd>Accsoon Toprig NP-F + NP-F970</dd></div>
+                                            <div><dt>MONITOR</dt><dd>4" HDMI LCD Square Display</dd></div>
+                                            <div><dt>AUDIO</dt><dd>Wavo PRO DS + Zoom H1</dd></div>
+                                            <div><dt>EDITING</dt><dd>DaVinci Resolve 20</dd></div>
+                                        </dl>
+                                    </div>
+                                    <div class="crtm-spec-block">
+                                        <p class="crtm-spec-block-title">UNDERWATER CONFIGURATION</p>
+                                        <dl class="crtm-spec-list">
+                                            <div><dt>CAMERA</dt><dd>Cine ROro / CinePi / Cinemate 3.2</dd></div>
+                                            <div><dt>HOUSING</dt><dd>Used Ewa-Marine VST Aqua Housing</dd></div>
+                                            <div><dt>TEST SITES</dt><dd>Bathtub + Swimming Pool</dd></div>
+                                            <div><dt>POWER</dt><dd>Accsoon Toprig NP-F + NP-F550</dd></div>
+                                            <div><dt>LENS</dt><dd>Cosmicar 12.5mm TV Lens (fungus visible underwater)</dd></div>
+                                            <div><dt>EDITING</dt><dd>DaVinci Resolve</dd></div>
+                                        </dl>
+                                    </div>
+                                </div>
+                                <p class="crtm-spec-footnote">BUILD HISTORY — v1.0: bare Raspberry Pi + sensor + lens, tripod-mounted, powered by an Anker bank, no case or monitor. v1.2: adds the 3D-printed enclosure, NP-F battery power, integrated audio, and the LCD monitor.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BLOGS PANEL -->
+                    <div class="crtm-panel" data-panel="blogs" hidden aria-labelledby="crtmBlogHeading">
+                        <div class="crtm-content-oval">
+                            <div class="crtm-content-oval-inner">
+                                <h3 id="crtmBlogHeading" class="crtm-panel-title">MEDIA DATABASE — BUILD LOG ARCHIVE</h3>
+                                <div class="crtm-blog-search-row">
+                                    <label for="crtmBlogSearch" class="crtm-sr-only">Search Cine ROro articles</label>
+                                    <input type="search" id="crtmBlogSearch" class="crtm-blog-search" placeholder="SEARCH ARCHIVE..." autocomplete="off">
+                                    <span class="crtm-blog-count" id="crtmBlogCount"></span>
+                                </div>
+                                <div class="crtm-blog-list" id="crtmBlogList" role="list"></div>
+                                <p class="crtm-blog-feedback" id="crtmBlogFeedback" aria-live="polite"></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- VIDEOS PANEL -->
+                    <div class="crtm-panel" data-panel="videos" hidden aria-labelledby="crtmVideoHeading">
+                        <!-- GRID sub-view: floating video tiles, same visual language as the CAMERAS grid -->
+                        <div class="crtm-video-subview" data-subview="grid">
+                            <div class="crtm-content-oval">
+                                <div class="crtm-content-oval-inner">
+                                    <h3 id="crtmVideoHeading" class="crtm-panel-title">VIDEO ARCHIVE</h3>
+                                    <div class="crtm-video-gallery" role="group" aria-label="Cine ROro video gallery" id="crtmVideoList"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PLAYER sub-view: vintage console-style video player -->
+                        <div class="crtm-video-subview" data-subview="player" hidden>
+                            <div class="crtm-content-oval">
+                                <div class="crtm-content-oval-inner">
+                                    <div class="crtm-video-player-frame">
+                                        <div class="crtm-video-player-chrome">
+                                            <span class="crtm-video-player-dot" aria-hidden="true"></span>
+                                            <span class="crtm-video-player-title" id="crtmVideoPlayerTitle"></span>
+                                        </div>
+                                        <div class="crtm-video-player-screen" id="crtmVideoPlayerScreen"></div>
+                                        <p class="crtm-video-now-playing" id="crtmVideoNowPlaying"></p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="crtm-video-player-actions">
+                                <button type="button" class="crtm-reset-btn" id="crtmVideoBackGrid"><span class="crtm-btn-text">&laquo; Back to Videos</span></button>
+                                <button type="button" class="crtm-reset-btn" id="crtmVideoBackHome"><span class="crtm-btn-text">&laquo; Main View</span></button>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+    (function () {
+        var section = document.getElementById('cine-roro-time-machine');
+        if (!section) return;
+
+        var prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        /* ---------- BOOT SEQUENCE (plays once per page view) ---------- */
+        var boot = document.getElementById('crtmBoot');
+        var bootPlayed = false;
+
+        function runBoot() {
+            if (bootPlayed) return;
+            bootPlayed = true;
+            if (prefersReducedMotion || !boot) {
+                if (boot && boot.parentNode) boot.parentNode.removeChild(boot);
+                return;
+            }
+            requestAnimationFrame(function () { boot.classList.add('crtm-boot-active'); });
+            setTimeout(function () {
+                boot.classList.add('crtm-boot-hide');
+                setTimeout(function () {
+                    if (boot.parentNode) boot.parentNode.removeChild(boot);
+                }, 500);
+            }, 1200);
+        }
+
+        if (boot) {
+            var bootObserver = new IntersectionObserver(function (entries) {
+                entries.forEach(function (entry) {
+                    if (entry.isIntersecting) {
+                        runBoot();
+                        bootObserver.disconnect();
+                    }
+                });
+            }, { threshold: 0.3 });
+            bootObserver.observe(section);
+        }
+
+        /* ---------- MODE / STATE SWITCHING ---------- */
+        var navItems = section.querySelectorAll('.crtm-nav-item');
+        var panels = section.querySelectorAll('.crtm-panel');
+        var statusText = document.getElementById('crtmStatusText');
+
+        var statusMessages = {
+            camera: 'SYSTEM READY',
+            specifications: 'SYSTEM CONFIGURATION LOADED',
+            blogs: 'MEDIA DATABASE ONLINE',
+            videos: 'VIDEO ARCHIVE ONLINE'
+        };
+
+        /* "Spark" glow on the arc — positioned to sit ON the curve at the
+           active nav item's own height, hidden when nothing is active (home
+           state). The curve isn't a vertical line — its x position varies
+           with height (it bulges toward the text in the middle, flares away
+           near the top/bottom) — so the spark's left% is looked up from the
+           same sample points .crtm-nav-arc's path was drawn from, not a
+           fixed offset that would only be correct at one height. */
+        var navSpark = document.getElementById('crtmNavSpark');
+
+        // (verticalFraction, curveXPercent) pairs sampled from the same
+        // ellipse points used to build the .crtm-nav-arc path's viewBox
+        // (0 0 38 96), read off as x/38 at each point's y/96.
+        var CRTM_ARC_CURVE = [
+            [0.0397, 90.24],
+            [0.1745, 48.42],
+            [0.3315, 22.13],
+            [0.5000, 13.16],
+            [0.6685, 22.13],
+            [0.8255, 48.42],
+            [0.9603, 90.24]
+        ];
+
+        function crtmCurveXPercent(fraction) {
+            if (fraction <= CRTM_ARC_CURVE[0][0]) return CRTM_ARC_CURVE[0][1];
+            for (var i = 0; i < CRTM_ARC_CURVE.length - 1; i++) {
+                var a = CRTM_ARC_CURVE[i];
+                var b = CRTM_ARC_CURVE[i + 1];
+                if (fraction >= a[0] && fraction <= b[0]) {
+                    var t = (fraction - a[0]) / (b[0] - a[0]);
+                    return a[1] + t * (b[1] - a[1]);
+                }
+            }
+            return CRTM_ARC_CURVE[CRTM_ARC_CURVE.length - 1][1];
+        }
+
+        function updateNavSpark(activeBtn) {
+            if (!navSpark) return;
+            if (!activeBtn) {
+                navSpark.classList.remove('is-visible');
+                return;
+            }
+            var nav = activeBtn.parentElement;
+            var fraction = (activeBtn.offsetTop + activeBtn.offsetHeight / 2) / nav.offsetHeight;
+            navSpark.style.top = (fraction * 100) + '%';
+            navSpark.style.left = crtmCurveXPercent(fraction) + '%';
+            navSpark.classList.add('is-visible');
+        }
+
+        /* Pulls each nav label toward the curve/spark at its own height,
+           using the same sample table — instead of a fixed guessed margin.
+           Skipped (and cleared) on the narrow layout where the arc is
+           hidden and nav becomes a horizontal row. */
+        var navArcWrap = document.querySelector('.crtm-nav-arc-wrap');
+
+        function updateNavLabelOffsets() {
+            if (!navArcWrap) return;
+            var arcVisible = getComputedStyle(navArcWrap).display !== 'none';
+            if (!arcVisible) {
+                navItems.forEach(function (btn) { btn.style.marginLeft = ''; });
+                return;
+            }
+            var arcWidth = navArcWrap.getBoundingClientRect().width;
+            navItems.forEach(function (btn) {
+                var nav = btn.parentElement;
+                var fraction = (btn.offsetTop + btn.offsetHeight / 2) / nav.offsetHeight;
+                var curveXPercent = crtmCurveXPercent(fraction);
+                var rawOffset = arcWidth * (curveXPercent / 100) * 2.2;
+                btn.style.marginLeft = Math.round(Math.min(260, rawOffset)) + 'px';
+            });
+        }
+
+        window.addEventListener('resize', updateNavLabelOffsets);
+
+        function setMode(mode) {
+            var activeBtn = null;
+            navItems.forEach(function (btn) {
+                var active = btn.getAttribute('data-mode') === mode;
+                btn.classList.toggle('is-active', active);
+                btn.setAttribute('aria-current', active ? 'true' : 'false');
+                if (active) activeBtn = btn;
+            });
+            panels.forEach(function (panel) {
+                var active = panel.getAttribute('data-panel') === mode;
+                panel.hidden = !active;
+            });
+            if (statusText) statusText.textContent = statusMessages[mode] || 'SYSTEM READY';
+            updateNavSpark(activeBtn);
+            /* Stop any playing video whenever the top-level mode changes —
+               a hidden iframe would otherwise keep playing audio. */
+            stopVideoPlayback();
+        }
+
+        /* Initial/idle state: no nav item marked active, camera panel shows
+           the camMain.png hero. Used on load, and whenever the visitor backs
+           all the way out via the logo or the grid's "Main View" button. */
+        function goHome() {
+            navItems.forEach(function (btn) {
+                btn.classList.remove('is-active');
+                btn.setAttribute('aria-current', 'false');
+            });
+            panels.forEach(function (panel) {
+                panel.hidden = panel.getAttribute('data-panel') !== 'camera';
+            });
+            setCameraSubView('hero');
+            stopVideoPlayback();
+            updateNavSpark(null);
+            if (statusText) statusText.textContent = 'SYSTEM READY';
+        }
+
+        /* Clicking "Cameras" always shows the configuration grid — mirrors
+           the reference site's "Products" behavior. */
+        function openCameraGrid() {
+            setMode('camera');
+            setCameraSubView('grid');
+        }
+
+        /* Clicking "Videos" always shows the video gallery — same idea. */
+        function openVideoGrid() {
+            setMode('videos');
+            setVideoSubView('grid');
+        }
+
+        navItems.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                var mode = btn.getAttribute('data-mode');
+                if (mode === 'camera') {
+                    openCameraGrid();
+                } else if (mode === 'videos') {
+                    openVideoGrid();
+                } else {
+                    setMode(mode);
+                }
+            });
+        });
+
+        /* ---------- CAMERA: hero / grid / preview sub-views ----------
+           Mirrors the reference site, where the home portrait photo is
+           replaced in place by a small product grid, and picking a product
+           would show a larger view — instead of stacking everything at once. */
+        var cameraSubViews = section.querySelectorAll('.crtm-subview');
+        var previewImage = document.getElementById('crtmPreviewImage');
+        var previewCaption = document.getElementById('crtmPreviewCaption');
+        var logoHome = document.getElementById('crtmLogoHome');
+        var viewGalleryBtn = document.getElementById('crtmViewGallery');
+        var backHomeBtn = document.getElementById('crtmBackHome');
+        var backGridBtn = document.getElementById('crtmBackGrid');
+
+        function setCameraSubView(view) {
+            cameraSubViews.forEach(function (sv) {
+                sv.hidden = sv.getAttribute('data-subview') !== view;
+            });
+        }
+
+        if (viewGalleryBtn) viewGalleryBtn.addEventListener('click', openCameraGrid);
+        if (backHomeBtn) backHomeBtn.addEventListener('click', goHome);
+        if (backGridBtn) backGridBtn.addEventListener('click', function () { setCameraSubView('grid'); });
+        if (logoHome) logoHome.addEventListener('click', goHome);
+
+        /* ========================================================
+           ADD FUTURE CINE RORO CAMERA VERSIONS HERE
+           Each entry renders as one tile in the CAMERAS grid. Clicking a
+           tile opens it larger in the preview sub-view.
+           ======================================================== */
+        var cineRoroCameraGallery = [
+            {
+                image: 'cam1.png',
+                label: 'Front / Body',
+                alt: 'Cine ROro camera body, front-left angle, with shotgun microphone and lens'
+            },
+            {
+                image: 'cam2.png',
+                label: 'Monitor View',
+                alt: 'Cine ROro camera with 4-inch HDMI monitor showing the live image'
+            },
+            {
+                image: 'cam3.png',
+                label: 'Underwater',
+                alt: 'Cine ROro sealed inside an Ewa-Marine underwater housing'
+            },
+            {
+                image: 'cam4.png',
+                label: 'Cinema Rig',
+                alt: 'Cine ROro side profile with matte box and cinema rig handle'
+            }
+        ];
+
+        var galleryList = document.getElementById('crtmGalleryList');
+
+        function renderCameraGallery() {
+            if (!galleryList) return;
+            cineRoroCameraGallery.forEach(function (cam) {
+                var item = document.createElement('button');
+                item.type = 'button';
+                item.className = 'crtm-gallery-item';
+
+                var inner = document.createElement('span');
+                inner.className = 'crtm-gallery-item-inner';
+
+                var frame = document.createElement('span');
+                frame.className = 'crtm-gallery-frame';
+                var img = document.createElement('img');
+                img.src = cam.image;
+                img.alt = cam.alt;
+                img.loading = 'lazy';
+                frame.appendChild(img);
+
+                var label = document.createElement('span');
+                label.className = 'crtm-gallery-label';
+                label.textContent = cam.label;
+
+                inner.appendChild(frame);
+                inner.appendChild(label);
+                item.appendChild(inner);
+                item.addEventListener('click', function () {
+                    if (previewImage) {
+                        previewImage.src = cam.image;
+                        previewImage.alt = cam.alt;
+                    }
+                    if (previewCaption) previewCaption.textContent = 'Cine ROro — ' + cam.label;
+                    setCameraSubView('preview');
+                });
+
+                galleryList.appendChild(item);
+            });
+        }
+
+        renderCameraGallery();
+
+        /* ========================================================
+           ADD FUTURE CINE RORO BLOG ARTICLES HERE
+           status: "published"   -> normal clickable archive entry
+           status: "coming-soon" -> visible + searchable, not navigable
+           ======================================================== */
+        var cineRoroArticles = [
+            {
+                title: 'Cine ROro — Building a DIY Digital Cinema Camera',
+                url: '/Blog/articles/cine-roro/',
+                date: 'March 2026',
+                description: 'Building a DIY digital cinema camera with Raspberry Pi 5, CinePi, and a vintage Cosmicar lens.',
+                thumbnail: '/Blog/articles/cine-roro/CoolTwo.png',
+                keywords: ['cine roro', 'cinepi', 'raspberry pi', 'build log', 'cosmicar', 'imx477', 'cinemate'],
+                status: 'published'
+            },
+            {
+                title: 'Cine ROro Goes Underwater',
+                url: '/Blog/articles/cine-roro-underwater/',
+                date: 'June 2026',
+                description: 'A cheap old plastic housing, a bathtub test, and my first attempt at taking my DIY CinePi camera below the surface.',
+                thumbnail: '/Blog/articles/cine-roro-underwater/underW1.png',
+                keywords: ['cine roro', 'underwater', 'ewa-marine', 'pool test', 'housing'],
+                status: 'published'
+            },
+            {
+                title: 'Cine ROro — Coming Soon',
+                url: null,
+                date: null,
+                description: 'COMING SOON',
+                thumbnail: 'cam5.png',
+                keywords: ['cine roro', 'camera', 'coming soon'],
+                status: 'coming-soon'
+            }
+        ];
+
+        var blogList = document.getElementById('crtmBlogList');
+        var blogSearch = document.getElementById('crtmBlogSearch');
+        var blogCount = document.getElementById('crtmBlogCount');
+        var blogFeedback = document.getElementById('crtmBlogFeedback');
+
+        function renderBlogEntry(article) {
+            var isPublished = article.status === 'published';
+            var el = document.createElement(isPublished ? 'a' : 'div');
+            el.className = 'crtm-blog-entry' + (isPublished ? '' : ' crtm-blog-entry--pending');
+            el.setAttribute('role', 'listitem');
+            if (isPublished) {
+                el.href = article.url;
+            } else {
+                el.setAttribute('tabindex', '0');
+                el.setAttribute('role', 'button');
+                el.setAttribute('aria-label', article.title + ' — coming soon, not yet available');
+            }
+
+            var thumb = document.createElement('div');
+            thumb.className = 'crtm-blog-thumb';
+            var img = document.createElement('img');
+            img.src = article.thumbnail;
+            img.loading = 'lazy';
+            img.alt = isPublished ? article.title : 'Cine ROro upcoming article thumbnail — unreleased';
+            thumb.appendChild(img);
+            if (!isPublished) {
+                var badge = document.createElement('span');
+                badge.className = 'crtm-blog-badge';
+                badge.textContent = 'COMING SOON';
+                thumb.appendChild(badge);
+            }
+
+            var info = document.createElement('div');
+            info.className = 'crtm-blog-info';
+            var titleEl = document.createElement('p');
+            titleEl.className = 'crtm-blog-title';
+            titleEl.textContent = article.title;
+            var descEl = document.createElement('p');
+            descEl.className = 'crtm-blog-desc';
+            descEl.textContent = article.description;
+            var metaEl = document.createElement('p');
+            metaEl.className = 'crtm-blog-meta';
+            metaEl.textContent = isPublished ? (article.date + ' · ARCHIVE ONLINE') : 'STATUS: IN DEVELOPMENT · ARCHIVE ENTRY PENDING';
+
+            info.appendChild(titleEl);
+            info.appendChild(descEl);
+            info.appendChild(metaEl);
+            el.appendChild(thumb);
+            el.appendChild(info);
+
+            if (!isPublished) {
+                var respond = function () {
+                    if (blogFeedback) blogFeedback.textContent = 'ARCHIVE ENTRY PENDING — COMING SOON';
+                };
+                el.addEventListener('click', respond);
+                el.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        respond();
+                    }
+                });
+            }
+
+            return el;
+        }
+
+        function renderBlogs(filter) {
+            if (!blogList) return;
+            var term = (filter || '').trim().toLowerCase();
+            blogList.innerHTML = '';
+            var matches = cineRoroArticles.filter(function (a) {
+                if (!term) return true;
+                var haystack = [a.title, a.description].concat(a.keywords || []).join(' ').toLowerCase();
+                return haystack.indexOf(term) !== -1;
+            });
+            matches.forEach(function (a) { blogList.appendChild(renderBlogEntry(a)); });
+            if (blogCount) blogCount.textContent = matches.length + (matches.length === 1 ? ' ENTRY' : ' ENTRIES');
+        }
+
+        if (blogSearch) {
+            blogSearch.addEventListener('input', function () {
+                if (blogFeedback) blogFeedback.textContent = '';
+                renderBlogs(blogSearch.value);
+            });
+        }
+        renderBlogs('');
+
+        /* ========================================================
+           ADD FUTURE CINE RORO VIDEOS HERE
+           ======================================================== */
+        var cineRoroVideos = [
+            { id: 'pclf0dKvlwo', title: 'Cine ROro — Archive Clip 01' },
+            { id: 'pleled3nm1s', title: 'Cine ROro — Archive Clip 02' },
+            { id: 'QAJQsWWKKuo', title: 'Cine ROro — Archive Clip 03' },
+            { id: 'hPdnLPs_rno', title: 'Cine ROro — First Video Test' },
+            { id: '6gM6dP3MHUU', title: 'Cine ROro — Archive Clip 05' }
+        ];
+
+        /* ---------- VIDEOS: grid / player sub-views ----------
+           Same in-place swap pattern as CAMERAS: a floating thumbnail grid
+           replaced by a vintage-chrome player, instead of an always-visible
+           viewer box. Kept on its own .crtm-video-subview class (rather than
+           reusing .crtm-subview) so toggling one panel's sub-views never
+           touches the other's. */
+        var videoSubViews = section.querySelectorAll('.crtm-video-subview');
+        var videoList = document.getElementById('crtmVideoList');
+        var videoPlayerScreen = document.getElementById('crtmVideoPlayerScreen');
+        var videoPlayerTitle = document.getElementById('crtmVideoPlayerTitle');
+        var videoNowPlaying = document.getElementById('crtmVideoNowPlaying');
+        var videoBackGridBtn = document.getElementById('crtmVideoBackGrid');
+        var videoBackHomeBtn = document.getElementById('crtmVideoBackHome');
+
+        function setVideoSubView(view) {
+            videoSubViews.forEach(function (sv) {
+                sv.hidden = sv.getAttribute('data-subview') !== view;
+            });
+        }
+
+        /* Empties the player iframe so a backgrounded video stops playing —
+           called whenever the visitor navigates away from the player. */
+        function stopVideoPlayback() {
+            if (videoPlayerScreen) videoPlayerScreen.innerHTML = '';
+        }
+
+        function renderVideos() {
+            if (!videoList) return;
+            cineRoroVideos.forEach(function (v) {
+                var tile = document.createElement('button');
+                tile.type = 'button';
+                tile.className = 'crtm-video-tile';
+
+                var inner = document.createElement('span');
+                inner.className = 'crtm-video-tile-inner';
+
+                var frame = document.createElement('span');
+                frame.className = 'crtm-video-tile-frame';
+                var img = document.createElement('img');
+                img.src = 'https://img.youtube.com/vi/' + v.id + '/mqdefault.jpg';
+                img.alt = 'Thumbnail for ' + v.title;
+                img.loading = 'lazy';
+                var play = document.createElement('span');
+                play.className = 'crtm-video-tile-play';
+                play.setAttribute('aria-hidden', 'true');
+                play.textContent = '▶';
+                frame.appendChild(img);
+                frame.appendChild(play);
+
+                var label = document.createElement('span');
+                label.className = 'crtm-video-tile-label';
+                label.textContent = v.title;
+
+                inner.appendChild(frame);
+                inner.appendChild(label);
+                tile.appendChild(inner);
+                tile.addEventListener('click', function () { playVideo(v); });
+                videoList.appendChild(tile);
+            });
+        }
+
+        function playVideo(v) {
+            if (videoPlayerScreen) {
+                videoPlayerScreen.innerHTML = '';
+                var iframe = document.createElement('iframe');
+                iframe.src = 'https://www.youtube.com/embed/' + v.id + '?autoplay=1&rel=0';
+                iframe.title = v.title;
+                iframe.setAttribute('frameborder', '0');
+                iframe.setAttribute('allow', 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture');
+                iframe.setAttribute('allowfullscreen', '');
+                iframe.loading = 'lazy';
+                videoPlayerScreen.appendChild(iframe);
+            }
+            if (videoPlayerTitle) videoPlayerTitle.textContent = v.title;
+            if (videoNowPlaying) videoNowPlaying.textContent = 'NOW PLAYING: ' + v.title;
+            setVideoSubView('player');
+        }
+
+        if (videoBackGridBtn) {
+            videoBackGridBtn.addEventListener('click', function () {
+                stopVideoPlayback();
+                setVideoSubView('grid');
+            });
+        }
+        if (videoBackHomeBtn) videoBackHomeBtn.addEventListener('click', goHome);
+
+        renderVideos();
+
+        /* ---------- PORTRAIT ROTATE SUGGESTION ----------
+           Non-blocking: the section already renders a compact, usable layout
+           in portrait via the RESPONSIVE CSS rules. This just surfaces a
+           small dismissible hint recommending landscape for the full
+           composition — it never locks scroll or blocks interaction. */
+        var orientHint = document.getElementById('crtmOrientHint');
+        var orientDismissBtn = document.getElementById('crtmOrientDismiss');
+        var portraitQuery = window.matchMedia('(max-width: 900px) and (orientation: portrait)');
+        var sectionInView = false;
+        var orientHintDismissed = false;
+
+        function updateOrientationHint() {
+            if (!orientHint) return;
+            orientHint.hidden = !(sectionInView && portraitQuery.matches && !orientHintDismissed);
+        }
+
+        if (orientDismissBtn) {
+            orientDismissBtn.addEventListener('click', function () {
+                orientHintDismissed = true;
+                updateOrientationHint();
+            });
+        }
+
+        var sectionObserver = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+                sectionInView = entry.isIntersecting;
+                updateOrientationHint();
+            });
+        }, { threshold: 0.4 });
+        sectionObserver.observe(section);
+
+        if (portraitQuery.addEventListener) {
+            portraitQuery.addEventListener('change', updateOrientationHint);
+        } else if (portraitQuery.addListener) {
+            portraitQuery.addListener(updateOrientationHint);
+        }
+        window.addEventListener('orientationchange', updateOrientationHint);
+        window.addEventListener('resize', updateOrientationHint);
+
+        /* ---------- INITIAL STATE ----------
+           No nav item active, hero (camMain.png) shown — matches the
+           reference site's neutral home screen. */
+        goHome();
+        updateNavLabelOffsets();
+    })();
+    </script>
 
 
     <!-- SECTION THREE: VR NURSING VISIT SIMULATOR -->
