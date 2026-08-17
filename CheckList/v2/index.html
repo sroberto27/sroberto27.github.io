@@ -181,13 +181,19 @@
               <div class="doc-card">
                 <label class="group-label">360° Photo</label>
                 <div class="photo-tools">
-                  <button type="button" class="tbtn tbtn--sm" id="btn360Capture">
-                    <i class="fa-solid fa-camera-rotate"></i> Capture 360°
-                  </button>
-                  <button type="button" class="tbtn tbtn--sm" id="btn360Attach">
+                  <button type="button" class="tbtn tbtn--sm tbtn--primary" id="btn360Attach">
                     <i class="fa-solid fa-upload"></i> Attach Existing 360°
                   </button>
+                  <button type="button" class="tbtn tbtn--sm" id="btn360Capture">
+                    <i class="fa-solid fa-camera-rotate"></i> Capture 360° (experimental)
+                  </button>
                   <input type="file" accept="image/*" hidden id="input360Attach">
+                </div>
+                <div class="mobile-hint">
+                  Best results: capture with your phone's built-in Panorama/Photo Sphere mode
+                  (or an app like Google Street View), then use <strong>Attach Existing 360°</strong>.
+                  The in-app <strong>Capture 360°</strong> uses motion sensors instead of real image
+                  alignment, so its panoramas are rougher and can show visible seams.
                 </div>
                 <div class="mobile-hint" id="pano360Hint"></div>
                 <div class="pano-strip" id="pano360Strip"></div>
