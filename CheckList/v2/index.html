@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Location Scouting Checklist</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:wght@600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- ============ TOP BAR ============ -->
+  <header class="topbar">
+    <div class="topbar-brand">
+      <button id="navToggle" class="icon-btn only-mobile" aria-label="Toggle sections menu" title="Sections">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      <img src="ULL.png" alt="ULL Logo" class="brand-logo">
+      <img src="HCILab.jpg" alt="HCI Lab Logo" class="brand-logo brand-logo--round">
+      <div class="brand-title">
+        <h1><i class="fa-solid fa-clapperboard"></i> <span class="brand-title-text">Location Scouting Checklist</span></h1>
+        <span class="brand-subtitle">Film &amp; Media Site Survey</span>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <img src="LEDlogo.png" alt="LED Logo" class="brand-logo led-logo">
+      <button id="themeToggle" class="icon-btn" aria-label="Toggle dark mode" title="Toggle theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- ============ LOCATION TOOLBAR ============ -->
+  <div class="toolbar">
+    <div class="toolbar-row toolbar-row--main">
+      <div class="location-picker">
+        <i class="fa-solid fa-map-pin"></i>
+        <select id="locationSelect" aria-label="Select saved location"></select>
+      </div>
+      <div class="toolbar-btns">
+        <button class="tbtn" id="btnNew" title="New location"><i class="fa-solid fa-plus"></i><span>New</span></button>
+        <button class="tbtn" id="btnRename" title="Rename location"><i class="fa-solid fa-pen"></i><span>Rename</span></button>
+        <button class="tbtn" id="btnDuplicate" title="Duplicate location"><i class="fa-solid fa-copy"></i><span>Duplicate</span></button>
+        <button class="tbtn tbtn--danger" id="btnDelete" title="Delete location"><i class="fa-solid fa-trash"></i><span>Delete</span></button>
+        <span class="tbtn-sep"></span>
+        <button class="tbtn" id="btnExport" title="Export as JSON"><i class="fa-solid fa-download"></i><span>Export</span></button>
+        <button class="tbtn" id="btnImport" title="Import JSON"><i class="fa-solid fa-upload"></i><span>Import</span></button>
+        <input type="file" id="importFile" accept="application/json" hidden>
+        <button class="tbtn" id="btnPrint" title="Print / Save PDF"><i class="fa-solid fa-print"></i><span>Print / PDF</span></button>
+        <button class="tbtn" id="btnShare" title="Share via device share sheet"><i class="fa-solid fa-share-nodes"></i><span>Share</span></button>
+      </div>
+    </div>
+    <div class="toolbar-row toolbar-row--status">
+      <div class="save-status" id="saveStatus"><i class="fa-solid fa-circle-check"></i> <span>All changes saved</span></div>
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <span class="progress-label" id="progressLabel">0% complete</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    <!-- ============ SIDEBAR NAV ============ -->
+    <nav class="sidenav" id="sidenav" aria-label="Checklist sections">
+      <div class="overview-card">
+        <div class="overview-title">Location Overview</div>
+        <label class="mini-label" for="overallStatus">Status</label>
+        <select id="overallStatus" class="status-select">
+          <option value="">Select status…</option>
+          <option value="pending">🟡 Pending Review</option>
+          <option value="approved">🟢 Approved</option>
+          <option value="backup">🔵 Backup Option</option>
+          <option value="rejected">🔴 Rejected</option>
+        </select>
+        <div class="mini-label">Overall Suitability</div>
+        <div class="star-rating" id="starRating" role="radiogroup" aria-label="Overall suitability rating">
+          <button type="button" class="star" data-val="1" aria-label="1 star"><i class="fa-solid fa-star"></i></button>
+          <button type="button" class="star" data-val="2" aria-label="2 stars"><i class="fa-solid fa-star"></i></button>
+          <button type="button" class="star" data-val="3" aria-label="3 stars"><i class="fa-solid fa-star"></i></button>
+          <button type="button" class="star" data-val="4" aria-label="4 stars"><i class="fa-solid fa-star"></i></button>
+          <button type="button" class="star" data-val="5" aria-label="5 stars"><i class="fa-solid fa-star"></i></button>
+        </div>
+      </div>
+      <ol class="section-list" id="sectionList"></ol>
+      <div class="sidenav-footer">
+        <button class="tbtn tbtn--danger tbtn--block" id="btnClear"><i class="fa-solid fa-eraser"></i> Clear This Location</button>
+      </div>
+    </nav>
+    <div class="sidenav-backdrop" id="sidenavBackdrop"></div>
+
+    <!-- ============ MAIN FORM ============ -->
+    <main class="content">
+      <form id="checklistForm" autocomplete="off">
+
+        <!-- 1. General Information -->
+        <section class="card" id="sec-1" data-section="1">
+          <h2><span class="sec-num">1</span><i class="fa-solid fa-circle-info"></i> General Information</h2>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="room-name">Room Name/ID</label>
+              <input type="text" id="room-name" placeholder="e.g. Room 204 — East Wing">
+            </div>
+            <div class="field">
+              <label for="location-address">Location Address</label>
+              <div class="input-with-btn">
+                <input type="text" id="location-address" placeholder="Street, city, state">
+                <button type="button" class="tbtn tbtn--sm" id="btnGeoLocate" title="Fill in with my current GPS location">
+                  <i class="fa-solid fa-location-crosshairs"></i>
+                </button>
+              </div>
+              <div class="mobile-hint" id="geoStatus"></div>
+            </div>
+            <div class="field">
+              <label for="date-of-scouting">Date of Scouting</label>
+              <input type="date" id="date-of-scouting">
+            </div>
+            <div class="field">
+              <label for="scouted-by">Scouted by</label>
+              <input type="text" id="scouted-by" placeholder="Name of scout">
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="switch-row" for="room-layout-sketch">
+              <span>Room Layout Sketch Attached</span>
+              <span class="switch"><input type="checkbox" id="room-layout-sketch"><span class="slider"></span></span>
+            </label>
+          </div>
+
+          <div class="field">
+            <label class="group-label">Photographic Documentation</label>
+            <div class="doc-grid">
+              <div class="doc-card">
+                <label class="switch-row" for="wide-angle">
+                  <span>Wide-angle Photos</span>
+                  <span class="switch"><input type="checkbox" id="wide-angle"><span class="slider"></span></span>
+                </label>
+                <div class="photo-tools">
+                  <button type="button" class="tbtn tbtn--sm photo-add-btn" data-target="wide-angle">
+                    <i class="fa-solid fa-camera"></i> Attach photos
+                  </button>
+                  <input type="file" accept="image/*" multiple hidden class="photo-input" data-target="wide-angle" capture="environment">
+                </div>
+                <div class="photo-strip" id="photos-wide-angle"></div>
+              </div>
+              <div class="doc-card">
+                <label class="switch-row" for="close-up">
+                  <span>Close-up Photos</span>
+                  <span class="switch"><input type="checkbox" id="close-up"><span class="slider"></span></span>
+                </label>
+                <div class="photo-tools">
+                  <button type="button" class="tbtn tbtn--sm photo-add-btn" data-target="close-up">
+                    <i class="fa-solid fa-camera"></i> Attach photos
+                  </button>
+                  <input type="file" accept="image/*" multiple hidden class="photo-input" data-target="close-up" capture="environment">
+                </div>
+                <div class="photo-strip" id="photos-close-up"></div>
+              </div>
+              <div class="doc-card">
+                <label class="switch-row" for="video">
+                  <span>Video Walkthrough</span>
+                  <span class="switch"><input type="checkbox" id="video"><span class="slider"></span></span>
+                </label>
+                <div class="field" style="margin-top:10px;">
+                  <label for="video-link" class="mini-label">Video link (optional)</label>
+                  <input type="text" id="video-link" placeholder="Cloud storage / drive link">
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. Exterior Details -->
+        <section class="card" id="sec-2" data-section="2">
+          <h2><span class="sec-num">2</span><i class="fa-solid fa-door-open"></i> Exterior Details</h2>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="door-count">Entry/Exit Door Count and Size</label>
+              <div class="counter">
+                <button type="button" class="counter-btn" data-action="dec" data-target="door-count" aria-label="Decrease"><i class="fa-solid fa-minus"></i></button>
+                <input type="number" id="door-count" value="0" min="0" inputmode="numeric">
+                <button type="button" class="counter-btn" data-action="inc" data-target="door-count" aria-label="Increase"><i class="fa-solid fa-plus"></i></button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="equipment-accessibility">Equipment Accessibility</label>
+              <select id="equipment-accessibility">
+                <option value="">Select…</option>
+                <option>Good</option>
+                <option>Fair</option>
+                <option>Poor</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="parking-capacity">Parking Capacity</label>
+              <input type="text" id="parking-capacity" placeholder="e.g. 12 spaces, street parking">
+            </div>
+            <div class="field">
+              <label for="distance-to-location">Distance to Filming Location</label>
+              <input type="text" id="distance-to-location" placeholder="e.g. 50 ft from load-in door">
+            </div>
+          </div>
+          <div class="field">
+            <label class="switch-row" for="staging-area">
+              <span>Staging Area Availability</span>
+              <span class="switch"><input type="checkbox" id="staging-area"><span class="slider"></span></span>
+            </label>
+          </div>
+        </section>
+
+        <!-- 3. Lighting Assessment -->
+        <section class="card" id="sec-3" data-section="3">
+          <h2><span class="sec-num">3</span><i class="fa-solid fa-lightbulb"></i> Lighting Assessment</h2>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="window-count">Number of Windows</label>
+              <div class="counter">
+                <button type="button" class="counter-btn" data-action="dec" data-target="window-count" aria-label="Decrease"><i class="fa-solid fa-minus"></i></button>
+                <input type="number" id="window-count" value="0" min="0" inputmode="numeric">
+                <button type="button" class="counter-btn" data-action="inc" data-target="window-count" aria-label="Increase"><i class="fa-solid fa-plus"></i></button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="window-direction">Window Direction</label>
+              <div class="input-with-btn">
+                <select id="window-direction">
+                  <option value="">Select…</option>
+                  <option>North</option>
+                  <option>South</option>
+                  <option>East</option>
+                  <option>West</option>
+                </select>
+                <button type="button" class="tbtn tbtn--sm" id="btnCompass" title="Detect direction with device compass — point phone at the window">
+                  <i class="fa-solid fa-compass"></i>
+                </button>
+              </div>
+              <div class="mobile-hint" id="compassStatus"></div>
+            </div>
+            <div class="field">
+              <label for="natural-light-type">Type of Natural Light</label>
+              <select id="natural-light-type">
+                <option value="">Select…</option>
+                <option>Direct</option>
+                <option>Indirect</option>
+                <option>Both</option>
+                <option>None</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="fixture-count">Number of Fixtures</label>
+              <div class="counter">
+                <button type="button" class="counter-btn" data-action="dec" data-target="fixture-count" aria-label="Decrease"><i class="fa-solid fa-minus"></i></button>
+                <input type="number" id="fixture-count" value="0" min="0" inputmode="numeric">
+                <button type="button" class="counter-btn" data-action="inc" data-target="fixture-count" aria-label="Increase"><i class="fa-solid fa-plus"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="group-label">Fixture Type</label>
+            <div class="chip-group">
+              <label class="chip"><input type="checkbox" id="overhead"><span>Overhead</span></label>
+              <label class="chip"><input type="checkbox" id="sconce"><span>Sconce</span></label>
+              <label class="chip"><input type="checkbox" id="lamp"><span>Lamp</span></label>
+              <label class="chip"><input type="checkbox" id="LED"><span>LED</span></label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="group-label">Fixture Position</label>
+            <div class="chip-group">
+              <label class="chip"><input type="checkbox" id="ceiling"><span>Ceiling</span></label>
+              <label class="chip"><input type="checkbox" id="wall"><span>Wall</span></label>
+              <label class="chip"><input type="checkbox" id="table"><span>Table</span></label>
+            </div>
+          </div>
+
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="color-temperature">Color Temperature</label>
+              <select id="color-temperature">
+                <option value="">Select…</option>
+                <option>Warm</option>
+                <option>Neutral</option>
+                <option>Cool</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="control-options">Control Options</label>
+              <select id="control-options">
+                <option value="">Select…</option>
+                <option>Blinds</option>
+                <option>Curtains</option>
+                <option>Dimmer</option>
+                <option>Mixed</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4. Power and Network Infrastructure -->
+        <section class="card" id="sec-4" data-section="4">
+          <h2><span class="sec-num">4</span><i class="fa-solid fa-plug"></i> Power and Network Infrastructure</h2>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="power-outlets">Number of Power Outlets</label>
+              <div class="counter">
+                <button type="button" class="counter-btn" data-action="dec" data-target="power-outlets" aria-label="Decrease"><i class="fa-solid fa-minus"></i></button>
+                <input type="number" id="power-outlets" value="0" min="0" inputmode="numeric">
+                <button type="button" class="counter-btn" data-action="inc" data-target="power-outlets" aria-label="Increase"><i class="fa-solid fa-plus"></i></button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="outlet-locations">Outlet Locations</label>
+              <select id="outlet-locations">
+                <option value="">Select…</option>
+                <option>Wall</option>
+                <option>Floor</option>
+                <option>Ceiling</option>
+                <option>Tables</option>
+                <option>None</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="network-connectivity">Network Connectivity</label>
+              <select id="network-connectivity">
+                <option value="">Select…</option>
+                <option>Wi-Fi</option>
+                <option>Ethernet</option>
+                <option>Both</option>
+                <option>None</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="switch-row switch-row--field" for="circuit-capacity">
+                <span>Circuit Capacity Available</span>
+                <span class="switch"><input type="checkbox" id="circuit-capacity"><span class="slider"></span></span>
+              </label>
+            </div>
+          </div>
+          <div class="field">
+            <label for="connectivity-details">Connectivity Details</label>
+            <textarea id="connectivity-details" rows="3" placeholder="Router placement, signal strength, dead zones…"></textarea>
+          </div>
+        </section>
+
+        <!-- 5. Aesthetic and Design Features -->
+        <section class="card" id="sec-5" data-section="5">
+          <h2><span class="sec-num">5</span><i class="fa-solid fa-paint-roller"></i> Aesthetic and Design Features</h2>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="wall-colors">Wall Colors and Finishes</label>
+              <input type="text" id="wall-colors" placeholder="e.g. Matte white, exposed brick accent">
+            </div>
+            <div class="field">
+              <label for="flooring-type">Flooring Type</label>
+              <input type="text" id="flooring-type" placeholder="e.g. Hardwood, polished concrete">
+            </div>
+            <div class="field">
+              <label for="flooring-condition">Condition of Flooring</label>
+              <select id="flooring-condition">
+                <option value="">Select…</option>
+                <option>Excellent</option>
+                <option>Good</option>
+                <option>Fair</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="architectural-details">Architectural Details</label>
+              <textarea id="architectural-details" rows="2" placeholder="Molding, columns, ceiling height…"></textarea>
+            </div>
+          </div>
+          <div class="grid grid-2">
+            <label class="switch-row switch-row--field" for="furniture-present">
+              <span>Furniture Present</span>
+              <span class="switch"><input type="checkbox" id="furniture-present"><span class="slider"></span></span>
+            </label>
+            <label class="switch-row switch-row--field" for="ease-of-moving-furniture">
+              <span>Ease of Moving Furniture</span>
+              <span class="switch"><input type="checkbox" id="ease-of-moving-furniture"><span class="slider"></span></span>
+            </label>
+          </div>
+        </section>
+
+        <!-- 6. Compliance and Permissions -->
+        <section class="card" id="sec-6" data-section="6">
+          <h2><span class="sec-num">6</span><i class="fa-solid fa-file-signature"></i> Compliance and Permissions</h2>
+          <div class="grid grid-2">
+            <label class="switch-row switch-row--field" for="zoning-regulations">
+              <span>Zoning Regulations Confirmed</span>
+              <span class="switch"><input type="checkbox" id="zoning-regulations"><span class="slider"></span></span>
+            </label>
+            <label class="switch-row switch-row--field" for="ownership-confirmed">
+              <span>Ownership Confirmed</span>
+              <span class="switch"><input type="checkbox" id="ownership-confirmed"><span class="slider"></span></span>
+            </label>
+          </div>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="owner-contact-name">Owner/Contact Name</label>
+              <input type="text" id="owner-contact-name">
+            </div>
+            <div class="field">
+              <label for="contact-information">Contact Information</label>
+              <input type="text" id="contact-information" placeholder="Phone / email">
+            </div>
+          </div>
+          <div class="field">
+            <label class="switch-row" for="permission-to-film">
+              <span>Permission to Film Secured</span>
+              <span class="switch"><input type="checkbox" id="permission-to-film"><span class="slider"></span></span>
+            </label>
+          </div>
+        </section>
+
+        <!-- 7. Acoustic Evaluation -->
+        <section class="card" id="sec-7" data-section="7">
+          <h2><span class="sec-num">7</span><i class="fa-solid fa-volume-high"></i> Acoustic Evaluation</h2>
+          <div class="field">
+            <label class="switch-row" for="ambient-noise">
+              <span>Ambient Noise Present</span>
+              <span class="switch"><input type="checkbox" id="ambient-noise"><span class="slider"></span></span>
+            </label>
+          </div>
+          <div class="field">
+            <button type="button" class="tbtn tbtn--sm" id="btnNoiseMeter" title="Measure ambient noise using the device microphone">
+              <i class="fa-solid fa-microphone"></i> Measure ambient noise (3 sec)
+            </button>
+            <div class="mobile-hint" id="noiseMeterStatus"></div>
+          </div>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="noise-source">Noise Source Details</label>
+              <input type="text" id="noise-source" placeholder="e.g. HVAC hum, street traffic">
+            </div>
+            <div class="field">
+              <label for="room-acoustics">Room Acoustics</label>
+              <select id="room-acoustics">
+                <option value="">Select…</option>
+                <option>None</option>
+                <option>Slight</option>
+                <option>Moderate</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8. Final Documentation -->
+        <section class="card" id="sec-8" data-section="8">
+          <h2><span class="sec-num">8</span><i class="fa-solid fa-clipboard-check"></i> Final Documentation</h2>
+          <div class="grid grid-2">
+            <label class="switch-row switch-row--field" for="detailed-report">
+              <span>Detailed Report Compiled and Attached</span>
+              <span class="switch"><input type="checkbox" id="detailed-report"><span class="slider"></span></span>
+            </label>
+            <label class="switch-row switch-row--field" for="database-entry">
+              <span>Entered into Location Database</span>
+              <span class="switch"><input type="checkbox" id="database-entry"><span class="slider"></span></span>
+            </label>
+          </div>
+          <div class="field">
+            <label for="tags-categories">Tags/Categories Assigned</label>
+            <input type="text" id="tags-categories" placeholder="e.g. interior, office, modern, quiet">
+          </div>
+          <div class="field">
+            <label for="additional-notes">Additional Notes</label>
+            <textarea id="additional-notes" rows="4" placeholder="Anything else worth remembering about this location…"></textarea>
+          </div>
+        </section>
+
+        <div class="bottom-actions">
+          <button type="button" class="tbtn tbtn--primary" id="btnSaveBottom"><i class="fa-solid fa-floppy-disk"></i> Save Now</button>
+          <button type="button" class="tbtn" id="btnExportBottom"><i class="fa-solid fa-download"></i> Export JSON</button>
+          <button type="button" class="tbtn" id="btnPrintBottom"><i class="fa-solid fa-print"></i> Print / PDF</button>
+          <button type="button" class="tbtn" id="btnShareBottom"><i class="fa-solid fa-share-nodes"></i> Share</button>
+        </div>
+      </form>
+    </main>
+  </div>
+
+  <!-- ============ CONFIRM MODAL ============ -->
+  <div class="modal-backdrop" id="modalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h3 id="modalTitle">Are you sure?</h3>
+      <p id="modalBody"></p>
+      <div class="modal-input-wrap" id="modalInputWrap">
+        <input type="text" id="modalInput" placeholder="Location name">
+      </div>
+      <div class="modal-actions">
+        <button class="tbtn" id="modalCancel">Cancel</button>
+        <button class="tbtn tbtn--primary" id="modalConfirm">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ TOASTS ============ -->
+  <div class="toast-stack" id="toastStack"></div>
+
+  <script src="app.js"></script>
+</body>
+
+</html>
