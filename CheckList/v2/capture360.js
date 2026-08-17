@@ -145,6 +145,7 @@
       let lastReading = null;
       let rafId = null;
       let orientationHandler = null;
+      let capturingInFlight = false; // guards auto-capture re-firing for the same target while a capture is still saving
 
       function finishAndClose(result) {
         if (finished) return;
@@ -208,8 +209,12 @@
           if (lz > 0.05) {
             const nx = (lx / lz) / tanGuide, ny = (ly / lz) / tanGuide;
             if (Math.abs(nx) <= 1.1 && Math.abs(ny) <= 1.1) {
-              dot.style.left = `calc(50% + ${nx * 46}vmin)`;
-              dot.style.top = `calc(50% - ${ny * 46}vmin)`;
+              // vw/vh (not vmin) so the guide fills the actual screen rectangle —
+              // on a tall phone screen, vmin for both axes clamps to the narrower
+              // width and squeezes high-pitch (ceiling/floor) markers toward the
+              // vertical center instead of near the true top/bottom of the frame.
+              dot.style.left = `calc(50% + ${nx * 42}vw)`;
+              dot.style.top = `calc(50% - ${ny * 42}vh)`;
               dot.innerHTML = captured[i] ? '<i class="fa-solid fa-check"></i>' : '';
               targetsEl.appendChild(dot);
               return;
@@ -264,50 +269,61 @@
       }
 
       async function captureAt(targetIdx, auto) {
-        if (finished || (auto && captured[targetIdx])) return;
-        let bitmap = null;
+        if (finished || capturingInFlight || (auto && captured[targetIdx])) return;
+        capturingInFlight = true;
         try {
-          const track = stream.getVideoTracks()[0];
-          if (typeof ImageCapture !== 'undefined' && track) {
-            const ic = new ImageCapture(track);
-            bitmap = await ic.grabFrame().catch(() => null);
+          // Snapshot orientation and grab the frame together, before any await —
+          // reading currentYaw/Pitch/Roll after the async grab/encode meant the
+          // stored metadata could reflect wherever the phone had moved to by the
+          // time the promises resolved, desyncing every photo from its recorded
+          // direction and corrupting the stitch.
+          const capturedYaw = currentYaw, capturedPitch = currentPitch, capturedRoll = currentRoll;
+          let bitmap = null;
+          try {
+            const track = stream.getVideoTracks()[0];
+            if (typeof ImageCapture !== 'undefined' && track) {
+              const ic = new ImageCapture(track);
+              bitmap = await ic.grabFrame().catch(() => null);
+            }
+          } catch (e) { bitmap = null; }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = bitmap ? bitmap.width : video.videoWidth;
+          canvas.height = bitmap ? bitmap.height : video.videoHeight;
+          const ctx = canvas.getContext('2d');
+          if (bitmap) { ctx.drawImage(bitmap, 0, 0); bitmap.close && bitmap.close(); }
+          else ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.86));
+          if (!blob) { toast('Could not capture that frame — try again', 'error'); return; }
+
+          const order = sourceMediaIds.length + 1;
+          const t = targets[targetIdx];
+          try {
+            const id = await global.LSCMedia.putMedia({
+              locationId, category: 'panorama-360-source', sessionId,
+              filename: `source_${String(order).padStart(3, '0')}_yaw${Math.round(t.yaw / DEG + 360) % 360}_pitch${Math.round(t.pitch / DEG)}.jpg`,
+              mime: 'image/jpeg', originalFilename: null,
+              width: canvas.width, height: canvas.height,
+              order, yaw: hasOrientation ? capturedYaw : t.yaw, pitch: hasOrientation ? capturedPitch : t.pitch, roll: hasOrientation ? capturedRoll : 0,
+              blob
+            });
+            sourceMediaIds.push(id);
+            captured[targetIdx] = true;
+          } catch (e) {
+            toast('Could not save that photo (storage may be full)', 'error');
+            return;
           }
-        } catch (e) { bitmap = null; }
 
-        const canvas = document.createElement('canvas');
-        canvas.width = bitmap ? bitmap.width : video.videoWidth;
-        canvas.height = bitmap ? bitmap.height : video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        if (bitmap) { ctx.drawImage(bitmap, 0, 0); bitmap.close && bitmap.close(); }
-        else ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-        const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.86));
-        if (!blob) { toast('Could not capture that frame — try again', 'error'); return; }
-
-        const order = sourceMediaIds.length + 1;
-        const t = targets[targetIdx];
-        try {
-          const id = await global.LSCMedia.putMedia({
-            locationId, category: 'panorama-360-source', sessionId,
-            filename: `source_${String(order).padStart(3, '0')}_yaw${Math.round(t.yaw / DEG + 360) % 360}_pitch${Math.round(t.pitch / DEG)}.jpg`,
-            mime: 'image/jpeg', originalFilename: null,
-            width: canvas.width, height: canvas.height,
-            order, yaw: hasOrientation ? currentYaw : t.yaw, pitch: hasOrientation ? currentPitch : t.pitch, roll: hasOrientation ? currentRoll : 0,
-            blob
-          });
-          sourceMediaIds.push(id);
-          captured[targetIdx] = true;
-        } catch (e) {
-          toast('Could not save that photo (storage may be full)', 'error');
-          return;
-        }
-
-        if (captured.every(Boolean)) {
-          finishBtn.hidden = false;
-          captureBtn.hidden = true;
-          instruction.textContent = 'All 18 targets captured — tap Finish to build the panorama.';
-        } else if (sourceMediaIds.length >= 6) {
-          finishBtn.hidden = false;
+          if (captured.every(Boolean)) {
+            finishBtn.hidden = false;
+            captureBtn.hidden = true;
+            instruction.textContent = 'All 18 targets captured — tap Finish to build the panorama.';
+          } else if (sourceMediaIds.length >= 6) {
+            finishBtn.hidden = false;
+          }
+        } finally {
+          capturingInFlight = false;
         }
       }
 
