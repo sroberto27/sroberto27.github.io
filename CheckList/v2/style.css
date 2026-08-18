@@ -580,24 +580,13 @@ select {
   padding: 14px; background: linear-gradient(rgba(0, 0, 0, .55), transparent);
 }
 .c360-counter { color: #fff; font-weight: 700; font-size: 14px; text-shadow: 0 1px 3px rgba(0, 0, 0, .6); }
-.c360-targets { position: absolute; inset: 0; pointer-events: none; }
-.c360-target {
-  position: absolute; width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%;
-  border: 3px solid rgba(255, 255, 255, .75); display: flex; align-items: center; justify-content: center;
-  color: #fff; font-size: 13px; transition: left .08s linear, top .08s linear;
-}
-.c360-target.active { border-color: #f5a623; box-shadow: 0 0 0 4px rgba(245, 166, 35, .25); }
-.c360-target.captured { border-color: var(--success); background: rgba(23, 163, 74, .35); }
-.c360-target.offscreen { border-style: dashed; background: rgba(0, 0, 0, .35); }
-.c360-reticle {
-  position: absolute; top: 50%; left: 50%; width: 60px; height: 60px; margin: -30px 0 0 -30px;
-  border: 3px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-}
-.c360-reticle-ring { width: 8px; height: 8px; border-radius: 50%; background: #fff; }
-.c360-reticle.aligned { border-color: #f5a623; }
-.c360-reticle.aligned .c360-reticle-ring { background: #f5a623; }
+/* The gray mask, peephole, world-locked captured-shot patches, active target
+   marker, and reticle ring are all painted on this canvas each frame (see
+   drawFrame() in capture360.js) instead of being separate DOM elements —
+   simpler to keep visually "world-locked" as the device rotates. */
+.c360-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .c360-instruction {
-  position: absolute; top: calc(50% + 70px); left: 0; right: 0; text-align: center; color: #fff;
+  position: absolute; top: 63%; left: 0; right: 0; text-align: center; color: #fff;
   font-weight: 700; font-size: 14px; text-shadow: 0 1px 3px rgba(0, 0, 0, .7); padding: 0 20px;
 }
 .c360-progress-track { position: absolute; bottom: 92px; left: 20px; right: 20px; height: 6px; border-radius: 6px; background: rgba(255, 255, 255, .25); overflow: hidden; }
