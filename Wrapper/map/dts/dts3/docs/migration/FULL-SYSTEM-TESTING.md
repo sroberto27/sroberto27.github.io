@@ -1165,6 +1165,93 @@ Comments: ____________________________________
 
 ---
 
+# Part K — Email-domain auto org-assignment (added 2026-08-18)
+
+New feature: an admin configures email domains per organization; a brand-new
+account whose email matches one is auto-added as a `member`. The DB-level
+mechanics (matching, case-insensitivity, disabled-org exclusion, the
+cross-org uniqueness conflict, RLS, and the `invite.js` race) are already
+**confirmed against the real dev Supabase project via a scripted test
+battery** (24/24 assertions passing) — see `docs/CHANGES.md`. Deployed
+2026-08-18; the user has since run a first real pass (tests 136, 137-partial,
+139, 141 below) directly against the live site — see each item's Comments.
+
+**136. Admin Board: add a domain to an organization.** ADMIN → Organizations
+→ open an org's "Email domains" area → add a domain. Confirm it appears in
+the list immediately (no draft/publish step — this is a live Postgres
+write, same as the rest of this screen).
+Result: - [x] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: User added `louisiana.edu` to an organization on the live site;
+appeared immediately. 2026-08-18.
+
+**137. Admin Board: edit and remove a domain.** Edit the domain you just
+added (change one character, Save), confirm it updates in place, then
+remove it.
+Result: - [ ] PASS - [ ] FAIL - [x] NOT TESTED (partial — see comment)
+Comments: Remove confirmed working (user removed the `louisiana.edu` domain
+after finishing the test below). The edit-in-place half (change a
+character, Save) was not exercised. 2026-08-18.
+
+**138. Admin Board: adding the same domain to a second org is rejected.**
+Add a domain to org A, then try to add the same domain (any case) to org B.
+Confirm a clear error, not a raw failure — and confirm org A's domain is
+unaffected.
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**139. A brand-new self-registered signup with a matching domain lands in
+the right org.** Configure a throwaway domain on a throwaway org, then sign
+up (email+password) with an address on that domain. After confirming the
+account, sign in and confirm the client portal shows membership in that org
+(e.g. the Activity tab becomes visible, or the org appears wherever
+membership is surfaced).
+Result: - [x] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: User created a new account with their own `louisiana.edu` address
+against the live site; it was automatically added to the organization the
+domain was configured on. Which account-creation path was used (the
+self-registration signup form vs. an Admin-Board-created account) wasn't
+specified — either exercises the same trigger, so this confirms the
+trigger-level mechanism either way; worth re-confirming via the signup form
+specifically if that distinction matters later. 2026-08-18.
+
+**140. A signup with a non-matching domain is unaffected.** Sign up with an
+address on a domain nothing is configured for. Confirm the account is
+created as a plain registered user with no org membership — ordinary
+pre-existing behavior, unchanged.
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**141. Domain-matched membership actually grants `client`-level access.**
+Using the account from test 139, confirm it can open a `client`-level
+resource belonging to that org (not just that a membership row exists —
+that the access check itself passes).
+Result: - [x] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: User confirmed the auto-joined account could download a build
+that only that organization's members can access — real end-to-end proof
+the access check itself passes, not just that the membership row exists.
+Test account and the `louisiana.edu` domain mapping both cleaned up
+afterward. 2026-08-18.
+
+**142. Org invite still works normally when the invitee's domain also
+matches the org being invited into.** As an org_admin, invite a new email
+address whose domain is configured for auto-assignment to that SAME org.
+Confirm the invite succeeds (no 500), the account ends up with the `org_role`
+you actually selected in the invite (not silently stuck at `member`), and
+only one membership row exists for them (check the Users screen — no
+duplicate). This is the `invite.js` race the migration's own scripted test
+already confirmed at the API level; this is the live/UI confirmation.
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**143. The Audit screen shows the domain-management actions.** ADMIN →
+Audit. Confirm `org_domain.add`/`org_domain.update`/`org_domain.remove`
+entries appear for the actions taken in tests 136–138, each with a real
+actor email and the organization involved.
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+---
+
 ## When you're done
 
 Report results back with the failures called out specifically — a failing test

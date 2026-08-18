@@ -2,6 +2,83 @@
 
 Newest first.
 
+## Add: email-domain auto org-assignment
+
+New feature, requested directly: an admin configures one or more email
+domains on an organization (Admin Board → Organizations → "Email domains"),
+and any brand-new account whose email matches one of those domains is
+automatically added as a `member` — no invite, no per-user admin action.
+
+Implemented at the Postgres trigger layer (`handle_new_user()`, extended in
+`supabase/migrations/20260818120000_org_email_domains.sql`), not in app code
+or a Cloudflare Function, because that's the only place that observes every
+account-creation path uniformly — OAuth sign-in creates the `auth.users` row
+entirely inside Supabase's hosted flow with zero DTS server-side request in
+the loop, so nothing short of a database trigger would ever see it. The
+trigger's own domain-match logic is wrapped in its own exception handler so
+a bug there can't roll back account creation itself (it already shares a
+transaction with the pre-existing `profiles`-row provisioning).
+
+New table `organization_email_domains`, RLS site_admin-only, a DB-level
+unique index on `lower(domain)` enforcing one domain → at most one org (no
+existing conflict-resolution mechanism to defer to). New Function routes
+`functions/api/admin/organizations/[id]/domains.js` and
+`.../domains/[domainId].js` (site_admin CRUD, same shape as the existing
+`organizations.js`/`organizations/[id].js`). New Admin Board UI
+(`domainsEditor()` in `js/admin.js`) nested inside each organization's row —
+live Postgres writes, same pattern as the entitlement picker, not the
+draft/publish path (this isn't `/data` content).
+
+**Real bug found and fixed as part of this, not a pre-existing issue:**
+`functions/api/org/invite.js`'s own membership insert would throw on a
+primary-key collision if an org_admin invites someone into an org whose
+domain is *also* configured for auto-assignment — the trigger's insert
+commits before `invite.js`'s own explicit insert runs, since the GoTrue
+admin-create-user call it awaits only returns after that transaction
+commits. Fixed by upserting on the real `(org_id, user_id)` primary key
+(`on_conflict=org_id,user_id`, `merge-duplicates`) instead of a bare insert
+— the invite's own requested `org_role` still always wins over the
+trigger's `member` default.
+
+Documented as an explicit, approved exception to the previously-stated
+principle "nothing is ever derived from an email address or its domain" —
+`docs/migration/ACCESS-MODEL.md` §1/§7/§10 and `docs/WEBSITE-STATE.md` §3/§5.3
+updated, same treatment self-registration itself got when it was added as
+an approved extension.
+
+**Verified against the real dev Supabase project** (migration pushed via
+`supabase db push`, confirmed applied via `supabase migration list`), via
+two scripted test batteries (17 + 7 assertions, all passing, using
+throwaway orgs/users cleaned up afterward): matching-domain auto-assignment
+(correct org, `member`, `active`), non-matching domain leaves existing
+behavior unchanged, case-insensitive matching, a disabled org's domains do
+NOT auto-assign, the cross-org uniqueness conflict (409/`23505`), RLS
+denying a non-site_admin direct table read/write, and the exact `invite.js`
+race scenario (trigger creates `member` first, the fixed upsert still lands
+on the invite's requested `org_admin`, no error, no duplicate row).
+
+**Deployed 2026-08-18** to `https://dts-website-4cu.pages.dev` via
+`DEPLOY-STAGING.md`'s full checklist (file-list diff, excluded-path check,
+post-deploy byte-count verification — all actually run, not skipped).
+Confirmed live via curl: the new domain routes return the real
+`{"error":"sign-in required"}` 401 (not the SPA fallback), `js/admin.js`'s
+`domainsEditor()` is present in the served file, and the stripped
+`js/config.js` is unaffected. **Incidental fix**: this deploy also closed a
+previously-flagged live regression — `tools/gis-harvest.mjs` was being
+served as a real file instead of hitting the SPA fallback (a prior deploy
+had skipped `DEPLOY-STAGING.md`'s own exclusion); now correctly excluded,
+confirmed by byte count.
+
+**User-confirmed live, same day**: added `louisiana.edu` to an organization
+via the Admin Board (appeared immediately), created a real account on that
+domain, and **downloaded a build gated to that org's members** with it —
+real end-to-end proof the auto-assignment and the `client`-level access
+check both work on the live deployment, not just against the dev-database
+scripts. Test account and domain mapping cleaned up afterward. Remaining
+Part K items (edit-in-place, cross-org uniqueness in the UI, non-matching
+domain, the `invite.js` race, Audit screen) still open — see
+`docs/migration/FULL-SYSTEM-TESTING.md`.
+
 ## Fix: category cards overlapping on very short phones (375x667)
 
 Real regression from the previous mobile-cards fix (the one that removed

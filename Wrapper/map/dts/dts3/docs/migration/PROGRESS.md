@@ -22,6 +22,72 @@ identity/access model each phase from 3 onward implements is defined in
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
 
+- 2026-08-18 — **Email-domain auto org-assignment, requested directly (not
+  part of the numbered phases).** An admin configures one or more email
+  domains per organization from the Admin Board; a brand-new account whose
+  email matches one is auto-added as a `member`, no invite needed. Related
+  to, but distinct from, the risk-log item below about restricting
+  org_admin invites BY domain — this is the opposite direction (auto-*grant*
+  on a matching domain, not a restriction).
+
+  Implemented as an extension to `handle_new_user()`
+  (`supabase/migrations/20260818120000_org_email_domains.sql`) rather than
+  app/Function code, since that trigger is the only thing that observes
+  every account-creation path uniformly — OAuth sign-in never touches DTS's
+  own backend at all. New table `organization_email_domains`
+  (site_admin-only RLS, unique index on `lower(domain)` — one domain maps to
+  at most one org, enforced at the DB layer since there's no existing
+  conflict-resolution mechanism). New admin routes
+  `functions/api/admin/organizations/[id]/domains.js` +
+  `.../domains/[domainId].js`, mirroring `organizations.js`'s existing
+  shape. New Admin Board UI (`domainsEditor()` in `js/admin.js`), nested per
+  organization, live-Postgres like the entitlement picker — not `/data`.
+
+  **Real bug found and fixed, not pre-existing:** `functions/api/org/invite.js`'s
+  membership insert would throw on a PK collision if invited into an org
+  whose domain also matches the invitee's email (the trigger gets there
+  first, inside the same GoTrue admin-create-user call `invite.js` awaits).
+  Fixed with an upsert on `(org_id, user_id)` — the invite's requested
+  `org_role` still wins over the trigger's `member` default.
+
+  Docs updated as a deliberate, documented exception to "nothing is ever
+  derived from an email address or its domain" —
+  `docs/migration/ACCESS-MODEL.md` §1/§7/§10, `docs/WEBSITE-STATE.md` §3/§5.3.
+
+  **Verified against the real dev Supabase project** — migration pushed via
+  `supabase db push` (confirmed applied via `supabase migration list`), then
+  two scripted batteries against the live project (17 + 7 assertions, all
+  passing, throwaway orgs/users cleaned up after): matching/non-matching/
+  case-insensitive domain matching, a disabled org NOT auto-assigning, the
+  cross-org uniqueness 409, RLS blocking a non-site_admin, and the exact
+  `invite.js` race (trigger creates `member` first, upsert still lands on
+  the requested `org_admin`, no throw, no duplicate row).
+
+  **Deployed same session**, `https://dts-website-4cu.pages.dev`, following
+  `DEPLOY-STAGING.md`'s checklist in full (file-list diff per included
+  directory, excluded-path presence check, post-deploy byte-count
+  verification — every step actually run). Confirmed live via curl: the new
+  domain routes 401 with the real `{"error":"sign-in required"}` body (not
+  the SPA fallback), `domainsEditor()` is present in the served
+  `js/admin.js`, and the stripped `js/config.js` is unchanged. Incidentally
+  fixed a previously-flagged live regression in the same deploy —
+  `tools/gis-harvest.mjs` was being served as a real file (a prior deploy
+  had skipped `DEPLOY-STAGING.md`'s own exclusion for it); confirmed now
+  correctly hitting the SPA fallback.
+
+  **User ran a first real browser pass same day, against the live site**
+  (`FULL-SYSTEM-TESTING.md` Part K, tests 136/137-partial/139/141): added
+  `louisiana.edu` to an org via the Admin Board (appeared immediately, no
+  publish step), created a real account on that domain (auto-joined the
+  org, confirming the trigger end to end on the live deployment, not just
+  the dev-database scripts), and **downloaded a build gated to that org's
+  members** with it — real proof the `client`-level access check itself
+  passes for an auto-assigned membership, the strongest confirmation tier
+  this feature has. Test account and domain mapping both cleaned up
+  afterward. Not yet tested: edit-in-place, cross-org uniqueness in the UI,
+  a non-matching-domain signup, the `invite.js` race in the UI, and the
+  Audit screen entries (tests 137-edit-half, 138, 140, 142, 143).
+
 - 2026-08-10 — **Documentation and file organization, getting ready for
   handoff. No site code touched at all** — `functions/`, `js/`, `css/`,
   `data/`, `index.html`, `_headers`, `wrangler.toml` all unchanged, confirmed
@@ -2915,7 +2981,10 @@ identity/access model each phase from 3 onward implements is defined in
 - Whether an `org_admin`'s invite should be restricted to specific email
   domains — currently unrestricted (DTS issues client addresses on its own
   domain), rate-limited + audited server-side. Revisit at Phase 5b if abuse
-  becomes a concern.
+  becomes a concern. (Distinct from the 2026-08-18 email-domain
+  auto-assignment feature above, which grants membership on a domain match
+  rather than restricting invites by one — related direction, opposite
+  effect, don't conflate the two.)
 - `data/projects/emergency.json` exists on disk but is absent from
   `data/manifest.json` — Phase 3's backfill script must ask before deciding
   whether to register or leave it out.

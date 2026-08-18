@@ -52,8 +52,22 @@ export async function onRequestPost(context) {
     return json({ error: "couldn’t create account: " + err.message }, 400);
   }
 
-  const [membership] = await pgrst(env, "organization_members", {
+  // Upsert on the real PK, not a plain insert: the new email-domain
+  // auto-assignment trigger (handle_new_user(), see the
+  // org_email_domains migration) may have already inserted this exact
+  // (org_id, user_id) row -- inside the same transaction as the
+  // gotrue() call just above, which only returns after that trigger
+  // commits -- if this org's domain happens to match the invitee's
+  // email. merge-duplicates makes this idempotent against that race
+  // instead of throwing on the PK conflict; the invite's own requested
+  // org_role always wins on merge, so it never gets silently stuck at
+  // the trigger's default 'member'. Safe specifically because the
+  // existingUsers check above already rejected the case where the
+  // email pre-existed, so any pre-existing row here can only be the one
+  // this same request's trigger just created.
+  const [membership] = await pgrst(env, "organization_members?on_conflict=org_id,user_id", {
     method: "POST",
+    prefer: "resolution=merge-duplicates,return=representation",
     body: { org_id: orgId, user_id: created.id, org_role: orgRole, status: "active" },
   });
 

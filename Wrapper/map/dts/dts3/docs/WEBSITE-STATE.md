@@ -80,7 +80,12 @@ on any disagreement. What follows is the working summary.
 6. **Resource access level + entitlements** — what a resource requires, and for
    `restricted`, who specifically holds it.
 
-Nothing is ever derived from an email address or its domain.
+Nothing is ever derived from an email address or its domain **at the point
+an access decision is made.** Documented exception since 2026-08-18: an
+email's domain can auto-create an `organization_members` row at account
+creation time (see §3's DB tables list and ACCESS-MODEL.md §1/§10) — once
+that row exists it's indistinguishable from one created by an invite or the
+Admin Board.
 
 ### The four resource access levels
 
@@ -149,17 +154,31 @@ Board.
 ### Account creation paths
 
 1. **DTS-created** — Admin Board → Users, or `scripts/import-clients.mjs` at
-   handoff. This is the **only** path that can also create a membership or
-   grant `site_admin`.
+   handoff. Only this path, or an org invite, can grant `site_admin`.
+1b. **Org invite** (`functions/api/org/invite.js`) — an org_admin or
+   site_admin creates the account and its membership together in one step.
 2. **Self-registration** — email+password (`signUp()`, email confirmation
-   required) or Google/Microsoft OAuth. Always lands at `site_role='user'`,
-   zero memberships. OAuth providers are **not yet enabled** (§9).
+   required) or Google/Microsoft OAuth. Always lands at `site_role='user'`.
+   OAuth providers are **not yet enabled** (§9).
+3. **Domain-based auto-assignment (added 2026-08-18)** — applies underneath
+   all three paths above, not a separate path of its own. `handle_new_user()`
+   (the same trigger that provisions every new `profiles` row) also checks
+   the new user's email domain against `organization_email_domains` and, on
+   a match against an active org, inserts an `organization_members` row
+   (`member`/`active`) in the same transaction. Trigger-level because OAuth
+   sign-in never touches DTS's own backend — only something at the database
+   layer can see every creation path uniformly. Admin-managed from the
+   Organizations screen (site_admin only). Full rationale, the invite-race
+   interaction, and failure isolation: `docs/migration/ACCESS-MODEL.md` §10.
 
 ### Database tables
 
-`profiles`, `organizations`, `organization_members`, `resource_entitlements`,
-`client_apps`, `events`, `admin_audit`. All seven have RLS enabled with
-deny-by-default policies. `admin_audit` has **no client insert policy at all** —
+`profiles`, `organizations`, `organization_members`,
+`organization_email_domains` (added 2026-08-18 — email→org mappings for
+auto-assignment, site_admin-managed, see the Account creation paths section
+above), `resource_entitlements`, `client_apps`, `events`, `admin_audit`. All
+eight have RLS enabled with deny-by-default policies. `admin_audit` has
+**no client insert policy at all** —
 only Functions using the service role can write it, which is why every audited
 mutation goes through a Cloudflare Function rather than a direct client write,
 even where RLS alone would have permitted the write.
@@ -268,7 +287,9 @@ in case it lost the race to register the listener. Nav groups:
 - **SECTORS** — one per category page, with its projects nested
 - **GIS MAPS** — each map as a bold parent row with a collapse/expand toggle,
   its tours nested one level deeper; plus Data sources
-- **ADMIN** — Organizations, Users, Builds, Access, Audit
+- **ADMIN** — Organizations (each with an inline "Email domains" editor,
+  added 2026-08-18 — add/edit/remove the domains that auto-assign new
+  signups into that org, `domainsEditor()`), Users, Builds, Access, Audit
 - **HELP** — Documentation
 
 Two different write models, and the distinction trips people up:
@@ -558,18 +579,18 @@ Everything below is **documented, not fixed**. None of it is a surprise.
 
 ### Found during this documentation pass — new, not previously recorded
 
-- **`tools/gis-harvest.mjs` is being served live again.** Confirmed
-  2026-08-10 against `https://dts-website-4cu.pages.dev/tools/gis-harvest.mjs`:
-  `200`, **16,886 bytes**, byte-identical to the local file, first line
-  `// tools/gis-harvest.mjs` — not the 63,157-byte SPA fallback. Phase 9's
-  session log recorded adding `tools/` to the exclusion list and confirming the
-  fallback byte count afterward, and `DEPLOY-STAGING.md` still lists `tools/`
-  under Exclude — so a later deploy rebuilt staging without that exclusion.
-  Low severity (no secrets; it does expose internal implementation comments and
-  internal doc paths), but it is a live regression of a fix already made once.
-  Fix on the next deploy. Every other excluded path checked the same day
-  (`/.env`, `/scripts/seed-dev.mjs`, `/supabase/config.toml`, `/CLAUDE.md`,
-  `/docs/migration/PROGRESS.md`) correctly returns the fallback.
+- ~~**`tools/gis-harvest.mjs` is being served live again.**~~ **RESOLVED
+  2026-08-18.** Was confirmed live 2026-08-10 (`200`, 16,886 bytes,
+  byte-identical to the local file — not the SPA fallback), because a deploy
+  had rebuilt staging without applying `DEPLOY-STAGING.md`'s own `tools/`
+  exclusion. The 2026-08-18 deploy (email-domain auto-assignment feature)
+  followed the checklist's file-list diff and exclusion-presence checks
+  exactly and re-confirmed live: `/tools/gis-harvest.mjs` now returns the
+  same byte count as `/` (63,157 — the SPA fallback), same as every other
+  excluded path (`/.env`, `/scripts/seed-dev.mjs`, `/supabase/config.toml`,
+  `/CLAUDE.md`, `/docs/migration/PROGRESS.md`, `/package.json`). No code
+  change was needed — the checklist itself was already correct; a deploy had
+  simply skipped a step.
 - **`README.md` is substantially stale.** It still describes Google-Sheet
   client sign-in, `adminUsers` in `data/access/access.json`, `js/clients.js`
   (deleted in Phase 4), GitHub Pages as the deploy target, and the old

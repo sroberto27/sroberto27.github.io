@@ -2649,6 +2649,91 @@
      writes the matching admin_audit row itself (§7) -- never a client-side
      insert, since admin_audit has no client insert policy at all.
      ============================================================ */
+  /* Live add/edit/remove UI for one organization's auto-assignment email
+     domains (functions/api/admin/organizations/[id]/domains*.js). Same
+     live-Postgres, one-API-call-per-action shape as entitlementPicker()
+     above -- this is Postgres data (organization_email_domains), not /data
+     content, so it never touches the draft/export/publish path. A brand-new
+     signup whose email matches one of these domains is auto-added as a
+     member of this org by handle_new_user() -- see the org_email_domains
+     migration and ACCESS-MODEL.md §1/§10. */
+  function domainsEditor(parent, org) {
+    var box = el("div", "adm-entitlements");
+    var labelRow = el("div", "adm-entitlement-labelrow");
+    labelRow.appendChild(el("p", "adm-label", "Email domains (auto-join for new signups)"));
+    box.appendChild(labelRow);
+    var listZone = el("div", "adm-listitems");
+    box.appendChild(listZone);
+    var dStatus = el("p", "adm-hint", "");
+    box.appendChild(dStatus);
+
+    function draw() {
+      listZone.innerHTML = "";
+      dStatus.textContent = "Loading…";
+      adminFetch("/api/admin/organizations/" + org.id + "/domains").then(function (res) {
+        if (!res.ok) { dStatus.textContent = "Couldn’t load domains: " + (res.data.error || res.status); return; }
+        dStatus.textContent = "";
+        var domains = res.data.domains || [];
+        if (!domains.length) {
+          listZone.appendChild(el("p", "adm-hint", "No domains configured — new signups won’t auto-join this organization."));
+          return;
+        }
+        domains.forEach(function (d) { listZone.appendChild(domainRow(d)); });
+      });
+    }
+
+    function domainRow(d) {
+      var item = el("div", "adm-listitem");
+      var editRow = el("div", "adm-entitlement-search");
+      var domIn = el("input", "adm-input"); domIn.type = "text"; domIn.value = d.domain;
+      var saveBtn = el("button", "adm-btn adm-btn-small", "Save");
+      saveBtn.type = "button";
+      saveBtn.addEventListener("click", function () {
+        var next = domIn.value.trim().toLowerCase();
+        if (!next || next === d.domain) return;
+        dStatus.textContent = "Saving…";
+        adminFetch("/api/admin/organizations/" + org.id + "/domains/" + d.id, { method: "PATCH", body: { domain: next } }).then(function (res) {
+          if (!res.ok) { dStatus.textContent = "Couldn’t update: " + (res.data.error || res.status); return; }
+          draw();
+        });
+      });
+      var delBtn = el("button", "adm-btn adm-btn-ghost adm-btn-small", "Remove");
+      delBtn.type = "button";
+      delBtn.addEventListener("click", function () {
+        if (!confirm("Remove “" + d.domain + "” from " + org.name + "? New signups from that domain will no longer auto-join.")) return;
+        dStatus.textContent = "Removing…";
+        adminFetch("/api/admin/organizations/" + org.id + "/domains/" + d.id, { method: "DELETE" }).then(function (res) {
+          if (!res.ok) { dStatus.textContent = "Couldn’t remove: " + (res.data.error || res.status); return; }
+          draw();
+        });
+      });
+      editRow.appendChild(domIn); editRow.appendChild(saveBtn); editRow.appendChild(delBtn);
+      item.appendChild(editRow);
+      return item;
+    }
+
+    var addRow = el("div", "adm-entitlement-search");
+    var newDomain = el("input", "adm-input"); newDomain.type = "text"; newDomain.placeholder = "e.g. louisiana.edu";
+    var addBtn = el("button", "adm-btn adm-btn-small", "+ Add domain");
+    addBtn.type = "button";
+    addBtn.addEventListener("click", function () {
+      var domain = newDomain.value.trim().toLowerCase();
+      if (!domain) { dStatus.textContent = "Enter a domain first."; return; }
+      dStatus.textContent = "Adding…";
+      adminFetch("/api/admin/organizations/" + org.id + "/domains", { method: "POST", body: { domain: domain } }).then(function (res) {
+        if (!res.ok) { dStatus.textContent = "Couldn’t add: " + (res.data.error || res.status); return; }
+        newDomain.value = "";
+        draw();
+      });
+    });
+    addRow.appendChild(newDomain); addRow.appendChild(addBtn);
+    box.appendChild(addRow);
+
+    draw();
+    parent.appendChild(box);
+    return { refresh: draw };
+  }
+
   function editOrganizations(pane) {
     var box = section(pane, "Organizations",
       "Every client organization in the system. Disabling one revokes client-level access for its members immediately — membership and entitlement rows are kept, not deleted, so reactivating restores everything.");
@@ -2718,6 +2803,7 @@
       });
       editRow.appendChild(nameIn); editRow.appendChild(slugIn); editRow.appendChild(saveBtn);
       card.appendChild(editRow);
+      domainsEditor(card, org);
       return card;
     }
 

@@ -34,10 +34,17 @@ whom manages the others" or "this user is `org_admin` at Acme and a plain
 6. **Resource access policy + entitlements** — what level a resource requires,
    and (for `restricted`) who specifically holds it.
 
-None of these is ever derived from an email address or its domain. DTS issues
-addresses like `Acme_Hotel@dtsxr.com`, but that string carries no permissions —
-permissions come only from `profiles`, `organization_members`, and
-`resource_entitlements`.
+None of these is ever derived from an email address or its domain **at the
+point permissions are checked.** `profiles`, `organization_members`, and
+`resource_entitlements` are still the only things any access decision reads.
+
+**Documented exception, added 2026-08-18 (approved, not a default):** an
+email's domain MAY influence how an `organization_members` row comes to
+exist in the first place — see §10's "Domain-based auto-assignment." Once
+that row exists it is indistinguishable from one created by an invite or the
+Admin Board; the email string itself still confers nothing directly. DTS
+issues addresses like `Acme_Hotel@dtsxr.com`, and that string alone still
+carries no permissions on its own.
 
 ---
 
@@ -64,6 +71,12 @@ organization_members
   status         text  'active' | 'invited' | 'disabled'  default 'active'
   created_at     timestamptz
   PRIMARY KEY (org_id, user_id)
+
+organization_email_domains        -- added 2026-08-18, see §10
+  id             uuid PK
+  org_id         uuid  references organizations(id)
+  domain         text        -- globally unique (lower(domain)), one org per domain
+  created_at     timestamptz
 
 resource_entitlements
   id             uuid PK
@@ -326,7 +339,11 @@ belongs to. Records what happened, never why.
 `site_role.change`, `membership.add`, `membership.remove`,
 `org_role.change`, `access_policy.change`, `entitlement.grant`,
 `entitlement.revoke`, `download.assign`, `account.disable`,
-`account.reactivate`, `invite.send`.
+`account.reactivate`, `invite.send`, `org_domain.add`, `org_domain.update`,
+`org_domain.remove` (the last three added 2026-08-18 for the domain-mapping
+CMS editor, §10 — same additive-extension precedent as `organization.create`/
+`organization.update`, both already in real use by
+`functions/api/admin/organizations.js` but not yet folded into this list).
 
 `events` and `admin_audit` are separate tables with separate RLS: `events` is
 client-insertable (via `/api/track`) and readable within your own org only;
@@ -374,14 +391,23 @@ provides.
 
 Two ways an `auth.users` row (and its auto-provisioned `profiles` row —
 `handle_new_user()`, `supabase/migrations/20260807220000_core_schema.sql`)
-comes into existence. Both land at exactly the same place: `site_role='user'`,
-zero `organization_members` rows — the plain `registered` tier in the §8
-table, nothing more, regardless of which path created it.
+comes into existence. Both land at `site_role='user'` — the plain
+`registered` tier in the §8 table at minimum, regardless of which path
+created it. **Until 2026-08-18** both also always landed with zero
+`organization_members` rows unless a human explicitly granted one; that is
+no longer universally true — see "Domain-based auto-assignment" below, which
+applies uniformly to every path on this list.
 
-**1. DTS-created (the originally-assumed path).** Phase 5b's Admin Board (not
-yet built) or `scripts/import-clients.mjs` at Handoff. This is the ONLY path
-that can ever also create an `organization_members` row or grant
-`site_role='site_admin'` — self-registration (below) never does either.
+**1. DTS-created (the originally-assumed path).** The Admin Board's Users
+screen (`functions/api/admin/users.js` — does not itself grant any
+membership) or `scripts/import-clients.mjs` at Handoff. Only a human action
+here, or an org invite (below), can grant `site_role='site_admin'` —
+self-registration and domain auto-assignment never do.
+
+**1b. Org invite.** `functions/api/org/invite.js` — an org_admin (own org
+only) or site_admin creates a brand-new account and its membership together
+in one step. The only path, alongside domain auto-assignment, that can
+create an `organization_members` row as part of account creation itself.
 
 **2. Self-registration (added 2026-08-08, after the reconciliation pass —
 not in the original phased plan, an explicit approved extension).** A guest
@@ -399,6 +425,41 @@ Client-side, `js/app.js` handles both through the same `finishSignIn()` tail
 as password login, plus a `supabase.auth.onAuthStateChange()` listener so a
 sign-up confirmed in a DIFFERENT tab (or any other out-of-band session
 change) is picked up without a manual reload.
+
+**3. Domain-based auto-assignment (added 2026-08-18, explicit approved
+extension — see §1's documented exception).** Applies uniformly underneath
+paths 1, 1b, and 2 above, not as a separate account-creation path of its
+own: `handle_new_user()` now also checks the new user's email domain against
+`organization_email_domains` (§2) and, on a match against an ACTIVE
+organization, inserts an `organization_members` row (`org_role='member'`,
+`status='active'`) in the same trigger, same transaction. This is
+implemented at the Postgres trigger layer specifically because OAuth
+sign-in (2, above) creates the `auth.users` row entirely inside Supabase's
+hosted flow with no DTS server-side request in the loop at all — a
+trigger is the only mechanism that observes every account-creation path
+uniformly, including that one.
+
+A failure in the domain-match logic is caught and logged
+(`raise warning`) inside the trigger, never allowed to abort the
+`auth.users` insert — the trigger already runs `profiles`-row creation in
+the same transaction, so an unhandled error here would break account
+creation entirely, not just this one feature.
+
+`organization_email_domains` is admin-managed (Admin Board → Organizations →
+per-org "Email domains", `functions/api/admin/organizations/[id]/domains*.js`,
+site_admin-only both at the RLS layer and the Function layer). One domain
+maps to at most one organization, enforced by a DB-level unique index on
+`lower(domain)` — there is no conflict-resolution mechanism for a domain
+claimed by two orgs, so the second attempt is simply rejected (409).
+
+**Interaction with org invite (1b):** if an org_admin invites someone whose
+email domain also matches that same org's configured domain, the trigger's
+membership insert commits before `invite.js`'s own insert runs (both happen
+within one Function request, but the GoTrue admin-create-user call `invite.js`
+awaits only returns after the trigger's transaction commits). `invite.js`
+upserts on the `(org_id, user_id)` primary key rather than plain-inserting,
+so this doesn't throw — the invite's explicitly requested `org_role` always
+wins over the trigger's `member` default.
 
 **Operational status as of 2026-08-08 — check `PROGRESS.md`'s session log
 for anything more recent before relying on this:**
