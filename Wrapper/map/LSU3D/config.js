@@ -128,16 +128,17 @@ window.CAMPUS_CONFIG = Object.assign(window.CAMPUS_CONFIG || {}, {
 
     // -- Google Photorealistic 3D Tiles (js/16-google-tiles.js) --
     // Rendered via NASA-AMMOS's open-source 3d-tiles-renderer + three.js
-    // as a MapLibre custom layer. OFF by default — flip googleTilesEnabled
-    // to true and set a real googleApiKey in a local, gitignored
-    // config.local.js (see config.local.example.js) to opt in. Never set
-    // a real key here; this file is committed. Even with a key present,
-    // this is billed usage (Google's Map Tiles API Enterprise SKU) — do
-    // not enable in a shared/production deployment until the API key's
-    // HTTP-referrer restriction, Map Tiles API restriction, and a daily
-    // quota cap are confirmed set in Google Cloud Console.
-    googleTilesEnabled: false,
-    googleApiKey: "",
+    // as a MapLibre custom layer. Enabled here with a real key because
+    // this file is what GitHub Pages actually serves (config.local.js is
+    // gitignored and never deploys) — the key is public static JS to any
+    // visitor either way. The real protection is the key's HTTP-referrer
+    // restriction (locked to localhost + this GitHub Pages path) and the
+    // $10/mo Cloud Billing budget alert on the "lsu-death-valley-3d"
+    // project, both confirmed set in Google Cloud Console. That budget
+    // alert is notification-only (not a hard spend cap) — if usage looks
+    // off, check Cloud Console billing before assuming it's fine.
+    googleTilesEnabled: true,
+    googleApiKey: "AIzaSyCgDjtnyWh1n5c-2NzMI2eu0EHDtXktLoc",
     googleTilesetUrl: "https://tile.googleapis.com/v1/3dtiles/root.json",
     // Absolute ceiling on how long to wait for the root tileset to load
     // at all before giving up and falling back to the flat extruded-
