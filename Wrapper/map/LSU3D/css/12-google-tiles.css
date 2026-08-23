@@ -1,0 +1,112 @@
+/* === LSU Death Valley Experience — Part 12: Google 3D Tiles UI ===
+   Two small pieces: the mandatory Google attribution chip (always in
+   the DOM, visibility toggled by js/16-google-tiles.js) and the 3D-mode
+   indicator badge in the map-controls rail (js/05-map-helpers.js +
+   js/16-google-tiles.js). Both match the existing quiet-chip / mapctl
+   visual language rather than introducing a new style. */
+
+/* Attribution — same "quiet white chip, bottom-right" treatment as
+   .maplibregl-ctrl-attrib (css/05-leaflet-responsive.css), sitting just
+   above it so both can be visible at once without overlapping. Hidden
+   via opacity+visibility (not display:none) so it can never be mistaken
+   for "removed" by anything checking computed layout, and so it never
+   needs to be re-added to the DOM (Google's ToS wants this rendered
+   whenever their content is on screen, not re-inserted per frame). */
+.google-tiles-attrib {
+  position: absolute;
+  right: 0;
+  bottom: 22px;
+  z-index: 5;
+  max-width: 60vw;
+  background: rgba(255,255,255,.85);
+  color: var(--ni-sec);
+  font-family: var(--sans);
+  font-size: 10px;
+  line-height: 1.4;
+  border-radius: 6px 0 0 0;
+  padding: 2px 8px;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--dur) var(--ease);
+}
+.google-tiles-attrib.is-visible {
+  opacity: 1;
+  visibility: visible;
+}
+.google-tiles-attrib a { color: var(--ni-blue); }
+
+/* 3D-mode indicator — status text, not a button (no hover/cursor
+   affordance). Sits in the same floating rail as the other .mapctl
+   controls but sized to its text instead of the fixed --ctl square. */
+.mapctl-badge {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  height: var(--ctl);
+  padding: 0 12px;
+  background: var(--ni-paper);
+  border-radius: 10px;
+  box-shadow: var(--ni-shadow);
+  color: var(--ni-sec);
+  font-family: var(--sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  white-space: nowrap;
+}
+.mapctl-badge.is-visible { display: flex; }
+.mapctl-badge.mode-google {
+  color: var(--ni-gold-dark);
+  background: var(--ni-gold);
+}
+.mapctl-badge.mode-simple {
+  color: var(--ni-ink);
+}
+
+/* #toggleImageryBtn greyed out while Google tiles are the active 3D
+   renderer — its DOTD-imagery toggle has no effect once Google's own
+   bundled imagery/mesh is what's rendering (js/14-redesign.js). */
+.mapctl.is-disabled {
+  opacity: .4;
+  pointer-events: none;
+}
+
+/* Loading veil — opaque, covers the whole map so an in-progress,
+   coarse/low-resolution Google-tiles load is never visible as if it
+   were the finished view (js/16-google-tiles.js). Same dark-purple +
+   gold-arc spinner language as the app's own splash screen
+   (css/01-base.css .splash/.splash-spinner), reusing its @keyframes
+   spin. Sits above the map canvas and mode badge, below nothing —
+   this is the topmost thing while it's up. */
+.google-tiles-loading {
+  position: absolute;
+  inset: 0;
+  z-index: 900;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: var(--ni-bg-gradient);
+  opacity: 0;
+  transition: opacity var(--dur) var(--ease);
+}
+.google-tiles-loading.is-visible {
+  display: flex;
+  opacity: 1;
+}
+.google-tiles-loading-spinner {
+  width: 34px;
+  height: 34px;
+  border: 3px solid var(--ni-border);
+  border-top-color: var(--ni-gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+.google-tiles-loading-label {
+  font-family: var(--sans);
+  font-size: 12px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--ni-muted);
+}

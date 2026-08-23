@@ -1,0 +1,17 @@
+{
+"type": "FeatureCollection",
+"name": "tours",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:OGC:1.3:CRS84" } },
+"features": [
+{ "type": "Feature", "properties": { "fid": 1, "name": "Lot 414 · River Road Arrival", "tour_group": "mainTour", "order_num": 1, "description": null }, "geometry": { "type": "Polygon", "coordinates": [ [ [ -91.187580, 30.414430 ], [ -91.187420, 30.414430 ], [ -91.187420, 30.414570 ], [ -91.187580, 30.414570 ], [ -91.187580, 30.414430 ] ] ] } },
+{ "type": "Feature", "properties": { "fid": 2, "name": "Charter Bus to the Facility", "tour_group": "mainTour", "order_num": 2, "description": null }, "geometry": { "type": "Polygon", "coordinates": [ [ [ -91.187880, 30.411730 ], [ -91.187720, 30.411730 ], [ -91.187720, 30.411870 ], [ -91.187880, 30.411870 ], [ -91.187880, 30.411730 ] ] ] } },
+{ "type": "Feature", "properties": { "fid": 3, "name": "Football Operations Facility", "tour_group": "mainTour", "order_num": 3, "description": null }, "geometry": { "type": "Polygon", "coordinates": [ [ [ -91.188829, 30.410860 ], [ -91.188669, 30.410860 ], [ -91.188669, 30.411000 ], [ -91.188829, 30.411000 ], [ -91.188829, 30.410860 ] ] ] } },
+{ "type": "Feature", "properties": { "fid": 4, "name": "Tiger Tailgate · Indoors", "tour_group": "mainTour", "order_num": 4, "description": null }, "geometry": { "type": "Polygon", "coordinates": [ [ [ -91.188580, 30.410730 ], [ -91.188420, 30.410730 ], [ -91.188420, 30.410870 ], [ -91.188580, 30.410870 ], [ -91.188580, 30.410730 ] ] ] } },
+{ "type": "Feature", "properties": { "fid": 5, "name": "Registration", "tour_group": "mainTour", "order_num": 5, "description": null }, "geometry": { "type": "Polygon", "coordinates": [ [ [ -91.188480, 30.410530 ], [ -91.188320, 30.410530 ], [ -91.188320, 30.410670 ], [ -91.188480, 30.410670 ], [ -91.188480, 30.410530 ] ] ] } },
+{ "type": "Feature", "properties": { "fid": 6, "name": "Tiger Walk", "tour_group": "mainTour", "order_num": 6, "description": null }, "geometry": { "type": "Polygon", "coordinates": [ [ [ -91.186280, 30.411330 ], [ -91.186120, 30.411330 ], [ -91.186120, 30.411470 ], [ -91.186280, 30.411470 ], [ -91.186280, 30.411330 ] ] ] } },
+{ "type": "Feature", "properties": { "fid": 7, "name": "Lawton Room", "tour_group": "mainTour", "order_num": 7, "description": null }, "geometry": { "type": "Polygon", "coordinates": [ [ [ -91.188880, 30.410930 ], [ -91.188720, 30.410930 ], [ -91.188720, 30.411070 ], [ -91.188880, 30.411070 ], [ -91.188880, 30.410930 ] ] ] } },
+{ "type": "Feature", "properties": { "fid": 8, "name": "Field Level Warmups", "tour_group": "mainTour", "order_num": 8, "description": null }, "geometry": { "type": "Polygon", "coordinates": [ [ [ -91.183880, 30.411830 ], [ -91.183720, 30.411830 ], [ -91.183720, 30.411970 ], [ -91.183880, 30.411970 ], [ -91.183880, 30.411830 ] ] ] } },
+{ "type": "Feature", "properties": { "fid": 9, "name": "Kickoff · Death Valley", "tour_group": "mainTour", "order_num": 9, "description": null }, "geometry": { "type": "Polygon", "coordinates": [ [ [ -91.183895, 30.411965 ], [ -91.183735, 30.411965 ], [ -91.183735, 30.412105 ], [ -91.183895, 30.412105 ], [ -91.183895, 30.411965 ] ] ] } },
+{ "type": "Feature", "properties": { "fid": 10, "name": "Postgame · Buses at Matherne's", "tour_group": "mainTour", "order_num": 10, "description": null }, "geometry": { "type": "Polygon", "coordinates": [ [ [ -91.179880, 30.409730 ], [ -91.179720, 30.409730 ], [ -91.179720, 30.409870 ], [ -91.179880, 30.409870 ], [ -91.179880, 30.409730 ] ] ] } }
+]
+}

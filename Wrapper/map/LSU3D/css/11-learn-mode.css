@@ -1,0 +1,70 @@
+/* === LSU Death Valley Experience — Part 11: Learn tab (placeholder) === */
+/* Learn is a "coming soon" placeholder for now — the deck's stats block,
+   Before/During/After framing, and avatar-guide content will land here
+   later. This intentionally does NOT reuse NewIberiaPro's browsable
+   course-catalog layout (list + curriculum detail) since there's no
+   course list to browse yet — see PRODUCT plan for why. */
+
+.learn-shell {
+  position: absolute;
+  inset: 0;
+  z-index: 950;
+  pointer-events: none;   /* panel re-enables below */
+  display: none;
+}
+body.mode-learn .learn-shell { display: block; }
+
+/* Explore rail hides while Learn is open (map + controls remain) */
+body.mode-learn .rail,
+body.mode-learn .tour-pill,
+body.mode-learn .locations-toggle,
+body.mode-learn .filter-chips-top { display: none !important; }
+
+.learn-coming-soon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(420px, calc(100vw - 48px));
+  padding: 40px 32px;
+  background: var(--ni-paper);
+  border: 1px solid var(--ni-border);
+  border-radius: var(--ni-radius-panel);
+  box-shadow: var(--ni-shadow);
+  text-align: center;
+  pointer-events: auto;
+}
+.learn-coming-soon-kicker { margin-bottom: 10px; }
+.learn-coming-soon-title {
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  color: var(--ni-gold);
+  margin: 0 0 14px;
+}
+.learn-coming-soon-body {
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ni-sec);
+  margin: 0;
+}
+
+/* The only route back to Explore while Learn is open — the mode pill
+   itself is inside .rail, which is hidden above. */
+.learn-back-btn {
+  margin-top: 22px;
+  width: 100%;
+  padding: 12px 18px;
+  background: var(--ni-navy);
+  border: none;
+  border-radius: var(--ni-radius-pill);
+  color: var(--on-dark);
+  font-family: var(--sans);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease);
+}
+.learn-back-btn:hover { background: var(--ni-blue); }

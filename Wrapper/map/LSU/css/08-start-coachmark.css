@@ -1,0 +1,270 @@
+/* === LSU Death Valley Experience styles — Part 8: welcome modal + coachmarks === */
+
+/* ===========================================================
+   WELCOME / START SCREEN — white card 470px, gold hairline top
+   =========================================================== */
+.start-screen {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--ni-dim);
+  z-index: 5000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease);
+}
+.start-screen[aria-hidden="false"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.start-screen-card {
+  position: relative;
+  width: min(470px, calc(100vw - 32px));
+  background: var(--ni-paper);
+  border-radius: 18px;
+  box-shadow: 0 8px 40px rgba(11,37,69,.25);
+  padding: 34px 40px 32px;
+  text-align: center;
+  transform: translateY(10px);
+  transition: transform var(--dur) var(--ease);
+  overflow: hidden; /* keeps the gold hairline inside the radius */
+}
+.start-screen[aria-hidden="false"] .start-screen-card {
+  transform: translateY(0);
+}
+
+.start-screen-logo {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 4px auto 12px;
+  display: block;
+}
+.start-screen-title {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ni-navy);
+}
+.start-screen-divider {
+  width: 56px;
+  height: 3px;
+  border-radius: 999px;
+  background: var(--ni-gold);
+  margin: 12px auto 0;
+}
+.start-screen-body {
+  margin: 14px 0 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ni-sec);
+}
+
+.start-screen-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--ni-sec);
+}
+.start-screen-checkbox input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.start-screen-checkbox-box {
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--ni-border);
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  color: transparent;
+  transition: all var(--dur) var(--ease);
+}
+.start-screen-checkbox-box svg { width: 12px; height: 12px; }
+.start-screen-checkbox input:checked + .start-screen-checkbox-box {
+  background: var(--ni-navy);
+  border-color: var(--ni-navy);
+  color: #fff;
+}
+.start-screen-checkbox:hover .start-screen-checkbox-box {
+  border-color: var(--ni-blue);
+}
+
+.start-screen-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+.start-screen-btn {
+  min-height: 44px;
+  border-radius: var(--ni-radius-pill);
+  font-size: 13px;
+  font-weight: 600;
+  transition: all var(--dur) var(--ease);
+}
+.start-screen-btn-primary {
+  background: var(--ni-navy);
+  color: #fff;
+  border: 1px solid var(--ni-navy);
+}
+.start-screen-btn-primary:hover { background: var(--ni-blue); border-color: var(--ni-blue); }
+.start-screen-btn-secondary {
+  background: var(--ni-paper);
+  color: var(--ni-ink);
+  border: 1px solid var(--ni-border);
+}
+.start-screen-btn-secondary:hover { border-color: var(--ni-blue); color: var(--ni-blue); }
+
+@media (max-width: 880px) {
+  .start-screen-card { width: min(360px, calc(100vw - 32px)); padding: 28px 26px 26px; }
+}
+
+/* ===========================================================
+   COACHMARK WALKTHROUGH — same mechanics, white tooltip card
+   =========================================================== */
+.coachmark-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease);
+}
+.coachmark-overlay[aria-hidden="false"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.coachmark-mask {
+  position: fixed;
+  background: var(--ni-dim);
+  pointer-events: auto;
+}
+.coachmark-overlay[aria-hidden="false"] .coachmark-mask { display: block; }
+.coachmark-mask-top    { top: 0; left: 0; right: 0;    height: 0; }
+.coachmark-mask-bottom { left: 0; right: 0; bottom: 0; height: 0; }
+.coachmark-mask-left   { left: 0; width: 0; }
+.coachmark-mask-right  { right: 0; width: 0; }
+
+.coachmark-ring {
+  position: fixed;
+  border: 2px solid var(--ni-gold);
+  border-radius: var(--ni-radius-panel);
+  pointer-events: none;
+  display: none; /* kept invisible, as before */
+}
+
+.coachmark-card {
+  position: fixed;
+  width: min(320px, calc(100vw - 32px));
+  background: var(--ni-paper);
+  border-radius: var(--ni-radius-panel);
+  box-shadow: 0 8px 40px rgba(11,37,69,.25);
+  padding: 20px 22px 16px;
+  transform: translateY(6px);
+  transition: transform var(--dur) var(--ease);
+  z-index: 2;
+}
+.coachmark-overlay[aria-hidden="false"] .coachmark-card {
+  transform: translateY(0);
+}
+
+.coachmark-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: transparent;
+  border-radius: 50%;
+  color: var(--ni-muted);
+}
+.coachmark-close:hover { background: var(--ni-cream); color: var(--ni-ink); }
+.coachmark-close svg { width: 14px; height: 14px; }
+
+.coachmark-card-arrow {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  background: var(--ni-paper);
+  transform: rotate(45deg);
+}
+.coachmark-card[data-arrow="left"]   .coachmark-card-arrow {
+  left: -6px; top: 50%; margin-top: -6px;
+}
+.coachmark-card[data-arrow="right"]  .coachmark-card-arrow {
+  right: -6px; top: 50%; margin-top: -6px;
+}
+.coachmark-card[data-arrow="top"]    .coachmark-card-arrow {
+  top: -6px; left: 50%; margin-left: -6px;
+}
+.coachmark-card[data-arrow="bottom"] .coachmark-card-arrow {
+  bottom: -6px; left: 50%; margin-left: -6px;
+}
+.coachmark-card[data-arrow="none"]   .coachmark-card-arrow {
+  display: none;
+}
+
+.coachmark-title {
+  margin: 0 18px 6px 0;
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--ni-navy);
+}
+.coachmark-body {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ni-sec);
+}
+
+.coachmark-footer {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ni-border);
+}
+.coachmark-nav {
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ni-blue);
+  min-height: 32px;
+  padding: 0 6px;
+}
+.coachmark-nav:hover { color: var(--ni-navy); }
+.coachmark-nav:disabled { color: var(--ni-muted); cursor: default; }
+.coachmark-nav:disabled:hover { color: var(--ni-muted); }
+.coachmark-nav[hidden] { opacity: 0; pointer-events: none; }
+.coachmark-nav-prev { justify-self: start; text-align: left; }
+.coachmark-nav-next { justify-self: end; text-align: right; }
+.coachmark-nav-finish {
+  background: var(--ni-navy);
+  color: #fff;
+  border-radius: var(--ni-radius-pill);
+  padding: 0 16px;
+}
+.coachmark-nav-finish:hover { background: var(--ni-blue); color: #fff; }
+.coachmark-count {
+  justify-self: center;
+  font-size: 11px;
+  color: var(--ni-muted);
+}
+
+body.coachmarks-active { overflow: hidden; }

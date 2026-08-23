@@ -1,0 +1,92 @@
+{
+  "$schema": "lsu-locations-v1",
+  "generatedAt": "2026-08-23",
+  "locations": [
+    {
+      "id": "stop-01",
+      "key": "lot 414 · river road arrival",
+      "name": "Lot 414 · River Road Arrival",
+      "category": "ROUTE",
+      "description": "Recruit families arrive off River Road and park. Have the gameday logistics graphic ready at the entrance. Position derived from LSU 2026 Pregame Traffic Flow map, updated 16 Aug 2026.",
+      "image": ""
+    },
+    {
+      "id": "stop-02",
+      "key": "board the charter bus",
+      "name": "Board the Charter Bus",
+      "category": "ROUTE",
+      "description": "Buses are parked in the lot. Once you park, walk over and board. Staff will point the way. Bus staging position inside Lot 414 to be confirmed.",
+      "image": ""
+    },
+    {
+      "id": "stop-03",
+      "key": "football operations facility",
+      "name": "Football Operations Facility",
+      "category": "FACILITY",
+      "description": "Arrival point for the visit. Home base before the walk to the stadium.",
+      "happensHere": ["Locker Room", "Weight Room", "Team Meeting Rooms"],
+      "address": "Football Operations Center, Baton Rouge, LA 70803",
+      "image": ""
+    },
+    {
+      "id": "stop-04",
+      "key": "tiger tailgate · indoors",
+      "name": "Tiger Tailgate · Indoors",
+      "category": "FACILITY",
+      "description": "Indoor tailgate. Walk-On's catering, video games, facility tour, former players. Inside the Football Operations Facility.",
+      "image": ""
+    },
+    {
+      "id": "stop-05",
+      "key": "registration",
+      "name": "Registration",
+      "category": "FACILITY",
+      "description": "Recruit check in. Arrival time is printed on the gameday logistics graphic. Assumed inside the Operations Facility. Exact room to be confirmed.",
+      "image": ""
+    },
+    {
+      "id": "stop-06",
+      "key": "tiger walk · victory hill",
+      "name": "Tiger Walk · Victory Hill",
+      "category": "ROUTE",
+      "description": "The team, spirit squad and band come down Victory Hill along North Stadium Drive. Guest drop point for the walk to be confirmed.",
+      "happensHere": ["Tiger Walk"],
+      "image": ""
+    },
+    {
+      "id": "stop-07",
+      "key": "lawton room",
+      "name": "Lawton Room",
+      "category": "FACILITY",
+      "description": "Northwest corner of Tiger Stadium at Gate 7. Staff remarks, halftime meal, open all game. LSU Athletics places the Lawton Room at the corner of North Stadium Dr and West Stadium Dr.",
+      "image": ""
+    },
+    {
+      "id": "stop-08",
+      "key": "field level warmups",
+      "name": "Field Level Warmups",
+      "category": "FACILITY",
+      "description": "Field level access to watch pregame warmups from behind the designated lines. Access gate or tunnel to be confirmed.",
+      "happensHere": ["Field Access", "Warmups"],
+      "image": ""
+    },
+    {
+      "id": "stop-09",
+      "key": "kickoff · death valley",
+      "name": "Kickoff · Death Valley",
+      "category": "FACILITY",
+      "description": "Saturday night in Tiger Stadium.",
+      "happensHere": ["Tiger Stadium", "Death Valley", "Kickoff"],
+      "address": "Tiger Stadium, Baton Rouge, LA 70803",
+      "image": ""
+    },
+    {
+      "id": "stop-10",
+      "key": "postgame · nicholson gateway",
+      "name": "Postgame · Nicholson Gateway",
+      "category": "ROUTE",
+      "description": "Buses stage in front of Matherne's Market and Torchy's. Walk North Stadium Dr and cross Nicholson. Matherne's Market at LSU and Torchy's sit roughly 350 ft apart in the Nicholson Gateway development.",
+      "image": ""
+    }
+  ]
+}

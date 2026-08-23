@@ -1,0 +1,11 @@
+stop,key,name,kind,group,lat,lng,confidence,blurb,note
+1,lot414,Lot 414 · River Road Arrival,ROUTE,,30.409712,-91.194771,derived,Recruit families arrive off River Road and park. Have the gameday logistics graphic ready at the entrance.,"Position derived from LSU 2026 Pregame Traffic Flow map, updated 16 Aug 2026."
+2,bus,Board the Charter Bus,ROUTE,,30.410365,-91.195431,pending,"Buses are parked in the lot. Once you park, walk over and board. Staff will point the way.",Bus staging position inside Lot 414 to be confirmed.
+3,ops,Football Operations Facility,FACILITY,ops,30.41056,-91.18856,verified,Arrival point for the visit. Home base before the walk to the stadium.,
+4,tailgate,Tiger Tailgate · Indoors,FACILITY,ops,30.41056,-91.18856,verified,"Indoor tailgate. Walk-On's catering, video games, facility tour, former players.",Inside the Football Operations Facility.
+5,registration,Registration,FACILITY,ops,30.41056,-91.18856,pending,Recruit check in. Arrival time is printed on the gameday logistics graphic.,Assumed inside the Operations Facility. Exact room to be confirmed.
+6,tigerwalk,Tiger Walk · Victory Hill,ROUTE,,30.4132,-91.18435,verified,"The team, spirit squad and band come down Victory Hill along North Stadium Drive.",Guest drop point for the walk to be confirmed.
+7,lawton,Lawton Room,FACILITY,stadium,30.41268,-91.18448,verified,"Northwest corner of Tiger Stadium at Gate 7. Staff remarks, halftime meal, open all game.",LSU Athletics places the Lawton Room at the corner of North Stadium Dr and West Stadium Dr.
+8,fieldlevel,Field Level Warmups,FACILITY,stadium,30.412035,-91.183816,pending,Field level access to watch pregame warmups from behind the designated lines.,Access gate or tunnel to be confirmed.
+9,kickoff,Kickoff · Death Valley,FACILITY,stadium,30.412035,-91.183816,verified,Saturday night in Tiger Stadium.,
+10,postgame,Postgame · Nicholson Gateway,ROUTE,,30.41273,-91.18734,verified,Buses stage in front of Matherne's Market and Torchy's. Walk North Stadium Dr and cross Nicholson.,Matherne's Market at LSU and Torchy's sit roughly 350 ft apart in the Nicholson Gateway development.

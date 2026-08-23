@@ -1,0 +1,40 @@
+{
+  "$schema": "lsu-treedis-sweeps-v1",
+  "generatedAt": "2026-08-22",
+  "models": {
+    "desktop": "",
+    "vr": ""
+  },
+  "sweeps": [
+    { "id": "stop-01", "key": "lot 414 · river road arrival", "name": "Lot 414 · River Road Arrival", "parentName": null,
+      "desktop": { "sweepId": null, "transitionTime": null, "rotation": null },
+      "vr":      { "sweepId": null, "transitionTime": null, "rotation": null } },
+    { "id": "stop-02", "key": "charter bus to the facility", "name": "Charter Bus to the Facility", "parentName": null,
+      "desktop": { "sweepId": null, "transitionTime": null, "rotation": null },
+      "vr":      { "sweepId": null, "transitionTime": null, "rotation": null } },
+    { "id": "stop-03", "key": "football operations facility", "name": "Football Operations Facility", "parentName": null,
+      "desktop": { "sweepId": null, "transitionTime": null, "rotation": null },
+      "vr":      { "sweepId": null, "transitionTime": null, "rotation": null } },
+    { "id": "stop-04", "key": "tiger tailgate · indoors", "name": "Tiger Tailgate · Indoors", "parentName": null,
+      "desktop": { "sweepId": null, "transitionTime": null, "rotation": null },
+      "vr":      { "sweepId": null, "transitionTime": null, "rotation": null } },
+    { "id": "stop-05", "key": "registration", "name": "Registration", "parentName": null,
+      "desktop": { "sweepId": null, "transitionTime": null, "rotation": null },
+      "vr":      { "sweepId": null, "transitionTime": null, "rotation": null } },
+    { "id": "stop-06", "key": "tiger walk", "name": "Tiger Walk", "parentName": null,
+      "desktop": { "sweepId": null, "transitionTime": null, "rotation": null },
+      "vr":      { "sweepId": null, "transitionTime": null, "rotation": null } },
+    { "id": "stop-07", "key": "lawton room", "name": "Lawton Room", "parentName": null,
+      "desktop": { "sweepId": null, "transitionTime": null, "rotation": null },
+      "vr":      { "sweepId": null, "transitionTime": null, "rotation": null } },
+    { "id": "stop-08", "key": "field level warmups", "name": "Field Level Warmups", "parentName": null,
+      "desktop": { "sweepId": null, "transitionTime": null, "rotation": null },
+      "vr":      { "sweepId": null, "transitionTime": null, "rotation": null } },
+    { "id": "stop-09", "key": "kickoff · death valley", "name": "Kickoff · Death Valley", "parentName": null,
+      "desktop": { "sweepId": null, "transitionTime": null, "rotation": null },
+      "vr":      { "sweepId": null, "transitionTime": null, "rotation": null } },
+    { "id": "stop-10", "key": "postgame · buses at matherne's", "name": "Postgame · Buses at Matherne's", "parentName": null,
+      "desktop": { "sweepId": null, "transitionTime": null, "rotation": null },
+      "vr":      { "sweepId": null, "transitionTime": null, "rotation": null } }
+  ]
+}

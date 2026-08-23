@@ -1,0 +1,92 @@
+{
+  "$schema": "lsu-locations-v1",
+  "generatedAt": "2026-08-22",
+  "locations": [
+    {
+      "id": "stop-01",
+      "key": "lot 414 · river road arrival",
+      "name": "Lot 414 · River Road Arrival",
+      "category": "ROUTE",
+      "description": "Recruit families arrive and park along River Road. PLACEHOLDER location — precise footprint to be traced in QGIS.",
+      "image": ""
+    },
+    {
+      "id": "stop-02",
+      "key": "charter bus to the facility",
+      "name": "Charter Bus to the Facility",
+      "category": "ROUTE",
+      "description": "Shuttle from Lot 414 to the Football Operations Center. PLACEHOLDER location — precise route to be traced in QGIS.",
+      "image": ""
+    },
+    {
+      "id": "stop-03",
+      "key": "football operations facility",
+      "name": "Football Operations Facility",
+      "category": "FACILITY",
+      "description": "The Charles McClendon Practice Facility / Football Operations Center — home base for the recruiting visit.",
+      "happensHere": ["Locker Room", "Weight Room", "Team Meeting Rooms"],
+      "address": "Football Operations Center, Baton Rouge, LA 70803",
+      "image": ""
+    },
+    {
+      "id": "stop-04",
+      "key": "tiger tailgate · indoors",
+      "name": "Tiger Tailgate · Indoors",
+      "category": "FACILITY",
+      "description": "Indoor tailgate reception inside the Operations Facility. PLACEHOLDER location — precise footprint to be traced in QGIS.",
+      "image": ""
+    },
+    {
+      "id": "stop-05",
+      "key": "registration",
+      "name": "Registration",
+      "category": "FACILITY",
+      "description": "Recruit check-in. PLACEHOLDER location — precise footprint to be traced in QGIS.",
+      "image": ""
+    },
+    {
+      "id": "stop-06",
+      "key": "tiger walk",
+      "name": "Tiger Walk",
+      "category": "ROUTE",
+      "description": "The team's walk from the Operations Center to Tiger Stadium. PLACEHOLDER location — precise route to be traced in QGIS.",
+      "happensHere": ["Tiger Walk"],
+      "image": ""
+    },
+    {
+      "id": "stop-07",
+      "key": "lawton room",
+      "name": "Lawton Room",
+      "category": "FACILITY",
+      "description": "Shirley and Bill Lawton Team Room, inside the Operations Center. PLACEHOLDER location — precise footprint to be traced in QGIS.",
+      "image": ""
+    },
+    {
+      "id": "stop-08",
+      "key": "field level warmups",
+      "name": "Field Level Warmups",
+      "category": "FACILITY",
+      "description": "Field-level access inside Tiger Stadium before kickoff. PLACEHOLDER location — precise footprint to be traced in QGIS.",
+      "happensHere": ["Field Access", "Warmups"],
+      "image": ""
+    },
+    {
+      "id": "stop-09",
+      "key": "kickoff · death valley",
+      "name": "Kickoff · Death Valley",
+      "category": "FACILITY",
+      "description": "Tiger Stadium — Death Valley — at kickoff.",
+      "happensHere": ["Tiger Stadium", "Death Valley", "Kickoff"],
+      "address": "Tiger Stadium, Baton Rouge, LA 70803",
+      "image": ""
+    },
+    {
+      "id": "stop-10",
+      "key": "postgame · buses at matherne's",
+      "name": "Postgame · Buses at Matherne's",
+      "category": "ROUTE",
+      "description": "Departure near Matherne's Market at LSU, Nicholson Gateway. PLACEHOLDER location — precise footprint to be traced in QGIS.",
+      "image": ""
+    }
+  ]
+}

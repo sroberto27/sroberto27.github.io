@@ -1,0 +1,84 @@
+/* === LSU Death Valley Experience styles — Part 5: MapLibre chrome + pins === */
+/* Renamed in spirit (not on disk) from the Leaflet version — same tour-pin
+   look, now driving maplibregl.Marker HTML instead of L.divIcon, and the
+   default MapLibre controls/attribution restyled instead of Leaflet's. */
+
+/* Default MapLibre navigation control replaced by the custom map-control
+   stack (#zoomInBtn / #zoomOutBtn). */
+.maplibregl-ctrl-top-right,
+.maplibregl-ctrl-top-left { display: none !important; }
+
+/* Attribution — quiet white chip bottom-right */
+.maplibregl-ctrl-attrib {
+  background: rgba(255,255,255,.85) !important;
+  color: var(--ni-sec) !important;
+  font-family: var(--sans);
+  font-size: 10px !important;
+  border-radius: 6px 0 0 0;
+  padding: 2px 8px !important;
+}
+.maplibregl-ctrl-attrib a { color: var(--ni-blue) !important; }
+.maplibregl-ctrl-attrib-button { display: none !important; }
+.maplibregl-ctrl-attrib.maplibregl-compact { background: rgba(255,255,255,.85) !important; }
+
+/* Feature hover tooltip (a plain positioned div driven by JS in
+   js/07-layer-builders.js, not a MapLibre Popup — cheaper, no
+   close button / tip arrow to fight with). */
+.campus-label {
+  position: absolute;
+  pointer-events: none;
+  background: var(--ni-paper);
+  border: 1px solid var(--ni-border);
+  border-radius: 8px;
+  box-shadow: var(--ni-shadow);
+  color: var(--ni-navy);
+  font-family: var(--serif);
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 4px 10px;
+  transform: translate(-50%, -130%);
+  white-space: nowrap;
+  z-index: 5;
+}
+
+/* ===========================================================
+   TOUR PINS — numbered white circles with navy ring;
+   the active stop fills blue. Root element of each
+   maplibregl.Marker built in js/07-layer-builders.js.
+   =========================================================== */
+.tour-pin-wrap { background: none; border: none; }
+.tour-pin {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--ni-paper);
+  border: 2px solid var(--ni-navy);
+  color: var(--ni-navy);
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: var(--ni-shadow);
+  cursor: pointer;
+}
+.tour-pin.is-active {
+  background: var(--ni-blue);
+  border-color: var(--ni-paper);
+  color: #fff;
+}
+.tour-pin.is-offcampus {
+  border-color: var(--ni-gold-dark);
+  color: var(--ni-gold-dark);
+  border-style: dashed;
+}
+.tour-pin-arrow { font-size: 10px; margin-left: 2px; }
+
+/* Dashed gold guided-tour route line-layer paint color lives in JS
+   (js/14-redesign.js) since MapLibre paint properties aren't CSS —
+   kept here only as a reference comment, no rule needed. */
+
+/* Narrow-laptop safety: shrink the rail slightly below 1100px */
+@media (max-width: 1100px) and (min-width: 881px) {
+  :root { --rail-w: 300px; }
+}

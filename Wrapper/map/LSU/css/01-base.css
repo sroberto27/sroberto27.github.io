@@ -1,0 +1,249 @@
+/* === LSU Death Valley Experience — Part 1: Tokens, splash, app frame === */
+/* ===========================================================
+   LSU DEATH VALLEY EXPERIENCE — dark purple/gold redesign
+   -----------------------------------------------------------
+   Forked from NewIberiaPro's light "map-first" redesign. Same
+   custom-property NAMES throughout (so every other CSS file's
+   var() references keep resolving untouched) — only the VALUES
+   changed, plus one new token (--ni-bg-gradient) for the dark
+   page background the light theme didn't need.
+
+   PLACEHOLDER: the deck's exact gradient stops couldn't be
+   sampled directly (PDF page rendering isn't available in this
+   environment) — --ni-bg-gradient below uses the approximate
+   values from the build brief. Worth eyedropping the real deck
+   pages before this ships. See README.
+   =========================================================== */
+
+:root {
+  /* ---------- Redesign tokens (LSU brand) ---------- */
+  --ni-navy:      #461D7C;   /* LSU Purple — primary buttons, tour pill, polygon outlines */
+  --ni-blue:      #6C3FA6;   /* lighter purple — selection / active */
+  --ni-gold:      #FDD023;   /* LSU Gold — accent hairlines, progress, route fills */
+  --ni-gold-dark: #2A1245;   /* deep purple — text on gold tint (contrast, not brown) */
+  --ni-paper:     #1B1029;   /* floating surfaces — opaque deep purple-black card */
+  --ni-cream:     #2D1B4E;   /* inputs, quiet rows — lighter purple-black */
+  --ni-ink:       #F2EDFB;   /* primary text — near-white on dark surfaces */
+  --ni-sec:       #C9BEDE;   /* secondary text */
+  --ni-muted:     #9C8DBE;   /* labels, hints */
+  --ni-border:    #3D2A5C;   /* hairlines, card borders */
+
+  /* New: page-level background gradient (dark purple → violet),
+     used only by html/body/.app/.splash below. Approximate deck
+     colors — see file header note. */
+  --ni-bg-gradient: linear-gradient(160deg, #150c26 0%, #2d1b4e 100%);
+
+  --ni-radius-panel: 16px;
+  --ni-radius-card:  12px;
+  --ni-radius-pill:  999px;
+  --ni-shadow: 0 2px 16px rgba(0,0,0,.45);
+  --ni-dim:    rgba(8,4,16,.65);   /* modal scrim over the map */
+
+  /* ---------- Legacy aliases (unchanged mapping, new values) -- */
+  --header-bg:   var(--ni-navy);
+  --brand-red:   var(--ni-blue);
+  --brand-red-2: var(--ni-navy);
+  --brand-gold:  var(--ni-gold);
+  --sidebar-bg:  var(--ni-paper);
+  --cell-bg:     var(--ni-paper);
+  --cell-active: var(--ni-cream);
+  --cell-border: var(--ni-border);
+
+  --ink:         var(--ni-ink);
+  --ink-2:       var(--ni-sec);
+  --fog:         var(--ni-cream);
+  --fog-2:       #241636;
+  --line:        var(--ni-border);
+  --line-soft:   var(--ni-border);
+  --paper:       var(--ni-paper);
+  --mint:        #a7f3d0;
+  --mint-deep:   #6ee7b7;
+  --mint-glow:   #86efac;
+  --rose:        #fca5a5;
+  --alert:       #e11d48;
+
+  /* Text-on-dark aliases — still used by the navy(purple) tour
+     pill, the rail tour-card, and the mobile street-view bar. */
+  --on-dark:        #ffffff;
+  --on-dark-muted:  rgba(255,255,255,.68);
+  --on-dark-faint:  rgba(255,255,255,.40);
+  --on-dark-line:   rgba(255,255,255,.14);
+
+  /* ---------- Typography ---------- */
+  --mono: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, system-ui, sans-serif;
+  --sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          Roboto, system-ui, sans-serif;
+  /* Bold condensed uppercase for location names + screen titles
+     ONLY — LSU's "SATURDAY NIGHT. EVERY NIGHT." headline
+     treatment. Was Playfair Display (serif) in NewIberiaPro. */
+  --serif: "Oswald", "Arial Narrow", "Segoe UI Condensed", sans-serif;
+
+  /* Labels: 10px uppercase letter-spaced */
+  --label-size: 10px;
+  --label-ls:   .12em;
+
+  /* ---------- Structural sizes ---------- */
+  --rail-w:      332px;   /* floating left rail */
+  --edge:        16px;    /* inset of every floating surface  */
+  --ctl:         40px;    /* map-control square size          */
+  --topbar-h:    0px;     /* legacy grid rows collapsed       */
+  --tourbar-h:   0px;
+  --sidebar-w:   var(--rail-w);
+  --details-w:   var(--rail-w);
+  --sidebar-tour-h: 0px;
+  --cell-h:      66px;    /* place-card height                */
+  --gutter:      16px;
+  --edge-gutter: 0px;
+  --panel-gap:   0px;
+
+  /* Mobile bottom-sheet snap heights */
+  --sheet-peek: 236px;
+  --sheet-half: 420px;
+  --mobile-half-h: var(--sheet-half);
+  --mobile-peek:   0px;
+
+  --flair-h: 0px;
+  --border-light: 1px solid var(--ni-border);
+
+  /* Motion */
+  --ease: cubic-bezier(.22,.7,.3,1);
+  --dur:  250ms;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--sans);
+  color: var(--ni-ink);
+  background: var(--ni-bg-gradient);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+button { font-family: inherit; cursor: pointer; }
+img    { user-select: none; -webkit-user-drag: none; }
+
+/* Shared label style: 10px uppercase letter-spaced */
+.ni-label {
+  font-size: var(--label-size);
+  letter-spacing: var(--label-ls);
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--ni-muted);
+}
+
+/* Signature motif — the ONLY places a 4px gold line appears:
+   bottom edge of photos (.gold-hairline-bottom) and top edge
+   of modals (.gold-hairline-top). */
+.gold-hairline-bottom::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  height: 4px;
+  background: var(--ni-gold);
+}
+.gold-hairline-top::before {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; top: 0;
+  height: 4px;
+  background: var(--ni-gold);
+  border-radius: inherit;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+/* ===========================================================
+   SPLASH — dark purple gradient, gold serif title, gold spinner arc
+   =========================================================== */
+.splash {
+  position: fixed;
+  inset: 0;
+  background: var(--ni-bg-gradient);
+  display: grid;
+  place-items: center;
+  z-index: 9999;
+  transition: opacity .4s ease-out;
+}
+.splash.is-hidden { opacity: 0; pointer-events: none; }
+
+.splash-brand { text-align: center; font-family: var(--sans); }
+
+.splash-sc {
+  font-size: 11px;
+  letter-spacing: .2em;
+  color: var(--ni-muted);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.splash-title {
+  font-family: var(--serif);
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: var(--ni-gold);
+  margin-bottom: 28px;
+}
+
+.splash-progress {
+  margin-top: 14px;
+  font-size: 11px;
+  letter-spacing: .15em;
+  color: var(--ni-muted);
+  text-transform: uppercase;
+}
+
+.splash-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--ni-border);
+  border-top-color: var(--ni-gold);
+  border-radius: 50%;
+  margin: 0 auto;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===========================================================
+   APP FRAME — no grid anymore. The map is full-bleed; every
+   panel floats above it.
+   =========================================================== */
+.app {
+  position: fixed;
+  inset: 0;
+  height: 100vh;
+  height: 100dvh;
+  background: var(--ni-bg-gradient);
+  opacity: 0;
+  transition: opacity .3s .2s;
+}
+.app.is-ready { opacity: 1; }
+
+/* Legacy top strip — removed in the redesign. */
+.brand-flair { display: none; }
+
+.shell {
+  position: absolute;
+  inset: 0;
+}
+
+/* Full-bleed map stage */
+.map-wrap {
+  position: absolute;
+  inset: 0;
+}
+#map {
+  position: absolute;
+  inset: 0;
+  background: #170D26; /* neutral dark under-tile tone */
+}
+
+/* Hidden utility buttons the JS still binds to */
+.hidden-utilities { display: none !important; }

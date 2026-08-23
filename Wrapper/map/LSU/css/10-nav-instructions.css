@@ -1,0 +1,107 @@
+/* === LSU Death Valley Experience styles — Part 10: 3D navigation instructions === */
+
+.nav-instructions {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--ni-dim);
+  z-index: 5100;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur) var(--ease);
+}
+.nav-instructions[aria-hidden="false"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.nav-instructions-card {
+  position: relative;
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100dvh - 48px);
+  overflow-y: auto;
+  background: var(--ni-paper);
+  border-radius: 18px;
+  box-shadow: 0 8px 40px rgba(11,37,69,.25);
+  padding: 30px 32px 26px;
+  text-align: center;
+  transform: translateY(10px);
+  transition: transform var(--dur) var(--ease);
+}
+.nav-instructions[aria-hidden="false"] .nav-instructions-card {
+  transform: translateY(0);
+}
+
+.nav-instructions-title {
+  margin: 4px 0 0;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ni-navy);
+}
+
+.nav-instructions-image {
+  margin-top: 16px;
+  border-radius: var(--ni-radius-card);
+  background: var(--ni-navy); /* the instruction PNGs are white-on-transparent */
+  padding: 12px;
+}
+.nav-instructions-img {
+  max-width: 100%;
+  height: auto;
+  display: none;
+}
+/* Desktop version by default; XR version when body.xr-mode */
+body:not(.xr-mode) .nav-instructions-img-desktop { display: inline-block; }
+body.xr-mode       .nav-instructions-img-xr      { display: inline-block; }
+.nav-instructions-fallback {
+  color: var(--on-dark-muted);
+  font-size: 12px;
+  padding: 30px 0;
+}
+
+.nav-instructions-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--ni-sec);
+}
+.nav-instructions-checkbox input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+.nav-instructions-checkbox-box {
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid var(--ni-border);
+  border-radius: 4px;
+  display: grid;
+  place-items: center;
+  color: transparent;
+  transition: all var(--dur) var(--ease);
+}
+.nav-instructions-checkbox-box svg { width: 12px; height: 12px; }
+.nav-instructions-checkbox input:checked + .nav-instructions-checkbox-box {
+  background: var(--ni-navy);
+  border-color: var(--ni-navy);
+  color: #fff;
+}
+
+.nav-instructions-actions { margin-top: 18px; }
+.nav-instructions-btn {
+  min-height: 44px;
+  min-width: 160px;
+  border: 1px solid var(--ni-navy);
+  border-radius: var(--ni-radius-pill);
+  background: var(--ni-navy);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background var(--dur) var(--ease);
+}
+.nav-instructions-btn:hover { background: var(--ni-blue); }

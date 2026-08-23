@@ -1,0 +1,598 @@
+/* === LSU Death Valley Experience styles — Part 4: rail DETAIL state, map controls,
+       guided-tour pill, tour rail card, mobile detail sheet === */
+
+/* ===========================================================
+   MAP CONTROLS — floating top-right vertical stack
+   =========================================================== */
+.map-controls {
+  position: absolute;
+  top: var(--edge);
+  right: var(--edge);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 850;
+}
+.mapctl {
+  width: var(--ctl);
+  height: var(--ctl);
+  display: grid;
+  place-items: center;
+  background: var(--ni-paper);
+  border: none;
+  border-radius: 10px;
+  box-shadow: var(--ni-shadow);
+  color: var(--ni-navy);
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  transition: background var(--dur) var(--ease);
+}
+.mapctl:hover { background: var(--ni-cream); }
+.mapctl svg { width: 18px; height: 18px; }
+.mapctl-group {
+  display: flex;
+  flex-direction: column;
+  background: var(--ni-paper);
+  border-radius: 10px;
+  box-shadow: var(--ni-shadow);
+  overflow: hidden;
+}
+.mapctl-group .mapctl {
+  box-shadow: none;
+  border-radius: 0;
+}
+.mapctl-group .mapctl + .mapctl { border-top: 1px solid var(--ni-border); }
+#layersBtn { color: var(--ni-sec); }
+#layersBtn.is-flash { background: rgba(232,185,60,.25); }
+
+/* ===========================================================
+   GUIDED TOUR PILL — persistent bottom-center navy pill, 44px
+   =========================================================== */
+.tour-pill {
+  position: absolute;
+  left: 50%;
+  bottom: calc(var(--edge) + 4px);
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 44px;
+  padding: 0 6px;
+  background: var(--ni-navy);
+  border-radius: var(--ni-radius-pill);
+  box-shadow: var(--ni-shadow);
+  color: #fff;
+  z-index: 860;
+  max-width: min(92vw, 560px);
+  white-space: nowrap;
+}
+.tour-pill .tour-arrow {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 1.5px solid rgba(255,255,255,.55);
+  border-radius: 50%;
+  color: #fff;
+  transition: background var(--dur) var(--ease);
+}
+.tour-pill .tour-arrow:hover:not(:disabled) { background: rgba(255,255,255,.12); }
+.tour-pill .tour-arrow:disabled { opacity: .4; cursor: default; }
+.tour-pill .tour-arrow svg { width: 16px; height: 16px; }
+
+.tour-pill-play {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: transparent;
+  color: var(--ni-gold);
+}
+.tour-pill-play svg { width: 14px; height: 14px; }
+
+.tour-pill-label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.tour-pill-dots {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+}
+.tour-pill-dots .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.35);
+}
+.tour-pill-dots .dot.is-done,
+.tour-pill-dots .dot.is-current { background: var(--ni-gold); }
+
+.tour-pill-status {
+  font-size: 12px;
+  color: var(--on-dark-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tour-pill-status .tour-name {
+  color: #fff;
+  font-weight: 600;
+}
+.tour-pill-sep { padding: 0 2px; }
+.tour-name.is-offcampus { color: var(--ni-gold); }
+
+/* ===========================================================
+   RAIL — TOUR CARD state (desktop-04)
+   =========================================================== */
+.rail-tour[hidden] { display: none; }
+.rail-tour {
+  padding: var(--gutter);
+  gap: 12px;
+  overflow-y: auto;
+}
+.rail-tour-card {
+  background: var(--ni-navy);
+  border-radius: var(--ni-radius-card);
+  padding: 16px;
+  color: #fff;
+  flex: none;
+}
+.rail-tour-kicker { color: var(--ni-gold); }
+.rail-tour-title {
+  font-family: var(--serif);
+  font-size: 19px;
+  font-weight: 700;
+  margin-top: 4px;
+}
+.rail-tour-sub {
+  font-size: 12px;
+  color: var(--on-dark-muted);
+  margin-top: 3px;
+}
+.rail-tour-progress {
+  margin-top: 12px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.18);
+  overflow: hidden;
+}
+.rail-tour-progress-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 999px;
+  background: var(--ni-gold);
+  transition: width var(--dur) var(--ease);
+}
+
+.rail-tour-stops {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: none;
+}
+.rail-tour-stop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 0 12px;
+  border: 1px solid var(--ni-border);
+  border-radius: var(--ni-radius-card);
+  background: var(--ni-paper);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ni-ink);
+}
+.rail-tour-stop.is-current {
+  border: 2px solid var(--ni-blue);
+  padding: 0 11px;
+}
+.rail-tour-stop .stop-badge {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 600;
+  border: 1.5px solid var(--ni-border);
+  color: var(--ni-muted);
+  background: var(--ni-paper);
+}
+.rail-tour-stop.is-done .stop-badge {
+  background: var(--ni-gold);
+  border-color: var(--ni-gold);
+  color: var(--ni-navy);
+}
+.rail-tour-stop.is-current .stop-badge {
+  background: var(--ni-blue);
+  border-color: var(--ni-blue);
+  color: #fff;
+}
+.rail-tour-stop .stop-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.rail-tour-actions {
+  display: flex;
+  gap: 10px;
+  flex: none;
+}
+.rail-tour-actions .pill-btn { flex: 1; }
+
+/* ===========================================================
+   RAIL — DETAIL state (desktop-02)
+   =========================================================== */
+.details-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Mobile-only tour stepper (see index.html comment above it) — a
+   sibling of .details-content, pinned to the bottom of the sheet by
+   the same flex-column layout .rail-detail already uses. Hidden on
+   desktop, where the .tour-pill fills this role instead. */
+.details-tour-stepper {
+  display: none;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--ni-border);
+  background: var(--ni-paper);
+}
+.details-tour-stepper-btn {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: var(--ni-cream);
+  border: none;
+  border-radius: 999px;
+  color: var(--ni-ink);
+  cursor: pointer;
+}
+.details-tour-stepper-btn svg { width: 18px; height: 18px; }
+.details-tour-stepper-btn:disabled { opacity: .35; pointer-events: none; }
+.details-tour-stepper-label {
+  flex: 1;
+  text-align: center;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .02em;
+  color: var(--ni-sec);
+  text-transform: uppercase;
+}
+
+.details-peek { position: relative; flex: none; }
+
+/* Hero photo — ~150px, gold hairline (via .gold-hairline-bottom) */
+.details-image {
+  position: relative;
+  margin: 12px 12px 0;
+  height: 150px;
+  border-radius: var(--ni-radius-card);
+  overflow: hidden;
+  background: var(--ni-cream);
+  display: block;
+}
+.details-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.details-image figcaption {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-size: var(--label-size);
+  letter-spacing: var(--label-ls);
+  color: var(--ni-muted);
+}
+.details-image.has-image figcaption { display: none; }
+.details-image-x { display: none; }
+
+/* Back button over the hero */
+.details-close {
+  position: absolute;
+  top: 22px;
+  left: 22px;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--ni-paper);
+  box-shadow: var(--ni-shadow);
+  color: var(--ni-navy);
+  z-index: 3;
+}
+.details-close svg { width: 16px; height: 16px; }
+
+/* Tag row: category chip + VR-ENABLED */
+.details-tagrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px var(--gutter) 0;
+}
+.details-tag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 0 10px;
+  border-radius: var(--ni-radius-pill);
+  background: rgba(232,185,60,.22);
+  color: var(--ni-gold-dark);
+  font-size: var(--label-size);
+  letter-spacing: var(--label-ls);
+  text-transform: uppercase;
+  font-weight: 600;
+}
+.details-tag.is-offcampus {
+  background: rgba(15,76,129,.12);
+  color: var(--ni-blue);
+}
+.details-vr-label {
+  font-size: var(--label-size);
+  letter-spacing: var(--label-ls);
+  font-weight: 600;
+  color: var(--ni-blue);
+  text-decoration: none;
+}
+
+.details-title {
+  margin: 8px var(--gutter) 0;
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--ni-navy);
+  line-height: 1.2;
+}
+.details-sub {
+  margin: 3px var(--gutter) 0;
+  font-size: 12px;
+  color: var(--ni-sec);
+}
+
+/* Primary CTA — Explore in 3D */
+.explore-cta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 14px var(--gutter) 0;
+  min-height: 44px;
+  border: none;
+  border-radius: var(--ni-radius-pill);
+  background: var(--ni-navy);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background var(--dur) var(--ease);
+}
+.explore-cta:hover { background: var(--ni-blue); }
+.explore-cta-icon-fallback { display: none; }
+
+/* Hidden-per-sweep rule — must beat the flex displays above */
+.is-hidden-no-sweep { display: none !important; }
+
+.details-extra { padding: 0 0 18px; }
+.details-body {
+  margin: 12px var(--gutter) 0;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ni-ink);
+}
+.details-offcampus-note {
+  display: flex;
+  gap: 8px;
+  margin: 12px var(--gutter) 0;
+  padding: 10px 12px;
+  background: rgba(232,185,60,.15);
+  border-radius: var(--ni-radius-card);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--ni-gold-dark);
+}
+
+.details-block { margin: 16px var(--gutter) 0; }
+.details-block-h { margin-bottom: 8px; }
+
+/* "What happens here?" chips — blue tint */
+.chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 26px;
+  padding: 0 11px;
+  border-radius: var(--ni-radius-pill);
+  background: rgba(15,76,129,.10);
+  color: var(--ni-blue);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* Explorable sub-locations */
+.sub-list { list-style: none; margin: 0; padding: 0; }
+.sub-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--ni-border);
+  border-radius: var(--ni-radius-card);
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--ni-ink);
+  cursor: pointer;
+}
+.sub-row:hover { border-color: var(--ni-blue); }
+.sub-row.is-pending { opacity: .6; }
+.sub-row .chev { color: var(--ni-muted); }
+
+/* Address */
+.details-address {
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--ni-sec);
+}
+.details-address::before {
+  content: "";
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0z'/%3E%3Ccircle cx='12' cy='10' r='3'/%3E%3C/svg%3E") center/contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0z'/%3E%3Ccircle cx='12' cy='10' r='3'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+.details-address-links[hidden] { display: none; }
+
+/* Action pill rows */
+.details-actions {
+  margin: 18px var(--gutter) 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.details-actions-row { display: flex; gap: 10px; }
+.details-actions-row .pill-btn { flex: 1; }
+
+/* Legacy elements kept for JS — never visible */
+.details-vr-inline,
+.details-footer,
+.vr-btn-hidden { display: none !important; }
+
+/* Handle (mobile grabber) hidden on desktop */
+.details-handle { display: none; }
+
+/* ===========================================================
+   MOBILE ≤880px — DETAIL bottom sheet with snap states
+   (JS drives .is-open / .is-full / .is-hidden / .is-dragging)
+   =========================================================== */
+@media (max-width: 880px) {
+  .rail-detail {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    height: var(--sheet-half);
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 24px rgba(11,37,69,.18);
+    transform: translateY(105%);
+    opacity: 1;
+    pointer-events: none;
+    z-index: 1150;
+    transition: transform var(--dur) var(--ease),
+                height var(--dur) var(--ease);
+  }
+  .rail-detail.is-open {
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  .rail-detail.is-full {
+    height: calc(100dvh - 64px - env(safe-area-inset-top));
+  }
+  .rail-detail.is-hidden { transform: translateY(105%); pointer-events: none; }
+  .rail-detail.is-dragging { transition: none; }
+
+  /* Desktop slide-in rules don't apply on mobile */
+  .shell.has-details .rail-detail { transform: translateY(0); }
+  .shell.has-details .rail-detail.is-hidden,
+  .shell.has-details .rail-detail:not(.is-open) { transform: translateY(105%); pointer-events: none; }
+
+  .details-handle {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 26px;
+    z-index: 5;
+    cursor: grab;
+    touch-action: none;
+  }
+  .details-handle::after {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 44px;
+    height: 4px;
+    border-radius: 999px;
+    background: var(--ni-border);
+  }
+
+  .details-image { margin-top: 26px; height: 130px; }
+  .details-close { top: 36px; }
+
+  /* Half state shows peek content only; full reveals the rest */
+  .rail-detail:not(.is-full) .details-extra { display: none; }
+  .rail-detail:not(.is-full) .details-content { overflow: hidden; }
+  .rail-detail:not(.is-full) .details-content::after {
+    content: "Swipe up for details";
+    display: block;
+    text-align: center;
+    font-size: 11px;
+    color: var(--ni-muted);
+    padding: 8px 0 12px;
+  }
+
+  /* Controls + pill make room for safe areas */
+  .map-controls {
+    top: calc(var(--edge) + 100px + env(safe-area-inset-top));
+  }
+  .mapctl-menu { display: none; } /* menu button moves next to search pill */
+
+  /* Mobile map-home uses the peek CTA + tour sheet instead of the
+     floating pill; street view gets the docked navy .tourbar. */
+  .tour-pill { display: none; }
+
+  /* Replaces the floating pill's prev/next+progress role on mobile —
+     js/14-redesign.js toggles .is-visible only while a tour is
+     actually running (tourIndex >= 0). */
+  .details-tour-stepper.is-visible { display: flex; }
+
+  /* Tour rail card becomes a bottom sheet on mobile */
+  .rail-tour {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    top: auto;
+    max-height: 70dvh;
+    border-radius: 20px 20px 0 0;
+    box-shadow: 0 -4px 24px rgba(11,37,69,.18);
+    transform: translateY(105%);
+    pointer-events: none;
+    z-index: 1140;
+  }
+  body.tour-rail-open .rail-tour {
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+}

@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#461D7C" />
+  <title>LSU Death Valley Experience</title>
+
+  <!-- Fonts: Inter for UI chrome/body; Oswald (bold condensed) for
+       location names + screen titles (LSU brand headline treatment). -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+  <!-- Split stylesheets — load order matters (cascade). -->
+  <link rel="stylesheet" href="css/01-base.css" />
+  <link rel="stylesheet" href="css/02-header.css" />
+  <link rel="stylesheet" href="css/03-sidebar.css" />
+  <link rel="stylesheet" href="css/04-map-details.css" />
+  <link rel="stylesheet" href="css/05-leaflet-responsive.css" />
+  <link rel="stylesheet" href="css/06-align-tool.css" />
+  <link rel="stylesheet" href="css/07-streetview-xr.css" />
+  <link rel="stylesheet" href="css/08-start-coachmark.css" />
+  <link rel="stylesheet" href="css/09-burger-settings.css" />
+  <link rel="stylesheet" href="css/10-nav-instructions.css" />
+  <link rel="stylesheet" href="css/11-learn-mode.css" />
+</head>
+<body>
+
+  <!-- ============================================================
+       SPLASH / LOADING
+       ============================================================ -->
+  <div id="splash" class="splash" role="status" aria-label="Loading">
+    <div class="splash-brand">
+      <div class="splash-sc">LSU FOOTBALL</div>
+      <div class="splash-title">The Death Valley Experience</div>
+      <div class="splash-spinner" aria-hidden="true"></div>
+      <div class="splash-progress" id="splashProgress">Loading…</div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       APP CHROME
+       ============================================================ -->
+  <div class="app" id="app" aria-hidden="true">
+
+    <!-- Burger menu state checkbox (CSS-only toggle). Must stay a
+         direct child of .app for the sibling selectors. Labels
+         referencing it live in the map-controls stack and in the
+         street-view overlay. -->
+    <input type="checkbox" id="burgerToggle" class="burger-toggle"
+           aria-hidden="true" />
+
+    <!-- Legacy top strip — hidden by CSS in the redesign -->
+    <div class="brand-flair" aria-hidden="true"></div>
+
+    <!-- ==== LEGACY HEADER (visually removed; kept for JS refs) ====
+         The brand + Explore|Learn toggle moved into the floating
+         rail. This header now only hosts the hidden utility buttons
+         the JS still binds to (#searchBtn, #alignBtn, #helpBtn,
+         #fullscreenBtn). display:none via CSS. -->
+    <header class="metabar" role="banner" aria-hidden="true">
+      <div class="hidden-utilities" aria-hidden="true">
+        <button class="link-btn" id="searchBtn" type="button"
+                tabindex="-1">SEARCH</button>
+        <button class="link-btn" id="alignBtn" type="button"
+                tabindex="-1" title="Align image to polygons (Shift+A)">ALIGN</button>
+        <button class="link-btn" id="helpBtn" type="button"
+                tabindex="-1">HELP</button>
+        <button class="link-btn" id="fullscreenBtn" type="button"
+                tabindex="-1">
+          <span class="fs-label">FULLSCREEN</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- ==== BURGER SLIDE-IN PANEL (right side, white card) ==== -->
+    <aside class="burger-panel" id="burgerPanel"
+           aria-label="Menu" aria-hidden="true">
+      <header class="burger-panel-head">
+        <span class="burger-panel-kicker">MENU</span>
+        <label for="burgerToggle" class="burger-panel-close"
+               role="button" aria-label="Close menu" tabindex="0">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" fill="none"/>
+          </svg>
+        </label>
+      </header>
+
+      <nav class="burger-panel-list" aria-label="Site links">
+        <a class="burger-link" href="#" id="burgerHowToUse">
+          <span>How to use</span>
+        </a>
+        <a class="burger-link" href="https://sroberto27.github.io/" target="_blank" rel="noopener noreferrer">
+          <span>Exit</span>
+        </a>
+
+        <div class="burger-settings" role="group"
+             aria-label="Display settings">
+          <label class="burger-toggle-row">
+            <span class="burger-toggle-text">
+              <span class="burger-toggle-label">
+                Show welcome screen on startup
+              </span>
+              <span class="burger-toggle-hint">
+                Takes effect next time you open the site
+              </span>
+            </span>
+            <span class="burger-switch">
+              <input type="checkbox" id="burgerShowStartScreen" />
+              <span class="burger-switch-track" aria-hidden="true">
+                <span class="burger-switch-thumb"></span>
+              </span>
+            </span>
+          </label>
+
+          <label class="burger-toggle-row">
+            <span class="burger-toggle-text">
+              <span class="burger-toggle-label">
+                Show 3D navigation instructions
+              </span>
+              <span class="burger-toggle-hint">
+                Appears the next time you enter a 3D view
+              </span>
+            </span>
+            <span class="burger-switch">
+              <input type="checkbox" id="burgerShowNavInstructions" />
+              <span class="burger-switch-track" aria-hidden="true">
+                <span class="burger-switch-thumb"></span>
+              </span>
+            </span>
+          </label>
+        </div>
+      </nav>
+    </aside>
+    <!-- Click-outside backdrop for the burger panel -->
+    <label for="burgerToggle" class="burger-backdrop"
+           aria-hidden="true"></label>
+
+    <!-- ==== MAIN SHELL — map full-bleed, panels float ==== -->
+    <main class="shell">
+
+      <!-- ───── FULL-BLEED MAP ───── -->
+      <section class="map-wrap">
+        <div id="map" role="application" aria-label="Interactive gameday journey map"></div>
+
+        <!-- =========================================================
+             TREEDIS STREET VIEW OVERLAY
+             ========================================================= -->
+        <div id="streetview" class="streetview" aria-hidden="true">
+          <iframe
+            id="tour-frame"
+            class="streetview-frame"
+            title="Street view"
+            allow="fullscreen; xr-spatial-tracking"
+            loading="lazy"
+            src="about:blank"
+          ></iframe>
+
+          <div class="streetview-loading" id="streetviewLoading"
+               aria-hidden="true">
+            <div class="streetview-loading-inner">
+              <div class="streetview-loading-spinner" aria-hidden="true"></div>
+              <span class="streetview-loading-label" id="streetviewLoadingLabel">
+                Loading street view…
+              </span>
+              <button type="button"
+                      class="streetview-loading-cancel"
+                      id="streetviewLoadingCancel"
+                      hidden>
+                Cancel
+              </button>
+            </div>
+          </div>
+
+          <!-- "Back to map" white pill — top-left (was the X close) -->
+          <button class="streetview-close" id="streetviewClose"
+                  type="button" aria-label="Back to map">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M14 6l-6 6 6 6" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round"
+                    stroke-linejoin="round" fill="none"/>
+            </svg>
+            <span>Back to map</span>
+          </button>
+
+          <!-- Place pill — top-center: category chip + name + VR -->
+          <div class="streetview-caption" id="streetviewCaption">
+            <span class="streetview-caption-kicker" hidden>STREET VIEW</span>
+            <span class="streetview-caption-sub" id="streetviewSub"></span>
+            <span class="streetview-caption-title" id="streetviewTitle">—</span>
+            <span class="streetview-caption-vr" aria-hidden="true">
+              VR-ENABLED
+              <svg viewBox="0 0 24 24" class="sv-vr-icon" aria-hidden="true">
+                <path d="M3 8.5C3 7.67 3.67 7 4.5 7h15c.83 0 1.5.67 1.5 1.5v7c0
+                         .83-.67 1.5-1.5 1.5h-3.4c-.5 0-.97-.25-1.25-.67L13.5
+                         14h-3l-1.35 2.33c-.28.42-.75.67-1.25.67H4.5C3.67 17 3
+                         16.33 3 15.5v-7z"
+                      stroke="currentColor" stroke-width="1.8" fill="none"
+                      stroke-linecap="round" stroke-linejoin="round"/>
+                <circle cx="8" cy="12" r="1.2" fill="currentColor"/>
+                <circle cx="16" cy="12" r="1.2" fill="currentColor"/>
+              </svg>
+            </span>
+          </div>
+
+          <!-- Street-view top-right controls: menu + help -->
+          <div class="sv-topright">
+            <label for="burgerToggle" class="mapctl sv-ctl"
+                   role="button" aria-label="Open menu" tabindex="0">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </label>
+            <button class="mapctl sv-ctl" id="svHelpBtn" type="button"
+                    aria-label="3D navigation help">?</button>
+          </div>
+
+          <!-- Enter VR — bottom center, above the tour pill -->
+          <a class="sv-enter-vr" id="enterVrBtn"
+             href="https://www.oculus.com/open_url/?url=https://sroberto27.github.io/Wrapper/map/LSU/"
+             target="_blank" rel="noopener noreferrer"
+             aria-label="Open this tour in your VR headset">Enter VR</a>
+
+          <!-- Picture-in-picture mini map — bottom-right, desktop -->
+          <div class="sv-minimap" id="svMiniMap">
+            <button class="sv-minimap-back" id="svMiniMapBack" type="button">
+              Back to map
+            </button>
+            <div class="sv-minimap-canvas" id="svMiniMapCanvas"></div>
+          </div>
+
+          <div class="streetview-touch-guard" id="streetviewTouchGuard"
+               aria-hidden="true">
+            <div class="streetview-touch-guard-prompt">
+              <svg width="28" height="28" viewBox="0 0 24 24"
+                   fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v12c0 1.1.9 2 2 2h8"/>
+                <path d="M18 20a6 6 0 0 0 0-12v12z"/>
+                <path d="m22 14-4 4"/>
+              </svg>
+              <span>Tap to interact with tour</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mobile: floating search pill (opens the list sheet).
+             Same id/handler as the old "Locations" toggle. -->
+        <button class="locations-toggle" id="locationsToggle"
+                type="button" aria-label="Search places — open list">
+          <svg viewBox="0 0 24 24" class="locations-toggle-icon" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" stroke="currentColor"
+                    stroke-width="2" fill="none"/>
+            <path d="M21 21l-4.3-4.3" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span>Search places</span>
+          <img class="locations-toggle-seal" src="assets/Icons/logo.png"
+               alt="" aria-hidden="true" onerror="this.style.display='none'" />
+        </button>
+
+        <!-- Mobile: menu button beside the search pill -->
+        <label for="burgerToggle" class="mapctl mobile-menu-btn"
+               role="button" aria-label="Open menu" tabindex="0">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </label>
+
+        <!-- Mobile: filter chips row under the search pill -->
+        <div class="filter-chips filter-chips-top" id="filterChipsTop"
+             role="group" aria-label="Filter places"></div>
+
+        <!-- ==== MAP CONTROLS — floating top-right stack ==== -->
+        <div class="map-controls" id="mapControls" aria-label="Map controls">
+          <label for="burgerToggle" class="mapctl mapctl-menu"
+                 role="button" aria-label="Open menu" tabindex="0">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </label>
+
+          <div class="mapctl-group">
+            <button class="mapctl" id="zoomInBtn" type="button"
+                    aria-label="Zoom in">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 5v14M5 12h14" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+            <button class="mapctl" id="zoomOutBtn" type="button"
+                    aria-label="Zoom out">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M5 12h14" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <button class="mapctl" id="locateBtn" type="button"
+                  aria-label="Show my location">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="3.2" fill="currentColor"/>
+              <circle cx="12" cy="12" r="7" stroke="currentColor"
+                      stroke-width="2" fill="none"/>
+              <path d="M12 2v3M12 19v3M2 12h3M19 12h3" stroke="currentColor"
+                    stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+
+          <button class="mapctl" id="layersBtn" type="button"
+                  aria-label="Toggle streets, buildings & place labels"
+                  aria-pressed="false"
+                  title="Streets, buildings & place labels">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3l9 5-9 5-9-5 9-5z" stroke="currentColor"
+                    stroke-width="1.8" fill="none" stroke-linejoin="round"/>
+              <path d="M3 13l9 5 9-5M3 17l9 5 9-5" stroke="currentColor"
+                    stroke-width="1.8" fill="none" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          <!-- Recenter on tour — reuses the existing fit handler -->
+          <button class="mapctl" id="fitBtn"
+                  type="button" aria-label="Recenter on tour">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="12" r="2.4" fill="currentColor"/>
+              <circle cx="12" cy="12" r="7" stroke="currentColor"
+                      stroke-width="2" fill="none"/>
+              <path d="M12 2v3.5M12 18.5V22M2 12h3.5M18.5 12H22"
+                    stroke="currentColor" stroke-width="2"
+                    stroke-linecap="round"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- ==== GUIDED TOUR PILL — bottom center, navy ====
+             Reuses the desktop tour ids (#tourPrev/#tourNext/
+             #tourName/#tourCurrent/#tourTotal) so 08-tourbar.js
+             keeps driving it unchanged. -->
+        <div class="tour-pill" id="tourPill" role="group"
+             aria-label="Guided tour">
+          <button class="tour-arrow" id="tourPrev" type="button"
+                  aria-label="Previous stop">
+            <svg viewBox="0 0 24 24"><path
+              d="M15 6l-6 6 6 6" stroke="currentColor"
+              stroke-width="2" fill="none" stroke-linecap="round"
+              stroke-linejoin="round"/></svg>
+          </button>
+
+          <button class="tour-pill-play" id="tourPlayBtn" type="button"
+                  aria-label="Show guided tour panel">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M8 5l11 7-11 7V5z" fill="currentColor"/>
+            </svg>
+          </button>
+
+          <span class="tour-pill-label">Guided tour</span>
+
+          <span class="tour-pill-dots" id="tourDots" aria-hidden="true"></span>
+
+          <span class="tour-pill-status">
+            <span id="tourCurrent">0</span> of <span id="tourTotal">0</span>
+            <span class="tour-pill-sep">·</span>
+            <span class="tour-name" id="tourName">—</span>
+          </span>
+
+          <button class="tour-arrow" id="tourNext" type="button"
+                  aria-label="Next stop">
+            <svg viewBox="0 0 24 24"><path
+              d="M9 6l6 6-6 6" stroke="currentColor"
+              stroke-width="2" fill="none" stroke-linecap="round"
+              stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- Backdrop behind the mobile list sheet -->
+      <div class="locations-backdrop" id="locationsBackdrop"
+           aria-hidden="true"></div>
+
+      <!-- ═════ FLOATING LEFT RAIL — one rail, swappable states ═════ -->
+      <div class="rail" id="rail">
+
+        <!-- ── RAIL / LIST STATE (also the mobile LIST sheet) ── -->
+        <aside class="locations rail-list" id="locations"
+               aria-label="Places to explore">
+
+          <div class="rail-grabber" aria-hidden="true"></div>
+
+          <header class="locations-head">
+            <img class="rail-seal" src="assets/Icons/logo.png"
+                 alt="LSU Death Valley Experience"
+                 onerror="this.outerHTML='&lt;svg class=&quot;rail-seal&quot; viewBox=&quot;0 0 48 48&quot; xmlns=&quot;http://www.w3.org/2000/svg&quot; role=&quot;img&quot; aria-label=&quot;LSU Death Valley Experience&quot;&gt;&lt;circle cx=&quot;24&quot; cy=&quot;24&quot; r=&quot;22&quot; fill=&quot;#461D7C&quot; stroke=&quot;#FDD023&quot; stroke-width=&quot;2&quot;/&gt;&lt;text x=&quot;24&quot; y=&quot;28&quot; text-anchor=&quot;middle&quot; fill=&quot;#FDD023&quot; font-family=&quot;sans-serif&quot; font-size=&quot;13&quot; font-weight=&quot;700&quot;&gt;LSU&lt;/text&gt;&lt;/svg&gt;'" />
+            <div class="locations-heading">
+              <h1 class="locations-title">Explore Death Valley</h1>
+              <div class="locations-kicker ni-label">LSU FOOTBALL · BATON ROUGE, LOUISIANA</div>
+            </div>
+            <button class="locations-close" id="locationsClose"
+                    type="button" aria-label="Close list">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round" fill="none"/>
+              </svg>
+            </button>
+          </header>
+
+          <!-- ==== EXPLORE / LEARN — segmented pill in the rail.
+               .mode-btn class kept: JS binds every .mode-btn. ==== -->
+          <div class="mode-toggle" role="tablist" aria-label="Mode">
+            <button class="mode-btn is-active" role="tab"
+                    aria-selected="true" data-mode="explore" type="button">Explore</button>
+            <button class="mode-btn" role="tab"
+                    aria-selected="false" data-mode="learn" type="button">Learn</button>
+          </div>
+
+          <!-- Search — cream pill + autocomplete dropdown card -->
+          <div class="metabar-search" id="metabarSearch">
+            <div class="search-field">
+              <svg viewBox="0 0 24 24" class="search-icon" aria-hidden="true">
+                <circle cx="11" cy="11" r="7" stroke="currentColor"
+                        stroke-width="2" fill="none"/>
+                <path d="M21 21l-4.3-4.3" stroke="currentColor"
+                      stroke-width="2" stroke-linecap="round"/>
+              </svg>
+              <input id="searchInput" type="search"
+                     placeholder="Search places"
+                     aria-label="Search places" />
+              <button class="search-clear" id="searchClear"
+                      type="button" aria-label="Clear search" hidden>
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M6 6l12 12M18 6L6 18" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round" fill="none"/>
+                </svg>
+              </button>
+            </div>
+            <div id="searchResults" class="search-results" hidden></div>
+          </div>
+
+          <!-- Filter chips — built by JS from locations.json categories -->
+          <div class="filter-chips" id="filterChips"
+               role="group" aria-label="Filter places"></div>
+
+          <!-- FEATURED · ALL — kept as small text links above the list
+               (same radio mechanism drives which list is shown). -->
+          <div class="loc-meta-row">
+            <div class="locations-meta" aria-live="polite">
+              <span id="locationsCount">0</span> STOPS
+            </div>
+            <div class="loc-tabs" role="tablist" aria-label="Location filter">
+              <input type="radio" name="locTab" id="locTabFeatured"
+                     class="loc-tab-input" checked />
+              <label for="locTabFeatured" class="loc-tab"
+                     role="tab" aria-controls="locationsList">Featured</label>
+
+              <input type="radio" name="locTab" id="locTabAll"
+                     class="loc-tab-input" />
+              <label for="locTabAll" class="loc-tab"
+                     role="tab" aria-controls="allLocationsList">All</label>
+            </div>
+          </div>
+
+          <!-- Sort control — only visible on the All tab -->
+          <div class="loc-sort" id="locSort" role="radiogroup"
+               aria-label="Sort all locations by">
+            <input type="radio" name="locSort" id="locSortAlpha"
+                   class="loc-sort-input" checked />
+            <input type="radio" name="locSort" id="locSortDept"
+                   class="loc-sort-input" />
+            <span class="loc-sort-label">Sort by:</span>
+            <label for="locSortAlpha" class="loc-sort-opt">Alphabetical</label>
+            <span class="loc-sort-dot" aria-hidden="true">•</span>
+            <label for="locSortDept" class="loc-sort-opt">Department</label>
+          </div>
+
+          <!-- Featured list (tour stops) — JS-owned -->
+          <ul class="locations-list locations-list-featured"
+              id="locationsList" role="listbox"
+              aria-labelledby="locTabFeatured">
+            <!-- populated by JS -->
+          </ul>
+
+          <!-- All list — JS-owned -->
+          <ul class="locations-list locations-list-all"
+              id="allLocationsList" role="listbox"
+              aria-labelledby="locTabAll">
+            <!-- populated by JS -->
+          </ul>
+        </aside>
+
+        <!-- ── RAIL / TOUR STATE — navy tour card + stop checklist.
+             Content rendered by 08-tourbar.js. ── -->
+        <section class="rail-tour" id="railTour" aria-label="Guided tour"
+                 hidden>
+          <div class="rail-tour-card">
+            <div class="rail-tour-kicker ni-label">GUIDED TOUR</div>
+            <div class="rail-tour-title" id="railTourTitle">—</div>
+            <div class="rail-tour-sub" id="railTourSub"></div>
+            <div class="rail-tour-progress" aria-hidden="true">
+              <div class="rail-tour-progress-fill" id="railTourProgress"></div>
+            </div>
+          </div>
+          <ol class="rail-tour-stops" id="railTourStops"></ol>
+          <div class="rail-tour-actions">
+            <button class="pill-btn pill-btn-outline" id="railTourPrev"
+                    type="button">Previous</button>
+            <button class="pill-btn pill-btn-primary" id="railTourNext"
+                    type="button">Next stop</button>
+          </div>
+        </section>
+
+        <!-- ── RAIL / DETAIL STATE (also the mobile detail sheet) ──
+             Same #details ids — 06-details-panel.js renders here. -->
+        <aside class="details rail-detail" id="details"
+               aria-label="Location details" aria-hidden="true">
+
+          <div class="details-handle" id="detailsHandle" aria-hidden="true"></div>
+
+          <div class="details-content">
+            <div class="details-peek">
+              <!-- Hero photo with gold hairline + back button -->
+              <figure class="details-image gold-hairline-bottom" id="detailsImage">
+                <div class="details-image-x" aria-hidden="true"></div>
+                <figcaption>LOCATION IMAGE</figcaption>
+              </figure>
+              <button class="details-close" id="detailsClose"
+                      type="button" aria-label="Back to list">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M14 6l-6 6 6 6" stroke="currentColor"
+                        stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round" fill="none"/>
+                </svg>
+              </button>
+
+              <div class="details-tagrow">
+                <div class="details-tag" id="detailsTag">STOP</div>
+                <a class="details-vr-label vr-link"
+                   href="https://www.oculus.com/open_url/?url=https://sroberto27.github.io/Wrapper/map/LSU/"
+                   target="_blank" rel="noopener noreferrer"
+                   title="Open this tour in your Meta Quest headset">VR-ENABLED</a>
+              </div>
+
+              <h2 class="details-title" id="detailsTitle">—</h2>
+              <div class="details-sub"  id="detailsSub">—</div>
+
+              <!-- Canonical Explore CTA — now the primary navy pill
+                   "Explore in 3D" at every breakpoint. -->
+              <button class="explore-cta explore-cta-inline"
+                      id="exploreCta" type="button">
+                <span>Explore in 3D</span>
+              </button>
+            </div>
+
+            <div class="details-extra">
+              <p class="details-body" id="detailsBody">
+                Select a stop from the list or map to see details.
+              </p>
+
+              <!-- Physical address + map links -->
+              <div class="details-block details-address-block"
+                   id="addressBlock" hidden>
+                <div class="details-address" id="detailsAddress"></div>
+                <div class="details-address-links" id="detailsAddressLinks"
+                     hidden></div>
+              </div>
+
+              <div class="details-block" id="happensHereBlock">
+                <div class="details-block-h ni-label">WHAT HAPPENS HERE?</div>
+                <div class="chip-row" id="chipsHere"></div>
+              </div>
+
+              <div class="details-block" id="explorableBlock">
+                <div class="details-block-h ni-label">EXPLORABLE LOCATIONS</div>
+                <ul class="sub-list" id="subList"></ul>
+              </div>
+
+              <!-- Secondary action pills -->
+              <div class="details-actions">
+                <div class="details-actions-row">
+                  <a class="pill-btn pill-btn-outline" id="gmapsBtn"
+                     href="#" target="_blank" rel="noopener noreferrer"
+                     hidden>Google Maps</a>
+                  <button class="pill-btn pill-btn-outline" id="shareBtn"
+                          type="button">Share</button>
+                </div>
+                <button class="pill-btn pill-btn-outline pill-btn-wide"
+                        id="addToTourBtn" type="button" hidden>
+                  Add to guided tour
+                </button>
+              </div>
+
+              <!-- Legacy VR row — kept for JS bindings, hidden -->
+              <div class="details-vr details-vr-inline">
+                <a class="vr-label vr-link"
+                   href="https://www.oculus.com/open_url/?url=https://sroberto27.github.io/Wrapper/map/LSU/"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   title="Open this tour in your Meta Quest headset"
+                   aria-label="Open this tour in your Meta Quest headset">
+                  <span class="vr-dot" aria-hidden="true"></span> VR-Enabled
+                </a>
+                <button class="vr-btn vr-btn-hidden" id="vrBtn" type="button"
+                        tabindex="-1" aria-hidden="true">
+                  <span>Explore</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Legacy persistent footer — hidden; #exploreCtaFooter
+               still proxies clicks to #exploreCta per the JS. -->
+          <footer class="details-footer" aria-label="Location actions" hidden>
+            <button class="details-footer-explore"
+                    id="exploreCtaFooter" type="button"
+                    aria-label="Explore this location" tabindex="-1">
+              <span>Explore</span>
+            </button>
+            <a class="details-footer-vr"
+               id="vrLabelFooter"
+               href="https://www.oculus.com/open_url/?url=https://sroberto27.github.io/Wrapper/map/LSU/"
+               target="_blank"
+               rel="noopener noreferrer"
+               tabindex="-1"
+               aria-label="Open this tour in your Meta Quest headset">
+              <span class="details-footer-vr-text">VR-Enabled</span>
+            </a>
+          </footer>
+        </aside>
+
+        <!-- Quiet cream "Recenter on tour" row pinned at rail bottom
+             (list state only). Wired in js/14-redesign.js. -->
+        <button class="rail-recenter" id="railRecenter" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="2.2" fill="currentColor"/>
+            <circle cx="12" cy="12" r="6.5" stroke="currentColor"
+                    stroke-width="1.8" fill="none"/>
+          </svg>
+          <span>Recenter on tour · <span id="railRecenterCount">0</span> stops</span>
+        </button>
+      </div>
+
+      <!-- ==== MOBILE PEEK SHEET — horizontal photo cards ====
+           Populated by js/14-redesign.js. -->
+      <section class="sheet-peek" id="sheetPeek" aria-label="Explore Death Valley">
+        <div class="rail-grabber" aria-hidden="true"></div>
+        <header class="sheet-peek-head">
+          <h2 class="sheet-peek-title">Explore Death Valley</h2>
+          <span class="sheet-peek-count" id="sheetPeekCount">0 places</span>
+        </header>
+        <div class="sheet-peek-rail" id="peekCards"></div>
+        <button class="pill-btn pill-btn-primary sheet-peek-cta"
+                id="startTourBtn" type="button">
+          Start guided tour
+        </button>
+      </section>
+    </main>
+
+    <!-- ============================================================
+         LEARN TAB — "coming soon" placeholder (see css/11-learn-mode.css
+         and js/13-learn-mode.js).
+         ============================================================ -->
+    <main class="learn-shell" id="learnShell"
+          aria-label="Learn" aria-hidden="true">
+      <section class="learn-coming-soon">
+        <div class="learn-coming-soon-kicker ni-label">LEARN</div>
+        <h1 class="learn-coming-soon-title">Coming Soon</h1>
+        <p class="learn-coming-soon-body">
+          More about the Death Valley Experience — the gameday journey,
+          the technology behind it, and how recruits and their families
+          use it — will live here.
+        </p>
+      </section>
+    </main>
+
+    <!-- ==== MOBILE STREET-VIEW TOUR BAR (docked, navy) ====
+         Hidden in map mode; shown while street view is open on
+         mobile. Same ids drive it from 08-tourbar.js. -->
+    <footer class="tourbar" role="contentinfo" aria-label="Tour navigation">
+      <button class="tour-arrow" id="tourPrevMobile" type="button"
+              aria-label="Previous stop">
+        <svg viewBox="0 0 24 24"><path
+          d="M15 6l-6 6 6 6" stroke="currentColor"
+          stroke-width="2" fill="none" stroke-linecap="round"
+          stroke-linejoin="round"/></svg>
+      </button>
+
+      <div class="tour-info">
+        <div class="tour-label ni-label">GUIDED TOUR</div>
+        <div class="tour-name" id="tourNameMobile">—</div>
+        <div class="tour-count">
+          <span id="tourCurrentMobile">0</span> of <span id="tourTotalMobile">0</span>
+        </div>
+      </div>
+
+      <button class="tour-arrow" id="tourNextMobile" type="button"
+              aria-label="Next stop">
+        <svg viewBox="0 0 24 24"><path
+          d="M9 6l6 6-6 6" stroke="currentColor"
+          stroke-width="2" fill="none" stroke-linecap="round"
+          stroke-linejoin="round"/></svg>
+      </button>
+    </footer>
+
+    <!-- ==== ALIGNMENT TOOL (dev; hidden — esri-image mode is already
+         georeferenced, see js/10-event-wiring.js) ==== -->
+    <div class="align-panel" id="alignPanel" hidden>
+      <div class="align-head">
+        <div class="align-title">IMAGE ALIGNMENT</div>
+        <button class="align-close" id="alignClose" type="button" aria-label="Close alignment tool">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor"
+                  stroke-width="2" stroke-linecap="round" fill="none"/>
+          </svg>
+        </button>
+      </div>
+
+      <p class="align-hint">
+        Nudge the satellite image until buildings line up with their
+        polygons. Arrow keys, <kbd>+</kbd>/<kbd>−</kbd> to scale.
+      </p>
+
+      <div class="align-pad">
+        <button class="align-dir" data-nudge="up"    aria-label="Shift image north">↑</button>
+        <button class="align-dir" data-nudge="left"  aria-label="Shift image west">←</button>
+        <button class="align-reset" data-action="reset" aria-label="Reset">●</button>
+        <button class="align-dir" data-nudge="right" aria-label="Shift image east">→</button>
+        <button class="align-dir" data-nudge="down"  aria-label="Shift image south">↓</button>
+      </div>
+
+      <div class="align-row">
+        <button class="align-btn" data-scale="x-">−W</button>
+        <span class="align-lbl">Width</span>
+        <button class="align-btn" data-scale="x+">+W</button>
+      </div>
+      <div class="align-row">
+        <button class="align-btn" data-scale="y-">−H</button>
+        <span class="align-lbl">Height</span>
+        <button class="align-btn" data-scale="y+">+H</button>
+      </div>
+
+      <div class="align-values" id="alignValues">
+        <div><span>offsetLat:</span> <code id="valLat">0</code></div>
+        <div><span>offsetLng:</span> <code id="valLng">0</code></div>
+        <div><span>scaleX:</span>    <code id="valSx">1.000</code></div>
+        <div><span>scaleY:</span>    <code id="valSy">1.000</code></div>
+      </div>
+
+      <div class="align-actions">
+        <button class="align-copy" id="alignCopy" type="button">Copy config</button>
+        <button class="align-save" id="alignSave" type="button">Save &amp; close</button>
+      </div>
+
+      <p class="align-tip">
+        Tip: hold <kbd>Shift</kbd> while nudging for 10× steps. Values
+        are auto-saved in this browser; paste them into <code>config.js</code>
+        to share across devices.
+      </p>
+    </div>
+
+  </div>
+
+  <!-- ============================================================
+       WELCOME / START SCREEN MODAL — white card, gold hairline top
+       ============================================================ -->
+  <div id="startScreen" class="start-screen" role="dialog"
+       aria-modal="true" aria-labelledby="startScreenTitle"
+       aria-hidden="true">
+    <div class="start-screen-card gold-hairline-top">
+      <img class="start-screen-logo"
+           src="assets/Icons/logo.png"
+           alt="LSU Football"
+           onerror="this.style.display='none'" />
+      <h2 class="start-screen-title" id="startScreenTitle">
+        The Death Valley Experience
+      </h2>
+      <div class="start-screen-divider" aria-hidden="true"></div>
+      <p class="start-screen-body">
+        Welcome to the LSU Football gameday journey — from arrival to
+        kickoff at Tiger Stadium. Follow a guided tour through the route
+        and facilities, or explore on your own. Some stops include
+        immersive street-view experiences.
+      </p>
+
+      <label class="start-screen-checkbox">
+        <input type="checkbox" id="startScreenSuppress" />
+        <span class="start-screen-checkbox-box" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 12l5 5 9-11" stroke="currentColor"
+                  stroke-width="2.4" stroke-linecap="round"
+                  stroke-linejoin="round" fill="none"/>
+          </svg>
+        </span>
+        <span class="start-screen-checkbox-label">
+          Don't show this again
+        </span>
+      </label>
+
+      <div class="start-screen-actions">
+        <button class="start-screen-btn start-screen-btn-primary"
+                id="startEnterBtn" type="button">Enter experience</button>
+        <button class="start-screen-btn start-screen-btn-secondary"
+                id="startHowToUseBtn" type="button">How to use</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       COACHMARK SYSTEM — same mechanics, white tooltip card
+       ============================================================ -->
+  <div id="coachmarkOverlay" class="coachmark-overlay"
+       aria-hidden="true">
+    <div class="coachmark-mask coachmark-mask-top"    data-mask="top"></div>
+    <div class="coachmark-mask coachmark-mask-right"  data-mask="right"></div>
+    <div class="coachmark-mask coachmark-mask-bottom" data-mask="bottom"></div>
+    <div class="coachmark-mask coachmark-mask-left"   data-mask="left"></div>
+
+    <div class="coachmark-ring" id="coachmarkRing" aria-hidden="true"></div>
+
+    <div class="coachmark-card" id="coachmarkCard" role="dialog"
+         aria-modal="true" aria-labelledby="coachmarkTitle"
+         aria-describedby="coachmarkBody">
+      <button class="coachmark-close" id="coachmarkClose"
+              type="button" aria-label="Close walkthrough">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M6 6l12 12M18 6L6 18" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" fill="none"/>
+        </svg>
+      </button>
+
+      <div class="coachmark-card-arrow" id="coachmarkArrow"
+           aria-hidden="true"></div>
+
+      <h3 class="coachmark-title" id="coachmarkTitle">—</h3>
+      <p class="coachmark-body" id="coachmarkBody">—</p>
+
+      <div class="coachmark-footer">
+        <button class="coachmark-nav coachmark-nav-prev"
+                id="coachmarkPrev" type="button">Previous</button>
+        <span class="coachmark-count">
+          <span id="coachmarkCurrent">1</span> of
+          <span id="coachmarkTotal">3</span>
+        </span>
+        <button class="coachmark-nav coachmark-nav-next"
+                id="coachmarkNext" type="button">Next</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       NAVIGATION INSTRUCTIONS MODAL (3D onboarding) — white card
+       ============================================================ -->
+  <div id="navInstructions" class="nav-instructions" role="dialog"
+       aria-modal="true" aria-labelledby="navInstructionsTitle"
+       aria-hidden="true">
+    <div class="nav-instructions-card gold-hairline-top">
+      <h2 class="nav-instructions-title" id="navInstructionsTitle">
+        Instructions for Navigating in 3D
+      </h2>
+
+      <div class="nav-instructions-image">
+        <img class="nav-instructions-img nav-instructions-img-desktop"
+             src="assets/Icons/nav-instructions.png"
+             alt="Navigation instructions for 360° tour using a mouse and keyboard"
+             onerror="this.style.display='none'; this.parentElement.querySelector('.nav-instructions-fallback').style.display='block';" />
+        <img class="nav-instructions-img nav-instructions-img-xr"
+             src="assets/Icons/nav-instructions-xr.png"
+             alt="Navigation instructions for 360° tour using a VR headset"
+             onerror="this.style.display='none'; this.parentElement.querySelector('.nav-instructions-fallback').style.display='block';" />
+        <div class="nav-instructions-fallback" style="display:none;">
+          TBD
+        </div>
+      </div>
+
+      <label class="nav-instructions-checkbox">
+        <input type="checkbox" id="navInstructionsSuppress" />
+        <span class="nav-instructions-checkbox-box" aria-hidden="true">
+          <svg viewBox="0 0 24 24">
+            <path d="M5 12l5 5 9-11" stroke="currentColor"
+                  stroke-width="2.4" stroke-linecap="round"
+                  stroke-linejoin="round" fill="none"/>
+          </svg>
+        </span>
+        <span class="nav-instructions-checkbox-label">
+          Don't show this again
+        </span>
+      </label>
+
+      <div class="nav-instructions-actions">
+        <button class="nav-instructions-btn" id="navInstructionsGotIt"
+                type="button">Got it</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============================================================
+       SCRIPTS — same order as NewIberiaPro; esri-leaflet added
+       right after Leaflet core since the imagery layer needs it.
+       ============================================================ -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/esri-leaflet@3.0.12/dist/esri-leaflet.js"></script>
+
+  <script src="config.js"></script>
+
+  <script src="js/00-data-adapter.js"></script>
+  <script src="js/01-utils.js"></script>
+  <script src="js/02-state.js"></script>
+  <script src="js/03-tour-bridge.js"></script>
+  <script src="js/04-street-view.js"></script>
+  <script src="js/05-map-helpers.js"></script>
+  <script src="js/06-details-panel.js"></script>
+  <script src="js/07-layer-builders.js"></script>
+  <script src="js/08-tourbar.js"></script>
+  <script src="js/09-sidebar-search.js"></script>
+  <script src="js/10-event-wiring.js"></script>
+  <script src="js/11-boot.js"></script>
+  <script src="js/12-start-screen.js"></script>
+  <script src="js/13-learn-mode.js"></script>
+  <script src="js/14-redesign.js"></script>
+</body>
+</html>
