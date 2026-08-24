@@ -184,7 +184,7 @@ window.CAMPUS_CONFIG = Object.assign(window.CAMPUS_CONFIG || {}, {
     // oblique camera. Also retunable via __captureView().
     map2dStartView: {
       center: [-91.19086441880341, 30.411144591245616],
-      zoom: 17.11,
+      zoom: 10.11,
       bearing: 0,
       pitch: 0
     }

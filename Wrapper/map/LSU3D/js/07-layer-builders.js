@@ -185,39 +185,126 @@ function buildTourPins() {
   }
   const markers = [];
 
+  /* Several stops share one building — 3/4/5 are all inside the Football
+     Operations Facility, 8/9 both inside Tiger Stadium — so their footprints,
+     and therefore their pin centers, are byte-identical. Plain stacked markers
+     hid every pin but the last one drawn (only "5" and "9" were visible).
+
+     Co-located stops are therefore drawn as ONE collapsed cluster pin showing
+     the range it covers ("3–5"), which expands into a row of the individual
+     numbered pins — in tour order — on hover, keyboard focus, or tap. That
+     keeps the map uncluttered at rest while still making every stop
+     individually reachable, which a permanently-fanned-out spray of pins or a
+     single cycling/animated number would not (with a cycling number only
+     whichever digit happened to be showing would be clickable).
+
+     Expansion is driven by JS classes rather than CSS :hover so the same code
+     path serves touch devices, where :hover never fires. */
+  const groups = new Map();
   (toursGeo.features || []).forEach((f) => {
-    const props = f.properties || {};
-    const order = Number(props.order_num);
+    const order = Number((f.properties || {}).order_num);
     if (!Number.isFinite(order)) return;
-
-    const bounds = boundsOfFeature(f);
-    const center = centerOfBounds(bounds);
+    const center = centerOfBounds(boundsOfFeature(f));
     if (!center) return;
+    const key = `${center[0].toFixed(6)},${center[1].toFixed(6)}`;
+    if (!groups.has(key)) groups.set(key, { center, items: [] });
+    groups.get(key).items.push({ f, order });
+  });
 
+  // Builds one numbered pin node and wires its click-to-select.
+  function makePinNode(f, order) {
     // Off-campus tour stops (e.g. a directional-indicator stop) get a
     // distinct amber pin with a small arrow glyph so the user can see
     // at a glance that the shape on the map is a directional indicator
     // rather than a real building footprint.
-    const offCampus = !!props.off_campus;
-    const root = document.createElement("div");
-    root.className = offCampus ? "tour-pin-wrap is-offcampus" : "tour-pin-wrap";
-    root.innerHTML = offCampus
-      ? `<div class="tour-pin is-offcampus" data-order="${order}" ` +
-        `title="Off-campus location — click for details">` +
-        `${order}<span class="tour-pin-arrow" aria-hidden="true">↗</span></div>`
-      : `<div class="tour-pin" data-order="${order}">${order}</div>`;
-
-    root.addEventListener("click", (e) => {
+    const offCampus = !!(f.properties || {}).off_campus;
+    const node = document.createElement("div");
+    node.className = offCampus ? "tour-pin is-offcampus" : "tour-pin";
+    node.dataset.order = String(order);
+    // The teardrop body is rotated -45deg in CSS, so its contents live in
+    // their own element that counter-rotates — otherwise the number would
+    // render on its side.
+    if (offCampus) {
+      node.title = "Off-campus location — click for details";
+      node.innerHTML =
+        `<span class="tour-pin-num">${order}` +
+        `<span class="tour-pin-arrow" aria-hidden="true">↗</span></span>`;
+    } else {
+      node.innerHTML = `<span class="tour-pin-num">${order}</span>`;
+    }
+    node.addEventListener("click", (e) => {
       e.stopPropagation();
       selectFeature({ sourceId: SOURCE_IDS.tours, featureId: f.id, feature: f }, "tour", { focus: true });
     });
+    return node;
+  }
 
-    const marker = new maplibregl.Marker({ element: root, anchor: "center" })
+  groups.forEach(({ center, items }) => {
+    items.sort((a, b) => a.order - b.order);
+
+    const root = document.createElement("div");
+
+    if (items.length === 1) {
+      const { f, order } = items[0];
+      root.className = "tour-pin-wrap";
+      const node = makePinNode(f, order);
+      root.appendChild(node);
+      tourStops.push({ feature: f, featureId: f.id, order, pinNode: node });
+    } else {
+      root.className = "tour-pin-wrap tour-pin-cluster";
+
+      const orders = items.map((it) => it.order);
+      const consecutive = orders.every((n, i) => i === 0 || n === orders[i - 1] + 1);
+      const label = consecutive
+        ? `${orders[0]}–${orders[orders.length - 1]}`
+        : orders.join("·");
+
+      const summary = document.createElement("button");
+      summary.type = "button";
+      summary.className = "tour-pin-cluster-summary";
+      summary.textContent = label;
+      summary.setAttribute("aria-expanded", "false");
+      summary.setAttribute(
+        "aria-label",
+        `${items.length} tour stops at this building: ${orders.join(", ")}. Expand to choose one.`
+      );
+
+      const membersWrap = document.createElement("div");
+      membersWrap.className = "tour-pin-cluster-members";
+
+      items.forEach(({ f, order }) => {
+        const node = makePinNode(f, order);
+        membersWrap.appendChild(node);
+        tourStops.push({ feature: f, featureId: f.id, order, pinNode: node });
+      });
+
+      root.appendChild(summary);
+      root.appendChild(membersWrap);
+
+      const setOpen = (open) => {
+        root.classList.toggle("is-open", open);
+        summary.setAttribute("aria-expanded", String(open));
+      };
+      root.addEventListener("mouseenter", () => setOpen(true));
+      root.addEventListener("mouseleave", () => setOpen(false));
+      root.addEventListener("focusin", () => setOpen(true));
+      root.addEventListener("focusout", (e) => {
+        if (!root.contains(e.relatedTarget)) setOpen(false);
+      });
+      // Touch: the summary has no hover to trigger it, so tapping toggles.
+      summary.addEventListener("click", (e) => {
+        e.stopPropagation();
+        setOpen(!root.classList.contains("is-open"));
+      });
+    }
+
+    // anchor:"bottom" (not "center") so the teardrop's TIP sits on the real
+    // coordinate — the whole point of a drop-shaped pin. Clusters bottom-align
+    // the same way, so their chip/row floats just above the shared point.
+    const marker = new maplibregl.Marker({ element: root, anchor: "bottom" })
       .setLngLat(center)
       .addTo(map);
-
     markers.push(marker);
-    tourStops.push({ feature: f, featureId: f.id, marker, order });
   });
 
   buildTourPins._markers = markers;
@@ -233,8 +320,14 @@ function buildTourPins() {
 function highlightActivePin() {
   document.querySelectorAll(".tour-pin.is-active")
           .forEach((n) => n.classList.remove("is-active"));
+  document.querySelectorAll(".tour-pin-cluster.has-active")
+          .forEach((n) => n.classList.remove("has-active"));
   const stop = tourStops[tourIndex];
-  if (!stop) return;
-  const node = stop.marker.getElement().querySelector(".tour-pin");
-  if (node) node.classList.add("is-active");
+  if (!stop || !stop.pinNode) return;
+  stop.pinNode.classList.add("is-active");
+  // A collapsed cluster would otherwise hide the pin that just became the
+  // active stop — mark the cluster so CSS keeps it expanded while its own
+  // stop is the current one, without needing a hover.
+  const cluster = stop.pinNode.closest(".tour-pin-cluster");
+  if (cluster) cluster.classList.add("has-active");
 }

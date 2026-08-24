@@ -42,37 +42,180 @@
 }
 
 /* ===========================================================
-   TOUR PINS — numbered white circles with navy ring;
-   the active stop fills blue. Root element of each
-   maplibregl.Marker built in js/07-layer-builders.js.
+   TOUR PINS — LSU-purple "geo drop" teardrops with a shaded,
+   dimensional body; the active stop switches to LSU gold. Root
+   element of each maplibregl.Marker built in
+   js/07-layer-builders.js, anchored bottom so the drop's TIP
+   sits on the real coordinate.
+
+   The drop shape is the classic rotated-square-with-three-round-
+   corners: border-radius 50% 50% 50% 0 turns a square into a
+   circle with one square corner, and rotate(-45deg) swings that
+   corner to the bottom to form the point. The number therefore
+   lives in .tour-pin-num, which counter-rotates +45deg so it
+   reads upright.
+
+   Depth comes from three stacked cues rather than a flat fill:
+   an off-centre radial gradient (light source upper-left), inset
+   shadows/highlights for the rounded body, and a cast shadow
+   below. Deliberately CSS-only — these are DOM markers over a
+   WebGL canvas, so they read identically in 2D and 3D mode.
    =========================================================== */
 .tour-pin-wrap { background: none; border: none; }
 .tour-pin {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
   display: grid;
   place-items: center;
-  background: var(--ni-paper);
-  border: 2px solid var(--ni-navy);
-  color: var(--ni-navy);
+  /* LSU purple body in a GOLD ring — both brand colours on every pin, in
+     every state, rather than one colour per state. The gradient's lighter
+     and darker stops are tints/shades of --ni-navy (no tokens exist for
+     them); the mid stop is the real token. */
+  background: radial-gradient(circle at 34% 28%,
+              #8256bd 0%, #5e3a9e 42%, var(--ni-navy) 72%, #2f1456 100%);
+  border: 2px solid var(--ni-gold);
+  box-shadow:
+    0 5px 9px rgba(0, 0, 0, .38),                 /* cast shadow on the map  */
+    inset -2px -3px 6px rgba(20, 6, 44, .55),     /* shaded lower-right edge */
+    inset 2px 3px 6px rgba(255, 255, 255, .22);   /* lit upper-left edge     */
+  cursor: pointer;
+  transition: transform var(--dur) var(--ease), box-shadow var(--dur) var(--ease);
+}
+.tour-pin-num {
+  transform: rotate(45deg); /* undo the body's -45deg so digits read upright */
+  display: flex;
+  align-items: center;
+  color: #fff;
   font-family: var(--sans);
   font-size: 12px;
-  font-weight: 600;
-  box-shadow: var(--ni-shadow);
-  cursor: pointer;
+  font-weight: 700;
+  line-height: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .5);
 }
+
+/* Lift on hover — the pin reads as rising off the map rather than
+   just changing colour. */
+.tour-pin:hover {
+  transform: rotate(-45deg) translate(-1px, -1px) scale(1.06);
+  box-shadow:
+    0 8px 14px rgba(0, 0, 0, .42),
+    inset -2px -3px 6px rgba(20, 6, 44, .55),
+    inset 2px 3px 6px rgba(255, 255, 255, .22);
+}
+
+/* Active stop — the same two brand colours, inverted: gold body in a
+   purple ring. Sits highest of all. */
 .tour-pin.is-active {
-  background: var(--ni-blue);
-  border-color: var(--ni-paper);
-  color: #fff;
+  background: radial-gradient(circle at 34% 28%,
+              #ffe89a 0%, var(--ni-gold) 40%, #e0af00 74%, #a87d00 100%);
+  border-color: var(--ni-navy);
+  transform: rotate(-45deg) scale(1.12);
+  box-shadow:
+    0 9px 15px rgba(0, 0, 0, .45),
+    inset -2px -3px 6px rgba(120, 84, 0, .5),
+    inset 2px 3px 7px rgba(255, 255, 255, .55);
+  z-index: 6;
 }
+.tour-pin.is-active .tour-pin-num {
+  color: var(--ni-navy);
+  text-shadow: 0 1px 1px rgba(255, 255, 255, .5);
+}
+
+/* Off-campus directional stops — gold body like the active pin, but held
+   apart from it by a dashed purple ring rather than a solid one. */
 .tour-pin.is-offcampus {
-  border-color: var(--ni-gold-dark);
-  color: var(--ni-gold-dark);
+  background: radial-gradient(circle at 34% 28%,
+              #ffe89a 0%, var(--ni-gold) 45%, #c99b06 100%);
+  border-color: var(--ni-navy);
   border-style: dashed;
 }
-.tour-pin-arrow { font-size: 10px; margin-left: 2px; }
+.tour-pin.is-offcampus .tour-pin-num {
+  color: var(--ni-navy);
+  text-shadow: none;
+}
+.tour-pin-arrow { font-size: 10px; margin-left: 1px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-pin { transition: none; }
+  .tour-pin:hover { transform: rotate(-45deg); }
+}
+
+/* ===========================================================
+   CO-LOCATED STOP CLUSTERS — several tour stops inside one
+   building share an identical footprint centre (stops 3/4/5 in
+   the Football Operations Facility, 8/9 in Tiger Stadium), so
+   they'd otherwise stack into a single visible pin. Collapsed,
+   the cluster shows its range ("3–5"); it expands into a row of
+   the real numbered pins on hover / focus / tap, or whenever
+   one of its own stops is the active tour stop (.has-active,
+   set by highlightActivePin() in js/07-layer-builders.js).
+   =========================================================== */
+.tour-pin-cluster {
+  display: grid;          /* summary and member row share one cell, so the */
+  place-items: center;    /* cluster stays centred on its real coordinate  */
+}
+.tour-pin-cluster > * { grid-area: 1 / 1; }
+
+.tour-pin-cluster-summary {
+  /* Same shaded LSU-purple body as .tour-pin, but a rounded capsule rather
+     than a drop — it stands for several stops, so it deliberately does NOT
+     point at one spot the way a single teardrop does. */
+  height: 28px;
+  padding: 0 11px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 30% 25%,
+              #8256bd 0%, #5e3a9e 45%, var(--ni-navy) 78%, #2f1456 100%);
+  border: 2px solid var(--ni-gold);
+  color: #fff;
+  font-family: var(--sans);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, .5);
+  box-shadow:
+    0 5px 9px rgba(0, 0, 0, .38),
+    inset -2px -3px 6px rgba(20, 6, 44, .55),
+    inset 2px 3px 6px rgba(255, 255, 255, .22);
+  cursor: pointer;
+}
+
+.tour-pin-cluster-members {
+  display: flex;
+  align-items: flex-end; /* drop tips line up along one baseline */
+  gap: 5px;
+  /* Hidden rather than display:none so the row keeps its layout box and
+     the expand doesn't reflow the pins around it. */
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(.85);
+  transition: opacity var(--dur) var(--ease), transform var(--dur) var(--ease);
+}
+
+.tour-pin-cluster.is-open .tour-pin-cluster-summary,
+.tour-pin-cluster.has-active .tour-pin-cluster-summary {
+  opacity: 0;
+  visibility: hidden;
+}
+.tour-pin-cluster.is-open .tour-pin-cluster-members,
+.tour-pin-cluster.has-active .tour-pin-cluster-members {
+  opacity: 1;
+  visibility: visible;
+  transform: scale(1);
+}
+
+/* An expanded cluster must sit above neighbouring markers, otherwise its
+   row can slide under an adjacent pin's marker element. */
+.tour-pin-cluster.is-open,
+.tour-pin-cluster.has-active { z-index: 5; }
+
+@media (prefers-reduced-motion: reduce) {
+  .tour-pin-cluster-members { transition: none; }
+}
 
 /* Dashed gold guided-tour route line-layer paint color lives in JS
    (js/14-redesign.js) since MapLibre paint properties aren't CSS —

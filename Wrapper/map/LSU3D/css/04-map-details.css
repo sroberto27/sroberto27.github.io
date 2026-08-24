@@ -10,6 +10,14 @@
   right: var(--edge);
   display: flex;
   flex-direction: column;
+  /* NOT the default `stretch`: in a column flex container the cross axis is
+     the WIDTH, so stretch sizes every child to the widest one. The .mapctl
+     buttons have an explicit width and resist it, but .mapctl-group has no
+     width of its own — so as soon as the wider #mode3DBadge ("3D: Google")
+     appeared in 3D mode, the zoom +/- group stretched to match it and
+     rendered oversized. flex-end keeps every control at its natural width,
+     flush to the rail's right edge. */
+  align-items: flex-end;
   gap: 10px;
   z-index: 850;
 }
