@@ -95,10 +95,13 @@ async function refine(msg) {
     return;
   }
 
-  /* Resolve against the worker's own URL rather than passing bare
-     relative paths. The app lives under a sub-path on GitHub Pages, and
-     how onnxruntime resolves a relative wasmPaths inside a worker is not
-     something to leave to chance. */
+  /* Resolve the model URL against the worker's own URL rather than a
+     bare relative path -- the app lives under a sub-path on GitHub
+     Pages. wasmPaths is deliberately NOT set: onnxruntime-web resolves
+     its own sibling .wasm/.mjs files relative to its own import.meta.url,
+     and vendor/ort.wasm.bundle.min.mjs already lives right next to them,
+     so passing a wasmPaths override here doubled to vendor/vendor/... and
+     404'd in production. See the note in pano/xfeat-extractor.js. */
   const vendorBase = new URL('vendor/', self.location.href).href;
 
   // The runtime and model are ~17 MB on first use and then cached. Saying
@@ -107,7 +110,6 @@ async function refine(msg) {
   await XF.init({
     ort: ortNS,
     modelUrl: vendorBase + 'xfeat.onnx',
-    wasmPaths: vendorBase,
     maxSide
   });
 

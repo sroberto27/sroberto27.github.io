@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<!-- Runtime smoke test: loads onnxruntime-web + xfeat.onnx exactly the way
+     pano-refine-worker.js does (as a module worker), and reports pass/fail
+     into the DOM so it can be checked headlessly with
+     `chrome --headless=new --dump-dom` without needing a phone or a
+     capture session. Catches vendor-path and MIME regressions in seconds.
+     Not part of the app UI -- delete or ignore in production checks. -->
+<html><head><meta charset="utf-8"><title>runtime smoketest</title></head>
+<body>
+<div id="result">PENDING</div>
+<script type="module">
+  const out = document.getElementById('result');
+  const worker = new Worker('../pano-refine-worker.js', { type: 'module' });
+  const timeout = setTimeout(() => { out.textContent = 'FAIL timeout waiting for worker'; }, 20000);
+
+  worker.onerror = (e) => {
+    clearTimeout(timeout);
+    out.textContent = 'FAIL worker error: ' + (e.message || e);
+  };
+
+  worker.onmessage = (e) => {
+    const msg = e.data;
+    if (msg.type === 'progress') { out.textContent = 'PENDING ' + msg.stage + ' ' + msg.pct + '%'; return; }
+    clearTimeout(timeout);
+    worker.terminate();
+    out.textContent = 'RESULT ' + JSON.stringify(msg).slice(0, 500);
+  };
+
+  // A trivial 4-shot session: too few for a real geometric solve, but
+  // enough to prove the worker loads the runtime, loads the model, and
+  // runs XFeat inference on real image data before (correctly) reporting
+  // 'too-few-shots' or 'too-few-matches' rather than crashing.
+  async function makeCanvas(seed) {
+    const c = new OffscreenCanvas(320, 240);
+    const ctx = c.getContext('2d');
+    ctx.fillStyle = '#334'; ctx.fillRect(0, 0, 320, 240);
+    for (let i = 0; i < 60; i++) {
+      ctx.fillStyle = 'hsl(' + ((i * 37 + seed * 91) % 360) + ',70%,55%)';
+      ctx.fillRect((i * 53 + seed * 17) % 300, (i * 29 + seed * 11) % 220, 14, 10);
+    }
+    return c.transferToImageBitmap();
+  }
+
+  const images = [];
+  for (let i = 0; i < 4; i++) {
+    images.push({ bitmap: await makeCanvas(i), width: 320, height: 240, yaw: i * 0.3, pitch: 0, roll: 0 });
+  }
+  worker.postMessage({ type: 'refine', images, options: {} }, images.map(im => im.bitmap));
+</script>
+</body></html>

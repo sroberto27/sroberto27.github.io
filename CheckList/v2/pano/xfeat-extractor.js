@@ -27,7 +27,17 @@
 
   const DEFAULTS = {
     modelUrl: 'vendor/xfeat.onnx',
-    wasmPaths: 'vendor/',
+    // Deliberately no default here. onnxruntime-web resolves sibling
+    // .wasm/.mjs files relative to its own import.meta.url, and every
+    // caller in this codebase loads the bundle from the same directory
+    // the model and runtime files live in -- so the correct value is
+    // "don't override," not a guessed relative path. Passing one caused
+    // a real production bug: env.wasm.wasmPaths gets treated as a base
+    // to resolve AGAINST the runtime's own location, not against the
+    // page, so 'vendor/' from a page already serving the runtime out of
+    // vendor/ resolved to vendor/vendor/... and 404'd. Only pass this
+    // explicitly if the runtime and model are NOT co-located.
+    wasmPaths: undefined,
     // XFeat is trained around VGA. Larger inputs find more keypoints but
     // cost roughly linearly, and on a phone that adds up over 26 shots.
     maxSide: 640,
@@ -54,7 +64,7 @@
     // Accepts an explicit runtime so a module worker can pass the ESM
     // import directly instead of relying on a global side effect.
     ort = resolveOrt(opts.ort);
-    ort.env.wasm.wasmPaths = opts.wasmPaths;
+    if (opts.wasmPaths) ort.env.wasm.wasmPaths = opts.wasmPaths;
     ort.env.wasm.numThreads = 1;
     ort.env.wasm.simd = true;
     ort.env.logLevel = 'error';

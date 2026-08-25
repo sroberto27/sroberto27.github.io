@@ -108,9 +108,10 @@
       // lab-boot.js is a deferred module, so on a very fast click it may
       // not have run yet.
       for (let i = 0; i < 100 && !window.ort; i++) await new Promise(r => setTimeout(r, 50));
+      // wasmPaths intentionally omitted -- see pano/xfeat-extractor.js.
       await XF.init({
         maxSide, ort: window.ort,
-        modelUrl: '../vendor/xfeat.onnx', wasmPaths: '../vendor/'
+        modelUrl: '../vendor/xfeat.onnx'
       });
       el('ortStatus').innerHTML = 'runtime: <span class="good">ready</span> (wasm, 1 thread)';
       log('onnxruntime-web ready in ' + Math.round(performance.now() - t0) + ' ms');

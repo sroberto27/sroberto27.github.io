@@ -77,6 +77,38 @@ deployed GitHub Pages site are not visible to a `localhost` lab, and vice versa.
 To work with real field captures, either deploy `lab/` alongside the app or make
 the test captures against the same local server.
 
+## Runtime smoke test
+
+`lab/runtime-smoketest.html` loads `pano-refine-worker.js` exactly the way a real
+capture does — real `onnxruntime-web`, real `xfeat.onnx`, real inference — against
+four throwaway synthetic images, and reports pass/fail into the DOM. It needs no
+camera, no capture session, and no phone, so it is the fastest way to catch a
+vendor-path or MIME regression (this caught a real one: `wasmPaths` was being
+passed as `'vendor/'`, but `onnxruntime-web` resolves that *relative to its own
+script location*, not the page — since the bundle already lives in `vendor/`,
+this doubled to `vendor/vendor/...` and 404'd. Fixed by not overriding
+`wasmPaths` at all when the runtime and model are co-located; see the comment in
+`pano/xfeat-extractor.js`).
+
+Drive it headlessly with Puppeteer against `pano-refine-worker.js`'s real
+`postMessage` result (a plain `--dump-dom` won't work — the worker's async
+model load needs real wall-clock time to complete, and `--virtual-time-budget`
+does not reliably advance it):
+
+```js
+const page = await browser.newPage();
+await page.goto('http://localhost:8000/lab/runtime-smoketest.html');
+await page.waitForFunction(
+  () => /^(RESULT|FAIL)/.test(document.getElementById('result').textContent),
+  { timeout: 45000, polling: 500 }
+);
+```
+
+A healthy run reports `RESULT {"type":"skipped","reason":"no-usable-edges"}` —
+the four synthetic images share no real overlap, so the worker correctly
+declines rather than fabricating a geometric solution; the point of the test is
+that it gets that far (model fetched, session created, inference run) at all.
+
 ## Vendored files
 
 `vendor/` holds ~17 MB that is **not** currently gitignored, because GitHub Pages
