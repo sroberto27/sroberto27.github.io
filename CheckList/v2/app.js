@@ -645,7 +645,15 @@
       loc.media['panorama-360'].push(result.panoramaMediaId);
       await renderPanoramaCard();
       scheduleSave();
-      toast('360° panorama created', 'success');
+      // Surface what refinement actually did — on a phone there is no
+      // console to check, and these two numbers are the quickest way to
+      // tell whether it ran and whether it produced something sane.
+      const r = result.refinement;
+      const detail = (r && typeof r.hFovDeg === 'number')
+        ? ` — lens measured at ${r.hFovDeg.toFixed(1)}° FOV, aim corrected ${
+            typeof r.meanCorrectionDeg === 'number' ? r.meanCorrectionDeg.toFixed(2) : '?'}° avg`
+        : '';
+      toast('360° panorama created' + detail, 'success');
     } else {
       await renderPanoramaCard(); // still shows the "incomplete session" recovery hint for the saved sources
       const reasonText = {

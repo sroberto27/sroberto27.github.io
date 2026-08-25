@@ -36,7 +36,23 @@
 
   const ALIGN_TOLERANCE_DEG = 5;
   const STABLE_MS = 550;
-  const ASSUMED_H_FOV_DEG = 68; // typical rear-camera horizontal FOV — no browser API exposes the real value
+  const ASSUMED_H_FOV_DEG = 68; // fallback only — pano-refine-worker.js calibrates the real value from the photos
+
+  // ---- pose refinement (pano-refine-worker.js) ----
+  // Refinement is advisory: if anything about it fails we stitch exactly as
+  // before, from raw sensor pose and the assumed FOV. It must never be able
+  // to cost the user a capture.
+  const REFINE_PREF_KEY = 'lsc2_pano_refine';
+  const REFINE_MAX_SIDE = 640;    // XFeat is trained around VGA; larger costs time for little gain
+  const REFINE_TIMEOUT_MS = 240000;
+
+  function refineEnabled() {
+    try { return localStorage.getItem(REFINE_PREF_KEY) !== '0'; }
+    catch (e) { return true; }
+  }
+  function setRefineEnabled(on) {
+    try { localStorage.setItem(REFINE_PREF_KEY, on ? '1' : '0'); } catch (e) { /* ignore */ }
+  }
   const ASSUMED_ASPECT = 9 / 16; // height/width used only to size the on-screen patch footprint
   const GUIDE_FOV_DEG = 78; // wider virtual FOV used for placing the reticle/target/patches on screen
   const MAX_BLUR_RETRIES = 2; // low-texture scenes (blank walls/ceilings) read as "blurry" too — don't loop forever
@@ -72,6 +88,9 @@
         <div class="c360-topbar">
           <button type="button" class="tbtn tbtn--sm c360-cancel"><i class="fa-solid fa-xmark"></i> Cancel</button>
           <div class="c360-counter">Photos: <span class="c360-count">0</span> / <span class="c360-total">26</span></div>
+          <label class="c360-enhance" title="Corrects lens FOV, pose drift and exposure on-device before stitching. Slower, but much sharper seams.">
+            <input type="checkbox" class="c360-enhance-input"> Enhance
+          </label>
         </div>
         <div class="c360-instruction">Move the phone until the circles align.</div>
         <div class="c360-progress-track"><div class="c360-progress-fill"></div></div>
@@ -205,6 +224,9 @@
       const finishBtn = overlay.querySelector('.c360-finish');
       const captureBtn = overlay.querySelector('.c360-capture');
       const instruction = overlay.querySelector('.c360-instruction');
+      const enhanceInput = overlay.querySelector('.c360-enhance-input');
+      enhanceInput.checked = refineEnabled();
+      enhanceInput.addEventListener('change', () => setRefineEnabled(enhanceInput.checked));
 
       const targets = buildTargetPattern();
       totalEl.textContent = String(targets.length);
@@ -490,28 +512,156 @@
         runStitchPhase();
       });
 
+      // Source records, in capture order, read back once and shared by the
+      // refinement and stitch phases.
+      async function loadSourceRecords() {
+        const recs = [];
+        for (const id of sourceMediaIds) {
+          const rec = await global.LSCMedia.getMedia(id);
+          if (rec && rec.blob) recs.push(rec);
+        }
+        return recs;
+      }
+
+      /* Runs pano-refine-worker.js. Resolves to
+         { byId, hFovDeg, diagnostics } or NULL, and null always means
+         "stitch exactly the way this app did before refinement existed".
+         Every failure path — no worker support, module worker rejected,
+         model fetch failure, implausible solution, timeout — funnels to
+         null rather than an error, because a refinement problem must never
+         cost the user their 26 photos. */
+      function runRefinement(records, onProgress) {
+        return new Promise(resolve => {
+          if (typeof Worker === 'undefined' || typeof OffscreenCanvas === 'undefined') { resolve(null); return; }
+
+          const order = [];
+          const images = [];
+          let worker = null;
+          let settled = false;
+          let timer = null;
+
+          const finish = (value) => {
+            if (settled) return;
+            settled = true;
+            if (timer) clearTimeout(timer);
+            try { if (worker) worker.terminate(); } catch (e) { /* ignore */ }
+            // Anything still untransferred has to be released explicitly.
+            for (const im of images) { try { im.bitmap.close && im.bitmap.close(); } catch (e) { /* ignore */ } }
+            resolve(value);
+          };
+
+          try { worker = new Worker('pano-refine-worker.js', { type: 'module' }); }
+          catch (e) { finish(null); return; }
+
+          timer = setTimeout(() => finish(null), REFINE_TIMEOUT_MS);
+
+          worker.onmessage = (e) => {
+            const msg = e.data;
+            if (!msg) return;
+            if (msg.type === 'progress') { onProgress(msg.stage, msg.pct); return; }
+            if (msg.type === 'result' && Array.isArray(msg.poses)) {
+              const byId = new Map();
+              for (let k = 0; k < order.length && k < msg.poses.length; k++) {
+                const pose = msg.poses[k];
+                if (!pose || typeof pose.yaw !== 'number') continue;
+                byId.set(order[k], {
+                  yaw: pose.yaw, pitch: pose.pitch, roll: pose.roll,
+                  gain: (msg.gains && typeof msg.gains[k] === 'number') ? msg.gains[k] : 1
+                });
+              }
+              if (!byId.size) { finish(null); return; }
+              finish({ byId, hFovDeg: msg.hFovDeg, diagnostics: msg.diagnostics || null });
+              return;
+            }
+            finish(null);   // 'skipped', 'error', or anything unexpected
+          };
+          worker.onerror = () => finish(null);
+
+          (async () => {
+            // Downscaled copies only. Geometry does not need full resolution,
+            // and decoding 26 full frames twice is a real cost on a phone.
+            for (const rec of records) {
+              if (settled) return;
+              let bmp = null;
+              try {
+                const w = rec.width || 0, h = rec.height || 0;
+                if (w && h) {
+                  const s = Math.min(1, REFINE_MAX_SIDE / Math.max(w, h));
+                  bmp = await createImageBitmap(rec.blob, {
+                    resizeWidth: Math.max(8, Math.round(w * s)),
+                    resizeHeight: Math.max(8, Math.round(h * s)),
+                    resizeQuality: 'medium'
+                  });
+                } else {
+                  bmp = await createImageBitmap(rec.blob);
+                }
+              } catch (err) { bmp = null; }
+              if (!bmp) continue;
+              order.push(rec.id);
+              images.push({
+                bitmap: bmp, width: bmp.width, height: bmp.height,
+                yaw: rec.yaw, pitch: rec.pitch, roll: rec.roll
+              });
+            }
+            if (settled) return;
+            if (images.length < 4) { finish(null); return; }
+            try {
+              worker.postMessage(
+                { type: 'refine', images, options: { maxSide: REFINE_MAX_SIDE, nominalHFovDeg: ASSUMED_H_FOV_DEG } },
+                images.map(i => i.bitmap)
+              );
+              images.length = 0;   // ownership transferred to the worker
+            } catch (err) { finish(null); }
+          })();
+        });
+      }
+
       async function runStitchPhase() {
         hud.hidden = true;
         stitchingPanel.hidden = false;
         const stageEl = stitchingPanel.querySelector('.c360-stitch-stage');
         const fillEl = stitchingPanel.querySelector('.c360-stitch-fill');
+        const setProgress = (stage, pct) => {
+          stageEl.textContent = stage;
+          fillEl.style.width = Math.max(0, Math.min(100, pct)) + '%';
+        };
 
         if (typeof Worker === 'undefined' || typeof createImageBitmap === 'undefined') {
           finishAndClose({ stitched: false, sessionId, sourceCount: sourceMediaIds.length, reason: 'unsupported' });
           return;
         }
 
+        const records = await loadSourceRecords();
+        if (!records.length) {
+          finishAndClose({ stitched: false, sessionId, sourceCount: sourceMediaIds.length, reason: 'no-readable-sources' });
+          return;
+        }
+
+        // Refinement, when it runs, owns the first 55% of the progress bar.
+        let refinement = null;
+        if (refineEnabled()) {
+          refinement = await runRefinement(records, (stage, pct) => setProgress(stage, pct * 0.55));
+        }
+        const base = refinement ? 55 : 0;
+        const span = refinement ? 45 : 100;
+        setProgress('Preparing images', base);
+
         let worker;
         try { worker = new Worker('pano-stitch-worker.js'); }
         catch (e) { finishAndClose({ stitched: false, sessionId, sourceCount: sourceMediaIds.length, reason: 'unsupported' }); return; }
 
         const images = [];
-        for (const id of sourceMediaIds) {
-          const rec = await global.LSCMedia.getMedia(id);
-          if (!rec) continue;
+        for (const rec of records) {
           try {
             const bmp = await createImageBitmap(rec.blob);
-            images.push({ bitmap: bmp, width: bmp.width, height: bmp.height, yaw: rec.yaw, pitch: rec.pitch, roll: rec.roll });
+            const fix = refinement ? refinement.byId.get(rec.id) : null;
+            images.push({
+              bitmap: bmp, width: bmp.width, height: bmp.height,
+              yaw: fix ? fix.yaw : rec.yaw,
+              pitch: fix ? fix.pitch : rec.pitch,
+              roll: fix ? fix.roll : rec.roll,
+              gain: fix ? fix.gain : 1
+            });
           } catch (e) { /* skip unreadable source */ }
         }
         if (!images.length) {
@@ -521,11 +671,15 @@
         }
 
         const size = chooseOutputSize();
+        const hFovDeg = refinement && refinement.hFovDeg ? refinement.hFovDeg : ASSUMED_H_FOV_DEG;
+        const refineInfo = refinement
+          ? Object.assign({ hFovDeg: refinement.hFovDeg }, refinement.diagnostics || {})
+          : null;
+
         worker.onmessage = async (e) => {
           const msg = e.data;
           if (msg.type === 'progress') {
-            stageEl.textContent = msg.stage;
-            fillEl.style.width = msg.pct + '%';
+            setProgress(msg.stage, base + msg.pct * span / 100);
           } else if (msg.type === 'unsupported' || msg.type === 'error') {
             worker.terminate();
             finishAndClose({ stitched: false, sessionId, sourceCount: sourceMediaIds.length, reason: msg.type === 'unsupported' ? 'unsupported' : 'stitch-error' });
@@ -543,7 +697,10 @@
                   filename: `panorama_${sessionId}.jpg`, mime: 'image/jpeg', originalFilename: null,
                   width: msg.width, height: msg.height, blob
                 });
-                finishAndClose({ stitched: true, panoramaMediaId: panoId, sessionId, sourceCount: sourceMediaIds.length });
+                finishAndClose({
+                  stitched: true, panoramaMediaId: panoId, sessionId,
+                  sourceCount: sourceMediaIds.length, refinement: refineInfo
+                });
               } catch (err) {
                 finishAndClose({ stitched: false, sessionId, sourceCount: sourceMediaIds.length, reason: 'storage-failed' });
               }
@@ -555,7 +712,7 @@
           finishAndClose({ stitched: false, sessionId, sourceCount: sourceMediaIds.length, reason: 'stitch-error' });
         };
         worker.postMessage(
-          { type: 'stitch', outputWidth: size.width, outputHeight: size.height, hFovDeg: ASSUMED_H_FOV_DEG, images },
+          { type: 'stitch', outputWidth: size.width, outputHeight: size.height, hFovDeg, images },
           images.map(i => i.bitmap)
         );
       }

@@ -1,15 +1,22 @@
 /* ===================== 360 STITCH WORKER =====================
    Produces a real equirectangular projection from the guided-capture
-   source photos using their measured yaw/pitch/roll (see orientation.js)
-   — NOT feature-matching stitching. Each source pixel is forward-projected
-   (gnomonic/rectilinear -> spherical) onto the output equirect canvas and
-   blended with its neighbors using a center-weighted feather, so this is
-   a genuine spherical projection + overlap/seam blend, just driven by
-   sensor pose instead of visual feature detection. See README note in
-   capture360.js STITCH_METHOD_NOTE for the full rationale — this is a
-   deliberate, documented trade-off, not a placeholder.
+   source photos. Each source pixel is forward-projected (gnomonic/
+   rectilinear -> spherical) onto the output equirect canvas and blended
+   with its neighbors using a center-weighted feather.
 
-   Message in:  { type:'stitch', outputWidth, outputHeight, hFovDeg, images:[{yaw,pitch,roll,bitmap,width,height}] }
+   The projection itself does no feature matching. Where the pose and FOV
+   come from depends on whether refinement ran:
+
+     - pano-refine-worker.js succeeded: yaw/pitch/roll are visually
+       refined by bundle adjustment, hFovDeg is calibrated from the
+       photos themselves, and each image carries an exposure gain.
+     - refinement skipped or failed: the raw device-orientation reading
+       and the assumed 68 deg FOV, exactly as before, with gain 1.
+
+   Either way this file only consumes what it is given, so a refinement
+   failure degrades to the original behaviour rather than breaking.
+
+   Message in:  { type:'stitch', outputWidth, outputHeight, hFovDeg, images:[{yaw,pitch,roll,gain,bitmap,width,height}] }
    Messages out: { type:'progress', stage, pct }, { type:'unsupported', reason },
                  { type:'error', message }, { type:'result', buffer, width, height } (transferred)
 */
@@ -67,6 +74,9 @@ function runStitch(msg) {
   for (let i = 0; i < total; i++) {
     const src = images[i];
     const pixels = readImage(src);
+    // Per-shot exposure gain from pano-refine-worker.js, cancelling the
+    // auto-exposure drift across a sweep. 1 when refinement was skipped.
+    const gain = (typeof src.gain === 'number' && src.gain > 0) ? src.gain : 1;
     const { forward, right, up } = basisForOrientation(src.yaw, src.pitch, src.roll);
     const vFov = 2 * Math.atan(Math.tan(hFov / 2) * (src.height / src.width));
     const tanH = Math.tan(hFov / 2), tanV = Math.tan(vFov / 2);
@@ -96,7 +106,7 @@ function runStitch(msg) {
         const weight = Math.max(0, Math.cos(Math.min(r, 1) * Math.PI / 2));
         if (weight <= 0) continue;
 
-        const r8 = pixels[idx], g8 = pixels[idx + 1], b8 = pixels[idx + 2];
+        const r8 = pixels[idx] * gain, g8 = pixels[idx + 1] * gain, b8 = pixels[idx + 2] * gain;
         splat(colorSum, weightSum, W, H, u, v, r8, g8, b8, weight);
       }
     }

@@ -580,6 +580,14 @@ select {
   padding: 14px; background: linear-gradient(rgba(0, 0, 0, .55), transparent);
 }
 .c360-counter { color: #fff; font-weight: 700; font-size: 14px; text-shadow: 0 1px 3px rgba(0, 0, 0, .6); }
+.c360-enhance {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: #fff; font-size: 13px; font-weight: 600;
+  padding: 5px 10px; border-radius: 999px;
+  background: rgba(0, 0, 0, .45); border: 1px solid rgba(255, 255, 255, .22);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .6); cursor: pointer; user-select: none;
+}
+.c360-enhance-input { accent-color: #f5a623; width: 15px; height: 15px; margin: 0; }
 /* The gray mask, peephole, world-locked captured-shot patches, active target
    marker, and reticle ring are all painted on this canvas each frame (see
    drawFrame() in capture360.js) instead of being separate DOM elements —
