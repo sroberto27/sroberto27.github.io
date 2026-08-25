@@ -58,14 +58,24 @@
     return { u: u, v: (0.5 - pitch / Math.PI) * H };
   }
 
-  // The 26-target pattern from capture360.js buildTargetPattern().
+  /* The capture pattern, mirroring capture360.js buildTargetPattern().
+     Used only by the offline test harnesses, which need the pattern
+     without loading the whole capture UI module.
+
+     MUST be kept in step with capture360.js. This copy silently went
+     stale once (it stayed at the old 26-shot pattern after the capture
+     side moved to 34), which made the offline evaluation report coverage
+     for a pattern the app no longer used. lab/test/run-tests.js now
+     asserts the two agree, so that can't happen again quietly. */
   function buildTargetPattern() {
     const t = [];
     for (let i = 0; i < 8; i++) t.push({ yaw: i * 45, pitch: 0 });
-    for (let i = 0; i < 8; i++) t.push({ yaw: i * 45, pitch: 35 });
-    for (let i = 0; i < 8; i++) t.push({ yaw: i * 45, pitch: -35 });
-    t.push({ yaw: 0, pitch: 80 });
-    t.push({ yaw: 0, pitch: -80 });
+    for (let i = 0; i < 8; i++) t.push({ yaw: i * 45 + 22.5, pitch: 33 });
+    for (let i = 0; i < 8; i++) t.push({ yaw: i * 45 + 22.5, pitch: -33 });
+    for (let i = 0; i < 4; i++) t.push({ yaw: i * 90, pitch: 66 });
+    for (let i = 0; i < 4; i++) t.push({ yaw: i * 90, pitch: -66 });
+    t.push({ yaw: 0, pitch: 90 });
+    t.push({ yaw: 0, pitch: -90 });
     return t.map(x => ({ yaw: x.yaw * DEG, pitch: x.pitch * DEG }));
   }
 

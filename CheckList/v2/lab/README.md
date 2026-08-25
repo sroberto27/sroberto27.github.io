@@ -25,30 +25,38 @@ visual correction anywhere. This pipeline adds the missing correction stage:
 
 ## Layout
 
+The pipeline modules are the SHIPPING copies under `../pano/` — the lab loads
+those directly rather than keeping its own, so the two cannot drift:
+
 ```
-geo/        pure geometry, no browser or model dependency
-  so3.js          rotation math; mirrors the worker's basisForOrientation exactly
-  camera.js       pinhole + equirect projection, worker conventions
-  estimate.js     Wahba/Davenport rotation solve, RANSAC, prior gate
-  calibrate.js    focal self-calibration
-  bundle.js       pose-graph bundle adjustment (LM), loop-closure diagnostics
-  pipeline.js     orchestration
-xfeat/      browser-only
-  extractor.js    onnxruntime-web session + NMS/top-K/descriptor sampling
-  match.js        mutual-NN matching with the geometric gate
-test/       node test suites
-tools/      fixture generation
-vendor/     onnxruntime-web + xfeat.onnx  (see "Vendored files" below)
-index.html  the lab page
-lab.js      lab page logic
+../pano/            shipping pipeline (loaded by both the app and these tests)
+  so3.js              rotation math; mirrors the worker's basisForOrientation
+  camera.js           pinhole + equirect projection + the capture pattern
+  estimate.js         Wahba/Davenport rotation solve, RANSAC, prior gate
+  calibrate.js        focal self-calibration
+  bundle.js           pose-graph bundle adjustment (LM), loop-closure diagnostics
+  pipeline.js         orchestration
+  stitch.js           headless equirect stitcher (mirrors pano-stitch-worker.js)
+  xfeat-extractor.js  onnxruntime-web session + NMS/top-K/descriptor sampling
+  xfeat-match.js      mutual-NN matching with the geometric gate
+../vendor/          onnxruntime-web + xfeat.onnx (see "Vendored files" below)
+
+lab/
+  test/               node test suites + synthetic scene generators
+  tools/              fixture generation
+  index.html, lab.js  the lab page
+  lab-boot.js         loads onnxruntime-web for the lab page
+  runtime-smoketest.html   real-worker/model smoke test
+  viewer-flip-test.html    panorama-viewer orientation regression test
 ```
 
 ## Running the tests
 
-No browser needed. Both suites run in Node:
+No browser needed. All four suites run in Node:
 
 ```bash
-node lab/test/run-tests.js                  # geometry vs synthetic ground truth (20 checks)
+node lab/test/run-tests.js                  # geometry vs synthetic ground truth (22 checks)
+node lab/test/run-filter-test.js            # orientation smoothing filter (5 checks)
 
 python lab/tools/xfeat_fixture.py           # needs: pip install onnx onnxruntime numpy
 node lab/test/run-xfeat-test.js .fixture    # full chain, real model (11 checks)
@@ -109,6 +117,42 @@ the four synthetic images share no real overlap, so the worker correctly
 declines rather than fabricating a geometric solution; the point of the test is
 that it gets that far (model fetched, session created, inference run) at all.
 
+## Viewer flip regression test
+
+`lab/viewer-flip-test.html` renders a synthetic top-red(ceiling)/bottom-blue(floor)
+equirect image through the real, unmodified `panorama-viewer.js`, drags the
+real viewer via real `PointerEvent`s, and reads back the rendered canvas —
+this is how a genuine bug was caught: `UNPACK_FLIP_Y_WEBGL` was set to `true`,
+which swapped ceiling and floor in every 360 preview. Root cause and fix are
+documented at the call site in `panorama-viewer.js`; the short version is that
+"flip Y" is the standard fix for a full-screen-quad shader sampled with its
+own vertex UVs, and exactly the wrong thing for this shader, which computes
+`uv` directly from spherical lon/lat and samples `texture2D()` with it as a
+raw texture coordinate — there's no quad-UV step for the flip to cancel
+against.
+
+Same driving pattern as the runtime smoke test (a `--dump-dom` timing hack
+won't work; use `page.waitForFunction` against the result text):
+
+```js
+await page.goto('http://localhost:8000/lab/viewer-flip-test.html');
+await page.waitForFunction(
+  () => /^(PASS|FAIL)/.test(document.getElementById('result').textContent),
+  { timeout: 20000, polling: 300 }
+);
+```
+
+One thing this test's harness has to work around, worth knowing if you extend
+it: `panorama-viewer.js` correctly omits `preserveDrawingBuffer` (it costs
+performance and the on-screen result is unaffected — the compositor keeps
+showing the last drawn frame between interactions). But that means an
+*external* async readback, like this test's `drawImage`-based color sample
+running on a later `setTimeout` tick, can legitimately see a browser-cleared
+buffer and read back solid black. The test monkey-patches
+`HTMLCanvasElement.prototype.getContext` to inject
+`preserveDrawingBuffer: true` for its own readback only — never do this in
+the shipped viewer itself.
+
 ## Vendored files
 
 `vendor/` holds ~17 MB that is **not** currently gitignored, because GitHub Pages
@@ -139,28 +183,28 @@ shipping anything to the app itself).
 ## Phase 0 error decomposition
 
 `run-stitch-eval.js` is the measurement that decides which research route is
-worth taking. Pose error in degrees is only a proxy; this stitches the same 26
+worth taking. Pose error in degrees is only a proxy; this stitches the same 34
 views under a ladder of hypotheses, changing exactly one thing per rung, and
 scores each against the source panorama. `--png` writes the panoramas out so
 they can be looked at, not just scored.
 
 | | hypothesis | PSNR | SSIM | covered |
 |---|---|---|---|---|
-| A | sensor pose + 68 deg (ships today) | 11.37 dB | 0.160 | 86.9% |
-| B | refined pose + 68 deg | 12.31 dB | 0.178 | 86.8% |
-| C | sensor pose + calibrated focal | 12.70 dB | 0.285 | 90.2% |
-| D | refined pose + calibrated focal | 19.94 dB | 0.675 | 90.1% |
-| E | TRUE pose + TRUE focal | 23.19 dB | 0.847 | 90.1% |
-| F | E + gain compensation | 26.38 dB | 0.852 | 90.1% |
+| A | sensor pose + 68 deg (ships today) | 11.90 dB | 0.168 | 97.9% |
+| B | refined pose + 68 deg | 13.11 dB | 0.185 | 98.0% |
+| C | sensor pose + calibrated focal | 13.26 dB | 0.300 | 98.3% |
+| D | refined pose + calibrated focal | 20.31 dB | 0.706 | 98.3% |
+| E | TRUE pose + TRUE focal | 23.08 dB | 0.845 | 98.3% |
+| F | E + gain compensation | 26.56 dB | 0.855 | 98.3% |
 
-**Pose and focal are strongly coupled.** Fixing pose alone buys +0.94 dB and
-fixing focal alone buys +1.33 dB, but doing both buys **+8.57 dB** — far more
+**Pose and focal are strongly coupled.** Fixing pose alone buys +1.21 dB and
+fixing focal alone buys +1.36 dB, but doing both buys **+8.42 dB** — far more
 than the sum. Neither half is worth shipping without the other: with the wrong
 focal a correct pose still misprojects, and vice versa.
 
-Remaining budget after Phase 0: 3.25 dB of residual pose/focal error, 3.19 dB of
+Remaining budget after Phase 0: 2.77 dB of residual pose/focal error, 3.47 dB of
 exposure drift (which gain compensation recovers, and which no pose method can
-touch), and a 26.38 dB floor from resampling and feather blending.
+touch), and a 26.56 dB floor from resampling and feather blending.
 
 Two caveats that bound what this can conclude:
 
@@ -171,13 +215,42 @@ Two caveats that bound what this can conclude:
 - **Synthetic correspondences.** The geometry is fed modelled matches here; the
   real-descriptor validation lives in `run-xfeat-test.js`.
 
-Separately: at the true FOV the 26-target pattern covers only ~90% of the sphere.
-That is a capture-pattern limit, not a stitching one — it needs more shots or
-tighter ring spacing, not better maths.
+## Sphere coverage: two bugs that showed as black holes
+
+Real captures came back with scalloped black gaps. Two independent causes, both
+now fixed, measured with equal-area sphere sampling through the real projection
+and feather:
+
+1. **The blend weight discarded every frame corner.** The feather was radial —
+   `cos(min(sqrt(nx²+ny²),1)·π/2)` — so a corner at `nx,ny = ±1` sits at
+   `r = √2`, giving `cos(π/2) ≈ 6e-17`. Combined with the `wsum > 0.0001`
+   coverage test, everything outside an *inscribed ellipse* was thrown away:
+   about 21% of every photo. Replaced with a separable feather (independent
+   horizontal × vertical falloff), which still tapers at every edge but keeps
+   the full rectangle.
+2. **The 26-shot pattern could not close the sphere.** Rings at 0°/±35° with a
+   single zenith at only ±80° left a genuine unreachable band. Replaced with 34
+   shots: 8 horizon, 8 at ±33° (staggered 22.5°), 4 at ±66°, and true ±90°
+   zenith/nadir.
+
+Measured coverage of the capture pattern alone, landscape 1920×1080:
+
+| pattern | 58° | 62° | 68° | 73.5° | 78° | shots |
+|---|---|---|---|---|---|---|
+| old (0, ±35, z±80) | 87.1% | 90.2% | 93.6% | 95.7% | 96.8% | 26 |
+| **current (0, ±33, ±66, z±90)** | **100%** | **100%** | **100%** | **100%** | **100%** | 34 |
+
+The margin across the whole FOV range matters: the true lens FOV is unknown at
+capture time (it's calibrated afterwards, from the photos), so the pattern has
+to hold up even on a narrower lens than assumed.
+
+`pano/camera.js` keeps a copy of this pattern for the offline harnesses. It went
+stale once — section 0 of `run-tests.js` now executes `capture360.js`'s real
+function and asserts the two agree, so it can't drift quietly again.
 
 ## Status
 
-Verified offline across three suites (37 checks). **Not yet run in a real browser
+Verified offline across four suites (44 checks). **Not yet run in a real browser
 or on a phone** — that is the next step, and the numbers below are desktop figures,
 not device measurements.
 

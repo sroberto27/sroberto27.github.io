@@ -127,7 +127,23 @@
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+      // NOT flipped, deliberately -- and this is worth a comment because
+      // "flip Y" is the standard WebGL fix for almost every OTHER shader
+      // pattern, which makes it exactly the wrong instinct to apply here.
+      // That standard advice is for a full-screen quad sampled with its
+      // OWN vertex UVs (where v=0 conventionally means "bottom of the
+      // screen"), and flipping cancels that convention out. This shader
+      // has no such quad-UV step: it computes uv directly from spherical
+      // lon/lat and samples texture2D(uTex, uv) with it as a raw texture
+      // coordinate, where v=0 always means "first stored texel row",
+      // full stop. Flipping on unpack there swaps which row is first,
+      // which swapped ceiling and floor -- confirmed empirically
+      // (lab/test/run-viewer-flip-test in spirit; see the commit this
+      // comment landed in) before this line existed. Leaving flip on
+      // unpack at its WebGL default (false) makes texture row 0 the
+      // source image's top row, matching pano-stitch-worker.js writing
+      // the ceiling to row 0 -- no flip needed anywhere in this chain.
+      gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
 
       const uYaw = gl.getUniformLocation(prog, 'uYaw');

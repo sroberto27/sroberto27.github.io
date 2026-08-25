@@ -58,10 +58,14 @@
           const eq = C.rayToEquirect(world, outW, outH);
           if (eq.v < 0 || eq.v >= outH) continue;
 
-          // Centre-weighted feather, identical in form to the worker's.
-          const r = Math.min(1.15, Math.sqrt(nx * nx + ny * ny));
-          let w = Math.max(0, Math.cos(Math.min(r, 1) * Math.PI / 2));
-          if (w <= 0) continue;
+          // Separable feather, identical in form to the worker's. Kept in
+          // lockstep deliberately: this file exists to measure what the
+          // shipped stitcher does, so any divergence here makes the
+          // offline evaluation measure a stitcher that doesn't exist.
+          const wxF = Math.cos(Math.min(Math.abs(nx), 1) * Math.PI / 2);
+          const wyF = Math.cos(Math.min(Math.abs(ny), 1) * Math.PI / 2);
+          let w = wxF * wyF;
+          if (w <= 1e-6) continue;
           if (featherPower !== 1) w = Math.pow(w, featherPower);
 
           const si = (y * W + x) * 3;

@@ -160,14 +160,17 @@ console.log('     residual pose/focal error      ' + f2(gap('E', 'D')).padStart(
 console.log('     exposure drift (photometric)   ' + f2(gap('F', 'E')).padStart(6) + ' dB   (E -> F)');
 console.log('     floor: resampling + blending   ' + f2(byTag['F'].psnr).padStart(6) + ' dB absolute');
 
-/* Coverage is a separate finding from accuracy. The 26-target pattern is
-   built around ASSUMED_H_FOV_DEG = 68; at the true FOV the rings at 0 and
-   +/-35 deg leave real holes between them, and no stitching improvement
-   can fill a direction the camera never pointed at. */
-console.log('\n   NOTE: at the true FOV the 26-target pattern still covers only ' +
-  f2(byTag['E'].coverage * 100, 1) + '% of the sphere.');
-console.log('         That remainder is a CAPTURE PATTERN limit, not a stitching one --');
-console.log('         it needs more shots or tighter ring spacing, not better maths.');
+/* Coverage is a separate finding from accuracy: no stitching improvement
+   can fill a direction the camera never pointed at. The old 26-shot
+   pattern had a genuine geometric gap here (~90%); the current 34-shot
+   pattern measures 100% when every shot lands exactly on target, so the
+   shortfall reported below is the simulated per-shot AIMING error that
+   synth.js injects, which is the realistic case. */
+console.log('\n   NOTE: at the true FOV the capture pattern covers ' +
+  f2(byTag['E'].coverage * 100, 1) + '% of the sphere (' +
+  scene.trueRotations.length + ' shots).');
+console.log('         The shortfall here is simulated AIMING error, not a pattern gap --');
+console.log('         the pattern itself measures 100% when every shot lands on target.');
 
 console.log('\n=== Checks ===');
 check('focal calibration alone beats the 68 deg assumption', gap('C', 'A') > 0.5,

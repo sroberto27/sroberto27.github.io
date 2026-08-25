@@ -33,6 +33,46 @@ function section(title) {
 function fmt(x, d) { return Number(x).toFixed(d === undefined ? 3 : d); }
 
 // ---------------------------------------------------------------
+section('0. Capture pattern is in step with the shipping app');
+{
+  /* pano/camera.js keeps a copy of the capture pattern so the offline
+     harnesses don't have to load the capture UI. That copy went stale
+     once already -- it stayed at 26 shots after capture360.js moved to
+     34, so the evaluation silently measured a pattern the app no longer
+     used. Rather than trust a comment telling people to keep them in
+     sync, execute capture360.js's real function and compare. */
+  const fs = require('fs');
+  const path = require('path');
+  const src = fs.readFileSync(
+    path.join(__dirname, '..', '..', 'capture360.js'), 'utf8');
+
+  const m = src.match(/function buildTargetPattern\(\)\s*\{[\s\S]*?\n  \}/);
+  let appPattern = null;
+  if (m) {
+    const DEG = Math.PI / 180;
+    appPattern = new Function('DEG', m[0] + '; return buildTargetPattern();')(DEG);
+  }
+  check('capture360.js buildTargetPattern() could be extracted', !!appPattern);
+
+  if (appPattern) {
+    const labPattern = C.buildTargetPattern();
+    let maxDiff = 0;
+    const sameLength = appPattern.length === labPattern.length;
+    if (sameLength) {
+      for (let i = 0; i < appPattern.length; i++) {
+        maxDiff = Math.max(maxDiff,
+          Math.abs(appPattern[i].yaw - labPattern[i].yaw),
+          Math.abs(appPattern[i].pitch - labPattern[i].pitch));
+      }
+    }
+    check('pano/camera.js pattern matches capture360.js exactly',
+      sameLength && maxDiff < 1e-12,
+      '(' + appPattern.length + ' vs ' + labPattern.length + ' shots' +
+      (sameLength ? ', max angle diff ' + maxDiff.toExponential(1) : '') + ')');
+  }
+}
+
+// ---------------------------------------------------------------
 section('1. Conventions match the shipped stitch worker');
 {
   const W = 1920, H = 1080, hFov = 68 * C.DEG;

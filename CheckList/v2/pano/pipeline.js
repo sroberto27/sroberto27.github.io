@@ -201,22 +201,61 @@
      reading is that the `measured` inconsistency has been absorbed
      rather than left to smear a seam somewhere. */
   function ringDiagnostics(rotations, edges) {
-    const rings = {
-      horizon: [0, 1, 2, 3, 4, 5, 6, 7],
-      upper: [8, 9, 10, 11, 12, 13, 14, 15],
-      lower: [16, 17, 18, 19, 20, 21, 22, 23]
-    };
     const DEGS = 180 / Math.PI;
-    const out = {};
-    for (const name of Object.keys(rings)) {
-      const cycle = rings[name].filter(i => i < rotations.length);
-      if (cycle.length < 3) { out[name] = { measured: null, refined: null }; continue; }
+
+    /* Rings are DERIVED from each view's actual pitch, not read off
+       hardcoded index ranges. The capture pattern has changed once
+       already (26 -> 34 shots, and the ring pitches moved), and fixed
+       indices would have kept "working" while silently reporting closure
+       for the wrong set of views. Grouping by pitch stays correct through
+       any future pattern change, and automatically picks up rings this
+       function was never told about. */
+    const byPitch = [];
+    for (let i = 0; i < rotations.length; i++) {
+      const p = S.toYawPitchRoll(rotations[i]).pitch * DEGS;
+      let g = byPitch.find(x => Math.abs(x.pitch - p) < 12);
+      if (!g) { g = { pitch: p, idx: [] }; byPitch.push(g); }
+      g.idx.push({ i: i, yaw: S.toYawPitchRoll(rotations[i]).yaw });
+    }
+
+    function closure(group) {
+      // Traverse the ring in yaw order; an index-order traversal would
+      // measure a path that zig-zags around the ring rather than a loop.
+      const cycle = group.idx.slice().sort((a, b) => a.yaw - b.yaw).map(x => x.i);
+      if (cycle.length < 3) return { measured: null, refined: null };
       const measured = edges ? B.loopClosureFromEdges(edges, cycle) : null;
-      out[name] = {
+      return {
         measured: measured === null ? null : measured * DEGS,
-        refined: B.loopClosureError(rotations, cycle) * DEGS
+        refined: B.loopClosureError(rotations, cycle) * DEGS,
+        pitchDeg: group.pitch,
+        shots: cycle.length
       };
     }
+
+    const rings = byPitch
+      .filter(g => g.idx.length >= 3)
+      .sort((a, b) => a.pitch - b.pitch)
+      .map(g => Object.assign({ pitchDeg: g.pitch }, closure(g)));
+
+    const EMPTY = { measured: null, refined: null };
+    const nearest = target => {
+      let best = null, bestD = Infinity;
+      for (const r of rings) {
+        const d = Math.abs(r.pitchDeg - target);
+        if (d < bestD) { bestD = d; best = r; }
+      }
+      return best || EMPTY;
+    };
+
+    // horizon/upper/lower are kept as named aliases because existing
+    // callers (the refine worker, the lab page, the test suite) read them
+    // by name; `all` exposes every ring the pattern actually has.
+    const out = {
+      horizon: nearest(0),
+      upper: rings.filter(r => r.pitchDeg > 15)[0] || EMPTY,
+      lower: rings.filter(r => r.pitchDeg < -15).slice(-1)[0] || EMPTY,
+      all: rings
+    };
     return out;
   }
 

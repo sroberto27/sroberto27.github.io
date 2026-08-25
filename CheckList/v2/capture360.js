@@ -20,17 +20,37 @@
   const O = global.LSCOrientation;
   const DEG = Math.PI / 180;
 
-  // 8 horizon + 8 upper ring + 8 lower ring + zenith + nadir = 26.
-  // At the assumed 68deg horizontal FOV, 45deg ring spacing gives real
-  // overlap (previously the upper/lower rings used 4 shots at 90deg
-  // spacing, which is a ~22deg GAP, not overlap, at that FOV).
+  /* 34-shot pattern: 8 horizon + 8 at +33 + 8 at -33 + 4 at +66 + 4 at -66
+     + true zenith + true nadir.
+
+     Chosen by measuring actual sphere coverage (equal-area sampling,
+     using the real stitcher's projection and feather) across the whole
+     plausible phone-lens range. The previous 26-shot pattern
+     (8/8/8 at 0,+/-35 with zenith/nadir at only +/-80) left real,
+     unreachable gaps: it covered 93.6% of the sphere at 68deg hFOV and
+     only 87.1% at a narrow 58deg lens, which showed up as black holes in
+     finished panoramas. This pattern measures 100.0% at every FOV from
+     58deg to 78deg -- the margin matters, because the true lens FOV is
+     unknown at capture time (it is calibrated later, from the photos).
+
+     Three specific changes, each load-bearing:
+     - the +/-66 rings close the band the old pattern could not reach
+       between the +/-35 ring's top edge and a single zenith shot;
+     - zenith/nadir moved to true +/-90, which is both better coverage
+       and easier to aim than the old +/-80;
+     - the +/-33 rings are staggered 22.5deg against the horizon ring, so
+       ring-to-ring overlap lands where a frame corner would otherwise
+       meet another frame corner. That also gives pose refinement more
+       cross-ring feature matches to work with. */
   function buildTargetPattern() {
     const t = [];
     for (let i = 0; i < 8; i++) t.push({ yaw: i * 45, pitch: 0 });
-    for (let i = 0; i < 8; i++) t.push({ yaw: i * 45, pitch: 35 });
-    for (let i = 0; i < 8; i++) t.push({ yaw: i * 45, pitch: -35 });
-    t.push({ yaw: 0, pitch: 80 });
-    t.push({ yaw: 0, pitch: -80 });
+    for (let i = 0; i < 8; i++) t.push({ yaw: i * 45 + 22.5, pitch: 33 });
+    for (let i = 0; i < 8; i++) t.push({ yaw: i * 45 + 22.5, pitch: -33 });
+    for (let i = 0; i < 4; i++) t.push({ yaw: i * 90, pitch: 66 });
+    for (let i = 0; i < 4; i++) t.push({ yaw: i * 90, pitch: -66 });
+    t.push({ yaw: 0, pitch: 90 });
+    t.push({ yaw: 0, pitch: -90 });
     return t.map(x => ({ yaw: x.yaw * DEG, pitch: x.pitch * DEG }));
   }
 
@@ -87,7 +107,7 @@
       <div class="c360-hud" hidden>
         <div class="c360-topbar">
           <button type="button" class="tbtn tbtn--sm c360-cancel"><i class="fa-solid fa-xmark"></i> Cancel</button>
-          <div class="c360-counter">Photos: <span class="c360-count">0</span> / <span class="c360-total">26</span></div>
+          <div class="c360-counter">Photos: <span class="c360-count">0</span> / <span class="c360-total">0</span></div>
           <label class="c360-enhance" title="Corrects lens FOV, pose drift and exposure on-device before stitching. Slower, but much sharper seams.">
             <input type="checkbox" class="c360-enhance-input"> Enhance
           </label>

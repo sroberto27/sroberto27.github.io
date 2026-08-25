@@ -16,6 +16,7 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{array}
+\usepackage{tabularx}
 \usepackage{xcolor}
 \usepackage{enumitem}
 \usepackage{tikz}
@@ -32,9 +33,9 @@
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\vect}[1]{\mathbf{#1}}
 \newcommand{\mat}[1]{\mathbf{#1}}
-\newcommand{\deg}{^{\circ}}
+\newcommand{\Deg}{\ensuremath{^{\circ}}}
 
-\title{\textbf{Web Location Scouting Checklist with\\ ML-Enhanced 360\deg\ Captures Using a Mobile Phone}\\[4pt]
+\title{\textbf{Web Location Scouting Checklist with\\ ML-Enhanced 360\Deg\ Captures Using a Mobile Phone}\\[4pt]
 \large On-Device Pose Refinement and Lens Self-Calibration for\\ Browser-Based Spherical Panorama Capture}
 
 \author{%
@@ -48,7 +49,7 @@
 \maketitle
 
 \begin{abstract}
-Location scouting -- the field survey of a physical site prior to a photo, film, or event production -- depends on capturing a spatially complete, unambiguous record of a space, and a full 360\deg\ panorama is the single artifact that communicates that record best. Native mobile operating systems ship dedicated panorama pipelines that fuse inertial sensors with proprietary, often ML-assisted stitching; the web platform exposes none of this. A browser-based location scouting tool must therefore reconstruct panorama capture from primitives that were never designed for it: an uncalibrated orientation event, a camera stream with no exposed intrinsics, and a compute budget bounded by what a phone's browser will tolerate. This paper describes and evaluates an on-device machine-learning pipeline that closes this gap for a deployed, browser-only location scouting checklist application. Given 26 guided phone photographs and their raw device-orientation readings, the pipeline runs XFeat, a sub-3-megabyte local feature network, under a correspondence search restricted by the orientation prior itself; solves for the camera's true field of view, which no browser API exposes; refines all 26 poses with a rotation-only spherical bundle adjustment anchored to an anisotropic (tilt-trusting, yaw-distrusting) prior; and estimates per-shot exposure gains to cancel auto-exposure banding -- before handing the result to the application's existing equirectangular projection and blending stage. The system is designed to be strictly advisory: any failure at any stage falls back to the original sensor-driven behavior, so refinement can never cost a capture. Controlled, synthetic-ground-truth evaluation shows the calibrated focal length recovers the true field of view to within a few tenths of a degree against a naive 5.5\deg\ error from the fixed assumption the application shipped with, refined pose converges to a small fraction of a degree of true rotation, and an end-to-end image-quality decomposition attributes an 8.57\,dB PSNR improvement to the combined pose-and-focal correction -- markedly more than either correction alone, indicating the two errors are coupled rather than additive. We report these results explicitly as offline, synthetic, and zero-parallax, and specify in detail the field validation -- paired ground-truth capture, controlled ablation, blind perceptual study, cross-device benchmarking, and a dedicated parallax-sensitivity protocol -- required to establish real-world validity before the results can be treated as more than preliminary.
+Location scouting -- the field survey of a physical site prior to a photo, film, or event production -- depends on capturing a spatially complete, unambiguous record of a space, and a full 360\Deg\ panorama is the single artifact that communicates that record best. Native mobile operating systems ship dedicated panorama pipelines that fuse inertial sensors with proprietary, often ML-assisted stitching; the web platform exposes none of this. A browser-based location scouting tool must therefore reconstruct panorama capture from primitives that were never designed for it: an uncalibrated orientation event, a camera stream with no exposed intrinsics, and a compute budget bounded by what a phone's browser will tolerate. This paper describes and evaluates an on-device machine-learning pipeline that closes this gap for a deployed, browser-only location scouting checklist application. Given 34 guided phone photographs and their raw device-orientation readings, the pipeline runs XFeat, a sub-3-megabyte local feature network, under a correspondence search restricted by the orientation prior itself; solves for the camera's true field of view, which no browser API exposes; refines all 34 poses with a rotation-only spherical bundle adjustment anchored to an anisotropic (tilt-trusting, yaw-distrusting) prior; and estimates per-shot exposure gains to cancel auto-exposure banding -- before handing the result to the application's existing equirectangular projection and blending stage. The system is designed to be strictly advisory: any failure at any stage falls back to the original sensor-driven behavior, so refinement can never cost a capture. Controlled, synthetic-ground-truth evaluation shows the calibrated focal length recovers the true field of view to within a few tenths of a degree against a naive 5.5\Deg\ error from the fixed assumption the application shipped with, refined pose converges to a small fraction of a degree of true rotation, and an end-to-end image-quality decomposition attributes an 8.42\,dB PSNR improvement to the combined pose-and-focal correction -- markedly more than either correction alone, indicating the two errors are coupled rather than additive. We report these results explicitly as offline, synthetic, and zero-parallax, and specify in detail the field validation -- paired ground-truth capture, controlled ablation, blind perceptual study, cross-device benchmarking, and a dedicated parallax-sensitivity protocol -- required to establish real-world validity before the results can be treated as more than preliminary.
 \end{abstract}
 
 \noindent\textbf{Keywords:} location scouting, panorama stitching, spherical bundle adjustment, on-device machine learning, WebAssembly, mobile web, local feature matching, XFeat.
@@ -62,7 +63,7 @@ Location scouting -- the field survey of a physical site prior to a photo, film,
 
 \subsection{Location Scouting as a Field-Documentation Task}
 
-Location scouting is the practice of visiting a candidate site -- a building interior, a stretch of street, a stadium concourse -- ahead of a production, event, or installation, and recording enough of its physical layout that decisions can be made without a second visit. The deliverable is not a single photograph but a structured record: annotated wide shots, close-up detail photos of specific fixtures or hazards, and, where possible, an immersive view a remote decision-maker can look around inside. Of these, the 360\deg\ panorama carries disproportionate value relative to its capture cost: it is the one artifact that lets someone who was never on site answer the question ``what does it actually feel like to stand here'' -- ceiling height, sightlines, obstruction, natural light -- without relying on the scout's verbal description or a handful of disconnected still frames.
+Location scouting is the practice of visiting a candidate site -- a building interior, a stretch of street, a stadium concourse -- ahead of a production, event, or installation, and recording enough of its physical layout that decisions can be made without a second visit. The deliverable is not a single photograph but a structured record: annotated wide shots, close-up detail photos of specific fixtures or hazards, and, where possible, an immersive view a remote decision-maker can look around inside. Of these, the 360\Deg\ panorama carries disproportionate value relative to its capture cost: it is the one artifact that lets someone who was never on site answer the question ``what does it actually feel like to stand here'' -- ceiling height, sightlines, obstruction, natural light -- without relying on the scout's verbal description or a handful of disconnected still frames.
 
 The application this paper is built around is a browser-based location scouting checklist: a client-side, installable web app that a scout runs on their own phone in the field, with no server round-trip required to capture, annotate, or store site data. Section~\ref{sec:app} describes its data model and workflow in more detail; the point relevant here is that it is a \emph{web} application by design -- it needs to run on whatever phone a scout is carrying, install instantly from a link, and work with an unreliable or absent field connection -- not a native app requiring an app-store install and per-platform maintenance.
 
@@ -77,7 +78,7 @@ Both major mobile operating systems ship a dedicated panorama capture pipeline a
 \item whatever compute the page can perform itself, inside a browser tab, on battery, without the native platform's stitching or ML acceleration APIs.
 \end{enumerate}
 
-This is the gap the present work addresses. Any web-based 360\deg\ capture feature must either (a) fall back to a manual multi-shot upload workflow with no assistance, (b) implement classical, purely geometric multi-image stitching (feature detection, RANSAC homography, blending) entirely in client-side JavaScript, or (c) implement some part of what native platforms do with proprietary sensor fusion and stitching, using models small enough to download and run inside a browser tab on a phone. This paper is an instance of (c): it uses one specific piece of the native panorama pipeline -- learned local feature matching -- to correct the two largest sources of error in a purely sensor-driven, geometry-only approach, while remaining small enough (single-digit megabytes) and fast enough (single-threaded, since the deployment target cannot use \texttt{SharedArrayBuffer}; see Section~\ref{sec:constraints}) to run acceptably on a phone's browser during a field capture session.
+This is the gap the present work addresses. Any web-based 360\Deg\ capture feature must either (a) fall back to a manual multi-shot upload workflow with no assistance, (b) implement classical, purely geometric multi-image stitching (feature detection, RANSAC homography, blending) entirely in client-side JavaScript, or (c) implement some part of what native platforms do with proprietary sensor fusion and stitching, using models small enough to download and run inside a browser tab on a phone. This paper is an instance of (c): it uses one specific piece of the native panorama pipeline -- learned local feature matching -- to correct the two largest sources of error in a purely sensor-driven, geometry-only approach, while remaining small enough (single-digit megabytes) and fast enough (single-threaded, since the deployment target cannot use \texttt{SharedArrayBuffer}; see Section~\ref{sec:constraints}) to run acceptably on a phone's browser during a field capture session.
 
 \subsection{Contributions}
 
@@ -86,7 +87,7 @@ This paper makes the following contributions:
 \begin{itemize}
 \item We characterize, with a controlled error decomposition, which of the classical panorama-stitching error sources are addressable by a pose-and-lens correction that is conditioned on an existing (if unreliable) orientation prior, and which are not.
 \item We describe a complete on-device pipeline -- prior-gated learned feature matching, focal self-calibration, rotation-only spherical bundle adjustment with anisotropic prior weighting, and exposure gain compensation -- built to run inside a Web Worker in a browser with no cross-origin isolation, no GPU acceleration guarantee, and a hard model-size budget.
-\item We report the first (to the authors' knowledge) measurement showing that pose correction and focal-length correction are \emph{strongly coupled} in this setting: applying either alone recovers under 1.5\,dB of PSNR against ground truth, while applying both together recovers 8.57\,dB -- far more than the sum of the parts.
+\item We report the first (to the authors' knowledge) measurement showing that pose correction and focal-length correction are \emph{strongly coupled} in this setting: applying either alone recovers under 1.5\,dB of PSNR against ground truth, while applying both together recovers 8.42\,dB -- far more than the sum of the parts.
 \item We integrate the pipeline into a shipping application as a strictly advisory stage with an explicit, tested fallback to the original behavior on any failure, and describe the deployment constraints (static hosting with no COOP/COEP, single-threaded WebAssembly, a documented WebKit regression in the alternative execution provider) that shaped every design decision.
 \item We specify, in the level of detail needed to actually execute it, the empirical validation program required before any of the offline numbers in this paper can be treated as evidence of real-world quality improvement.
 \end{itemize}
@@ -127,23 +128,23 @@ The method in this paper is deliberately \emph{not} an end-to-end learned stitch
 
 \subsection{Purpose and Workflow}
 
-The host application is a client-side, browser-installable checklist tool for location scouting. A scout creates a location record in the field, works through a structured checklist of site attributes, attaches wide-angle and close-up reference photographs, and -- the feature this paper concerns -- captures a guided full-sphere 360\deg\ panorama of each significant space. All data, including captured photographs and the panorama source images, is stored client-side; there is no capture-time server dependency, which is a deliberate design choice for field use where connectivity cannot be assumed.
+The host application is a client-side, browser-installable checklist tool for location scouting. A scout creates a location record in the field, works through a structured checklist of site attributes, attaches wide-angle and close-up reference photographs, and -- the feature this paper concerns -- captures a guided full-sphere 360\Deg\ panorama of each significant space. All data, including captured photographs and the panorama source images, is stored client-side; there is no capture-time server dependency, which is a deliberate design choice for field use where connectivity cannot be assumed.
 
 \subsection{Data Model and Client-Side Storage}
 
-Location records, including references to attached media, are persisted to \texttt{localStorage}. The binary photo and panorama data itself -- which is too large for \texttt{localStorage}'s practical quota -- is stored as \texttt{Blob} objects in an IndexedDB object store, keyed by a generated media id and indexed by location, capture session, and media category. A 360\deg\ capture session produces up to 26 source photographs, stored under a \texttt{panorama-360-source} category with a shared session id, plus the final stitched equirectangular panorama under a \texttt{panorama-360} category. This separation -- keeping every source photograph even after a successful stitch -- is what makes the pose-refinement pipeline in this paper possible without any change to the capture UX: refinement operates on exactly the source photographs and per-shot orientation metadata the application already retains for every session, successful or not.
+Location records, including references to attached media, are persisted to \texttt{localStorage}. The binary photo and panorama data itself -- which is too large for \texttt{localStorage}'s practical quota -- is stored as \texttt{Blob} objects in an IndexedDB object store, keyed by a generated media id and indexed by location, capture session, and media category. A 360\Deg\ capture session produces up to 34 source photographs, stored under a \texttt{panorama-360-source} category with a shared session id, plus the final stitched equirectangular panorama under a \texttt{panorama-360} category. This separation -- keeping every source photograph even after a successful stitch -- is what makes the pose-refinement pipeline in this paper possible without any change to the capture UX: refinement operates on exactly the source photographs and per-shot orientation metadata the application already retains for every session, successful or not.
 
-\subsection{Guided 360\deg\ Capture UX}
+\subsection{Guided 360\Deg\ Capture UX}
 \label{sec:captureux}
 
-The capture flow presents a full-screen camera overlay with a fixed on-screen reticle and a single active aim target at a time, drawn from a fixed 26-shot pattern: eight shots around the horizon, eight at $+35\deg$ pitch, eight at $-35\deg$ pitch, and one each at the zenith and nadir. The scout physically rotates the phone until the live device-orientation reading falls within a $5\deg$ angular tolerance of the active target and holds it there for approximately half a second, at which point the shot is captured automatically; already-captured shots are re-projected onto the overlay, world-locked by orientation, so the scout can visually confirm coverage as the sphere fills in. Each captured photograph is stored together with the yaw, pitch, and roll reading recorded at the instant of capture.
+The capture flow presents a full-screen camera overlay with a fixed on-screen reticle and a single active aim target at a time, drawn from a fixed 34-shot pattern: eight shots around the horizon, eight at $+33\Deg$ pitch and eight at $-33\Deg$ pitch (both staggered $22.5\Deg$ in yaw against the horizon ring), four at $+66\Deg$ and four at $-66\Deg$, and one each at the true zenith and nadir. Section~\ref{sec:coverage} explains why this pattern replaced an earlier 26-shot one. The scout physically rotates the phone until the live device-orientation reading falls within a $5\Deg$ angular tolerance of the active target and holds it there for approximately half a second, at which point the shot is captured automatically; already-captured shots are re-projected onto the overlay, world-locked by orientation, so the scout can visually confirm coverage as the sphere fills in. Each captured photograph is stored together with the yaw, pitch, and roll reading recorded at the instant of capture.
 
 Two properties of this workflow matter for the method in Section~\ref{sec:method}. First, the recorded pose is a genuine \emph{measurement}, not a placeholder: it reflects the device's own orientation sensor at the moment of capture, and its error characteristics -- good tilt accuracy, poor and drift-prone yaw accuracy indoors -- are exactly the well-documented characteristics of consumer-phone inertial sensing that motivate the anisotropic prior weighting in Section~\ref{sec:ba}. Second, the on-screen visual alignment step is a \emph{human}, capture-time UX aid -- the scout physically points the camera to match a target position derived from that same sensor reading -- and does not itself constitute a pixel-content-based correction of the recorded pose; nothing in the capture flow, prior to this work, compared the actual image content of overlapping shots against one another.
 
 \subsection{The Pre-Existing Sensor-Driven Stitcher and Its Limitations}
 \label{sec:priorstitcher}
 
-Prior to this work, the application's stitching stage performed no visual correction whatsoever. Each source photograph's pixels were forward-projected -- gnomonic (rectilinear) to spherical -- directly from its \emph{recorded sensor pose}, using a single hardcoded assumed horizontal field of view of $68\deg$, into a shared equirectangular output buffer, and overlapping projections were combined with a simple center-weighted (cosine-feathered) average. This is a legitimate, documented design point -- a genuine spherical projection and blend, just one driven entirely by sensor pose rather than image content -- but it inherits every error in that pose and in the assumed field of view directly and without correction. The taxonomy in Section~\ref{sec:errortax} makes explicit which specific errors this causes and which of them the method in this paper is able to address.
+Prior to this work, the application's stitching stage performed no visual correction whatsoever. Each source photograph's pixels were forward-projected -- gnomonic (rectilinear) to spherical -- directly from its \emph{recorded sensor pose}, using a single hardcoded assumed horizontal field of view of $68\Deg$, into a shared equirectangular output buffer, and overlapping projections were combined with a simple center-weighted (cosine-feathered) average. This is a legitimate, documented design point -- a genuine spherical projection and blend, just one driven entirely by sensor pose rather than image content -- but it inherits every error in that pose and in the assumed field of view directly and without correction. The taxonomy in Section~\ref{sec:errortax} makes explicit which specific errors this causes and which of them the method in this paper is able to address.
 
 % ====================================================================
 \section{Problem Formulation}
@@ -183,7 +184,7 @@ Table~\ref{tab:errortax} enumerates the specific, distinguishable error sources 
 \begin{table}[h]
 \centering
 \small
-\begin{tabular}{@{}clll@{}}
+\begin{tabularx}{\textwidth}{@{}cX>{\raggedright\arraybackslash}p{0.22\textwidth}>{\raggedright\arraybackslash}p{0.30\textwidth}@{}}
 \toprule
 \textbf{ID} & \textbf{Error source} & \textbf{Nature} & \textbf{Addressed here?} \\
 \midrule
@@ -195,7 +196,7 @@ E5 & Auto-exposure / white-balance drift across shots & Photometric & Partially 
 E6 & Naive feathered blend, no seam optimization & Compositional & No --- unchanged in this work \\
 E7 & Rolling shutter during handheld motion & Intra-frame geometric & No --- not modeled \\
 \bottomrule
-\end{tabular}
+\end{tabularx}
 \caption{Error sources in a purely sensor-driven equirectangular stitcher, and which are addressed by the method in this paper. E4 in particular is called out explicitly: no rotation-only method, learned or classical, can correct for translation of the optical center between shots, and the offline evaluation in Section~\ref{sec:evaluation} is constructed with zero parallax by design, so it cannot speak to E4 at all (see Section~\ref{sec:limitations}).}
 \label{tab:errortax}
 \end{table}
@@ -219,14 +220,14 @@ Figure~\ref{fig:pipeline} shows the complete refinement pipeline. It runs once p
   fallbackbox/.style={draw, rounded corners, minimum height=8mm, minimum width=34mm, align=center, font=\small, fill=red!6},
   arrow/.style={-{Latex[length=2mm]}}
 ]
-  \node[box] (capture) {26 photographs\\ + recorded sensor pose};
+  \node[box] (capture) {34 photographs\\ + recorded sensor pose};
   \node[box, below=of capture] (xfeat) {XFeat feature extraction\\ (per view, \S\ref{sec:xfeat})};
   \node[box, below=of xfeat] (match) {Prior-gated matching\\ (\S\ref{sec:matching})};
   \node[box, below=of match] (calib) {Focal self-calibration\\ (\S\ref{sec:calib})};
   \node[box, below=of calib] (ba) {Spherical bundle adjustment\\ (\S\ref{sec:ba})};
   \node[decision, below=of ba] (gate) {Solution\\ plausible?};
   \node[box, below=of gate, yshift=-2mm] (gain) {Exposure gain\\ compensation (\S\ref{sec:gain})};
-  \node[fallbackbox, right=28mm of gate] (fallback) {Fallback:\\ raw sensor pose,\\ assumed 68\deg\ FOV};
+  \node[fallbackbox, right=28mm of gate] (fallback) {Fallback:\\ raw sensor pose,\\ assumed 68\Deg\ FOV};
   \node[box, below=of gain, minimum width=46mm] (stitch) {Existing equirectangular projection\\ + feathered blend (unmodified)};
 
   \draw[arrow] (capture) -- (xfeat);
@@ -249,10 +250,10 @@ Algorithm~\ref{alg:pipeline} states the pipeline as pseudocode, corresponding di
 \caption{On-device pose and lens refinement}
 \label{alg:pipeline}
 \begin{algorithmic}[1]
-\Require Photographs $I_1,\dots,I_N$ ($N\le 26$); recorded poses $\tilde{\mat{R}}_1,\dots,\tilde{\mat{R}}_N$; nominal focal $f_0$ (from the $68\deg$ assumption)
+\Require Photographs $I_1,\dots,I_N$ ($N\le 26$); recorded poses $\tilde{\mat{R}}_1,\dots,\tilde{\mat{R}}_N$; nominal focal $f_0$ (from the $68\Deg$ assumption)
 \Ensure Refined poses $\mat{R}_1,\dots,\mat{R}_N$; calibrated focal $\hat f$; per-view gains $g_1,\dots,g_N$; or \textsc{Fallback}
 \State $\mathcal{F}_i \gets \textsc{XFeat}(I_i)$ for each $i$ \Comment{keypoints + L2-normalized 64-d descriptors}
-\State $\mathcal{P} \gets \{(i,j) : \angle(\text{optical axis}_i, \text{optical axis}_j) \le 60\deg \text{ under } \tilde{\mat{R}}\}$ \Comment{candidate pairs from the prior}
+\State $\mathcal{P} \gets \{(i,j) : \angle(\text{optical axis}_i, \text{optical axis}_j) \le 60\Deg \text{ under } \tilde{\mat{R}}\}$ \Comment{candidate pairs from the prior}
 \For{$(i,j) \in \mathcal{P}$}
   \State $\mat{R}^{\mathrm{rel}}_{ij} \gets \tilde{\mat{R}}_j^{\!\top}\tilde{\mat{R}}_i$
   \State $M_{ij} \gets \textsc{PriorGatedMatch}(\mathcal{F}_i, \mathcal{F}_j, \mat{R}^{\mathrm{rel}}_{ij}, f_0)$ \Comment{\S\ref{sec:matching}}
@@ -261,7 +262,7 @@ Algorithm~\ref{alg:pipeline} states the pipeline as pseudocode, corresponding di
 \If{$|E| < 3$}: \Return \textsc{Fallback} \EndIf
 \State $\hat f \gets \textsc{CalibrateFocal}(E)$ \Comment{golden-section search, \S\ref{sec:calib}; alternated with re-fitting $E$}
 \State $\{\mat{R}_i\} \gets \textsc{SphericalBundleAdjust}(\{\tilde{\mat{R}}_i\}, E, \hat f)$ \Comment{Levenberg--Marquardt, \S\ref{sec:ba}}
-\If{$\hat\theta_h \notin [45\deg, 95\deg]$ \textbf{or} mean correction $> 25\deg$}: \Return \textsc{Fallback} \Comment{sanity gate}
+\If{$\hat\theta_h \notin [45\Deg, 95\Deg]$ \textbf{or} mean correction $> 25\Deg$}: \Return \textsc{Fallback} \Comment{sanity gate}
 \EndIf
 \State $\{g_i\} \gets \textsc{EstimateGains}(\{I_i\}, \{\mat{R}_i\}, \hat f)$ \Comment{\S\ref{sec:gain}; discarded if implausible}
 \State \Return $\{\mat{R}_i\}, \hat f, \{g_i\}$
@@ -273,7 +274,7 @@ Algorithm~\ref{alg:pipeline} states the pipeline as pseudocode, corresponding di
 
 Each view's features are extracted with XFeat~\cite{potje2024xfeat}, a fully convolutional detector-and-descriptor network reported to run in real time on CPU at VGA-class resolution and to require substantially less compute than comparable deep local features at comparable accuracy. The exported inference graph used here (weights merged with their external-data tensors into a single self-contained file, verified byte-identical to the unmerged original's output) is 2.8\,MB. The network outputs, for an input of size $W\times H$: a dense $64$-channel descriptor field at $W/8 \times H/8$ resolution, a full-resolution keypoint heatmap, and a full-resolution reliability map. Keypoint detection, top-$K$ selection, bilinear descriptor sampling, and L2 normalization are all performed in JavaScript rather than inside the exported graph, which keeps the ONNX graph itself restricted to plain convolutional and elementwise operations -- avoiding dynamic-shape \texttt{TopK}/\texttt{NonMaxSuppression} operators, a common source of first-attempt failures when running exported models through \texttt{onnxruntime-web}. Non-maximum suppression uses a fixed radius and score threshold with a border margin excluding descriptors sampled too close to the frame edge, since frame edges are exactly where panorama seams form and a poorly-conditioned edge descriptor is disproportionately costly there.
 
-This design point -- a small, purely convolutional network over a transformer-based matcher such as LightGlue~\cite{lindenberger2023lightglue} -- is a direct consequence of the deployment cost structure. Extraction cost scales linearly in the number of views ($N=26$); matching cost, addressed next, scales with the number of overlapping \emph{pairs} ($\mathcal{O}(N^2)$ in general, though far fewer in practice under the prior gate). A transformer-based matcher performs a learned forward pass \emph{per pair}; on a single-threaded WebAssembly runtime (Section~\ref{sec:constraints}) with roughly fifty to sixty overlapping pairs in a full 26-shot session, this cost structure favors a design where the expensive learned computation happens once per \emph{view}, and matching itself is a cheap, classical nearest-neighbor search.
+This design point -- a small, purely convolutional network over a transformer-based matcher such as LightGlue~\cite{lindenberger2023lightglue} -- is a direct consequence of the deployment cost structure. Extraction cost scales linearly in the number of views ($N=34$); matching cost, addressed next, scales with the number of overlapping \emph{pairs} ($\mathcal{O}(N^2)$ in general, though far fewer in practice under the prior gate). A transformer-based matcher performs a learned forward pass \emph{per pair}; on a single-threaded WebAssembly runtime (Section~\ref{sec:constraints}) with roughly eighty to a hundred overlapping pairs in a full 34-shot session, this cost structure favors a design where the expensive learned computation happens once per \emph{view}, and matching itself is a cheap, classical nearest-neighbor search.
 
 \subsection{Prior-Gated Correspondence Search}
 \label{sec:matching}
@@ -307,9 +308,9 @@ Within each candidate pair, correspondences surviving the prior-gated search of 
 \subsection{Focal-Length Self-Calibration}
 \label{sec:calib}
 
-The application's pre-existing stitcher assumes a fixed horizontal field of view of $68\deg$ (Section~\ref{sec:priorstitcher}) because no web API exposes a phone's true value, and this value varies across devices. Under an incorrect focal length, camera-frame rays computed by Equation~\eqref{eq:pixel2ray} are radially distorted in a way no rotation can compensate for, so the best-achievable inlier alignment residual across all correspondences, evaluated as a function of an assumed focal length, is minimized at (or very near) the true value. Calibration therefore performs a coarse scan followed by golden-section refinement of this residual -- a trimmed mean (discarding the worst 20\% of per-match residuals at each candidate value, so that a handful of surviving outliers cannot flatten the minimum) over a bracketed range of plausible horizontal fields of view -- and returns the minimizing focal length.
+The application's pre-existing stitcher assumes a fixed horizontal field of view of $68\Deg$ (Section~\ref{sec:priorstitcher}) because no web API exposes a phone's true value, and this value varies across devices. Under an incorrect focal length, camera-frame rays computed by Equation~\eqref{eq:pixel2ray} are radially distorted in a way no rotation can compensate for, so the best-achievable inlier alignment residual across all correspondences, evaluated as a function of an assumed focal length, is minimized at (or very near) the true value. Calibration therefore performs a coarse scan followed by golden-section refinement of this residual -- a trimmed mean (discarding the worst 20\% of per-match residuals at each candidate value, so that a handful of surviving outliers cannot flatten the minimum) over a bracketed range of plausible horizontal fields of view -- and returns the minimizing focal length.
 
-One implementation detail proved consequential enough to warrant stating explicitly, because it produced a measurable regression during development and is a natural pitfall in any similar re-implementation: focal-length calibration and RANSAC inlier selection are \emph{mutually dependent}, since which correspondences RANSAC accepts as inliers depends on the currently assumed focal length, and the calibration then reads its estimate off exactly those inliers. Running this once, seeded at the nominal $68\deg$ assumption, is circular: the inlier set RANSAC selects at $68\deg$ is systematically biased toward correspondences that happen to agree with $68\deg$ -- disproportionately those nearer the image center, where an incorrect focal length has the least radial effect -- which drags the resulting focal-length estimate back toward the very assumption it was meant to correct. The implementation instead alternates focal-length estimation and correspondence re-fitting to convergence (typically 2--3 rounds). This single change reduced the focal-length recovery error in the controlled synthetic evaluation (Section~\ref{sec:eval1}) from 2.74\% to 0.06\%.
+One implementation detail proved consequential enough to warrant stating explicitly, because it produced a measurable regression during development and is a natural pitfall in any similar re-implementation: focal-length calibration and RANSAC inlier selection are \emph{mutually dependent}, since which correspondences RANSAC accepts as inliers depends on the currently assumed focal length, and the calibration then reads its estimate off exactly those inliers. Running this once, seeded at the nominal $68\Deg$ assumption, is circular: the inlier set RANSAC selects at $68\Deg$ is systematically biased toward correspondences that happen to agree with $68\Deg$ -- disproportionately those nearer the image center, where an incorrect focal length has the least radial effect -- which drags the resulting focal-length estimate back toward the very assumption it was meant to correct. The implementation instead alternates focal-length estimation and correspondence re-fitting to convergence (typically 2--3 rounds). This single change reduced the focal-length recovery error in the controlled synthetic evaluation (Section~\ref{sec:eval1}) from 2.74\% to 0.06\%.
 
 \subsection{Rotation-Only Spherical Bundle Adjustment}
 \label{sec:ba}
@@ -335,7 +336,7 @@ A phone's auto-exposure adjusts continuously as the camera pans across a scene o
 \subsection{Fallback Guarantees and Failure Handling}
 \label{sec:fallback}
 
-Every stage in Figure~\ref{fig:pipeline} can fail, and every failure path is designed to converge on the same outcome: the application stitches exactly as it did before this work existed, from the raw recorded sensor pose and the assumed $68\deg$ field of view. Concretely, the pipeline reports failure -- rather than proceeding -- when: the browser lacks Web Worker or \texttt{OffscreenCanvas} support; the model fails to load; fewer than four photographs can be decoded; fewer than three view pairs produce a usable correspondence set; the bundle adjustment fails to converge; or, as an explicit final sanity gate, the calibrated field of view falls outside a $[45\deg, 95\deg]$ plausible range or the mean per-view pose correction exceeds $25\deg$ -- either of which would indicate the solve converged to something implausible rather than a genuine correction, and shipping such a result would be a worse outcome than the unrefined sensor pose. A wall-clock timeout provides a final backstop against a pathological input hanging the capture flow indefinitely. This design choice -- optimizing for the pipeline never being able to make a capture \emph{worse} than the pre-existing behavior, rather than for maximizing the fraction of sessions on which it succeeds -- follows directly from the field context: a failed or degraded panorama on a location-scouting trip may not be recapturable at all if the site becomes unavailable, so a false sense of ``it will probably still stitch reasonably'' is a materially worse failure mode than a clean, silent fallback.
+Every stage in Figure~\ref{fig:pipeline} can fail, and every failure path is designed to converge on the same outcome: the application stitches exactly as it did before this work existed, from the raw recorded sensor pose and the assumed $68\Deg$ field of view. Concretely, the pipeline reports failure -- rather than proceeding -- when: the browser lacks Web Worker or \texttt{OffscreenCanvas} support; the model fails to load; fewer than four photographs can be decoded; fewer than three view pairs produce a usable correspondence set; the bundle adjustment fails to converge; or, as an explicit final sanity gate, the calibrated field of view falls outside a $[45\Deg, 95\Deg]$ plausible range or the mean per-view pose correction exceeds $25\Deg$ -- either of which would indicate the solve converged to something implausible rather than a genuine correction, and shipping such a result would be a worse outcome than the unrefined sensor pose. A wall-clock timeout provides a final backstop against a pathological input hanging the capture flow indefinitely. This design choice -- optimizing for the pipeline never being able to make a capture \emph{worse} than the pre-existing behavior, rather than for maximizing the fraction of sessions on which it succeeds -- follows directly from the field context: a failed or degraded panorama on a location-scouting trip may not be recapturable at all if the site becomes unavailable, so a false sense of ``it will probably still stitch reasonably'' is a materially worse failure mode than a clean, silent fallback.
 
 % ====================================================================
 \section{Implementation}
@@ -349,7 +350,7 @@ Two platform constraints shaped the implementation directly. First, the applicat
 
 \subsection{Model and Runtime Footprint}
 
-Table~\ref{tab:footprint} reports the on-disk size of every asset the refinement pipeline adds to the application. All assets are cached by the browser after first use within a session; the first 360\deg\ capture on a given device downloads the full footprint, and the capture UI reports this explicitly during the loading stage rather than presenting an unexplained delay.
+Table~\ref{tab:footprint} reports the on-disk size of every asset the refinement pipeline adds to the application. All assets are cached by the browser after first use within a session; the first 360\Deg\ capture on a given device downloads the full footprint, and the capture UI reports this explicitly during the loading stage rather than presenting an unexplained delay.
 
 \begin{table}[h]
 \centering
@@ -389,7 +390,7 @@ Real captures have no independently known true camera pose or true lens field of
 \subsection{Experiment 1: Geometric Recovery Under Controlled Conditions}
 \label{sec:eval1}
 
-The first experiment validates the geometry pipeline (Sections~\ref{sec:wahba}--\ref{sec:ba}) in isolation, using synthetically generated correspondences rather than real image features: a full 26-shot capture is simulated with camera poses drawn from the application's exact target pattern (Section~\ref{sec:captureux}) perturbed by a realistic aiming error, a device-orientation prior constructed with \emph{anisotropic} noise (small, independent perturbations on pitch/roll; a larger, additionally \emph{accumulating} drift term on yaw, modeling the well-documented behavior of consumer magnetometer-fused yaw estimation indoors), a true focal length deliberately different from the application's assumed $68\deg$, and synthetic point correspondences contaminated with both uniformly random outliers and \emph{geometrically self-consistent} outliers (a fixed pixel-space shift shared across a subset of matches, simulating a repeated-structure mismatch) at controlled rates.
+The first experiment validates the geometry pipeline (Sections~\ref{sec:wahba}--\ref{sec:ba}) in isolation, using synthetically generated correspondences rather than real image features: a full 34-shot capture is simulated with camera poses drawn from the application's exact target pattern (Section~\ref{sec:captureux}) perturbed by a realistic aiming error, a device-orientation prior constructed with \emph{anisotropic} noise (small, independent perturbations on pitch/roll; a larger, additionally \emph{accumulating} drift term on yaw, modeling the well-documented behavior of consumer magnetometer-fused yaw estimation indoors), a true focal length deliberately different from the application's assumed $68\Deg$, and synthetic point correspondences contaminated with both uniformly random outliers and \emph{geometrically self-consistent} outliers (a fixed pixel-space shift shared across a subset of matches, simulating a repeated-structure mismatch) at controlled rates.
 
 \begin{table}[h]
 \centering
@@ -398,23 +399,23 @@ The first experiment validates the geometry pipeline (Sections~\ref{sec:wahba}--
 \toprule
 \textbf{Quantity} & \textbf{Value} \\
 \midrule
-True horizontal FOV & $73.50\deg$ \\
-Recovered horizontal FOV & $73.47\deg$ (0.03\deg\ / 0.06\% error) \\
-FOV error under the application's fixed 68\deg\ assumption & $5.50\deg$ \\
-Mean pose error, sensor prior (before refinement) & $3.202\deg$ \\
-Mean pose error, after refinement & $0.087\deg$ (max $0.232\deg$) \\
+True horizontal FOV & $73.50\Deg$ \\
+Recovered horizontal FOV & $73.47\Deg$ (0.03\Deg\ / 0.06\% error) \\
+FOV error under the application's fixed 68\Deg\ assumption & $5.50\Deg$ \\
+Mean pose error, sensor prior (before refinement) & $3.202\Deg$ \\
+Mean pose error, after refinement & $0.087\Deg$ (max $0.232\Deg$) \\
 Improvement factor, mean pose error & $36.7\times$ \\
 Candidate correspondence edges retained & 67 of 69 (2 rejected) \\
 Bundle adjustment & 4 iterations, converged \\
-RMS edge residual after bundle adjustment & $0.116\deg$ \\
+RMS edge residual after bundle adjustment & $0.116\Deg$ \\
 Robustness to combined outlier rate & accurate to $\ge 60\%$ contamination \\
 \bottomrule
 \end{tabular}
-\caption{Experiment 1: geometric recovery on a controlled synthetic 26-shot capture, synthetic correspondences. Pose error is reported after removing the estimated set's unobservable global gauge rotation by Procrustes alignment on $\SO$, as any two rotation sets differing only by a common rotation are geometrically equivalent panoramas.}
+\caption{Experiment 1: geometric recovery on a controlled synthetic 34-shot capture, synthetic correspondences. Pose error is reported after removing the estimated set's unobservable global gauge rotation by Procrustes alignment on $\SO$, as any two rotation sets differing only by a common rotation are geometrically equivalent panoramas.}
 \label{tab:exp1}
 \end{table}
 
-A separate sweep varied the synthetic scene's point density (a proxy for available scene texture) and compared the anisotropic prior weighting of Equation~\eqref{eq:bundlecost} against an isotropic (equal-weight) alternative, averaged over six random seeds per density to control for per-instance variance. On a well-connected view graph (dense texture), the anisotropic weighting outperformed the isotropic alternative by a factor of $5.6\times$ in mean pose error ($0.064\deg$ vs.\ $0.364\deg$); the advantage narrowed, but the anisotropic weighting was never worse, as texture thinned toward the sparse, low-connectivity regime characteristic of blank walls and plain ceilings.
+A separate sweep varied the synthetic scene's point density (a proxy for available scene texture) and compared the anisotropic prior weighting of Equation~\eqref{eq:bundlecost} against an isotropic (equal-weight) alternative, averaged over six random seeds per density to control for per-instance variance. On a well-connected view graph (dense texture), the anisotropic weighting outperformed the isotropic alternative by a factor of $5.6\times$ in mean pose error ($0.064\Deg$ vs.\ $0.364\Deg$); the advantage narrowed, but the anisotropic weighting was never worse, as texture thinned toward the sparse, low-connectivity regime characteristic of blank walls and plain ceilings.
 
 \subsection{Experiment 2: Validation With the Real Feature Extractor}
 \label{sec:eval2}
@@ -432,10 +433,10 @@ Keypoints extracted per view & 2048 (top-$K$ cap reached on every view) \\
 Descriptor L2-norm deviation from unity & $<2.8\times10^{-8}$ \\
 Descriptor comparisons, prior-gated vs.\ exhaustive matching & $4.7\times$ fewer \\
 Matches retained under gating, relative to exhaustive & 89\% \\
-True horizontal FOV & $73.50\deg$ \\
-Recovered horizontal FOV & $73.39\deg$ (0.11\deg\ / 0.15\% error) \\
-Mean pose error, sensor prior & $2.579\deg$ \\
-Mean pose error, after refinement & $0.271\deg$ (max $0.401\deg$) \\
+True horizontal FOV & $73.50\Deg$ \\
+Recovered horizontal FOV & $73.39\Deg$ (0.11\Deg\ / 0.15\% error) \\
+Mean pose error, sensor prior & $2.579\Deg$ \\
+Mean pose error, after refinement & $0.271\Deg$ (max $0.401\Deg$) \\
 Improvement factor, mean pose error & $9.5\times$ \\
 Mean RANSAC inlier ratio across edges & 0.70 \\
 \bottomrule
@@ -454,8 +455,8 @@ The third experiment measures what Experiments 1 and 2 cannot: the actual visual
 \begin{center}
 \small
 \begin{tabular}{@{}cl@{}}
-A & sensor pose + assumed $68\deg$ FOV (the application's pre-existing behavior) \\
-B & refined pose + assumed $68\deg$ FOV \\
+A & sensor pose + assumed $68\Deg$ FOV (the application's pre-existing behavior) \\
+B & refined pose + assumed $68\Deg$ FOV \\
 C & sensor pose + calibrated focal length \\
 D & refined pose + calibrated focal length (the full pipeline of this paper) \\
 E & true pose + true focal length (the geometric ceiling) \\
@@ -472,12 +473,12 @@ Every hypothesis is scored against the known source panorama by PSNR and SSIM, r
 \toprule
 & \textbf{Hypothesis} & \textbf{PSNR (dB)} & \textbf{SSIM} & \textbf{Sphere covered} \\
 \midrule
-A & Sensor pose + $68\deg$ (ships today) & 11.37 & 0.160 & 86.9\% \\
-B & Refined pose + $68\deg$ & 12.31 & 0.178 & 86.8\% \\
-C & Sensor pose + calibrated focal & 12.70 & 0.285 & 90.2\% \\
-D & Refined pose + calibrated focal & \textbf{19.94} & \textbf{0.675} & 90.1\% \\
-E & True pose + true focal (ceiling) & 23.19 & 0.847 & 90.1\% \\
-F & E + exposure gain compensation & 26.38 & 0.852 & 90.1\% \\
+A & Sensor pose + $68\Deg$ (prior behaviour) & 11.90 & 0.168 & 97.9\% \\
+B & Refined pose + $68\Deg$ & 13.11 & 0.185 & 98.0\% \\
+C & Sensor pose + calibrated focal & 13.26 & 0.300 & 98.3\% \\
+D & Refined pose + calibrated focal & \textbf{20.31} & \textbf{0.706} & 98.3\% \\
+E & True pose + true focal (ceiling) & 23.08 & 0.845 & 98.3\% \\
+F & E + exposure gain compensation & 26.56 & 0.855 & 98.3\% \\
 \bottomrule
 \end{tabular}
 \caption{Experiment 3: end-to-end image-quality error decomposition, scored against a known synthetic ground-truth panorama over the region every hypothesis covers in common. Zero parallax by construction (Section~\ref{sec:limitations}).}
@@ -495,7 +496,7 @@ F & E + exposure gain compensation & 26.38 & 0.852 & 90.1\% \\
   every node near coord/.append style={font=\scriptsize},
   axis lines*=left, enlarge x limits=0.12,
   ]
-\addplot[fill=blue!35] coordinates {(A,11.37) (B,12.31) (C,12.70) (D,19.94) (E,23.19) (F,26.38)};
+\addplot[fill=blue!35] coordinates {(A,11.90) (B,13.11) (C,13.26) (D,20.31) (E,23.08) (F,26.56)};
 \end{axis}
 \end{tikzpicture}
 \caption{PSNR against ground truth across the six hypotheses of Table~\ref{tab:exp3}. The jump from either single correction (B, C) to the combined correction (D) is far larger than either correction's individual contribution, indicating the two error sources are coupled rather than additive.}
@@ -504,15 +505,55 @@ F & E + exposure gain compensation & 26.38 & 0.852 & 90.1\% \\
 
 Two findings from this decomposition are worth stating explicitly, since they are directly actionable rather than merely descriptive.
 
-\textbf{Pose and focal-length correction are strongly coupled.} Pose refinement alone (B, relative to A) recovers $+0.94$\,dB; focal calibration alone (C, relative to A) recovers $+1.33$\,dB; the two together (D) recover $+8.57$\,dB -- nearly four times the sum of the individual contributions. This has a direct design implication: an implementation (or a future ablation of this one) that applied only one of the two corrections would substantially understate the achievable benefit and could plausibly be judged not worth the added complexity, when the correct conclusion is that neither correction is worth applying without the other.
+\textbf{Pose and focal-length correction are strongly coupled.} Pose refinement alone (B, relative to A) recovers $+1.21$\,dB; focal calibration alone (C, relative to A) recovers $+1.36$\,dB; the two together (D) recover $+8.42$\,dB -- over three times the sum of the individual contributions. This has a direct design implication: an implementation (or a future ablation of this one) that applied only one of the two corrections would substantially understate the achievable benefit and could plausibly be judged not worth the added complexity, when the correct conclusion is that neither correction is worth applying without the other.
 
-\textbf{The 26-shot capture pattern itself has a coverage gap.} Independent of any stitching quality, the fixed target pattern (Section~\ref{sec:captureux}) covers only 90.1\% of the sphere at the \emph{true} field of view, and 86.9\% under the incorrect $68\deg$ assumption -- visible as small, consistently-shaped gaps between the horizon and elevated rings in the rendered output. This is a capture-pattern limitation, addressable only by more shots or a tighter ring spacing, not a stitching-algorithm limitation, and is reported here specifically so it is not mistaken for a stitching defect in future work.
+\textbf{Sphere coverage is a separate axis from alignment quality, and was the subject of two distinct bugs.} No stitching improvement can fill a direction the camera never pointed at, and early real-world captures returned panoramas with conspicuous black holes despite good alignment. Section~\ref{sec:coverage} treats this in full; the short version is that one cause was a blending-weight defect that silently discarded $\approx$21\% of every photograph, and the other was a genuine geometric gap in the original 26-shot capture pattern. The residual shortfall in Table~\ref{tab:exp3} (98.3\%, not 100\%) is simulated per-shot \emph{aiming} error, which is the realistic case: the current pattern measures 100\% coverage when every shot lands exactly on target.
 
-The remaining budget after the full pipeline (D) is $3.25$\,dB of residual pose/focal error relative to the geometric ceiling (E), and a further $3.19$\,dB attributable purely to uncorrected exposure drift (E$\to$F) -- a photometric error no pose or focal correction can touch by construction, which gain compensation (Section~\ref{sec:gain}) is shown here to recover directly.
+The remaining budget after the full pipeline (D) is $2.77$\,dB of residual pose/focal error relative to the geometric ceiling (E), and a further $3.47$\,dB attributable purely to uncorrected exposure drift (E$\to$F) -- a photometric error no pose or focal correction can touch by construction, which gain compensation (Section~\ref{sec:gain}) is shown here to recover directly.
+
+\subsection{Sphere Coverage: Two Defects That Presented Identically}
+\label{sec:coverage}
+
+Once the alignment pipeline was working on real captures, the dominant remaining visual defect was not misalignment but \emph{missing image}: conspicuous black regions, with a distinctive scalloped or petal-like outline, in otherwise well-aligned panoramas. Two independent causes turned out to be responsible, and they are worth separating carefully because they are indistinguishable by eye and only one of them is a capture-pattern issue.
+
+\textbf{Cause 1: the blend weight silently discarded every frame corner.} The compositing feather (Section~\ref{sec:camera}) was radial, computed as $\cos\!\left(\min\!\left(\sqrt{n_x^2+n_y^2},\,1\right)\cdot\pi/2\right)$ over normalized frame coordinates $n_x, n_y \in [-1,1]$. At a frame \emph{corner}, $n_x = n_y = \pm 1$, so the radial distance is $\sqrt{2}\approx1.41$, which clamps to $1$ and yields $\cos(\pi/2)\approx 6\times10^{-17}$ -- numerically zero. Combined with the accumulated-weight threshold used to decide whether an output pixel was covered at all, this discarded everything outside the largest ellipse inscribed in each photograph: approximately $1-\pi/4 \approx 21\%$ of every image captured. The defect is easy to miss on inspection because the expression is a perfectly reasonable \emph{radial} falloff; it is only wrong because the domain is a rectangle, not a disc. The fix is a separable feather, $\cos(|n_x|\pi/2)\cdot\cos(|n_y|\pi/2)$, which still tapers to zero at every edge -- preserving soft seams -- while covering the full rectangular frame.
+
+\textbf{Cause 2: the original capture pattern could not close the sphere.} Independently of any blending defect, the 26-shot pattern (rings at $0\Deg$ and $\pm35\Deg$, with zenith and nadir shots at only $\pm80\Deg$ rather than true poles) left a genuinely unreachable band between the upper ring's top edge and the single zenith shot, across most longitudes. This is a geometric property of the pattern, correctable only by capturing more directions.
+
+Table~\ref{tab:coverage} reports measured sphere coverage for the old and current patterns, computed by equal-area sampling of the sphere and testing each sample against every view using the real projection and the real feather weight -- that is, measuring the pipeline as implemented rather than an idealized rectangular footprint.
+
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+\textbf{Capture pattern} & $58\Deg$ & $62\Deg$ & $68\Deg$ & $73.5\Deg$ & $78\Deg$ & \textbf{shots} \\
+\midrule
+Original ($0\Deg$, $\pm35\Deg$, zenith/nadir $\pm80\Deg$) & 87.1\% & 90.2\% & 93.6\% & 95.7\% & 96.8\% & 26 \\
+\textbf{Current} ($0\Deg$, $\pm33\Deg$, $\pm66\Deg$, true $\pm90\Deg$) & \textbf{100\%} & \textbf{100\%} & \textbf{100\%} & \textbf{100\%} & \textbf{100\%} & 34 \\
+\bottomrule
+\end{tabular}
+\caption{Measured sphere coverage as a function of assumed horizontal field of view, with the separable feather in place. The margin across the whole FOV range is the point: the true lens FOV is \emph{unknown at capture time} -- it is calibrated afterwards, from the captured photographs (Section~\ref{sec:calib}) -- so a pattern that only achieves full coverage at the optimistic end of the range will leave real gaps on a narrower lens.}
+\label{tab:coverage}
+\end{table}
+
+The current pattern adds rings at $\pm66\Deg$ to close the band the old pattern could not reach, moves zenith and nadir to the true poles, and staggers the $\pm33\Deg$ rings by $22.5\Deg$ in yaw relative to the horizon ring so that ring-to-ring overlap does not land corner-to-corner. That stagger has a secondary benefit for the method in this paper: it increases cross-ring overlap, which yields more inter-ring correspondences for the bundle adjustment and therefore a better-connected view graph.
+
+The general lesson generalizes beyond this application: \textbf{coverage and alignment quality are independent axes and should be reported separately}. A metric such as PSNR computed only over covered pixels -- as in Table~\ref{tab:exp3}, deliberately -- says nothing about how much of the sphere was captured, and a system can trivially improve its apparent photometric score by covering less. Conversely, a coverage figure says nothing about whether what was covered is correctly aligned.
+
+\subsection{Two Further Defects Found Only Through Real-Device and Rendering Tests}
+
+Two additional defects surfaced during deployment that no amount of offline geometric testing would have caught, and both are worth recording because they represent failure classes rather than one-off mistakes.
+
+\textbf{Unfiltered orientation input.} The capture overlay drove both its live world-locked preview and its shot-stability timer directly from raw \texttt{DeviceOrientationEvent} readings, with no smoothing. Consumer orientation sensors carry sample-to-sample noise on the order of a few tenths of a degree, which was enough to make already-captured preview patches visibly shake -- undermining exactly the visual-confirmation affordance the overlay exists to provide -- and to spuriously reset the hold-steady timer. This was resolved with a One Euro filter~\cite{casiez2012oneeuro} applied to yaw, pitch and roll, chosen because its speed-adaptive cutoff gives heavy smoothing while the device is nearly still and progressively less as it moves, which is precisely the aiming-versus-sweeping tradeoff this interaction requires. The filter operates on wrap-safe angular deltas rather than raw angle differences, so it does not produce a spurious transient when yaw crosses $\pm180\Deg$. Measured on synthetic input at 60\,Hz: mean deviation while stationary falls from $0.62\Deg$ to $0.16\Deg$, with a worst-case lag of $5.6\Deg$ during a brisk $90\Deg$/s sweep.
+
+\textbf{Inverted texture orientation in the viewer.} The interactive equirectangular viewer applied WebGL's \texttt{UNPACK\_FLIP\_Y\_WEBGL} on texture upload, which vertically inverted every panorama -- rendering ceiling content underfoot and floor content overhead. The flip is the conventional fix for a full-screen-quad shader sampled by its own vertex UV coordinates, where the $v=0$ convention differs from texture storage order; it is exactly wrong for a shader that, as here, computes a texture coordinate \emph{directly} from spherical longitude and latitude and samples with it as a raw coordinate, because there is no quad-UV convention for the flip to cancel against. The bug is notable mainly for how it evaded review: the resulting panorama is fully populated, correctly aligned, and internally consistent, and reads as plausible until one specifically checks which way is up.
+
+Both defects are now covered by automated regression tests that drive the real, unmodified shipping modules -- the viewer test renders a synthetic ceiling-red/floor-blue panorama through the actual viewer, dispatches real pointer events to look up and down, and reads back the rendered canvas -- so neither can silently return.
 
 \subsection{Summary and Interpretation}
 
-Across all three experiments, the method recovers the true focal length to well under one degree of horizontal field of view (against a $5.5\deg$ error from the assumption it replaces), reduces mean pose error by roughly an order of magnitude relative to the raw sensor prior, and -- the result most directly relevant to whether the method is worth deploying at all -- produces an $8.57$\,dB end-to-end PSNR improvement that is markedly super-additive in its two constituent corrections. These are, however, uniformly \emph{offline, synthetic, zero-parallax} results, obtained without a real device, a real lens, real auto-exposure hardware behavior, or a real handheld capture's translation between shots. Section~\ref{sec:validation} specifies what is required to establish whether these numbers hold, in whatever attenuated or altered form, under real field conditions.
+Across all three experiments, the method recovers the true focal length to well under one degree of horizontal field of view (against a $5.5\Deg$ error from the assumption it replaces), reduces mean pose error by roughly an order of magnitude relative to the raw sensor prior, and -- the result most directly relevant to whether the method is worth deploying at all -- produces an $8.42$\,dB end-to-end PSNR improvement that is markedly super-additive in its two constituent corrections. These are, however, uniformly \emph{offline, synthetic, zero-parallax} results, obtained without a real device, a real lens, real auto-exposure hardware behavior, or a real handheld capture's translation between shots. Section~\ref{sec:validation} specifies what is required to establish whether these numbers hold, in whatever attenuated or altered form, under real field conditions.
 
 % ====================================================================
 \section{Recommended Empirical Validation Plan}
@@ -526,7 +567,7 @@ The offline results in Section~\ref{sec:evaluation} establish that the method is
 
 \textbf{Question.} Does the pipeline run acceptably -- in wall-clock time, memory, and thermal/battery impact -- on the range of phones scouts actually carry, given the single-threaded WebAssembly constraint of Section~\ref{sec:constraints}?
 
-\textbf{Method.} Benchmark the full 26-shot pipeline on a fixed device matrix spanning at minimum: a low-end and a flagship Android device (both Chrome and, where available, a Chromium-based alternative), and an older and current iPhone (Safari). For each device, record: per-shot XFeat inference time; total pipeline wall-clock time; peak JavaScript heap and WebAssembly linear-memory usage; whether the \texttt{onnxruntime-web} module worker initializes successfully at all (a documented risk on some WebKit versions); and device thermal state / battery percentage delta over a full session. Report the sanity-gate rejection rate (Section~\ref{sec:fallback}) and outright failure rate per device, since these determine what fraction of field sessions never reach the refined result regardless of accuracy.
+\textbf{Method.} Benchmark the full 34-shot pipeline on a fixed device matrix spanning at minimum: a low-end and a flagship Android device (both Chrome and, where available, a Chromium-based alternative), and an older and current iPhone (Safari). For each device, record: per-shot XFeat inference time; total pipeline wall-clock time; peak JavaScript heap and WebAssembly linear-memory usage; whether the \texttt{onnxruntime-web} module worker initializes successfully at all (a documented risk on some WebKit versions); and device thermal state / battery percentage delta over a full session. Report the sanity-gate rejection rate (Section~\ref{sec:fallback}) and outright failure rate per device, since these determine what fraction of field sessions never reach the refined result regardless of accuracy.
 
 \textbf{Why this is necessary.} The offline timing figures available at present are desktop CPU figures; single-threaded mobile WebAssembly performance for a model of this size is, at the time of writing, entirely unmeasured, and is the one component the offline test suites explicitly cannot exercise.
 
@@ -535,7 +576,7 @@ The offline results in Section~\ref{sec:evaluation} establish that the method is
 
 \textbf{Question.} Does the offline error decomposition (Section~\ref{sec:eval3}) hold, in whatever attenuated form, on real captures with real parallax?
 
-\textbf{Method.} At each of $n \ge 30$ diverse indoor sites (spanning small enclosed rooms, large open interiors, low-texture surfaces, and high-dynamic-range lighting, in proportions reflecting the E4/E5/E6 concerns of Table~\ref{tab:errortax}), capture a tripod-mounted reference panorama with an independent, dedicated 360\deg\ camera at a precisely logged position, immediately followed by a normal handheld 26-shot phone capture from as close to the same position as practical, with the application's Enhance toggle recorded. Register the phone capture to the reference panorama offline, with generous compute budget and no real-time constraint, to obtain an approximate real-world ground truth pose per site. Report the same PSNR/SSIM decomposition as Table~\ref{tab:exp3}, plus a seam-localized metric restricted to a fixed-width band around each visible seam (a global average can mask the specific artifact a user actually notices), for Enhance-on versus Enhance-off captures at each site.
+\textbf{Method.} At each of $n \ge 30$ diverse indoor sites (spanning small enclosed rooms, large open interiors, low-texture surfaces, and high-dynamic-range lighting, in proportions reflecting the E4/E5/E6 concerns of Table~\ref{tab:errortax}), capture a tripod-mounted reference panorama with an independent, dedicated 360\Deg\ camera at a precisely logged position, immediately followed by a normal handheld 34-shot phone capture from as close to the same position as practical, with the application's Enhance toggle recorded. Register the phone capture to the reference panorama offline, with generous compute budget and no real-time constraint, to obtain an approximate real-world ground truth pose per site. Report the same PSNR/SSIM decomposition as Table~\ref{tab:exp3}, plus a seam-localized metric restricted to a fixed-width band around each visible seam (a global average can mask the specific artifact a user actually notices), for Enhance-on versus Enhance-off captures at each site.
 
 \textbf{Why this is necessary.} This is the only proposed study that measures parallax (E4) at all; the offline evaluation is zero-parallax by construction and is silent on it entirely.
 
@@ -544,7 +585,7 @@ The offline results in Section~\ref{sec:evaluation} establish that the method is
 
 \textbf{Question.} Does the coupling between pose and focal correction found offline (Section~\ref{sec:eval3}) reproduce on real captures, or is it an artifact of the synthetic scene's zero-parallax, single-texture-model construction?
 
-\textbf{Method.} Using the paired captures of Section~\ref{sec:val-paired}, additionally reconstruct panoramas under the same six hypotheses (A--F) of Table~\ref{tab:exp3} from each real 26-shot session -- pose correction alone, focal correction alone, both together, and (where a real reference exists) the ground-truth-aligned ceiling -- and re-run the same decomposition. Report the finding as confirmed, attenuated, or contradicted per site category, and specifically test whether the super-additive coupling holds at the same order of magnitude.
+\textbf{Method.} Using the paired captures of Section~\ref{sec:val-paired}, additionally reconstruct panoramas under the same six hypotheses (A--F) of Table~\ref{tab:exp3} from each real 34-shot session -- pose correction alone, focal correction alone, both together, and (where a real reference exists) the ground-truth-aligned ceiling -- and re-run the same decomposition. Report the finding as confirmed, attenuated, or contradicted per site category, and specifically test whether the super-additive coupling holds at the same order of magnitude.
 
 \textbf{Statistical treatment.} Report PSNR and SSIM differences between hypotheses as paired comparisons within site (each site is its own block), using a paired $t$-test if differences are approximately normal or a Wilcoxon signed-rank test otherwise, with 95\% confidence intervals on the mean difference and an explicit correction (e.g.\ Holm--Bonferroni) for the multiple pairwise hypothesis comparisons this design entails.
 
@@ -567,7 +608,7 @@ The offline results in Section~\ref{sec:evaluation} establish that the method is
 
 \textbf{Question.} At what magnitude of optical-center displacement between shots -- the one error source (E4) no rotation-only method can address by construction -- does panorama quality degrade to an unacceptable level, and how does this compare to the natural displacement of an unassisted handheld capture?
 
-\textbf{Method.} Using a calibrated pan/tilt rig with an adjustable, known lever arm between the rotation axis and the lens's nodal point, capture matched 26-shot sessions at a sweep of lever-arm magnitudes (e.g.\ 0, 5, 10, 15, 20, 30\,cm, spanning the plausible range of a wrist-, elbow-, and shoulder-pivoted handheld rotation) at a fixed, close-range indoor site chosen to maximize parallax sensitivity. Stitch each with the full pipeline and report PSNR/SSIM degradation as a function of lever-arm magnitude. Separately, instrument a small number of ordinary (unassisted) handheld captures with an inertial measurement unit rigidly attached near the phone to estimate the effective lever arm scouts actually produce in practice, to situate the controlled sweep against real-world handheld behavior.
+\textbf{Method.} Using a calibrated pan/tilt rig with an adjustable, known lever arm between the rotation axis and the lens's nodal point, capture matched 34-shot sessions at a sweep of lever-arm magnitudes (e.g.\ 0, 5, 10, 15, 20, 30\,cm, spanning the plausible range of a wrist-, elbow-, and shoulder-pivoted handheld rotation) at a fixed, close-range indoor site chosen to maximize parallax sensitivity. Stitch each with the full pipeline and report PSNR/SSIM degradation as a function of lever-arm magnitude. Separately, instrument a small number of ordinary (unassisted) handheld captures with an inertial measurement unit rigidly attached near the phone to estimate the effective lever arm scouts actually produce in practice, to situate the controlled sweep against real-world handheld behavior.
 
 \textbf{Why this is necessary.} This is the single most important open question this paper's method cannot answer: whether the E4 error the method by design ignores is, in this application's typical near-range indoor scenes, small enough to be dominated by the E1/E2/E5 errors the method does address, or large enough to be the dominant remaining source of visible artifact regardless of how well pose and focal are corrected.
 
@@ -594,9 +635,9 @@ The following limitations apply directly to the results reported in Section~\ref
 \item \textbf{Zero parallax by construction.} Every rendered view in every offline experiment shares a single optical center. The method's rotation-only formulation is therefore untested, by this paper's own evaluation, against the one error source (E4, Table~\ref{tab:errortax}) most likely to dominate in this application's actual use case of close-range indoor rooms. Section~\ref{sec:val-parallax} is the proposed remedy.
 \item \textbf{No real-device measurements.} Every timing, accuracy, and quality figure in Section~\ref{sec:evaluation} was obtained offline, in Node.js, on desktop CPU hardware. Single-threaded mobile WebAssembly performance -- the one component no offline suite can exercise -- is entirely unmeasured at the time of writing.
 \item \textbf{Single synthetic texture and lighting model.} Experiments 1 and 3 use one procedurally generated texture model and one simulated auto-exposure curve; real indoor scenes vary far more, particularly in the low-texture and high-dynamic-range directions the application's own capture guidance (Section~\ref{sec:captureux}) already flags as difficult.
-\item \textbf{Focal length is treated as constant across a session.} The self-calibration of Section~\ref{sec:calib} assumes a single shared focal length across all 26 shots of one session, which is physically correct only if the device does not change optical zoom mid-capture; this is not currently enforced or verified.
+\item \textbf{Focal length is treated as constant across a session.} The self-calibration of Section~\ref{sec:calib} assumes a single shared focal length across all 34 shots of one session, which is physically correct only if the device does not change optical zoom mid-capture; this is not currently enforced or verified.
 \item \textbf{No comparison against alternative small matchers or classical baselines on real data.} XFeat was chosen on cost-structure and prior-art grounds (Section~\ref{sec:related}), not validated against LightGlue or a classical (ORB/AKAZE) matcher under this application's specific real-world conditions; Section~\ref{sec:val-paired}'s protocol could be extended to such a comparison but this paper does not report one.
-\item \textbf{Coverage limitation is orthogonal but conflated in appearance.} The 26-shot pattern's $\sim$90\% sphere coverage (Section~\ref{sec:eval3}) produces visible gaps that are easily mistaken for a stitching artifact; any human perceptual study (Section~\ref{sec:val-perceptual}) must be designed so raters are not penalizing the method for a capture-pattern limitation it does not address.
+\item \textbf{Coverage and alignment are conflated in appearance.} Uncovered sphere directions render as black gaps that are easily mistaken for a stitching artifact (Section~\ref{sec:coverage}); any human perceptual study (Section~\ref{sec:val-perceptual}) must be designed so raters are not penalizing the method for a capture-pattern limitation it does not address. Coverage should be reported alongside PSNR/SSIM rather than folded into them.
 \end{itemize}
 
 % ====================================================================
@@ -604,7 +645,7 @@ The following limitations apply directly to the results reported in Section~\ref
 \label{sec:conclusion}
 % ====================================================================
 
-This paper described and offline-validated an on-device machine-learning pipeline that closes a specific, well-defined gap in browser-based 360\deg\ panorama capture: the absence, on the web platform, of any equivalent to the calibrated, sensor-fused panorama pipelines native mobile operating systems provide. Using a small (2.8\,MB) local feature network under a correspondence search restricted by the phone's own orientation sensor, the method self-calibrates a lens field of view no browser API exposes, refines 26 device-orientation readings into a globally consistent, loop-closed spherical pose set via a bundle adjustment that explicitly exploits the asymmetric reliability of tilt versus yaw in consumer inertial sensing, and estimates per-shot exposure correction -- all while remaining strictly advisory to a pre-existing, unmodified projection stage, so that any failure degrades gracefully to the application's original behavior rather than risking an unrecoverable field capture.
+This paper described and offline-validated an on-device machine-learning pipeline that closes a specific, well-defined gap in browser-based 360\Deg\ panorama capture: the absence, on the web platform, of any equivalent to the calibrated, sensor-fused panorama pipelines native mobile operating systems provide. Using a small (2.8\,MB) local feature network under a correspondence search restricted by the phone's own orientation sensor, the method self-calibrates a lens field of view no browser API exposes, refines 26 device-orientation readings into a globally consistent, loop-closed spherical pose set via a bundle adjustment that explicitly exploits the asymmetric reliability of tilt versus yaw in consumer inertial sensing, and estimates per-shot exposure correction -- all while remaining strictly advisory to a pre-existing, unmodified projection stage, so that any failure degrades gracefully to the application's original behavior rather than risking an unrecoverable field capture.
 
 The controlled, synthetic evaluation reported here establishes that the geometry is correct and that the resulting quality improvement is substantial and specifically \emph{coupled} between its pose and focal-length components -- a finding with a direct design implication for any similar system: apply both corrections jointly, not one in isolation. It does not, and cannot, establish real-world validity on its own; Section~\ref{sec:validation} lays out the specific field studies -- paired ground-truth capture, controlled ablation, blind perceptual evaluation, cross-device benchmarking, and a dedicated parallax-sensitivity protocol -- required before that claim can be made.
 
@@ -655,6 +696,9 @@ G. Wahba, ``A Least Squares Estimate of Satellite Attitude,'' \textit{SIAM Revie
 \bibitem{markley1988attitude}
 F.~L. Markley, ``Attitude Determination Using Vector Observations and the Singular Value Decomposition,'' \textit{The Journal of the Astronautical Sciences}, vol.~36, no.~3, pp.~245--258, 1988.
 
+\bibitem{casiez2012oneeuro}
+G. Casiez, N. Roussel, and D. Vogel, ``1 Euro Filter: A Simple Speed-Based Low-Pass Filter for Noisy Input in Interactive Systems,'' in \textit{Proc.\ SIGCHI Conf.\ on Human Factors in Computing Systems (CHI '12)}, Austin, TX, USA, 2012, pp.~2527--2530. DOI: 10.1145/2207676.2208639.
+
 \end{thebibliography}
 
 \appendix
@@ -689,6 +733,10 @@ $g_i$ & Estimated exposure gain for view $i$ \\
 \section{Reproducibility}
 % ====================================================================
 
-All three offline experiments of Section~\ref{sec:evaluation} are implemented as deterministic, seeded automated test suites within the application's source repository, runnable with Node.js and requiring no browser: a pure-geometry suite (Experiment 1), a real-model fixture suite consuming recorded ONNX inference outputs (Experiment 2), and an end-to-end image-quality decomposition suite that writes its stitched panoramas to disk for visual inspection (Experiment 3). The refinement pipeline's production code (feature extraction, matching, calibration, and bundle adjustment) is loaded directly by all three suites from the same modules the deployed application ships, rather than a parallel reimplementation, specifically so the two cannot silently drift apart.
+All three offline experiments of Section~\ref{sec:evaluation} are implemented as deterministic, seeded automated test suites within the application's source repository, runnable with Node.js and requiring no browser: a pure-geometry suite (Experiment 1), a real-model fixture suite consuming recorded ONNX inference outputs (Experiment 2), and an end-to-end image-quality decomposition suite that writes its stitched panoramas to disk for visual inspection (Experiment 3). A fourth suite covers the orientation filter of Section~\ref{sec:coverage}. The refinement pipeline's production code (feature extraction, matching, calibration, and bundle adjustment) is loaded directly by all suites from the same modules the deployed application ships, rather than a parallel reimplementation, specifically so the two cannot silently drift apart.
+
+Two categories of defect described in this paper could not be caught by any of the above, because they involve a real browser rather than pure computation: the WebAssembly runtime actually loading and executing on-device, and the WebGL viewer actually rendering. These are covered by two additional browser-driven regression tests, executed headlessly against the real, unmodified shipping modules -- one that loads the refinement worker end to end (real runtime, real model, real inference) and one that renders a synthetic panorama with known ceiling and floor colours through the real viewer, dispatches real pointer events to look up and down, and reads the rendered canvas back. Both defects in Section~\ref{sec:coverage} were of a kind that produces confident, plausible-looking, wrong output, which is precisely the case where an assertion against ground truth is worth more than inspection.
+
+The capture pattern is duplicated between the capture module and the offline harnesses (the latter needs it without loading the capture UI). That copy went stale once during this work -- it remained at the previous 26-shot pattern after the capture side moved to 34 -- causing the evaluation to silently report coverage for a pattern the application no longer used. The test suite now extracts and executes the capture module's real pattern function and asserts the two agree exactly, which is a more reliable guarantee than a comment asking future maintainers to keep them synchronized.
 
 \end{document}

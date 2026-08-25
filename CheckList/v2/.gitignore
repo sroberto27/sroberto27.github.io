@@ -1,3 +1,4 @@
 .fixture/
 .stitch-eval/
 ~$*
+node_modules/

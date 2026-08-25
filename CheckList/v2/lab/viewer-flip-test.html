@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<!-- Regression test for a real, shipped bug: panorama-viewer.js had
+     UNPACK_FLIP_Y_WEBGL set to true, which is the standard WebGL fix for
+     a full-screen-quad-with-its-own-UVs shader -- and exactly the wrong
+     thing for THIS shader, which samples texture2D() directly from a
+     computed spherical uv with no quad-UV step to cancel the flip
+     against. The bug swapped ceiling and floor in every 360 preview.
+     Root cause and fix are documented at the UNPACK_FLIP_Y_WEBGL call
+     site in panorama-viewer.js.
+
+     Renders a synthetic top-red(ceiling)/bottom-blue(floor) equirect
+     image through the REAL, unmodified panorama-viewer.js, drives the
+     viewer via real PointerEvents (not a shortcut), and reads back what
+     a user would actually see. Needs no camera, no capture session, no
+     phone.
+
+     Drive it with Puppeteer (see lab/README.md), same pattern as
+     lab/runtime-smoketest.html: --dump-dom can't be used here either,
+     because the sequence of drags+renders needs real setTimeout ticks. -->
+<html><head><meta charset="utf-8"><title>viewer flip regression test</title>
+<style>.pano-viewer-overlay{position:fixed;inset:0}.pano-viewer-stage{position:absolute;inset:0}.pano-viewer-canvas{width:100%;height:100%}</style>
+</head>
+<body>
+<div id="result">PENDING</div>
+<script src="../panorama-viewer.js"></script>
+<script>
+  const out = document.getElementById('result');
+
+  // Test-harness-only. panorama-viewer.js correctly omits
+  // preserveDrawingBuffer (costs performance, on-screen result is
+  // unaffected -- the compositor keeps showing the last drawn frame
+  // between interactions). But it means an external async readback
+  // (this test's drawImage-based color sample) can legitimately see a
+  // browser-cleared buffer. Inject the flag here only, so this test can
+  // reliably read back the real, unmodified module's output.
+  const _origGetContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (type, opts) {
+    if (type === 'webgl' || type === 'experimental-webgl') {
+      opts = Object.assign({}, opts, { preserveDrawingBuffer: true });
+    }
+    return _origGetContext.call(this, type, opts);
+  };
+
+  function fireDrag(canvas, dyTotal, steps) {
+    const rect = canvas.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2, cy = rect.top + rect.height / 2;
+    canvas.dispatchEvent(new PointerEvent('pointerdown', { clientX: cx, clientY: cy, pointerId: 1, bubbles: true }));
+    for (let i = 1; i <= steps; i++) {
+      const y = cy + (dyTotal * i / steps);
+      canvas.dispatchEvent(new PointerEvent('pointermove', { clientX: cx, clientY: y, pointerId: 1, bubbles: true }));
+    }
+    window.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1, bubbles: true }));
+  }
+
+  function dominantColor(canvas) {
+    const c2 = document.createElement('canvas');
+    c2.width = canvas.width; c2.height = canvas.height;
+    const ctx = c2.getContext('2d');
+    ctx.drawImage(canvas, 0, 0);
+    const d = ctx.getImageData(Math.floor(c2.width / 2 - 5), Math.floor(c2.height / 2 - 5), 10, 10).data;
+    let r = 0, g = 0, b = 0, n = 0;
+    for (let i = 0; i < d.length; i += 4) { r += d[i]; g += d[i + 1]; b += d[i + 2]; n++; }
+    return { r: r / n, g: g / n, b: b / n };
+  }
+
+  LSCPanoViewer.open('viewer-flip-test.png', { title: 'flip regression test' });
+
+  setTimeout(() => {
+    const canvas = document.querySelector('.pano-viewer-canvas');
+    if (!canvas) {
+      const fallback = document.querySelector('.pano-viewer-fallback-img');
+      out.textContent = 'FAIL no canvas — ' + (fallback ? 'WebGL fallback triggered' : 'unknown');
+      return;
+    }
+
+    // Dragging down increases `pitch`, which the shader's rotation math
+    // points toward +lat -- i.e. "looking up", toward the ceiling.
+    fireDrag(canvas, 400, 20);
+    setTimeout(() => {
+      const up = dominantColor(canvas);
+      fireDrag(canvas, -800, 20); // now looking down, toward -lat / the floor
+      setTimeout(() => {
+        const down = dominantColor(canvas);
+        const isRed = c => c.r > 150 && c.b < 100;
+        const isBlue = c => c.b > 150 && c.r < 100;
+        const ok = isRed(up) && isBlue(down);
+        out.textContent = (ok ? 'PASS' : 'FAIL') + ' ' + JSON.stringify({ up, down });
+      }, 150);
+    }, 150);
+  }, 1200);
+</script>
+</body></html>
