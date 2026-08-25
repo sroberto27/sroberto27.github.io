@@ -107,8 +107,78 @@
     return { yaw, pitch, roll, rawYaw };
   }
 
+  // Shortest signed angular difference a -> b, wrap-safe at +/-PI. This is
+  // what makes filtering yaw possible at all: a naive low-pass on the raw
+  // wrapped angle sees a ~360deg "jump" every time yaw crosses +/-180deg
+  // and reacts as if the phone snapped instantly. Every consumer below
+  // works in deltas built from this, never in raw angle differences.
+  function angleDelta(a, b) {
+    let d = (a - b) % (2 * Math.PI);
+    if (d > Math.PI) d -= 2 * Math.PI;
+    if (d < -Math.PI) d += 2 * Math.PI;
+    return d;
+  }
+
+  /**
+   * One Euro Filter (Casiez, Roussel & Vogel, CHI 2012) adapted for a
+   * wrapping angle: heavier smoothing while the signal is nearly still,
+   * automatically loosening as the phone moves faster, so aiming holds
+   * rock-steady but a fast sweep between capture targets doesn't lag
+   * behind the real motion.
+   *
+   * Built as delta-accumulation (running_value += filtered_delta) rather
+   * than filtering the absolute angle, specifically so it never has to
+   * "unwrap" a running total across many rotations -- the wrap-safe delta
+   * above is the only place wraparound is handled, and every derived
+   * quantity (velocity estimate, filtered output) stays a small number.
+   *
+   * opts: { minCutoff (Hz, default 1.0 — steady-state smoothing strength,
+   *         lower = smoother), beta (default 0.3 — how fast responsiveness
+   *         ramps up with speed), dCutoff (Hz, default 1.0 — smoothing on
+   *         the velocity estimate itself) }
+   */
+  function makeOneEuroAngleFilter(opts) {
+    const o = opts || {};
+    const minCutoff = o.minCutoff !== undefined ? o.minCutoff : 1.0;
+    const beta = o.beta !== undefined ? o.beta : 0.3;
+    const dCutoff = o.dCutoff !== undefined ? o.dCutoff : 1.0;
+
+    let value = null;   // running filtered angle (radians, unwrapped total)
+    let dValue = 0;      // filtered angular velocity (rad/s)
+    let lastT = null;
+
+    function alpha(cutoffHz, dt) {
+      const tau = 1 / (2 * Math.PI * cutoffHz);
+      return 1 / (1 + tau / dt);
+    }
+
+    // tSeconds should be a monotonically increasing clock (performance.now()/1000).
+    function filter(rawAngle, tSeconds) {
+      if (value === null) { value = rawAngle; lastT = tSeconds; return value; }
+      const dt = Math.max(1e-4, tSeconds - lastT);
+      lastT = tSeconds;
+
+      const rawDelta = angleDelta(rawAngle, value);
+      const instD = rawDelta / dt;
+      const aD = alpha(dCutoff, dt);
+      dValue = dValue + aD * (instD - dValue);
+
+      const cutoff = minCutoff + beta * Math.abs(dValue);
+      const a = alpha(cutoff, dt);
+      value = value + a * rawDelta;
+      return value;
+    }
+
+    function reset(rawAngle, tSeconds) {
+      value = rawAngle; dValue = 0; lastT = tSeconds !== undefined ? tSeconds : lastT;
+    }
+
+    return { filter: filter, reset: reset };
+  }
+
   global.LSCOrientation = {
     orientationToQuaternion, quaternionToYawPitchRoll,
-    normalize, dot, cross, sub, scale, rotateVec, degToRad
+    normalize, dot, cross, sub, scale, rotateVec, degToRad,
+    angleDelta, makeOneEuroAngleFilter
   };
-})(typeof window !== 'undefined' ? window : self);
+})(typeof window !== 'undefined' ? window : (typeof self !== 'undefined' ? self : globalThis));

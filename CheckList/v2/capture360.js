@@ -238,6 +238,16 @@
       let stream = null;
       let finished = false;
       let currentYaw = 0, currentPitch = 0, currentRoll = 0;
+      // Raw deviceorientation events are noisy frame-to-frame (no OS-level
+      // smoothing guarantee), and that raw value used to drive both the
+      // live overlay and the 550ms "hold steady" capture timer directly —
+      // visibly jittering the already-captured patches on screen and
+      // spuriously resetting the stability timer on ordinary sensor noise.
+      // These filters absorb that noise while staying responsive during a
+      // real sweep to the next target; see LSCOrientation.makeOneEuroAngleFilter.
+      const yawFilter = O.makeOneEuroAngleFilter({ minCutoff: 0.9, beta: 0.4 });
+      const pitchFilter = O.makeOneEuroAngleFilter({ minCutoff: 0.9, beta: 0.4 });
+      const rollFilter = O.makeOneEuroAngleFilter({ minCutoff: 0.9, beta: 0.4 });
       let hasOrientation = false;
       let startYaw = null;
       let stableSince = null;
@@ -735,13 +745,30 @@
         hud.hidden = false;
         resizeCanvas();
 
+        // Some sideways drift of the lens between shots is unavoidable —
+        // a handheld phone can't rotate about its own lens's optical
+        // center — and no amount of pose refinement afterward can correct
+        // for it (it needs depth information this app doesn't have). The
+        // one thing that actually helps is capture technique: pivoting at
+        // the wrist keeps the lens closer to a fixed point than swinging
+        // from the shoulder does. One-time tip, not repeated per shot.
+        toast('Tip: pivot from your wrist, not your shoulder — swinging your arm shifts the lens and shows up as ghosting.', 'info');
+
         if (hasOrientation) {
           orientationHandler = (e) => {
             if (typeof e.alpha !== 'number') return;
             const q = O.orientationToQuaternion(e.alpha, e.beta, e.gamma, screenAngle());
             const reading = O.quaternionToYawPitchRoll(q, startYaw || 0);
-            if (startYaw === null) { startYaw = reading.rawYaw; return; } // first reading only sets the yaw==0 baseline
-            currentYaw = reading.yaw; currentPitch = reading.pitch; currentRoll = reading.roll;
+            if (startYaw === null) {
+              startYaw = reading.rawYaw; // first reading only sets the yaw==0 baseline
+              const t0 = performance.now() / 1000;
+              yawFilter.reset(0, t0); pitchFilter.reset(reading.pitch, t0); rollFilter.reset(reading.roll, t0);
+              return;
+            }
+            const t = performance.now() / 1000;
+            currentYaw = yawFilter.filter(reading.yaw, t);
+            currentPitch = pitchFilter.filter(reading.pitch, t);
+            currentRoll = rollFilter.filter(reading.roll, t);
           };
           window.addEventListener('deviceorientation', orientationHandler);
         } else {
