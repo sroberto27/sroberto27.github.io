@@ -2,3 +2,10 @@
 .stitch-eval/
 ~$*
 node_modules/
+
+# Real capture archives used for offline testing (lab/replay.html).
+# Each is ~125 MB of source JPEGs; they are test inputs, not site content,
+# and committing one to a GitHub Pages repo cannot be undone without
+# rewriting history.
+docs/photos/
+docs/360-capture_*.zip
