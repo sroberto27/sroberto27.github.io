@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>360 Capture Replay</title>
+<style>
+  :root {
+    --bg: #14161a; --panel: #1c1f25; --panel2: #22262e; --line: #2e333c;
+    --ink: #e6e8ec; --muted: #939aa6; --accent: #f5a623; --ok: #4ec9a0; --bad: #e2626b;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 13px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 14px 18px; border-bottom: 1px solid var(--line); background: var(--panel);
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+  h1 { font-size: 15px; margin: 0; font-weight: 650; }
+  h1 span { color: var(--muted); font-weight: 400; margin-left: 8px; font-size: 12px; }
+  .wrap { padding: 16px 18px; max-width: 1500px; }
+  .row { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    padding: 14px 16px; margin-bottom: 16px; }
+  .card h2 { font-size: 12px; text-transform: uppercase; letter-spacing: .07em;
+    color: var(--muted); margin: 0 0 10px; font-weight: 600; }
+  button { background: var(--accent); color: #221703; border: 0; border-radius: 6px;
+    padding: 8px 14px; font-weight: 600; font-size: 13px; cursor: pointer; }
+  button:disabled { opacity: .4; cursor: default; }
+  button.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  select, input { background: var(--panel2); color: var(--ink); border: 1px solid var(--line);
+    border-radius: 6px; padding: 7px 9px; font-size: 13px; }
+  table { border-collapse: collapse; width: 100%; font-size: 12px; }
+  th, td { text-align: left; padding: 5px 10px 5px 0; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums;
+    font-family: ui-monospace, Consolas, monospace; }
+  .metric { display: flex; justify-content: space-between; gap: 20px; padding: 5px 0;
+    border-bottom: 1px solid var(--line); }
+  .metric b { font-family: ui-monospace, Consolas, monospace; font-weight: 600; }
+  .good { color: var(--ok); } .bad { color: var(--bad); } .dim { color: var(--muted); }
+  #log { font-family: ui-monospace, Consolas, monospace; font-size: 11.5px;
+    white-space: pre-wrap; max-height: 240px; overflow: auto; color: var(--muted); margin: 0; }
+  .bar { height: 5px; background: var(--panel2); border-radius: 3px; overflow: hidden; margin: 8px 0; }
+  .bar i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .2s; }
+  canvas { max-width: 100%; border: 1px solid var(--line); border-radius: 6px; display: block; }
+  .col { flex: 1 1 340px; min-width: 320px; }
+  .note { color: var(--muted); font-size: 12px; margin: 8px 0 0; }
+  code { background: var(--panel2); padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+  #drop { border: 1.5px dashed var(--line); border-radius: 8px; padding: 26px; text-align: center;
+    color: var(--muted); cursor: pointer; transition: border-color .15s, background .15s; }
+  #drop.over { border-color: var(--accent); background: rgba(245,166,35,.07); color: var(--ink); }
+  .thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 6px; }
+  .thumbs figure { margin: 0; }
+  .thumbs img { width: 100%; border-radius: 4px; display: block; border: 1px solid var(--line); }
+  .thumbs figcaption { font-size: 10px; color: var(--muted); text-align: center;
+    font-family: ui-monospace, Consolas, monospace; }
+</style>
+</head>
+<body>
+<header>
+  <h1>360 Capture Replay <span>real phone captures, real workers, on a desktop</span></h1>
+  <span id="ortStatus" class="dim">no capture loaded</span>
+</header>
+
+<div class="wrap">
+
+  <div class="card">
+    <h2>1 &middot; Capture archive</h2>
+    <div id="drop">
+      <b>Drop a <code>360-capture_*.zip</code> here</b><br>
+      or click to browse &mdash; produced by <b>Save photos (.zip)</b> in the app&rsquo;s 360&deg; capture screen
+    </div>
+    <input type="file" id="file" accept=".zip,application/zip" hidden>
+    <p class="note">
+      Everything below runs the <b>shipping</b> workers unmodified
+      (<code>../pano-refine-worker.js</code>, <code>../pano-stitch-worker.js</code>), so a result
+      here is what the phone would have produced given the same memory budget.
+      Serve this over <code>http://</code>, not <code>file://</code> &mdash; module workers need an origin.
+    </p>
+  </div>
+
+  <div class="card" id="sessionCard" hidden>
+    <h2>2 &middot; Session</h2>
+    <div class="row">
+      <div class="col">
+        <div id="sessionMeta"></div>
+      </div>
+      <div class="col">
+        <div class="row" style="align-items:center;gap:10px">
+          <label><input type="checkbox" id="useRefine" checked> Enhance (XFeat + bundle adjustment)</label>
+          <label>Output
+            <select id="outSize">
+              <option value="2048x1024">2048 &times; 1024</option>
+              <option value="3072x1536" selected>3072 &times; 1536</option>
+              <option value="4096x2048">4096 &times; 2048</option>
+            </select>
+          </label>
+        </div>
+        <div class="row" style="margin-top:10px;gap:8px">
+          <button id="runBtn">Run</button>
+          <button id="abBtn" class="ghost">A/B: sensor vs enhanced</button>
+          <button id="dlBtn" class="ghost" disabled>Download panorama</button>
+        </div>
+        <div class="bar"><i id="prog"></i></div>
+        <div id="stage" class="dim">idle</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="resultCard" hidden>
+    <h2>3 &middot; Result</h2>
+    <div class="row">
+      <div class="col" style="flex:2 1 620px">
+        <canvas id="pano"></canvas>
+      </div>
+      <div class="col">
+        <div id="metrics"></div>
+        <p class="note">
+          <b>Sphere coverage</b> is measured before gap-filling and weighted by
+          cos(latitude), so it reflects solid angle rather than equirect pixels.
+          Anything materially under 100% is a <em>capture</em> gap, not a stitching
+          fault &mdash; no amount of alignment can fill a direction the lens never faced.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="shotsCard" hidden>
+    <h2>4 &middot; Shots</h2>
+    <div class="thumbs" id="thumbs"></div>
+  </div>
+
+  <div class="card">
+    <h2>Log</h2>
+    <pre id="log"></pre>
+  </div>
+
+</div>
+
+<script src="../vendor/jszip.min.js"></script>
+<script src="replay.js"></script>
+</body>
+</html>

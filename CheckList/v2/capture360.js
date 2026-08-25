@@ -65,6 +65,10 @@
   const REFINE_PREF_KEY = 'lsc2_pano_refine';
   const REFINE_MAX_SIDE = 640;    // XFeat is trained around VGA; larger costs time for little gain
   const REFINE_TIMEOUT_MS = 240000;
+  /* Longest gap tolerated between two progress messages from the stitch
+     worker before we assume it died. Generous, because the per-image
+     scatter loop on a slow phone can genuinely take a while. */
+  const STITCH_WATCHDOG_MS = 75000;
 
   function refineEnabled() {
     try { return localStorage.getItem(REFINE_PREF_KEY) !== '0'; }
@@ -114,9 +118,13 @@
         </div>
         <div class="c360-instruction">Move the phone until the circles align.</div>
         <div class="c360-progress-track"><div class="c360-progress-fill"></div></div>
+        <div class="c360-utility">
+          <button type="button" class="tbtn tbtn--sm c360-savezip" hidden><i class="fa-solid fa-file-zipper"></i> Save photos (.zip)</button>
+        </div>
         <div class="c360-controls">
-          <button type="button" class="tbtn c360-finish" hidden>Finish</button>
+          <button type="button" class="tbtn tbtn--sm c360-retake" hidden><i class="fa-solid fa-rotate-left"></i> Retake</button>
           <button type="button" class="tbtn tbtn--primary c360-capture"><i class="fa-solid fa-camera"></i> Capture</button>
+          <button type="button" class="tbtn c360-finish" hidden><i class="fa-solid fa-wand-magic-sparkles"></i> Generate</button>
         </div>
       </div>
       <div class="c360-error" hidden>
@@ -150,11 +158,23 @@
     return 0;
   }
 
+  /* Output size is a memory decision before it is a quality one. The
+     stitch worker holds 16 bytes of accumulator per output pixel, so
+     4096x2048 costs 134 MB, plus 34 MB for the output image itself.
+
+     navigator.deviceMemory does not exist on Safari or Firefox, which
+     means every iPhone used to land on the 4096x2048 branch -- the most
+     expensive one -- purely because we could not measure it. Combined
+     with 34 decoded source bitmaps that was enough to have the browser
+     kill the tab outright. Unknown now means 3072x1536 (about 100 MB of
+     accumulators): still a detailed panorama, and it leaves headroom.
+     Devices that actually report >= 8 GB still get the full size. */
   function chooseOutputSize() {
     const mem = navigator.deviceMemory;
     if (mem && mem <= 3) return { width: 2048, height: 1024 };
     if (mem && mem >= 8) return { width: 4096, height: 2048, allowHigh: true };
-    return { width: 4096, height: 2048 };
+    if (mem) return { width: 3072, height: 1536 };
+    return { width: 3072, height: 1536 };
   }
 
   // Laplacian-variance sharpness score on a small downsample. Low-texture
@@ -243,6 +263,8 @@
       const progressFill = overlay.querySelector('.c360-progress-fill');
       const finishBtn = overlay.querySelector('.c360-finish');
       const captureBtn = overlay.querySelector('.c360-capture');
+      const retakeBtn = overlay.querySelector('.c360-retake');
+      const saveZipBtn = overlay.querySelector('.c360-savezip');
       const instruction = overlay.querySelector('.c360-instruction');
       const enhanceInput = overlay.querySelector('.c360-enhance-input');
       enhanceInput.checked = refineEnabled();
@@ -253,6 +275,10 @@
       const captured = new Array(targets.length).fill(false);
       const capturedPatches = []; // { yaw, pitch, canvas }
       const sourceMediaIds = [];
+      /* Capture order, so Retake knows which shot was actually last --
+         which is not the same as the highest target index, because the
+         user can shoot targets out of order. */
+      const shotLog = [];         // { targetIdx, mediaId, yaw, pitch, roll, width, height }
       let activeIndex = 0;
       let blurRetries = 0;
       let stream = null;
@@ -277,6 +303,13 @@
       let capturingInFlight = false;
       let canvasW = 0, canvasH = 0, dpr = 1;
       let alignedNow = false;
+      /* After a retake the phone is usually still pointing at the target
+         it just discarded, so the stability timer would fire immediately
+         and take the same bad photo again. Auto-capture stays disarmed
+         until the user either aims away once or waits this out. */
+      let rearmAfterLeaving = false;
+      let rearmAt = 0;
+      let zipping = false;
 
       function finishAndClose(result) {
         if (finished) return;
@@ -410,7 +443,7 @@
         countEl.textContent = String(captured.filter(Boolean).length);
         progressFill.style.width = (captured.filter(Boolean).length / targets.length * 100) + '%';
 
-        if (activeIndex >= targets.length) { instruction.textContent = 'All targets captured — tap Finish.'; alignedNow = false; return; }
+        if (activeIndex >= targets.length) { instruction.textContent = 'All targets captured — tap Generate.'; alignedNow = false; return; }
         if (!hasOrientation) {
           instruction.textContent = 'Orientation not available — use Capture to shoot each angle manually.';
           alignedNow = false;
@@ -420,7 +453,10 @@
         alignedNow = dist < ALIGN_TOLERANCE_DEG;
         instruction.textContent = alignedNow ? 'Hold steady…' : 'Move the phone until the circles align.';
 
-        if (alignedNow) {
+        if (rearmAfterLeaving && (!alignedNow || performance.now() > rearmAt)) rearmAfterLeaving = false;
+        if (rearmAfterLeaving) instruction.textContent = 'Reframe the shot — aim away and back, or hold on.';
+
+        if (alignedNow && !rearmAfterLeaving) {
           const moved = lastReading && (Math.abs(currentYaw - lastReading.yaw) / DEG > 1.2 || Math.abs(currentPitch - lastReading.pitch) / DEG > 1.2);
           if (moved || stableSince === null) stableSince = performance.now();
           if (performance.now() - stableSince > STABLE_MS) {
@@ -500,6 +536,13 @@
             sourceMediaIds.push(id);
             captured[targetIdx] = true;
             capturedPatches.push({ yaw: hasOrientation ? capturedYaw : t.yaw, pitch: hasOrientation ? capturedPitch : t.pitch, canvas: makeThumbnail(shotCanvas, 480) });
+            shotLog.push({
+              targetIdx: targetIdx, mediaId: id,
+              yaw: hasOrientation ? capturedYaw : t.yaw,
+              pitch: hasOrientation ? capturedPitch : t.pitch,
+              roll: hasOrientation ? capturedRoll : 0,
+              width: shotCanvas.width, height: shotCanvas.height
+            });
             if (targetIdx === activeIndex) {
               let next = activeIndex + 1;
               while (next < targets.length && captured[next]) next++;
@@ -511,16 +554,143 @@
           }
 
           if (captured.every(Boolean)) {
-            finishBtn.hidden = false;
-            captureBtn.hidden = true;
-            instruction.textContent = `All ${targets.length} targets captured — tap Finish to build the panorama.`;
-          } else if (sourceMediaIds.length >= 6) {
-            finishBtn.hidden = false;
+            instruction.textContent = `All ${targets.length} targets captured — tap Generate to build the panorama.`;
           }
         } finally {
+          // Order matters: updateControls() reads capturingInFlight, so it
+          // has to run after the flag clears or Retake stays disabled for
+          // the rest of the session.
           capturingInFlight = false;
+          updateControls();
         }
       }
+
+      /* Which of the four buttons are live, in one place, so Capture,
+         Retake and Generate can never disagree about the shot count. */
+      function updateControls() {
+        const n = shotLog.length;
+        const done = captured.every(Boolean);
+        captureBtn.hidden = done;
+        retakeBtn.hidden = n === 0;
+        finishBtn.hidden = n === 0;
+        saveZipBtn.hidden = n === 0;
+        retakeBtn.disabled = capturingInFlight;
+        // Left alone while a ZIP is being built; that path owns the button
+        // (spinner label and all) until it finishes.
+        if (!zipping) saveZipBtn.disabled = capturingInFlight;
+      }
+
+      /* Undo the most recent shot and aim back at its target. The photo is
+         deleted from IndexedDB rather than orphaned, otherwise a session
+         with several retakes would leave dead blobs behind and the ZIP
+         export would contain frames the panorama never used. */
+      async function retakeLast() {
+        if (finished || capturingInFlight || !shotLog.length) return;
+        const last = shotLog.pop();
+        const k = sourceMediaIds.indexOf(last.mediaId);
+        if (k >= 0) { sourceMediaIds.splice(k, 1); capturedPatches.splice(k, 1); }
+        captured[last.targetIdx] = false;
+        activeIndex = last.targetIdx;
+        stableSince = null;
+        lastReading = null;
+        blurRetries = 0;
+        rearmAfterLeaving = true;
+        rearmAt = performance.now() + 3000;
+        try { await global.LSCMedia.deleteMedia(last.mediaId); } catch (e) { /* already gone */ }
+        updateControls();
+        toast(`Shot ${last.targetIdx + 1} discarded — aim at the highlighted target again.`, 'info');
+      }
+
+      /* Saves every source frame plus a metadata.json describing the pose
+         each one was taken at. The photos alone are not enough to
+         reproduce a stitch offline: the whole pipeline is driven by the
+         per-shot yaw/pitch/roll, so the JSON is the load-bearing half of
+         this file. Open lab/replay.html on a desktop and drop the ZIP in
+         to re-run the real refine and stitch workers over it. */
+      async function saveSourcesZip() {
+        if (!sourceMediaIds.length) { toast('No photos captured yet.', 'error'); return; }
+        if (typeof JSZip === 'undefined') { toast('ZIP export is not available in this browser.', 'error'); return; }
+        const original = saveZipBtn.innerHTML;
+        zipping = true;
+        saveZipBtn.disabled = true;
+        saveZipBtn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> Packing…';
+        try {
+          const zip = new JSZip();
+          const folder = zip.folder('photos');
+          const shots = [];
+          for (let k = 0; k < sourceMediaIds.length; k++) {
+            const rec = await global.LSCMedia.getMedia(sourceMediaIds[k]);
+            if (!rec || !rec.blob) continue;
+            const entry = shotLog.find(sl => sl.mediaId === sourceMediaIds[k]) || null;
+            const name = rec.filename || `source_${String(k + 1).padStart(3, '0')}.jpg`;
+            folder.file(name, rec.blob);
+            const tIdx = entry ? entry.targetIdx : -1;
+            const tgt = tIdx >= 0 ? targets[tIdx] : null;
+            shots.push({
+              file: 'photos/' + name,
+              order: k + 1,
+              targetIndex: tIdx,
+              targetYawDeg: tgt ? +(tgt.yaw / DEG).toFixed(3) : null,
+              targetPitchDeg: tgt ? +(tgt.pitch / DEG).toFixed(3) : null,
+              // Radians are what the pipeline consumes; degrees are for reading.
+              yaw: rec.yaw, pitch: rec.pitch, roll: rec.roll,
+              yawDeg: +((rec.yaw || 0) / DEG).toFixed(3),
+              pitchDeg: +((rec.pitch || 0) / DEG).toFixed(3),
+              rollDeg: +((rec.roll || 0) / DEG).toFixed(3),
+              width: rec.width, height: rec.height,
+              bytes: rec.blob.size
+            });
+          }
+          if (!shots.length) { toast('Could not read the captured photos.', 'error'); return; }
+          const meta = {
+            format: 'lsc-360-capture/1',
+            sessionId: sessionId,
+            capturedAt: new Date().toISOString(),
+            locationId: locationId != null ? String(locationId) : null,
+            shotCount: shots.length,
+            patternSize: targets.length,
+            // Recorded so an offline run reproduces exactly what the phone did.
+            assumedHFovDeg: ASSUMED_H_FOV_DEG,
+            refineEnabled: refineEnabled(),
+            refineMaxSide: REFINE_MAX_SIDE,
+            hasOrientation: hasOrientation,
+            outputSize: chooseOutputSize(),
+            pattern: targets.map((t, i) => ({
+              index: i,
+              yawDeg: +(t.yaw / DEG).toFixed(3),
+              pitchDeg: +(t.pitch / DEG).toFixed(3),
+              captured: !!captured[i]
+            })),
+            device: {
+              userAgent: navigator.userAgent,
+              deviceMemory: navigator.deviceMemory || null,
+              hardwareConcurrency: navigator.hardwareConcurrency || null,
+              screen: { width: screen.width, height: screen.height, dpr: window.devicePixelRatio || 1 }
+            },
+            shots: shots
+          };
+          zip.file('metadata.json', JSON.stringify(meta, null, 2));
+          const out = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
+          const url = URL.createObjectURL(out);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `360-capture_${sessionId}.zip`;
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(() => URL.revokeObjectURL(url), 60000);
+          toast(`Saved ${shots.length} photos + metadata.json.`, 'success');
+        } catch (err) {
+          toast('Could not build the ZIP: ' + (err && err.message ? err.message : err), 'error');
+        } finally {
+          zipping = false;
+          saveZipBtn.innerHTML = original;
+          saveZipBtn.disabled = false;
+        }
+      }
+
+      retakeBtn.addEventListener('click', retakeLast);
+      saveZipBtn.addEventListener('click', saveSourcesZip);
 
       captureBtn.addEventListener('click', () => {
         if (activeIndex < targets.length) captureAt(activeIndex, false);
@@ -531,7 +701,7 @@
         if (total < targets.length) {
           const gapPct = computeCoverageGapPct(targets, captured);
           const ok = await confirm({
-            title: 'Finish Early?',
+            title: 'Generate Early?',
             body: gapPct > 5
               ? `About ${gapPct}% of the sphere has no coverage yet — those areas will look smeared in the panorama. Continue anyway?`
               : `${total} of ${targets.length} angles were captured, but coverage looks close to complete. Continue?`,
@@ -680,20 +850,23 @@
         try { worker = new Worker('pano-stitch-worker.js'); }
         catch (e) { finishAndClose({ stitched: false, sessionId, sourceCount: sourceMediaIds.length, reason: 'unsupported' }); return; }
 
-        const images = [];
-        for (const rec of records) {
-          try {
-            const bmp = await createImageBitmap(rec.blob);
-            const fix = refinement ? refinement.byId.get(rec.id) : null;
-            images.push({
-              bitmap: bmp, width: bmp.width, height: bmp.height,
-              yaw: fix ? fix.yaw : rec.yaw,
-              pitch: fix ? fix.pitch : rec.pitch,
-              roll: fix ? fix.roll : rec.roll,
-              gain: fix ? fix.gain : 1
-            });
-          } catch (e) { /* skip unreadable source */ }
-        }
+        /* Hand the worker the COMPRESSED blobs and let it decode them one
+           at a time. Decoding all 34 here first produced 34 live
+           ImageBitmaps at 1920x1080 -- 282 MB of resident pixel data,
+           which on top of the worker's own accumulators was enough for
+           mobile Safari to kill the tab instead of throwing something the
+           error handlers below could catch. Blobs are ~500 KB each and
+           are passed by reference, so this loop now costs nothing. */
+        const images = records.map(rec => {
+          const fix = refinement ? refinement.byId.get(rec.id) : null;
+          return {
+            blob: rec.blob, width: rec.width, height: rec.height,
+            yaw: fix ? fix.yaw : rec.yaw,
+            pitch: fix ? fix.pitch : rec.pitch,
+            roll: fix ? fix.roll : rec.roll,
+            gain: fix ? fix.gain : 1
+          };
+        }).filter(im => im.blob);
         if (!images.length) {
           worker.terminate();
           finishAndClose({ stitched: false, sessionId, sourceCount: sourceMediaIds.length, reason: 'no-readable-sources' });
@@ -706,45 +879,85 @@
           ? Object.assign({ hFovDeg: refinement.hFovDeg }, refinement.diagnostics || {})
           : null;
 
+        /* A worker killed for memory does not always fire onerror -- it can
+           simply stop, leaving the progress bar frozen forever with no way
+           out but reloading the page. The sources are already safe in
+           IndexedDB at this point, so treat prolonged silence as a failure
+           and hand the user back a session they can retry or export. */
+        let lastStage = 'Preparing images';
+        let watchdog = null;
+        const armWatchdog = () => {
+          if (watchdog) clearTimeout(watchdog);
+          watchdog = setTimeout(() => {
+            try { worker.terminate(); } catch (e) { /* ignore */ }
+            finishAndClose({
+              stitched: false, sessionId, sourceCount: sourceMediaIds.length,
+              reason: 'stitch-stalled', stage: lastStage
+            });
+          }, STITCH_WATCHDOG_MS);
+        };
+        const stopWatchdog = () => { if (watchdog) { clearTimeout(watchdog); watchdog = null; } };
+
+        async function storePanorama(blob, width, height) {
+          if (!blob) { finishAndClose({ stitched: false, sessionId, sourceCount: sourceMediaIds.length, reason: 'encode-failed' }); return; }
+          try {
+            const panoId = await global.LSCMedia.putMedia({
+              locationId, category: 'panorama-360', sessionId,
+              filename: `panorama_${sessionId}.jpg`, mime: 'image/jpeg', originalFilename: null,
+              width, height, blob
+            });
+            finishAndClose({
+              stitched: true, panoramaMediaId: panoId, sessionId,
+              sourceCount: sourceMediaIds.length, refinement: refineInfo
+            });
+          } catch (err) {
+            finishAndClose({ stitched: false, sessionId, sourceCount: sourceMediaIds.length, reason: 'storage-failed' });
+          }
+        }
+
         worker.onmessage = async (e) => {
           const msg = e.data;
           if (msg.type === 'progress') {
+            lastStage = msg.stage;
+            armWatchdog();
             setProgress(msg.stage, base + msg.pct * span / 100);
           } else if (msg.type === 'unsupported' || msg.type === 'error') {
+            stopWatchdog();
             worker.terminate();
-            finishAndClose({ stitched: false, sessionId, sourceCount: sourceMediaIds.length, reason: msg.type === 'unsupported' ? 'unsupported' : 'stitch-error' });
+            finishAndClose({
+              stitched: false, sessionId, sourceCount: sourceMediaIds.length,
+              reason: msg.type === 'unsupported' ? 'unsupported' : 'stitch-error',
+              stage: msg.stage || lastStage, detail: msg.message || null
+            });
           } else if (msg.type === 'result') {
+            stopWatchdog();
             worker.terminate();
+            // The worker encodes the JPEG itself when it can. The raw-buffer
+            // branch is the fallback, and is the expensive one: it costs an
+            // ImageData plus a full-size canvas on the main thread.
+            if (msg.blob) { await storePanorama(msg.blob, msg.width, msg.height); return; }
             const imgData = new ImageData(new Uint8ClampedArray(msg.buffer), msg.width, msg.height);
             const canvas2 = document.createElement('canvas');
             canvas2.width = msg.width; canvas2.height = msg.height;
             canvas2.getContext('2d').putImageData(imgData, 0, 0);
             canvas2.toBlob(async blob => {
-              if (!blob) { finishAndClose({ stitched: false, sessionId, sourceCount: sourceMediaIds.length, reason: 'encode-failed' }); return; }
-              try {
-                const panoId = await global.LSCMedia.putMedia({
-                  locationId, category: 'panorama-360', sessionId,
-                  filename: `panorama_${sessionId}.jpg`, mime: 'image/jpeg', originalFilename: null,
-                  width: msg.width, height: msg.height, blob
-                });
-                finishAndClose({
-                  stitched: true, panoramaMediaId: panoId, sessionId,
-                  sourceCount: sourceMediaIds.length, refinement: refineInfo
-                });
-              } catch (err) {
-                finishAndClose({ stitched: false, sessionId, sourceCount: sourceMediaIds.length, reason: 'storage-failed' });
-              }
+              canvas2.width = 1; canvas2.height = 1;
+              await storePanorama(blob, msg.width, msg.height);
             }, 'image/jpeg', 0.92);
           }
         };
         worker.onerror = () => {
+          stopWatchdog();
           worker.terminate();
-          finishAndClose({ stitched: false, sessionId, sourceCount: sourceMediaIds.length, reason: 'stitch-error' });
+          finishAndClose({
+            stitched: false, sessionId, sourceCount: sourceMediaIds.length,
+            reason: 'stitch-error', stage: lastStage
+          });
         };
-        worker.postMessage(
-          { type: 'stitch', outputWidth: size.width, outputHeight: size.height, hFovDeg, images },
-          images.map(i => i.bitmap)
-        );
+        armWatchdog();
+        worker.postMessage({
+          type: 'stitch', outputWidth: size.width, outputHeight: size.height, hFovDeg, images
+        });
       }
 
       // ---- boot sequence: must stay synchronous-ish so the iOS permission
@@ -763,6 +976,7 @@
         video.srcObject = stream;
         loading.hidden = true;
         hud.hidden = false;
+        updateControls();
         resizeCanvas();
 
         // Some sideways drift of the lens between shots is unavoidable —

@@ -23,6 +23,26 @@ visual correction anywhere. This pipeline adds the missing correction stage:
    set, anchored to the prior with anisotropic weights (tilt is gravity-referenced
    and trustworthy; yaw drifts indoors), with loop closure enforced
 
+## Replaying a real capture
+
+The synthetic harness has zero parallax by construction and perfect ground
+truth, which makes it ideal for regression-testing geometry and useless for
+judging what a handheld capture actually looks like. `replay.html` closes that
+gap:
+
+1. In the app's 360° capture screen, tap **Save photos (.zip)** before
+   generating. That writes every source frame plus a `metadata.json` holding
+   the per-shot yaw/pitch/roll, the capture pattern, and the device details.
+2. Serve this folder over HTTP (module workers need a real origin — `file://`
+   will not work) and open `lab/replay.html`.
+3. Drop the archive in, then **Run** or **A/B: sensor vs enhanced**.
+
+It drives the *shipping* workers — `../pano-refine-worker.js` and
+`../pano-stitch-worker.js` — unmodified, so a result there is what the phone
+would have produced given the same memory budget. It reports sphere coverage,
+recovered FOV, mean pose correction, match-graph size and timing, and the
+panorama is downloadable.
+
 ## Layout
 
 The pipeline modules are the SHIPPING copies under `../pano/` — the lab loads

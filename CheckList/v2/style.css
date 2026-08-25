@@ -601,10 +601,25 @@ select {
   position: absolute; top: 63%; left: 0; right: 0; text-align: center; color: #fff;
   font-weight: 700; font-size: 14px; text-shadow: 0 1px 3px rgba(0, 0, 0, .7); padding: 0 20px;
 }
-.c360-progress-track { position: absolute; bottom: 92px; left: 20px; right: 20px; height: 6px; border-radius: 6px; background: rgba(255, 255, 255, .25); overflow: hidden; }
+.c360-progress-track { position: absolute; bottom: 108px; left: 20px; right: 20px; height: 6px; border-radius: 6px; background: rgba(255, 255, 255, .25); overflow: hidden; }
 .c360-progress-fill { height: 100%; width: 0; background: var(--brand); border-radius: 6px; transition: width .2s; }
-.c360-controls { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; justify-content: center; gap: 12px; }
-.c360-capture { min-width: 140px; justify-content: center; }
+/* Secondary row above the shutter: the .zip export, which is a developer/
+   research affordance rather than part of the capture flow, so it sits
+   apart from Retake / Capture / Generate. */
+.c360-utility { position: absolute; bottom: 72px; left: 0; right: 0; display: flex; justify-content: center; }
+.c360-savezip { background: rgba(0, 0, 0, .5); border: 1px solid rgba(255, 255, 255, .28); color: #fff; }
+.c360-controls { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 10px; padding: 0 12px; }
+/* Capture stays the widest and centred; Retake and Generate flank it at
+   equal width so the shutter does not shift sideways as they appear. */
+.c360-capture { min-width: 132px; justify-content: center; }
+.c360-retake, .c360-finish { min-width: 104px; justify-content: center; }
+.c360-retake { background: rgba(0, 0, 0, .5); border: 1px solid rgba(255, 255, 255, .28); color: #fff; }
+.c360-finish { background: #f5a623; border: 1px solid #f5a623; color: #241a05; font-weight: 700; }
+.c360-retake[disabled], .c360-savezip[disabled] { opacity: .5; }
+@media (max-width: 380px) {
+  .c360-capture { min-width: 104px; }
+  .c360-retake, .c360-finish { min-width: 84px; font-size: 12px; }
+}
 .c360-stitch-stage { font-size: 14px; font-weight: 700; }
 .c360-stitching .c360-progress-track { position: static; width: 240px; }
 

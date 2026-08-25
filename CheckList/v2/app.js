@@ -656,15 +656,20 @@
       toast('360° panorama created' + detail, 'success');
     } else {
       await renderPanoramaCard(); // still shows the "incomplete session" recovery hint for the saved sources
+      const n = result.sourceCount || 0;
       const reasonText = {
-        unsupported: 'Automatic stitching isn’t supported in this browser. Your 18 source photos were saved — they can be re-processed later or exported as a source set.',
+        unsupported: `Automatic stitching isn’t supported in this browser. Your ${n} source photos were saved — they can be re-processed later or exported as a source set.`,
         'stitch-error': 'Stitching failed, but your source photos were saved and were not lost.',
+        // Almost always memory: the worker was killed rather than throwing.
+        'stitch-stalled': `Stitching stopped responding— most likely this device ran out of memory. Your ${n} source photos were saved. Turning off “Enhance”, or capturing fewer angles, both reduce how much memory the build needs.`,
         'no-readable-sources': 'Could not read the captured photos back from storage — nothing to stitch.',
         'encode-failed': 'The finished panorama could not be encoded, but your source photos were saved.',
         'storage-failed': 'The finished panorama could not be saved (storage may be full), but your source photos were kept.',
         'camera-interrupted': 'The camera was interrupted, but photos captured so far were saved.'
       }[result.reason] || 'Stitching did not complete, but your source photos were saved.';
-      toast(reasonText, 'error');
+      // The stage is the single most useful thing to know when this is
+      // reported back, and a phone has no console to read it from.
+      toast(reasonText + (result.stage ? ` (stopped during: ${result.stage})` : ''), 'error');
     }
   }
 
