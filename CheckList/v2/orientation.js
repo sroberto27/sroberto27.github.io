@@ -119,6 +119,14 @@
     return d;
   }
 
+  // Normalise any angle (including an unwrapped running total spanning
+  // many turns) into (-PI, PI].
+  function wrapAngle(a) {
+    let x = (a + Math.PI) % (2 * Math.PI);
+    if (x < 0) x += 2 * Math.PI;
+    return x - Math.PI;
+  }
+
   /**
    * One Euro Filter (Casiez, Roussel & Vogel, CHI 2012) adapted for a
    * wrapping angle: heavier smoothing while the signal is nearly still,
@@ -127,10 +135,23 @@
    * behind the real motion.
    *
    * Built as delta-accumulation (running_value += filtered_delta) rather
-   * than filtering the absolute angle, specifically so it never has to
-   * "unwrap" a running total across many rotations -- the wrap-safe delta
-   * above is the only place wraparound is handled, and every derived
-   * quantity (velocity estimate, filtered output) stays a small number.
+   * than filtering the absolute angle, so the filter never has to reason
+   * about a discontinuity: the wrap-safe delta above is the only place
+   * wraparound is handled, and the velocity estimate stays a small number
+   * even as the phone spins repeatedly.
+   *
+   * The internal accumulator is deliberately UNWRAPPED (it keeps growing
+   * past +/-180 as you keep turning) because that is what makes the
+   * delta arithmetic stable. The RETURNED value is wrapped back to
+   * (-PI, PI], which matters more than it sounds: a 360 capture spins the
+   * phone through several full turns, and callers store this value as the
+   * shot's recorded pose. Returning the raw accumulator leaked totals
+   * like 1844 degrees into stored metadata, which then produced garbage
+   * prior rotations -- the pose prior gate rejected 80 of 97 candidate
+   * image pairs on a real capture and refinement fell back to the
+   * unrefined sensor path every time. Wrapping here, at the boundary,
+   * keeps the filter's internal math intact while giving every consumer
+   * the normalised angle it expects.
    *
    * opts: { minCutoff (Hz, default 1.0 — steady-state smoothing strength,
    *         lower = smoother), beta (default 0.3 — how fast responsiveness
@@ -166,11 +187,11 @@
       const cutoff = minCutoff + beta * Math.abs(dValue);
       const a = alpha(cutoff, dt);
       value = value + a * rawDelta;
-      return value;
+      return wrapAngle(value);
     }
 
     function reset(rawAngle, tSeconds) {
-      value = rawAngle; dValue = 0; lastT = tSeconds !== undefined ? tSeconds : lastT;
+      value = wrapAngle(rawAngle); dValue = 0; lastT = tSeconds !== undefined ? tSeconds : lastT;
     }
 
     return { filter: filter, reset: reset };
@@ -179,6 +200,6 @@
   global.LSCOrientation = {
     orientationToQuaternion, quaternionToYawPitchRoll,
     normalize, dot, cross, sub, scale, rotateVec, degToRad,
-    angleDelta, makeOneEuroAngleFilter
+    angleDelta, wrapAngle, makeOneEuroAngleFilter
   };
 })(typeof window !== 'undefined' ? window : (typeof self !== 'undefined' ? self : globalThis));

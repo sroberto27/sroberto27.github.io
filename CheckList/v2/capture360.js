@@ -874,7 +874,21 @@
         }
 
         const size = chooseOutputSize();
-        const hFovDeg = refinement && refinement.hFovDeg ? refinement.hFovDeg : ASSUMED_H_FOV_DEG;
+        /* ASSUMED_H_FOV_DEG describes the lens across its LONG axis. The
+           camera returns portrait stills, so applying it to the frame
+           WIDTH would overstate the lens by ~25% (see
+           widthFovFromLongFov in pano/camera.js). Convert using the real
+           dimensions of the frames we are about to stitch. Refinement,
+           when it ran, already measured the width-axis FOV directly. */
+        const ref0 = images[0];
+        const fallbackHFovDeg = ref0
+          ? 2 * Math.atan(
+              Math.max(ref0.width, ref0.height) === 0 ? 0 :
+              ref0.width / (2 * (Math.max(ref0.width, ref0.height) /
+                (2 * Math.tan(ASSUMED_H_FOV_DEG * DEG / 2))))
+            ) / DEG
+          : ASSUMED_H_FOV_DEG;
+        const hFovDeg = refinement && refinement.hFovDeg ? refinement.hFovDeg : fallbackHFovDeg;
         const refineInfo = refinement
           ? Object.assign({ hFovDeg: refinement.hFovDeg }, refinement.diagnostics || {})
           : null;

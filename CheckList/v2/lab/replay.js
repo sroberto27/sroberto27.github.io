@@ -25,6 +25,25 @@
   const logEl = el('log');
   const DEG = Math.PI / 180;
   const REFINE_MAX_SIDE = 640;   // must match capture360.js
+  const ASSUMED_LONG_FOV_DEG = 68;  // lens FOV across its LONG axis (capture360.js)
+
+  /* The assumed lens FOV is quoted across the LONG image axis, but phone
+     stills come back portrait, so it has to be mapped onto the frame
+     WIDTH before it is used as a focal length. Applying it to a portrait
+     width directly overstates the lens by ~25%. Mirrors
+     widthFovFromLongFov in ../pano/camera.js. */
+  function widthFovDeg(longFovDeg, w, h) {
+    const longSide = Math.max(w, h);
+    const f = longSide / (2 * Math.tan(longFovDeg * DEG / 2));
+    return 2 * Math.atan(w / (2 * f)) / DEG;
+  }
+
+  // Width-axis FOV implied for the loaded archive's frames.
+  function baselineFovDeg() {
+    const s0 = archive && archive.shots && archive.shots[0];
+    if (!s0 || !s0.width || !s0.height) return ASSUMED_LONG_FOV_DEG;
+    return widthFovDeg(ASSUMED_LONG_FOV_DEG, s0.width, s0.height);
+  }
 
   let archive = null;  // { meta, shots:[{name, blob, yaw, pitch, roll, width, height}] }
   let lastBlob = null;
@@ -176,7 +195,7 @@
           images.push({ bitmap: bmp, width: bmp.width, height: bmp.height, yaw: s.yaw, pitch: s.pitch, roll: s.roll });
         }
         worker.postMessage(
-          { type: 'refine', images, options: { maxSide: REFINE_MAX_SIDE, nominalHFovDeg: 68 } },
+          { type: 'refine', images, options: { maxSide: REFINE_MAX_SIDE, nominalHFovDeg: ASSUMED_LONG_FOV_DEG } },
           images.map(i => i.bitmap)
         );
       })().catch(err => { log('  decode failed: ' + err.message); finish(null); });
@@ -231,7 +250,7 @@
       };
     });
 
-    const hFov = (refinement && refinement.hFovDeg) ? refinement.hFovDeg : 68;
+    const hFov = (refinement && refinement.hFovDeg) ? refinement.hFovDeg : baselineFovDeg();
     const base = useRefine ? 0.55 : 0;
     const span = useRefine ? 0.45 : 1;
     const res = await runStitch(images, W, H, hFov, (s, pct) => {
@@ -289,7 +308,8 @@
         metric('Sphere coverage', fmt(r.res.coverage * 100, 1) + '%',
           r.res.coverage > 0.995 ? 'good' : (r.res.coverage > 0.97 ? '' : 'bad')),
         metric('Output', `${r.res.width} × ${r.res.height}` + (r.res.downscaled ? ' (downscaled)' : '')),
-        metric('Horizontal FOV used', fmt(r.hFov) + '°'),
+        metric('Horizontal FOV used', fmt(r.hFov) + '°' +
+          (r.refinement ? '' : ' (assumed, from ' + ASSUMED_LONG_FOV_DEG + '° long-axis)')),
         metric('Pose refinement', r.refinement ? 'applied' : 'not applied', r.refinement ? 'good' : 'dim'),
         metric('Mean pose correction', d.meanCorrectionDeg !== undefined ? fmt(d.meanCorrectionDeg) + '°' : '—'),
         metric('Max pose correction', d.maxCorrectionDeg !== undefined ? fmt(d.maxCorrectionDeg) + '°' : '—'),
@@ -314,7 +334,7 @@
     try {
       const { W, H } = outputSize();
       log(`\nA/B: ${archive.shots.length} shots -> ${W}x${H}`);
-      const a = await buildOnce(false, W, H, 'A sensor pose + 68°');
+      const a = await buildOnce(false, W, H, `A sensor pose + ${fmt(baselineFovDeg(), 1)}°`);
       const b = await buildOnce(true, W, H, 'B enhanced');
       await draw(b.res);
       const d = (b.refinement && b.refinement.diagnostics) || {};
@@ -324,7 +344,7 @@
         metric('Coverage delta', (b.res.coverage >= a.res.coverage ? '+' : '') +
           fmt((b.res.coverage - a.res.coverage) * 100, 2) + ' pts',
           b.res.coverage >= a.res.coverage ? 'good' : 'bad'),
-        metric('FOV: assumed → calibrated', `68° → ${fmt(b.hFov)}°`),
+        metric('FOV: assumed → calibrated', `${fmt(baselineFovDeg(), 1)}° → ${fmt(b.hFov)}°`),
         metric('Mean pose correction', d.meanCorrectionDeg !== undefined ? fmt(d.meanCorrectionDeg) + '°' : '—'),
         metric('A time', (a.ms / 1000).toFixed(1) + ' s'),
         metric('B time', (b.ms / 1000).toFixed(1) + ' s'),

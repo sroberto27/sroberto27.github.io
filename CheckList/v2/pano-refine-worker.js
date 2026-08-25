@@ -144,7 +144,11 @@ async function refine(msg) {
     roll: typeof im.roll === 'number' ? im.roll : 0
   }));
   const priorR = priors.map(p => S.fromYawPitchRoll(p.yaw, p.pitch, p.roll));
-  const nominalFocal = C.focalFromHFov(nominalHFov * C.DEG, W);
+  /* nominalHFov quotes the lens across its LONG axis; phone stills come
+     back portrait, so it has to be mapped onto this image's width before
+     it means anything. See widthFovFromLongFov in pano/camera.js. */
+  const nominalWidthFov = C.widthFovFromLongFov(nominalHFov * C.DEG, W, H);
+  const nominalFocal = C.focalFromHFov(nominalWidthFov, W);
 
   const pairs = P.candidatePairs(priors, {}).filter(pr => features[pr.i] && features[pr.j]);
   const edges = [];
@@ -167,7 +171,8 @@ async function refine(msg) {
 
   // ---- geometry ----
   progress('Solving geometry', 84);
-  const result = P.refinePoses({ width: W, height: H, priors, edges }, {});
+  const result = P.refinePoses({ width: W, height: H, priors, edges },
+    { nominalHFovDeg: nominalWidthFov / C.DEG });
   if (!result.ok) { post('skipped', { reason: result.reason }); return; }
 
   /* Sanity gate. A wildly different FOV or an enormous mean correction

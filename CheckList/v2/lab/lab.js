@@ -27,12 +27,28 @@
   function progress(frac) { el('prog').style.width = (frac * 100).toFixed(1) + '%'; }
   function fmt(v, d) { return (v === null || v === undefined || !isFinite(v)) ? '—' : Number(v).toFixed(d === undefined ? 3 : d); }
 
-  // ---- read the app's media store (read-only) ----
+  /* ---- read the app's media store (strictly read-only) ----
+     Opened WITHOUT a version and with the upgrade path treated as an
+     error, on purpose. indexedDB.open(name) with no version creates the
+     database if it does not exist, and an empty database created here
+     would have no 'media' object store -- but it WOULD have version 1,
+     which is exactly the version db.js asks for. The app's own
+     open('lsc2_media', 1) would then find a version match, never fire
+     onupgradeneeded, and never create the store, leaving the real app
+     permanently unable to save media. A research harness must not be
+     able to corrupt the thing it is inspecting, so if this callback
+     fires at all we abort the transaction and report it rather than
+     letting the empty database persist. */
   function openAppDb() {
     return new Promise((resolve, reject) => {
       const req = indexedDB.open('lsc2_media');
+      req.onupgradeneeded = () => {
+        try { req.transaction.abort(); } catch (e) { /* ignore */ }
+        reject(new Error('no capture database yet — capture a 360 in the app first'));
+      };
       req.onsuccess = () => resolve(req.result);
       req.onerror = () => reject(req.error || new Error('cannot open lsc2_media'));
+      req.onblocked = () => reject(new Error('database blocked by another tab — close other app tabs'));
     });
   }
 

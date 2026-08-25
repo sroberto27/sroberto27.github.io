@@ -86,6 +86,21 @@
     const priorR = priors.map(p => S.fromYawPitchRoll(p.yaw, p.pitch, p.roll || 0));
 
     const gateRad = (opts.priorGateDeg || 9) * C.DEG;
+    /* The first pass runs at the ASSUMED focal, because the real one is
+       what we are about to solve for. A wrong focal displaces rays
+       radially, worst at the frame edges -- which is exactly where
+       neighbouring shots overlap and where the correspondences are. So
+       the tight prior gate, correct once the focal is known, is far too
+       tight to bootstrap with: on a real capture whose assumed focal was
+       25% off it rejected 80 of 97 candidate pairs and left nothing to
+       calibrate from.
+
+       Pass 1 therefore gates generously, purely to admit enough geometry
+       to estimate the focal. Every later pass re-gates at `gateRad`
+       against the calibrated focal, so the final edge set is selected
+       just as strictly as before -- the widening is a bootstrap, not a
+       loosening of the result. */
+    const bootstrapGateRad = Math.max(gateRad, (opts.bootstrapGateDeg || 25) * C.DEG);
     const nominalFocal = C.focalFromHFov((opts.nominalHFovDeg || 68) * C.DEG, W);
     const ransacOpts = {
       thresholdRad: (opts.ransacPixelThreshold || 2.5) / nominalFocal,
@@ -102,7 +117,12 @@
        centre, where a wrong focal matters least), which drags the
        estimate back toward the assumption. So alternate the two to
        convergence instead. */
-    const pass1 = fitEdges(input.edges, priorR, W, H, nominalFocal, gateRad, ransacOpts);
+    const pass1 = fitEdges(input.edges, priorR, W, H, nominalFocal, bootstrapGateRad,
+      Object.assign({}, ransacOpts, {
+        // The pixel threshold is meaningful, but it is divided by a focal
+        // we do not trust yet; loosen it in proportion for this pass only.
+        thresholdRad: (opts.ransacPixelThreshold || 2.5) * 2 / nominalFocal
+      }));
     if (!pass1.edges.length) {
       return { ok: false, reason: 'no-usable-edges', rejected: pass1.rejected };
     }

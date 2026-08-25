@@ -30,6 +30,30 @@
     return 2 * Math.atan(width / (2 * f));
   }
 
+  /* Convert a lens FOV quoted across the LONG image axis into the FOV
+     across the image WIDTH, for an image of the given dimensions.
+
+     This exists because ASSUMED_H_FOV_DEG = 68 is a property of the lens,
+     not of the file: it describes the long axis, which for a landscape
+     frame IS the width. Phone cameras, however, return portrait stills
+     (a real capture measured here was 3024x4032), and applying 68 deg
+     across a portrait frame's 3024-pixel WIDTH claims a far wider lens
+     than exists -- a 25% focal error, before any pose error at all.
+
+     That error is radial and grows toward the frame edges, which is
+     exactly where neighbouring shots overlap and where correspondences
+     therefore live, so it poisoned the pose prior precisely where the
+     prior was needed: on one real 34-shot capture the 9 deg prior gate
+     rejected 80 of 97 candidate pairs and refinement had nothing left to
+     solve with. Converting the quoted FOV onto the correct axis first
+     predicts 53.67 deg for that capture, against 50.7-54.4 deg recovered
+     independently by self-calibration from the photographs. */
+  function widthFovFromLongFov(longFovRad, width, height) {
+    const longSide = Math.max(width, height);
+    const f = longSide / (2 * Math.tan(longFovRad / 2));
+    return 2 * Math.atan(width / (2 * f));
+  }
+
   // Pixel centre -> unit ray in camera frame.
   function pixelToRay(px, py, W, H, f) {
     return S.normalize(S.vec((px + 0.5 - W / 2) / f, (H / 2 - py - 0.5) / f, 1));
@@ -101,6 +125,7 @@
     DEG: DEG,
     focalFromHFov: focalFromHFov,
     hFovFromFocal: hFovFromFocal,
+    widthFovFromLongFov: widthFovFromLongFov,
     pixelToRay: pixelToRay,
     rayToPixel: rayToPixel,
     inFrame: inFrame,

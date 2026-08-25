@@ -130,6 +130,62 @@ console.log('\n=== 4. Tracks a real sweep without excessive lag ===');
     maxLag < 12 * DEG, '(' + fmt(maxLag / DEG, 2) + ' deg)');
 }
 
+/* ===================== 5. OUTPUT STAYS WRAPPED =====================
+   A 360 capture spins the phone through several full turns, and the
+   filtered yaw is stored verbatim as each shot's recorded pose. The
+   filter accumulates deltas internally (unwrapped, on purpose -- that is
+   what keeps its arithmetic stable), so without an explicit wrap at the
+   output boundary the returned value keeps climbing: past 360, past 720,
+   and on a real 34-shot capture it reached 1844 degrees.
+
+   That is not a cosmetic problem. fromYawPitchRoll() is fed those totals
+   to build the pose prior, the prior gate then compares every candidate
+   image pair against a prior that is wrong for most shots, and on the
+   real capture that reproduced this it threw out 80 of 97 pairs --
+   leaving too little of the view graph for refinement to run, so the app
+   silently fell back to the unrefined sensor path every single time.
+   The failure looked like "the ML did nothing", with no error anywhere. */
+{
+  console.log('\n=== 5. Filter output stays in (-180, 180] across many turns ===');
+  const f = O.makeOneEuroAngleFilter({ minCutoff: 0.9, beta: 0.4 });
+  const rnd = makeRng(99);
+  let t = 0;
+  const dt = 1 / 60;
+  let trueYaw = 0;
+  let out = f.filter(0, t);
+  let maxAbs = 0;
+  let worstTrackErr = 0;
+
+  // Six full rotations, the way a scout sweeps a sphere.
+  const turns = 6;
+  const steps = Math.round(turns * 360 / 90 * 60); // at ~90 deg/s, 60 Hz
+  for (let i = 0; i < steps; i++) {
+    t += dt;
+    trueYaw += 90 * DEG * dt;
+    out = f.filter(O.wrapAngle(trueYaw + gauss(rnd) * 0.5 * DEG), t);
+    maxAbs = Math.max(maxAbs, Math.abs(out));
+    if (i > 20) worstTrackErr = Math.max(worstTrackErr, Math.abs(O.angleDelta(trueYaw, out)));
+  }
+  console.log('    after ' + turns + ' full turns: |output| max ' + fmt(maxAbs / DEG, 2) +
+    ' deg, worst tracking error ' + fmt(worstTrackErr / DEG, 2) + ' deg');
+
+  check('output never escapes (-180, 180] no matter how far the phone turns',
+    maxAbs <= Math.PI + 1e-9, '(max |out| = ' + fmt(maxAbs / DEG, 2) + ' deg)');
+  check('wrapping does not break tracking of the true heading',
+    worstTrackErr < 12 * DEG, '(' + fmt(worstTrackErr / DEG, 2) + ' deg)');
+
+  // wrapAngle itself, including inputs several turns out.
+  let wrapWorst = 0;
+  for (const a of [0, 1, -1, 179, 180, 181, 359, 361, 720, 1844, -1844, -540]) {
+    const w = O.wrapAngle(a * DEG);
+    if (w > Math.PI + 1e-9 || w <= -Math.PI - 1e-9) wrapWorst = Infinity;
+    // Same direction on the circle as the input.
+    wrapWorst = Math.max(wrapWorst, Math.abs(O.angleDelta(a * DEG, w)));
+  }
+  check('wrapAngle normalises arbitrary totals without changing direction',
+    wrapWorst < 1e-9, '(max deviation ' + wrapWorst.toExponential(2) + ')');
+}
+
 console.log('\n' + '-'.repeat(58));
 console.log(failures === 0 ? 'ALL ' + checks + ' CHECKS PASSED' : failures + ' of ' + checks + ' CHECKS FAILED');
 console.log('-'.repeat(58));

@@ -20,7 +20,27 @@
    near the image centre, because that is where an incorrect focal has
    least effect. `spread` in the result reports how far matches reach
    from centre so a weak estimate can be detected instead of trusted.
-*/
+
+   A second, more dangerous caveat, found by replaying a real handheld
+   capture rather than the noise-free synthetic scenes this was
+   originally validated against: the residual MUST be measured in pixel
+   space, not as the angle between unit ray vectors. A fixed amount of
+   real match noise (JPEG blur, sub-pixel localisation error, anything
+   that is not the radial-distortion signal this search is trying to
+   read) produces a SMALLER angular residual as the assumed focal grows,
+   because pixelToRay divides by f -- rays collapse toward straight-ahead
+   as the field of view narrows, regardless of whether the correspondence
+   is actually consistent. That makes plain angular residual monotonic in
+   focal for noisy data: shrinking the assumed field of view always looks
+   like it helps, all the way to the degenerate limit, independent of the
+   true geometry. On one real 34-shot capture this drove the search to
+   its floor (45deg, then 8deg when the floor was moved to test it) with
+   NO interior minimum anywhere in between -- a strictly monotonic curve,
+   not a noisy-but-real one. Reprojecting into pixel space before scoring
+   fixes this: a fixed pixel-level mismatch stays a fixed pixel-level
+   mismatch regardless of the assumed focal, so only genuine radial
+   distortion (which really does scale with focal error) still produces
+   a minimum, and the degenerate collapse is no longer rewarded. */
 (function (global) {
   'use strict';
 
@@ -38,6 +58,23 @@
     return { a: a, b: b };
   }
 
+  /* Reprojection error in PIXELS, not the angle between two unit rays.
+     Rotate A's ray into B's frame and project it back through the SAME
+     candidate focal, then measure the pixel distance to where the
+     matcher actually found the correspondence. See the module comment
+     for why this, and not ray-angle, is the residual this search must
+     use: ray-angle silently rewards shrinking the focal regardless of
+     whether the correspondences agree, and pixel-space reprojection does
+     not. Returns null for a point that lands behind the camera at this
+     candidate focal (only possible for a wildly wrong candidate), which
+     the caller excludes rather than treats as a perfect (zero) fit. */
+  function reprojResidualPx(R, m, W, H, f) {
+    const ray = S.apply(R, C.pixelToRay(m.ax, m.ay, W, H, f));
+    const p = C.rayToPixel(ray, W, H, f);
+    if (!p) return null;
+    return Math.hypot(p.px - m.bx, p.py - m.by);
+  }
+
   /* Trimmed mean of the per-match alignment residual across all edges at
      a candidate focal length.
 
@@ -53,7 +90,10 @@
       const { a, b } = raysFor(ed.matches, W, H, f);
       const R = E.solveRotation(a, b);
       if (!R) continue;
-      for (let k = 0; k < a.length; k++) all.push(E.residualAngle(R, a[k], b[k]));
+      for (const m of ed.matches) {
+        const r = reprojResidualPx(R, m, W, H, f);
+        if (r !== null) all.push(r);
+      }
     }
     if (!all.length) return Infinity;
     all.sort((x, y) => x - y);
@@ -82,7 +122,10 @@
 
   /**
    * edges: [{ i, j, matches: [{ax, ay, bx, by}] }] -- inlier matches only.
-   * Returns { focal, hFovDeg, residualRad, spread, curve }.
+   * Returns { focal, hFovDeg, residualPx, spread, curve }. residualPx is
+   * a trimmed-mean REPROJECTION error in pixels (see reprojResidualPx),
+   * not an angle -- comparable across candidate focal lengths, which a
+   * ray-angle residual is not.
    */
   function estimateFocal(edges, W, H, options) {
     const opts = options || {};
@@ -98,7 +141,7 @@
       const fov = minFov + (maxFov - minFov) * (s / (coarse - 1));
       const f = C.focalFromHFov(fov, W);
       const res = residualAtFocal(edges, W, H, f);
-      curve.push({ hFovDeg: fov / C.DEG, residualRad: res });
+      curve.push({ hFovDeg: fov / C.DEG, residualPx: res });
       if (res < bestVal) { bestVal = res; bestIdx = s; }
     }
 
@@ -128,7 +171,7 @@
     return {
       focal: focal,
       hFovDeg: fov / C.DEG,
-      residualRad: residualAtFocal(edges, W, H, focal),
+      residualPx: residualAtFocal(edges, W, H, focal),
       spread: matchSpread(edges, W, H),
       curve: curve
     };
