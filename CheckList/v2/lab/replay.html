@@ -53,6 +53,12 @@
   .thumbs img { width: 100%; border-radius: 4px; display: block; border: 1px solid var(--line); }
   .thumbs figcaption { font-size: 10px; color: var(--muted); text-align: center;
     font-family: ui-monospace, Consolas, monospace; }
+  .strip figure { margin: 0 0 10px; }
+  .strip figcaption { font-size: 11px; color: var(--muted); margin-top: 4px;
+    font-family: ui-monospace, Consolas, monospace; }
+  .strip > figure > canvas { max-width: none; }
+  .strip figure > canvas { display: block; }
+  .strip figure { overflow-x: auto; }
 </style>
 </head>
 <body>
@@ -87,6 +93,13 @@
       <div class="col">
         <div class="row" style="align-items:center;gap:10px">
           <label><input type="checkbox" id="useRefine" checked> Enhance (XFeat + bundle adjustment)</label>
+          <label>Blend
+            <select id="blendMode">
+              <option value="best" selected>Sharpest wins</option>
+              <option value="sharp">Sharpness-weighted</option>
+              <option value="average">Blended (pre-Phase-1)</option>
+            </select>
+          </label>
           <label>Output
             <select id="outSize">
               <option value="2048x1024">2048 &times; 1024</option>
@@ -98,6 +111,7 @@
         <div class="row" style="margin-top:10px;gap:8px">
           <button id="runBtn">Run</button>
           <button id="abBtn" class="ghost">A/B: sensor vs enhanced</button>
+          <button id="blendBtn" class="ghost">A/B: blend modes</button>
           <button id="dlBtn" class="ghost" disabled>Download panorama</button>
         </div>
         <div class="bar"><i id="prog"></i></div>
@@ -122,6 +136,19 @@
         </p>
       </div>
     </div>
+  </div>
+
+  <div class="card" id="blendCard" hidden>
+    <h2>Blend modes, side by side</h2>
+    <div class="strip" id="blendStrip"></div>
+    <p class="note">
+      Rendered at full output resolution and scrolled, not fit to the card &mdash; the
+      difference between these modes is a few pixels wide and vanishes under downscaling.
+      <b>Blended</b> is the pre-Phase-1 behaviour: every overlapping source averaged, which
+      draws a misaligned edge twice. <b>Sharpest wins</b> gives each output pixel to a single
+      source outright. The judgement to make is whether doubled edges resolve to single
+      instances <em>without</em> gaining visible seam lines.
+    </p>
   </div>
 
   <div class="card" id="shotsCard" hidden>

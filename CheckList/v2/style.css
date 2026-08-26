@@ -581,7 +581,7 @@ select {
 .c360-hud { position: absolute; inset: 0; }
 .c360-topbar {
   position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between;
-  padding: 14px; background: linear-gradient(rgba(0, 0, 0, .55), transparent);
+  gap: 8px; flex-wrap: wrap; padding: 14px; background: linear-gradient(rgba(0, 0, 0, .55), transparent);
 }
 .c360-counter { color: #fff; font-weight: 700; font-size: 14px; text-shadow: 0 1px 3px rgba(0, 0, 0, .6); }
 .c360-enhance {
@@ -592,6 +592,21 @@ select {
   text-shadow: 0 1px 3px rgba(0, 0, 0, .6); cursor: pointer; user-select: none;
 }
 .c360-enhance-input { accent-color: #f5a623; width: 15px; height: 15px; margin: 0; }
+/* Blend-mode picker, styled to read as a sibling of the Enhance pill rather
+   than as a form control — the top bar is already full and a default
+   <select> chrome would dominate it. */
+.c360-blend {
+  display: inline-flex; align-items: center;
+  border-radius: 999px; background: rgba(0, 0, 0, .45);
+  border: 1px solid rgba(255, 255, 255, .22);
+}
+.c360-blend-input {
+  appearance: none; -webkit-appearance: none;
+  background: transparent; border: 0; color: #fff;
+  font-size: 13px; font-weight: 600; font-family: inherit;
+  padding: 5px 10px; cursor: pointer;
+}
+.c360-blend-input option { color: #111; background: #fff; }
 /* The gray mask, peephole, world-locked captured-shot patches, active target
    marker, and reticle ring are all painted on this canvas each frame (see
    drawFrame() in capture360.js) instead of being separate DOM elements —

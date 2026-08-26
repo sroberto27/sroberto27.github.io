@@ -91,6 +91,25 @@
   function setRefineEnabled(on) {
     try { localStorage.setItem(REFINE_PREF_KEY, on ? '1' : '0'); } catch (e) { /* ignore */ }
   }
+
+  /* How pano-stitch-worker.js combines sources where photos overlap.
+     'best' (winner-takes-all) ships as the default because a handheld
+     capture's pose is never exactly right, and a few hard seam lines
+     read as cleaner than the doubled edges averaging produces. It is a
+     preference rather than a constant because that trade genuinely
+     flips: with Enhance off the pose can be several degrees out, and a
+     smeared seam can beat a hard one that lands in the wrong place. */
+  const BLEND_PREF_KEY = 'lsc2_pano_blend';
+  const BLEND_MODES = ['best', 'sharp', 'average'];
+  function blendMode() {
+    try {
+      const v = localStorage.getItem(BLEND_PREF_KEY);
+      return BLEND_MODES.indexOf(v) >= 0 ? v : 'best';
+    } catch (e) { return 'best'; }
+  }
+  function setBlendMode(v) {
+    try { localStorage.setItem(BLEND_PREF_KEY, v); } catch (e) { /* ignore */ }
+  }
   const ASSUMED_ASPECT = 9 / 16; // height/width used only to size the on-screen patch footprint
   const GUIDE_FOV_DEG = 78; // wider virtual FOV used for placing the reticle/target/patches on screen
   const MAX_BLUR_RETRIES = 2; // low-texture scenes (blank walls/ceilings) read as "blurry" too — don't loop forever
@@ -128,6 +147,13 @@
           <div class="c360-counter">Photos: <span class="c360-count">0</span> / <span class="c360-total">0</span></div>
           <label class="c360-enhance" title="Corrects lens FOV, pose drift and exposure on-device before stitching. Slower, but much sharper seams.">
             <input type="checkbox" class="c360-enhance-input"> Enhance
+          </label>
+          <label class="c360-blend" title="How overlapping photos are combined. Sharpest wins: no doubled edges, but seams can be visible. Blended: smoothest seams, but slight ghosting.">
+            <select class="c360-blend-input">
+              <option value="best">Sharpest wins</option>
+              <option value="sharp">Sharpness-weighted</option>
+              <option value="average">Blended</option>
+            </select>
           </label>
         </div>
         <div class="c360-instruction">Move the phone until the circles align.</div>
@@ -283,6 +309,9 @@
       const enhanceInput = overlay.querySelector('.c360-enhance-input');
       enhanceInput.checked = refineEnabled();
       enhanceInput.addEventListener('change', () => setRefineEnabled(enhanceInput.checked));
+      const blendInput = overlay.querySelector('.c360-blend-input');
+      blendInput.value = blendMode();
+      blendInput.addEventListener('change', () => setBlendMode(blendInput.value));
 
       const targets = buildTargetPattern();
       totalEl.textContent = String(targets.length);
@@ -984,7 +1013,8 @@
         };
         armWatchdog();
         worker.postMessage({
-          type: 'stitch', outputWidth: size.width, outputHeight: size.height, hFovDeg, images
+          type: 'stitch', outputWidth: size.width, outputHeight: size.height, hFovDeg,
+          blend: blendMode(), images
         });
       }
 

@@ -19,6 +19,15 @@
    photometric. And whatever remains at F is resampling and blending --
    the floor this projection and feather can reach at all.
 
+   The ladder runs under the SHIPPING blend mode, and a second table
+   below re-runs hypothesis D under all three. Read that table with care:
+   PSNR rewards averaging. Averaging several slightly misaligned copies
+   of an edge is exactly the operation that minimises squared error and
+   exactly the operation that draws the edge twice, so 'average' scores
+   highest here while looking worst on a real capture. The numbers are
+   recorded to make the size of that trade explicit, not to pick the
+   default -- that is decided by looking at a real capture.
+
    Run: node lab/test/run-stitch-eval.js [--png]
 */
 const path = require('path');
@@ -98,6 +107,9 @@ function buildViews(rotations, focal, gainList) {
   }));
 }
 
+// The mode the app ships with, and the one the ladder below is scored in.
+const SHIP_BLEND = 'best';
+
 const HYPOTHESES = [
   ['A', 'sensor pose + 68 deg (ships today)', priorAligned, assumedFocal, null],
   ['B', 'refined pose + 68 deg', refinedAligned, assumedFocal, null],
@@ -109,7 +121,8 @@ const HYPOTHESES = [
 
 if (WRITE_PNG) fs.mkdirSync(OUTDIR, { recursive: true });
 
-console.log('\nStitching ' + HYPOTHESES.length + ' hypotheses at ' + EW + 'x' + EH + '…');
+console.log('\nStitching ' + HYPOTHESES.length + ' hypotheses at ' + EW + 'x' + EH +
+  ' (blend: ' + SHIP_BLEND + ')…');
 const results = [];
 let sharedMask = null;
 
@@ -118,7 +131,7 @@ for (const [tag, label, rotations, focal, gainMode] of HYPOTHESES) {
   if (gainMode === 'auto') {
     gainList = ST.estimateGains(buildViews(rotations, focal, null), 16);
   }
-  const out = ST.stitch(buildViews(rotations, focal, gainList), EW, EH, {});
+  const out = ST.stitch(buildViews(rotations, focal, gainList), EW, EH, { blend: SHIP_BLEND });
   // Score every hypothesis over the SAME pixel set, so coverage
   // differences cannot flatter one of them.
   if (!sharedMask) sharedMask = out.covered;
@@ -172,6 +185,35 @@ console.log('\n   NOTE: at the true FOV the capture pattern covers ' +
 console.log('         The shortfall here is simulated AIMING error, not a pattern gap --');
 console.log('         the pattern itself measures 100% when every shot lands on target.');
 
+/* Blend-mode comparison, held at hypothesis D -- the pipeline that
+   actually ships -- so the only thing varying is how overlapping
+   sources are combined. */
+console.log('\n=== Blend modes at hypothesis D (refined pose + calibrated focal) ===\n');
+const blendRows = [];
+for (const bm of ['average', 'sharp', 'best']) {
+  const o = ST.stitch(buildViews(refinedAligned, res.focal, null), EW, EH, { blend: bm });
+  let own = 0;
+  for (let p = 0; p < o.covered.length; p++) if (o.covered[p]) own++;
+  blendRows.push({
+    mode: bm,
+    psnr: psnr(o.rgb, pano, sharedMask, EW * EH),
+    ssim: ssim(o.rgb, pano, sharedMask, EW, EH),
+    coverage: own / (EW * EH)
+  });
+  if (WRITE_PNG) writePNG(path.join(OUTDIR, 'D-' + bm + '.png'), o.rgb, EW, EH);
+}
+console.log('       blend      PSNR dB   SSIM    sphere covered');
+for (const r of blendRows) {
+  console.log('   ' + r.mode.padEnd(12) + f2(r.psnr).padStart(7) + '  ' +
+    f2(r.ssim, 4).padStart(7) + '   ' + (f2(r.coverage * 100, 1) + '%').padStart(9));
+}
+console.log('\n   Averaging minimises squared error by construction, so it wins on PSNR here');
+console.log('   even where it visibly doubles edges. Coverage is the number that must NOT');
+console.log('   move: a blend mode is allowed to trade sharpness for smoothness, but it is');
+console.log('   never allowed to stop a source from reaching a direction it photographed.');
+
+const byBlend = Object.fromEntries(blendRows.map(r => [r.mode, r]));
+
 console.log('\n=== Checks ===');
 check('focal calibration alone beats the 68 deg assumption', gap('C', 'A') > 0.5,
   '(+' + f2(gap('C', 'A')) + ' dB)');
@@ -183,6 +225,14 @@ check('Phase 0 gets close to the geometric ceiling', gap('E', 'D') < gap('D', 'A
   '(' + f2(gap('E', 'D')) + ' dB left vs ' + f2(gap('D', 'A')) + ' dB gained)');
 check('gain compensation recovers exposure drift', gap('F', 'E') > 0.3,
   '(+' + f2(gap('F', 'E')) + ' dB)');
+check('every blend mode reaches the same sphere coverage',
+  Math.abs(byBlend['sharp'].coverage - byBlend['average'].coverage) < 0.002 &&
+  Math.abs(byBlend['best'].coverage - byBlend['average'].coverage) < 0.002,
+  'average ' + f2(byBlend['average'].coverage * 100, 1) + '%, sharp ' +
+  f2(byBlend['sharp'].coverage * 100, 1) + '%, best ' + f2(byBlend['best'].coverage * 100, 1) + '%');
+check('winner-takes-all costs PSNR rather than gaining it (expected, and why the default is a visual call)',
+  byBlend['best'].psnr < byBlend['average'].psnr,
+  f2(byBlend['best'].psnr) + ' dB vs ' + f2(byBlend['average'].psnr) + ' dB');
 check('gains track the simulated auto-exposure',
   (() => {
     const g = byTag['F'].gainList;

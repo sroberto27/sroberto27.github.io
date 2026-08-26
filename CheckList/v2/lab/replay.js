@@ -204,7 +204,7 @@
 
   // ---------------------------------------------------------------- stitch
 
-  function runStitch(images, W, H, hFovDeg, onProgress) {
+  function runStitch(images, W, H, hFovDeg, blend, onProgress) {
     return new Promise((resolve, reject) => {
       const worker = new Worker('../pano-stitch-worker.js');
       worker.onmessage = (e) => {
@@ -217,11 +217,17 @@
       worker.onerror = (e) => { worker.terminate(); reject(new Error(e.message || 'stitch worker crashed')); };
       // Blobs, not bitmaps — the worker decodes one at a time. Sending 34
       // decoded frames instead is what used to run phones out of memory.
-      worker.postMessage({ type: 'stitch', outputWidth: W, outputHeight: H, hFovDeg, images });
+      worker.postMessage({ type: 'stitch', outputWidth: W, outputHeight: H, hFovDeg, blend, images });
     });
   }
 
-  async function buildOnce(useRefine, W, H, label) {
+  function blendChoice() { return el('blendMode').value; }
+  function blendLabel(m) {
+    return m === 'best' ? 'sharpest wins' : (m === 'sharp' ? 'sharpness-weighted' : 'blended');
+  }
+
+  async function buildOnce(useRefine, W, H, label, blend) {
+    blend = blend || blendChoice();
     const t0 = performance.now();
     let refinement = null;
     if (useRefine) {
@@ -253,13 +259,63 @@
     const hFov = (refinement && refinement.hFovDeg) ? refinement.hFovDeg : baselineFovDeg();
     const base = useRefine ? 0.55 : 0;
     const span = useRefine ? 0.45 : 1;
-    const res = await runStitch(images, W, H, hFov, (s, pct) => {
+    const res = await runStitch(images, W, H, hFov, blend, (s, pct) => {
       stage(s); progress(base + pct / 100 * span);
     });
     const ms = performance.now() - t0;
     log(`  ${label}: ${fmt(res.coverage * 100, 1)}% sphere coverage, ${(ms / 1000).toFixed(1)}s` +
       (res.downscaled ? ' [worker downscaled the output — not enough memory]' : ''));
-    return { res, refinement, hFov, ms };
+    return { res, refinement, hFov, ms, blend };
+  }
+
+  /* Refinement is by far the expensive half of a run and it does not
+     depend on the blend mode at all, so the blend A/B reuses one
+     refinement across all three stitches. Re-refining per mode would
+     triple the wall clock and, because the pipeline is deterministic,
+     produce the same poses anyway. */
+  async function buildBlends(useRefine, W, H, modes) {
+    let refinement = null;
+    if (useRefine) {
+      stage('refining…');
+      refinement = await runRefinement(archive.shots, (s, pct) => {
+        stage(s); progress(pct / 100 * 0.4);
+      });
+      if (refinement) {
+        const d = refinement.diagnostics || {};
+        log(`  refined: hFOV ${fmt(refinement.hFovDeg)}°, mean correction ${fmt(d.meanCorrectionDeg)}°, ` +
+          `${d.edges} edges (${d.rejectedEdges} rejected), ${d.keypointsPerShot} kpts/shot`);
+      } else {
+        log('  refinement returned nothing — falling back to sensor pose');
+      }
+    }
+
+    const images = archive.shots.map((s, i) => {
+      const pose = refinement && refinement.poses[i];
+      const g = refinement && refinement.gains && refinement.gains[i];
+      return {
+        blob: s.blob, width: s.width, height: s.height,
+        yaw: pose ? pose.yaw : s.yaw,
+        pitch: pose ? pose.pitch : s.pitch,
+        roll: pose ? pose.roll : s.roll,
+        gain: (typeof g === 'number') ? g : 1
+      };
+    });
+    const hFov = (refinement && refinement.hFovDeg) ? refinement.hFovDeg : baselineFovDeg();
+
+    const runs = [];
+    for (let i = 0; i < modes.length; i++) {
+      const t0 = performance.now();
+      const base = (useRefine ? 0.4 : 0) + i / modes.length * (useRefine ? 0.6 : 1);
+      const span = (useRefine ? 0.6 : 1) / modes.length;
+      const res = await runStitch(images, W, H, hFov, modes[i], (st, pct) => {
+        stage(modes[i] + ': ' + st); progress(base + pct / 100 * span);
+      });
+      const ms = performance.now() - t0;
+      log(`  ${modes[i]} (${blendLabel(modes[i])}): ${fmt(res.coverage * 100, 1)}% coverage, ` +
+        `${(ms / 1000).toFixed(1)}s`);
+      runs.push({ mode: modes[i], res, ms });
+    }
+    return { runs, refinement, hFov };
   }
 
   async function draw(res) {
@@ -284,6 +340,33 @@
     el('metrics').innerHTML = rows.join('');
   }
 
+  /* One canvas per blend mode, at full output resolution, so the modes can
+     be flipped between at 1:1 rather than judged from a downscaled
+     thumbnail — every difference this feature is about lives at the pixel
+     level and disappears when the image is fit to a card. */
+  async function showBlendStrip(runs) {
+    const box = el('blendStrip');
+    box.innerHTML = '';
+    for (const r of runs) {
+      const fig = document.createElement('figure');
+      const cv = document.createElement('canvas');
+      cv.width = r.res.width; cv.height = r.res.height;
+      const ctx = cv.getContext('2d');
+      if (r.res.blob) {
+        const bmp = await createImageBitmap(r.res.blob);
+        ctx.drawImage(bmp, 0, 0);
+        bmp.close();
+      } else {
+        ctx.putImageData(new ImageData(new Uint8ClampedArray(r.res.buffer), r.res.width, r.res.height), 0, 0);
+      }
+      const cap = document.createElement('figcaption');
+      cap.textContent = `${r.mode} — ${blendLabel(r.mode)}`;
+      fig.appendChild(cv); fig.appendChild(cap);
+      box.appendChild(fig);
+    }
+    el('blendCard').hidden = false;
+  }
+
   function outputSize() {
     const [w, h] = el('outSize').value.split('x').map(Number);
     return { W: w, H: h };
@@ -292,6 +375,7 @@
   function busy(on) {
     el('runBtn').disabled = on;
     el('abBtn').disabled = on;
+    el('blendBtn').disabled = on;
   }
 
   el('runBtn').addEventListener('click', async () => {
@@ -300,7 +384,9 @@
     try {
       const { W, H } = outputSize();
       const useRefine = el('useRefine').checked;
-      log(`\nrun: ${archive.shots.length} shots -> ${W}x${H}, enhance ${useRefine ? 'ON' : 'OFF'}`);
+      const blend = blendChoice();
+      log(`\nrun: ${archive.shots.length} shots -> ${W}x${H}, enhance ${useRefine ? 'ON' : 'OFF'}, ` +
+        `blend ${blend} (${blendLabel(blend)})`);
       const r = await buildOnce(useRefine, W, H, useRefine ? 'enhanced' : 'sensor pose');
       await draw(r.res);
       const d = (r.refinement && r.refinement.diagnostics) || {};
@@ -308,6 +394,7 @@
         metric('Sphere coverage', fmt(r.res.coverage * 100, 1) + '%',
           r.res.coverage > 0.995 ? 'good' : (r.res.coverage > 0.97 ? '' : 'bad')),
         metric('Output', `${r.res.width} × ${r.res.height}` + (r.res.downscaled ? ' (downscaled)' : '')),
+        metric('Blend mode', `${r.blend} — ${blendLabel(r.blend)}`),
         metric('Horizontal FOV used', fmt(r.hFov) + '°' +
           (r.refinement ? '' : ' (assumed, from ' + ASSUMED_LONG_FOV_DEG + '° long-axis)')),
         metric('Pose refinement', r.refinement ? 'applied' : 'not applied', r.refinement ? 'good' : 'dim'),
@@ -352,6 +439,39 @@
       ]);
       log('  showing B (enhanced) above. Coverage is a capture property, so the two ' +
         'should be close; the visible difference is seam alignment.');
+      stage('done'); progress(1);
+    } catch (err) {
+      log('  FAILED ' + (err && err.message ? err.message : err));
+      stage('failed: ' + (err && err.message ? err.message : err));
+    } finally { busy(false); }
+  });
+
+  /* The comparison Phase 1 exists to settle: identical photos, identical
+     poses, identical output size, the only difference being how
+     overlapping sources are combined. The result is a visual judgement —
+     look at the doubled edges, not at the coverage number, which is
+     expected to be identical to a rounding error across all three. */
+  el('blendBtn').addEventListener('click', async () => {
+    if (!archive) return;
+    busy(true);
+    try {
+      const { W, H } = outputSize();
+      const useRefine = el('useRefine').checked;
+      const modes = ['average', 'sharp', 'best'];
+      log(`\nblend A/B: ${archive.shots.length} shots -> ${W}x${H}, enhance ${useRefine ? 'ON' : 'OFF'}`);
+      const { runs, refinement, hFov } = await buildBlends(useRefine, W, H, modes);
+      showBlendStrip(runs);
+      await draw(runs[runs.length - 1].res);
+      showMetrics([
+        metric('Enhance', useRefine ? (refinement ? 'applied' : 'requested, not applied') : 'off',
+          refinement ? 'good' : 'dim'),
+        metric('Horizontal FOV used', fmt(hFov) + '°')
+      ].concat(runs.map(r =>
+        metric(`${r.mode} · ${blendLabel(r.mode)}`,
+          `${fmt(r.res.coverage * 100, 1)}% · ${(r.ms / 1000).toFixed(1)} s`)
+      )));
+      log('  the canvas shows "best". Compare the strip above at full size — the question ' +
+        'is whether doubled edges become single without gaining visible seam lines.');
       stage('done'); progress(1);
     } catch (err) {
       log('  FAILED ' + (err && err.message ? err.message : err));

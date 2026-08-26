@@ -5,6 +5,10 @@
      - per-view rotation (the worker reads the raw sensor pose)
      - focal length      (the worker uses ASSUMED_H_FOV_DEG = 68)
 
+   The blend modes ('average' / 'sharp' / 'best') are ported too, with
+   the same constants, for the same reason: measuring a blend the app
+   does not ship would tell us nothing about the app.
+
    That is the whole point of this file. Holding the projection and
    blending identical to the shipped code and varying ONLY pose and focal
    isolates how much of the visible error each one causes. Anything this
@@ -24,15 +28,80 @@
   const S = global.LSCSO3;
   const C = global.LSCCamera;
 
+  /* Blend constants, held in lockstep with ../pano-stitch-worker.js --
+     see the BLEND MODES block there for what each one is for. Changing
+     one of these without changing the other makes this file measure a
+     stitcher that does not exist. */
+  const DEFAULT_BLEND = 'best';
+  const SHARP_K = 6 / 255;        // luma here is 0..1, not 0..255
+  const SHARP_SMOOTH = 12;
+  const SHARP_FLOOR = 0.005;
+  const SHARP_EXP = 3;
+  const BEST_FEATHER_WEIGHT = 0.35;
+
+  // Local sharpness on the scatter loop's own sample grid; mirrors
+  // sharpnessMap() in the worker, over Float32 RGB in 0..1.
+  function sharpnessMap(px, w, h, stride) {
+    const sw = Math.ceil(w / stride), sh = Math.ceil(h / stride);
+    const raw = new Float32Array(sw * sh);
+    const gray = (x, y) => {
+      const o = (y * w + x) * 3;
+      return 0.299 * px[o] + 0.587 * px[o + 1] + 0.114 * px[o + 2];
+    };
+    for (let gy = 0; gy < sh; gy++) {
+      const y = gy * stride;
+      const yUp = y - stride < 0 ? 0 : y - stride;
+      const yDn = y + stride >= h ? h - 1 : y + stride;
+      for (let gx = 0; gx < sw; gx++) {
+        const x = gx * stride;
+        const xL = x - stride < 0 ? 0 : x - stride;
+        const xR = x + stride >= w ? w - 1 : x + stride;
+        const lap = gray(xL, y) + gray(xR, y) + gray(x, yUp) + gray(x, yDn) - 4 * gray(x, y);
+        raw[gy * sw + gx] = lap < 0 ? -lap : lap;
+      }
+    }
+    const tmp = new Float32Array(sw * sh);
+    const R = SHARP_SMOOTH;
+    for (let gy = 0; gy < sh; gy++) {
+      const row = gy * sw;
+      let sum = 0;
+      for (let k = 0; k <= (R < sw - 1 ? R : sw - 1); k++) sum += raw[row + k];
+      for (let gx = 0; gx < sw; gx++) {
+        const a = gx - R, b = gx + R;
+        tmp[row + gx] = sum / ((b >= sw ? sw - 1 : b) - (a < 0 ? 0 : a) + 1);
+        if (b + 1 < sw) sum += raw[row + b + 1];
+        if (a >= 0) sum -= raw[row + a];
+      }
+    }
+    for (let gx = 0; gx < sw; gx++) {
+      let sum = 0;
+      for (let k = 0; k <= (R < sh - 1 ? R : sh - 1); k++) sum += tmp[k * sw + gx];
+      for (let gy = 0; gy < sh; gy++) {
+        const a = gy - R, b = gy + R;
+        const v = sum / ((b >= sh ? sh - 1 : b) - (a < 0 ? 0 : a) + 1);
+        if (b + 1 < sh) sum += tmp[(b + 1) * sw + gx];
+        if (a >= 0) sum -= tmp[a * sw + gx];
+        raw[gy * sw + gx] = v / (v + SHARP_K);
+      }
+    }
+    return { map: raw, sw: sw };
+  }
+
   /**
    * views: [{ rgb: Float32Array(W*H*3) in 0..1, width, height, R, focal, gain? }]
+   * options.blend: 'average' | 'sharp' | 'best' (default DEFAULT_BLEND)
    * Returns { rgb: Float32Array(outW*outH*3), weight: Float32Array, covered: Uint8Array }
    */
   function stitch(views, outW, outH, options) {
     const opts = options || {};
     const featherPower = opts.featherPower !== undefined ? opts.featherPower : 1;
+    let mode = opts.blend;
+    if (mode !== 'average' && mode !== 'sharp' && mode !== 'best') mode = DEFAULT_BLEND;
+    if (mode === 'best' && views.length > 255) mode = 'sharp';
     const colorSum = new Float32Array(outW * outH * 3);
     const weightSum = new Float32Array(outW * outH);
+    const bestScore = mode === 'best' ? new Float32Array(outW * outH) : null;
+    const bestOwner = mode === 'best' ? new Uint8Array(outW * outH) : null;
 
     for (let v = 0; v < views.length; v++) {
       const view = views[v];
@@ -47,6 +116,13 @@
       const hFov = C.hFovFromFocal(f, W);
       const outSamplesAcross = (hFov / (2 * Math.PI)) * outW;
       const stride = Math.max(1, Math.floor(W / (outSamplesAcross * 1.4 || 1)));
+
+      let sharp = null, sharpW = 0;
+      if (mode !== 'average') {
+        const sm = sharpnessMap(px, W, H, stride);
+        sharp = sm.map; sharpW = sm.sw;
+      }
+      const owner = v + 1;   // 0 means "no source has claimed this pixel yet"
 
       for (let y = 0; y < H; y += stride) {
         const ny = 1 - (y + 0.5) / H * 2;
@@ -69,8 +145,19 @@
           if (featherPower !== 1) w = Math.pow(w, featherPower);
 
           const si = (y * W + x) * 3;
-          splat(colorSum, weightSum, outW, outH, eq.u, eq.v,
-            px[si] * gain, px[si + 1] * gain, px[si + 2] * gain, w);
+          const r = px[si] * gain, gg = px[si + 1] * gain, b = px[si + 2] * gain;
+          if (mode === 'average') {
+            splat(colorSum, weightSum, outW, outH, eq.u, eq.v, r, gg, b, w);
+          } else {
+            const norm = sharp[(y / stride) * sharpW + (x / stride)];
+            if (mode === 'sharp') {
+              const boost = SHARP_FLOOR + Math.pow(norm, SHARP_EXP);
+              splat(colorSum, weightSum, outW, outH, eq.u, eq.v, r, gg, b, w * boost);
+            } else {
+              splatBest(colorSum, weightSum, bestScore, bestOwner, outW, outH, eq.u, eq.v,
+                r, gg, b, w, norm + BEST_FEATHER_WEIGHT * w, owner);
+            }
+          }
         }
       }
     }
@@ -87,6 +174,38 @@
       }
     }
     return { rgb: rgb, weight: weightSum, covered: covered };
+  }
+
+  // Winner-takes-all splat; mirrors splatBest() in the worker.
+  function splatBest(colorSum, weightSum, bestScore, bestOwner, W, H, u, v, r, g, b, weight, score, owner) {
+    const x0 = Math.floor(u), y0 = Math.floor(v);
+    const fx = u - x0, fy = v - y0;
+    for (let dy = 0; dy <= 1; dy++) {
+      const yy = y0 + dy;
+      if (yy < 0 || yy >= H) continue;
+      const wy = dy ? fy : (1 - fy);
+      for (let dx = 0; dx <= 1; dx++) {
+        let xx = (x0 + dx) % W; if (xx < 0) xx += W;
+        const wx = dx ? fx : (1 - fx);
+        const w = weight * wx * wy;
+        if (w <= 0) continue;
+        const p = yy * W + xx;
+        if (bestOwner[p] === owner) {
+          if (score > bestScore[p]) bestScore[p] = score;
+        } else if (bestOwner[p] === 0 || score > bestScore[p]) {
+          bestOwner[p] = owner;
+          bestScore[p] = score;
+          colorSum[p * 3] = 0; colorSum[p * 3 + 1] = 0; colorSum[p * 3 + 2] = 0;
+          weightSum[p] = 0;
+        } else {
+          continue;
+        }
+        colorSum[p * 3] += r * w;
+        colorSum[p * 3 + 1] += g * w;
+        colorSum[p * 3 + 2] += b * w;
+        weightSum[p] += w;
+      }
+    }
   }
 
   function splat(colorSum, weightSum, W, H, u, v, r, g, b, weight) {
