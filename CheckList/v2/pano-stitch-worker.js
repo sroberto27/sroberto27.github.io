@@ -19,7 +19,8 @@
    MEMORY IS THE BINDING CONSTRAINT HERE, not speed. Sources arrive as
    compressed Blobs and are decoded ONE AT A TIME inside this worker; an
    earlier version decoded all of them on the main thread and transferred
-   34 live ImageBitmaps, which at 1920x1080 is 282 MB of uncompressed
+   every live ImageBitmap at once, which for 34 frames at 1920x1080 is
+   282 MB of uncompressed
    pixels resident simultaneously. Together with the accumulators that put
    peak usage near half a gigabyte, and mobile Safari kills the whole tab
    rather than throwing something catchable -- the symptom was "the page
@@ -494,7 +495,7 @@ function splatBest(colorSum, weightSum, bestScore, bestOwner, W, H, u, v, r, g, 
    pixels, and the reason is not pedantry. An equirect row near a pole has
    the same W columns as the equator but covers a vanishing sliver of
    solid angle, so forward scatter cannot fill it: at 88 deg latitude a
-   34-shot capture leaves roughly 800 of 1024 columns empty in an
+   real capture leaves roughly 800 of 1024 columns empty in an
    alternating speckle (measured: 185 separate runs in one row), purely
    because the source frames do not have that many samples pointing there.
    Counting pixels called that a 0.35% coverage gap. It is not one -- the

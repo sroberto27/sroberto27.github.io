@@ -20,33 +20,49 @@
   const O = global.LSCOrientation;
   const DEG = Math.PI / 180;
 
-  /* 34-shot pattern: 8 horizon + 8 at +33 + 8 at -33 + 4 at +66 + 4 at -66
-     + true zenith + true nadir.
+  /* 46-shot pattern: 12 horizon + 12 at +33 + 12 at -33 + 4 at +66
+     + 4 at -66 + true zenith + true nadir.
 
-     Chosen by measuring actual sphere coverage (equal-area sampling,
-     using the real stitcher's projection and feather) across the whole
-     plausible phone-lens range. The previous 26-shot pattern
-     (8/8/8 at 0,+/-35 with zenith/nadir at only +/-80) left real,
-     unreachable gaps: it covered 93.6% of the sphere at 68deg hFOV and
-     only 87.1% at a narrow 58deg lens, which showed up as black holes in
-     finished panoramas. This pattern measures 100.0% at every FOV from
-     58deg to 78deg -- the margin matters, because the true lens FOV is
-     unknown at capture time (it is calibrated later, from the photos).
+     Chosen by lab/test/run-pattern-coverage.js, which samples the sphere
+     equal-area and back-projects every sample through the real stitcher
+     projection and feather, across the whole plausible phone-lens range.
+     Run it rather than trusting this paragraph.
 
-     Three specific changes, each load-bearing:
-     - the +/-66 rings close the band the old pattern could not reach
-       between the +/-35 ring's top edge and a single zenith shot;
-     - zenith/nadir moved to true +/-90, which is both better coverage
-       and easier to aim than the old +/-80;
-     - the +/-33 rings are staggered 22.5deg against the horizon ring, so
-       ring-to-ring overlap lands where a frame corner would otherwise
-       meet another frame corner. That also gives pose refinement more
-       cross-ring feature matches to work with. */
+     This replaced an 8-per-ring version, and the reason is overlap, not
+     coverage. Coverage is a trap here: phone stills come back PORTRAIT,
+     so the vertical field is a third wider than the horizontal one, and
+     rings only have to ABUT for every direction to land inside some
+     frame. The 8-per-ring pattern measured 100% covered and still
+     produced doubled edges, because at the 46.6deg lens calibrated from
+     a real capture, 45deg yaw spacing leaves consecutive horizon frames
+     overlapping by 1.6deg. Neither the feature matcher nor the
+     best-pixel blend can do anything with that -- both need two frames
+     to see the same direction properly before they have a choice to
+     make. Measured as the share of the sphere seen well by at least two
+     frames, 8-per-ring manages 48.7% at 45deg and 93.0% at 57deg;
+     12-per-ring reaches 77.5% and 99.6%, and is complete by 60deg.
+
+     Every part of it is load-bearing, and the measurement says so:
+     - 12 per ring rather than 8, for the overlap above. 30deg spacing
+       gives a real margin at any lens the app is likely to meet.
+     - the +/-66 rings close the band between the +/-33 ring's top edge
+       and a single pole shot. Dropping them (12/12/12 + poles, 38 shots)
+       loses full coverage outright -- 95.0% at 45deg -- and its two-frame
+       overlap never exceeds 97.5% even at 78deg.
+     - zenith/nadir at true +/-90, which is both better coverage and
+       easier to aim than an off-pole shot. They are only worth about 2.7
+       points of overlap over the 44-shot variant, but they are two
+       photographs and they are the margin if a lens turns out narrower
+       than anything swept here.
+     - the +/-33 rings are staggered by half a step (15deg) against the
+       horizon ring, so ring-to-ring overlap lands where a frame corner
+       would otherwise meet another frame corner. That also gives pose
+       refinement more cross-ring feature matches to work with. */
   function buildTargetPattern() {
     const t = [];
-    for (let i = 0; i < 8; i++) t.push({ yaw: i * 45, pitch: 0 });
-    for (let i = 0; i < 8; i++) t.push({ yaw: i * 45 + 22.5, pitch: 33 });
-    for (let i = 0; i < 8; i++) t.push({ yaw: i * 45 + 22.5, pitch: -33 });
+    for (let i = 0; i < 12; i++) t.push({ yaw: i * 30, pitch: 0 });
+    for (let i = 0; i < 12; i++) t.push({ yaw: i * 30 + 15, pitch: 33 });
+    for (let i = 0; i < 12; i++) t.push({ yaw: i * 30 + 15, pitch: -33 });
     for (let i = 0; i < 4; i++) t.push({ yaw: i * 90, pitch: 66 });
     for (let i = 0; i < 4; i++) t.push({ yaw: i * 90, pitch: -66 });
     t.push({ yaw: 0, pitch: 90 });
@@ -78,10 +94,24 @@
      spatial coverage. 960 is the measured optimum, at roughly double the
      inference time -- acceptable for a stage the user opts into. */
   const REFINE_MAX_SIDE = 960;
-  const REFINE_TIMEOUT_MS = 240000;
+  /* Whole-refinement deadline, not a per-step one: if this fires we give
+     up on refinement entirely and stitch from the sensor pose.
+
+     It is sized by MATCH PAIRS, not by shot count, because pairwise
+     matching dominates and pairs grow much faster than photos do. Going
+     from the 8-per-ring pattern to the 12-per-ring one took the capture
+     from 34 shots to 46 (1.35x) but from 124 candidate pairs to 253
+     (2.04x). 240000 was the value tuned against 124 pairs, so this is
+     that number scaled by the measured pair growth and rounded. */
+  const REFINE_TIMEOUT_MS = 480000;
   /* Longest gap tolerated between two progress messages from the stitch
      worker before we assume it died. Generous, because the per-image
-     scatter loop on a slow phone can genuinely take a while. */
+     scatter loop on a slow phone can genuinely take a while.
+
+     Deliberately NOT scaled with the pattern size: the worker reports
+     progress once per source image, so this bounds the time for ONE
+     decode plus one scatter pass, which does not depend on how many
+     photos there are. */
   const STITCH_WATCHDOG_MS = 75000;
 
   function refineEnabled() {
@@ -199,13 +229,18 @@
   }
 
   /* Output size is a memory decision before it is a quality one. The
-     stitch worker holds 16 bytes of accumulator per output pixel, so
-     4096x2048 costs 134 MB, plus 34 MB for the output image itself.
+     stitch worker holds 16 bytes of accumulator per output pixel -- 21 in
+     the winner-takes-all blend, which adds a score and an owner map -- so
+     4096x2048 costs 134 to 176 MB, plus 34 MB for the output image itself.
+
+     Note this does NOT scale with the number of photos: the accumulators
+     are per OUTPUT pixel, and sources are decoded one at a time. Adding
+     shots to the capture pattern costs time, not peak memory.
 
      navigator.deviceMemory does not exist on Safari or Firefox, which
      means every iPhone used to land on the 4096x2048 branch -- the most
      expensive one -- purely because we could not measure it. Combined
-     with 34 decoded source bitmaps that was enough to have the browser
+     with every source bitmap decoded that was enough to have the browser
      kill the tab outright. Unknown now means 3072x1536 (about 100 MB of
      accumulators): still a detailed panorama, and it leaves headroom.
      Devices that actually report >= 8 GB still get the full size. */
@@ -894,8 +929,9 @@
         catch (e) { finishAndClose({ stitched: false, sessionId, sourceCount: sourceMediaIds.length, reason: 'unsupported' }); return; }
 
         /* Hand the worker the COMPRESSED blobs and let it decode them one
-           at a time. Decoding all 34 here first produced 34 live
-           ImageBitmaps at 1920x1080 -- 282 MB of resident pixel data,
+           at a time. Decoding them all here first produced one live
+           ImageBitmap per shot at 1920x1080 -- 282 MB of resident pixel
+           data for a 34-shot capture, more now,
            which on top of the worker's own accumulators was enough for
            mobile Safari to kill the tab instead of throwing something the
            error handlers below could catch. Blobs are ~500 KB each and

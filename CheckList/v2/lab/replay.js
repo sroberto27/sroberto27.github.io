@@ -215,8 +215,8 @@
         else reject(new Error(`${msg.type}${msg.stage ? ' during ' + msg.stage : ''}: ${msg.message || msg.reason || ''}`));
       };
       worker.onerror = (e) => { worker.terminate(); reject(new Error(e.message || 'stitch worker crashed')); };
-      // Blobs, not bitmaps — the worker decodes one at a time. Sending 34
-      // decoded frames instead is what used to run phones out of memory.
+      // Blobs, not bitmaps — the worker decodes one at a time. Sending every
+      // decoded frame instead is what used to run phones out of memory.
       worker.postMessage({ type: 'stitch', outputWidth: W, outputHeight: H, hFovDeg, blend, images });
     });
   }

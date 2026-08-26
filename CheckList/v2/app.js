@@ -661,7 +661,7 @@
         unsupported: `Automatic stitching isn’t supported in this browser. Your ${n} source photos were saved — they can be re-processed later or exported as a source set.`,
         'stitch-error': 'Stitching failed, but your source photos were saved and were not lost.',
         // Almost always memory: the worker was killed rather than throwing.
-        'stitch-stalled': `Stitching stopped responding— most likely this device ran out of memory. Your ${n} source photos were saved. Turning off “Enhance”, or capturing fewer angles, both reduce how much memory the build needs.`,
+        'stitch-stalled': `Stitching stopped responding— most likely this device ran out of memory. Your ${n} source photos were saved. Turning off “Enhance” reduces how much memory the build needs; you can also finish a capture early rather than shooting every angle.`,
         'no-readable-sources': 'Could not read the captured photos back from storage — nothing to stitch.',
         'encode-failed': 'The finished panorama could not be encoded, but your source photos were saved.',
         'storage-failed': 'The finished panorama could not be saved (storage may be full), but your source photos were kept.',

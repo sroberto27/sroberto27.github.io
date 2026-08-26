@@ -248,11 +248,29 @@ section('5. Anisotropic prior vs isotropic, across graph density');
       ' | ' + fmt(r.prior).padStart(10));
   }
 
+  /* What is claimed here changed when the capture pattern went from 8 to
+     12 shots per ring. That doubled the view graph -- 109 edges to 224 at
+     6000 points -- and on a graph that well connected the prior barely
+     participates in the solution at all: both variants land inside 0.03
+     deg of truth and which one wins is noise (they have traded places
+     between runs). Asserting that the anisotropic prior wins there would
+     be asserting noise, so the dense case now asserts the thing that is
+     actually true and actually useful: at that density the prior does not
+     matter, and neither choice can hurt you.
+
+     The anisotropic prior earns its place as the graph thins, which is
+     the low-texture indoor case this application keeps meeting -- blank
+     walls and plain ceilings yield few keypoints no matter how many
+     photos are taken, so a denser pattern does not rescue it. That is
+     where the second check lives now. */
   const dense = rows[0];
-  check('anisotropic prior beats isotropic on a well-connected graph',
-    dense.aniso < dense.iso, '(' + fmt(dense.aniso, 4) + ' vs ' + fmt(dense.iso, 4) + ' deg)');
-  check('anisotropic prior is never worse at any density',
-    rows.every(r => r.aniso <= r.iso * 1.02));
+  check('on a well-connected graph the prior barely matters either way',
+    Math.abs(dense.aniso - dense.iso) < 0.02 && dense.aniso < 0.05 && dense.iso < 0.05,
+    '(' + fmt(dense.aniso, 4) + ' vs ' + fmt(dense.iso, 4) + ' deg)');
+  check('anisotropic prior is decisively better as the graph thins',
+    rows.filter(r => r.edges < 200).every(r => r.aniso < r.iso * 0.9),
+    '(' + rows.filter(r => r.edges < 200)
+      .map(r => fmt(r.aniso, 3) + ' vs ' + fmt(r.iso, 3)).join(', ') + ' deg)');
 
   const sparse = rows[rows.length - 1];
   console.log('    note: at ' + sparse.pts + ' points only ~' + Math.round(sparse.edges) +

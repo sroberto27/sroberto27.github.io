@@ -9,7 +9,8 @@
    quality metrics cannot see:
 
      - sources arrive as compressed Blobs and are decoded ONE AT A TIME.
-       The previous version took 34 pre-decoded ImageBitmaps, 282 MB of
+       The previous version took all 34 of the then-pattern's frames as
+       pre-decoded ImageBitmaps, 282 MB of
        resident pixels, and mobile Safari killed the tab outright rather
        than throwing anything the error handlers could catch.
      - allocate() steps the output down instead of dying when the
@@ -131,7 +132,8 @@ function run(env, msg) {
 }
 
 (async () => {
-  console.log('=== 1. Full 34-shot stitch, sources as blobs ===');
+  console.log('=== 1. Full ' + C.buildTargetPattern().length +
+    '-shot stitch, sources as blobs ===');
   {
     const env = makeEnv();
     const shots = buildShots(320, 180);
@@ -147,15 +149,15 @@ function run(env, msg) {
     check('decoded every source exactly once', st.decodes === shots.length, `${st.decodes} decodes / ${shots.length} shots`);
 
     /* The whole point of the change. One decoded frame alive at a time
-       instead of all 34; on a real 1920x1080 capture that is the
+       instead of all of them; on a real 1920x1080 capture that is the
        difference between 8 MB and 282 MB. */
     check('never holds more than one decoded frame at once', st.peakLive <= 1, `peak ${st.peakLive} live bitmaps`);
     check('releases every bitmap it decoded', st.live === 0, `${st.live} still open`);
 
     /* Coverage is the assertion that would have caught the black-holes
-       bug directly: perfect poses, 34 shots, nominal FOV, nothing should
+       bug directly: perfect poses, the whole pattern, nominal FOV, nothing should
        be missing. */
-    check("34-shot pattern covers the whole sphere", out.coverage > 0.999,
+    check("the capture pattern covers the whole sphere", out.coverage > 0.999,
       f2(out.coverage * 100, 2) + '% (solid-angle weighted)');
     check('did not have to downscale', out.downscaled === false);
 

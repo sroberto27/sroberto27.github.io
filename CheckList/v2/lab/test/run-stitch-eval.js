@@ -175,8 +175,8 @@ console.log('     floor: resampling + blending   ' + f2(byTag['F'].psnr).padStar
 
 /* Coverage is a separate finding from accuracy: no stitching improvement
    can fill a direction the camera never pointed at. The old 26-shot
-   pattern had a genuine geometric gap here (~90%); the current 34-shot
-   pattern measures 100% when every shot lands exactly on target, so the
+   pattern had a genuine geometric gap here (~90%); the current pattern
+   measures 100% when every shot lands exactly on target, so the
    shortfall reported below is the simulated per-shot AIMING error that
    synth.js injects, which is the realistic case. */
 console.log('\n   NOTE: at the true FOV the capture pattern covers ' +
