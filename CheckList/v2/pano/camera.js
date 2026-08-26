@@ -68,6 +68,30 @@
     };
   }
 
+  /* How far a ray's direction can move, for a feature this many pixels
+     from the principal point, purely because the focal length is not yet
+     known exactly.
+
+     This is the term that makes a FIXED angular prior gate the wrong
+     shape. A wrong focal displaces rays RADIALLY: nothing at all at the
+     image centre, growing steadily toward the corners. Measured on a real
+     capture at a nominal 53.7 deg with the focal only known to lie in the
+     45-95 deg search range, the induced shift is 0 deg at the centre but
+     over 20 deg near the frame edge -- so a flat 9 deg gate is loose where
+     it should be strict and far too strict where the overlapping frames
+     actually share their features. It threw away all but a median of ONE
+     match per pair on real data.
+
+     Returning the spread as a function of radius lets the gate be shaped
+     like the error it is meant to tolerate, and lets it tighten on its own
+     once calibration has narrowed the focal range. */
+  function focalSpreadRad(rPx, focal, focalLo, focalHi) {
+    if (!(rPx > 0)) return 0;
+    const at = (f) => Math.atan(rPx / f);
+    const base = at(focal);
+    return Math.max(Math.abs(at(focalLo) - base), Math.abs(at(focalHi) - base));
+  }
+
   function inFrame(p, W, H, margin) {
     const m = margin || 0;
     return !!p && p.px >= m && p.px <= W - 1 - m && p.py >= m && p.py <= H - 1 - m;
@@ -128,6 +152,7 @@
     widthFovFromLongFov: widthFovFromLongFov,
     pixelToRay: pixelToRay,
     rayToPixel: rayToPixel,
+    focalSpreadRad: focalSpreadRad,
     inFrame: inFrame,
     rayToEquirect: rayToEquirect,
     buildTargetPattern: buildTargetPattern,

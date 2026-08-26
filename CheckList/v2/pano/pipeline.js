@@ -30,9 +30,39 @@
     return C.overlappingPairs(R, (opts.maxAxisAngleDeg || 60) * C.DEG);
   }
 
-  function fitEdges(edgeInputs, priorR, W, H, focal, gateRad, ransacOpts) {
+  /* The prior gate's threshold is deliberately NOT a single angle.
+
+     Pose uncertainty is roughly uniform across the frame, but focal
+     uncertainty is radial: it displaces a ray by nothing at the principal
+     point and by tens of degrees near the corners (camera.js
+     focalSpreadRad). Since the focal is exactly what this pipeline is
+     still solving for, a flat gate is mis-shaped -- and mis-shaped in the
+     worst possible direction, because overlapping frames share their
+     features at the FRAME EDGES, where a flat gate is tightest relative
+     to the true error. On a real 34-shot capture a flat 9 deg gate left a
+     median of one surviving match per pair and rejected 38 of 81 pairs
+     outright.
+
+     So the allowance is pose-uncertainty PLUS whatever the current focal
+     ignorance can account for at that match's radius. It narrows on its
+     own as calibration narrows [focalLo, focalHi]. */
+  function makeGate(baseRad, W, H, focal, focalLo, focalHi) {
+    const cx = W / 2, cy = H / 2;
+    return function (c) {
+      const m = c.m;
+      const r = Math.max(
+        Math.hypot(m.ax - cx, m.ay - cy),
+        Math.hypot(m.bx - cx, m.by - cy));
+      return baseRad + C.focalSpreadRad(r, focal, focalLo, focalHi);
+    };
+  }
+
+  function fitEdges(edgeInputs, priorR, W, H, focal, gateRad, ransacOpts, focalRange) {
     const edges = [];
     const rejected = [];
+    const lo = focalRange ? focalRange.lo : focal;
+    const hi = focalRange ? focalRange.hi : focal;
+    const gateFn = makeGate(gateRad, W, H, focal, lo, hi);
     for (const ein of edgeInputs) {
       const matches = ein.matches || [];
       if (matches.length < 4) { rejected.push({ i: ein.i, j: ein.j, reason: 'too-few-matches' }); continue; }
@@ -44,7 +74,7 @@
       // matches that repeated indoor structure produces before RANSAC
       // ever gets a chance to build a consensus around them.
       const RrelPrior = S.mul(S.transpose(priorR[ein.j]), priorR[ein.i]);
-      const gated = E.priorGate(corr, RrelPrior, gateRad);
+      const gated = E.priorGate(corr, RrelPrior, gateFn);
       if (gated.length < 4) { rejected.push({ i: ein.i, j: ein.j, reason: 'prior-gate' }); continue; }
 
       const fit = E.ransacRotation(gated, ransacOpts);
@@ -52,6 +82,9 @@
 
       // Reject an edge whose result contradicts the prior wholesale --
       // almost always a degenerate or repeated-texture match set.
+      // Whole-edge sanity: compare the SOLVED rotation to the prior. This
+      // is a pose-vs-pose comparison, so it uses the base angle only --
+      // the radial term above is about individual feature positions.
       const deviation = S.angleBetween(fit.R, RrelPrior);
       if (deviation > gateRad * 1.5) {
         rejected.push({ i: ein.i, j: ein.j, reason: 'contradicts-prior' });
@@ -117,21 +150,33 @@
        centre, where a wrong focal matters least), which drags the
        estimate back toward the assumption. So alternate the two to
        convergence instead. */
+    const calOpts = {
+      minHFovDeg: opts.minHFovDeg || 45,
+      maxHFovDeg: opts.maxHFovDeg || 95
+    };
+    /* Before calibration the focal is only known to lie somewhere in the
+       search window, so the gate has to tolerate the full radial spread
+       that window implies. */
+    const searchRange = {
+      lo: C.focalFromHFov(calOpts.maxHFovDeg * C.DEG, W),   // widest FOV -> shortest focal
+      hi: C.focalFromHFov(calOpts.minHFovDeg * C.DEG, W)
+    };
     const pass1 = fitEdges(input.edges, priorR, W, H, nominalFocal, bootstrapGateRad,
       Object.assign({}, ransacOpts, {
         // The pixel threshold is meaningful, but it is divided by a focal
         // we do not trust yet; loosen it in proportion for this pass only.
         thresholdRad: (opts.ransacPixelThreshold || 2.5) * 2 / nominalFocal
-      }));
+      }), searchRange);
     if (!pass1.edges.length) {
       return { ok: false, reason: 'no-usable-edges', rejected: pass1.rejected };
     }
 
-    const calOpts = {
-      minHFovDeg: opts.minHFovDeg || 45,
-      maxHFovDeg: opts.maxHFovDeg || 95
-    };
     const pxThresh = opts.ransacPixelThreshold || 2.5;
+    /* Once calibration has produced a focal, the remaining uncertainty is
+       its own error, not the width of the search window. Allow a modest
+       band around it so the gate stays shaped correctly while still
+       tightening by roughly an order of magnitude. */
+    const refinedBand = opts.focalBand !== undefined ? opts.focalBand : 0.12;
     const rounds = opts.calibrationRounds || 3;
 
     let focal = nominalFocal;
@@ -142,7 +187,8 @@
       const prevFocal = focal;
       focal = cal.focal;
       const nextFit = fitEdges(input.edges, priorR, W, H, focal, gateRad,
-        Object.assign({}, ransacOpts, { thresholdRad: pxThresh / focal }));
+        Object.assign({}, ransacOpts, { thresholdRad: pxThresh / focal }),
+        { lo: focal * (1 - refinedBand), hi: focal * (1 + refinedBand) });
       if (nextFit.edges.length) fitted = nextFit;
       if (Math.abs(focal - prevFocal) / focal < 1e-4) break;
     }
@@ -182,11 +228,58 @@
       ba = B.optimize(priorR, workingEdges, baOpts);
     }
 
+    /* Shots that ended up with no surviving edge are not solved for at
+       all -- the bundle leaves them exactly at their sensor prior. That is
+       safe in isolation but wrong in context: their NEIGHBOURS just moved
+       by several degrees, so an unconstrained shot is left behind and
+       becomes a visible seam against frames it used to line up with.
+
+       Sensor error here is dominated by slow yaw drift, which is shared
+       between shots taken close together, so the correction its
+       neighbours needed is the best available estimate of the correction
+       it needs too. Carry it across: take the world-frame correction
+       D = R_solved * R_prior^T from the nearest connected shots, average
+       in the Lie algebra weighted by angular proximity, and apply that to
+       the orphan's prior. Shots that were solved for are untouched. */
+    const nShots = priorR.length;
+    const degree = new Array(nShots).fill(0);
+    for (const ed of workingEdges) { degree[ed.i]++; degree[ed.j]++; }
+    const connected = [];
+    for (let i = 0; i < nShots; i++) if (degree[i] > 0) connected.push(i);
+
+    let carried = 0;
+    if (connected.length >= 2) {
+      const fwd = priorR.map(R => S.column(R, 2));
+      for (let u = 0; u < nShots; u++) {
+        if (degree[u] > 0) continue;
+        const near = connected
+          .map(v => ({
+            v: v,
+            ang: Math.acos(Math.max(-1, Math.min(1, S.dot(fwd[u], fwd[v]))))
+          }))
+          .sort((x, y) => x.ang - y.ang)
+          .slice(0, 3);
+        let acc = S.vec(0, 0, 0), wsum = 0;
+        for (const nb of near) {
+          const D = S.mul(ba.rotations[nb.v], S.transpose(priorR[nb.v]));
+          const w = 1 / (nb.ang + 1e-3);
+          acc = S.add(acc, S.scale(S.log(D), w));
+          wsum += w;
+        }
+        if (wsum > 0) {
+          ba.rotations[u] = S.mul(S.exp(S.scale(acc, 1 / wsum)), priorR[u]);
+          carried++;
+        }
+      }
+    }
+
     const refined = ba.rotations.map(R => S.toYawPitchRoll(R));
     const corrections = ba.rotations.map((R, i) => S.angleBetween(R, priorR[i]));
 
     return {
       ok: true,
+      unconstrainedShots: nShots - connected.length,
+      carriedShots: carried,
       focal: cal.focal,
       hFovDeg: cal.hFovDeg,
       calibration: cal,

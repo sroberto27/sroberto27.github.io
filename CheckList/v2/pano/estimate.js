@@ -126,16 +126,22 @@
   }
 
   /* Rejects correspondences that disagree with the pose prior by more
-     than maxDeviationRad. This filter is free -- the prior already
+     than the allowed deviation, which may be a constant or -- preferably --
+     a function of the correspondence, so the threshold can be shaped like
+     the error it tolerates (see focalSpreadRad in camera.js: focal
+     uncertainty displaces rays radially, so the allowance has to grow with
+     distance from the principal point). This filter is free -- the prior already
      exists -- and it is the main reason a cheap matcher suffices here:
      the geometrically self-consistent false matches that repeated indoor
      structure produces (identical windows, ceiling tiles) are exactly
      what a global search accepts and what this rejects. */
-  function priorGate(corr, RrelPrior, maxDeviationRad) {
+  function priorGate(corr, RrelPrior, maxDeviation) {
+    const perItem = (typeof maxDeviation === 'function');
     const kept = [];
     for (let k = 0; k < corr.length; k++) {
       const c = corr[k];
-      if (residualAngle(RrelPrior, c.a, c.b) <= maxDeviationRad) kept.push(c);
+      const lim = perItem ? maxDeviation(c) : maxDeviation;
+      if (residualAngle(RrelPrior, c.a, c.b) <= lim) kept.push(c);
     }
     return kept;
   }

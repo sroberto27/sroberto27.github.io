@@ -304,7 +304,16 @@ function measureCoverage(filled, W, H) {
 // between rings) by repeatedly averaging already-filled neighbors — a
 // standard dilation inpaint, not invented image content.
 function gapFill(out, filled, W, H, passes) {
-  passes = passes || 8;
+  /* Each pass grows the filled region by one pixel, so the cap is the
+     widest hole that can be closed. 8 was enough for the hairline seams
+     this was written for, but not for a real gap: a genuinely narrow lens
+     (a portrait phone frame is only ~47 deg wide, giving the 8-shot rings
+     almost no horizon overlap) leaves wedges tens of pixels across once
+     pose refinement moves the frames, and those survived 8 passes as
+     conspicuous black. The loop already exits the moment nothing is left
+     to fill, so a high cap costs nothing on a capture that has no holes
+     and simply finishes the job on one that does. */
+  passes = passes || 96;
   const nextFilled = new Uint8Array(filled.length);   // reused; a per-pass slice() churned 8 MB at a time
   for (let pass = 0; pass < passes; pass++) {
     let remaining = 0;

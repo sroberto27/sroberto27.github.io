@@ -24,7 +24,7 @@
   const el = id => document.getElementById(id);
   const logEl = el('log');
   const DEG = Math.PI / 180;
-  const REFINE_MAX_SIDE = 640;   // must match capture360.js
+  const REFINE_MAX_SIDE = 960;   // must match capture360.js
   const ASSUMED_LONG_FOV_DEG = 68;  // lens FOV across its LONG axis (capture360.js)
 
   /* The assumed lens FOV is quoted across the LONG image axis, but phone

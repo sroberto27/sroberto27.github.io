@@ -63,7 +63,21 @@
   // before, from raw sensor pose and the assumed FOV. It must never be able
   // to cost the user a capture.
   const REFINE_PREF_KEY = 'lsc2_pano_refine';
-  const REFINE_MAX_SIDE = 640;    // XFeat is trained around VGA; larger costs time for little gain
+  /* Longest side the refinement stage sees. Measured on a real 34-shot
+     portrait capture (3024x4032 sources), holding everything else fixed:
+
+       640 px   30 match edges, 4.2 s inference -- seated person DOUBLED
+       960 px   37 match edges, 8.9 s inference -- person single and sharp
+      1280 px   28 match edges, 16.3 s inference -- worse and 4x the cost
+
+     640 was chosen originally because XFeat is trained around VGA, but a
+     portrait phone still downscales to 480x640 there, and a large room's
+     detail does not survive it: too few distinctive keypoints reach the
+     matcher and thin-overlap pairs fail. 1280 is worse again because the
+     2048-keypoint cap then spreads over four times the area, thinning
+     spatial coverage. 960 is the measured optimum, at roughly double the
+     inference time -- acceptable for a stage the user opts into. */
+  const REFINE_MAX_SIDE = 960;
   const REFINE_TIMEOUT_MS = 240000;
   /* Longest gap tolerated between two progress messages from the stitch
      worker before we assume it died. Generous, because the per-image
