@@ -68,21 +68,27 @@ lab/
   lab-boot.js         loads onnxruntime-web for the lab page
   runtime-smoketest.html   real-worker/model smoke test
   viewer-flip-test.html    panorama-viewer orientation regression test
+  capture-sphere-test.html capture-sphere.js pose/orientation readback test
 ```
 
 ## Running the tests
 
-No browser needed. All four suites run in Node:
+No browser needed. These all run in Node:
 
 ```bash
 node lab/test/run-tests.js                  # geometry vs synthetic ground truth (22 checks)
-node lab/test/run-filter-test.js            # orientation smoothing filter (5 checks)
+node lab/test/run-filter-test.js            # orientation smoothing filter (8 checks)
+node lab/test/run-worker-test.js            # stitch worker plumbing + memory (20 checks)
+node lab/test/run-pattern-coverage.js       # capture pattern coverage + overlap (7 checks)
 
 python lab/tools/xfeat_fixture.py           # needs: pip install onnx onnxruntime numpy
 node lab/test/run-xfeat-test.js .fixture    # full chain, real model (11 checks)
 
-node --max-old-space-size=3072 lab/test/run-stitch-eval.js --png   # error decomposition (6 checks)
+node --max-old-space-size=3072 lab/test/run-stitch-eval.js --png   # error decomposition (8 checks)
 ```
+
+Two more need a real browser, because what they check is what a GPU actually
+drew: `viewer-flip-test.html` and `capture-sphere-test.html`, both below.
 
 The second one renders views off a synthetic panorama at a known focal length and
 known rotations, runs the real XFeat ONNX model, and drives the actual browser-side
@@ -172,6 +178,39 @@ buffer and read back solid black. The test monkey-patches
 `HTMLCanvasElement.prototype.getContext` to inject
 `preserveDrawingBuffer: true` for its own readback only — never do this in
 the shipped viewer itself.
+
+## Capture sphere readback test
+
+`lab/capture-sphere-test.html` drives the real, unmodified `capture-sphere.js`
+-- the live 3D preview painted over the camera during a capture -- and reads
+pixels back. Everything it checks is a mistake that looks fine in review and
+is obvious on a phone:
+
+- **a patch at the wrong pose.** Patches in known flat colours go at known
+  yaw/pitch; looking at each must show that colour. A sign error in the view
+  matrix, or the capture code's z-up convention leaking into GL's y-up, moves
+  a patch somewhere plausible and only a readback notices.
+- **patches that do not overlap.** Adjacent shots have to appear together in
+  one frame and overlap the way the capture pattern intends -- a 68 deg photo
+  centred 30 deg off axis covers the middle of the screen as well as the right
+  of it. If they only ever render one at a time, the preview cannot show the
+  sphere filling in, which is its whole purpose.
+- **a patch upside down.** Same class of bug as the viewer flip above, and the
+  same reasoning: these texture coordinates are computed in `patchMesh()`, not
+  inherited from quad UVs, so there is nothing for a flip to cancel against.
+- **a patch behind the camera folding into view.** The near-plane clip is the
+  only thing stopping it and there is no depth buffer as a backstop.
+- **`removePatch()` leaving the patch on screen** -- which is what Retake
+  depends on.
+
+Drive it exactly like the flip test; it reports into `#result`, and sets
+`window.__done` plus `window.__result = { checks, failures, text }` when it
+finishes. It uses the same `preserveDrawingBuffer` harness hack, for the same
+reason and with the same warning: never do that in shipped code.
+
+Note when running headless without a GPU: pass `--use-angle=swiftshader
+--enable-unsafe-swiftshader`, or `create()` returns null and the page
+correctly reports that WebGL is unavailable rather than testing anything.
 
 ## Vendored files
 

@@ -607,10 +607,21 @@ select {
   padding: 5px 10px; cursor: pointer;
 }
 .c360-blend-input option { color: #111; background: #fff; }
-/* The gray mask, peephole, world-locked captured-shot patches, active target
-   marker, and reticle ring are all painted on this canvas each frame (see
-   drawFrame() in capture360.js) instead of being separate DOM elements —
-   simpler to keep visually "world-locked" as the device rotates. */
+/* Two stacked overlays over the live video, in this order:
+
+   .c360-gl      the live 3D capture sphere (capture-sphere.js) — the dim
+                 mask with its aiming peephole, a faint wireframe globe,
+                 and every photo taken so far pasted onto it at the pose
+                 it was shot at. Absent on devices without WebGL, where
+                 drawFrame() paints the mask and flat patches on the 2D
+                 canvas below instead.
+   .c360-canvas  the reticle ring, the active target marker and the
+                 off-screen arrow. Always on top, in both paths, so a
+                 patch can never hide the thing the user aims with.
+
+   Both are canvases rather than DOM elements because everything on them is
+   world-locked and repainted every frame as the device rotates. */
+.c360-gl { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .c360-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .c360-instruction {
   position: absolute; top: 63%; left: 0; right: 0; text-align: center; color: #fff;

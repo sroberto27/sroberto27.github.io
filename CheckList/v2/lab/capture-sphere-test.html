@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<!-- Readback regression test for capture-sphere.js, the live 3D preview
+     drawn over the camera during a 360 capture.
+
+     Everything this file checks is a mistake that is invisible in code
+     review and obvious on a phone, which is why it reads pixels back
+     rather than asserting on numbers:
+
+       - a patch drawn at the wrong POSE. Four patches are placed at known
+         yaw/pitch in four flat colours; pointing the preview at each one
+         in turn must show that colour and no other. A sign error in the
+         view matrix, or capture's z-up convention leaking into GL's
+         y-up, moves a patch somewhere plausible-looking, and only a
+         readback notices.
+       - a patch drawn UPSIDE DOWN. This is the same class of bug
+         panorama-viewer.js shipped with UNPACK_FLIP_Y_WEBGL, and the same
+         reasoning applies here (texture coordinates are computed in
+         patchMesh(), not inherited from quad UVs, so there is no
+         convention for a flip to cancel against). A fifth patch is
+         half red on top and half blue on the bottom, and the test reads
+         the top and bottom of the screen separately.
+       - a patch drawn BEHIND the camera leaking into view. The near-plane
+         clip is the only thing preventing it, and there is no depth
+         buffer to catch it if that goes wrong.
+       - removePatch() leaving the removed patch on screen, which is what
+         Retake depends on.
+
+     Runs the REAL, unmodified capture-sphere.js. Needs no camera, no
+     capture session and no phone. Drive it with headless Chrome the same
+     way as lab/viewer-flip-test.html; it reports into #result and sets
+     window.__done when finished. -->
+<html><head><meta charset="utf-8"><title>capture sphere regression test</title>
+<style>
+  body { margin: 0; background: #000; color: #ddd; font: 13px/1.5 ui-monospace, Consolas, monospace; }
+  #stage { position: fixed; inset: 0; }
+  canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+  #result { position: fixed; z-index: 9; left: 0; right: 0; bottom: 0; background: #111;
+    padding: 8px 12px; white-space: pre-wrap; max-height: 55vh; overflow: auto; }
+</style>
+</head>
+<body>
+<div id="stage"><canvas id="gl"></canvas></div>
+<pre id="result">PENDING</pre>
+<script>
+  /* Test-harness-only, exactly as in lab/viewer-flip-test.html:
+     capture-sphere.js correctly omits preserveDrawingBuffer (it costs
+     performance and changes nothing on screen, because the compositor
+     keeps showing the last drawn frame). But an external readback can
+     legitimately see a cleared buffer without it. Injected here, and only
+     here, so the test can read the real module's output. */
+  const _origGetContext = HTMLCanvasElement.prototype.getContext;
+  HTMLCanvasElement.prototype.getContext = function (type, opts) {
+    if (type === 'webgl' || type === 'experimental-webgl') {
+      opts = Object.assign({}, opts, { preserveDrawingBuffer: true });
+    }
+    return _origGetContext.call(this, type, opts);
+  };
+</script>
+<script src="../capture-sphere.js"></script>
+<script>
+(function () {
+  const DEG = Math.PI / 180;
+  const out = document.getElementById('result');
+  const lines = [];
+  let failures = 0, checks = 0;
+  function check(name, cond, detail) {
+    checks++; if (!cond) failures++;
+    lines.push('[' + (cond ? 'PASS' : 'FAIL') + '] ' + name + (detail ? '  ' + detail : ''));
+    out.textContent = lines.join('\n');
+  }
+
+  // A flat-coloured "photo", or a two-tone one for the flip check.
+  function swatch(top, bottom) {
+    const c = document.createElement('canvas');
+    c.width = 120; c.height = 160;             // portrait, like a phone still
+    const g = c.getContext('2d');
+    g.fillStyle = top; g.fillRect(0, 0, 120, bottom ? 80 : 160);
+    if (bottom) { g.fillStyle = bottom; g.fillRect(0, 80, 120, 80); }
+    return c;
+  }
+
+  const canvas = document.getElementById('gl');
+  const W = 480, H = 640;
+
+  const sphere = window.LSCCaptureSphere.create(canvas, {
+    guideFovDeg: 78, ndcSpan: 0.84, patchAspect: 160 / 120, patchFovDeg: 68
+  });
+  if (!sphere) {
+    out.textContent = 'FAIL  WebGL unavailable — capture-sphere.js returned null';
+    window.__done = true;
+    return;
+  }
+  sphere.resize(W, H);
+
+  /* Deliberately no peephole for most of the run: the mask is opaque and
+     would tint every colour read back. It gets its own check at the end. */
+  sphere.setPeephole(0, 0, 0);
+
+  const RED = [255, 0, 0], GREEN = [0, 255, 0], BLUE = [0, 0, 255], YELLOW = [255, 255, 0];
+  const POSES = [
+    { name: 'ahead (yaw 0)', yaw: 0, pitch: 0, rgb: RED, css: '#ff0000' },
+    { name: 'right (yaw 90)', yaw: 90, pitch: 0, rgb: GREEN, css: '#00ff00' },
+    { name: 'behind (yaw 180)', yaw: 180, pitch: 0, rgb: BLUE, css: '#0000ff' },
+    { name: 'up (pitch 60)', yaw: 0, pitch: 60, rgb: YELLOW, css: '#ffff00' }
+  ];
+  POSES.forEach(p => sphere.addPatch({
+    yaw: p.yaw * DEG, pitch: p.pitch * DEG, roll: 0, canvas: swatch(p.css)
+  }));
+
+  const gl = canvas.getContext('webgl');
+  function readAt(fx, fy) {
+    // fx, fy in 0..1 from the TOP-LEFT; gl.readPixels is bottom-up.
+    const x = Math.round(fx * (canvas.width - 1));
+    const y = Math.round((1 - fy) * (canvas.height - 1));
+    const px = new Uint8Array(4);
+    gl.readPixels(x, y, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px);
+    return [px[0], px[1], px[2], px[3]];
+  }
+  const near = (a, b, tol) => Math.abs(a[0] - b[0]) <= (tol || 40) &&
+    Math.abs(a[1] - b[1]) <= (tol || 40) && Math.abs(a[2] - b[2]) <= (tol || 40);
+  const show = c => '[' + c.join(',') + ']';
+
+  // ---- 1. each patch appears where it was placed, and only there -------
+  for (const p of POSES) {
+    sphere.setPose(p.yaw * DEG, p.pitch * DEG, 0);
+    sphere.render();
+    const centre = readAt(0.5, 0.5);
+    check('patch at ' + p.name + ' is on screen when we look at it',
+      near(centre, p.rgb), show(centre) + ' expected ' + show(p.rgb));
+  }
+
+  // Looking 90 deg away from every patch centre and below the "up" patch:
+  // yaw 270 is between "right" and "behind" by 90 deg each way, so with a
+  // 68 deg photo in a 78 deg view nothing should reach the middle.
+  sphere.setPose(270 * DEG, -20 * DEG, 0);
+  sphere.render();
+  {
+    const c = readAt(0.5, 0.5);
+    check('nothing leaks in from a direction with no patch',
+      c[3] < 40, show(c) + ' (alpha ' + c[3] + ' — should be transparent)');
+  }
+
+  /* ---- 1b. several patches are on screen AT ONCE, and they overlap -----
+     The point of the preview is watching the sphere fill in, so "each
+     patch renders when you stare straight at it" is not enough: adjacent
+     shots have to appear together in one frame, and they have to OVERLAP
+     the way the capture pattern intends. A 68 deg photo centred 30 deg
+     off axis -- the pattern's yaw step -- spans -4 to +64 deg, so it
+     covers the middle of the screen as well as the right of it, and being
+     added later it wins there. 20 deg to the LEFT is outside its reach
+     and must still show the patch underneath.
+
+     A screen position for an angle: ndc = tan(angle) * ndcSpan /
+     tan(guideFov/2), and fx = 0.5 + ndc/2. */
+  const fxAt = a => 0.5 + (Math.tan(a * DEG) * 0.84 / Math.tan(39 * DEG)) / 2;
+  sphere.addPatch({ yaw: 30 * DEG, pitch: 0, roll: 0, canvas: swatch('#ff00ff') });
+  sphere.setPose(0, 0, 0);
+  sphere.render();
+  {
+    const left = readAt(fxAt(-20), 0.5);
+    const centre = readAt(fxAt(0), 0.5);
+    const right = readAt(fxAt(30), 0.5);
+    check('adjacent patches render together and overlap as the pattern intends',
+      near(left, RED) && near(centre, [255, 0, 255]) && near(right, [255, 0, 255]),
+      '-20 deg ' + show(left) + ', 0 deg ' + show(centre) + ', +30 deg ' + show(right));
+  }
+  sphere.removePatch(sphere.patchCount - 1);
+
+  // ---- 2. a patch behind the camera does not leak through -------------
+  sphere.setPose(0, 0, 0);
+  sphere.render();
+  {
+    // "behind (yaw 180)" is directly opposite. If the near-plane clip
+    // failed, the perspective divide by a negative z would fold it into
+    // view, usually mirrored through the centre.
+    let sawBlue = false;
+    for (let i = 0; i <= 10; i++) {
+      for (let j = 0; j <= 10; j++) {
+        const c = readAt(i / 10, j / 10);
+        if (c[2] > 140 && c[0] < 90 && c[1] < 90) sawBlue = true;
+      }
+    }
+    check('the patch behind the camera is clipped, not folded into view', !sawBlue);
+  }
+
+  // ---- 3. patches are not upside down ---------------------------------
+  sphere.addPatch({
+    yaw: 0, pitch: -60 * DEG, roll: 0, canvas: swatch('#ff0000', '#0000ff')
+  });
+  sphere.setPose(0, -60 * DEG, 0);
+  sphere.render();
+  {
+    const top = readAt(0.5, 0.30), bottom = readAt(0.5, 0.70);
+    check('the top of a photo renders at the top of its patch',
+      near(top, RED) && near(bottom, BLUE),
+      'top ' + show(top) + ', bottom ' + show(bottom) +
+      ' (upside down would be blue over red)');
+  }
+
+  // ---- 4. removePatch actually removes it (this is Retake) ------------
+  {
+    sphere.setPose(90 * DEG, 0, 0);
+    sphere.render();
+    const before = readAt(0.5, 0.5);
+    sphere.removePatch(1);                     // the green one
+    sphere.render();
+    const after = readAt(0.5, 0.5);
+    check('removePatch clears the patch from the sphere',
+      near(before, GREEN) && after[3] < 40,
+      'before ' + show(before) + ', after ' + show(after));
+  }
+
+  // ---- 5. the mask dims the view and the peephole punches through -----
+  {
+    sphere.setPeephole(W / 2, H * 0.46, 60);
+    sphere.setPose(180 * DEG, 0, 0);           // looking at the blue patch
+    sphere.render();
+    const inHole = readAt(0.5, 0.46);
+    const outside = readAt(0.08, 0.06);
+    check('the peephole shows the sphere, the mask covers the rest',
+      near(inHole, BLUE) && outside[3] > 200 && outside[0] < 80,
+      'hole ' + show(inHole) + ', masked ' + show(outside));
+  }
+
+  sphere.destroy();
+  lines.push('');
+  lines.push(failures === 0 ? 'ALL ' + checks + ' CHECKS PASSED'
+    : failures + ' OF ' + checks + ' CHECKS FAILED');
+  out.textContent = lines.join('\n');
+  window.__result = { checks: checks, failures: failures, text: lines.join('\n') };
+  window.__done = true;
+})();
+</script>
+</body></html>

@@ -169,6 +169,7 @@
     overlay.className = 'capture360-overlay';
     overlay.innerHTML = `
       <video class="c360-video" autoplay playsinline muted></video>
+      <canvas class="c360-gl"></canvas>
       <canvas class="c360-canvas"></canvas>
       <div class="c360-scrim c360-loading"><i class="fa-solid fa-circle-notch fa-spin"></i> <span>Starting camera…</span></div>
       <div class="c360-hud" hidden>
@@ -327,6 +328,7 @@
       const sessionId = 'pano_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
       const overlay = buildOverlay();
       const video = overlay.querySelector('.c360-video');
+      const glCanvas = overlay.querySelector('.c360-gl');
       const canvas = overlay.querySelector('.c360-canvas');
       const ctx = canvas.getContext('2d');
       const loading = overlay.querySelector('.c360-loading');
@@ -348,10 +350,30 @@
       blendInput.value = blendMode();
       blendInput.addEventListener('change', () => setBlendMode(blendInput.value));
 
+      /* Live 3D preview. Null is a normal outcome -- no WebGL, a lost
+         context, a shader that would not compile -- and everything below
+         checks for it, because the flat 2D preview has to keep working on
+         devices that cannot run this. The layout constants are handed over
+         rather than duplicated so the two paths frame the sphere
+         identically and switching between them is not visible. */
+      let sphere = null;
+      try {
+        sphere = global.LSCCaptureSphere ? global.LSCCaptureSphere.create(glCanvas, {
+          guideFovDeg: GUIDE_FOV_DEG,
+          ndcSpan: 0.84,               // 0.42 of the full viewport, as drawFrame() lays out
+          patchAspect: ASSUMED_ASPECT,
+          patchFovDeg: ASSUMED_H_FOV_DEG
+        }) : null;
+      } catch (e) { sphere = null; }
+
       const targets = buildTargetPattern();
       totalEl.textContent = String(targets.length);
       const captured = new Array(targets.length).fill(false);
-      const capturedPatches = []; // { yaw, pitch, canvas }
+      /* roll is not decoration here: the 2D path baked it into an
+         axis-aligned rectangle and lost it, but a quad on a sphere has to
+         be oriented, so the GL preview needs the same three angles the
+         stitcher gets. */
+      const capturedPatches = []; // { yaw, pitch, roll, canvas }
       const sourceMediaIds = [];
       /* Capture order, so Retake knows which shot was actually last --
          which is not the same as the highest target index, because the
@@ -395,6 +417,11 @@
         if (rafId) cancelAnimationFrame(rafId);
         if (orientationHandler) window.removeEventListener('deviceorientation', orientationHandler);
         window.removeEventListener('resize', resizeCanvas);
+        // Release the GL context explicitly rather than waiting for GC: a
+        // phone allows only a handful of live contexts, and a capture
+        // opened and cancelled a few times would otherwise stop getting
+        // one and silently fall back to the 2D path.
+        if (sphere) { try { sphere.destroy(); } catch (e) { /* ignore */ } }
         if (stream) stream.getTracks().forEach(t => t.stop());
         overlay.remove();
         resolve(result);
@@ -438,6 +465,7 @@
         canvas.height = Math.round(canvasH * dpr);
         canvas.style.width = canvasW + 'px';
         canvas.style.height = canvasH + 'px';
+        if (sphere) sphere.resize(canvasW, canvasH);
       }
       window.addEventListener('resize', resizeCanvas);
 
@@ -455,16 +483,24 @@
         const reticleX = canvasW / 2, reticleY = canvasH * 0.46;
         const holeR = Math.min(canvasW, canvasH) * 0.135;
 
-        // gray mask with a circular peephole at the reticle for aiming
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(0, 0, canvasW, canvasH);
-        ctx.moveTo(reticleX + holeR, reticleY);
-        ctx.arc(reticleX, reticleY, holeR, 0, Math.PI * 2, true);
-        ctx.closePath();
-        ctx.fillStyle = 'rgba(28,30,36,0.94)';
-        ctx.fill('evenodd');
-        ctx.restore();
+        /* The mask and the captured patches move to the GL layer when it
+           is available, and they move TOGETHER. They cannot be split: the
+           mask is a near-opaque fill over the whole screen and this canvas
+           sits above the GL one, so a mask painted here would bury the
+           sphere. Everything after them -- target, arrow, reticle -- stays
+           here and therefore stays on top of the patches, which is the
+           order the 2D path already had. */
+        if (!sphere) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(0, 0, canvasW, canvasH);
+          ctx.moveTo(reticleX + holeR, reticleY);
+          ctx.arc(reticleX, reticleY, holeR, 0, Math.PI * 2, true);
+          ctx.closePath();
+          ctx.fillStyle = 'rgba(28,30,36,0.94)';
+          ctx.fill('evenodd');
+          ctx.restore();
+        }
 
         const { forward: fwd, right, up } = basisForOrientation(currentYaw, currentPitch, currentRoll);
         const tanGuide = Math.tan(GUIDE_FOV_DEG * DEG / 2);
@@ -475,14 +511,20 @@
         const patchHalfH0 = (Math.tan(vFovRad / 2) / tanGuide) * unitPxH;
 
         // already-captured shots, world-locked so they "fill in" the gray
-        capturedPatches.forEach(p => {
-          const proj = project(p.yaw, p.pitch, right, up, fwd, tanGuide);
-          if (proj.lz <= 0.05 || Math.abs(proj.nx) > 1.35 || Math.abs(proj.ny) > 1.35) return;
-          const scale = 1 / proj.lz;
-          const halfW = patchHalfW0 * scale, halfH = patchHalfH0 * scale;
-          const cx = canvasW / 2 + proj.nx * unitPxW, cy = canvasH / 2 - proj.ny * unitPxH;
-          ctx.drawImage(p.canvas, cx - halfW, cy - halfH, halfW * 2, halfH * 2);
-        });
+        if (sphere) {
+          sphere.setPeephole(reticleX, reticleY, holeR);
+          sphere.setPose(currentYaw, currentPitch, currentRoll);
+          sphere.render();
+        } else {
+          capturedPatches.forEach(p => {
+            const proj = project(p.yaw, p.pitch, right, up, fwd, tanGuide);
+            if (proj.lz <= 0.05 || Math.abs(proj.nx) > 1.35 || Math.abs(proj.ny) > 1.35) return;
+            const scale = 1 / proj.lz;
+            const halfW = patchHalfW0 * scale, halfH = patchHalfH0 * scale;
+            const cx = canvasW / 2 + proj.nx * unitPxW, cy = canvasH / 2 - proj.ny * unitPxH;
+            ctx.drawImage(p.canvas, cx - halfW, cy - halfH, halfW * 2, halfH * 2);
+          });
+        }
 
         // the single active target
         if (activeIndex < targets.length) {
@@ -613,7 +655,14 @@
             });
             sourceMediaIds.push(id);
             captured[targetIdx] = true;
-            capturedPatches.push({ yaw: hasOrientation ? capturedYaw : t.yaw, pitch: hasOrientation ? capturedPitch : t.pitch, canvas: makeThumbnail(shotCanvas, 480) });
+            const patch = {
+              yaw: hasOrientation ? capturedYaw : t.yaw,
+              pitch: hasOrientation ? capturedPitch : t.pitch,
+              roll: hasOrientation ? capturedRoll : 0,
+              canvas: makeThumbnail(shotCanvas, 480)
+            };
+            capturedPatches.push(patch);
+            if (sphere) sphere.addPatch(patch);
             shotLog.push({
               targetIdx: targetIdx, mediaId: id,
               yaw: hasOrientation ? capturedYaw : t.yaw,
@@ -666,7 +715,11 @@
         if (finished || capturingInFlight || !shotLog.length) return;
         const last = shotLog.pop();
         const k = sourceMediaIds.indexOf(last.mediaId);
-        if (k >= 0) { sourceMediaIds.splice(k, 1); capturedPatches.splice(k, 1); }
+        if (k >= 0) {
+          sourceMediaIds.splice(k, 1);
+          capturedPatches.splice(k, 1);
+          if (sphere) sphere.removePatch(k);
+        }
         captured[last.targetIdx] = false;
         activeIndex = last.targetIdx;
         stableSince = null;
