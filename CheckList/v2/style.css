@@ -89,6 +89,21 @@ button, .tbtn, .icon-btn, .chip, .switch, a {
   gap: 12px;
   min-width: 0; /* lets brand-title truncate instead of pushing the bar wider than the screen */
 }
+/* Which side gives way when the bar is short of room, stated explicitly
+   rather than left to the flex defaults.
+
+   Both sides default to `flex: 0 1 auto`, so both shrink in proportion to
+   their content. That is wrong here, because everything inside
+   .topbar-actions is flex-shrink: 0 — shrinking the container does not
+   shrink its contents, it just makes them spill out of it. The symptom
+   was the theme toggle having a few pixels clipped off its right edge at
+   some widths, which reads as a rendering glitch rather than as a layout
+   that ran out of room.
+
+   The brand side absorbs the squeeze instead: it holds the one thing in
+   the bar that is designed to give way, the ellipsised title. */
+.topbar-brand { flex: 1 1 auto; }
+.topbar-actions { flex: 0 0 auto; }
 
 .brand-title { min-width: 0; }
 .brand-title h1 { min-width: 0; }
@@ -681,7 +696,8 @@ select {
 }
 
 @media (max-width: 720px) {
-  .topbar { padding: 10px 14px; }
+  .topbar { padding: 10px 14px; gap: 8px; }
+  .topbar-brand, .topbar-actions { gap: 8px; }
   .brand-subtitle { display: none; }
   .brand-title h1 { font-size: 15px; }
   .brand-logo { height: 30px; }
@@ -700,6 +716,53 @@ select {
   .input-with-btn .tbtn--sm { min-width: 44px; padding: 0 12px; }
   .bottom-actions .tbtn { flex: 1 1 45%; justify-content: center; }
 }
+
+
+/* ===================== TOP BAR OVERFLOW ON PHONES =====================
+   The top bar carries a hamburger, three institutional logos, the app
+   title and two or three buttons. Every one of those except the title is
+   flex-shrink: 0, deliberately, so a squeeze cannot distort a logo's
+   aspect ratio — which means that when the bar runs out of room it does
+   not compress, it pushes the DOCUMENT wider than the screen. The whole
+   page then renders at the wider width and the browser lets you pan, so
+   the app appears to sit in a column with dead space beside it and has to
+   be pinch-zoomed out to read.
+
+   Measured on a 412 px phone: the bar needed 477 px against a 397 px
+   viewport, an 80 px overflow. The LED banner alone accounts for 156 px
+   of it — it is a wide wordmark, so even at 30 px tall it is 40% of the
+   screen — and it cannot shrink.
+
+   Fixed by giving the bar less to carry as the screen narrows, rather
+   than by letting the logos distort. The breakpoints below are where each
+   item stops fitting, measured rather than guessed. All three logos are
+   still shown from 600 px up, which covers tablets, desktop and print. */
+@media (max-width: 600px) {
+  .led-logo { display: none; }
+}
+@media (max-width: 430px) {
+  /* At this width the title is down to about 70 px — "Locat…" — which is
+     worse than dropping the second mark. */
+  .brand-logo--round { display: none; }
+  .brand-logo { height: 26px; }
+  .topbar { padding: 10px; }
+}
+@media (max-width: 400px) {
+  /* Smallest phones still in use (iPhone SE is 375 CSS px). Measured at
+     360: the bar still wanted 10 px more than it had, and the overflow
+     guard below was silently clipping the theme toggle rather than the
+     bar visibly not fitting — which is the worse of the two failures,
+     because it looks like a rendering glitch. What is left is the
+     functional minimum: menu, title, install, theme. */
+  .topbar-brand .brand-logo { display: none; }
+  .topbar { padding: 10px 8px; }
+}
+/* Last-resort guard. Everything above stops the bar overflowing on the
+   sizes that exist today; this stops a future addition to the bar from
+   silently widening the whole document again, which is a failure that
+   shows up as "the app does not fit the screen" rather than as anything
+   obviously to do with the top bar. */
+.topbar { overflow: hidden; }
 
 /* ===================== PRINT ===================== */
 @media print {
