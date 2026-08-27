@@ -1,0 +1,142 @@
+/* === LSU Death Valley Experience — 13: Shared chrome for the gameday
+   features ===========================================================
+   Small UI primitives that more than one Phase 1 feature needs, kept
+   here rather than duplicated into each feature's stylesheet.
+
+   Loads after every existing stylesheet, so anything here wins the
+   cascade against 01–12 without needing !important.
+   ==================================================================== */
+
+/* --------------------------------------------------------------------
+   Toast — a brief, dismissible, non-blocking message.
+
+   Used for the things a deep link can get wrong (an unknown stop, a
+   missing itinerary). Deliberately NOT an alert(): the app already
+   uses window.alert() in two places and it blocks the whole page,
+   which is exactly wrong for a message that says "carry on, just
+   without that one thing".
+   -------------------------------------------------------------------- */
+
+.toast-stack {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 9000;              /* above the map + panels, below modals */
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  pointer-events: none;       /* the stack never eats map clicks */
+  max-width: min(92vw, 460px);
+}
+
+.toast {
+  pointer-events: auto;       /* ...but the toast itself is dismissible */
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: #2A1245;                 /* LSU deep purple */
+  border: 1px solid rgba(253, 208, 35, 0.45);  /* gold hairline */
+  color: #FFFFFF;
+  font-size: 14px;
+  line-height: 1.4;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.toast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast-text { flex: 1 1 auto; }
+
+.toast-close {
+  flex: 0 0 auto;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 18px;
+  line-height: 1;
+  padding: 0 2px;
+  cursor: pointer;
+}
+
+.toast-close:hover  { color: #FDD023; }
+.toast-close:focus-visible {
+  outline: 2px solid #FDD023;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* On phones the bottom sheet occupies the lower third, so lift the
+   stack clear of it. */
+@media (max-width: 880px) {
+  .toast-stack { bottom: auto; top: 72px; }
+  .toast { transform: translateY(-8px); }
+  .toast.is-visible { transform: translateY(0); }
+}
+
+/* Respect a reduced-motion preference — the toast still appears and
+   still auto-dismisses, it just doesn't slide. */
+@media (prefers-reduced-motion: reduce) {
+  .toast { transition: opacity 120ms linear; transform: none; }
+  .toast.is-visible { transform: none; }
+}
+
+/* --------------------------------------------------------------------
+   "You are here" dot (js/19-geolocation.js)
+
+   A maplibregl.Marker element, so it sits above every map layer in the
+   DOM. Blue rather than LSU purple or gold on purpose: the user's own
+   position must not read as one of the numbered tour pins.
+   -------------------------------------------------------------------- */
+
+.user-dot {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+
+.user-dot-core {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: #2563EB;
+  border: 2.5px solid #FFFFFF;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.user-dot-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(37, 99, 235, 0.35);
+  animation: user-dot-pulse 2.4s ease-out infinite;
+}
+
+@keyframes user-dot-pulse {
+  0%   { transform: scale(1);   opacity: 0.7; }
+  70%  { transform: scale(2.6); opacity: 0;   }
+  100% { transform: scale(2.6); opacity: 0;   }
+}
+
+/* A fix too vague to navigate by looks vague: hollow, dashed, and no
+   pulse, so it doesn't imply a precision it hasn't got. */
+.user-dot.is-approximate .user-dot-core {
+  background: rgba(37, 99, 235, 0.25);
+  border-style: dashed;
+}
+
+.user-dot.is-approximate .user-dot-pulse { display: none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .user-dot-pulse { animation: none; opacity: 0.35; transform: scale(1.8); }
+}
