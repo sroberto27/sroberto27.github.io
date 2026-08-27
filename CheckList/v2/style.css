@@ -730,3 +730,20 @@ select {
   .media-attach-card { break-inside: avoid; page-break-inside: avoid; border: 1px solid #ccc; }
   .media-attach-preview { display: none !important; }
 }
+
+/* ===================== INSTALL / OFFLINE BUTTON =====================
+   Lives in the top bar next to the theme toggle. It is hidden by default
+   and install.js decides whether to show it, because "installable" is a
+   question only the browser can answer and the answer differs per
+   platform — Chrome fires beforeinstallprompt, Safari fires nothing. A
+   button that is always visible would be inert on every iPhone. */
+#installBtn { white-space: nowrap; }
+#installBtn .install-label { display: inline; }
+.tbtn--ghost { background: transparent; border-style: dashed; opacity: .85; }
+.tbtn--ghost:hover { background: var(--surface-alt); }
+/* On a narrow phone the top bar is already carrying two logos, a title
+   and the theme toggle, so the label goes and the icon carries it. */
+@media (max-width: 560px) {
+  #installBtn .install-label { display: none; }
+  #installBtn { padding-left: 8px; padding-right: 8px; }
+}

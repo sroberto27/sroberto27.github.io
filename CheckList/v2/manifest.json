@@ -1,0 +1,16 @@
+{
+  "name": "Location Scouting Checklist",
+  "short_name": "Scout",
+  "description": "Film and media location scouting: guided checklists, photo/video notes and on-device 360\u00b0 panorama capture. Works entirely offline.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f4f7",
+  "theme_color": "#AD1D28",
+  "categories": ["productivity", "photo"],
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

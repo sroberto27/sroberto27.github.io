@@ -1403,6 +1403,11 @@
   }
 
   window.LSCApp = { SECTION_META, MEDIA_FIELD_SET, MEDIA_CATEGORIES };
+  /* install.js loads before this file and needs to report install and
+     offline-cache progress somewhere the user will actually see. It
+     falls back to console.log until this exists, so the ordering is
+     safe either way. */
+  window.LSCToast = toast;
 
   document.addEventListener('DOMContentLoaded', init);
 })();

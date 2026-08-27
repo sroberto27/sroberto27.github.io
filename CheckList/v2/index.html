@@ -5,10 +5,26 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Location Scouting Checklist</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fraunces:wght@600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <meta name="theme-color" content="#AD1D28">
+  <meta name="description" content="Film and media location scouting: guided checklists, photo/video notes and on-device 360 panorama capture. Works entirely offline.">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <!-- iOS ignores the manifest for standalone launch; these two are what
+       make "Add to Home Screen" open without Safari chrome. -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Scout">
+
+  <!-- Fonts and icons are SELF-HOSTED. They used to come from
+       fonts.googleapis.com and cdnjs.cloudflare.com, which meant a first
+       load with no signal rendered an unstyled, icon-less page -- and this
+       app is meant to be used in basements and half-built sets. There are
+       now no external origins at all. See vendor/fonts/inter.css and
+       vendor/fontawesome/solid.min.css for what was trimmed and why. -->
+  <link rel="stylesheet" href="vendor/fonts/inter.css">
+  <link rel="stylesheet" href="vendor/fontawesome/fontawesome.min.css">
+  <link rel="stylesheet" href="vendor/fontawesome/solid.min.css">
   <link rel="stylesheet" href="style.css">
 </head>
 
@@ -29,6 +45,12 @@
     </div>
     <div class="topbar-actions">
       <img src="LEDlogo.png" alt="LED Logo" class="brand-logo led-logo">
+      <!-- Hidden until the browser confirms the app is installable, or
+           until we detect iOS, where the prompt does not exist and the
+           user has to be told where the button is instead. -->
+      <button id="installBtn" class="tbtn tbtn--sm" hidden>
+        <i class="fa-solid fa-mobile-screen"></i> <span class="install-label">Install</span>
+      </button>
       <button id="themeToggle" class="icon-btn" aria-label="Toggle dark mode" title="Toggle theme">
         <i class="fa-solid fa-moon"></i>
       </button>
@@ -562,6 +584,7 @@
   <script src="capture-sphere.js"></script>
   <script src="capture360.js"></script>
   <script src="export.js"></script>
+  <script src="install.js"></script>
   <script src="app.js"></script>
 </body>
 
