@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Location Scouting Checklist</title>
   <meta name="theme-color" content="#AD1D28">
   <meta name="description" content="Film and media location scouting: guided checklists, photo/video notes and on-device 360 panorama capture. Works entirely offline.">
@@ -13,7 +13,11 @@
   <!-- iOS ignores the manifest for standalone launch; these two are what
        make "Add to Home Screen" open without Safari chrome. -->
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <!-- NOT black-translucent. That makes iOS put the page UNDER the status
+       bar, which then has to be paid for with safe-area padding on a sticky
+       header whose height other sticky offsets depend on. "default" lets iOS
+       reserve that strip itself and the whole class of overlap bugs with it. -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="Scout">
 
   <!-- Fonts and icons are SELF-HOSTED. They used to come from
@@ -36,24 +40,24 @@
       <button id="navToggle" class="icon-btn only-mobile" aria-label="Toggle sections menu" title="Sections">
         <i class="fa-solid fa-bars"></i>
       </button>
-      <img src="ULL.png" alt="ULL Logo" class="brand-logo">
-      <img src="HCILab.jpg" alt="HCI Lab Logo" class="brand-logo brand-logo--round">
+      <!-- The three partner marks share ONE slot and cross-fade between
+           themselves. Side by side they cost about 300px of a 412px phone
+           screen and cannot shrink (they are flex-shrink: 0 so a squeeze
+           cannot distort them), which is what used to push the whole
+           document wider than the display. One slot costs ~104px and shows
+           all three. The group carries the label; the images themselves
+           have empty alt so a screen reader hears the credit once rather
+           than three times as the slides rotate. -->
+      <div class="brand-banner" role="img"
+           aria-label="In partnership with the University of Louisiana at Lafayette, the HCI Lab, and Louisiana Economic Development">
+        <img src="ULL.png" alt="" class="brand-slide is-active">
+        <img src="HCILab.jpg" alt="" class="brand-slide">
+        <img src="LEDlogo.png" alt="" class="brand-slide">
+      </div>
       <div class="brand-title">
         <h1><i class="fa-solid fa-clapperboard"></i> <span class="brand-title-text">Location Scouting Checklist</span></h1>
         <span class="brand-subtitle">Film &amp; Media Site Survey</span>
       </div>
-    </div>
-    <div class="topbar-actions">
-      <img src="LEDlogo.png" alt="LED Logo" class="brand-logo led-logo">
-      <!-- Hidden until the browser confirms the app is installable, or
-           until we detect iOS, where the prompt does not exist and the
-           user has to be told where the button is instead. -->
-      <button id="installBtn" class="tbtn tbtn--sm" hidden>
-        <i class="fa-solid fa-mobile-screen"></i> <span class="install-label">Install</span>
-      </button>
-      <button id="themeToggle" class="icon-btn" aria-label="Toggle dark mode" title="Toggle theme">
-        <i class="fa-solid fa-moon"></i>
-      </button>
     </div>
   </header>
 
@@ -75,6 +79,18 @@
         <input type="file" id="importFile" accept="application/json" hidden>
         <button class="tbtn" id="btnPrint" title="Print / Save PDF"><i class="fa-solid fa-print"></i><span>Print / PDF</span></button>
         <button class="tbtn" id="btnShare" title="Share via device share sheet"><i class="fa-solid fa-share-nodes"></i><span>Share</span></button>
+        <span class="tbtn-sep"></span>
+        <!-- Moved out of the red bar. Neither is used often enough to earn
+             space there, and on a phone that bar has no space to give.
+             Install stays hidden until the browser confirms the app is
+             installable, or until iOS is detected — Safari has no install
+             API, so there the button explains where the control is. -->
+        <button class="tbtn" id="installBtn" hidden title="Install this app for offline use">
+          <i class="fa-solid fa-mobile-screen"></i><span class="install-label">Install</span>
+        </button>
+        <button class="tbtn" id="themeToggle" aria-label="Toggle dark mode" title="Toggle theme">
+          <i class="fa-solid fa-moon"></i><span class="theme-label">Theme</span>
+        </button>
       </div>
     </div>
     <div class="toolbar-row toolbar-row--status">

@@ -1078,8 +1078,14 @@
   }
 
   function updateThemeIcon(theme) {
-    qs('#themeToggle').innerHTML = theme === 'dark'
-      ? '<i class="fa-solid fa-sun"></i>' : '<i class="fa-solid fa-moon"></i>';
+    /* Swap the icon in place rather than rewriting the button. It carries a
+       text label now that it lives in the toolbar instead of the top bar,
+       and replacing innerHTML would delete it on the first theme change. */
+    const tBtn = qs('#themeToggle');
+    const tIcon = tBtn && tBtn.querySelector('i');
+    if (tIcon) tIcon.className = theme === 'dark' ? 'fa-solid fa-sun' : 'fa-solid fa-moon';
+    const tLabel = tBtn && tBtn.querySelector('.theme-label');
+    if (tLabel) tLabel.textContent = theme === 'dark' ? 'Light' : 'Dark';
   }
 
   /* ===================== DEVICE: GPS LOCATION ===================== */
@@ -1325,18 +1331,65 @@
   function updateStickyOffset() {
     const topbar = qs('.topbar');
     const toolbar = qs('.toolbar');
-    const total = (topbar ? topbar.offsetHeight : 0) + (toolbar ? toolbar.offsetHeight : 0);
-    document.documentElement.style.setProperty('--sticky-offset', total + 'px');
+    const topH = topbar ? topbar.offsetHeight : 0;
+    /* The toolbar sticks directly below the header, so it needs the
+       header's height on its own as well as the combined figure. It used
+       to be a constant in the stylesheet, which is wrong the moment the
+       header reflows -- a different breakpoint, a wrapped title, a
+       differently sized partner banner -- and shows up as the toolbar
+       overlapping the header or floating below a gap. */
+    document.documentElement.style.setProperty('--topbar-h', topH + 'px');
+    /* Only count the toolbar when it is actually pinned. On a phone it is
+       static (see the note in style.css), and counting it there would push
+       every section anchor 200px too far down the page. */
+    const toolbarPinned = toolbar &&
+      getComputedStyle(toolbar).position === 'sticky';
+    document.documentElement.style.setProperty('--sticky-offset',
+      (topH + (toolbarPinned ? toolbar.offsetHeight : 0)) + 'px');
   }
 
   function bindStickyOffset() {
     updateStickyOffset();
+    /* A ResizeObserver catches the reflows a resize event does not: the
+       toolbar buttons wrapping onto a second row, a font finishing
+       loading, the title going from one line to two. */
+    if (typeof ResizeObserver !== 'undefined') {
+      const ro = new ResizeObserver(updateStickyOffset);
+      const bar = qs('.topbar'), tb = qs('.toolbar');
+      if (bar) ro.observe(bar);
+      if (tb) ro.observe(tb);
+    }
     let resizeTimer;
     window.addEventListener('resize', () => {
       clearTimeout(resizeTimer);
       resizeTimer = setTimeout(updateStickyOffset, 150);
     });
     window.addEventListener('orientationchange', () => setTimeout(updateStickyOffset, 250));
+  }
+
+  /* ===================== PARTNER BANNER =====================
+     Three marks, one slot, cross-fading. See .brand-banner in style.css
+     for why they share a slot at all.
+
+     Stops while the tab is hidden. A timer that keeps firing in the
+     background costs battery on the device this app is meant to be used
+     on, and nothing is being seen while it runs. */
+  const BRAND_ROTATE_MS = 5000;
+  function startBrandBanner() {
+    const slides = qsa('.brand-slide');
+    if (slides.length < 2) return;
+    let i = slides.findIndex(el => el.classList.contains('is-active'));
+    if (i < 0) i = 0;
+    let timer = null;
+    const step = () => {
+      slides[i].classList.remove('is-active');
+      i = (i + 1) % slides.length;
+      slides[i].classList.add('is-active');
+    };
+    const start = () => { if (!timer) timer = setInterval(step, BRAND_ROTATE_MS); };
+    const stop = () => { if (timer) { clearInterval(timer); timer = null; } };
+    document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
+    start();
   }
 
   /* ===================== MOBILE NAV ===================== */
@@ -1392,6 +1445,7 @@
     bindToolbar();
     bindMobileNav();
     bindStickyOffset();
+    startBrandBanner();
     bindGeolocation();
     bindCompass();
     bindNoiseMeter();

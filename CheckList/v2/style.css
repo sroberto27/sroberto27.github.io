@@ -115,17 +115,44 @@ button, .tbtn, .icon-btn, .chip, .switch, a {
   display: block;
 }
 
-.brand-logo {
+/* ===================== PARTNER BANNER =====================
+   One slot, three marks, cross-fading. Side by side they were about 300 px
+   of a 412 px phone screen and could not shrink, which is what pushed the
+   document wider than the display; this shows all three in ~104 px.
+
+   The white chip is what makes it work for all three rather than for two:
+   the LED mark is dark blue and black type, which is legible on white and
+   marginal on the brand red the bar is painted with.
+
+   object-fit: contain rather than a fixed height, because the three have
+   very different proportions -- 2.98, 1.90 and 5.19 to 1. Contain fits
+   each inside the same box on its own terms, so the widest one scales down
+   instead of setting the slot's width for everybody. */
+.brand-banner {
+  position: relative;
+  flex-shrink: 0;
+  width: 132px;
   height: 38px;
-  border-radius: 4px;
   background: #fff;
-  padding: 2px;
-  flex-shrink: 0; /* keep aspect ratio intact under a squeeze instead of getting distorted */
+  border-radius: 4px;
+  padding: 3px;
+  overflow: hidden;
 }
-
-.brand-logo--round { border-radius: 50%; object-fit: cover; }
-
-.led-logo { background: transparent; padding: 0; height: 32px; }
+.brand-slide {
+  position: absolute;
+  inset: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity .55s ease;
+}
+.brand-slide.is-active { opacity: 1; }
+/* The rotation still happens -- it is a credit, not decoration, and all
+   three partners should appear -- but it swaps instead of fading. */
+@media (prefers-reduced-motion: reduce) {
+  .brand-slide { transition: none; }
+}
 
 .brand-title h1 {
   font-size: 19px;
@@ -166,7 +193,13 @@ button, .tbtn, .icon-btn, .chip, .switch, a {
 /* ===================== TOOLBAR ===================== */
 .toolbar {
   position: sticky;
-  top: 62px;
+  /* Measured from the real element rather than hard-coded. The header's
+     height moves with the breakpoint, the banner size and the title
+     wrapping, and a stale constant here shows up as the toolbar either
+     overlapping the header or floating below a gap. app.js keeps
+     --topbar-h in step with a ResizeObserver; the fallback is the desktop
+     height, for the moment before the first measurement lands. */
+  top: var(--topbar-h, 62px);
   z-index: 35;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
@@ -700,8 +733,12 @@ select {
   .topbar-brand, .topbar-actions { gap: 8px; }
   .brand-subtitle { display: none; }
   .brand-title h1 { font-size: 15px; }
-  .brand-logo { height: 30px; }
-  .toolbar { top: 58px; padding: 10px 14px; }
+  .brand-banner { width: 112px; height: 30px; }
+  /* No `top` here. It is var(--topbar-h), measured from the real
+     element — a constant would be wrong the moment the header reflows,
+     and at this breakpoint the header is 64px, so the 58px that used
+     to be here hid 6px of it behind the toolbar on scroll. */
+  .toolbar { padding: 10px 14px; }
   .toolbar-row--main { flex-direction: column; align-items: stretch; }
   .location-picker select { flex: 1; min-width: 0; }
   .toolbar-btns { gap: 6px; }
@@ -728,33 +765,23 @@ select {
    the app appears to sit in a column with dead space beside it and has to
    be pinch-zoomed out to read.
 
-   Measured on a 412 px phone: the bar needed 477 px against a 397 px
-   viewport, an 80 px overflow. The LED banner alone accounts for 156 px
-   of it — it is a wide wordmark, so even at 30 px tall it is 40% of the
-   screen — and it cannot shrink.
+   Measured on a 412 px phone before this was addressed: the bar needed
+   477 px against a 397 px viewport, an 80 px overflow. The three partner
+   marks side by side were most of it, and the LED wordmark alone was
+   156 px — 40% of the screen — with no ability to shrink.
 
-   Fixed by giving the bar less to carry as the screen narrows, rather
-   than by letting the logos distort. The breakpoints below are where each
-   item stops fitting, measured rather than guessed. All three logos are
-   still shown from 600 px up, which covers tablets, desktop and print. */
-@media (max-width: 600px) {
-  .led-logo { display: none; }
-}
+   Most of that is now structural rather than a breakpoint: the marks
+   share one cross-fading slot (see .brand-banner) and the Install and
+   theme controls moved out of the bar entirely, into the toolbar row
+   below it. What is left here is sizing that slot down as the screen
+   narrows. */
 @media (max-width: 430px) {
-  /* At this width the title is down to about 70 px — "Locat…" — which is
-     worse than dropping the second mark. */
-  .brand-logo--round { display: none; }
-  .brand-logo { height: 26px; }
+  .brand-banner { width: 96px; height: 26px; }
   .topbar { padding: 10px; }
 }
 @media (max-width: 400px) {
-  /* Smallest phones still in use (iPhone SE is 375 CSS px). Measured at
-     360: the bar still wanted 10 px more than it had, and the overflow
-     guard below was silently clipping the theme toggle rather than the
-     bar visibly not fitting — which is the worse of the two failures,
-     because it looks like a rendering glitch. What is left is the
-     functional minimum: menu, title, install, theme. */
-  .topbar-brand .brand-logo { display: none; }
+  /* Smallest phones still in use — an iPhone SE is 375 CSS px. */
+  .brand-banner { width: 84px; height: 24px; }
   .topbar { padding: 10px 8px; }
 }
 /* Last-resort guard. Everything above stops the bar overflowing on the
@@ -763,6 +790,80 @@ select {
    shows up as "the app does not fit the screen" rather than as anything
    obviously to do with the top bar. */
 .topbar { overflow: hidden; }
+
+
+/* On a phone the toolbar is not sticky. Measured at 412 px it is about
+   200 px tall — a location picker, two wrapped rows of icon buttons and a
+   status row — and pinning that under a 64 px header leaves a third of the
+   screen permanently spent on chrome, on the device where screen is
+   scarcest. The header stays pinned because it carries the section menu;
+   the toolbar's actions are ones you reach for deliberately, so scrolling
+   to the top for them is a fair trade for a third of the viewport.
+
+   app.js reads the computed position rather than assuming, so
+   --sticky-offset (which scroll-margin uses to land section anchors below
+   the chrome) stays right in both modes. */
+@media (max-width: 720px) {
+  .toolbar { position: static; }
+}
+
+/* ===================== MOBILE ERGONOMICS =====================
+   The phone is a primary device for this app, not a fallback: it is used
+   standing in a room being scouted, one-handed, often in bad light.
+
+   TAP TARGETS. The toolbar collapses to icon-only buttons on a phone, and
+   an icon-only button is exactly where a too-small target hurts, because
+   there is no text to widen it. 44 px is the size a fingertip actually
+   needs; the row already wraps, so giving them room costs a second line
+   at worst rather than an overflow.
+
+   SAFE AREAS on the horizontal axis only. A notched phone in landscape
+   puts the cutout and the rounded corner over the leading edge, which is
+   where the menu button and the location picker live. The vertical insets
+   are deliberately left alone: iOS reserves the status bar itself now
+   that the status-bar style is "default" rather than black-translucent,
+   and padding a sticky header whose height other sticky offsets are
+   measured from is a good way to introduce a subtler bug than the one it
+   fixes. */
+@media (max-width: 720px) {
+  .toolbar-btns .tbtn { min-width: 44px; min-height: 44px; }
+  .icon-btn { width: 44px; height: 44px; }
+  .toolbar-btns { gap: 8px; }
+  .tbtn-sep { margin: 0 2px; }
+}
+/* Width is a proxy for touch and not a very good one: a tablet or a touch
+   laptop is wide and still driven by a fingertip. This asks the real
+   question. Both rules are kept, because a coarse pointer is what matters
+   and a narrow screen is what can be tested in a headless browser. */
+@media (pointer: coarse) {
+  .toolbar-btns .tbtn { min-width: 44px; min-height: 44px; }
+  .icon-btn { width: 44px; height: 44px; }
+}
+
+.topbar, .toolbar {
+  padding-left: max(20px, env(safe-area-inset-left));
+  padding-right: max(20px, env(safe-area-inset-right));
+}
+@media (max-width: 720px) {
+  .topbar { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
+  .toolbar { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
+  .app-shell {
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-bottom: max(60px, env(safe-area-inset-bottom));
+  }
+}
+@media (max-width: 430px) {
+  .topbar { padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right)); }
+}
+@media (max-width: 400px) {
+  .topbar { padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
+}
+
+/* The install button reads as an action rather than a utility while it is
+   still worth doing, then stops competing once the app is installed. */
+#installBtn { border-color: var(--brand); color: var(--brand); }
+#installBtn:hover, #installBtn:active { background: var(--brand-light); }
 
 /* ===================== PRINT ===================== */
 @media print {
