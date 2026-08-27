@@ -45,7 +45,11 @@
     return widthFovDeg(ASSUMED_LONG_FOV_DEG, s0.width, s0.height);
   }
 
-  let archive = null;  // { meta, shots:[{name, blob, yaw, pitch, roll, width, height}] }
+  /* archive.sequence holds the pose-only frames a sequence-mode capture
+     recorded between targets. They are fed to refinement exactly as the
+     phone feeds them -- flagged poseOnly, never stitched -- so a replay of
+     a sequence capture exercises the same code path the phone did. */
+  let archive = null;  // { meta, shots:[...], sequence:[...] }
   let lastBlob = null;
 
   function log(msg) {
@@ -102,10 +106,31 @@
       }
       if (!shots.length) throw new Error('none of the listed photos were present in the archive');
 
-      archive = { meta, shots };
+      /* Pose-only frames, present only in a sequence-mode archive. Missing
+         ones are skipped rather than fatal: they are supporting evidence,
+         and a capture is perfectly replayable without them. */
+      const sequence = [];
+      for (const f of (meta.sequence || [])) {
+        const entry = zip.file(f.file);
+        if (!entry) continue;
+        sequence.push({
+          blob: await entry.async('blob'),
+          yaw: f.yaw, pitch: f.pitch, roll: f.roll,
+          width: f.width, height: f.height
+        });
+      }
+
+      archive = { meta, shots, sequence };
       lastBlob = null;
       el('dlBtn').disabled = true;
-      log(`  loaded ${shots.length} shots, session ${meta.sessionId}`);
+      const seqBox = el('useSequence');
+      if (seqBox) {
+        seqBox.disabled = !sequence.length;
+        seqBox.checked = !!sequence.length;
+      }
+      log(`  loaded ${shots.length} shots` +
+        (sequence.length ? ` + ${sequence.length} sequence frames` : '') +
+        `, session ${meta.sessionId}`);
       renderSession();
       renderThumbs();
       el('ortStatus').textContent = `${shots.length} shots · ${meta.sessionId}`;
@@ -154,7 +179,7 @@
   /* Same protocol capture360.js uses: downscaled ImageBitmaps, transferred.
      Resolves to { byId, hFovDeg, diagnostics } or null, where null means
      "stitch from the sensor pose", exactly as on the phone. */
-  function runRefinement(shots, onProgress) {
+  function runRefinement(shots, sequence, onProgress) {
     return new Promise(resolve => {
       let worker;
       try { worker = new Worker('../pano-refine-worker.js', { type: 'module' }); }
@@ -194,9 +219,16 @@
           full.close();
           images.push({ bitmap: bmp, width: bmp.width, height: bmp.height, yaw: s.yaw, pitch: s.pitch, roll: s.roll });
         }
+        const photoCount = images.length;
+        for (const f of (sequence || [])) {
+          images.push({
+            blob: f.blob, width: f.width, height: f.height,
+            yaw: f.yaw, pitch: f.pitch, roll: f.roll, poseOnly: true
+          });
+        }
         worker.postMessage(
           { type: 'refine', images, options: { maxSide: REFINE_MAX_SIDE, nominalHFovDeg: ASSUMED_LONG_FOV_DEG } },
-          images.map(i => i.bitmap)
+          images.slice(0, photoCount).map(i => i.bitmap)
         );
       })().catch(err => { log('  decode failed: ' + err.message); finish(null); });
     });
@@ -221,6 +253,15 @@
     });
   }
 
+  /* Off unless the archive actually has them AND the checkbox is on, so a
+     sequence capture can be replayed both ways to see what the extra
+     frames bought. */
+  function sequenceFrames() {
+    const box = el('useSequence');
+    if (!archive || !archive.sequence || !archive.sequence.length) return null;
+    return (box && box.checked) ? archive.sequence : null;
+  }
+
   function blendChoice() { return el('blendMode').value; }
   function blendLabel(m) {
     return m === 'best' ? 'sharpest wins' : (m === 'sharp' ? 'sharpness-weighted' : 'blended');
@@ -232,13 +273,18 @@
     let refinement = null;
     if (useRefine) {
       stage('refining…');
-      refinement = await runRefinement(archive.shots, (s, pct) => {
+      refinement = await runRefinement(archive.shots, sequenceFrames(), (s, pct) => {
         stage(s); progress(pct / 100 * 0.55);
       });
       if (refinement) {
         const d = refinement.diagnostics || {};
         log(`  refined: hFOV ${fmt(refinement.hFovDeg)}°, mean correction ${fmt(d.meanCorrectionDeg)}°, ` +
           `${d.edges} edges (${d.rejectedEdges} rejected), ${d.keypointsPerShot} kpts/shot`);
+        if (d.sequenceFrames) {
+          log(`  sequence: ${d.sequenceFrames} pose-only frames, ${d.directEdges} direct pairs ` +
+            `chained into ${d.chainedEdges} photo-to-photo edges ` +
+            `(${d.droppedTracks} ambiguous tracks dropped)`);
+        }
       } else {
         log('  refinement returned nothing — falling back to sensor pose');
       }
@@ -277,13 +323,18 @@
     let refinement = null;
     if (useRefine) {
       stage('refining…');
-      refinement = await runRefinement(archive.shots, (s, pct) => {
+      refinement = await runRefinement(archive.shots, sequenceFrames(), (s, pct) => {
         stage(s); progress(pct / 100 * 0.4);
       });
       if (refinement) {
         const d = refinement.diagnostics || {};
         log(`  refined: hFOV ${fmt(refinement.hFovDeg)}°, mean correction ${fmt(d.meanCorrectionDeg)}°, ` +
           `${d.edges} edges (${d.rejectedEdges} rejected), ${d.keypointsPerShot} kpts/shot`);
+        if (d.sequenceFrames) {
+          log(`  sequence: ${d.sequenceFrames} pose-only frames, ${d.directEdges} direct pairs ` +
+            `chained into ${d.chainedEdges} photo-to-photo edges ` +
+            `(${d.droppedTracks} ambiguous tracks dropped)`);
+        }
       } else {
         log('  refinement returned nothing — falling back to sensor pose');
       }

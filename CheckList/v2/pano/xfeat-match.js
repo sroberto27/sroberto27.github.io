@@ -152,6 +152,11 @@
       matches.push({
         ax: kpA[i].x, ay: kpA[i].y,
         bx: kpB[j].x, by: kpB[j].y,
+        // Keypoint INDICES, not just coordinates. Geometry only ever needs
+        // the coordinates, but pipeline.chainEdges() has to recognise that
+        // "this keypoint in frame s" is the same keypoint across two
+        // different edges, and identity is what an index gives it.
+        ai: i, bi: j,
         score: bestScore[i]
       });
     }

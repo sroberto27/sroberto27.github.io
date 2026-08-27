@@ -377,6 +377,108 @@ section('5b. Pose parameterisation survives the poles');
     worstJump < 0.05, '(worst step ' + worstJump.toFixed(4) + ' deg near pitch ' + jumpAt.toFixed(2) + ')');
 }
 
+section('5c. Sequence frames: pair selection and track chaining');
+{
+  /* Sequence mode records frames while the phone moves between targets and
+     uses them as pose-only evidence. Two pieces have to hold for that to be
+     worth anything, and both are pure functions, so both are testable here
+     rather than only on a phone.
+
+     Neither of these can be checked by "does the panorama look better" --
+     that is a judgement about a capture, made afterwards, on a device. */
+  const DEG = Math.PI / 180;
+  const shots = C.buildTargetPattern();
+
+  /* Interleave four intermediate frames into every gap of the horizon
+     ring, exactly as an angular trigger at 7 deg would over 30 deg gaps. */
+  const priors = [];
+  const isKey = [];
+  const horizon = shots.filter(t => Math.abs(t.pitch) < 1e-6);
+  for (let i = 0; i < horizon.length; i++) {
+    priors.push({ yaw: horizon[i].yaw, pitch: 0, roll: 0 });
+    isKey.push(true);
+    for (let k = 1; k <= 4; k++) {
+      priors.push({ yaw: horizon[i].yaw + k * 6 * DEG, pitch: 0, roll: 0 });
+      isKey.push(false);
+    }
+  }
+
+  const all = P.candidatePairs(priors, {});
+  const picked = P.selectPairs(priors, isKey, {});
+  const keyCount = isKey.filter(Boolean).length;
+
+  /* The point of selection is that matching cost must not grow with the
+     square of the frame count. Every pair between two photographs is kept,
+     because those are what the bundle actually solves for. */
+  const keyPairsAll = all.filter(pr => isKey[pr.i] && isKey[pr.j]).length;
+  const keyPairsKept = picked.filter(pr => isKey[pr.i] && isKey[pr.j]).length;
+  console.log('    ' + priors.length + ' frames (' + keyCount + ' photographs): ' +
+    all.length + ' overlapping pairs -> ' + picked.length + ' selected');
+  check('selection keeps every photograph-to-photograph pair',
+    keyPairsKept === keyPairsAll, keyPairsKept + ' of ' + keyPairsAll);
+  check('selection stops the pair count growing with the square of the frames',
+    picked.length < all.length * 0.5,
+    picked.length + ' vs ' + all.length + ' (' +
+    (picked.length / all.length * 100).toFixed(0) + '%)');
+
+  /* Every frame still has to be reachable, or a chain cannot form through
+     it and the frame was recorded for nothing. */
+  const deg = new Array(priors.length).fill(0);
+  for (const pr of picked) { deg[pr.i]++; deg[pr.j]++; }
+  check('every frame keeps at least one pair, so no frame is stranded',
+    deg.every(d => d > 0), 'min degree ' + Math.min.apply(null, deg));
+
+  /* Chaining. Two photographs with no direct match, joined only by a run
+     of sequence frames, must come out as a direct correspondence. This is
+     the whole mechanism: it is what lets a 30 deg gap on a blank wall be
+     solved by 7 deg hops without the bundle ever growing. */
+  const mkMatches = (n, shift) => {
+    const out = [];
+    for (let k = 0; k < n; k++) {
+      out.push({ ai: k, bi: k + shift, ax: k * 3, ay: k * 5, bx: k * 3 + 1, by: k * 5 + 1, score: 1 });
+    }
+    return out;
+  };
+  const chainInput = [
+    { i: 0, j: 1, matches: mkMatches(20, 0) },
+    { i: 1, j: 2, matches: mkMatches(20, 0) },
+    { i: 2, j: 3, matches: mkMatches(20, 0) }
+  ];
+  const chained = P.chainEdges(chainInput, [true, false, false, true], {});
+  check('a photograph pair joined only through sequence frames becomes a direct edge',
+    chained.length === 1 && chained[0].i === 0 && chained[0].j === 3 &&
+    chained[0].matches.length === 20,
+    chained.length ? chained[0].i + '-' + chained[0].j + ', ' +
+      chained[0].matches.length + ' matches' : 'none');
+  check('the chained edge carries no sequence frame into the solve',
+    chained.every(e => e.i === 0 && e.j === 3));
+
+  /* A track that lands on the same frame twice claims two different
+     keypoints in one image are the same world point. That cannot be true,
+     and it is how a chain of small errors announces itself. */
+  const ambiguous = [{
+    i: 0, j: 1,
+    matches: [
+      { ai: 0, bi: 0, ax: 1, ay: 1, bx: 9, by: 9 },
+      { ai: 7, bi: 0, ax: 4, ay: 4, bx: 9, by: 9 }
+    ]
+  }];
+  const rejected = P.chainEdges(ambiguous, [true, false], { minMatches: 1 });
+  check('a track that sees one frame twice is discarded, not used',
+    rejected.length === 0 && rejected.droppedAmbiguousTracks === 1,
+    rejected.length + ' edges, ' + rejected.droppedAmbiguousTracks + ' dropped');
+
+  // Bounded output: an edge cannot hand the bundle an unbounded match list.
+  const fat = [
+    { i: 0, j: 1, matches: mkMatches(2000, 0) },
+    { i: 1, j: 2, matches: mkMatches(2000, 0) }
+  ];
+  const capped = P.chainEdges(fat, [true, false, true], { maxPerEdge: 240 });
+  check('chained edges are capped so the bundle cost stays bounded',
+    capped.length === 1 && capped[0].matches.length === 240,
+    capped.length ? capped[0].matches.length + ' matches' : 'none');
+}
+
 section('6. Degenerate and adversarial inputs');
 {
   const scene = Synth.generate({ seed: 3 });

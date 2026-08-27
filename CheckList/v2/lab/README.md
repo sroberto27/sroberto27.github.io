@@ -212,6 +212,61 @@ Note when running headless without a GPU: pass `--use-angle=swiftshader
 --enable-unsafe-swiftshader`, or `create()` returns null and the page
 correctly reports that WebGL is unavailable rather than testing anything.
 
+## Sequence mode
+
+A capture can record extra frames while the phone is moving between
+targets, flagged `poseOnly`. They exist for the pose graph, which is the
+measured weak point of a real capture: on a 46-shot capture of a room with
+large blank walls, 82 of 164 candidate pairs were rejected, the edge
+residual after solving was 3.47 deg against 0.31 on a synthetic
+zero-parallax scene, and the horizon ring accumulated 21.8 deg of loop
+drift. Two photographs 30 deg apart on a blank wall share little and often
+fail to match; the same pair joined by frames 7 deg apart matches every
+time.
+
+They never contribute a pixel, and they never reach the bundle adjuster.
+`bundle.js` builds a dense Jacobian and normal matrix, so its cost grows
+with the cube of the parameter count and 186 frames would be 558
+parameters against 108. Instead `pipeline.chainEdges()` runs union-find
+over (frame, keypoint) to build feature tracks, and a track touching two
+photographs yields a correspondence between them directly -- so
+`A -> s1 -> s2 -> B` becomes a plain `A -> B` correspondence and the solve
+stays exactly the size it was. A track that observes the same frame twice
+is discarded: two distinct keypoints in one image cannot be the same world
+point, and that is how a chain of small errors announces itself.
+
+`pipeline.selectPairs()` keeps matching tractable. Pairs inside a 60 deg
+cone grow as `N^2 (1 - cos 60)/2`, so five times the frames is twenty-five
+times the matching -- roughly 2800 pairs and two billion descriptor
+comparisons. It keeps every photograph-to-photograph pair and gives every
+other frame only its nearest handful of neighbours.
+
+Three things it does NOT do, worth knowing before reading a result:
+
+- it does not fix parallax. A ceiling fan a metre overhead moves against
+  the far wall by roughly the lens travel over its distance whatever the
+  frame rate, and a rotation-only model cannot represent that.
+- it does not improve resolution. Frames taken while moving are
+  motion-blurred and rolling-shutter-skewed, which is exactly why they are
+  pose-only.
+- it cannot verify that the preview sees the same field of view as the
+  stills. Phones commonly give 4:3 stills and a 16:9 preview; when the
+  preview is relatively taller it is trimmed symmetrically, which is right
+  if video is a shorter slice of the same sensor and wrong if the device
+  crops horizontally for stabilisation. There is no web API to ask. A
+  wrong focal shows up as refinement being rejected by its own
+  plausibility gate, not as a quietly worse panorama.
+
+The numbers to watch when judging whether it helped are `loopDriftDeg`,
+`rejectedEdges` and `rmsEdgeResidualDeg` -- not PSNR. The residual is the
+useful one: whatever it settles at once the graph is dense is the parallax
+floor for that capture.
+
+Archives from a sequence capture carry the frames under `sequence/` and
+list them in `metadata.sequence`, so `lab/replay.html` can replay the run
+both ways -- its "Use sequence frames" checkbox enables itself when the
+archive has them.
+
 ## Vendored files
 
 `vendor/` holds ~17 MB that is **not** currently gitignored, because GitHub Pages

@@ -141,6 +141,54 @@
   function setBlendMode(v) {
     try { localStorage.setItem(BLEND_PREF_KEY, v); } catch (e) { /* ignore */ }
   }
+
+  /* ===================== SEQUENCE MODE =====================
+     Keep grabbing cheap frames from the preview while the phone is moving
+     between one target and the next, and hand them to refinement as
+     POSE-ONLY evidence. They never contribute a pixel to the panorama.
+
+     What it is for: the pose graph, which is the measured weak point of a
+     real capture. On a 46-shot capture of a room with large blank walls,
+     82 of 164 candidate pairs were rejected outright, the edge residual
+     after solving was 3.47 deg against 0.31 on a synthetic zero-parallax
+     scene, and the horizon ring accumulated 21.8 deg of loop drift. Two
+     photographs 30 deg apart on a blank wall share little and often fail
+     to match; the same pair joined by frames 7 deg apart matches every
+     time, and pipeline.chainEdges() turns those hops back into a direct
+     correspondence between the two photographs.
+
+     What it is NOT for: pixels. Frames taken while the phone is moving are
+     motion-blurred and rolling-shutter-skewed, which is exactly why they
+     are flagged poseOnly and dropped after the solve.
+
+     It cannot fix parallax. A ceiling fan a metre overhead moves against
+     the far wall by roughly the lens travel over its distance whatever the
+     frame rate, and a rotation-only model has no way to represent that. */
+  const SEQUENCE_PREF_KEY = 'lsc2_pano_sequence';
+  function sequenceEnabled() {
+    try { return localStorage.getItem(SEQUENCE_PREF_KEY) !== '0'; }
+    catch (e) { return true; }
+  }
+  function setSequenceEnabled(on) {
+    try { localStorage.setItem(SEQUENCE_PREF_KEY, on ? '1' : '0'); } catch (e) { /* ignore */ }
+  }
+
+  /* Frames are triggered by ANGLE, not by a timer. A timer gives four
+     hundred frames from a slow sweep and holes in a fast one; a fixed
+     angular step makes graph density a property of the capture pattern
+     rather than of how briskly the user moved. 7 deg puts four or five
+     frames in each 30 deg gap between targets. */
+  const SEQ_STEP_DEG = 7;
+  /* Above this rotation rate a hand-held frame is smeared far enough that
+     its keypoints land in the wrong place, which is worse than not having
+     the frame at all. Below the lower bound the phone is effectively
+     parked on a target and the photograph already covers it. */
+  const SEQ_MAX_RATE_DEG_S = 90;
+  const SEQ_MIN_RATE_DEG_S = 3;
+  /* Hard ceiling. 36 targets with 30 deg gaps at a 7 deg step is about
+     150 frames; the cap is headroom for a wandering capture, and it bounds
+     both the refinement time and the ~150 KB each costs in memory. */
+  const SEQ_MAX_FRAMES = 260;
   /* Shape of a source photo, used to size and orient everything drawn on
      the aiming overlay: the captured-shot patches, and the cone the
      coverage warning counts with.
@@ -211,6 +259,9 @@
           <div class="c360-counter">Photos: <span class="c360-count">0</span> / <span class="c360-total">0</span></div>
           <label class="c360-enhance" title="Corrects lens FOV, pose drift and exposure on-device before stitching. Slower, but much sharper seams.">
             <input type="checkbox" class="c360-enhance-input"> Enhance
+          </label>
+          <label class="c360-enhance c360-sequence" title="Keeps grabbing low-resolution frames while you move between targets and uses them to align the photos to each other. They never appear in the panorama. Slower to process.">
+            <input type="checkbox" class="c360-sequence-input"> Sequence
           </label>
           <label class="c360-blend" title="How overlapping photos are combined. Sharpest wins: no doubled edges, but seams can be visible. Blended: smoothest seams, but slight ghosting.">
             <select class="c360-blend-input">
@@ -457,6 +508,12 @@
       const blendInput = overlay.querySelector('.c360-blend-input');
       blendInput.value = blendMode();
       blendInput.addEventListener('change', () => setBlendMode(blendInput.value));
+      const sequenceInput = overlay.querySelector('.c360-sequence-input');
+      sequenceInput.checked = sequenceEnabled();
+      sequenceInput.addEventListener('change', () => {
+        setSequenceEnabled(sequenceInput.checked);
+        if (!sequenceInput.checked) seqFrames.length = 0;
+      });
 
       /* Live 3D preview. Null is a normal outcome -- no WebGL, a lost
          context, a shader that would not compile -- and everything below
@@ -468,7 +525,9 @@
          is corrected from the first real still; everything that draws a
          photo on the overlay reads it from here. */
       let frameGeom = frameGeometry(0, 0);
+      let frameSrcW = 0, frameSrcH = 0;   // the real still's pixel size
       function noteFrameSize(w, h) {
+        if (w > 0 && h > 0) { frameSrcW = w; frameSrcH = h; }
         const g = frameGeometry(w, h);
         if (Math.abs(g.hFovDeg - frameGeom.hFovDeg) < 1e-6 &&
             Math.abs(g.aspect - frameGeom.aspect) < 1e-6) return;
@@ -552,6 +611,17 @@
       // replay can tell an unlocked capture from a locked one.
       let cameraLocks = null;
 
+      /* Sequence frames: pose-only evidence taken while moving, held in
+         memory as small JPEGs and never written to the media store. They
+         are handed to refinement and then dropped. */
+      const seqFrames = [];       // { blob, width, height, yaw, pitch, roll }
+      let seqLastDir = null;      // direction of the last frame kept
+      let seqPrev = null;         // { yaw, pitch, t } for the rate estimate
+      let seqBusy = false;
+      let seqGeomChecked = false;
+      let seqDisabledReason = null;
+      let seqCrop = null;         // source rect of the preview to use, or null for all of it
+
       function finishAndClose(result) {
         if (finished) return;
         finished = true;
@@ -563,6 +633,7 @@
         // opened and cancelled a few times would otherwise stop getting
         // one and silently fall back to the 2D path.
         if (sphere) { try { sphere.destroy(); } catch (e) { /* ignore */ } }
+        seqFrames.length = 0;
         if (stream) stream.getTracks().forEach(t => t.stop());
         overlay.remove();
         resolve(result);
@@ -598,6 +669,136 @@
           finishAndClose({ stitched: false, sessionId, sourceCount: sourceMediaIds.length, reason: 'camera-interrupted' });
         }
       });
+
+      /* One preview frame, scaled so its long side is REFINE_MAX_SIDE --
+         the size refinement works at anyway, so nothing is lost and a
+         couple of hundred of them cost about 150 KB each instead of 3 MB.
+
+         Drawn from the <video> element rather than taken with
+         ImageCapture.takePhoto(), which needs hundreds of milliseconds and
+         cannot be burst. That means these frames come from the VIDEO path
+         of the camera, and on many phones video is a different crop of the
+         sensor from stills -- a different field of view, which the
+         single-focal pipeline cannot represent. checkSequenceGeometry()
+         below refuses the whole feature when it detects that rather than
+         letting it quietly corrupt the geometry. */
+      async function grabSequenceFrame() {
+        const vw = video.videoWidth || 0, vh = video.videoHeight || 0;
+        if (!vw || !vh || !frameSrcW) return null;
+        /* Sized from the PHOTOGRAPH's dimensions, not the preview's, and
+           by the same rule runRefinement() uses to downscale the
+           photographs. The pipeline carries one width/height for the whole
+           capture, so a sequence frame that came out 540x960 next to a
+           photograph's 720x960 would be dropped by the worker's backstop
+           even though both are the same scene at the same field of view.
+           Matching the target exactly removes that whole class of
+           near-miss; the aspect check is what guards the case where the
+           two genuinely disagree. */
+        if (!checkSequenceGeometry(vw, vh)) return null;
+        const scale = Math.min(1, REFINE_MAX_SIDE / Math.max(frameSrcW, frameSrcH));
+        const c = document.createElement('canvas');
+        c.width = Math.max(8, Math.round(frameSrcW * scale));
+        c.height = Math.max(8, Math.round(frameSrcH * scale));
+        const ctx2 = c.getContext('2d');
+        if (seqCrop) ctx2.drawImage(video, seqCrop.sx, seqCrop.sy, seqCrop.sw, seqCrop.sh, 0, 0, c.width, c.height);
+        else ctx2.drawImage(video, 0, 0, c.width, c.height);
+        const blob = await new Promise(res => c.toBlob(res, 'image/jpeg', 0.82));
+        const w = c.width, h = c.height;
+        c.width = 1; c.height = 1;
+        if (!blob) return null;
+        return { blob, width: w, height: h, srcW: vw, srcH: vh };
+      }
+
+      /* Decide once whether preview frames can stand in for photographs,
+         and how much of each one to use.
+
+         The pipeline carries ONE field of view for the whole capture, so a
+         sequence frame is only usable if it sees the same field as the
+         stills. The stills come from ImageCapture.takePhoto() and the
+         preview from the video track, and phones very often give those
+         different shapes: 4:3 stills next to a 16:9 preview is the normal
+         case, not the exotic one.
+
+         Different SHAPE does not have to mean a different field, though.
+         The usual reason a phone's video is 16:9 while its stills are 4:3
+         is that video takes a shorter slice of the same sensor -- same
+         horizontal field, less vertical. When the preview is relatively
+         TALLER than the stills we can therefore trim it back symmetrically
+         and get a frame with both the stills' aspect and the stills'
+         width field of view.
+
+         Relatively WIDER is refused, because reaching the stills' aspect
+         from there means trimming the SIDES, and that would genuinely
+         narrow the field to something the single-focal pipeline cannot
+         represent.
+
+         The assumption being made is equal horizontal field, and it is
+         worth naming because there is no web API to verify it: electronic
+         stabilisation crops video horizontally on some devices without
+         changing its aspect ratio at all, which would slip past this check
+         entirely. The failure is not silent, though -- a wrong focal shows
+         up as refinement being rejected by its own plausibility gate, and
+         the capture falls back to sensor pose exactly as it would if
+         refinement had never run. */
+      function checkSequenceGeometry(vw, vh) {
+        if (seqGeomChecked) return !seqDisabledReason;
+        seqGeomChecked = true;
+        const stillAspect = frameGeom.aspect;
+        const previewAspect = vh / vw;
+        if (!(previewAspect > 0) || !(stillAspect > 0)) {
+          seqDisabledReason = 'preview size unknown';
+          seqFrames.length = 0;
+          return false;
+        }
+        if (previewAspect < stillAspect * 0.98) {
+          seqDisabledReason = 'preview (' + vw + 'x' + vh + ') is wider than the photos, ' +
+            'so it cannot be trimmed to match them';
+          seqFrames.length = 0;
+          toast('Sequence mode is off for this capture: the preview is a wider shape than the ' +
+            'photos, so frames from it cannot be used to align them.', 'info');
+          return false;
+        }
+        if (previewAspect > stillAspect * 1.02) {
+          const sh = Math.round(vw * stillAspect);
+          seqCrop = { sx: 0, sy: Math.round((vh - sh) / 2), sw: vw, sh: sh };
+        }
+        return true;
+      }
+
+      /* Called every frame. Keeps a frame when the phone has turned far
+         enough since the last one AND is moving at a sane rate. */
+      function maybeGrabSequenceFrame(now) {
+        if (!sequenceInput.checked || seqDisabledReason) return;
+        if (finished || seqBusy || capturingInFlight) return;
+        if (!hasOrientation || !shotLog.length) return;      // nothing to link yet
+        if (seqFrames.length >= SEQ_MAX_FRAMES) return;
+
+        const here = { yaw: currentYaw, pitch: currentPitch };
+        if (seqPrev) {
+          const dt = (now - seqPrev.t) / 1000;
+          if (dt > 0) {
+            const rate = angularDist(here, seqPrev) / DEG / dt;
+            if (rate > SEQ_MAX_RATE_DEG_S || rate < SEQ_MIN_RATE_DEG_S) {
+              seqPrev = { yaw: here.yaw, pitch: here.pitch, t: now };
+              return;
+            }
+          }
+        }
+        seqPrev = { yaw: here.yaw, pitch: here.pitch, t: now };
+        if (seqLastDir && angularDist(here, seqLastDir) / DEG < SEQ_STEP_DEG) return;
+
+        seqBusy = true;
+        const roll = currentRoll;
+        grabSequenceFrame().then(frame => {
+          seqBusy = false;
+          if (!frame || finished) return;
+          seqLastDir = { yaw: here.yaw, pitch: here.pitch };
+          seqFrames.push({
+            blob: frame.blob, width: frame.width, height: frame.height,
+            yaw: here.yaw, pitch: here.pitch, roll: roll
+          });
+        }).catch(() => { seqBusy = false; });
+      }
 
       function resizeCanvas() {
         dpr = window.devicePixelRatio || 1;
@@ -733,6 +934,7 @@
       function loop() {
         if (finished) return;
         updateGuidance();
+        maybeGrabSequenceFrame(performance.now());
         rafId = requestAnimationFrame(loop);
       }
 
@@ -797,6 +999,11 @@
             sourceMediaIds.push(id);
             captured[targetIdx] = true;
             noteFrameSize(shotCanvas.width, shotCanvas.height);
+            /* Restart the angular step from the target just taken, so the
+               first sequence frame of the next gap is a full step away
+               from the photograph rather than from wherever the previous
+               gap happened to end. */
+            seqLastDir = { yaw: capturedYaw, pitch: capturedPitch };
             const patch = {
               yaw: hasOrientation ? capturedYaw : t.yaw,
               pitch: hasOrientation ? capturedPitch : t.pitch,
@@ -925,6 +1132,10 @@
             // Recorded so an offline run reproduces exactly what the phone did.
             assumedHFovDeg: ASSUMED_H_FOV_DEG,
             cameraLocks: cameraLocks,
+            sequenceMode: !!(sequenceInput.checked && !seqDisabledReason),
+            sequenceFrameCount: seqFrames.length,
+            sequenceDisabledReason: seqDisabledReason,
+            sequenceCrop: seqCrop,
             refineEnabled: refineEnabled(),
             refineMaxSide: REFINE_MAX_SIDE,
             hasOrientation: hasOrientation,
@@ -941,8 +1152,26 @@
               hardwareConcurrency: navigator.hardwareConcurrency || null,
               screen: { width: screen.width, height: screen.height, dpr: window.devicePixelRatio || 1 }
             },
-            shots: shots
+            shots: shots,
+            /* Pose-only frames, kept in the archive so lab/replay.html can
+               reproduce a sequence-mode run exactly. They are already
+               downscaled to what refinement works at, so they add about
+               150 KB each rather than the 3 MB a photograph costs. */
+            sequence: seqFrames.map((f, k) => ({
+              file: 'sequence/seq_' + String(k + 1).padStart(4, '0') + '.jpg',
+              yaw: f.yaw, pitch: f.pitch, roll: f.roll,
+              yawDeg: +(f.yaw / DEG).toFixed(3),
+              pitchDeg: +(f.pitch / DEG).toFixed(3),
+              rollDeg: +(f.roll / DEG).toFixed(3),
+              width: f.width, height: f.height, bytes: f.blob.size
+            }))
           };
+          if (seqFrames.length) {
+            const seqFolder = zip.folder('sequence');
+            seqFrames.forEach((f, k) => {
+              seqFolder.file('seq_' + String(k + 1).padStart(4, '0') + '.jpg', f.blob);
+            });
+          }
           zip.file('metadata.json', JSON.stringify(meta, null, 2));
           const out = await zip.generateAsync({ type: 'blob', compression: 'STORE' });
           const url = URL.createObjectURL(out);
@@ -1011,7 +1240,7 @@
          model fetch failure, implausible solution, timeout — funnels to
          null rather than an error, because a refinement problem must never
          cost the user their 26 photos. */
-      function runRefinement(records, onProgress) {
+      function runRefinement(records, extraFrames, onProgress) {
         return new Promise(resolve => {
           if (typeof Worker === 'undefined' || typeof OffscreenCanvas === 'undefined') { resolve(null); return; }
 
@@ -1027,14 +1256,21 @@
             if (timer) clearTimeout(timer);
             try { if (worker) worker.terminate(); } catch (e) { /* ignore */ }
             // Anything still untransferred has to be released explicitly.
-            for (const im of images) { try { im.bitmap.close && im.bitmap.close(); } catch (e) { /* ignore */ } }
+            for (const im of images) { try { im.bitmap && im.bitmap.close && im.bitmap.close(); } catch (e) { /* ignore */ } }
             resolve(value);
           };
 
           try { worker = new Worker('pano-refine-worker.js', { type: 'module' }); }
           catch (e) { finish(null); return; }
 
-          timer = setTimeout(() => finish(null), REFINE_TIMEOUT_MS);
+          /* Sequence frames multiply the matching work, not the solve:
+             the bundle still sees only the photographs. Measured pair
+             counts are 139 for the photographs alone and roughly six times
+             that once every frame gets its nearest few neighbours, so the
+             deadline scales with it rather than staying at a value tuned
+             for a capture a sixth the size. */
+          const budget = REFINE_TIMEOUT_MS * (extraFrames && extraFrames.length ? 3 : 1);
+          timer = setTimeout(() => finish(null), budget);
 
           worker.onmessage = (e) => {
             const msg = e.data;
@@ -1086,10 +1322,28 @@
             }
             if (settled) return;
             if (images.length < 4) { finish(null); return; }
+
+            /* Sequence frames go LAST and carry poseOnly. The worker
+               returns one pose per non-poseOnly frame, in order, so the
+               photographs occupying the first N slots is what keeps
+               msg.poses[k] aligned with order[k]. They are sent as blobs
+               rather than bitmaps deliberately: a couple of hundred live
+               720x960 bitmaps is 400 MB of resident pixels, where the same
+               frames as JPEG are about 150 KB each and the worker decodes
+               them one at a time. */
+            const photoCount = images.length;
+            if (extraFrames && extraFrames.length) {
+              for (const f of extraFrames) {
+                images.push({
+                  blob: f.blob, width: f.width, height: f.height,
+                  yaw: f.yaw, pitch: f.pitch, roll: f.roll, poseOnly: true
+                });
+              }
+            }
             try {
               worker.postMessage(
                 { type: 'refine', images, options: { maxSide: REFINE_MAX_SIDE, nominalHFovDeg: ASSUMED_H_FOV_DEG } },
-                images.map(i => i.bitmap)
+                images.slice(0, photoCount).map(i => i.bitmap)
               );
               images.length = 0;   // ownership transferred to the worker
             } catch (err) { finish(null); }
@@ -1121,7 +1375,15 @@
         // Refinement, when it runs, owns the first 55% of the progress bar.
         let refinement = null;
         if (refineEnabled()) {
-          refinement = await runRefinement(records, (stage, pct) => setProgress(stage, pct * 0.55));
+          /* Sequence frames are NOT dropped here even though refinement is
+             the only thing that consumes them: "Save photos (.zip)" stays
+             available afterwards, and an archive without them could not
+             reproduce the run in lab/replay.html. A couple of hundred
+             small JPEGs is about 20 MB, against the stitcher's own 176 MB
+             of accumulators, so keeping them is not what puts a phone
+             under memory pressure. They go when the overlay closes. */
+          refinement = await runRefinement(records, seqFrames,
+            (stage, pct) => setProgress(stage, pct * 0.55));
         }
         const base = refinement ? 55 : 0;
         const span = refinement ? 45 : 100;

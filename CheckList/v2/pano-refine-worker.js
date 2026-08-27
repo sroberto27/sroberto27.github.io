@@ -22,6 +22,17 @@
    but BOTH TOGETHER buy +8.57 dB. They are strongly coupled -- neither
    half is worth applying without the other.
 
+   SEQUENCE FRAMES. A capture may include frames taken while the phone was
+   moving between targets, flagged `poseOnly`. They exist because two
+   photographs 30 deg apart on a blank wall often fail to match while the
+   same pair joined by frames 7 deg apart matches every time. They never
+   contribute a pixel to the panorama and never get an exposure gain: they
+   are matched, their matches are chained into direct correspondences
+   between the real photographs (pipeline.chainEdges), and then they are
+   dropped before the bundle runs. The bundle therefore stays the size it
+   would have been without them, which matters because bundle.js builds a
+   dense normal matrix.
+
    This worker is strictly advisory. Every failure path returns a result
    the caller can ignore, and capture360.js falls back to the original
    sensor-pose behaviour. Refinement must never be able to lose a capture.
@@ -62,6 +73,19 @@ self.onmessage = async (e) => {
     post('error', { message: err && err.message ? err.message : String(err) });
   }
 };
+
+/* A frame arrives either already decoded (the photographs, which the
+   caller has downscaled anyway) or as a compressed blob (sequence frames,
+   of which there can be a couple of hundred). Blobs are decoded one at a
+   time and released immediately, for the same reason the stitch worker
+   does it: a hundred and fifty live 720x960 bitmaps is 400 MB of resident
+   pixels, and mobile Safari kills the tab rather than throwing something
+   catchable. */
+async function frameBitmap(img) {
+  if (img.bitmap) return { bitmap: img.bitmap, owned: false };
+  if (img.blob) return { bitmap: await createImageBitmap(img.blob), owned: true };
+  return null;
+}
 
 function smallCanvasRGB(bitmap, targetW) {
   const scale = Math.min(1, targetW / bitmap.width);
@@ -113,6 +137,13 @@ async function refine(msg) {
     maxSide
   });
 
+  /* Which frames the caller actually wants poses for. Everything else is
+     a sequence frame: matched, chained, then discarded. */
+  const isKey = images.map(im => !im.poseOnly);
+  const keyIdx = [];
+  for (let i = 0; i < images.length; i++) if (isKey[i]) keyIdx.push(i);
+  if (keyIdx.length < 4) { post('skipped', { reason: 'too-few-shots' }); return; }
+
   // ---- features ----
   const features = [];
   const gainViews = [];
@@ -120,24 +151,51 @@ async function refine(msg) {
   for (let i = 0; i < images.length; i++) {
     const img = images[i];
     let f = null;
+    let held = null;
     try {
-      f = await XF.extract(img.bitmap, { maxSide });
-      inferMs += f.timings.infer;
-      const small = smallCanvasRGB(img.bitmap, GAIN_SAMPLE_WIDTH);
-      gainViews.push(small);
+      held = await frameBitmap(img);
+      if (held) {
+        f = await XF.extract(held.bitmap, { maxSide });
+        inferMs += f.timings.infer;
+        // Exposure is only ever solved for the photographs. A sequence
+        // frame is motion-blurred by construction and contributes no
+        // pixels, so sampling it would cost time and buy nothing.
+        gainViews.push(isKey[i] ? smallCanvasRGB(held.bitmap, GAIN_SAMPLE_WIDTH) : null);
+      } else {
+        gainViews.push(null);
+      }
     } catch (err) {
       gainViews.push(null);
     }
     features.push(f);
-    try { img.bitmap.close && img.bitmap.close(); } catch (e) { /* ignore */ }
+    if (held) {
+      try { held.bitmap.close && held.bitmap.close(); } catch (e) { /* ignore */ }
+      if (held.owned) img.blob = null;
+    }
+    if (img.bitmap) img.bitmap = null;
     progress('Analysing photos', 5 + (i + 1) / images.length * 55);
   }
 
-  const usable = features.filter(Boolean).length;
+  const usable = keyIdx.filter(i => features[i]).length;
   if (usable < 4) { post('skipped', { reason: 'extraction-failed' }); return; }
 
   // ---- matching under the pose prior ----
-  const W = images[0].width, H = images[0].height;
+  /* One frame geometry for the whole capture. The matcher's predictor, the
+     focal solve and the bundle all take a single width/height/focal, so a
+     sequence frame whose dimensions differ from the photographs cannot be
+     used without corrupting the geometry -- and video frames are a
+     different crop of the sensor on many phones. Drop the mismatches
+     rather than trust them; the caller checks the same thing before it
+     bothers sending them, so in practice this is a backstop. */
+  const W = images[keyIdx[0]].width, H = images[keyIdx[0]].height;
+  let mismatched = 0;
+  for (let i = 0; i < images.length; i++) {
+    if (isKey[i] || !features[i]) continue;
+    if (images[i].width !== W || images[i].height !== H) {
+      features[i] = null;
+      mismatched++;
+    }
+  }
   const priors = images.map(im => ({
     yaw: typeof im.yaw === 'number' ? im.yaw : 0,
     pitch: typeof im.pitch === 'number' ? im.pitch : 0,
@@ -150,7 +208,9 @@ async function refine(msg) {
   const nominalWidthFov = C.widthFovFromLongFov(nominalHFov * C.DEG, W, H);
   const nominalFocal = C.focalFromHFov(nominalWidthFov, W);
 
-  const pairs = P.candidatePairs(priors, {}).filter(pr => features[pr.i] && features[pr.j]);
+  const sequenceFrames = images.length - keyIdx.length;
+  const pairs = P.selectPairs(priors, sequenceFrames ? isKey : null, {})
+    .filter(pr => features[pr.i] && features[pr.j]);
   const edges = [];
   let comparisons = 0;
   for (let k = 0; k < pairs.length; k++) {
@@ -169,9 +229,26 @@ async function refine(msg) {
 
   if (edges.length < 3) { post('skipped', { reason: 'too-few-matches' }); return; }
 
+  /* Chain the sequence frames out of the problem before solving. What
+     goes into the bundle is always exactly the photographs. */
+  const directEdges = edges.length;
+  let chainedEdges = 0, droppedTracks = 0;
+  let solveEdges = edges, solvePriors = priors;
+  if (sequenceFrames) {
+    progress('Linking photos', 83);
+    const chained = P.chainEdges(edges, isKey, {});
+    droppedTracks = chained.droppedAmbiguousTracks || 0;
+    chainedEdges = chained.length;
+    if (chained.length < 3) { post('skipped', { reason: 'too-few-matches' }); return; }
+    const remap = new Array(images.length).fill(-1);
+    keyIdx.forEach((g, k) => { remap[g] = k; });
+    solveEdges = chained.map(e => ({ i: remap[e.i], j: remap[e.j], matches: e.matches }));
+    solvePriors = keyIdx.map(i => priors[i]);
+  }
+
   // ---- geometry ----
   progress('Solving geometry', 84);
-  const result = P.refinePoses({ width: W, height: H, priors, edges },
+  const result = P.refinePoses({ width: W, height: H, priors: solvePriors, edges: solveEdges },
     { nominalHFovDeg: nominalWidthFov / C.DEG });
   if (!result.ok) { post('skipped', { reason: result.reason }); return; }
 
@@ -193,8 +270,8 @@ async function refine(msg) {
   progress('Balancing exposure', 92);
   let gains = null;
   try {
-    const views = result.rotations.map((R, i) => {
-      const g = gainViews[i];
+    const views = result.rotations.map((R, k) => {
+      const g = gainViews[sequenceFrames ? keyIdx[k] : k];
       if (!g) return null;
       return {
         rgb: g.rgb, width: g.width, height: g.height, R,
@@ -216,12 +293,17 @@ async function refine(msg) {
     focal: result.focal,
     gains,
     diagnostics: {
-      shots: images.length,
+      shots: keyIdx.length,
+      sequenceFrames: sequenceFrames,
+      sequenceRejected: mismatched,
+      directEdges: directEdges,
+      chainedEdges: chainedEdges,
+      droppedTracks: droppedTracks,
       usableShots: usable,
       edges: result.edges.length,
       rejectedEdges: result.rejected.length,
       keypointsPerShot: Math.round(
-        features.filter(Boolean).reduce((s, f) => s + f.count, 0) / usable),
+        keyIdx.filter(i => features[i]).reduce((s, i) => s + features[i].count, 0) / usable),
       meanCorrectionDeg: result.corrections.meanDeg,
       maxCorrectionDeg: result.corrections.maxDeg,
       rmsEdgeResidualDeg: result.bundle.rmsEdgeResidualRad * 180 / Math.PI,

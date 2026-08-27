@@ -30,6 +30,174 @@
     return C.overlappingPairs(R, (opts.maxAxisAngleDeg || 60) * C.DEG);
   }
 
+  /* Which view pairs to match when a capture contains intermediate frames.
+
+     candidatePairs() returns everything within the axis threshold, which
+     is right for 36 photographs and hopeless for 36 photographs plus 150
+     frames taken between them: pairs inside a 60 deg cone grow as
+     N^2 * (1 - cos 60)/2, so 5x the frames is 25x the matching. Measured
+     on the shipping pattern that is 139 pairs against roughly 2800, and
+     about 2 billion descriptor comparisons.
+
+     The fix is the standard one: keep every pair between the frames whose
+     pose actually matters -- they are few and they are what the bundle
+     solves for -- and give every other frame only its nearest handful of
+     neighbours, which is all a chain needs to stay connected. */
+  function selectPairs(priors, isKey, options) {
+    const opts = options || {};
+    const perFrame = opts.neighbours || 8;
+    const all = candidatePairs(priors, opts);
+    if (!isKey) return all;
+
+    const R = priors.map(p => S.fromYawPitchRoll(p.yaw, p.pitch, p.roll || 0));
+    const fwd = R.map(r => S.column(r, 2));
+    const cost = (a, b) => -Math.max(-1, Math.min(1, S.dot(fwd[a], fwd[b])));
+
+    const keep = new Set();
+    const key = (i, j) => (i < j ? i + ':' + j : j + ':' + i);
+    for (const pr of all) {
+      if (isKey[pr.i] && isKey[pr.j]) keep.add(key(pr.i, pr.j));
+    }
+    const byNode = [];
+    for (let i = 0; i < priors.length; i++) byNode.push([]);
+    for (const pr of all) { byNode[pr.i].push(pr.j); byNode[pr.j].push(pr.i); }
+    for (let i = 0; i < priors.length; i++) {
+      const near = byNode[i].slice().sort((a, b) => cost(i, a) - cost(i, b));
+      for (let k = 0; k < near.length && k < perFrame; k++) keep.add(key(i, near[k]));
+    }
+
+    const out = [];
+    for (const pr of all) if (keep.has(key(pr.i, pr.j))) out.push(pr);
+    return out;
+  }
+
+  /* Turn matches THROUGH intermediate frames into matches BETWEEN the
+     frames whose pose we actually solve for.
+
+     Sequence capture exists because two photographs 30 deg apart on a
+     blank wall often fail to match, while the same pair joined by four
+     frames 7 deg apart matches every time. But the bundle adjuster cannot
+     simply be handed all 186 frames: bundle.js builds a dense Jacobian and
+     normal matrix, so its cost grows with the cube of the parameter count,
+     and 186 poses is 558 parameters against 108 today.
+
+     So the intermediate frames are used and then discarded. Every match is
+     a claim that two KEYPOINTS are the same world point; union-find over
+     (frame, keypoint) turns those claims into tracks, and a track that
+     touches two key frames yields a correspondence between them directly.
+     A -> s1 -> s2 -> B becomes a plain A -> B correspondence, and the
+     bundle stays exactly the size it is today.
+
+     A track that observes the same frame twice is dropped rather than
+     used. It means two distinct keypoints in one image were transitively
+     identified with each other, which cannot be true of a real world
+     point, and it is the way a chain of small errors announces itself.
+
+     Chained correspondences are less reliable than direct ones -- error
+     compounds along the chain -- but they arrive with the outlier
+     machinery already in place: estimate.js runs RANSAC over every edge
+     and the prior gate discards anything geometrically implausible. */
+  function chainEdges(edges, isKey, options) {
+    const opts = options || {};
+    const minMatches = opts.minMatches || 6;
+    const maxPerEdge = opts.maxPerEdge || 240;
+
+    const slot = [];        // slot[frame] = Map(keypoint -> node id)
+    const parent = [];
+    const nodeFrame = [];
+    const nodeX = [];
+    const nodeY = [];
+
+    function nodeOf(frame, kp, x, y) {
+      let m = slot[frame];
+      if (!m) { m = new Map(); slot[frame] = m; }
+      let id = m.get(kp);
+      if (id === undefined) {
+        id = parent.length;
+        m.set(kp, id);
+        parent.push(id);
+        nodeFrame.push(frame); nodeX.push(x); nodeY.push(y);
+      }
+      return id;
+    }
+    function find(a) {
+      while (parent[a] !== a) { parent[a] = parent[parent[a]]; a = parent[a]; }
+      return a;
+    }
+    function union(a, b) {
+      a = find(a); b = find(b);
+      if (a !== b) parent[b] = a;
+    }
+
+    for (const e of edges) {
+      for (const m of e.matches) {
+        if (m.ai === undefined || m.bi === undefined) continue;
+        union(nodeOf(e.i, m.ai, m.ax, m.ay), nodeOf(e.j, m.bi, m.bx, m.by));
+      }
+    }
+
+    // Collect only the observations that land on a key frame; the rest of
+    // each track has done its job by connecting them.
+    const tracks = new Map();
+    for (let n = 0; n < parent.length; n++) {
+      if (!isKey[nodeFrame[n]]) continue;
+      const root = find(n);
+      let t = tracks.get(root);
+      if (!t) { t = []; tracks.set(root, t); }
+      t.push(n);
+    }
+
+    const buckets = new Map();
+    let dropped = 0;
+    for (const t of tracks.values()) {
+      if (t.length < 2) continue;
+      const seen = new Set();
+      let ambiguous = false;
+      for (const n of t) {
+        if (seen.has(nodeFrame[n])) { ambiguous = true; break; }
+        seen.add(nodeFrame[n]);
+      }
+      if (ambiguous) { dropped++; continue; }
+      for (let a = 0; a < t.length; a++) {
+        for (let b = a + 1; b < t.length; b++) {
+          let na = t[a], nb = t[b];
+          if (nodeFrame[na] > nodeFrame[nb]) { const s = na; na = nb; nb = s; }
+          const k = nodeFrame[na] + ':' + nodeFrame[nb];
+          let list = buckets.get(k);
+          if (!list) { list = []; buckets.set(k, list); }
+          list.push({ ax: nodeX[na], ay: nodeY[na], bx: nodeX[nb], by: nodeY[nb] });
+        }
+      }
+    }
+
+    const out = [];
+    for (const [k, list] of buckets) {
+      if (list.length < minMatches) continue;
+      const parts = k.split(':');
+      out.push({
+        i: +parts[0], j: +parts[1],
+        matches: list.length <= maxPerEdge ? list : decimate(list, maxPerEdge)
+      });
+    }
+    out.sort((a, b) => (a.i - b.i) || (a.j - b.j));
+    out.droppedAmbiguousTracks = dropped;
+    return out;
+  }
+
+  /* Uniform decimation, not truncation. Keypoints arrive ordered by
+     detector score, which is only loosely related to position, but
+     truncating a list still biases toward whatever the union-find visited
+     first -- and that IS positional, because it follows keypoint index
+     within a frame. Taking every n-th keeps the spread. */
+  function decimate(list, target) {
+    const step = list.length / target;
+    const out = [];
+    for (let k = 0; out.length < target && k < list.length; k++) {
+      if (Math.floor(k / step) === out.length) out.push(list[k]);
+    }
+    return out;
+  }
+
   /* The prior gate's threshold is deliberately NOT a single angle.
 
      Pose uncertainty is roughly uniform across the frame, but focal
@@ -374,6 +542,8 @@
 
   global.LSCPipeline = {
     candidatePairs: candidatePairs,
+    selectPairs: selectPairs,
+    chainEdges: chainEdges,
     refinePoses: refinePoses,
     ringDiagnostics: ringDiagnostics
   };

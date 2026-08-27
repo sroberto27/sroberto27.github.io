@@ -591,7 +591,11 @@ select {
   background: rgba(0, 0, 0, .45); border: 1px solid rgba(255, 255, 255, .22);
   text-shadow: 0 1px 3px rgba(0, 0, 0, .6); cursor: pointer; user-select: none;
 }
-.c360-enhance-input { accent-color: #f5a623; width: 15px; height: 15px; margin: 0; }
+.c360-enhance-input, .c360-sequence-input { accent-color: #f5a623; width: 15px; height: 15px; margin: 0; }
+/* The top bar carries four controls on a phone-width screen, so it wraps
+   (see .c360-topbar) and the pills have to stay readable at the smaller
+   size rather than relying on there being room for all of them in a row. */
+.c360-sequence { white-space: nowrap; }
 /* Blend-mode picker, styled to read as a sibling of the Enhance pill rather
    than as a form control — the top bar is already full and a default
    <select> chrome would dominate it. */
