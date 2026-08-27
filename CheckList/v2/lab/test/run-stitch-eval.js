@@ -7,7 +7,7 @@
    result against the source panorama. The gaps between rungs attribute
    the visible error to specific causes:
 
-     A  sensor pose + 68 deg          what the app ships today
+     A  sensor pose + assumed FOV     what the app ships today
      B  refined pose + 68 deg         pose fixed, focal still assumed
      C  sensor pose + calibrated      focal fixed, pose still raw
      D  refined pose + calibrated     the full Phase 0 pipeline
@@ -47,8 +47,18 @@ const OUTDIR = path.join(__dirname, '..', '..', '.stitch-eval');
 const DEG = Math.PI / 180;
 
 const EW = 2048, EH = 1024;
-const VW = 960, VH = 540;
-const ASSUMED_HFOV = 68;
+/* PORTRAIT 3:4 source views, matching the only frame shape the app can
+   produce; see the note on the defaults in synth.js for why rendering
+   landscape here measured a capture that cannot be taken. */
+const VW = 600, VH = 800;
+/* What the app assumes when refinement is unavailable. ASSUMED_H_FOV_DEG
+   in capture360.js is 68 deg across the lens's LONG axis, which on a
+   portrait frame is the HEIGHT, so the width assumption is the converted
+   value -- exactly the conversion the app does before starting the stitch
+   worker. Quoting 68 against a portrait width would overstate the lens by
+   a quarter and is the bug that conversion exists to prevent. */
+const ASSUMED_HFOV = 2 * Math.atan(
+  VW / (2 * (Math.max(VW, VH) / (2 * Math.tan(68 * Math.PI / 360))))) * 180 / Math.PI;
 
 let failures = 0, checks = 0;
 function check(name, cond, detail) {
@@ -58,7 +68,7 @@ function check(name, cond, detail) {
 const f2 = (v, d) => Number(v).toFixed(d === undefined ? 2 : d);
 
 console.log('Building scene…');
-const scene = Synth.generate({ seed: 42, width: VW, height: VH, trueHFovDeg: 73.5 });
+const scene = Synth.generate({ seed: 42, width: VW, height: VH, trueHFovDeg: 58 });
 const pano = Scene.makePanorama(EW, EH, 1234);
 const gains = Scene.exposureGains(scene.trueRotations);
 
@@ -110,9 +120,28 @@ function buildViews(rotations, focal, gainList) {
 // The mode the app ships with, and the one the ladder below is scored in.
 const SHIP_BLEND = 'best';
 
+/* Coverage weighted by solid angle, the same semantics measureCoverage()
+   uses in pano-stitch-worker.js. Counting equirect pixels instead makes
+   the poles look far more important than they are -- an 8.7 deg cap is
+   1.2% of the sphere but 9.7% of the rows of a 2048x1024 equirect -- which
+   matters now that the capture pattern leaves those caps on purpose. */
+function solidAngleCoverage(covered, W, H) {
+  let seen = 0, total = 0;
+  for (let y = 0; y < H; y++) {
+    const cw = Math.cos((0.5 - (y + 0.5) / H) * Math.PI);
+    if (cw <= 0) continue;
+    const row = y * W;
+    let rowSeen = 0;
+    for (let x = 0; x < W; x++) if (covered[row + x]) rowSeen++;
+    seen += cw * (rowSeen / W);
+    total += cw;
+  }
+  return total > 0 ? seen / total : 0;
+}
+
 const HYPOTHESES = [
-  ['A', 'sensor pose + 68 deg (ships today)', priorAligned, assumedFocal, null],
-  ['B', 'refined pose + 68 deg', refinedAligned, assumedFocal, null],
+  ['A', 'sensor pose + assumed FOV (ships today)', priorAligned, assumedFocal, null],
+  ['B', 'refined pose + assumed FOV', refinedAligned, assumedFocal, null],
   ['C', 'sensor pose + calibrated focal', priorAligned, res.focal, null],
   ['D', 'refined pose + calibrated focal', refinedAligned, res.focal, null],
   ['E', 'TRUE pose + TRUE focal', scene.trueRotations, scene.trueFocal, null],
@@ -136,9 +165,7 @@ for (const [tag, label, rotations, focal, gainMode] of HYPOTHESES) {
   // differences cannot flatter one of them.
   if (!sharedMask) sharedMask = out.covered;
   else for (let p = 0; p < sharedMask.length; p++) if (!out.covered[p]) sharedMask[p] = 0;
-  let own = 0;
-  for (let p = 0; p < out.covered.length; p++) if (out.covered[p]) own++;
-  results.push({ tag, label, out, gainList, coverage: own / (EW * EH) });
+  results.push({ tag, label, out, gainList, coverage: solidAngleCoverage(out.covered, EW, EH) });
 }
 
 for (const r of results) {
@@ -151,11 +178,9 @@ if (WRITE_PNG) {
   console.log('  wrote PNGs to ' + OUTDIR);
 }
 
-let covered = 0;
-for (let p = 0; p < sharedMask.length; p++) if (sharedMask[p]) covered++;
-
 console.log('\n=== Error decomposition (scored over ' +
-  (covered / (EW * EH) * 100).toFixed(1) + '% of the sphere seen by all hypotheses) ===\n');
+  (solidAngleCoverage(sharedMask, EW, EH) * 100).toFixed(1) +
+  '% of the sphere seen by all hypotheses) ===\n');
 console.log('       hypothesis                            PSNR dB   SSIM    sphere covered');
 for (const r of results) {
   console.log('   ' + r.tag + '   ' + r.label.padEnd(36) + f2(r.psnr).padStart(7) + '  ' +
@@ -174,16 +199,18 @@ console.log('     exposure drift (photometric)   ' + f2(gap('F', 'E')).padStart(
 console.log('     floor: resampling + blending   ' + f2(byTag['F'].psnr).padStart(6) + ' dB absolute');
 
 /* Coverage is a separate finding from accuracy: no stitching improvement
-   can fill a direction the camera never pointed at. The old 26-shot
-   pattern had a genuine geometric gap here (~90%); the current pattern
-   measures 100% when every shot lands exactly on target, so the
-   shortfall reported below is the simulated per-shot AIMING error that
-   synth.js injects, which is the realistic case. */
+   can fill a direction the camera never pointed at.
+
+   The current pattern stops at +/-45 and takes no pole shot, so it leaves
+   a cap at each pole ON PURPOSE -- see buildTargetPattern in capture360.js
+   for why, and lab/test/run-pattern-coverage.js for the measured size.
+   The figure below is that deliberate cap plus the simulated per-shot
+   aiming error, and it is not expected to reach 100%. */
 console.log('\n   NOTE: at the true FOV the capture pattern covers ' +
   f2(byTag['E'].coverage * 100, 1) + '% of the sphere (' +
   scene.trueRotations.length + ' shots).');
-console.log('         The shortfall here is simulated AIMING error, not a pattern gap --');
-console.log('         the pattern itself measures 100% when every shot lands on target.');
+console.log('         The shortfall is the pole caps this pattern deliberately does not');
+console.log('         photograph, plus simulated aiming error. gapFill() inpaints them.');
 
 /* Blend-mode comparison, held at hypothesis D -- the pipeline that
    actually ships -- so the only thing varying is how overlapping
@@ -192,13 +219,11 @@ console.log('\n=== Blend modes at hypothesis D (refined pose + calibrated focal)
 const blendRows = [];
 for (const bm of ['average', 'sharp', 'best']) {
   const o = ST.stitch(buildViews(refinedAligned, res.focal, null), EW, EH, { blend: bm });
-  let own = 0;
-  for (let p = 0; p < o.covered.length; p++) if (o.covered[p]) own++;
   blendRows.push({
     mode: bm,
     psnr: psnr(o.rgb, pano, sharedMask, EW * EH),
     ssim: ssim(o.rgb, pano, sharedMask, EW, EH),
-    coverage: own / (EW * EH)
+    coverage: solidAngleCoverage(o.covered, EW, EH)
   });
   if (WRITE_PNG) writePNG(path.join(OUTDIR, 'D-' + bm + '.png'), o.rgb, EW, EH);
 }
@@ -215,7 +240,7 @@ console.log('   never allowed to stop a source from reaching a direction it phot
 const byBlend = Object.fromEntries(blendRows.map(r => [r.mode, r]));
 
 console.log('\n=== Checks ===');
-check('focal calibration alone beats the 68 deg assumption', gap('C', 'A') > 0.5,
+check('focal calibration alone beats the assumed FOV', gap('C', 'A') > 0.5,
   '(+' + f2(gap('C', 'A')) + ' dB)');
 check('pose refinement alone beats the sensor prior', gap('B', 'A') > 0.5,
   '(+' + f2(gap('B', 'A')) + ' dB)');

@@ -120,13 +120,13 @@ function pattern(parts) {
 }
 
 const CANDIDATES = [
-  /* Stanford's VFT Photosphere Camera, for comparison: 36 shots, three
-     rows at 0 and +/-45, no pole shots at all. Measured here because it
-     is the obvious "why not just do what they do" question, and the
-     answer depends entirely on the lens. */
-  { name: 'VFT: 12/12/12 at 0,+/-45, no poles',
+  /* What ships. Three rows of 12 at 0 and +/-45, no pole shots -- the
+     pattern Stanford's VFT Photosphere Camera uses. It does NOT cover the
+     whole sphere and is not meant to; see buildTargetPattern() in
+     capture360.js for the reasoning and the sizes below for the cost. */
+  { name: '12/12/12 at 0,+/-45, no poles  (ships)',
     shots: pattern([ring(12, 0), ring(12, 45, 15), ring(12, -45, 15)]) },
-  { name: '8/8/8 + 4/4 + poles  (was shipping)',
+  { name: '8/8/8 + 4/4 + poles  (older)',
     shots: pattern([ring(8, 0), ring(8, 33, 22.5), ring(8, -33, 22.5),
                     ring(4, 66), ring(4, -66), POLES]) },
   { name: '10/10/10 + 4/4 + poles',
@@ -137,7 +137,7 @@ const CANDIDATES = [
   { name: '12/12/12 + 4/4',
     shots: pattern([ring(12, 0), ring(12, 33, 15), ring(12, -33, 15),
                     ring(4, 66), ring(4, -66)]) },
-  { name: '12/12/12 + 4/4 + poles',
+  { name: '12/12/12 + 4/4 + poles  (full-sphere option)',
     shots: pattern([ring(12, 0), ring(12, 33, 15), ring(12, -33, 15),
                     ring(4, 66), ring(4, -66), POLES]) }
 ];
@@ -270,6 +270,7 @@ for (const r of rows) {
    outer tenth, which is a pinhole a few square degrees across at a lens
    narrower than any yet measured, and closing it would cost another ring. */
 const covers = rows.filter(r => r.worstReached >= 0.9999 && r.worstUseful >= 0.999);
+const shipRow = rows[0];
 const byOverlap = covers.slice().sort((a, b) => b.worstOverlap - a.worstOverlap);
 console.log('');
 console.log('   patterns with full coverage across 45-78 deg, by worst-case overlap');
@@ -294,26 +295,40 @@ console.log('\n=== Checks ===');
 check('the shipping pattern is one of the measured candidates',
   rows.some(r => r.shots === shipped.length && Math.abs(r.worstUseful - shippedUseful) < 1e-9),
   shipped.length + ' shots');
-check('no direction is a hole at any lens in the sweep',
-  Math.min.apply(null, shippedM.map(x => x.reached)) >= 0.9999,
-  'worst ' + pct(Math.min.apply(null, shippedM.map(x => x.reached)), 2));
-check('the shipping pattern covers the whole sphere across the FOV sweep',
-  shippedUseful >= 0.999,
-  'worst ' + pct(shippedUseful, 2) + ' at ' +
-  fovs[shippedM.map(x => x.useful).indexOf(shippedUseful)] + ' deg');
-/* Two thresholds, both set from what the pattern has to survive rather
-   than from what it happens to score. 75% at the narrow end is roughly
-   what the 12-per-ring patterns reach and roughly half again what the
-   8-per-ring one manages, so it separates them; and by 63 deg -- comfortably
-   inside the range of a landscape frame or a wide phone lens -- every
-   direction should have a second frame to blend with. */
-check('the shipping pattern still overlaps most of the sphere at the narrowest lens',
-  shippedOverlap >= 0.75,
+/* The shipping pattern deliberately does not reach the poles, so the
+   checks below bound the shortfall rather than forbidding it. Both
+   directions matter: too much missing means the rings have stopped
+   meeting each other, and nothing missing would mean this is measuring a
+   pattern the app does not use. */
+const shippedReached = Math.min.apply(null, shippedM.map(x => x.reached));
+check('the shipping pattern leaves the poles, and only the poles, unphotographed',
+  shippedReached >= 0.94 && shippedReached < 0.999,
+  'worst ' + pct(shippedReached, 2) + ' reached, at ' +
+  fovs[shippedM.map(x => x.reached).indexOf(shippedReached)] + ' deg');
+check('what it does reach, it reaches everywhere between the rings',
+  shippedM[fovs.length - 1].useful >= 0.999,
+  pct(shippedM[fovs.length - 1].useful, 2) + ' at ' + fovs[fovs.length - 1] +
+  ' deg, where the frame is tall enough to close the caps');
+/* Overlap is what the phase this pattern came from exists to buy, and it
+   is the number that must NOT regress: below about 60% the feature
+   matcher and the best-pixel blend both start running out of second
+   opinions. At a lens wide enough to close the poles, every direction
+   should have a second frame. */
+check('two frames see most of the sphere even at the narrowest lens',
+  shippedOverlap >= 0.60,
   'worst ' + pct(shippedOverlap, 2) + ' at ' +
   fovs[shippedM.map(x => x.overlapped).indexOf(shippedOverlap)] + ' deg');
-check('the shipping pattern overlaps the whole sphere by 63 deg',
-  shippedM[fovs.indexOf(63)].overlapped >= 0.9999,
-  pct(shippedM[fovs.indexOf(63)].overlapped, 2) + ' at 63 deg');
+check('two frames see all of it once the lens closes the poles',
+  shippedM[fovs.length - 1].overlapped >= 0.999,
+  pct(shippedM[fovs.length - 1].overlapped, 2) + ' at ' + fovs[fovs.length - 1] + ' deg');
+/* A full-sphere pattern is still measured and still available, because
+   the reason for dropping the pole shots is an indoor one (whatever is
+   overhead is usually the closest thing in the room, and a rotation-only
+   stitcher cannot register a close object). Outdoors that reasoning does
+   not apply, and this is the row to read. */
+check('a full-sphere option is still on the table for captures that need it',
+  covers.length > 0,
+  covers.length ? covers.map(r => r.shots + ' shots').join(', ') : 'none');
 check('coverage never improves as the lens gets narrower',
   rows.every(r => r.m[0].useful <= r.m[r.m.length - 1].useful + 1e-9),
   'sanity check on the sweep direction');

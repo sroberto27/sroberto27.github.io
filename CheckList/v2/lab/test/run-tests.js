@@ -264,14 +264,23 @@ section('5. Anisotropic prior vs isotropic, across graph density');
      walls and plain ceilings yield few keypoints no matter how many
      photos are taken, so a denser pattern does not rescue it. That is
      where the second check lives now. */
+  const SHOTS = C.buildTargetPattern().length;
   const dense = rows[0];
   check('on a well-connected graph the prior barely matters either way',
     Math.abs(dense.aniso - dense.iso) < 0.02 && dense.aniso < 0.05 && dense.iso < 0.05,
     '(' + fmt(dense.aniso, 4) + ' vs ' + fmt(dense.iso, 4) + ' deg)');
-  check('anisotropic prior is decisively better as the graph thins',
-    rows.filter(r => r.edges < 200).every(r => r.aniso < r.iso * 0.9),
-    '(' + rows.filter(r => r.edges < 200)
-      .map(r => fmt(r.aniso, 3) + ' vs ' + fmt(r.iso, 3)).join(', ') + ' deg)');
+  /* "Thin" is expressed per view rather than as an absolute edge count,
+     because an absolute one silently stops meaning anything when the
+     capture pattern changes: 200 edges was a well-connected graph on the
+     46-shot pattern and is more than the 36-shot pattern ever produces.
+     Each rotation carries 3 degrees of freedom, so a graph averaging
+     fewer than three edges per view is under-constrained by construction,
+     and that is where a prior has to carry the solution. */
+  const thin = rows.filter(r => r.edges < 3 * SHOTS);
+  check('anisotropic prior is decisively better once the graph is thin',
+    thin.length > 0 && thin.every(r => r.aniso < r.iso * 0.9),
+    '(under ' + (3 * SHOTS) + ' edges: ' +
+    thin.map(r => fmt(r.aniso, 3) + ' vs ' + fmt(r.iso, 3)).join(', ') + ' deg)');
 
   const sparse = rows[rows.length - 1];
   console.log('    note: at ' + sparse.pts + ' points only ~' + Math.round(sparse.edges) +

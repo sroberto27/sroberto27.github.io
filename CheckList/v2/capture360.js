@@ -20,53 +20,53 @@
   const O = global.LSCOrientation;
   const DEG = Math.PI / 180;
 
-  /* 46-shot pattern: 12 horizon + 12 at +33 + 12 at -33 + 4 at +66
-     + 4 at -66 + true zenith + true nadir.
+  /* 36-shot pattern: three rings of 12, at the horizon and at +/-45.
+     No zenith or nadir shot -- the phone is never pointed straight up or
+     straight down.
 
-     Chosen by lab/test/run-pattern-coverage.js, which samples the sphere
-     equal-area and back-projects every sample through the real stitcher
-     projection and feather, across the whole plausible phone-lens range.
-     Run it rather than trusting this paragraph.
+     This is Stanford's VFT Photosphere Camera pattern, adopted
+     deliberately and with a known cost. Measure it yourself with
+     lab/test/run-pattern-coverage.js rather than trusting this paragraph.
 
-     This replaced an 8-per-ring version, and the reason is overlap, not
-     coverage. Coverage is a trap here: phone stills come back PORTRAIT,
-     so the vertical field is a third wider than the horizontal one, and
-     rings only have to ABUT for every direction to land inside some
-     frame. The 8-per-ring pattern measured 100% covered and still
-     produced doubled edges, because at the 46.6deg lens calibrated from
-     a real capture, 45deg yaw spacing leaves consecutive horizon frames
-     overlapping by 1.6deg. Neither the feature matcher nor the
-     best-pixel blend can do anything with that -- both need two frames
-     to see the same direction properly before they have a choice to
-     make. Measured as the share of the sphere seen well by at least two
-     frames, 8-per-ring manages 48.7% at 45deg and 93.0% at 57deg;
-     12-per-ring reaches 77.5% and 99.6%, and is complete by 60deg.
+     WHAT IT GIVES UP. A ring at +45 reaches 45 deg plus half the frame's
+     VERTICAL field, and a portrait phone still is 4:3, so at the 49.95 deg
+     width FOV calibrated from a real capture the vertical field is 63.7
+     deg and the top ring reaches 76.8 deg. That leaves a 13.2 deg radius
+     cap at each pole that no frame contains: 2.6% of the sphere, closed by
+     gapFill() rather than photographed. On a narrower lens it is worse --
+     16.1 deg and 3.9% at 45 deg. The previous 46-shot pattern (three rings
+     of 12 at 0/+/-33, four at +/-66, plus true zenith and nadir) reached
+     100% of the sphere at every lens from 45 to 78 deg.
 
-     Every part of it is load-bearing, and the measurement says so:
-     - 12 per ring rather than 8, for the overlap above. 30deg spacing
-       gives a real margin at any lens the app is likely to meet.
-     - the +/-66 rings close the band between the +/-33 ring's top edge
-       and a single pole shot. Dropping them (12/12/12 + poles, 38 shots)
-       loses full coverage outright -- 95.0% at 45deg -- and its two-frame
-       overlap never exceeds 97.5% even at 78deg.
-     - zenith/nadir at true +/-90, which is both better coverage and
-       easier to aim than an off-pole shot. They are only worth about 2.7
-       points of overlap over the 44-shot variant, but they are two
-       photographs and they are the margin if a lens turns out narrower
-       than anything swept here.
-     - the +/-33 rings are staggered by half a step (15deg) against the
-       horizon ring, so ring-to-ring overlap lands where a frame corner
-       would otherwise meet another frame corner. That also gives pose
-       refinement more cross-ring feature matches to work with. */
+     WHY IT IS STILL THE RIGHT TRADE HERE. The pole shots were not merely
+     expensive, they were actively harmful indoors. Whatever is directly
+     overhead is usually the CLOSEST thing in the room -- a light fitting,
+     a ceiling fan -- and a rotation-only stitcher cannot register a close
+     object at all: it shifts against the far wall by roughly the lens
+     travel divided by its distance, so a hand-held 25 cm of drift moves a
+     1 m fan by about 14 deg while the 4 m walls move 3.5. On the capture
+     that prompted this, the zenith and +66 frames were filled edge to edge
+     with a ceiling fan about a metre away, and every blend mode turned
+     that region into a patchwork no amount of pose refinement could fix.
+     An inpainted 13 deg cap of plain ceiling is a better outcome than a
+     photographed one that disagrees with its neighbours by 14 deg. It also
+     removes the two most awkward shots in the sequence, and near-vertical
+     is exactly where the phone's own orientation reading is least
+     trustworthy.
+
+     If a capture needs true pole coverage -- an outdoor scene, or a room
+     with nothing close overhead -- that is what the four-ring pattern was
+     for, and run-pattern-coverage.js still measures it.
+
+     The +/-45 rings are staggered half a step (15 deg) against the horizon
+     ring, so ring-to-ring overlap lands where a frame corner would
+     otherwise meet another frame corner. That also gives pose refinement
+     more cross-ring feature matches to work with. */
   function buildTargetPattern() {
     const t = [];
     for (let i = 0; i < 12; i++) t.push({ yaw: i * 30, pitch: 0 });
-    for (let i = 0; i < 12; i++) t.push({ yaw: i * 30 + 15, pitch: 33 });
-    for (let i = 0; i < 12; i++) t.push({ yaw: i * 30 + 15, pitch: -33 });
-    for (let i = 0; i < 4; i++) t.push({ yaw: i * 90, pitch: 66 });
-    for (let i = 0; i < 4; i++) t.push({ yaw: i * 90, pitch: -66 });
-    t.push({ yaw: 0, pitch: 90 });
-    t.push({ yaw: 0, pitch: -90 });
+    for (let i = 0; i < 12; i++) t.push({ yaw: i * 30 + 15, pitch: 45 });
+    for (let i = 0; i < 12; i++) t.push({ yaw: i * 30 + 15, pitch: -45 });
     return t.map(x => ({ yaw: x.yaw * DEG, pitch: x.pitch * DEG }));
   }
 
@@ -98,12 +98,13 @@
      up on refinement entirely and stitch from the sensor pose.
 
      It is sized by MATCH PAIRS, not by shot count, because pairwise
-     matching dominates and pairs grow much faster than photos do. Going
-     from the 8-per-ring pattern to the 12-per-ring one took the capture
-     from 34 shots to 46 (1.35x) but from 124 candidate pairs to 253
-     (2.04x). 240000 was the value tuned against 124 pairs, so this is
-     that number scaled by the measured pair growth and rounded. */
-  const REFINE_TIMEOUT_MS = 480000;
+     matching dominates and pairs do not track photo count at all closely.
+     240000 was the value tuned against a 34-shot pattern with 124
+     candidate pairs; the current 36-shot pattern has 139, so this is that
+     number scaled by the measured pair count and rounded. (The four-ring
+     46-shot pattern in between had 253 pairs and needed 480000 -- 28% more
+     photographs, nearly double the matching.) */
+  const REFINE_TIMEOUT_MS = 270000;
   /* Longest gap tolerated between two progress messages from the stitch
      worker before we assume it died. Generous, because the per-image
      scatter loop on a slow phone can genuinely take a while.
@@ -473,7 +474,25 @@
             Math.abs(g.aspect - frameGeom.aspect) < 1e-6) return;
         frameGeom = g;
         if (sphere) sphere.setPatchGeometry(g.hFovDeg, g.aspect);
+
+        /* The 36-shot pattern needs a PORTRAIT frame and stops being
+           complete without one. Its rings sit 45 deg apart, and what
+           decides whether a ring meets the one above it is the frame's
+           VERTICAL field: a portrait 3:4 still at a 53.7 deg width has 68
+           deg of height and the rings overlap comfortably, but the same
+           lens held in landscape has only 31 deg of height and the rings
+           stop touching, leaving an unphotographed band right around the
+           capture rather than a small cap at each pole. Warned once, and
+           only once the real frame has been measured, because guessing
+           from the video preview is what the whole frameGeom machinery
+           exists to avoid. */
+        if (g.aspect < 1 && !warnedLandscape) {
+          warnedLandscape = true;
+          toast('Hold the phone upright — this capture pattern needs a portrait frame, ' +
+            'and sideways leaves a gap between the rows.', 'error');
+        }
       }
+      let warnedLandscape = false;
 
       let sphere = null;
       try {
@@ -954,7 +973,14 @@
       finishBtn.addEventListener('click', async () => {
         const total = captured.filter(Boolean).length;
         if (total < targets.length) {
-          const gapPct = computeCoverageGapPct(targets, captured);
+          /* Measured against what the COMPLETE pattern reaches, not against
+             a whole sphere. Since the pattern stops at +/-45 it never
+             photographs the poles, so an absolute figure would report a
+             couple of per cent missing on a flawless capture and the number
+             would stop meaning "you skipped something". */
+          const gapPct = Math.max(0,
+            computeCoverageGapPct(targets, captured, frameGeom) -
+            computeCoverageGapPct(targets, targets.map(() => true), frameGeom));
           const ok = await confirm({
             title: 'Generate Early?',
             body: gapPct > 5

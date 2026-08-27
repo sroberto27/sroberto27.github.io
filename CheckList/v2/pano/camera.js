@@ -119,12 +119,8 @@
   function buildTargetPattern() {
     const t = [];
     for (let i = 0; i < 12; i++) t.push({ yaw: i * 30, pitch: 0 });
-    for (let i = 0; i < 12; i++) t.push({ yaw: i * 30 + 15, pitch: 33 });
-    for (let i = 0; i < 12; i++) t.push({ yaw: i * 30 + 15, pitch: -33 });
-    for (let i = 0; i < 4; i++) t.push({ yaw: i * 90, pitch: 66 });
-    for (let i = 0; i < 4; i++) t.push({ yaw: i * 90, pitch: -66 });
-    t.push({ yaw: 0, pitch: 90 });
-    t.push({ yaw: 0, pitch: -90 });
+    for (let i = 0; i < 12; i++) t.push({ yaw: i * 30 + 15, pitch: 45 });
+    for (let i = 0; i < 12; i++) t.push({ yaw: i * 30 + 15, pitch: -45 });
     return t.map(x => ({ yaw: x.yaw * DEG, pitch: x.pitch * DEG }));
   }
 

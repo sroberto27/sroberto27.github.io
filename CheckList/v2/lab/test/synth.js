@@ -1,14 +1,15 @@
 /* ===================== SYNTHETIC CAPTURE GENERATOR =====================
-   Builds a fake 26-shot spherical capture with exactly known ground
-   truth, so the geometry pipeline can be validated without a camera, a
-   feature matcher, or a browser.
+   Builds a fake spherical capture with exactly known ground truth, on the
+   app's current target pattern, so the geometry pipeline can be validated
+   without a camera, a feature matcher, or a browser.
 
    What it models, and why each part is there:
 
-   - True poses are the app's 26-target pattern plus a random miss of up
-     to ALIGN_TOLERANCE_DEG, because capture360.js fires the shutter as
-     soon as the sensor is within 5 deg of target. The user never lands
-     exactly on the target and the pipeline must not assume they did.
+   - True poses are the app's own target pattern (read from
+     pano/camera.js, never hardcoded) plus a random miss of up to
+     ALIGN_TOLERANCE_DEG, because capture360.js fires the shutter as soon
+     as the sensor is within 5 deg of target. The user never lands exactly
+     on the target and the pipeline must not assume they did.
 
    - The prior is the true pose corrupted by ANISOTROPIC error: small on
      tilt (gravity-referenced) and large on yaw, plus a yaw drift that
@@ -16,9 +17,10 @@
      it is what makes the last shot of a ring disagree with the first,
      and it is precisely what loop closure has to absorb.
 
-   - True focal length deliberately differs from the 68 deg the app
-     assumes, so a pipeline that silently trusts the constant fails the
-     test instead of passing it by luck.
+   - Frames are PORTRAIT and the true focal length deliberately differs
+     from what the app assumes, so a pipeline that silently trusts the
+     constant fails the test instead of passing it by luck. See the note
+     on the defaults below for why the frame's shape is load-bearing.
 
    - Outliers come in two flavours: random mismatches, and CONSISTENT
      mismatches offset by a fixed shift. The second kind simulates
@@ -55,9 +57,26 @@
     const opts = options || {};
     const rnd = makeRng(opts.seed || 42);
 
-    const W = opts.width || 1920;
-    const H = opts.height || 1080;
-    const trueHFovDeg = opts.trueHFovDeg !== undefined ? opts.trueHFovDeg : 73.5;
+    /* PORTRAIT 3:4, because that is the only shape the app ever sees: a
+       phone still comes back portrait, and capture360.js derives its whole
+       overlay geometry from the real frame.
+
+       This used to default to landscape 1920x1080 and it mattered far more
+       than it looks. A frame's VERTICAL field is what decides whether one
+       ring of shots overlaps the ring above it, and turning a 53.7 deg
+       frame from landscape to portrait takes that field from 31 deg to 68.
+       Measured on the 36-shot pattern, the landscape harness produced 111
+       match edges and 0.087 deg of residual pose error; the same pattern
+       on portrait frames gives 143 edges and 0.031 deg. The harness was
+       reporting a capture the app cannot take.
+
+       trueHFovDeg is the field across the frame WIDTH, and it is set 8%
+       above what the app assumes for a portrait frame (a 68 deg long-axis
+       lens gives 53.7 deg across a 3:4 width), so a pipeline that silently
+       trusts the assumption still fails instead of passing by luck. */
+    const W = opts.width || 720;
+    const H = opts.height || 960;
+    const trueHFovDeg = opts.trueHFovDeg !== undefined ? opts.trueHFovDeg : 58;
     const focal = C.focalFromHFov(trueHFovDeg * DEG, W);
 
     const aimErrorDeg = opts.aimErrorDeg !== undefined ? opts.aimErrorDeg : 4.0;

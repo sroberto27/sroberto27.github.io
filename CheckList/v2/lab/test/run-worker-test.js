@@ -113,6 +113,16 @@ function fakeShot(w, h, pose, tint) {
   };
 }
 
+/* Fake source frames are PORTRAIT 3:4 and the FOV quoted with them is the
+   field across their WIDTH, because that is the only combination the app
+   can actually produce: phone stills come back portrait, and a lens quoted
+   at 68 deg across its LONG axis is 53.7 deg across a 3:4 width. Quoting
+   68 against a portrait width claims a lens a quarter wider than exists,
+   and a frame's vertical field is what decides whether one ring of shots
+   overlaps the ring above it -- so getting this wrong here would have the
+   worker measure coverage for a capture nobody can take. */
+const SRC_W = 180, SRC_H = 240, SRC_HFOV = 53.7;
+
 function buildShots(w, h) {
   return C.buildTargetPattern().map((p, i) => fakeShot(w, h, p, (i * 7) % 256));
 }
@@ -136,10 +146,10 @@ function run(env, msg) {
     '-shot stitch, sources as blobs ===');
   {
     const env = makeEnv();
-    const shots = buildShots(320, 180);
+    const shots = buildShots(SRC_W, SRC_H);
     const t0 = Date.now();
     const out = await run(env, {
-      type: 'stitch', outputWidth: 1024, outputHeight: 512, hFovDeg: 68, images: shots
+      type: 'stitch', outputWidth: 1024, outputHeight: 512, hFovDeg: SRC_HFOV, images: shots
     });
     const st = env.state;
 
@@ -157,7 +167,17 @@ function run(env, msg) {
     /* Coverage is the assertion that would have caught the black-holes
        bug directly: perfect poses, the whole pattern, nominal FOV, nothing should
        be missing. */
-    check("the capture pattern covers the whole sphere", out.coverage > 0.999,
+    /* NOT 100%, on purpose. The capture pattern stops at +/-45 and takes
+       no pole shot, so it leaves a cap at each pole that gapFill() inpaints
+       rather than photographs -- about 11 deg of radius at this frame
+       shape, which is 1.8% of the sphere. See buildTargetPattern() in
+       capture360.js for why that trade is worth making indoors, and
+       lab/test/run-pattern-coverage.js for the measurement across the whole
+       plausible lens range. The check is two-sided because both failures
+       matter: much less than this means the rings have stopped meeting,
+       and 100% would mean the pattern is not the one that ships. */
+    check('the capture pattern reaches everything except the poles',
+      out.coverage > 0.97 && out.coverage < 0.995,
       f2(out.coverage * 100, 2) + '% (solid-angle weighted)');
     check('did not have to downscale', out.downscaled === false);
 
@@ -172,11 +192,11 @@ function run(env, msg) {
     // coverage must say so rather than being flattered by the poles.
     const env = makeEnv();
     const ring = [];
-    for (let i = 0; i < 8; i++) ring.push(fakeShot(320, 180, { yaw: i * 45 * Math.PI / 180, pitch: 0 }, 100));
+    for (let i = 0; i < 8; i++) ring.push(fakeShot(SRC_W, SRC_H, { yaw: i * 45 * Math.PI / 180, pitch: 0 }, 100));
     const out = await run(env, {
-      type: 'stitch', outputWidth: 1024, outputHeight: 512, hFovDeg: 68, images: ring
+      type: 'stitch', outputWidth: 1024, outputHeight: 512, hFovDeg: SRC_HFOV, images: ring
     });
-    check('a horizon-only capture reports a large gap', out.coverage < 0.65,
+    check('a horizon-only capture reports a large gap', out.coverage < 0.75,
       f2(out.coverage * 100, 1) + '% covered');
     check('but still covers the band it did shoot', out.coverage > 0.3,
       f2(out.coverage * 100, 1) + '%');
@@ -193,7 +213,7 @@ function run(env, msg) {
     }
     const env = makeEnv({ Float32Array: TightFloat32Array });
     const out = await run(env, {
-      type: 'stitch', outputWidth: 4096, outputHeight: 2048, hFovDeg: 68, images: buildShots(320, 180)
+      type: 'stitch', outputWidth: 4096, outputHeight: 2048, hFovDeg: SRC_HFOV, images: buildShots(SRC_W, SRC_H)
     });
     check('still returns a panorama', out.type === 'result', out.type);
     check('stepped the output down', out.width < 4096, `${out.width}x${out.height}`);
@@ -203,10 +223,10 @@ function run(env, msg) {
   console.log('\n=== 4. Failures name the stage they happened in ===');
   {
     const env = makeEnv();
-    const shots = buildShots(320, 180);
+    const shots = buildShots(SRC_W, SRC_H);
     shots[5].blob = null;   // one unreadable source
     const out = await run(env, {
-      type: 'stitch', outputWidth: 512, outputHeight: 256, hFovDeg: 68, images: shots
+      type: 'stitch', outputWidth: 512, outputHeight: 256, hFovDeg: SRC_HFOV, images: shots
     });
     check('reports an error rather than hanging', out.type === 'error', out.type);
     check('names the stage', !!out.stage, 'stage=' + out.stage);
@@ -217,7 +237,7 @@ function run(env, msg) {
   {
     const env = makeEnv({ failEncode: true });
     const out = await run(env, {
-      type: 'stitch', outputWidth: 512, outputHeight: 256, hFovDeg: 68, images: buildShots(320, 180)
+      type: 'stitch', outputWidth: 512, outputHeight: 256, hFovDeg: SRC_HFOV, images: buildShots(SRC_W, SRC_H)
     });
     check('still returns a result', out.type === 'result', out.type);
     check('sends the raw buffer instead', !out.blob && !!out.buffer);
