@@ -1,0 +1,11 @@
+{
+  "$schema": "lsu-gamedays-v1",
+  "generatedAt": "2026-08-27",
+  "gamedays": [
+    {
+      "id": "sample-gameday",
+      "label": "Sample gameday · template",
+      "active": false
+    }
+  ]
+}

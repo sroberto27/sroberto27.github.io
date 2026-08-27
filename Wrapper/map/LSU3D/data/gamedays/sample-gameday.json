@@ -1,0 +1,82 @@
+{
+  "$schema": "lsu-gameday-v1",
+  "id": "sample-gameday",
+  "opponent": "TBD",
+  "kickoff": "2026-09-05T18:30:00-05:00",
+  "timezone": "America/Chicago",
+  "notes": "PLACEHOLDER ITINERARY — every time below is illustrative. Replace with the real gameday logistics graphic before sharing this link with anyone.",
+  "contacts": [
+    {
+      "role": "Recruiting Operations",
+      "phone": "",
+      "note": "Your first call for anything during the visit"
+    },
+    {
+      "role": "Football Operations Front Desk",
+      "phone": "",
+      "note": "If you get separated from the group"
+    }
+  ],
+  "stops": [
+    {
+      "stopKey": "lot-414-river-road-arrival",
+      "arrive": "13:30",
+      "depart": "13:45",
+      "instruction": "Park in Lot 414 off River Road. Look for the gold LSU flags at the entrance."
+    },
+    {
+      "stopKey": "board-the-charter-bus",
+      "arrive": "13:45",
+      "depart": "14:00",
+      "instruction": "Walk to the charter buses staged in the lot. Staff will direct you."
+    },
+    {
+      "stopKey": "football-operations-facility",
+      "arrive": "14:00",
+      "depart": "14:15",
+      "instruction": "Home base for the afternoon."
+    },
+    {
+      "stopKey": "tiger-tailgate-indoors",
+      "arrive": "14:15",
+      "depart": "15:15",
+      "instruction": "Indoor tailgate — food, video games, facility tour, former players."
+    },
+    {
+      "stopKey": "registration",
+      "arrive": "15:15",
+      "depart": "15:30",
+      "instruction": "Check in and pick up your credentials."
+    },
+    {
+      "stopKey": "tiger-walk-victory-hill",
+      "arrive": "15:30",
+      "depart": "16:15",
+      "instruction": "Line up along North Stadium Drive for the team's walk down Victory Hill."
+    },
+    {
+      "stopKey": "lawton-room",
+      "arrive": "16:15",
+      "depart": "17:45",
+      "instruction": "Gate 7, northwest corner of Tiger Stadium. Staff remarks and the halftime meal."
+    },
+    {
+      "stopKey": "field-level-warmups",
+      "arrive": "17:45",
+      "depart": "18:15",
+      "instruction": "Field level for pregame warmups. Stay behind the designated lines."
+    },
+    {
+      "stopKey": "kickoff-death-valley",
+      "arrive": "18:15",
+      "depart": "21:30",
+      "instruction": "Saturday night in Tiger Stadium."
+    },
+    {
+      "stopKey": "postgame-nicholson-gateway",
+      "arrive": "21:30",
+      "depart": "22:00",
+      "instruction": "Walk North Stadium Drive and cross Nicholson. Buses stage near Matherne's Market."
+    }
+  ]
+}

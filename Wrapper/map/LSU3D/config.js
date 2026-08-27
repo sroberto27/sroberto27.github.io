@@ -198,7 +198,43 @@ window.CAMPUS_CONFIG = Object.assign(window.CAMPUS_CONFIG || {}, {
     buildings: "data/buildings.geojson",
     tours:     "data/tours.geojson",
     locations:     "data/locations.json",
-    treedisSweeps: "data/treedis-sweeps.json"
+    treedisSweeps: "data/treedis-sweeps.json",
+    // Directory, not a file — one itinerary per gameday, fetched on
+    // demand by js/00-data-adapter.js: loadGamedayJSON(id) when a link
+    // carries ?g=<id>. Trailing slash required.
+    gamedaysDir:   "data/gamedays/"
+  },
+
+  /* -- Gameday features (Phase 1) ---------------------------
+     Feature flags and timings for My Gameday, Live Visit Mode
+     and kiosk mode. Everything tunable lives here rather than
+     being scattered through the feature modules, so a display
+     in the Lawton Room can be retimed without touching JS.
+     ------------------------------------------------------- */
+  gameday: {
+    // Master switches. Turning one off hides its UI entirely and
+    // is the fastest rollback if something misbehaves in front of
+    // a real recruit.
+    enableMyGameday:  true,
+    enableLiveVisit:  true,
+    enableGeolocation: true,
+    enableKiosk:      true,
+
+    // Treat a stop as "reached" inside this radius. 150 ft is
+    // wider than a typical phone's open-sky accuracy but narrower
+    // than the gap between any two stops on this tour.
+    arrivalRadiusFt: 150,
+
+    // Above this accuracy figure the fix is too vague to quote a
+    // distance from, so Live Visit shows an "approximate" state
+    // instead of a confident number.
+    poorAccuracyM: 50,
+
+    kiosk: {
+      dwellMs:   12000,  // time on each stop before auto-advancing
+      idleMs:    90000,  // no interaction for this long → reset to stop 1
+      loop:      true
+    }
   },
 
   /* -- Tour configuration ---------------------------------- */

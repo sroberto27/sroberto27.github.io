@@ -157,6 +157,49 @@ function applyCoursesJSON(payload) {
   return true;
 }
 
+/* === Gameday itineraries ==================================
+   A gameday is one recruiting visit: kickoff time, staff
+   contacts, and an arrive/depart time plus an instruction for
+   each tour stop. It is NOT a second list of stops — the tour
+   order still comes from data/tours.geojson. This file only
+   layers times and copy onto stops that already exist.
+
+   Unlike locations/sweeps, this is fetched on demand: only when
+   a link carries ?g=<id>. A visitor without one never pays for
+   the request.
+
+   The id is used to build a path, so it is validated hard here
+   as well as in the router — a value that reached this function
+   from somewhere else must still not be able to escape the
+   gamedays directory.
+   ============================================================ */
+async function loadGamedayJSON(id) {
+  if (!id || !/^[a-z0-9][a-z0-9-]{0,63}$/i.test(id)) return null;
+
+  const cfg = window.CAMPUS_CONFIG || {};
+  const dir = (cfg.dataFiles && cfg.dataFiles.gamedaysDir) || "data/gamedays/";
+  const payload = await tryFetchJSON(`${dir}${String(id).toLowerCase()}.json`);
+
+  if (!payload || !Array.isArray(payload.stops)) return null;
+  if (payload.id && String(payload.id).toLowerCase() !== String(id).toLowerCase()) {
+    // The file disagrees with its own filename. Serve it anyway —
+    // the link the recruit was given is the authority — but say so,
+    // because it means someone copied a file without editing it.
+    console.warn(`[data] gameday "${id}" declares id "${payload.id}"`);
+  }
+  return payload;
+}
+
+/* The list of itineraries that exist. Only needed by tooling and
+   by a future staff picker — the app itself never needs it to
+   open a link, so nothing calls this during boot. */
+async function loadGamedayIndexJSON() {
+  const cfg = window.CAMPUS_CONFIG || {};
+  const dir = (cfg.dataFiles && cfg.dataFiles.gamedaysDir) || "data/gamedays/";
+  const payload = await tryFetchJSON(`${dir}index.json`);
+  return payload && Array.isArray(payload.gamedays) ? payload.gamedays : null;
+}
+
 /* Orchestrator. Fetches the three JSON files in parallel; for
    each one, falls back silently to whatever the legacy .js
    shim already populated. Returns a small report so the boot
