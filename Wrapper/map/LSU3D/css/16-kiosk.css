@@ -1,0 +1,176 @@
+/* === LSU Death Valley Experience — 16: Kiosk mode ===================
+   A display across the room, not a screen in someone's hand. So:
+   bigger type than anywhere else in the app, high contrast, and
+   almost nothing on screen except the map and where you are in the
+   tour.
+   ==================================================================== */
+
+/* --------------------------------------------------------------------
+   Hide everything that assumes a user with a keyboard and an intent.
+   The map, the tour pins and the route line all stay.
+   -------------------------------------------------------------------- */
+
+body.mode-kiosk .rail,
+body.mode-kiosk .sheet-peek,
+body.mode-kiosk .tour-pill,
+body.mode-kiosk .tourbar,
+body.mode-kiosk .burger-panel,
+body.mode-kiosk .burger-backdrop,
+body.mode-kiosk .metabar,
+body.mode-kiosk .filter-chips-top,
+body.mode-kiosk .start-screen,
+body.mode-kiosk .coachmark-overlay,
+body.mode-kiosk .nav-instructions,
+body.mode-kiosk .details {
+  display: none !important;
+}
+
+/* Map controls stay for a staff member driving a touchscreen, but
+   step back visually so they don't compete with the content. */
+body.mode-kiosk .map-controls { opacity: 0.35; }
+body.mode-kiosk .map-controls:hover { opacity: 1; }
+
+/* --------------------------------------------------------------------
+   The overlay
+   -------------------------------------------------------------------- */
+
+.kiosk-chrome {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1400;
+  padding: 28px 40px 32px;
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+  text-align: center;
+  color: #FFFFFF;
+  /* Gradient rather than a solid bar so the map still reads behind
+     it — the map is the thing people are looking at. */
+  background: linear-gradient(180deg,
+              rgba(42, 18, 69, 0) 0%,
+              rgba(42, 18, 69, 0.78) 38%,
+              rgba(42, 18, 69, 0.96) 100%);
+  pointer-events: none;      /* the map stays draggable through it */
+}
+
+.kiosk-chrome > * { pointer-events: auto; }
+
+.kiosk-title {
+  font-family: Oswald, Inter, system-ui, sans-serif;
+  font-weight: 700;
+  /* Scales with the display: readable on a 24" desk monitor and on a
+     75" panel across a room, without a breakpoint for each. */
+  font-size: clamp(28px, 4.2vw, 64px);
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.55);
+  text-wrap: balance;
+  max-width: 22ch;
+}
+
+.kiosk-counter {
+  font-size: clamp(13px, 1.2vw, 20px);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #FDD023;
+}
+
+.kiosk-dots {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.kiosk-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.32);
+  transition: background 200ms ease, transform 200ms ease;
+}
+
+.kiosk-dot.is-current {
+  background: #FDD023;
+  transform: scale(1.5);
+}
+
+/* --------------------------------------------------------------------
+   Controls — deliberately oversized for a touchscreen someone
+   approaches without looking closely.
+   -------------------------------------------------------------------- */
+
+.kiosk-controls {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.kiosk-btn {
+  min-width: 72px;
+  min-height: 72px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  font-size: 26px;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.kiosk-btn:hover { background: rgba(255, 255, 255, 0.22); }
+
+.kiosk-btn-play {
+  min-width: 88px;
+  min-height: 88px;
+  background: #FDD023;
+  border-color: #FDD023;
+  color: #2A1245;
+  font-size: 30px;
+}
+
+.kiosk-btn:focus-visible {
+  outline: 3px solid #FDD023;
+  outline-offset: 3px;
+}
+
+.kiosk-fs-hint {
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* --------------------------------------------------------------------
+   Exit target — top-left corner, invisible, triple-tap.
+
+   Not a secret (there is nothing behind it worth hiding) but not
+   something a visitor finds by accident either.
+   -------------------------------------------------------------------- */
+
+.kiosk-corner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 84px;
+  height: 84px;
+  z-index: 1500;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.kiosk-corner:focus-visible {
+  outline: 2px dashed rgba(253, 208, 35, 0.8);
+  outline-offset: -6px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kiosk-dot { transition: none; }
+}

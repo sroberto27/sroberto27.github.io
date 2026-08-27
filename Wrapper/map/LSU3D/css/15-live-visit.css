@@ -1,0 +1,296 @@
+/* === LSU Death Valley Experience — 15: Live Visit Mode ==============
+   Mobile-first. This is the one part of the app designed to be read
+   while walking: large type, high contrast, few words, and touch
+   targets sized for someone who isn't looking carefully.
+
+   The bar is fixed to the top and the map keeps the rest of the
+   screen — the map is still the point, the bar just answers "where
+   next" without needing a tap.
+   ==================================================================== */
+
+/* --------------------------------------------------------------------
+   Chrome the mode hides.
+
+   Search, filter chips, the All-locations tab and the PEEK sheet are
+   all browse-the-campus affordances. Mid-visit they're noise, and on
+   a phone they're competing for the only screen there is.
+   -------------------------------------------------------------------- */
+
+body.mode-live .metabar-search,
+body.mode-live .filter-chips,
+body.mode-live .filter-chips-top,
+body.mode-live .loc-tabs,
+body.mode-live .loc-sort,
+body.mode-live .sheet-peek,
+body.mode-live .tour-pill {
+  display: none !important;
+}
+
+/* The rail is a browse surface too — collapse it, but leave the map
+   controls (zoom / locate / 3D) alone: those stay useful on foot. */
+body.mode-live .rail { display: none; }
+
+/* --------------------------------------------------------------------
+   The bar
+   -------------------------------------------------------------------- */
+
+.live-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1200;              /* above the map + its controls */
+  background: linear-gradient(180deg, #2A1245 0%, #3D1E63 100%);
+  color: #FFFFFF;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  border-bottom: 2px solid #FDD023;
+  /* Clear of a notch / dynamic island. */
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.live-bar-inner {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  padding: 10px 14px 8px;
+}
+
+/* --------------------------------------------------------------------
+   "You are here"
+   -------------------------------------------------------------------- */
+
+.live-here {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.live-here-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #FDD023;
+  white-space: nowrap;
+}
+
+.live-here-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* Each state reads differently at a glance, without needing the words. */
+.live-here.is-fixed  .live-here-label { background: rgba(37, 99, 235, 0.30); color: #BFDBFE; }
+.live-here.is-approx .live-here-label { background: rgba(253, 208, 35, 0.22); color: #FDD023; }
+.live-here.is-off    .live-here-label { background: rgba(255, 255, 255, 0.10); color: rgba(255,255,255,0.65); }
+.live-here.is-waiting .live-here-text { opacity: 0.75; }
+
+/* --------------------------------------------------------------------
+   Current / next stop
+   -------------------------------------------------------------------- */
+
+.live-stop {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.live-stop-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.10em;
+  color: rgba(255, 255, 255, 0.55);
+  min-width: 74px;
+}
+
+.live-stop-name {
+  font-family: Oswald, Inter, system-ui, sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: #FFFFFF;
+  overflow-wrap: anywhere;
+}
+
+.live-stop-next .live-stop-name {
+  font-size: 15px;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.live-stop-time {
+  font-size: 13px;
+  font-weight: 700;
+  color: #FDD023;
+  white-space: nowrap;
+}
+
+.live-stop-note {
+  flex: 1 0 100%;
+  font-size: 12px;
+  line-height: 1.4;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.live-stop-next.is-end .live-stop-name {
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* --------------------------------------------------------------------
+   Distance + direction
+
+   The arrow is rotated to the true bearing of the next stop. The map
+   is north-up, so "up" on screen is north and the rotation is
+   directly meaningful.
+   -------------------------------------------------------------------- */
+
+.live-next-nav {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(253, 208, 35, 0.16);
+  border: 1px solid rgba(253, 208, 35, 0.35);
+}
+
+.live-next-arrow {
+  display: inline-block;
+  font-size: 15px;
+  line-height: 1;
+  color: #FDD023;
+  transform-origin: 50% 50%;
+}
+
+.live-next-dist {
+  font-size: 13px;
+  font-weight: 700;
+  color: #FDD023;
+  white-space: nowrap;
+}
+
+.live-next-walk {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------
+   Progress
+   -------------------------------------------------------------------- */
+
+.live-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-progress-track {
+  flex: 1 1 auto;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  overflow: hidden;
+}
+
+.live-progress-fill {
+  height: 100%;
+  background: #FDD023;
+  transition: width 260ms ease;
+}
+
+.live-progress-text {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: rgba(255, 255, 255, 0.75);
+  white-space: nowrap;
+}
+
+/* --------------------------------------------------------------------
+   Actions — 44px minimum, the smallest a thumb reliably hits
+   -------------------------------------------------------------------- */
+
+.live-actions {
+  display: flex;
+  gap: 8px;
+  padding: 0 14px 12px;
+}
+
+.live-btn {
+  flex: 1 1 auto;
+  min-height: 44px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.10);
+  color: #FFFFFF;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  line-height: 1.2;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.live-btn:disabled { opacity: 0.4; cursor: default; }
+
+.live-btn-primary {
+  background: #FDD023;
+  border-color: #FDD023;
+  color: #2A1245;
+}
+
+.live-btn-call {
+  background: rgba(37, 99, 235, 0.9);
+  border-color: rgba(37, 99, 235, 0.9);
+}
+
+.live-btn-exit { flex: 0 1 auto; }
+
+.live-btn:focus-visible {
+  outline: 2px solid #FDD023;
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------
+   Push the map down so the bar never covers it, and keep the details
+   sheet clear of the bar.
+   -------------------------------------------------------------------- */
+
+body.mode-live .map-controls { top: auto; }
+
+body.mode-live .details.rail-detail {
+  top: auto;
+}
+
+/* Desktop: same bar, but constrained so the lines don't stretch to a
+   27-inch monitor's width. */
+@media (min-width: 881px) {
+  .live-bar-inner,
+  .live-actions {
+    max-width: 880px;
+    margin: 0 auto;
+  }
+  .live-bar-inner {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+    column-gap: 24px;
+  }
+  .live-here     { grid-column: 1 / -1; }
+  .live-progress { grid-column: 1 / -1; }
+}
+
+.live-visit-start { white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .live-progress-fill { transition: none; }
+}

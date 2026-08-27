@@ -273,6 +273,15 @@
     // the browser's Geolocation API directly (what Leaflet did
     // internally anyway).
     locateBtn.addEventListener("click", () => {
+      // js/19-geolocation.js upgrades this to a real "You Are Here"
+      // (persistent marker, accuracy ring, permission-denied UX). It
+      // loads later than this file, so we look it up at click time
+      // rather than at wiring time. Everything below is the fallback
+      // for when that module is absent or disabled.
+      if (window.Geo && typeof Geo.locate === "function") {
+        Geo.locate({ source: "locate_button" });
+        return;
+      }
       if (!navigator.geolocation) {
         if (imageBounds) resetCampusView(true);
         return;
