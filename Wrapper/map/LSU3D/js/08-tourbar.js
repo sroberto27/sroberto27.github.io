@@ -140,6 +140,12 @@ function updateTourbar() {
 
 function goToStop(i) {
   if (!tourStops.length) return;
+  // "Started the tour" = moved to a stop while no tour was running.
+  // Emitted here rather than at each button so every entry point
+  // (pill, rail card, PEEK card, deep link, kiosk) counts the same.
+  if (tourIndex < 0 && typeof track === "function") {
+    track("tour_started", { total: tourStops.length });
+  }
   tourIndex = Math.max(0, Math.min(i, tourStops.length - 1));
   const stop = tourStops[tourIndex];
   selectFeature({ sourceId: SOURCE_IDS.tours, featureId: stop.featureId, feature: stop.feature },

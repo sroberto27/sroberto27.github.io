@@ -425,6 +425,14 @@ async function boot() {
       // with the start screen fade-in.
       setTimeout(() => showStartScreen(), 220);
     }
+
+    // Signal "the app is usable" to the gameday feature modules
+    // (js/15-core-services.js onwards): the map, layers, pins, lists
+    // and search index all exist by now. Same defensive guard as
+    // showStartScreen() above — this file is parsed and boot() is
+    // called before those scripts have run, so nothing here may
+    // assume they loaded.
+    if (typeof onAppReady === "function") onAppReady();
   });
 }
 

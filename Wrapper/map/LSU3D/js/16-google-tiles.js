@@ -664,6 +664,7 @@ async function activateGoogleTilesMode() {
 
     googleTilesActive = true;
     active3DRenderer = "google";
+    if (typeof track === "function") track("google3d_entered", {});
     updateMode3DBadge();
     showGoogleTilesLoading(false);
     if (el.toggleImageryBtn) {
@@ -725,6 +726,12 @@ function applySimplified3DFallback() {
     map.setTerrain({ source: SOURCE_IDS.terrain, exaggeration: 1 });
   }
   active3DRenderer = is3DMode ? "simple" : null;
+  // Only a *fallback* if Google tiles were meant to be showing. A
+  // build with no key configured is running the simple view by
+  // design, and counting that as a failure would drown the signal.
+  if (is3DMode && typeof track === "function" && googleTilesConfigured()) {
+    track("google3d_fallback", { reason: googleTilesPreviouslyFailed() ? "prior_failure" : "fallback" });
+  }
   updateMode3DBadge();
 }
 

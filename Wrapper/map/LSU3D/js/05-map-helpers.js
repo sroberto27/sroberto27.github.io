@@ -67,7 +67,12 @@ function scheduleMapRefresh({ recenterIfNeeded = true, delay = 0 } = {}) {
    map.getLayer() guards make this safe to call before those
    layers exist (Phase 1-5 of the build). */
 function set3DMode(on) {
+  const was3D = is3DMode;
   is3DMode = !!on;
+
+  if (is3DMode !== was3D && typeof track === "function") {
+    track(is3DMode ? "mode_entered" : "mode_exited", { mode: "3d" });
+  }
 
   if (is3DMode && !map.getSource(SOURCE_IDS.terrain)) {
     const t = config.terrain || {};

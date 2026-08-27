@@ -84,6 +84,9 @@ function syncWrapperToSweep(sweepId) {
          the sweep in pendingSweep. _flushPendingSweep() runs
          when TourReady fires and finishes the job. */
 function openStreetView(sweepId, title, sub, options) {
+  if (typeof track === "function") {
+    track("explore_launched", { hasSweep: !!sweepId, title: title || null });
+  }
   if (!sweepId) {
     console.warn("[streetview] open request ignored — no sweep id for", title);
     // Tiny visual nudge — still open the overlay so the user sees
