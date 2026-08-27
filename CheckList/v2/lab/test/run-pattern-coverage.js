@@ -120,7 +120,13 @@ function pattern(parts) {
 }
 
 const CANDIDATES = [
-  { name: '8/8/8 + 4/4 + poles  (ships today)',
+  /* Stanford's VFT Photosphere Camera, for comparison: 36 shots, three
+     rows at 0 and +/-45, no pole shots at all. Measured here because it
+     is the obvious "why not just do what they do" question, and the
+     answer depends entirely on the lens. */
+  { name: 'VFT: 12/12/12 at 0,+/-45, no poles',
+    shots: pattern([ring(12, 0), ring(12, 45, 15), ring(12, -45, 15)]) },
+  { name: '8/8/8 + 4/4 + poles  (was shipping)',
     shots: pattern([ring(8, 0), ring(8, 33, 22.5), ring(8, -33, 22.5),
                     ring(4, 66), ring(4, -66), POLES]) },
   { name: '10/10/10 + 4/4 + poles',

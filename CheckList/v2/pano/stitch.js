@@ -240,7 +240,23 @@
 
      Solves (sum_j N_ij (g_i I_ij - g_j I_ji)^2) + sigma*(g_i - 1)^2 by
      Gauss-Seidel; the regulariser pins the overall exposure so the
-     system is not free to drift to zero. */
+     system is not free to drift to zero.
+
+     CLIPPED PIXELS ARE EXCLUDED, and this matters more than it sounds.
+     A gain is only meaningful where both views are still measuring
+     light: once a pixel has saturated, its value is a floor on the true
+     radiance, not the radiance, so a pair of blown-out samples reports
+     "these agree" no matter how far apart the exposures really were.
+     Measured on a real capture with a ceiling fan light in frame, the
+     ceiling shots -- whose auto-exposure had closed right down on that
+     lamp -- came back with gains of 2.0 to 2.2, because the only thing
+     their overlap had in common was clipped white. Applying that doubles
+     an already-blown ceiling and leaves a hard brightness step against
+     every neighbour. Dropping saturated and near-black samples makes the
+     estimate come from the part of the overlap that actually carries
+     photometric information. */
+  const CLIP_HI = 0.94, CLIP_LO = 0.02;
+
   function estimateGains(views, sampleStep, regularisation) {
     const n = views.length;
     const step = sampleStep || 16;
@@ -265,8 +281,11 @@
             if (!C.inFrame(p, vj.width, vj.height, 4)) continue;
             const si = (y * Wi + x) * 3;
             const sj = (Math.round(p.py) * vj.width + Math.round(p.px)) * 3;
-            sumI += (vi.rgb[si] + vi.rgb[si + 1] + vi.rgb[si + 2]) / 3;
-            sumJ += (vj.rgb[sj] + vj.rgb[sj + 1] + vj.rgb[sj + 2]) / 3;
+            const li = (vi.rgb[si] + vi.rgb[si + 1] + vi.rgb[si + 2]) / 3;
+            const lj = (vj.rgb[sj] + vj.rgb[sj + 1] + vj.rgb[sj + 2]) / 3;
+            if (li > CLIP_HI || lj > CLIP_HI || li < CLIP_LO || lj < CLIP_LO) continue;
+            sumI += li;
+            sumJ += lj;
             cnt++;
           }
         }

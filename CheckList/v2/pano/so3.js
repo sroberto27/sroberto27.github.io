@@ -121,15 +121,38 @@
     ];
   }
 
-  // Mirrors basisForOrientation() in the capture/stitch code exactly.
+  /* Mirrors basisForOrientation() in the capture/stitch code exactly.
+
+     The reference for roll is the world-up direction projected
+     perpendicular to the view axis, and it is written out analytically
+     rather than as a normalised cross product because the cross product
+     vanishes at the pole and the guard that used to stand in for it was
+     wrong.
+
+     cross(forward, worldUp) = (cos(yaw)cos(pitch), -sin(yaw)cos(pitch), 0),
+     so once normalised it is exactly (cos(yaw), -sin(yaw), 0) for every
+     pitch in (-90, 90) -- the cos(pitch) factor divides straight out. The
+     old code computed the cross product and, when |forward.z| > 0.999,
+     substituted (1, 0, 0) instead. That threshold is |pitch| > 87.44 deg,
+     which the capture pattern's zenith and nadir targets sit inside by
+     design, and the substitution DISCARDS YAW: it turns the frame by
+     whatever the yaw happened to be.
+
+     Measured on a real capture, the nadir frame came back rotated 121 deg
+     about its own view axis, because that shot was taken at pitch -89.6
+     with yaw 121.4. The bug was invisible in every offline test because
+     all four copies of this function shared it, so they agreed with each
+     other; what they did not agree with is orientation.js, which measures
+     roll against the projected world-up with no such guard. A device
+     quaternion taken through quaternionToYawPitchRoll and back came out
+     with its up axis 40 deg wrong at pitch 87.5 and right at 87.0. */
   function fromYawPitchRoll(yaw, pitch, roll) {
     const forward = vec(
       Math.sin(yaw) * Math.cos(pitch),
       Math.cos(yaw) * Math.cos(pitch),
       Math.sin(pitch)
     );
-    const worldUp = vec(0, 0, 1);
-    const right0 = Math.abs(forward.z) > 0.999 ? vec(1, 0, 0) : normalize(cross(forward, worldUp));
+    const right0 = vec(Math.cos(yaw), -Math.sin(yaw), 0);
     const up0 = normalize(cross(right0, forward));
     const cr = Math.cos(roll || 0), sr = Math.sin(roll || 0);
     const right = normalize(sub(scale(right0, cr), scale(up0, sr)));
@@ -146,8 +169,9 @@
     const right = column(R, 0);
     const yaw = Math.atan2(forward.x, forward.y);
     const pitch = Math.asin(Math.max(-1, Math.min(1, forward.z)));
-    const worldUp = vec(0, 0, 1);
-    const right0 = Math.abs(forward.z) > 0.999 ? vec(1, 0, 0) : normalize(cross(forward, worldUp));
+    // Same reference frame as fromYawPitchRoll, so the two stay an exact
+    // inverse pair right up to the pole. See the note there.
+    const right0 = vec(Math.cos(yaw), -Math.sin(yaw), 0);
     const up0 = normalize(cross(right0, forward));
     const roll = Math.atan2(-dot(right, up0), dot(right, right0));
     return { yaw: yaw, pitch: pitch, roll: roll };

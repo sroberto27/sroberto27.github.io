@@ -67,6 +67,20 @@
   // the lines read as "one shot per cell" rather than as decoration.
   const GRID_STEP_DEG = 30;
 
+  /* Fraction of each patch, measured in from its border, over which it
+     fades out. Without it the patches are opaque rectangles with hard
+     edges, and a sphere tiled with hard rectangles reads as a collage
+     sitting in front of the world rather than as photographs wrapped
+     onto it -- which is exactly the complaint that prompted this. With
+     it, overlapping shots cross-fade into each other and a patch with no
+     neighbour yet visibly trails off, so the eye reads the boundary as
+     "not covered yet" instead of "edge of a card".
+
+     It is deliberately gentler than the stitcher's feather. This is an
+     aiming aid: the user has to be able to see WHERE a photo landed, and
+     a patch faded over half its width no longer tells them that. */
+  const EDGE_FEATHER = 0.14;
+
   const VERT = `
     attribute vec3 aDir;
     attribute vec2 aUv;
@@ -92,9 +106,13 @@
     uniform sampler2D uTex;
     uniform vec4 uColor;
     uniform float uUseTex;
+    uniform float uEdgeFeather;
     void main() {
       vec4 t = texture2D(uTex, vUv);
-      gl_FragColor = mix(uColor, vec4(t.rgb, t.a * uColor.a), uUseTex);
+      float e = max(uEdgeFeather, 1e-4);
+      float f = smoothstep(0.0, e, vUv.x) * smoothstep(0.0, e, 1.0 - vUv.x)
+              * smoothstep(0.0, e, vUv.y) * smoothstep(0.0, e, 1.0 - vUv.y);
+      gl_FragColor = mix(uColor, vec4(t.rgb, t.a * uColor.a * f), uUseTex);
     }`;
 
   /* The dimming mask with its aiming peephole, drawn here rather than on
@@ -156,8 +174,9 @@
      then produce a panorama that does not. */
   function basis(yaw, pitch, roll) {
     const forward = [Math.sin(yaw) * Math.cos(pitch), Math.cos(yaw) * Math.cos(pitch), Math.sin(pitch)];
-    const worldUp = [0, 0, 1];
-    const right0 = Math.abs(forward[2]) > 0.999 ? [1, 0, 0] : norm(cross(forward, worldUp));
+    // Analytic roll reference; see the note on fromYawPitchRoll in
+    // pano/so3.js for why this is not a normalised cross product.
+    const right0 = [Math.cos(yaw), -Math.sin(yaw), 0];
     const up0 = norm(cross(right0, forward));
     const cr = Math.cos(roll || 0), sr = Math.sin(roll || 0);
     const right = norm([right0[0] * cr - up0[0] * sr, right0[1] * cr - up0[1] * sr, right0[2] * cr - up0[2] * sr]);
@@ -168,6 +187,17 @@
   /* One patch's geometry: a TESS x TESS grid of directions spanning the
      photo's field of view, every vertex normalised onto the unit sphere
      so the patch curves with it.
+
+     hFov is the field across the frame's WIDTH and aspect is its
+     height/width, and both have to describe the REAL photo. Getting them
+     from a lens spec instead is how this went wrong the first time: a
+     phone lens quoted at 68 deg describes its LONG axis, phone stills
+     come back portrait, and pairing that 68 deg with a landscape 9:16
+     aspect drew every patch as a 68 x 42 deg landscape rectangle when the
+     photograph is a 54 x 68 deg portrait one. Every patch was then a
+     quarter too wide, a third too short and turned on its side, so they
+     did not tile the sphere and did not line up with the graticule --
+     they read as loose cards rather than as pieces of the sphere.
 
      Texture rows: with UNPACK_FLIP_Y_WEBGL left at its default false, row
      0 of the source canvas is t = 0, and row 0 is the TOP of the photo.
@@ -258,8 +288,10 @@
    *                   number that makes the two agree and passes it here)
    * opts.ndcSpan      fraction of the half-viewport one guide-FOV unit
    *                   spans, matching the 2D path's layout constants
-   * opts.patchAspect  source photo height/width
-   * opts.patchFovDeg  assumed horizontal FOV of a source photo
+   * opts.patchAspect  source photo height/width (3:4 portrait by default)
+   * opts.patchFovDeg  FOV across the source photo's WIDTH, not its long
+   *                   axis. Both are replaced by setPatchGeometry() as
+   *                   soon as a real frame has been measured.
    */
   function create(canvas, opts) {
     opts = opts || {};
@@ -280,8 +312,11 @@
 
     const guideFov = (opts.guideFovDeg || 78) * DEG;
     const ndcSpan = opts.ndcSpan !== undefined ? opts.ndcSpan : 0.84;
-    const patchAspect = opts.patchAspect || (9 / 16);
-    const patchFov = (opts.patchFovDeg || 68) * DEG;
+    /* Defaults are a PORTRAIT phone still (3:4) at the width-FOV a 68 deg
+       long-axis lens gives on one. The caller replaces both the moment it
+       has a real frame to measure -- see setPatchGeometry. */
+    let patchAspect = opts.patchAspect || (4 / 3);
+    let patchFov = (opts.patchFovDeg || 53.7) * DEG;
     const scale = ndcSpan / Math.tan(guideFov / 2);
 
     const A = {
@@ -294,7 +329,8 @@
       nearFar: gl.getUniformLocation(prog, 'uNearFar'),
       tex: gl.getUniformLocation(prog, 'uTex'),
       color: gl.getUniformLocation(prog, 'uColor'),
-      useTex: gl.getUniformLocation(prog, 'uUseTex')
+      useTex: gl.getUniformLocation(prog, 'uUseTex'),
+      edgeFeather: gl.getUniformLocation(prog, 'uEdgeFeather')
     };
     const MA = { aPos: gl.getAttribLocation(maskProg, 'aPos') };
     const MU = {
@@ -324,7 +360,10 @@
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, 1, 1, 0, gl.RGBA, gl.UNSIGNED_BYTE,
       new Uint8Array([255, 255, 255, 255]));
 
-    const patches = [];   // { tex, dirBuf, uvBuf, idxBuf, count }
+    // Poses are kept alongside the buffers so the meshes can be rebuilt
+    // when the real frame geometry arrives, which is usually after the
+    // first photo has already been added.
+    const patches = [];   // { tex, yaw, pitch, roll, aspect, dirBuf, uvBuf, idxBuf, count }
     let width = 0, height = 0, dpr = 1;
     let view = [1, 0, 0, 0, 1, 0, 0, 0, 1];
     let hole = { x: 0, y: 0, r: 0 };
@@ -357,11 +396,34 @@
       const m = patchMesh(p.yaw, p.pitch, p.roll || 0, patchFov, aspect);
       patches.push({
         tex: tex,
+        yaw: p.yaw, pitch: p.pitch, roll: p.roll || 0, aspect: aspect,
         dirBuf: makeBuffer(gl.ARRAY_BUFFER, m.dirs),
         uvBuf: makeBuffer(gl.ARRAY_BUFFER, m.uvs),
         idxBuf: makeBuffer(gl.ELEMENT_ARRAY_BUFFER, m.idx),
         count: m.count
       });
+    }
+
+    /* Tell the preview what the photos actually look like. The caller
+       cannot know this until it has taken one -- the still pipeline's
+       dimensions are not the video preview's -- so patches added before
+       then are rebuilt here rather than left at the default. Cheap: a few
+       dozen meshes of 49 vertices each. */
+    function setPatchGeometry(hFovDeg, aspect) {
+      if (lost) return;
+      const f = hFovDeg * DEG;
+      if (!(f > 0) || !(aspect > 0)) return;
+      if (Math.abs(f - patchFov) < 1e-6 && Math.abs(aspect - patchAspect) < 1e-6) return;
+      patchFov = f;
+      patchAspect = aspect;
+      for (const p of patches) {
+        p.aspect = aspect;
+        const m = patchMesh(p.yaw, p.pitch, p.roll, patchFov, aspect);
+        gl.bindBuffer(gl.ARRAY_BUFFER, p.dirBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, m.dirs, gl.STATIC_DRAW);
+        gl.bindBuffer(gl.ARRAY_BUFFER, p.uvBuf);
+        gl.bufferData(gl.ARRAY_BUFFER, m.uvs, gl.STATIC_DRAW);
+      }
     }
 
     function dropPatch(p) {
@@ -438,6 +500,7 @@
       // graticule first: it is context, and the photos belong on top of it
       gl.bindTexture(gl.TEXTURE_2D, blank);
       gl.uniform1f(U.useTex, 0);
+      gl.uniform1f(U.edgeFeather, 0);
       gl.uniform4f(U.color, 1, 1, 1, 0.16);
       gl.bindBuffer(gl.ARRAY_BUFFER, gridBuf);
       gl.vertexAttribPointer(A.aDir, 3, gl.FLOAT, false, 0, 0);
@@ -446,6 +509,7 @@
       gl.drawArrays(gl.LINES, 0, gridCount);
 
       gl.uniform1f(U.useTex, 1);
+      gl.uniform1f(U.edgeFeather, EDGE_FEATHER);
       gl.uniform4f(U.color, 1, 1, 1, 1);
       for (let i = 0; i < patches.length; i++) {
         const p = patches[i];
@@ -477,7 +541,8 @@
     }
 
     return {
-      addPatch, removePatch, resize, setPeephole, setPose, render, destroy,
+      addPatch, removePatch, resize, setPeephole, setPose, setPatchGeometry,
+      render, destroy,
       get patchCount() { return patches.length; }
     };
   }

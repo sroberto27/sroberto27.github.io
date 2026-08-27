@@ -140,15 +140,47 @@
   function setBlendMode(v) {
     try { localStorage.setItem(BLEND_PREF_KEY, v); } catch (e) { /* ignore */ }
   }
-  const ASSUMED_ASPECT = 9 / 16; // height/width used only to size the on-screen patch footprint
+  /* Shape of a source photo, used to size and orient everything drawn on
+     the aiming overlay: the captured-shot patches, and the cone the
+     coverage warning counts with.
+
+     This used to be a constant, 9/16, paired with ASSUMED_H_FOV_DEG, and
+     both halves of that were wrong in the same direction. ASSUMED_H_FOV_DEG
+     describes the lens across its LONG axis; 9/16 is a LANDSCAPE
+     height/width. Phone stills come back PORTRAIT -- the real captures
+     measured here are 3024x4032 -- so the overlay drew every photo as a
+     68 x 42 deg landscape rectangle when the photograph is a 54 x 68 deg
+     portrait one: a quarter too wide, a third too short, and turned on
+     its side. On the 3D preview that is very visible, because the patches
+     then neither tile the sphere nor line up with the graticule.
+
+     The stitch path already did this conversion correctly (see the
+     hFovDeg computation before the worker is started, and
+     widthFovFromLongFov in pano/camera.js); only the overlay did not.
+
+     The default is a portrait 3:4 frame, and it is replaced by the real
+     numbers as soon as a photo has actually been taken -- the still
+     pipeline's dimensions are not the video preview's, so there is no
+     way to know them earlier without guessing again. */
+  const DEFAULT_FRAME_ASPECT = 4 / 3;   // height/width of a portrait phone still
+  function frameGeometry(w, h) {
+    if (!(w > 0) || !(h > 0)) {
+      w = 3; h = 4;
+    }
+    const longSide = Math.max(w, h);
+    const f = longSide / (2 * Math.tan(ASSUMED_H_FOV_DEG * DEG / 2));
+    return { hFovDeg: 2 * Math.atan(w / (2 * f)) / DEG, aspect: h / w };
+  }
   const GUIDE_FOV_DEG = 78; // wider virtual FOV used for placing the reticle/target/patches on screen
   const MAX_BLUR_RETRIES = 2; // low-texture scenes (blank walls/ceilings) read as "blurry" too — don't loop forever
   const SHARPNESS_MIN = 12; // conservative: only rejects genuinely motion-blurred frames
 
+  // See the note on fromYawPitchRoll in pano/so3.js: the roll reference is
+  // written analytically because the cross product it replaces vanishes at
+  // the pole, and the guard that used to cover that discarded yaw.
   function basisForOrientation(yaw, pitch, roll) {
     const forward = { x: Math.sin(yaw) * Math.cos(pitch), y: Math.cos(yaw) * Math.cos(pitch), z: Math.sin(pitch) };
-    const worldUp = { x: 0, y: 0, z: 1 };
-    const right0 = Math.abs(forward.z) > 0.999 ? { x: 1, y: 0, z: 0 } : O.normalize(O.cross(forward, worldUp));
+    const right0 = { x: Math.cos(yaw), y: -Math.sin(yaw), z: 0 };
     const up0 = O.normalize(O.cross(right0, forward));
     const cr = Math.cos(roll || 0), sr = Math.sin(roll || 0);
     const right = O.normalize({ x: right0.x * cr - up0.x * sr, y: right0.y * cr - up0.y * sr, z: right0.z * cr - up0.z * sr });
@@ -281,6 +313,80 @@
     return sumSq / n - mean * mean;
   }
 
+  /* Freeze exposure, white balance and focus for the rest of the capture.
+
+     Every panorama app that produces clean results does this, and the
+     reason shows up plainly in a real capture: with auto-exposure running,
+     a sweep that passes a window or a ceiling lamp drives the camera a
+     full stop or more between neighbouring shots. On one 46-shot capture
+     measured here the ceiling frames came back needing gains of 1.9 to
+     2.3 to match their neighbours -- their auto-exposure had closed right
+     down on a ceiling fan light -- and no amount of gain compensation
+     afterwards can undo that, because the lamp is already CLIPPED in those
+     frames and clipped detail is gone for good. Gain compensation cleans
+     up what is left; locking is what stops it happening.
+
+     Focus is locked for a second, less obvious reason: focus breathing
+     changes the effective focal length between shots, and the whole
+     pipeline -- prior, calibration, stitch -- assumes one focal length for
+     the whole capture.
+
+     Strictly best-effort. Support is patchy (Android Chrome generally has
+     it, Safari generally does not) and the constraint names are optional
+     in the spec, so every step is guarded and a failure is silent: an
+     unlocked capture is exactly what shipped before this existed.
+
+     Called after the preview has been live for a moment, so the values
+     being frozen are ones auto-exposure has already settled on rather
+     than whatever the sensor woke up with. */
+  async function lockCameraSettings(track) {
+    if (!track || typeof track.getCapabilities !== 'function') return null;
+    let caps, cur;
+    try {
+      caps = track.getCapabilities() || {};
+      cur = (typeof track.getSettings === 'function' ? track.getSettings() : {}) || {};
+    } catch (e) { return null; }
+
+    const has = (name, value) => Array.isArray(caps[name]) && caps[name].indexOf(value) >= 0;
+    const adv = {};
+    const locked = [];
+    if (has('exposureMode', 'manual')) {
+      adv.exposureMode = 'manual';
+      // Carry the settled values across; without them some
+      // implementations jump to a default exposure on switching to manual.
+      if (typeof cur.exposureTime === 'number') adv.exposureTime = cur.exposureTime;
+      if (typeof cur.iso === 'number') adv.iso = cur.iso;
+      locked.push('exposure');
+    }
+    if (has('whiteBalanceMode', 'manual')) {
+      adv.whiteBalanceMode = 'manual';
+      if (typeof cur.colorTemperature === 'number') adv.colorTemperature = cur.colorTemperature;
+      locked.push('white balance');
+    }
+    if (has('focusMode', 'manual')) {
+      adv.focusMode = 'manual';
+      if (typeof cur.focusDistance === 'number') adv.focusDistance = cur.focusDistance;
+      locked.push('focus');
+    }
+    if (!locked.length) return null;
+
+    try {
+      await track.applyConstraints({ advanced: [adv] });
+    } catch (e) {
+      /* Some devices accept the mode but reject the explicit value.
+         Retry with the modes alone before giving up -- a locked mode at
+         the driver's own choice of value is still worth far more than no
+         lock at all. */
+      const modesOnly = {};
+      if (adv.exposureMode) modesOnly.exposureMode = adv.exposureMode;
+      if (adv.whiteBalanceMode) modesOnly.whiteBalanceMode = adv.whiteBalanceMode;
+      if (adv.focusMode) modesOnly.focusMode = adv.focusMode;
+      try { await track.applyConstraints({ advanced: [modesOnly] }); }
+      catch (e2) { return null; }
+    }
+    return locked;
+  }
+
   function makeThumbnail(sourceCanvas, maxDim) {
     const scale = Math.min(1, maxDim / Math.max(sourceCanvas.width, sourceCanvas.height));
     const c = document.createElement('canvas');
@@ -292,8 +398,9 @@
 
   // Coarse coverage check (a yaw/pitch grid) so "Finish Early" can warn
   // about real spherical gaps, not just a raw shot count.
-  function computeCoverageGapPct(targets, captured) {
-    const hFov = ASSUMED_H_FOV_DEG * DEG, vFov = 2 * Math.atan(Math.tan(hFov / 2) * ASSUMED_ASPECT);
+  function computeCoverageGapPct(targets, captured, geom) {
+    geom = geom || frameGeometry(0, 0);
+    const hFov = geom.hFovDeg * DEG, vFov = 2 * Math.atan(Math.tan(hFov / 2) * geom.aspect);
     const cones = targets.filter((t, i) => captured[i]).map(t => basisForOrientation(t.yaw, t.pitch, 0));
     const tanH = Math.tan(hFov / 2), tanV = Math.tan(vFov / 2);
     let total = 0, covered = 0;
@@ -356,13 +463,25 @@
          devices that cannot run this. The layout constants are handed over
          rather than duplicated so the two paths frame the sphere
          identically and switching between them is not visible. */
+      /* What a source photo looks like. Starts as the portrait default and
+         is corrected from the first real still; everything that draws a
+         photo on the overlay reads it from here. */
+      let frameGeom = frameGeometry(0, 0);
+      function noteFrameSize(w, h) {
+        const g = frameGeometry(w, h);
+        if (Math.abs(g.hFovDeg - frameGeom.hFovDeg) < 1e-6 &&
+            Math.abs(g.aspect - frameGeom.aspect) < 1e-6) return;
+        frameGeom = g;
+        if (sphere) sphere.setPatchGeometry(g.hFovDeg, g.aspect);
+      }
+
       let sphere = null;
       try {
         sphere = global.LSCCaptureSphere ? global.LSCCaptureSphere.create(glCanvas, {
           guideFovDeg: GUIDE_FOV_DEG,
           ndcSpan: 0.84,               // 0.42 of the full viewport, as drawFrame() lays out
-          patchAspect: ASSUMED_ASPECT,
-          patchFovDeg: ASSUMED_H_FOV_DEG
+          patchAspect: frameGeom.aspect,
+          patchFovDeg: frameGeom.hFovDeg
         }) : null;
       } catch (e) { sphere = null; }
 
@@ -410,6 +529,9 @@
       let rearmAfterLeaving = false;
       let rearmAt = 0;
       let zipping = false;
+      // Which of exposure/white balance/focus the camera let us lock, so a
+      // replay can tell an unlocked capture from a locked one.
+      let cameraLocks = null;
 
       function finishAndClose(result) {
         if (finished) return;
@@ -505,8 +627,8 @@
         const { forward: fwd, right, up } = basisForOrientation(currentYaw, currentPitch, currentRoll);
         const tanGuide = Math.tan(GUIDE_FOV_DEG * DEG / 2);
         const unitPxW = canvasW * 0.42, unitPxH = canvasH * 0.42;
-        const hFovRad = ASSUMED_H_FOV_DEG * DEG;
-        const vFovRad = 2 * Math.atan(Math.tan(hFovRad / 2) * ASSUMED_ASPECT);
+        const hFovRad = frameGeom.hFovDeg * DEG;
+        const vFovRad = 2 * Math.atan(Math.tan(hFovRad / 2) * frameGeom.aspect);
         const patchHalfW0 = (Math.tan(hFovRad / 2) / tanGuide) * unitPxW;
         const patchHalfH0 = (Math.tan(vFovRad / 2) / tanGuide) * unitPxH;
 
@@ -655,6 +777,7 @@
             });
             sourceMediaIds.push(id);
             captured[targetIdx] = true;
+            noteFrameSize(shotCanvas.width, shotCanvas.height);
             const patch = {
               yaw: hasOrientation ? capturedYaw : t.yaw,
               pitch: hasOrientation ? capturedPitch : t.pitch,
@@ -782,6 +905,7 @@
             patternSize: targets.length,
             // Recorded so an offline run reproduces exactly what the phone did.
             assumedHFovDeg: ASSUMED_H_FOV_DEG,
+            cameraLocks: cameraLocks,
             refineEnabled: refineEnabled(),
             refineMaxSide: REFINE_MAX_SIDE,
             hasOrientation: hasOrientation,
@@ -1126,14 +1250,36 @@
         updateControls();
         resizeCanvas();
 
-        // Some sideways drift of the lens between shots is unavoidable —
-        // a handheld phone can't rotate about its own lens's optical
-        // center — and no amount of pose refinement afterward can correct
-        // for it (it needs depth information this app doesn't have). The
-        // one thing that actually helps is capture technique: pivoting at
-        // the wrist keeps the lens closer to a fixed point than swinging
-        // from the shoulder does. One-time tip, not repeated per shot.
-        toast('Tip: pivot from your wrist, not your shoulder — swinging your arm shifts the lens and shows up as ghosting.', 'info');
+        /* Some sideways drift of the lens between shots is unavoidable — a
+           handheld phone can't rotate about its own lens's optical centre —
+           and no amount of pose refinement afterwards can correct for it,
+           because correcting it needs the depth of every pixel and this app
+           has none. It is also the single largest error left in a real
+           indoor capture: anything close to the camera (a ceiling fan a
+           metre overhead, a table edge) shifts against the far wall by
+           roughly the lens travel divided by its distance, so a 25 cm
+           sideways drift smears a 1 m object by about 14 degrees while the
+           4 m walls move only 3.5.
+
+           So the tip has to be about keeping the LENS still, and the
+           version that works is the one Stanford's VFT Photosphere Camera
+           gives: hold the phone close to your face and turn your whole
+           body, which keeps the lens near the axis you are turning about.
+           The previous wording here ("pivot from your wrist") was aimed at
+           the same problem but describes a smaller improvement — a wrist
+           pivot still swings the lens through an arc. */
+        toast('Hold the phone close to your face and turn your whole body — keeping the lens still is what stops close objects ghosting.', 'info');
+
+        /* Freeze exposure/white balance/focus once the preview has settled.
+           Best-effort and silent when unsupported; see lockCameraSettings. */
+        setTimeout(async () => {
+          if (finished) return;
+          const track = stream && stream.getVideoTracks ? stream.getVideoTracks()[0] : null;
+          cameraLocks = await lockCameraSettings(track);
+          if (cameraLocks && cameraLocks.length) {
+            toast('Locked ' + cameraLocks.join(', ') + ' so brightness stays consistent across every shot.', 'info');
+          }
+        }, 1200);
 
         if (hasOrientation) {
           orientationHandler = (e) => {

@@ -157,10 +157,32 @@ function cross(a, b) { return { x: a.y * b.z - a.z * b.y, y: a.z * b.x - a.x * b
 function add3(a, b) { return { x: a.x + b.x, y: a.y + b.y, z: a.z + b.z }; }
 function scale3(a, s) { return { x: a.x * s, y: a.y * s, z: a.z * s }; }
 
+/* The reference for roll is the world-up direction projected
+     perpendicular to the view axis, and it is written out analytically
+     rather than as a normalised cross product because the cross product
+     vanishes at the pole and the guard that used to stand in for it was
+     wrong.
+
+     cross(forward, worldUp) = (cos(yaw)cos(pitch), -sin(yaw)cos(pitch), 0),
+     so once normalised it is exactly (cos(yaw), -sin(yaw), 0) for every
+     pitch in (-90, 90) -- the cos(pitch) factor divides straight out. The
+     old code computed the cross product and, when |forward.z| > 0.999,
+     substituted (1, 0, 0) instead. That threshold is |pitch| > 87.44 deg,
+     which the capture pattern's zenith and nadir targets sit inside by
+     design, and the substitution DISCARDS YAW: it turns the frame by
+     whatever the yaw happened to be.
+
+     Measured on a real capture, the nadir frame came back rotated 121 deg
+     about its own view axis, because that shot was taken at pitch -89.6
+     with yaw 121.4. The bug was invisible in every offline test because
+     all four copies of this function shared it, so they agreed with each
+     other; what they did not agree with is orientation.js, which measures
+     roll against the projected world-up with no such guard. A device
+     quaternion taken through quaternionToYawPitchRoll and back came out
+     with its up axis 40 deg wrong at pitch 87.5 and right at 87.0. */
 function basisForOrientation(yaw, pitch, roll) {
   const forward = { x: Math.sin(yaw) * Math.cos(pitch), y: Math.cos(yaw) * Math.cos(pitch), z: Math.sin(pitch) };
-  const worldUp = { x: 0, y: 0, z: 1 };
-  let right0 = Math.abs(forward.z) > 0.999 ? { x: 1, y: 0, z: 0 } : normalize(cross(forward, worldUp));
+  const right0 = { x: Math.cos(yaw), y: -Math.sin(yaw), z: 0 };
   const up0 = normalize(cross(right0, forward));
   const cr = Math.cos(roll), sr = Math.sin(roll);
   const right = normalize(add3(scale3(right0, cr), scale3(up0, -sr)));

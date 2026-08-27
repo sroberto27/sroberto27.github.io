@@ -10,6 +10,7 @@ load('pano/calibrate.js');
 load('pano/bundle.js');
 load('pano/pipeline.js');
 load('lab/test/synth.js');
+load('orientation.js');   // the sensor side of the pose round trip
 
 const S = globalThis.LSCSO3;
 const C = globalThis.LSCCamera;
@@ -280,6 +281,93 @@ section('5. Anisotropic prior vs isotropic, across graph density');
 }
 
 // ---------------------------------------------------------------
+section('5b. Pose parameterisation survives the poles');
+{
+  /* The capture pattern aims a shot at true zenith and true nadir, so the
+     yaw/pitch/roll parameterisation has to stay exact THERE, not merely
+     away from there. It did not.
+
+     so3.fromYawPitchRoll built its roll reference as a normalised
+     cross(forward, worldUp) and, when |forward.z| > 0.999, substituted
+     (1,0,0) instead -- a threshold of |pitch| > 87.44 deg, which the pole
+     targets sit inside by design. The substitution discards yaw, so the
+     frame came back turned by whatever the yaw happened to be. On a real
+     46-shot capture the nadir frame was rotated 121 deg about its own view
+     axis, because that shot was taken at pitch -89.6 with yaw 121.4, and
+     the floor of the panorama was smeared accordingly.
+
+     Nothing caught it, and the reason is worth remembering: all four
+     copies of the function -- so3, the stitch worker, the capture overlay,
+     the 3D preview -- shared the substitution, so every test that compared
+     them to each other agreed. What they did not agree with was
+     orientation.js, which measures roll against the projected world-up
+     with no such guard, and which is where poses actually come from. So
+     this checks the round trip through the SENSOR path, not the internal
+     one. */
+  const O = globalThis.LSCOrientation;
+  const DEG = Math.PI / 180;
+  function qMul(a, b) {
+    return {
+      w: a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z,
+      x: a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
+      y: a.w * b.y - a.x * b.z + a.y * b.w + a.z * b.x,
+      z: a.w * b.z + a.x * b.y - a.y * b.x + a.z * b.w
+    };
+  }
+  function qAxis(ax, ang) {
+    const h = ang / 2, si = Math.sin(h);
+    return { w: Math.cos(h), x: ax[0] * si, y: ax[1] * si, z: ax[2] * si };
+  }
+  const angBetween = (a, b) =>
+    Math.acos(Math.max(-1, Math.min(1, a.x * b.x + a.y * b.y + a.z * b.z))) / DEG;
+
+  let worstF = 0, worstU = 0, worstAt = 0;
+  for (const pitchDeg of [0, 30, 60, 80, 85, 86, 87, 87.4, 87.5, 88, 89, 89.5, 89.9, -87.5, -89.5]) {
+    for (const yawDeg of [0, 40, 121.4, -95]) {
+      const q = qMul(qMul(qAxis([0, 0, 1], -yawDeg * DEG), qAxis([1, 0, 0], (90 - pitchDeg) * DEG)),
+        qAxis([0, 0, 1], 25 * DEG));
+      const ypr = O.quaternionToYawPitchRoll(q, 0);
+      const R = S.fromYawPitchRoll(ypr.rawYaw, ypr.pitch, ypr.roll);
+      const fErr = angBetween(O.normalize(O.rotateVec(q, { x: 0, y: 0, z: -1 })), S.column(R, 2));
+      const uErr = angBetween(O.normalize(O.rotateVec(q, { x: 0, y: 1, z: 0 })), S.column(R, 1));
+      if (fErr > worstF) worstF = fErr;
+      if (uErr > worstU) { worstU = uErr; worstAt = pitchDeg; }
+    }
+  }
+  check('a sensor pose survives yaw/pitch/roll and back, view axis',
+    worstF < 1e-6, '(worst ' + worstF.toExponential(1) + ' deg)');
+  check('a sensor pose survives yaw/pitch/roll and back, UP axis, including at the poles',
+    worstU < 1e-6, '(worst ' + worstU.toExponential(1) + ' deg, at pitch ' + worstAt + ')');
+
+  // The internal pair has to stay an exact inverse there too, or bundle
+  // adjustment and the stitcher disagree about what a refined pose means.
+  let worstRt = 0;
+  for (const pitchDeg of [0, 60, 87, 87.5, 89, 89.9, -89.9]) {
+    for (const rollDeg of [0, 30, -106.1]) {
+      const R = S.fromYawPitchRoll(121.4 * DEG, pitchDeg * DEG, rollDeg * DEG);
+      const ypr = S.toYawPitchRoll(R);
+      const R2 = S.fromYawPitchRoll(ypr.yaw, ypr.pitch, ypr.roll);
+      for (let c = 0; c < 3; c++) {
+        worstRt = Math.max(worstRt, angBetween(S.column(R, c), S.column(R2, c)));
+      }
+    }
+  }
+  check('toYawPitchRoll and fromYawPitchRoll stay exact inverses at the poles',
+    worstRt < 1e-6, '(worst ' + worstRt.toExponential(1) + ' deg)');
+
+  // And the frame must not jump as a shot creeps up on the zenith, which
+  // is the shape the bug actually took.
+  let worstJump = 0, jumpAt = 0;
+  for (let p = 80; p < 89.99; p += 0.01) {
+    const a = S.fromYawPitchRoll(121.4 * DEG, p * DEG, -106.1 * DEG);
+    const b = S.fromYawPitchRoll(121.4 * DEG, (p + 0.01) * DEG, -106.1 * DEG);
+    const j = angBetween(S.column(a, 0), S.column(b, 0));
+    if (j > worstJump) { worstJump = j; jumpAt = p; }
+  }
+  check('the camera frame is continuous all the way to the pole',
+    worstJump < 0.05, '(worst step ' + worstJump.toFixed(4) + ' deg near pitch ' + jumpAt.toFixed(2) + ')');
+}
+
 section('6. Degenerate and adversarial inputs');
 {
   const scene = Synth.generate({ seed: 3 });
