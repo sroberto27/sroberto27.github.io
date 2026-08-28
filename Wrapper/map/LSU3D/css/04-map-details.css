@@ -72,7 +72,12 @@
   box-shadow: var(--ni-shadow);
   color: #fff;
   z-index: 860;
-  max-width: min(92vw, 560px);
+  /* Fixed width, not max-width. The pill shrink-wrapped its contents, so
+     stepping through stops resized it — and because it is centred with
+     translateX(-50%), it visibly jittered on both edges at every stop.
+     560px is the width it already reached on the longest stop name, so
+     this stops it shrinking rather than making it bigger. */
+  width: min(92vw, 560px);
   white-space: nowrap;
 }
 .tour-pill .tour-arrow {
@@ -103,14 +108,19 @@
 }
 .tour-pill-play svg { width: 14px; height: 14px; }
 
+/* The label and the dots are constant-width by nature, so they must not be
+   the parts that give way when the pill hits 92vw on a narrow desktop
+   window — the stop name is what should ellipsis, not "Guided tour". */
 .tour-pill-label {
   font-size: 13px;
   font-weight: 600;
+  flex-shrink: 0;
 }
 .tour-pill-dots {
   display: inline-flex;
   gap: 5px;
   align-items: center;
+  flex-shrink: 0;
 }
 .tour-pill-dots .dot {
   width: 7px;
@@ -126,6 +136,13 @@
   color: var(--on-dark-muted);
   overflow: hidden;
   text-overflow: ellipsis;
+  /* Takes up whatever the fixed-width pill has left over, and is the only
+     part allowed to flex — every sibling is a constant width, so this is
+     what absorbs a long stop name instead of the pill growing.
+     min-width:0 is required: a flex item defaults to min-width:auto, which
+     refuses to shrink below its content and defeats the ellipsis above. */
+  flex: 1 1 auto;
+  min-width: 0;
 }
 .tour-pill-status .tour-name {
   color: #fff;
