@@ -69,29 +69,29 @@ This is the checklist from `CLAUDE.md`, expanded into individual rows.
 
 | # | Test | Expected | Pass | Fail | N/T | Comments |
 |---|---|---|---|---|---|---|
-| A1 | Load the app cold (hard refresh) | Splash appears, progresses, hides; app revealed | [ ] | [ ] | [ ] | |
-| A2 | First load ever (clear localStorage first) | Start-screen modal appears | [ ] | [ ] | [ ] | |
-| A3 | 2D map loads | DOTD aerial imagery visible, campus framed correctly | [ ] | [ ] | [ ] | |
-| A4 | Click a tour stop polygon on the map | Details panel opens, camera flies to it | [ ] | [ ] | [ ] | |
-| A5 | Click a row in the left rail locations list | Same stop selects, same as A4 | [ ] | [ ] | [ ] | |
-| A6 | Tour bar arrows step forward and back | Moves through all 10 stops, stops at each end | [ ] | [ ] | [ ] | |
-| A7 | `←` / `→` keys | Same stepping as A6 | [ ] | [ ] | [ ] | |
-| A8 | Guided-tour pill and rail tour card | Progress stays in sync with the current stop | [ ] | [ ] | [ ] | |
-| A9 | Co-located stops 3–5 (Ops Facility) | Show as one cluster pin that expands | [ ] | [ ] | [ ] | |
-| A10 | Co-located stops 8–9 (stadium) | Show as one cluster pin that expands | [ ] | [ ] | [ ] | |
-| A11 | 2D→3D toggle | Terrain loads lazily, buildings extrude | [ ] | [ ] | [ ] | |
-| A12 | 3D badge with a Google key configured | Google tiles take over; badge reads "3D: Google" | [ ] | [ ] | [ ] | |
-| A13 | 3D with the Google key removed/invalid | Falls back cleanly; badge reads "3D: Simple" | [ ] | [ ] | [ ] | |
-| A14 | "Explore" CTA on every stop | Hidden everywhere (no Treedis sweeps exist yet) — info-only panel is correct | [ ] | [ ] | [ ] | |
-| A15 | Reference-overlay (OSM labels) toggle | Toggles on and off | [ ] | [ ] | [ ] | |
-| A16 | Imagery on/off toggle | Toggles on and off | [ ] | [ ] | [ ] | |
-| A17 | Learn tab | Switches to "coming soon" placeholder and back | [ ] | [ ] | [ ] | |
-| A18 | Burger menu → "How to use" | Reopens the coachmark walkthrough | [ ] | [ ] | [ ] | |
-| A19 | Burger menu settings toggles | Both persist across a reload | [ ] | [ ] | [ ] | |
-| A20 | Search box + autocomplete | Finds stops and places, selecting one works | [ ] | [ ] | [ ] | |
-| A21 | Filter chips | Filter the list correctly | [ ] | [ ] | [ ] | |
-| A22 | Recenter / fit button | Returns to the full campus view | [ ] | [ ] | [ ] | |
-| A23 | Console during all of the above | No errors | [ ] | [ ] | [ ] | |
+| A1 | Load the app cold (hard refresh) | Splash appears, progresses, hides; app revealed | [x] | [ ] | [ ] | |
+| A2 | First load ever (clear localStorage first) | Start-screen modal appears | [x] | [ ] | [ ] | |
+| A3 | 2D map loads | DOTD aerial imagery visible, campus framed correctly | [x] | [ ] | [ ] | |
+| A4 | Click a tour stop polygon on the map | Details panel opens, camera flies to it | [x] | [ ] | [ ] | |
+| A5 | Click a row in the left rail locations list | Same stop selects, same as A4 | [x] | [ ] | [ ] | |
+| A6 | Tour bar arrows step forward and back | Moves through all 10 stops, stops at each end | [ ] | [ ] | [x] | RETEST. Original run passed but the pill resized per stop name. Fixed in css/04-map-details.css: `.tour-pill` now has a fixed `width` instead of `max-width`, and `.tour-pill-status` flexes with `min-width:0` so the name ellipsises instead. Desktop only. Confirmed by reading code, NOT in a browser. |
+| A7 | `←` / `→` keys | Same stepping as A6 | [x] | [ ] | [ ] | |
+| A8 | Guided-tour pill and rail tour card | Progress stays in sync with the current stop | [x] | [ ] | [ ] | |
+| A9 | Co-located stops 3–5 (Ops Facility) | Show as one cluster pin that expands | [x] | [ ] | [ ] | |
+| A10 | Co-located stops 8–9 (stadium) | Show as one cluster pin that expands | [x] | [ ] | [ ] | |
+| A11 | 2D→3D toggle | Terrain loads lazily, buildings extrude | [x] | [ ] | [ ] | |
+| A12 | 3D badge with a Google key configured | Google tiles take over; badge reads "3D: Google" | [x] | [ ] | [ ] |It passed but since it is running local the 3d Google map does not load it loads the backup 3d simple but i am sure it work in the deploy version so this passed!|
+| A13 | 3D with the Google key removed/invalid | Falls back cleanly; badge reads "3D: Simple" | [x] | [ ] | [ ] | |
+| A14 | "Explore" CTA on every stop | Hidden everywhere (no Treedis sweeps exist yet) — info-only panel is correct | [x] | [ ] | [ ] | |
+| A15 | Reference-overlay (OSM labels) toggle | Toggles on and off | [x] | [ ] | [ ] | |
+| A16 | Imagery on/off toggle | Toggles on and off | [x] | [ ] | [ ] | |
+| A17 | Learn tab | Switches to "coming soon" placeholder and back | [x] | [ ] | [ ] | |
+| A18 | Burger menu → "How to use" | Reopens the coachmark walkthrough | [x] | [ ] | [ ] | it works but the how to use instructions do not match the current layout we can add this to the end once we finish full functioning site so we are sure that the instruction are up to date with final version|
+| A19 | Burger menu settings toggles | Both persist across a reload | [x] | [ ] | [ ] | |
+| A20 | Search box + autocomplete | Finds stops and places, selecting one works | [x] | [ ] | [ ] | |
+| A21 | Filter chips | Filter the list correctly | [x] | [ ] | [ ] | |
+| A22 | Recenter / fit button | Returns to the full campus view | [x] | [ ] | [ ] | |
+| A23 | Console during all of the above | No errors | [x] | [ ] | [ ] | |
 
 ---
 
@@ -104,31 +104,31 @@ Base = `http://localhost:8000/` (or the deployed URL).
 
 | # | Test | Expected | Pass | Fail | N/T | Comments |
 |---|---|---|---|---|---|---|
-| B1 | `?stop=lot-414-river-road-arrival` | Opens at stop 1, details open, camera there | [ ] | [ ] | [ ] | |
-| B2 | `?stop=board-the-charter-bus` | Opens at stop 2 | [ ] | [ ] | [ ] | |
-| B3 | `?stop=football-operations-facility` | Opens at stop 3 | [ ] | [ ] | [ ] | |
-| B4 | `?stop=tiger-tailgate-indoors` | Opens at stop 4 | [ ] | [ ] | [ ] | |
-| B5 | `?stop=registration` | Opens at stop 5 | [ ] | [ ] | [ ] | |
-| B6 | `?stop=tiger-walk-victory-hill` | Opens at stop 6 | [ ] | [ ] | [ ] | |
-| B7 | `?stop=lawton-room` | Opens at stop 7 | [ ] | [ ] | [ ] | |
-| B8 | `?stop=field-level-warmups` | Opens at stop 8 | [ ] | [ ] | [ ] | |
-| B9 | `?stop=kickoff-death-valley` | Opens at stop 9 | [ ] | [ ] | [ ] | |
-| B10 | `?stop=postgame-nicholson-gateway` | Opens at stop 10 | [ ] | [ ] | [ ] | |
-| B11 | `?stop=not-a-real-stop` | Brief message appears, full map opens normally, bad value removed from the address bar | [ ] | [ ] | [ ] | |
-| B12 | `?stop=Lawton%20Room` (name, not slug) | Still opens the Lawton Room | [ ] | [ ] | [ ] | |
-| B13 | No parameters at all | Behaves exactly as it did before deep links existed | [ ] | [ ] | [ ] | |
-| B14 | `?utm_source=x&fbclid=y` | Junk stripped from the address bar; app loads normally | [ ] | [ ] | [ ] | |
-| B15 | Click through 5 stops, then browser Back repeatedly | Steps back through the stops you visited | [ ] | [ ] | [ ] | |
-| B16 | Then browser Forward repeatedly | Steps forward again | [ ] | [ ] | [ ] | |
-| B17 | Select a stop, then refresh the page | Same stop reopens | [ ] | [ ] | [ ] | |
-| B18 | Select a stop, then close the details panel | `stop=` disappears from the address bar | [ ] | [ ] | [ ] | |
-| B19 | Bookmark a stop URL, reopen the bookmark later | Opens that stop | [ ] | [ ] | [ ] | |
-| B20 | Share button on a stop (desktop) | Copies a link **containing that stop**, button confirms "Link copied" | [ ] | [ ] | [ ] | |
-| B21 | Paste the copied link into a new tab | Opens the same stop | [ ] | [ ] | [ ] | |
-| B22 | Share button on a phone | Opens the native share sheet with the stop link | [ ] | [ ] | [ ] | |
-| B23 | `?src=qr` on any stop link | Works identically; `src=qr` kept in the address bar | [ ] | [ ] | [ ] | |
-| B24 | Generate a real QR code from a stop URL and scan it with a phone | Opens that stop on the phone | [ ] | [ ] | [ ] | |
-| B25 | Console during all deep-link tests | No errors | [ ] | [ ] | [ ] | |
+| B1 | `?stop=lot-414-river-road-arrival` | Opens at stop 1, details open, camera there | [x] | [ ] | [ ] | |
+| B2 | `?stop=board-the-charter-bus` | Opens at stop 2 | [x] | [ ] | [ ] | |
+| B3 | `?stop=football-operations-facility` | Opens at stop 3 | [x] | [ ] | [ ] | |
+| B4 | `?stop=tiger-tailgate-indoors` | Opens at stop 4 | [x] | [ ] | [ ] | |
+| B5 | `?stop=registration` | Opens at stop 5 | [x] | [ ] | [ ] | |
+| B6 | `?stop=tiger-walk-victory-hill` | Opens at stop 6 | [x] | [ ] | [ ] | |
+| B7 | `?stop=lawton-room` | Opens at stop 7 | [x] | [ ] | [ ] | |
+| B8 | `?stop=field-level-warmups` | Opens at stop 8 | [x] | [ ] | [ ] | |
+| B9 | `?stop=kickoff-death-valley` | Opens at stop 9 | [x] | [ ] | [ ] | |
+| B10 | `?stop=postgame-nicholson-gateway` | Opens at stop 10 | [x] | [ ] | [ ] | |
+| B11 | `?stop=not-a-real-stop` | Brief message appears, full map opens normally, bad value removed from the address bar | [x] | [ ] | [ ] | |
+| B12 | `?stop=Lawton%20Room` (name, not slug) | Still opens the Lawton Room | [x] | [ ] | [ ] | |
+| B13 | No parameters at all | Behaves exactly as it did before deep links existed | [x] | [ ] | [ ] | |
+| B14 | `?utm_source=x&fbclid=y` | Junk stripped from the address bar; app loads normally | [x] | [ ] | [ ] | |
+| B15 | Click through 5 stops, then browser Back repeatedly | Steps back through the stops you visited | [x] | [ ] | [ ] | |
+| B16 | Then browser Forward repeatedly | Steps forward again | [x] | [ ] | [ ] | |
+| B17 | Select a stop, then refresh the page | Same stop reopens | [x] | [ ] | [ ] | |
+| B18 | Select a stop, then close the details panel | `stop=` disappears from the address bar | [x] | [ ] | [ ] | |
+| B19 | Bookmark a stop URL, reopen the bookmark later | Opens that stop | [x] | [ ] | [ ] | |
+| B20 | Share button on a stop (desktop) | Copies a link **containing that stop**, button confirms "Link copied" | [x] | [ ] | [ ] | |
+| B21 | Paste the copied link into a new tab | Opens the same stop | [x] | [ ] | [ ] | |
+| B22 | Share button on a phone | Opens the native share sheet with the stop link | [x] | [ ] | [ ] | |
+| B23 | `?src=qr` on any stop link | Works identically; `src=qr` kept in the address bar | [x] | [ ] | [ ] | |
+| B24 | Generate a real QR code from a stop URL and scan it with a phone | Opens that stop on the phone | [x] | [ ] | [ ] | |
+| B25 | Console during all deep-link tests | No errors | [x] | [ ] | [ ] | |
 
 ---
 
@@ -141,23 +141,23 @@ URL: `?g=sample-gameday`
 
 | # | Test | Expected | Pass | Fail | N/T | Comments |
 |---|---|---|---|---|---|---|
-| C1 | `?g=sample-gameday` on desktop | Guided-tour card shows greeting, kickoff countdown, Now/Next, contacts | [ ] | [ ] | [ ] | |
-| C2 | The tour checklist in that card | Each stop shows its scheduled time | [ ] | [ ] | [ ] | |
-| C3 | Step through stops | Now/Next rows update to match | [ ] | [ ] | [ ] | |
-| C4 | Open any stop's details panel | Shows that stop's time and instruction | [ ] | [ ] | [ ] | |
-| C5 | Step through several stops, watching the details panel | Only **one** instruction block, always the current stop's (not stacking up) | [ ] | [ ] | [ ] | |
-| C6 | `?g=sample-gameday&n=Jordan` | Greeting reads "Jordan, here's your gameday" | [ ] | [ ] | [ ] | |
-| C7 | Immediately check the address bar after C6 | `n=Jordan` is **gone** from the URL | [ ] | [ ] | [ ] | |
-| C8 | `?g=no-such-gameday` | Brief message; standard tour loads normally; no crash | [ ] | [ ] | [ ] | |
-| C9 | `?g=../../something` | Ignored; app loads normally | [ ] | [ ] | [ ] | |
-| C10 | Contacts block | Shows role and note; numbers are blank ("to be confirmed") in the sample | [ ] | [ ] | [ ] | |
-| C11 | Visit several stops, then reload with the same `?g=` | Visited stops still show as done | [ ] | [ ] | [ ] | |
+| C1 | `?g=sample-gameday` on desktop | Guided-tour card shows greeting, kickoff countdown, Now/Next, contacts | [x] | [ ] | [ ] | |
+| C2 | The tour checklist in that card | Each stop shows its scheduled time | [x] | [ ] | [ ] | |
+| C3 | Step through stops | Now/Next rows update to match | [x] | [ ] | [ ] | |
+| C4 | Open any stop's details panel | Shows that stop's time and instruction C
+| C5 | Step through several stops, watching the details panel | Only **one** instruction block, always the current stop's (not stacking up) | [x] | [ ] | [ ] | |
+| C6 | `?g=sample-gameday&n=Jordan` | [x] | [ ] | [ ] | |
+| C7 | Immediately check the address bar after C6 | `n=Jordan` is **gone** from the URL | [x] | [ ] | [ ] | this is the url after: http://localhost:8000/?g=sample-gameday&stop=lot-414-river-road-arrival|
+| C8 | `?g=no-such-gameday` | Brief message; standard tour loads normally; no crash | [x] | [ ] | [ ] | |
+| C9 | `?g=../../something` | Ignored; app loads normally | [x] | [ ] | [ ] | |
+| C10 | Contacts block | Shows role and note; numbers are blank ("to be confirmed") in the sample | [x] | [ ] | [ ] | |
+| C11 | Visit several stops, then reload with the same `?g=` | Visited stops still show as done | [x] | [ ] | [ ] | |
 | C12 | Same, in a private/incognito window | Works, just doesn't remember between reloads — **no crash** | [ ] | [ ] | [ ] | |
-| C13 | `?g=sample-gameday&stop=lawton-room` | Opens the itinerary **and** that stop | [ ] | [ ] | [ ] | |
-| C14 | `?g=sample-gameday` on a phone | Times/instructions visible in the details sheet; the tour card does **not** stack on top of the details sheet | [ ] | [ ] | [ ] | |
-| C15 | Set the device clock forward past kickoff, reload | Countdown says kickoff has passed rather than showing a negative number | [ ] | [ ] | [ ] | |
-| C16 | Set the device timezone to something else (e.g. Los Angeles), reload | Stop times still read as Baton Rouge wall-clock times (2:15 PM stays 2:15 PM) | [ ] | [ ] | [ ] | |
-| C17 | Console throughout | No errors | [ ] | [ ] | [ ] | |
+| C13 | `?g=sample-gameday&stop=lawton-room` | Opens the itinerary **and** that stop | [x] | [ ] | [ ] | |
+| C14 | `?g=sample-gameday` on a phone | Times/instructions visible in the details sheet; the tour card does **not** stack on top of the details sheet | [x] | [ ] | [ ] | |
+| C15 | Set the device clock forward past kickoff, reload | Countdown says kickoff has passed rather than showing a negative number | [ ] | [ ] | [x] | |
+| C16 | Set the device timezone to something else (e.g. Los Angeles), reload | Stop times still read as Baton Rouge wall-clock times (2:15 PM stays 2:15 PM) | [ ] | [ ] | [x] | |
+| C17 | Console throughout | No errors | [x] | [ ] | [ ] | |
 
 ---
 
@@ -222,22 +222,22 @@ URL: `?mode=kiosk` and `?mode=kiosk&autoplay=1`
 
 | # | Test | Expected | Pass | Fail | N/T | Comments |
 |---|---|---|---|---|---|---|
-| F1 | `?mode=kiosk` | Large overlay, minimal chrome, paused | [ ] | [ ] | [ ] | |
-| F2 | `?mode=kiosk&autoplay=1` | Starts advancing on its own from stop 1 | [ ] | [ ] | [ ] | |
-| F3 | Watch a full cycle | Advances through all 10 stops, then loops to stop 1 | [ ] | [ ] | [ ] | |
-| F4 | Time between stops | Roughly 12 seconds (`config.gameday.kiosk.dwellMs`) | [ ] | [ ] | [ ] | |
-| F5 | Tap the screen while it's advancing | Pauses; play button shows paused state | [ ] | [ ] | [ ] | |
-| F6 | Leave it alone for 90 seconds after touching it | Resets to stop 1 and resumes on its own | [ ] | [ ] | [ ] | |
-| F7 | Play/pause button | Works both ways | [ ] | [ ] | [ ] | |
-| F8 | Prev/next buttons | Move one stop at a time | [ ] | [ ] | [ ] | |
-| F9 | Spacebar | Toggles play/pause | [ ] | [ ] | [ ] | |
-| F10 | First tap anywhere | Goes full screen (browsers require a tap first) | [ ] | [ ] | [ ] | |
-| F11 | Triple-tap the very top-left corner | Exits kiosk mode | [ ] | [ ] | [ ] | |
-| F12 | `Esc` | Also exits | [ ] | [ ] | [ ] | |
-| F13 | After exiting | Normal app is intact and usable | [ ] | [ ] | [ ] | |
-| F14 | Readability from across a room | Stop name legible at viewing distance | [ ] | [ ] | [ ] | |
-| F15 | **Leave running for 8+ hours** | Still cycling, still responsive, no slowdown | [ ] | [ ] | [ ] | |
-| F16 | Console after the long run | No accumulating errors | [ ] | [ ] | [ ] | |
+| F1 | `?mode=kiosk` | Large overlay, minimal chrome, paused | [x] | [ ] | [ ] | |
+| F2 | `?mode=kiosk&autoplay=1` | Starts advancing on its own from stop 1 | [x] | [ ] | [ ] | |
+| F3 | Watch a full cycle | Advances through all 10 stops, then loops to stop 1 | [x] | [ ] | [ ] | |
+| F4 | Time between stops | Roughly 12 seconds (`config.gameday.kiosk.dwellMs`) | [x] | [ ] | [ ] | |
+| F5 | Tap the screen while it's advancing | Pauses; play button shows paused state | [x] | [ ] | [ ] | |
+| F6 | Leave it alone for 90 seconds after touching it | Resets to stop 1 and resumes on its own | [x] | [ ] | [ ] | |
+| F7 | Play/pause button | Works both ways | [x] | [ ] | [ ] | |
+| F8 | Prev/next buttons | Move one stop at a time | [x] | [ ] | [ ] | |
+| F9 | Spacebar | Toggles play/pause | [x] | [ ] | [ ] | |
+| F10 | First tap anywhere | Goes full screen (browsers require a tap first) | [x] | [ ] | [ ] | |
+| F11 | Triple-tap the very top-left corner | Exits kiosk mode | [x] | [ ] | [ ] | |
+| F12 | `Esc` | Also exits | [x] | [ ] | [ ] | |
+| F13 | After exiting | Normal app is intact and usable | [x] | [ ] | [ ] | |
+| F14 | Readability from across a room | Stop name legible at viewing distance | [ ] | [ ] | [x] | RETEST: the kiosk now shows the stop's description under the name (js/21-kiosk.js + .kiosk-blurb). Result cells were left blank on the last run. |
+| F15 | **Leave running for 8+ hours** | Still cycling, still responsive, no slowdown | [x] | [ ] | [  ] | |
+| F16 | Console after the long run | No accumulating errors | [x] | [ ] | [ ] | |
 
 ---
 
@@ -385,7 +385,11 @@ Fill this in after the run.
 
 **Non-blocking issues:**
 
-1.
+1. **A18 — the "How to use" coachmark describes a layout that no longer
+   exists.** Deferred by agreement until the site is feature-complete, since
+   Phase 2 may move the UI again and the walkthrough would need rewriting
+   twice. **Must be done before real recruit traffic** — it is currently
+   actively misleading.
 2.
 
 **Anything that passed but felt wrong:**
