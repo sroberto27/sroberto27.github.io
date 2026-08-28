@@ -70,6 +70,20 @@ body.mode-kiosk .map-controls:hover { opacity: 1; }
   max-width: 22ch;
 }
 
+/* The stop's own description, from data/locations.json. Sized well below
+   the title so the hierarchy still reads at a distance, and held to a
+   comfortable measure — a single line of text stretched across a 75"
+   panel is unreadable however large the type is. */
+.kiosk-blurb {
+  margin: 0;
+  max-width: 46ch;
+  font-size: clamp(15px, 1.5vw, 24px);
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.88);
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.5);
+  text-wrap: pretty;
+}
+
 .kiosk-counter {
   font-size: clamp(13px, 1.2vw, 20px);
   font-weight: 700;

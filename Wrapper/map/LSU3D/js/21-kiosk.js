@@ -158,8 +158,25 @@
     const idx = (typeof tourIndex === "number" && tourIndex >= 0) ? tourIndex : 0;
     const name = total ? cleanName(tourStops[idx].feature.properties.name) : "";
 
+    /* The stop's own copy, read through the same getter the details
+       panel uses (js/01-utils.js), so kiosk content stays editable in
+       data/locations.json and is never hard-coded here. Stops without a
+       description simply show the name, as before. */
+    let blurb = "";
+    try {
+      // getDescription() substitutes a "more information coming soon"
+      // filler for stops with no copy — right for the details panel,
+      // wrong on a display being read from across a room. So check the
+      // lookup map for a real entry first, then take the value through
+      // the getter so the data seam stays the single source.
+      const key = String(name || "").toLowerCase();
+      const hasCopy = !!(config && config.descriptionMap && config.descriptionMap[key]);
+      if (hasCopy && typeof getDescription === "function") blurb = getDescription(name) || "";
+    } catch (_) { /* a missing description must never blank the display */ }
+
     node.innerHTML = `
       <div class="kiosk-title">${escapeHTML(name)}</div>
+      ${blurb ? `<p class="kiosk-blurb">${escapeHTML(blurb)}</p>` : ""}
       <div class="kiosk-counter">Stop ${idx + 1} of ${total}</div>
       <div class="kiosk-dots" aria-hidden="true">${
         Array.from({ length: total }, (_, i) =>
