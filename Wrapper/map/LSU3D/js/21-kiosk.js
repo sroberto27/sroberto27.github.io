@@ -109,11 +109,13 @@
      property that makes it genuinely unattended.
      ============================================================ */
 
-  function noteInteraction() {
+  function noteInteraction({ pauseToo = true } = {}) {
     if (!active) return;
 
     // A touch takes over: stop advancing under the visitor's hands.
-    if (playing) pause({ reason: "interaction" });
+    // `pauseToo: false` is for the mode's own controls, which decide for
+    // themselves whether to play or pause — see onAnyInteraction.
+    if (pauseToo && playing) pause({ reason: "interaction" });
 
     if (idleTimer) clearTimeout(idleTimer);
     idleTimer = setTimeout(() => {
@@ -243,13 +245,26 @@
      Enter
      ============================================================ */
 
+  /* Space and Escape are this mode's OWN controls, not "a visitor is
+     touching the screen". This handler runs in the capture phase, so
+     without the exception below it paused on the way down and the
+     bubble-phase toggle then saw playing === false and started it again
+     — the spacebar could start the loop but never stop it. */
+  function isModeControlKey(e) {
+    return e.type === "keydown" &&
+           (e.key === " " || e.code === "Space" || e.key === "Escape");
+  }
+
   function onAnyInteraction(e) {
     // The corner button handles its own taps; don't let them also
     // count as "a visitor is browsing".
     if (e.target && e.target.id === "kioskCorner") return;
 
     if (e.type === "pointerdown") tryFullscreen();
-    noteInteraction();
+
+    // Still reset the idle clock for a control key — someone is clearly
+    // present — but leave the play/pause decision to its own handler.
+    noteInteraction({ pauseToo: !isModeControlKey(e) });
   }
 
   function enter({ autoplay = false, source = "deep_link" } = {}) {
