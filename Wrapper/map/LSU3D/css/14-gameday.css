@@ -3,24 +3,36 @@
    (#railTour) and the details panel, not a new panel of its own.
    Everything here is scoped to elements js/18-gameday.js injects, so
    with no ?g= in the URL not one rule below applies to anything.
+
+   THEME: this app is DARK. `--ni-paper` (#1B1029) is the floating
+   surface, `--ni-navy` (#461D7C) is the tour card, and body text is
+   `--ni-ink` (near-white). Every colour below comes from the tokens in
+   css/01-base.css rather than a literal hex, so this stays consistent
+   with `.rail-tour-*` instead of inventing a third palette.
+
+   Two different backgrounds are in play and they need different
+   treatments:
+     • .gameday-head sits INSIDE .rail-tour-card  → navy  (#461D7C)
+     • .gameday-contacts is appended to #railTour → paper (#1B1029)
    ==================================================================== */
 
 /* --------------------------------------------------------------------
    Header block — greeting, kickoff countdown, now/next
+   On the navy card, so white text and gold accents.
    -------------------------------------------------------------------- */
 
 .gameday-head {
   margin: 0 0 12px;
   padding: 0 0 12px;
-  border-bottom: 1px solid rgba(70, 29, 124, 0.14);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.16);
 }
 
 .gameday-greeting {
-  font-family: Oswald, Inter, system-ui, sans-serif;
+  font-family: var(--serif), Oswald, Inter, system-ui, sans-serif;
   font-weight: 600;
   font-size: 17px;
   line-height: 1.2;
-  color: #2A1245;
+  color: #fff;
   text-wrap: balance;
 }
 
@@ -29,7 +41,7 @@
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.02em;
-  color: #6C3FA6;
+  color: var(--ni-gold);
 }
 
 /* Now / Next — the two lines someone mid-visit actually reads. */
@@ -47,27 +59,27 @@
   gap: 8px;
   padding: 6px 8px;
   border-radius: 8px;
-  background: rgba(108, 63, 166, 0.06);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .gameday-row-label {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
-  color: #6C3FA6;
+  color: var(--on-dark-muted);
 }
 
 .gameday-row-name {
   font-size: 13px;
   font-weight: 600;
-  color: #2A1245;
+  color: #fff;
   overflow-wrap: anywhere;
 }
 
 .gameday-row-time {
   font-size: 12px;
   font-weight: 700;
-  color: #7A5C10;
+  color: var(--ni-gold);
   white-space: nowrap;
 }
 
@@ -75,22 +87,26 @@
    eye lands on the current stop first. */
 .gameday-row:first-child {
   background: rgba(253, 208, 35, 0.16);
-  box-shadow: inset 2px 0 0 #FDD023;
+  box-shadow: inset 2px 0 0 var(--ni-gold);
+}
+
+.gameday-row:first-child .gameday-row-label {
+  color: var(--ni-gold);
 }
 
 .gameday-note {
   margin-top: 10px;
   padding: 8px 10px;
   border-radius: 8px;
-  background: rgba(253, 208, 35, 0.12);
-  border: 1px solid rgba(122, 92, 16, 0.22);
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(253, 208, 35, 0.30);
   font-size: 12px;
   line-height: 1.45;
-  color: #4A3608;
+  color: rgba(255, 255, 255, 0.88);
 }
 
 /* --------------------------------------------------------------------
-   Scheduled time on each checklist row
+   Scheduled time on each checklist row (on --ni-paper)
    -------------------------------------------------------------------- */
 
 .gameday-stop-time {
@@ -98,32 +114,49 @@
   padding-left: 8px;
   font-size: 11px;
   font-weight: 700;
-  color: #7A5C10;
+  color: var(--ni-gold);
   white-space: nowrap;
 }
 
-/* The checklist rows are laid out by css/03-sidebar.css; make sure the
-   time can sit at the far right without fighting that layout. */
+/* The checklist rows are laid out by css/04-map-details.css; make sure
+   the time can sit at the far right without fighting that layout. */
 .rail-tour-stop { align-items: center; }
 
 /* A completed stop's time recedes rather than disappearing — it still
    answers "when were we meant to be there?". */
-.rail-tour-stop.is-done .gameday-stop-time { opacity: 0.5; }
+.rail-tour-stop.is-done .gameday-stop-time { opacity: 0.55; }
+
+/* Visited-but-not-current: the tour card's own `is-done` state means
+   "earlier in the tour than where you are now", which is lost on
+   reload. This marks stops actually visited and remembered. */
+.rail-tour-stop.is-visited .stop-badge {
+  border-color: var(--ni-gold);
+  color: var(--ni-gold);
+}
+
+.gameday-visited-check {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ni-gold);
+  flex: none;
+}
 
 /* --------------------------------------------------------------------
-   Contacts
+   Contacts — appended to #railTour, so on --ni-paper, not the navy card
    -------------------------------------------------------------------- */
 
 .gameday-contacts {
   padding: 12px 16px 16px;
-  border-top: 1px solid rgba(70, 29, 124, 0.14);
+  border-top: 1px solid var(--ni-border);
+  flex: none;
 }
 
 .gameday-contacts-kicker {
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.10em;
-  color: #6C3FA6;
+  color: var(--ni-gold);
   margin-bottom: 8px;
 }
 
@@ -136,61 +169,93 @@
 }
 
 .gameday-contact + .gameday-contact {
-  border-top: 1px solid rgba(70, 29, 124, 0.08);
+  border-top: 1px solid var(--ni-border);
 }
 
 .gameday-contact-role {
   font-size: 12px;
   font-weight: 700;
-  color: #2A1245;
+  color: var(--ni-ink);
 }
 
 .gameday-contact-call {
   font-size: 13px;
   font-weight: 700;
-  color: #461D7C;
+  color: var(--ni-gold);
   text-decoration: none;
-  border-bottom: 1.5px solid #FDD023;
+  border-bottom: 1.5px solid rgba(253, 208, 35, 0.5);
 }
 
-.gameday-contact-call:hover { color: #6C3FA6; }
+.gameday-contact-call:hover { border-bottom-color: var(--ni-gold); }
+
+.gameday-contact-call:focus-visible {
+  outline: 2px solid var(--ni-gold);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
 
 .gameday-contact-tbd {
   font-size: 12px;
   font-style: italic;
-  color: #8A7FA0;
+  color: var(--ni-muted);
 }
 
 .gameday-contact-note {
   flex: 1 0 100%;
   font-size: 11px;
   line-height: 1.4;
-  color: #6B6480;
+  color: var(--ni-sec);
 }
 
 /* --------------------------------------------------------------------
-   Per-stop instruction in the details panel
+   Per-stop instruction in the details panel (on --ni-paper)
 
-   This is the mobile surface: the rail tour card is desktop-only, so
-   on a phone the details sheet is where the itinerary has to show up.
+   This is the mobile surface: the rail tour card is desktop-only, so on
+   a phone the details sheet is where the itinerary has to show up.
    -------------------------------------------------------------------- */
+
+/* The visit summary inside the details panel.
+
+   This is the mount that actually gets seen: .rail-detail is opaque and
+   sits above .rail-tour, so with a stop selected the tour-card copy is
+   completely covered. Slightly quieter than the card version — the stop
+   is the subject here, the visit is context. */
+.gameday-detail-summary {
+  margin: 12px var(--gutter) 0;
+  padding: 12px;
+  border-radius: var(--ni-radius-card);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--ni-border);
+}
+
+.gameday-detail-summary .gameday-greeting { font-size: 15px; }
+
+.gameday-detail-summary .gameday-nownext { margin-top: 8px; }
+
+/* Contacts sit directly inside the summary here rather than in their own
+   bordered section, so drop the section chrome from the card version. */
+.gameday-detail-summary .gameday-contacts-kicker {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ni-border);
+}
 
 .gameday-detail-note {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 4px 10px;
-  margin: 0 0 10px;
+  margin: 12px var(--gutter) 0;
   padding: 10px 12px;
   border-radius: 8px;
-  background: rgba(253, 208, 35, 0.14);
-  box-shadow: inset 2px 0 0 #FDD023;
+  background: rgba(253, 208, 35, 0.10);
+  box-shadow: inset 2px 0 0 var(--ni-gold);
 }
 
 .gameday-detail-time {
   font-size: 13px;
   font-weight: 700;
-  color: #7A5C10;
+  color: var(--ni-gold);
   white-space: nowrap;
 }
 
@@ -198,5 +263,5 @@
   flex: 1 1 180px;
   font-size: 13px;
   line-height: 1.45;
-  color: #3A2C10;
+  color: var(--ni-ink);
 }

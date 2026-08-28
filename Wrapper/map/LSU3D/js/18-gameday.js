@@ -193,10 +193,16 @@
     return head;
   }
 
-  function renderHeader() {
-    const head = ensureHeader();
-    if (!head || !state.loaded) return;
+  /* The summary markup, built once and mounted in two places.
 
+     WHY TWO PLACES: .rail-list / .rail-tour / .rail-detail are three
+     absolutely-positioned, OPAQUE layers stacked z-index 1/2/3 inside
+     .rail (css/03-sidebar.css). Selecting a stop raises .rail-detail,
+     which completely covers the tour card — so a summary that lives
+     only in the tour card is invisible exactly when someone is looking
+     at a stop, which is most of the time. Same builder, two mounts;
+     not two implementations. */
+  function summaryHTML({ includeNotes = true } = {}) {
     const d = state.data || {};
     const parts = [];
 
@@ -218,20 +224,21 @@
     const next = nextStop();
     if (now || next) {
       parts.push('<div class="gameday-nownext">');
-      if (now) {
-        parts.push(rowHTML("NOW", now.name, now.arrive));
-      }
-      if (next) {
-        parts.push(rowHTML("NEXT", next.name, next.arrive));
-      }
+      if (now)  parts.push(rowHTML("NOW", now.name, now.arrive));
+      if (next) parts.push(rowHTML("NEXT", next.name, next.arrive));
       parts.push("</div>");
     }
 
-    if (d.notes) {
+    if (includeNotes && d.notes) {
       parts.push(`<div class="gameday-note">${escapeHTML(d.notes)}</div>`);
     }
+    return parts.join("");
+  }
 
-    head.innerHTML = parts.join("");
+  function renderHeader() {
+    const head = ensureHeader();
+    if (!head || !state.loaded) return;
+    head.innerHTML = summaryHTML();
   }
 
   function rowHTML(label, name, arrive) {
@@ -253,7 +260,30 @@
     list.querySelectorAll(".rail-tour-stop").forEach((li) => {
       const i = Number(li.dataset.stopIndex);
       const key = Router.keyForStopIndex(i);
-      const entry = key && state.byStopKey.get(key);
+      if (!key) return;
+
+      /* Visited state. The card's own `is-done` (js/08-tourbar.js) means
+         "earlier in the tour than the current index", which is a
+         position, not a memory — after a reload tourIndex is -1 and every
+         stop looks unvisited even though we persisted the progress. This
+         renders what we actually stored. */
+      if (state.visited.has(key)) {
+        li.classList.add("is-visited");
+        if (!li.querySelector(".gameday-visited-check")) {
+          const check = document.createElement("span");
+          check.className = "gameday-visited-check";
+          check.textContent = "✓";
+          check.title = "You've been here";
+          check.setAttribute("aria-label", "Visited");
+          // After the name, before the time, so the row reads
+          // "3 · Football Operations Facility ✓ 2:00 PM".
+          const name = li.querySelector(".stop-name");
+          if (name && name.nextSibling) li.insertBefore(check, name.nextSibling);
+          else li.appendChild(check);
+        }
+      }
+
+      const entry = state.byStopKey.get(key);
       if (!entry || !entry.arrive) return;
 
       const time = document.createElement("span");
@@ -266,23 +296,12 @@
   /* Staff contacts, at the foot of the tour card. Tel links only —
      these are published department lines, never a personal number
      (see docs/DATA-SCHEMA.md §Privacy and the validator). */
-  function renderContacts() {
-    const section = $id("railTour");
-    if (!section || !state.loaded) return;
-
-    let block = $id("gamedayContacts");
+  /* Contacts markup — the other half shared between the two mounts. */
+  function contactsHTML() {
     const contacts = (state.data && state.data.contacts) || [];
-    if (!contacts.length) { if (block) block.remove(); return; }
+    if (!contacts.length) return "";
 
-    if (!block) {
-      block = document.createElement("div");
-      block.id = "gamedayContacts";
-      block.className = "gameday-contacts";
-      section.appendChild(block);
-    }
-
-    block.innerHTML =
-      '<div class="gameday-contacts-kicker">WHO TO CALL</div>' +
+    return '<div class="gameday-contacts-kicker">WHO TO CALL</div>' +
       contacts.map((c) => {
         const role = escapeHTML(c.role || "Staff");
         const note = c.note ? `<span class="gameday-contact-note">${escapeHTML(c.note)}</span>` : "";
@@ -296,14 +315,36 @@
                   ${action}${note}
                 </div>`;
       }).join("");
+  }
 
-    block.querySelectorAll(".gameday-contact-call").forEach((a) => {
+  /* The role, never the number — a phone number in an analytics payload
+     is exactly the kind of data we said we would not keep. */
+  function wireContactTracking(root) {
+    if (!root || !root.querySelectorAll) return;
+    root.querySelectorAll(".gameday-contact-call").forEach((a) => {
       a.addEventListener("click", () => {
-        // The role, never the number — a phone number in an analytics
-        // payload is exactly the kind of data we said we wouldn't keep.
         Core.track("contact_clicked", { role: a.dataset.role, gamedayId: state.id });
       });
     });
+  }
+
+  function renderContacts() {
+    const section = $id("railTour");
+    if (!section || !state.loaded) return;
+
+    let block = $id("gamedayContacts");
+    const html = contactsHTML();
+    if (!html) { if (block) block.remove(); return; }
+
+    if (!block) {
+      block = document.createElement("div");
+      block.id = "gamedayContacts";
+      block.className = "gameday-contacts";
+      section.appendChild(block);
+    }
+
+    block.innerHTML = html;
+    wireContactTracking(block);
   }
 
   function render() {
@@ -314,6 +355,23 @@
       renderContacts();
     } catch (err) {
       console.warn("[gameday] render failed:", err);
+    }
+  }
+
+  /* Re-render an ALREADY OPEN details panel.
+
+     The router applies ?stop= synchronously during onAppReady, but
+     loading a ?g= itinerary is async — so on a cold deep link the panel
+     is built and shown before the itinerary exists, and comes up with no
+     times and no summary. Any later click re-rendered it and everything
+     appeared, which is why this only ever showed up on a fresh load. */
+  function refreshOpenDetails() {
+    try {
+      if (!state.loaded) return;
+      if (typeof selectedFeature === "undefined" || !selectedFeature) return;
+      renderDetails(selectedFeature.feature, selectedFeature.kind);
+    } catch (err) {
+      console.warn("[gameday] could not refresh the open details panel:", err);
     }
   }
 
@@ -366,14 +424,17 @@
   /* Mark a stop done. Called when it is selected — the honest
      signal available without GPS; Live Visit Mode tightens this to
      "you were actually near it". */
+  /* Returns true when this was a new visit, so the caller knows whether
+     anything needs re-rendering. */
   function markVisited(key) {
-    if (!key || !state.loaded || state.visited.has(key)) return;
+    if (!key || !state.loaded || state.visited.has(key)) return false;
     state.visited.add(key);
     saveProgress();
 
     if (state.visited.size === (typeof tourStops !== "undefined" ? tourStops.length : -1)) {
       Core.track("tour_completed", { gamedayId: state.id });
     }
+    return true;
   }
 
   /* ============================================================
@@ -397,8 +458,20 @@
       if (!body || !state.loaded) return;
 
       // renderDetails runs on every selection, so clear the previous
-      // note before adding this stop's — otherwise they stack up.
-      document.querySelectorAll(".gameday-detail-note").forEach((n) => n.remove());
+      // blocks before adding this stop's — otherwise they stack up.
+      document
+        .querySelectorAll(".gameday-detail-note, .gameday-detail-summary")
+        .forEach((n) => n.remove());
+
+      /* The visit summary, mounted here as well as in the tour card,
+         because .rail-detail is opaque and sits above .rail-tour — with
+         a stop selected the card version is completely hidden, which is
+         the state the app is in most of the time. */
+      const summary = document.createElement("div");
+      summary.className = "gameday-detail-summary";
+      summary.innerHTML = summaryHTML({ includeNotes: false }) + contactsHTML();
+      body.parentNode.insertBefore(summary, body);
+      wireContactTracking(summary);
 
       const key = Router.stopKeyForFeature(feature);
       const entry = entryFor(key);
@@ -415,6 +488,8 @@
       const note = document.createElement("div");
       note.className = "gameday-detail-note";
       note.innerHTML = bits.join("");
+      // insertBefore(body) each time, so this lands after the summary:
+      // [summary] [note] [description].
       body.parentNode.insertBefore(note, body);
     } catch (err) {
       console.warn("[gameday] details decoration failed:", err);
@@ -429,7 +504,11 @@
     _selectFeature(sel, kind, opts);
     try {
       if (!state.loaded) return;
-      markVisited(Router.stopKeyForFeature(sel && sel.feature));
+      /* The original selectFeature above already ran updateTourbar, and
+         therefore render(), before we got here — so a newly visited stop
+         would not show its check until the *next* render. Re-render when
+         this call actually changed something. */
+      if (markVisited(Router.stopKeyForFeature(sel && sel.feature))) render();
     } catch (err) {
       console.warn("[gameday] progress tracking failed:", err);
     }
@@ -462,6 +541,9 @@
       goToStop(0);
     } else {
       render();
+      // A ?stop= deep link already opened the panel while we were still
+      // fetching — rebuild it now that the itinerary is here.
+      refreshOpenDetails();
     }
 
     // Keep the countdown honest without spinning a per-second timer
