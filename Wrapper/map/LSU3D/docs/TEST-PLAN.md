@@ -86,7 +86,7 @@ This is the checklist from `CLAUDE.md`, expanded into individual rows.
 | A15 | Reference-overlay (OSM labels) toggle | Toggles on and off | [x] | [ ] | [ ] | |
 | A16 | Imagery on/off toggle | Toggles on and off | [x] | [ ] | [ ] | |
 | A17 | Learn tab | Switches to "coming soon" placeholder and back | [x] | [ ] | [ ] | |
-| A18 | Burger menu → "How to use" | Reopens the coachmark walkthrough | [x] | [ ] | [ ] | it works but the how to use instructions do not match the current layout we can add this to the end once we finish full functioning site so we are sure that the instruction are up to date with final version|
+| A18 | Burger menu → "How to use" | Reopens the coachmark walkthrough, and each step points at something actually on screen | [ ] | [ ] | [x] | RETEST. REWRITTEN. Step 2 pointed at `.metabar`, which is display:none — the Explore/Learn toggle had moved into the rail — so it dimmed the whole screen and described nothing. Details was placed to the LEFT of a panel that is itself on the left, and the mobile step highlighted a sheet parked off-screen at translateY(105%). Now 4 steps: find a stop, guided tour, stop details, map controls — each with a target visible at that breakpoint. Confirmed by reading code, NOT in a browser. Previous run: it works but the instructions do not match the current layout. |
 | A19 | Burger menu settings toggles | Both persist across a reload | [x] | [ ] | [ ] | |
 | A20 | Search box + autocomplete | Finds stops and places, selecting one works | [x] | [ ] | [ ] | |
 | A21 | Filter chips | Filter the list correctly | [x] | [ ] | [ ] | |
@@ -407,11 +407,10 @@ Fill this in after the run.
 
 **Non-blocking issues:**
 
-1. **A18 — the "How to use" coachmark describes a layout that no longer
-   exists.** Deferred by agreement until the site is feature-complete, since
-   Phase 2 may move the UI again and the walkthrough would need rewriting
-   twice. **Must be done before real recruit traffic** — it is currently
-   actively misleading.
+1. ~~A18 — the "How to use" coachmark describes a layout that no longer
+   exists.~~ **Fixed** — rewritten to 4 steps that point at the current UI,
+   with `scripts/tests/coachmark.test.mjs` guarding against it drifting
+   again. Awaiting a browser retest.
 2.
 
 **Anything that passed but felt wrong:**

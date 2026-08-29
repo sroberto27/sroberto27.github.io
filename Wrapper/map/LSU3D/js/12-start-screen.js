@@ -128,14 +128,34 @@
      between steps (e.g. details panel opening) is reflected.
      `placement` controls which side of the highlight the card
      sits on. ------------------------------------------------- */
+     /* A HIGHLIGHT TARGET MUST BE VISIBLE WHERE IT IS HIGHLIGHTED.
+        Two ways that quietly stops being true as the UI moves on, both
+        of which this walkthrough previously fell into:
+
+          • The element is display:none. positionCutout() handles a
+            zero-size rect by dimming the whole screen and centring the
+            card — no crash, but the user reads a description of
+            something that is not on screen. The old "Experience Toggle"
+            step pointed at `.metabar`, which css/02-header.css hides
+            outright; the toggle itself had moved into the rail.
+
+          • The element exists but is translated off-screen. On mobile
+            `.rail-detail` sits at translateY(105%) until a stop is
+            selected, so highlighting it draws the cutout below the
+            fold — worse than the zero-size case, because it looks like
+            the walkthrough simply broke.
+
+        When adding a step, check the element is on screen AT THAT
+        BREAKPOINT with nothing selected, which is the state the
+        walkthrough actually runs in. */
      const STEPS = [
       {
-        id: "left-sidebar",
+        id: "stops-list",
         desktop: {
-          title: "Locations Sidebar",
-          body: "Browse every stop on the gameday journey here. Search for a " +
-                "stop and tap to see details, or simply take the guided tour " +
-                "at bottom left. ",
+          title: "Find a stop",
+          body: "Every stop on the gameday journey is listed here. Search, " +
+                "filter by type, or click one to open it — the map follows " +
+                "along.",
           getRect: () => {
             const node = document.getElementById("locations");
             return node ? node.getBoundingClientRect() : null;
@@ -143,10 +163,9 @@
           placement: "right"
         },
         mobile: {
-          title: "Locations Menu",
-          body: "Tap the Locations button to open the full list of tour " +
-                "stops here. Search for a stop and tap to see details, or " +
-                "simply take the guided tour at bottom left. ",
+          title: "Find a stop",
+          body: "Tap here for the full list of stops. Search, filter by " +
+                "type, or tap one to open it — the map follows along.",
           getRect: () => {
             const node = document.getElementById("locationsToggle");
             return node ? node.getBoundingClientRect() : null;
@@ -155,55 +174,83 @@
         }
       },
       {
-        id: "top-bar",
+        id: "guided-tour",
         desktop: {
-          title: "Experience Toggle",
-          body:"Choose Explore to follow the gameday journey through LSU's " +
-               "campus and football facilities; choose Learn to see what's " +
-               "coming next.",
-
+          title: "Take the guided tour",
+          body: "Walk the ten stops in order, from arrival at Lot 414 to " +
+                "postgame at Nicholson Gateway. Use the arrows here, or the " +
+                "← and → keys.",
           getRect: () => {
-            const node = document.querySelector(".metabar");
+            const node = document.getElementById("tourPill");
             return node ? node.getBoundingClientRect() : null;
           },
-          placement: "bottom"
+          placement: "top"
         },
         mobile: {
-          title: "Experience Toggle",
-          body:"Choose Explore to follow the gameday journey through LSU's " +
-               "campus and football facilities; choose Learn to see what's " +
-               "coming next.",
+          // The pill is desktop-only (hidden under 880px in
+          // css/04-map-details.css); on a phone the tour starts from the
+          // peek sheet, and its stepper then lives inside the details sheet.
+          title: "Take the guided tour",
+          body: "Tap Start guided tour to walk the ten stops in order, from " +
+                "arrival at Lot 414 to postgame at Nicholson Gateway.",
           getRect: () => {
-            const node = document.querySelector(".metabar");
+            const node = document.getElementById("sheetPeek");
             return node ? node.getBoundingClientRect() : null;
           },
-          placement: "bottom"
+          placement: "top"
         }
       },
       {
-        id: "right-panel",
+        id: "stop-details",
         desktop: {
-          title: "Location Details",
-          body: "Choose any location to see its details here. Tap Explore " +
-                "to drop into an immersive street view (where available). " +
-                "Explorable locations are shortcuts. ",
-
+          title: "Stop details",
+          body: "Open a stop and its details appear here — what happens " +
+                "there, the address, and a link you can share or print as a " +
+                "QR code.",
           getRect: () => {
+            // .rail-detail is absolutely positioned to fill .rail, so this
+            // highlights the region details open into. Accurate even with
+            // nothing selected yet.
             const node = document.getElementById("details");
+            return node ? node.getBoundingClientRect() : null;
+          },
+          placement: "right"   // the panel is on the LEFT — card goes right
+        },
+        mobile: {
+          title: "Stop details",
+          body: "Tap any numbered pin to open that stop. Details slide up " +
+                "from the bottom — swipe up for the rest.",
+          getRect: () => {
+            // NOT #details here: it is parked off-screen until something is
+            // selected. The map is always visible, and the pins are what
+            // the instruction is actually about.
+            const node = document.getElementById("map");
+            return node ? node.getBoundingClientRect() : null;
+          },
+          placement: "top"
+        }
+      },
+      {
+        id: "map-controls",
+        desktop: {
+          title: "Map controls",
+          body: "Zoom, find yourself on campus, turn street labels or aerial " +
+                "imagery on and off, and switch between 2D and 3D.",
+          getRect: () => {
+            const node = document.getElementById("mapControls");
             return node ? node.getBoundingClientRect() : null;
           },
           placement: "left"
         },
         mobile: {
-          title: "Location Details",
-          body: "Choose any location to see its details here. Tap Explore " +
-                "to drop into an immersive street view (where available). " +
-                "Explorable locations are shortcuts. ",
+          title: "Map controls",
+          body: "Zoom, find yourself on campus, turn street labels or aerial " +
+                "imagery on and off, and switch between 2D and 3D.",
           getRect: () => {
-            const node = document.getElementById("details");
+            const node = document.getElementById("mapControls");
             return node ? node.getBoundingClientRect() : null;
           },
-          placement: "top"     // card sits ABOVE the bottom sheet on mobile
+          placement: "left"
         }
       }
     ];
