@@ -27,9 +27,9 @@ Treedis capture exists. **A CMS manages content that exists, and there is none
 yet.** `docs/LSU-INFORMATION-REQUEST.md` is the questionnaire that unblocks it.
 
 **Do not start CMS, Supabase or Cloudflare work until those answers arrive.**
-When they do, run `/cms-build` (or
-`docs/plans/CMS-IMPLEMENTATION-PROMPT.md`) - it opens with a gate listing
-exactly what must be answered first.
+Their replies get recorded in
+`docs/LSU-ANSWERS.md`, which is what `/cms-build` reads to decide whether it
+can start. `docs/CMS-BUILD-RUNBOOK.md` is the human process around all of it.
 When they do, copy `../dts/dts3/` - it is a complete working implementation of
 this exact architecture (Cloudflare Pages + Functions + R2 + Supabase with RLS,
 plus a `js/admin.js` mini-CMS that drafts to localStorage, previews live, and

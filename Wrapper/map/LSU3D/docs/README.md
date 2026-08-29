@@ -18,6 +18,8 @@ every subsystem as it actually works today.
 |---|---|
 | `DATA-SCHEMA.md` | The contract for every file under `data/` — field by field, including the `stop_key` slugs that printed QR codes depend on and the privacy rules for a world-readable repo. |
 | `CONTENT-EDITING.md` | The staff-facing version of the above: which file to open for which change, how to set up a gameday, and how to check your work before pushing. |
+| `CMS-BUILD-RUNBOOK.md` | **Step-by-step process for building the CMS**, from sending the request to cutting over. Written for a person, not for Claude. Start here when LSU reply. |
+| `LSU-ANSWERS.md` | Where LSU's replies get recorded. `/cms-build` reads this file to decide whether Phase 3 can start — answers kept anywhere else do not count. |
 | `LSU-INFORMATION-REQUEST.md` | **What we need from LSU.** 40 questions for athletics staff, written for them rather than for developers. §1–3 block a real gameday; the rest shapes the CMS. |
 
 ## Testing

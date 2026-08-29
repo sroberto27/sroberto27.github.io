@@ -21,8 +21,11 @@ run migrations on this pass.**
 ## 0. Gate — check this first, and stop if it fails
 
 Phase 3 was paused deliberately. Confirm the information actually arrived before
-planning anything. Look for answers to `docs/LSU-INFORMATION-REQUEST.md` — in
-the repo, in `data/`, or from the user directly.
+planning anything. **The answers live in `docs/LSU-ANSWERS.md`** — read that
+file first, including its status table. Answers recorded anywhere else (an
+email thread, a meeting note, the user's memory) do not count: ask for them to
+be written into that file before proceeding, so the next session can see them
+too.
 
 **Required before you plan:**
 
