@@ -63,6 +63,15 @@ function makeEnv(search, { gamedayFound = true } = {}) {
     return byId.get(id);
   };
 
+  /* Nodes appended to <body> must become findable by getElementById,
+     otherwise a module that creates its own UI (the Live Visit bar, the
+     kiosk overlay, the toast stack) is invisible to a test — it would
+     get back an unrelated empty stub and quietly assert nothing. */
+  const registerById = (node) => {
+    if (node && node.id) byId.set(node.id, node);
+    return node;
+  };
+
   const history = {
     entries: [],
     replaceState(s, t, url) { this.entries.push(url); sync(url); },
@@ -88,7 +97,12 @@ function makeEnv(search, { gamedayFound = true } = {}) {
     console, history,
     location: { search, pathname: "/Wrapper/map/LSU3D/", origin: "https://sroberto27.github.io" },
     document: {
-      body: makeNode("body"),
+      body: (() => {
+        const b = makeNode("body");
+        const append = b.appendChild;
+        b.appendChild = (c) => { append(c); return registerById(c); };
+        return b;
+      })(),
       documentElement: makeNode("html"),
       createElement: (t) => makeNode(t),
       getElementById: get,
@@ -110,7 +124,26 @@ function makeEnv(search, { gamedayFound = true } = {}) {
     isFinite, isNaN, Set, Map, RegExp, Error,
     setTimeout: () => 0, clearTimeout() {}, setInterval: () => 0, clearInterval() {},
     requestAnimationFrame: (fn) => fn(),
-    encodeURIComponent, navigator: { geolocation: undefined },
+    encodeURIComponent,
+    navigator: {
+      geolocation: {
+        getCurrentPosition(ok, err) {
+          if (ctx.__geoFix) ok({ coords: ctx.__geoFix });
+          else err({ code: 1 });
+        },
+        watchPosition() { return 1; },
+        clearWatch() {}
+      }
+    },
+    // Real campus extent from config.js map3d.bounds.
+    imageBounds: {
+      contains: ({ lng, lat }) =>
+        lng >= -91.2014 && lng <= -91.1735 && lat >= 30.4040 && lat <= 30.4202,
+      getCenter: () => ({ lng: -91.18745, lat: 30.4121 })
+    },
+    resetCampusView() { ctx.__campusResets++; },
+    __geoFix: null,
+    __campusResets: 0,
 
     // --- map + app globals -------------------------------------------
     maplibregl: { Marker: class { constructor(o) { this.o = o; } setLngLat() { return this; } addTo() { return this; } remove() {} getElement() { return this.o.element; } } },
@@ -400,6 +433,60 @@ const ok = (label, cond, extra = "") => {
   ctx.onAppReady();
   ctx.__dispatch("pointerdown", { target: { id: "map" } });
   ok("a screen tap still pauses the kiosk", !ctx.Kiosk.isPlaying());
+}
+
+/* ---- on-campus vs previewing from home --------------------------------- */
+{
+  // Someone standing at Tiger Stadium.
+  const ctx = makeEnv("");
+  ctx.onAppReady();
+  ctx.__geoFix = { longitude: -91.1836, latitude: 30.4118, accuracy: 8 };
+  await ctx.Geo.locate({ source: "test" });
+
+  ok("on-campus fix is recognised", ctx.Geo.isOnCampus() === true);
+  ok("on-campus reports a distance to a stop", ctx.Geo.toStop(6) !== null);
+  ok("on-campus finds a nearest stop", ctx.Geo.nearestStop() !== null);
+  ok("on-campus does not reset the camera", ctx.__campusResets === 0);
+}
+
+{
+  // Someone in Los Angeles, previewing weeks before the visit.
+  const ctx = makeEnv("");
+  ctx.onAppReady();
+  ctx.__geoFix = { longitude: -118.2437, latitude: 34.0522, accuracy: 8 };
+  await ctx.Geo.locate({ source: "test" });
+
+  ok("off-campus fix is recognised", ctx.Geo.isOnCampus() === false);
+  ok("off-campus quotes NO distance", ctx.Geo.toStop(6) === null,
+     "1,800 mi and a 480,000 minute walk is not a useful answer");
+  ok("off-campus has no nearest stop", ctx.Geo.nearestStop() === null);
+  ok("off-campus falls back to the campus view", ctx.__campusResets > 0);
+  ok("off-campus is reported to subscribers", ctx.Geo.getState().onCampus === false);
+
+  const fix = ctx.Core.__events().find((e) => e.event === "geo_fix");
+  ok("geo_fix records on/off campus", fix && fix.props.onCampus === false);
+  ok("geo_fix still carries no coordinates",
+     fix && JSON.stringify(fix.props).indexOf("118.2") === -1,
+     fix ? JSON.stringify(fix.props) : "");
+}
+
+{
+  // Live Visit must say so rather than showing an empty distance.
+  const ctx = makeEnv("?mode=live");
+  // Set the fix BEFORE entering: LiveVisit calls locate() on entry, and a
+  // refusal is deliberately final, so a denial here would block every
+  // later attempt — which is the app behaving correctly, not a bug.
+  ctx.__geoFix = { longitude: -118.2437, latitude: 34.0522, accuracy: 8 };
+  ctx.onAppReady();
+  await new Promise((r) => setImmediate(r));
+  ctx.LiveVisit.refresh();
+
+  const bar = ctx.document.getElementById("liveVisitBar");
+  ok("live bar shows the not-on-campus state",
+     String(bar.innerHTML).includes("NOT ON CAMPUS"),
+     "bar=" + String(bar.innerHTML).slice(0, 200).replace(/\s+/g, " "));
+  ok("live bar shows no distance chip",
+     !String(bar.innerHTML).includes("live-next-nav"));
 }
 
 /* ---- geolocation absent ----------------------------------------------- */

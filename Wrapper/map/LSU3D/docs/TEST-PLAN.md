@@ -144,9 +144,9 @@ URL: `?g=sample-gameday`
 | C1 | `?g=sample-gameday` on desktop | Guided-tour card shows greeting, kickoff countdown, Now/Next, contacts | [x] | [ ] | [ ] | |
 | C2 | The tour checklist in that card | Each stop shows its scheduled time | [x] | [ ] | [ ] | |
 | C3 | Step through stops | Now/Next rows update to match | [x] | [ ] | [ ] | |
-| C4 | Open any stop's details panel | Shows that stop's time and instruction C
+| C4 | Open any stop's details panel | Shows that stop's time and instruction | [ ] | [ ] | [x] | RETEST. A cold `?g=&stop=` deep link rendered the panel BEFORE the async itinerary arrived, so no time/instruction block appeared until something re-rendered it (your 3rd image). js/18-gameday.js now re-renders an open panel once the itinerary lands. The block stays display-only by design — nothing opens when tapped. |
 | C5 | Step through several stops, watching the details panel | Only **one** instruction block, always the current stop's (not stacking up) | [x] | [ ] | [ ] | |
-| C6 | `?g=sample-gameday&n=Jordan` | [x] | [ ] | [ ] | |
+| C6 | `?g=sample-gameday&n=Jordan` | Greeting reads "Jordan, here's your gameday" | [ ] | [ ] | [x] | RETEST. FIXED (2nd attempt). Real cause was NOT contrast: .rail-list/.rail-tour/.rail-detail are three opaque absolutely-positioned layers stacked z-index 1/2/3 (css/03-sidebar.css), so selecting a stop raises the opaque details panel OVER the tour card holding the greeting. The summary is now also mounted in the details panel. Previous run: still not showing greeting, see second image. |
 | C7 | Immediately check the address bar after C6 | `n=Jordan` is **gone** from the URL | [x] | [ ] | [ ] | this is the url after: http://localhost:8000/?g=sample-gameday&stop=lot-414-river-road-arrival|
 | C8 | `?g=no-such-gameday` | Brief message; standard tour loads normally; no crash | [x] | [ ] | [ ] | |
 | C9 | `?g=../../something` | Ignored; app loads normally | [x] | [ ] | [ ] | |
@@ -179,6 +179,9 @@ URL: `?g=sample-gameday`
 | D9 | Revoke permission mid-session in site settings | App keeps working, no crash | [ ] | [ ] | [ ] | |
 | D10 | Desktop browser with no GPS | Either works via IP or says it can't — never silently nothing | [ ] | [ ] | [ ] | |
 | D11 | Console throughout | No errors | [ ] | [ ] | [ ] | |
+| D12 | **Off campus** (anywhere but LSU): tap locate, allow | Says you're not on campus yet, keeps the full campus view, no marker dropped | [ ] | [ ] | [ ] | Added after the JPEG/basemap work exposed this — testable from anywhere |
+| D13 | Off campus: check the map afterwards | Camera stays on campus, does NOT sit clamped at an edge | [ ] | [ ] | [ ] | |
+| D14 | On campus (or a spoofed location inside the campus bounds): tap locate | Normal blue dot behaviour, map flies to you | [ ] | [ ] | [ ] | DevTools → Sensors → Location can spoof this from anywhere |
 
 ---
 
@@ -211,6 +214,9 @@ URL: `?mode=live`
 | E18 | One-handed use while walking | Buttons are reachable and big enough to hit | [ ] | [ ] | [ ] | |
 | E19 | Desktop | Bar renders sensibly, not stretched across the whole screen | [ ] | [ ] | [ ] | |
 | E20 | Console throughout | No errors | [ ] | [ ] | [ ] | |
+| E21 | **Off campus** with `?mode=live` | Bar reads "NOT ON CAMPUS — previewing the route"; no distance, arrow or walking time shown | [ ] | [ ] | [ ] | Testable from anywhere |
+| E22 | Off campus: the rest of the bar | Current stop, next stop, times and progress all still work | [ ] | [ ] | [ ] | |
+| E23 | Spoof a location inside campus bounds, still in Live Visit | Switches to the normal state and distances appear | [ ] | [ ] | [ ] | DevTools → Sensors → Location |
 
 ---
 
@@ -269,7 +275,12 @@ URL: `?mode=kiosk` and `?mode=kiosk&autoplay=1`
 | H4 | Deploy an update | New version picked up, no stale-cache lock-in | [ ] | [ ] | [x] | Not built |
 | H5 | Data Saver / Lite mode | Lightweight map, no automatic immersive loading | [ ] | [ ] | [x] | Not built |
 | H6 | Manual override of the mode | Always available | [ ] | [ ] | [x] | Not built |
-| H7 | Slow 4G throttling, first load | Map usable within target | [ ] | [ ] | [x] | Not built |
+| H7 | Slow 4G throttling, first load | Map usable; note the time in Comments | [ ] | [ ] | [ ] | Now measurable — basemap dropped from ~5.5 MB to ~0.29 MB per viewport |
+| H13 | DevTools → Network, filter `dotd.la.gov`, load the map | Tiles are `image/jpeg`, roughly 14–30 KB each, ~12 per viewport (was ~156 KB each, ~35 per viewport) | [ ] | [ ] | [ ] | The single number that should have moved |
+| H14 | Look at the aerial imagery on screen | Still looks right — no visible JPEG blockiness at normal zooms | [ ] | [ ] | [ ] | **Judgement call only you can make.** Fallback is `format=jpgpng` at a smaller win |
+| H15 | Pan to the far edges of the map | No black or missing tiles at the extremes of the campus bounds | [ ] | [ ] | [ ] | JPEG has no transparency; all 5 corners verified over the network, but confirm visually |
+| H16 | Zoom fully in | Imagery still sharp at max zoom | [ ] | [ ] | [ ] | maxZoom moved 21→20 to match the 512px tiles; same ground resolution as before |
+| H17 | DevTools → Network → **Protocol** column | Record whether it says h2 or http/1.1 | [ ] | [ ] | [ ] | Settles whether bundling the 22 JS files is worth doing at all |
 | H8 | Images lazy-load; next stop prefetched | Not all 10 at once | [ ] | [ ] | [x] | Not built |
 | H9 | Treedis stays lazy | Doesn't delay the map | [ ] | [ ] | [x] | Not built |
 | H10 | 3D on a low-end phone | Degrades sensibly | [ ] | [ ] | [x] | Not built |
