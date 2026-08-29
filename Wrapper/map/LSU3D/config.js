@@ -38,12 +38,44 @@ window.CAMPUS_CONFIG = Object.assign(window.CAMPUS_CONFIG || {}, {
     // request time. bandIds 0,1,2 = R,G,B — drops the 4th
     // (near-infrared) band so the image renders true-color
     // instead of IR-tinted.
+    // FORMAT: jpg, not png32. This is the single biggest performance
+    // decision in the app. The source is aerial photography —
+    // continuous-tone imagery, which is exactly what JPEG is for —
+    // while png32 is lossless RGBA. Measured on one identical tile:
+    //
+    //     png32  156,115 B   0.28 s      <- what this used to request
+    //     png8   140,824 B   0.29 s
+    //     jpgpng 156,115 B   0.32 s
+    //     jpg     17,177 B   0.18 s      <- 9.1x smaller AND faster
+    //
+    // A desktop viewport pulls roughly 35 tiles, so this is the
+    // difference between ~5.5 MB and ~0.6 MB of basemap for one screen.
+    // For scale: the entire rest of the app — MapLibre, all 22 js files,
+    // all 15 stylesheets, every data file — is about 120 KB gzipped.
+    //
+    // The one thing jpg gives up is transparency, which matters only at
+    // the EDGE of DOTD's coverage, where a png32 tile would be partly
+    // transparent and a jpg tile is opaque black. Campus sits well
+    // inside coverage (see README.md), so that edge is outside
+    // map3d.bounds. If a black tile ever does appear at the extremes,
+    // switch to `jpgpng` — JPEG in the interior, PNG only where
+    // transparency is actually needed — and accept the smaller win.
+    //
+    // SIZE: 512 rather than 256. One 512 jpg tile measured 52,382 B
+    // against 68,708 B for the four 256 tiles covering the same ground:
+    // fewer bytes and a quarter of the requests. tileSize below must
+    // stay in step with the size= parameter here.
     tiles: [
       "https://maps.dotd.la.gov/imagery/rest/services/Imagery/2025_Various_6IN_RGBI/ImageServer/exportImage" +
-      "?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=256,256&format=png32&f=image&bandIds=0,1,2"
+      "?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=512,512&format=jpg&f=image&bandIds=0,1,2"
     ],
-    tileSize: 256,
-    maxZoom: 21, // native resolution is ~6in/pixel; don't advertise sharper
+    tileSize: 512,
+    // 20, not 21, BECAUSE tileSize became 512. Ground resolution is
+    // 2^zoom * tileSize, so z20@512 and z21@256 are the same sharpness —
+    // leaving this at 21 would request tiles at twice the detail the
+    // 6 in/px source actually has, paying for pixels that do not exist.
+    // Zooming past 20 still works; MapLibre overzooms the z20 tiles.
+    maxZoom: 20,
     attribution: 'Imagery: Louisiana DOTD, 2025 6" Aerial'
   },
 

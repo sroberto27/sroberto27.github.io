@@ -35,6 +35,12 @@
        location names + screen titles (LSU brand headline treatment). -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+  <!-- The basemap origin. Every aerial tile comes from here, it is by far
+       the heaviest thing the page loads, and the first request cannot
+       start until DNS + TLS finish. Getting that handshake underway
+       during head parsing saves it from the first tile's critical path. -->
+  <link rel="preconnect" href="https://maps.dotd.la.gov" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Oswald:wght@500;600;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4/dist/maplibre-gl.css" />
