@@ -46,6 +46,7 @@ visual needs `TEST-PLAN.md` and a browser.
 | Document | What it is |
 |---|---|
 | `plans/GAMEDAY-EVOLUTION-PROMPT.md` | The original multi-phase brief: Phase 1 "Make It Useful", Phase 2 "Make It Fast", then the hosting migration. **Run in Plan Mode.** Phases 1 and 2 are done; the Phase 3 section is the live part. |
+| `plans/CMS-IMPLEMENTATION-PROMPT.md` | **Phase 3, for later.** The brief for building the CMS on Cloudflare + Supabase, modelled on `../../dts/dts3/`. Opens with a gate: do not run it until LSU have answered the information request. Run with `/cms-build`. |
 | `plans/GAMEDAY-EVOLUTION-PLAN.md` | The approved Phase 1 plan produced from that brief. Historical — Phase 1 shipped. |
 | `LSU_Mobile_4G_Audit_Prompt.md` | Earlier, narrower mobile / slow-4G brief. Largely answered by Phase 2, which found the basemap was ~95% of the page weight. |
 

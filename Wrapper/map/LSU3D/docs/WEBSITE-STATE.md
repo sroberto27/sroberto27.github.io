@@ -31,7 +31,9 @@ sample gameday has invented times, `opponent: "TBD"` and blank phone numbers;
 content that exists, and there is none yet.** Building the editor against a
 placeholder schema risks designing for a shape real LSU data will not have.
 
-`docs/LSU-INFORMATION-REQUEST.md` is the questionnaire that unblocks it.
+`docs/LSU-INFORMATION-REQUEST.md` is the questionnaire that unblocks it, and
+`docs/plans/CMS-IMPLEMENTATION-PROMPT.md` (`/cms-build`) is the brief to run
+once it comes back.
 
 ### When it resumes, copy the sibling project
 
