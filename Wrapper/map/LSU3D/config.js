@@ -252,6 +252,19 @@ window.CAMPUS_CONFIG = Object.assign(window.CAMPUS_CONFIG || {}, {
     enableGeolocation: true,
     enableKiosk:      true,
 
+    // OFF ON PURPOSE. A service worker is the only real caching control
+    // on GitHub Pages (which sends max-age=600 on everything), and it is
+    // what lets the app boot at all on a saturated gameday network — but
+    // its failure mode is pinning a broken build onto a device where a
+    // normal reload will not clear it. Leave it off until geolocation
+    // and Live Visit Mode have been exercised in a browser at least once.
+    //
+    // To turn on: set true and deploy. To turn off: set false and deploy
+    // — visitors are unregistered automatically on their next visit.
+    // To rescue a device stuck on a bad build without deploying, send
+    // them the app URL with `?sw=off`. See js/22-service-worker.js.
+    enableServiceWorker: false,
+
     // Treat a stop as "reached" inside this radius. 150 ft is
     // wider than a typical phone's open-sky accuracy but narrower
     // than the gap between any two stops on this tour.

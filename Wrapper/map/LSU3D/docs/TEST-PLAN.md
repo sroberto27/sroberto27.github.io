@@ -269,10 +269,21 @@ URL: `?mode=kiosk` and `?mode=kiosk&autoplay=1`
 
 | # | Test | Expected | Pass | Fail | N/T | Comments |
 |---|---|---|---|---|---|---|
-| H1 | Service worker registers | App shell cached | [ ] | [ ] | [x] | Not built |
-| H2 | Second visit is faster than the first | Measurably | [ ] | [ ] | [x] | Not built |
-| H3 | Go offline and reload | Offline fallback, not a browser error page | [ ] | [ ] | [x] | Not built |
-| H4 | Deploy an update | New version picked up, no stale-cache lock-in | [ ] | [ ] | [x] | Not built |
+| H1 | With `enableServiceWorker: false` (the shipped default) | **Nothing installs.** DevTools → Application → Service Workers is empty | [ ] | [ ] | [ ] | Test this FIRST — it is the shipped state |
+| H18 | Set `enableServiceWorker: true`, deploy, load | Worker registers; scope is `/Wrapper/map/LSU3D/` and **not** the origin root | [ ] | [ ] | [ ] | A root scope would hijack ../LSU/, ../NewIberia/, ../dts/ |
+| H19 | Reload with the worker active | App loads; DevTools shows assets served from ServiceWorker | [ ] | [ ] | [ ] | |
+| H20 | DevTools → Network → filter `dotd.la.gov`, with the worker active | Aerial tiles still come from the **network**, never the worker | [ ] | [ ] | [ ] | Metered third-party content must never be cached |
+| H21 | Go offline (DevTools → Network → Offline), reload | Stop list, descriptions, tour navigation all work; map imagery is blank | [ ] | [ ] | [ ] | Blank imagery is correct and expected |
+| H22 | Offline with `?g=sample-gameday` | Itinerary times, instructions and contacts still readable | [ ] | [ ] | [ ] | This is the gameday case that justifies the whole feature |
+| H23 | Offline, then navigate to a URL never visited before | Offline fallback page, not a browser error | [ ] | [ ] | [ ] | |
+| H24 | Edit a CSS file, deploy, reload twice | Change appears; no stale styling persists | [ ] | [ ] | [ ] | |
+| H25 | **Kill switch 1:** set `enableServiceWorker: false`, deploy, load once | Worker unregisters itself and its caches are gone, in ONE visit | [ ] | [ ] | [ ] | config.js is network-first specifically so this does not take two visits |
+| H26 | **Kill switch 2:** with the worker active, open `?sw=off` | Unregisters immediately, no deploy needed | [ ] | [ ] | [ ] | The rescue path for a device stuck on a bad build |
+| H27 | After either kill switch, reload normally | App works, nothing served by a worker | [ ] | [ ] | [ ] | |
+| H28 | Confirm the other apps on the origin are untouched | `../LSU/`, `../NewIberia/`, `../dts/` all load normally with no worker | [ ] | [ ] | [ ] | **Do not skip.** Same origin, separate deployed apps |
+| H2 | Second visit with the worker active | Measurably faster; note both times in Comments | [ ] | [ ] | [ ] | |
+| H3 | Go offline and reload | See H21–H23 | [ ] | [ ] | [ ] | |
+| H4 | Deploy an update | See H24 | [ ] | [ ] | [ ] | |
 | H5 | Data Saver / Lite mode | Lightweight map, no automatic immersive loading | [ ] | [ ] | [x] | Not built |
 | H6 | Manual override of the mode | Always available | [ ] | [ ] | [x] | Not built |
 | H7 | Slow 4G throttling, first load | Map usable; note the time in Comments | [ ] | [ ] | [ ] | Now measurable — basemap dropped from ~5.5 MB to ~0.29 MB per viewport |
