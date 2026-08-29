@@ -103,6 +103,17 @@
                 <span class="live-here-text">Distances are unavailable</span>
               </div>`;
     }
+    /* Previewing from home is the normal case for most of this app's
+       life, so it gets a real state rather than a broken-looking one.
+       Checked before accuracy: "you're in another state" is the more
+       useful thing to say than "your signal is weak". */
+    if (geo.onCampus === false) {
+      return `<div class="live-here is-away">
+                <span class="live-here-label">NOT ON CAMPUS</span>
+                <span class="live-here-text">Previewing the route — distances appear when you arrive</span>
+              </div>`;
+    }
+
     if (geo.approximate) {
       return `<div class="live-here is-approx">
                 <span class="live-here-label">APPROXIMATE</span>

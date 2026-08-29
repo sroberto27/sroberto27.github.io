@@ -87,6 +87,9 @@ body.mode-live .rail { display: none; }
 .live-here.is-fixed  .live-here-label { background: rgba(37, 99, 235, 0.30); color: #BFDBFE; }
 .live-here.is-approx .live-here-label { background: rgba(253, 208, 35, 0.22); color: #FDD023; }
 .live-here.is-off    .live-here-label { background: rgba(255, 255, 255, 0.10); color: rgba(255,255,255,0.65); }
+/* Previewing from elsewhere is a normal, expected state — informational
+   blue rather than a warning colour. Nothing is wrong. */
+.live-here.is-away   .live-here-label { background: rgba(37, 99, 235, 0.22); color: #BFDBFE; }
 .live-here.is-waiting .live-here-text { opacity: 0.75; }
 
 /* --------------------------------------------------------------------

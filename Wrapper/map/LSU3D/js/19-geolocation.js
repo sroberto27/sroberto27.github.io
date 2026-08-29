@@ -45,10 +45,38 @@
     accuracyM: null,
     at: 0,
     denied: false,
+    onCampus: null,      // null = unknown, true/false once we have a fix
     watchId: null,
     marker: null,
     listeners: new Set()
   };
+
+  /* ============================================================
+     On campus, or previewing from home?
+     ------------------------------------------------------------
+     Most use of this app happens nowhere near Baton Rouge. A recruit
+     and their family look at it for weeks before the visit, from the
+     sofa — that is the whole point of a preview experience. Only one
+     afternoon of its life is spent on campus.
+
+     The map is clamped to the campus extent (setMaxBounds in
+     js/05-map-helpers.js), so flying to someone in California does
+     nothing visible, drops a marker off-screen, and leaves the
+     distance readout confidently announcing "1,800 mi · 480,000 min
+     west". Better to notice, say so plainly, and skip all of it.
+     ============================================================ */
+  function isOnCampus(coords) {
+    if (!coords) return null;
+    try {
+      // imageBounds is the mapped campus extent (js/11-boot.js), which
+      // is exactly the area the camera is allowed to show — so it is
+      // also the right definition of "somewhere this map can help you".
+      if (typeof imageBounds === "undefined" || !imageBounds) return null;
+      return imageBounds.contains({ lng: coords[0], lat: coords[1] });
+    } catch (_) {
+      return null;
+    }
+  }
 
   /* ============================================================
      Map rendering
@@ -161,17 +189,32 @@
     state.accuracyM = pos.coords.accuracy;
     state.at = Date.now();
     state.denied = false;
+    state.onCampus = isOnCampus(state.coords);
 
-    renderPosition();
+    // Off campus there is nothing useful to draw: the marker would sit
+    // outside the camera's allowed bounds, permanently off-screen.
+    if (state.onCampus === false) clearPosition();
+    else renderPosition();
 
     Core.track("geo_fix", {
       source,
       accuracy: accuracyBucket(state.accuracyM),
-      approximate: isApproximate()
+      approximate: isApproximate(),
+      // Whether the visitor is on campus is genuinely useful to know —
+      // it says how the app is really being used. It is a boolean, not
+      // a location.
+      onCampus: state.onCampus
     });
 
-    if (fly) {
+    if (fly && state.onCampus !== false) {
       map.flyTo({ center: state.coords, zoom: Math.min(map.getMaxZoom(), 17) });
+    } else if (fly && state.onCampus === false) {
+      // Don't animate toward a place the camera cannot go. Say so instead.
+      Router.showToast(
+        "You’re not on campus yet — showing the full gameday route. " +
+        "Your location will appear here when you arrive."
+      );
+      if (typeof imageBounds !== "undefined" && imageBounds) resetCampusView(true);
     }
     notify();
   }
@@ -269,6 +312,9 @@
      that is 200 m wrong. */
   function toStop(i) {
     if (!state.coords || isApproximate()) return null;
+    // Off campus the honest answer is "not applicable", not "1,800 mi".
+    // A walking distance and time are meaningless from another state.
+    if (state.onCampus === false) return null;
     if (typeof tourStops === "undefined" || !tourStops[i]) return null;
 
     const center = centerOfBounds(boundsOfFeature(tourStops[i].feature));
@@ -289,6 +335,7 @@
   /* Nearest tour stop to the current position, or null. */
   function nearestStop() {
     if (!state.coords || typeof tourStops === "undefined") return null;
+    if (state.onCampus === false) return null;
     let best = null;
     for (let i = 0; i < tourStops.length; i++) {
       const center = centerOfBounds(boundsOfFeature(tourStops[i].feature));
@@ -313,6 +360,7 @@
       accuracyM: state.accuracyM,
       approximate: isApproximate(),
       denied: state.denied,
+      onCampus: state.onCampus,
       watching: state.watchId != null,
       at: state.at
     };
@@ -325,6 +373,7 @@
     stopWatch,
     toStop,
     nearestStop,
+    isOnCampus: () => state.onCampus,
     getState: publicState,
     isApproximate,
     clear: clearPosition,
