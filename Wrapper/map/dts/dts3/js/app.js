@@ -113,7 +113,7 @@
       /* data-label feeds the ghost echo behind the active item
          (see .nav-drawer a.is-active::before). */
       a.dataset.label = c.kicker;
-      a.innerHTML = '<span>' + c.kicker + '</span>';
+      a.innerHTML = '<span>' + escapeHTML(c.kicker) + '</span>';
       a.addEventListener("click", (e) => {
         e.preventDefault();
         openCategory(c.id);
@@ -543,8 +543,13 @@
       el.className = "uc-card";
       el.tabIndex = 0;
       el.dataset.card = card.id;
+      /* Upper-case FIRST, then escape -- escaping first would upper-case the
+         entity names it produces ("&lt;" -> "&LT;"). Same escapeHTML() the
+         "more from this sector" grid below already applies to these exact
+         two fields. */
       el.innerHTML =
-        '<h3>' + card.title.toUpperCase() + '</h3><p>' + card.text + '</p>';
+        '<h3>' + escapeHTML(card.title.toUpperCase()) + '</h3>' +
+        '<p>' + escapeHTML(card.text) + '</p>';
       el.addEventListener("click", () => openExample(card.id));
       el.addEventListener("keydown", (e) => {
         if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openExample(card.id); }
