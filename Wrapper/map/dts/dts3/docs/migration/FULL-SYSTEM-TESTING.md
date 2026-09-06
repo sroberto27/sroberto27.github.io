@@ -1430,6 +1430,111 @@ Comments: ____________________________________
 
 ---
 
+# Part M — security audit fixes (2026-09-06)
+
+From the `app`-scope audit in `SECURITY-AUDIT-2026-09-06.md`. **These need a
+republish before any of Part M can be tested**: the link fix runs at publish
+time, so `data/current/` in R2 is unchanged until a `site_admin` uses the
+Admin Board's "Publish to site". Test 157 checks exactly that.
+
+## Link access levels (F-01)
+
+The splitter used to strip a link's URL only when its `kind` was `"treedis"`,
+so the access picker did nothing on Vimeo/Matterport/external links. It now
+keys on the access level alone, and the 29 links that were public by
+convention now say `"access": "public"` in `/data`.
+
+**157. Publish, then confirm the public documents are unchanged for guests.**
+As `testadmin`, open the Admin Board and use "Publish to site". Then, in a
+**private/logged-out window**, open a project with videos (Campus & Schools,
+Economic Development, Energy). Confirm the "More from this project" chips are
+still ordinary clickable links that open the video — *not* locked tiles. This
+is the regression that matters: the fix is supposed to change nothing a
+visitor sees.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**158. Gated Treedis links are still locked for a guest.** Same logged-out
+window, open Automotive and Campus & Schools. Their Treedis tour chips must
+still render as locked tiles, and the main tour experience must still show
+"Sign in to view this experience".
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**159. A newly added link defaults to gated, and the editor says so.** As
+`testadmin`, add a link to any project (Admin Board → PROJECTS → a project →
+Related links → "+ Add link"). Confirm its Access level shows "Inherit from
+project" and the hint text explains that Inherit resolves to Registered and
+withholds the URL. Set it to **Public**, publish, and confirm a logged-out
+visitor can see and click it. Then delete the test link and publish again.
+*This is a real behavior change:* before this fix a new external link was
+silently public.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**160. A link marked Registered is genuinely withheld.** Set one Vimeo link on
+a test project to **Registered**, publish, and confirm in a logged-out window
+that it renders as a locked tile with no URL in the page source (view source
+and search for the vimeo.com URL — it must be absent). Sign in as
+`testuser@example.com` and confirm the tile now resolves and opens. Put it
+back to Public and publish.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+## CMS text escaping (F-02)
+
+The sector kicker and the use-case card title/text reached `innerHTML`
+unescaped.
+
+**161. Sector pages and the mobile drawer render normally.** Visit each of the
+four sector views on desktop and confirm the four use-case cards show their
+real titles (upper-cased) and body text. Open the mobile drawer on a phone or
+a narrow window and confirm each sector's kicker reads correctly. Nothing
+should look double-escaped — no stray `&amp;` or `&#39;` on screen.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**162. A sector kicker containing an apostrophe or ampersand still reads
+correctly.** As `testadmin`, temporarily set a sector's kicker to something
+like `Health & Safety's Twin`, publish, and confirm it renders as typed on the
+category page and in the mobile drawer — not as `Health &amp; Safety&#39;s`.
+Restore the original value and publish.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+## Invite rate-limit ledger (F-03)
+
+The `invite.send` audit row is now written before the account it counts, and
+strictly rather than best-effort.
+
+**163. Inviting a new teammate still works end to end.** Sign in as
+`testorgadmin@example.com`, open the client portal's team panel for Beta
+Municipal, and invite a brand-new throwaway email with a temporary password.
+Confirm the member appears in the list. Then sign in as `testadmin`, open
+Admin Board → Audit, and confirm exactly **one** `invite.send` row exists for
+it, with the new account's id in its target — not a blank target, and not two
+rows.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**164. A rejected invite leaves no audit row.** As `testorgadmin`, try to
+invite an email that already exists (`testmember@example.com`). Expect a clear
+"already exists" error. Then check Admin Board → Audit and confirm **no** new
+`invite.send` row was created for that attempt. Delete the throwaway account
+from test 163 when finished.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+---
+
 ## When you're done
 
 Report results back with the failures called out specifically — a failing test

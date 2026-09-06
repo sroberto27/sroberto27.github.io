@@ -2,6 +2,55 @@
 
 Newest first.
 
+## Fix: security audit (app scope) — link gating, CMS escaping, invite ledger
+
+First run of the `security-audit` skill, scoped to `app` (the Cloudflare Pages
+Functions layer and the client code that consumes it). Full report, including
+the twelve leads that were investigated and dismissed:
+`SECURITY-AUDIT-2026-09-06.md`.
+
+**The one that mattered: a link's access level was unenforced unless its kind
+was `"treedis"`.** The public/private splitter only stripped a link's `url`
+when `link.kind === "treedis"`, so the access field was silently inert on
+every other kind of link — while the Admin Board offered an access picker on
+all of them, the resolver gated all of them, and `js/app.js` treats "url
+present" as "public" and skips the gate entirely. A gated Vimeo or Matterport
+link would therefore have been published in the clear *and* never checked.
+Confirmed live: `/data/projects/campus.json` handed an anonymous caller a link
+URL that `/api/resource/project.campus:link-2` refused with a 401 to the same
+caller. Fixed by keying the strip on the resolved access level alone in all
+three implementations, and by authoring the previously implicit "vimeo links
+are public by convention" rule as real data — 29 links across 13 projects now
+carry `"access": "public"`.
+
+**Nothing a visitor sees changes**, which was the point: the same 29 URLs
+ship, the four gated Treedis links are still stripped. What changes is that
+the CMS control now works for links added later. One real behavior change for
+editors: a **new** link left on "Inherit" now resolves to Registered and its
+URL is withheld, where before it was silently public. The link editor's hint
+says so.
+
+Also fixed: the sector kicker and the use-case card title/text reached
+`innerHTML` unescaped (`js/app.js` escapes at 15 other sinks and missed these
+two) — a `site_admin` could have put executing markup into every visitor's
+session, which matters more than usual here because the CSP allows
+`'unsafe-inline'` and the Supabase token lives in `localStorage`. And
+`/api/org/invite`'s rate limiter counted audit rows written through
+`writeAudit()`, which swallows its own failures by design — right for an audit
+trail, wrong for a counter; the ledger row is now reserved before the account
+it counts and fails closed. That last one is hardening rather than a closed
+hole: an `org_admin` has no reliable way to make the insert fail, so there was
+no exploit to reproduce, and the audit report says so.
+
+Three probes now live under `tests/security/` and are wired into `CLAUDE.md`'s
+testing checklist. Each was written before its fix and confirmed red against
+the unfixed code, so they are regression tests rather than tautologies.
+
+**Committed, not deployed, and not published.** The link fix runs at publish
+time — `data/current/` in R2 is unchanged until a `site_admin` runs "Publish
+to site". `docs/migration/FULL-SYSTEM-TESTING.md` gained Part M (tests
+157–164) for the manual pass, and test 157 is the republish itself.
+
 ## Fix: memory and network performance audit pass
 
 Requested directly: a full audit of the site's memory usage (~1GB reported

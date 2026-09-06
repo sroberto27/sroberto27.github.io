@@ -294,6 +294,21 @@ Resolution order for a given `resource_key`:
    subject_id=<uid>` OR `subject_type='org', subject_id IN (<uid's active
    org_ids>)`.
 
+**Step 1 applies to every link, whatever its `kind`.** This is spelled out
+because the code disagreed with it until 2026-09-06: the splitter stripped a
+link's `url` only when `kind === "treedis"`, so the access level was silently
+inert on Vimeo, Matterport and external links (`SECURITY-AUDIT-2026-09-06.md`
+F-01). There is **no kind-based exemption** — a link that should be reachable
+without a session carries `"access": "public"` and says so, and the 29 links
+that were previously public by unwritten convention now do.
+
+Note what this default means in practice: a link authored with **no** `access`
+field is `registered`, i.e. gated, and its URL is withheld from
+`data/current/`. That is deny-by-default working as intended (§3), but it is
+the opposite of what the old convention did, so a link added to `/data` by hand
+— or created in the Admin Board and left on "Inherit" — is gated until someone
+chooses otherwise.
+
 This resolution happens **only** inside `functions/api/resource/[key].js`
 (Phase 4) — never trust a client-computed decision.
 

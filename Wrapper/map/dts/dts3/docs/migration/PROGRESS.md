@@ -22,6 +22,82 @@ identity/access model each phase from 3 onward implements is defined in
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
 
+- 2026-09-06 — **First `security-audit` skill run, scope `app`; three fixes
+  committed on branch `security-audit-2026-09-06`.** Full report with the
+  reachability traces, the twelve dismissed leads and their reasons, and the
+  untested-areas list: `SECURITY-AUDIT-2026-09-06.md`. Commits `3be4dec0`,
+  `ea805d19`, `84922d80`.
+
+  **F-01 (Medium, the one worth reading) — a link's access level was
+  unenforced unless its `kind` was `"treedis"`.** `functions/_lib/split-logic.js`
+  stripped a link's `url` only for Treedis links, so the access field was
+  inert on every other kind. That is not cosmetic, because for links the strip
+  *is* the enforcement: `js/app.js:1854` returns early with zero network calls
+  when a node already carries a `url`, and `buildExampleLinks()` renders a
+  link with a `url` as a plain `<a href>`. So a gated non-Treedis link would
+  have been published in the clear AND never routed through
+  `/api/resource/*`. Meanwhile `js/admin.js` put an access picker on every
+  link regardless of kind, new links are created as `kind: "external"`, and
+  the Access index reported all 29 as `registered` — the operator was being
+  actively misinformed. Confirmed against the real deployed site, not just by
+  reading: `/data/projects/campus.json` returned `link-2`'s Vimeo URL
+  (unlisted hash token included) to an anonymous caller, while
+  `/api/resource/project.campus%3Alink-2` returned 401 to that same caller.
+
+  Fixed in all three implementations (`functions/_lib/split-logic.js`,
+  `scripts/split-content.mjs`, `scripts/strip-public-data.mjs`) by keying on
+  the resolved access level alone. `scripts/backfill-access.mjs` was
+  deliberately left alone — it *assigns* access, it does not strip, and its
+  current behavior is still correct.
+
+  The owner's call on the product half was **keep them public**: the 29 links
+  now carry an explicit `"access": "public"` in `/data`, so visitor-facing
+  output is identical to today and the convention is authored data rather than
+  a rule hidden in a code comment. Watch for the one real behavior change: a
+  **new** link left on "Inherit" now resolves to Registered and is withheld,
+  where it used to be silently public. The link editor's hint text was updated
+  to say so.
+
+  **F-02 (Medium) — sector kicker and use-case card title/text reached
+  `innerHTML` unescaped** (`js/app.js:116`, `js/app.js:546`). Both are Admin
+  Board free-text fields rendered to every visitor. Ranked with this project's
+  own `site_admin` calibration — not guest-facing XSS, since the author is
+  already maximally trusted — but real for persistence and blast radius, and
+  worse than the CSP suggests because `script-src` allows `'unsafe-inline'`
+  and the session token is in `localStorage`. Note the card title is
+  upper-cased *before* escaping; the other order would upper-case the entity
+  names.
+
+  **F-03 (reclassified to hardening) — the invite rate limiter's ledger.**
+  `/api/org/invite` counted `admin_audit` rows written through `writeAudit()`,
+  which swallows failures by design. Reserved-before-the-side-effect and
+  fail-closed now. **Reported initially as a Low finding, then downgraded
+  during the fix:** an `org_admin` has no reliable way to make the insert fail
+  (every column is server-derived except an email GoTrue already validated),
+  so there is no exploit to reproduce, and by the skill's own rule it belonged
+  in investigated-and-dismissed. Implemented anyway because it is cheap and
+  correct; the audit report and the probe header both say it is hardening.
+
+  **Verification.** Three probes under `tests/security/`, each written before
+  its fix and confirmed red against the unfixed code (stash the fix, re-run,
+  see it fail) so none is a tautology. F-01's runs the real shared splitter
+  over the real `/data` — 29 leaking links before, 0 after, with the 29 public
+  ones still carrying their URLs — and has a `--deployed` mode that stays red
+  until someone republishes, which is the correct signal. F-02's evaluates the
+  real expressions extracted from `js/app.js` and counts tag openings, so it
+  cannot pass by pattern-matching. F-03's is a structural ordering guard and
+  says in its own header that it is the weakest test in the directory.
+
+  **Blocked / not done.** Nothing is deployed or published — the F-01 fix does
+  nothing until a `site_admin` runs "Publish to site", since the strip happens
+  at publish time. I could not publish: it needs a `site_admin` session or R2
+  credentials from `.env`, which the audit deliberately never reads. F-02 was
+  not confirmed in a browser (would require publishing a payload into shared
+  CMS content). The `supabase`, `cloudflare` and `deps` scopes were not run —
+  most notably `55-deploy-exposure.sh`, so **whether raw `/data` is shadowing
+  the access-checking Function on the current deploy is still unverified**,
+  and that is the highest-severity invariant on this project.
+
 - 2026-09-05 — **Memory and network performance audit, then a fix pass across
   three phases, requested directly (not part of the numbered phases).** Full
   audit of the site's memory usage (~1GB reported in Chrome) and its behavior

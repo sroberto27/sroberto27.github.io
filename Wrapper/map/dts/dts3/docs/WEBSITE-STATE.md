@@ -1,8 +1,10 @@
 # DTS Website — State of Knowledge
 
 **Last updated: 2026-08-10, with a 2026-09-05 addition (§9, §10) covering a
-memory/network performance audit and fix pass — the rest of this document was
-not otherwise re-verified on that date.** Written to be read cold. If you are
+memory/network performance audit and fix pass, and a 2026-09-06 addition (§4,
+§9) covering the first `security-audit` run (`app` scope) — the rest of this
+document was not otherwise re-verified on either date.** Written to be read
+cold. If you are
 a new session or a new developer, read this before `docs/migration/PROGRESS.md`
 (2,800+ lines of session log) or before reading source files from scratch.
 
@@ -228,6 +230,25 @@ Admin Board edits window.DTS_CONTENT (in memory)
 The split logic is one shared module, `functions/_lib/split-logic.js`, imported
 by **both** the CLI path (`scripts/split-content.mjs`) and the live path
 (`functions/api/publish.js`) so they cannot drift apart.
+
+**A link's `url` is stripped on its resolved access level alone — the link's
+`kind` is irrelevant** (corrected 2026-09-06; before that the strip only
+applied to `kind: "treedis"`, which made the access field inert on every other
+kind of link. See `SECURITY-AUDIT-2026-09-06.md` F-01). Two consequences worth
+holding on to:
+
+- A link with **no** `access` resolves to `registered` and its URL is withheld
+  from `data/current/`. Links that should be publicly visible say so
+  explicitly — 29 Vimeo/Matterport links carry `"access": "public"` for exactly
+  this reason. A newly added link in the Admin Board defaults to "Inherit",
+  which means gated until someone chooses otherwise.
+- For links, **the strip is the enforcement.** `js/app.js`'s
+  `resolveExperienceNode()` returns early with no network call when a node
+  already carries a `url`, and `buildExampleLinks()` renders such a link as a
+  plain `<a href>`. `/api/resource/*` gates links correctly, but it is only
+  reached for a link whose URL was actually withheld. Anything that publishes a
+  URL it should not have therefore bypasses the gate entirely rather than
+  merely leaking a stale string.
 
 `data/current/manifest.json` is **filtered** — it lists only documents that
 actually exist in `data/current/`. This matters: `content-loader.js` fetches
@@ -653,6 +674,34 @@ entry. Practical, current-state summary:
 **None of the above has been committed, deployed, or confirmed in a real
 browser as of 2026-09-05.** `docs/migration/FULL-SYSTEM-TESTING.md`'s new
 Part L (tests 144-156) is the manual pass that needs to happen once deployed.
+
+### Security audit, `app` scope — 2026-09-06
+
+Three fixes on branch `security-audit-2026-09-06`; full report and the
+dismissed-lead list in `SECURITY-AUDIT-2026-09-06.md`. Practical current state:
+
+- **Link access levels are now enforced on the access level, not the link
+  kind** (§4 above). Visitor-facing output is unchanged by design.
+- **`js/app.js:116` and `:546` now escape** the sector kicker and use-case card
+  title/text before `innerHTML`.
+- **`/api/org/invite` reserves its rate-limit ledger row before creating the
+  account** and fails closed. This is the one place in the codebase that
+  deliberately does *not* use `writeAudit()`, because that helper swallows its
+  own failures — right for an audit trail, wrong for a counter.
+
+**Committed, not deployed, and — importantly — not published.** The link fix
+runs at publish time, so `data/current/` in R2 still holds the pre-fix copies
+until a `site_admin` runs "Publish to site". Nothing regresses in the meantime
+(the pre- and post-fix public output is identical for today's content), but the
+new control is not live until then. Part M (tests 157–164) is the manual pass;
+test 157 is the republish itself.
+
+**Still unverified, and it is the big one:** `55-deploy-exposure.sh` was not
+run, so whether raw `/data` is shipping as static files and shadowing
+`functions/data/[[path]].js` on the current deploy has **not** been checked.
+That is the single highest-severity invariant here (§7) — it would bypass every
+access check on the site at once, silently. The `supabase`, `cloudflare` and
+`deps` scopes are all still unrun.
 
 ---
 

@@ -105,12 +105,25 @@ documented there so a fresh session doesn't rediscover them from scratch.
 - One example window per sector
 - "Try a Digital Twin" reveal opens and closes — **the tour must not reload**
 - A lead form send, plus the `mailto:` fallback with the Web3Forms key removed
-- Sign-in with `demo` / `1234`
+- Sign-in as a real Supabase account (`testuser@example.com` — the old
+  `demo`/`1234` sign-in was removed in Phase 4 and no longer exists)
 - Admin sign-in → save draft → preview → discard
 - Mobile drawer and sector swipe
 - Safari check for the Vision Pro CTA
 - Browser back/forward through home → sector → project → close
 - Console clean on load and on every overlay
+- The security regression probes pass:
+
+  ```bash
+  for p in tests/security/probe-*.mjs; do node "$p" || echo "FAILED: $p"; done
+  ```
+
+  These need no credentials and no network. Each was written against a real
+  finding, before its fix, and confirmed red against the unfixed code — a
+  failure means the bug is back, not that a fixture drifted. See
+  `tests/security/README.md`. Add `--deployed` to the F-01 probe to check the
+  **published** copy in R2 rather than the working tree; that one legitimately
+  stays red until someone runs "Publish to site" after a content fix.
 
 ---
 
