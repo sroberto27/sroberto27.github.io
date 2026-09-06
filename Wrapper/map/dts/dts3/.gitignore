@@ -13,3 +13,8 @@ node_modules/
 .DS_Store
 Thumbs.db
 ~$*
+
+# Security-audit evidence (scan output and probe request logs). Not source,
+# and both can contain response bodies.
+.claude/skills/security-audit/scan/results/
+tests/security/logs/

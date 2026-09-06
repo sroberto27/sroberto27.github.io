@@ -1,0 +1,44 @@
+# gitleaks config for the working-tree (`gitleaks dir`) pass.
+#
+# Extends the stock ruleset rather than replacing it -- the point of running
+# the real tool is its rules, not ours.
+#
+# The path allowlist below is not about hiding findings. Each entry is a
+# location where a hit tells the audit nothing it does not already know:
+#
+#   .env          Holds live credentials by design. 20-secrets.sh proves it is
+#                 git-ignored and untracked and then deliberately never reads
+#                 it, so that scan/results/ cannot contain a real secret.
+#                 Letting gitleaks walk it would break that promise for no
+#                 gain -- "the secrets file contains secrets" is not a finding.
+#   .build/       Generated deploy-staging output. Every hit here is a copy of
+#                 something already reported from its source file, so it
+#                 triples the noise and adds nothing.
+#   node_modules/ Third-party code. Dependency risk is 10-deps.sh's job, and
+#                 test fixtures in packages fire constantly.
+#   .wrangler/    Local wrangler cache and bundles, same reasoning as .build/.
+#   .git/         Object store. History is scanned properly by the `gitleaks
+#                 git` pass with --log-opts, which understands commits.
+#
+# Regexes deliberately use [.] rather than an escaped dot: this file has to
+# survive several layers of shell and heredoc quoting, and a lone backslash
+# has been eaten more than once getting here.
+#
+# NOTE: this applies to the working-tree pass only. The history pass is
+# path-scoped by --log-opts instead and does not use this config.
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Paths where a hit is known noise, not signal -- see the header"
+targets = ["path"]
+paths = [
+  '''(^|/)[.]env$''',
+  '''(^|/)[.]env[.]''',
+  '''(^|/)[.]build/''',
+  '''(^|/)node_modules/''',
+  '''(^|/)[.]wrangler/''',
+  '''(^|/)[.]git/''',
+  '''(^|/)[.]claude/skills/security-audit/scan/results/''',
+]
