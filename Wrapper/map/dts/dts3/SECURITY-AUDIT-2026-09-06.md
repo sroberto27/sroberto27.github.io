@@ -1179,27 +1179,81 @@ PASS tests/regression/gis-resolver-connection-limit.mjs
 `CLAUDE.md`'s checklist gained the three connection-requiring probes as a
 separate, explicitly-not-in-the-loop block, plus the `--live` flag note.
 
-### Deployment state — read this before assuming "done"
+### Deployment state
 
-Separating these two claims matters on this project; conflating them is what
-made the 2026-09-06 GIS outage hard to attribute.
+Separating "committed", "deployed" and "verified" matters on this project;
+conflating them is what made the 2026-09-06 GIS outage hard to attribute. All
+three are now true for this work, and here is the evidence for each.
 
-- **Live now, no deploy needed:** all three migrations. They are applied to the
-  `DTSdev` database and recorded in `schema_migrations` (8 rows). Because RLS
-  and grants are enforced by Postgres, F-S01's RLS half, F-S02 and F-S03 are
-  **already in force for the deployed site** — including against the currently
-  deployed JS.
-- **Committed but NOT deployed:** the two JS changes
-  (`functions/_lib/admin.js`, `js/app.js`). Until someone redeploys per
-  `docs/migration/DEPLOY-STAGING.md`, the live site still runs the old
-  `isOrgAdmin()` and the old `buildSessionFromAuth()`. The security consequence
-  is contained — the RLS half already denies the reads, so a disabled org's
-  org_admin cannot reach data — but `/api/org/members` and `/api/org/invite`
-  authorize through the Function-side `isOrgAdmin()`, which is still the
-  unfixed copy in production. **F-S01 is not fully closed until that deploy
-  happens.**
-- **Not confirmed in a browser:** the `js/app.js` change. `node --check` passes
-  and the query shape is the documented PostgREST embed syntax, but no one has
-  signed in and looked at the portal. Worth a click-through of the org-admin
-  team panel for an *active* org after deploying, since that is the path the
-  change touches.
+**Deployed: `3eada530`, 2026-09-06, from the staged directory built per
+`docs/migration/DEPLOY-STAGING.md`.** 83 files, 1 changed.
+
+- **Live in the database, no deploy needed:** all three migrations, applied to
+  `DTSdev` and recorded in `schema_migrations` (8 rows). Postgres enforces RLS
+  and grants regardless of which JS is deployed, so F-S02, F-S03 and F-S01's
+  RLS half were in force from the moment they were applied.
+- **Live in the deploy:** the two JS changes. The deployed `js/app.js` now
+  contains `organizations!inner` (confirmed by fetching it); the Functions
+  bundle was recompiled and uploaded, carrying the fixed `isOrgAdmin()` behind
+  `/api/org/members` and `/api/org/invite`. **F-S01 is now closed on both
+  paths.**
+
+Pre-deploy checks from the runbook, all run rather than assumed:
+
+- File lists diffed source vs. staged for all six included directories. `css`,
+  `js`, `assets`, `vendor`, `functions` identical; `models` differs only by the
+  two oversized Backrooms `.usdz` files, which is the intended exclusion.
+- `functions/data/[[path]].js` confirmed present in staging — the
+  double-bracket catch-all that has silently vanished from a staged build
+  before.
+- All 19 excluded paths confirmed absent from the staged directory.
+- `js/config.js` overlay applied: staged copy greps 2, not the repo copy's 16.
+
+Post-deploy checks against `https://dts-website-4cu.pages.dev`:
+
+- `/` is 64804 bytes. Ten excluded paths (`/.env`, `/scripts/seed-dev.mjs`,
+  `/supabase/config.toml`, `/docs/migration/PROGRESS.md`,
+  `/tools/gis-harvest.mjs`, `/CLAUDE.md`, `/wrangler.toml`, `/package.json`,
+  `/SECURITY-AUDIT-2026-09-06.md`, `/tests/security/_harness.mjs`) each return
+  **exactly** 64804 — the SPA fallback, not real content. Status codes prove
+  nothing here, which is why this is measured in bytes.
+- `/data/manifest.json` returns 5043 bytes — genuinely different, so the
+  R2-backed Function route still serves `/data`.
+- **The highest-severity invariant holds.** Raw `/data` is not shipping as
+  static files: the repo's `data/projects/campus.json` contains `tourUrl`, the
+  served copy contains none, which is only possible if the request is being
+  answered from the stripped `data/current/` copy in R2 through
+  `functions/data/[[path]].js`. A nonexistent `/data/...` path returns the
+  Function's own 9-byte `not found` rather than the SPA fallback, confirming
+  the Function owns that route.
+- Deployed `js/config.js` greps **2** for `spaces.dtsxr.com`, not 16 — the
+  stripped fallback shipped, not the repo copy carrying all 16 gated tour URLs.
+- `/index.html` 308-redirects to `/` and resolves to the same 64804 bytes.
+  Normal Cloudflare Pages behaviour, noted only so a future reader does not
+  mistake a bare `curl` of it (0 bytes, redirect not followed) for a fault.
+
+Regression suite, post-deploy — all green:
+
+```
+PASS tests/security/probe-f01-link-access-strip.mjs
+PASS tests/security/probe-f02-cms-html-injection.mjs
+PASS tests/security/probe-f03-invite-ledger-order.mjs
+PASS tests/security/probe-fs01-org-status-enforced.mjs
+PASS tests/security/probe-fs02-events-anon-insert.mjs
+PASS tests/regression/gis-resolver-connection-limit.mjs
+```
+
+Plus the live F-S02 probe against the deployed site: anonymous PostgREST insert
+refused (401), `POST /api/track` still accepted (201).
+
+**Still not confirmed in a browser.** No one has signed in and looked at the
+portal since the `js/app.js` change. The query shape is the documented
+PostgREST embed syntax and `node --check` passes, but the thing worth clicking
+is the org-admin team panel for an **active** org — that is the path the change
+touches, and the failure mode if the embed filter is wrong is that a legitimate
+org_admin loses their panel. Everything above is API- and file-level evidence,
+which is not the same claim.
+
+**Not pushed.** `main` and `security-audit-supabase-2026-09-06` are both ahead
+of `origin`. Pushing also updates the still-live GitHub Pages site, which
+`PROGRESS.md` records as a separate decision; it was deliberately left alone.
