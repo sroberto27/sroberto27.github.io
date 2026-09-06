@@ -1,0 +1,27 @@
+-- Security audit 2026-09-06, finding F-S02.
+--
+-- events_insert granted `anon, authenticated` an INSERT on public.events with
+-- `with check (true)`. The publishable key ships to every visitor in
+-- js/supabase-init.js, so that policy handed the entire internet a direct,
+-- unvalidated write into the analytics table: any `type` (bypassing the
+-- 17-value allowlist in functions/api/track.js), any `user_id` or `org_id`
+-- (which that Function rejects outright), and no rate limit of any kind.
+--
+-- Confirmed by exploit before this migration: an anonymous POST to
+-- /rest/v1/events carrying only the publishable key returned 201 and the row
+-- landed with type 'AUDIT-FS02-PROBE-not-an-allowed-type'. See
+-- tests/security/probe-fs02-events-anon-insert.mjs.
+--
+-- Nothing uses the policy. There is no `.insert(` anywhere in js/ -- the only
+-- client-side touch of this table is a SELECT in js/app.js's
+-- renderPortalActivity(). Every legitimate write goes through
+-- functions/api/track.js, which uses the service role and therefore bypasses
+-- RLS entirely and never needed an insert policy. Dropping it is expected to
+-- be behaviour-neutral for every real path; the probe's companion assertion
+-- (POST /api/track still returns 201) is what proves that rather than assumes
+-- it.
+--
+-- events_select is left exactly as it was: site_admin sees everything, an org
+-- member sees their own org's rows. Reads are unaffected.
+
+drop policy if exists "events_insert" on public.events;
