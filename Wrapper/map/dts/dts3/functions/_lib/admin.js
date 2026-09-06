@@ -17,10 +17,18 @@ export async function requireSiteAdmin(request, env) {
   return { userId };
 }
 
+// Requires the ORGANIZATION's own status to be active too, not just the
+// membership row's -- the same !inner embed + dot-filter access.js's
+// activeOrgIdsFor() uses, and for the same reason. Without it, disabling an
+// organization left its org_admin still able to manage members through
+// /api/org/members and still able to create brand-new accounts through
+// /api/org/invite, because both authorize through requireOrgAdminOf() ->
+// here. Security audit 2026-09-06, finding F-S01 (the Function-path half; the
+// RLS half is 20260906190100_org_status_in_rls_helpers.sql).
 export async function isOrgAdmin(userId, orgId, env) {
   const rows = await pgrst(
     env,
-    `organization_members?user_id=eq.${userId}&org_id=eq.${orgId}&org_role=eq.org_admin&status=eq.active&select=org_id&limit=1`
+    `organization_members?select=org_id,organizations!inner(status)&user_id=eq.${userId}&org_id=eq.${orgId}&org_role=eq.org_admin&status=eq.active&organizations.status=eq.active&limit=1`
   );
   return rows.length > 0;
 }

@@ -2062,7 +2062,16 @@
   /* Builds access.session from a live Supabase Auth session: the user's
      own site_role (profiles) and org memberships (organization_members
      joined to organizations) — both readable under RLS as "your own
-     rows", no service role needed here. */
+     rows", no service role needed here.
+
+     The membership query filters on the ORGANIZATION's status as well as
+     the membership row's. A disabled org must not appear in access.session
+     .orgs: that array decides whether the Activity tile renders and which
+     orgs get an org-admin team panel, so without this a disabled org kept
+     its team panel on screen. `!inner` also means a row whose org is
+     filtered out is dropped entirely rather than arriving with a null
+     `organizations`, which the mapping below would dereference.
+     Security audit 2026-09-06, finding F-S01. */
   async function buildSessionFromAuth(authSession) {
     if (!authSession) { access.session = null; return; }
     const sb = window.DTS_SUPABASE;
@@ -2071,8 +2080,9 @@
     const [{ data: profile }, { data: memberships }] = await Promise.all([
       sb.from("profiles").select("site_role").eq("user_id", user.id).maybeSingle(),
       sb.from("organization_members")
-        .select("org_id, org_role, organizations(slug, name)")
+        .select("org_id, org_role, organizations!inner(slug, name)")
         .eq("user_id", user.id).eq("status", "active")
+        .eq("organizations.status", "active")
     ]);
 
     access.session = {
