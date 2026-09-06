@@ -27,19 +27,22 @@
       "_type": "link",
       "label": "UL Lafayette Solar Energy Lab — fly-over",
       "url": "https://vimeo.com/1058364652/f98b84dae1",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     },
     {
       "_type": "link",
       "label": "Energy: Central Processing Facility",
       "url": "https://vimeo.com/376724255",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     },
     {
       "_type": "link",
       "label": "Shell demo",
       "url": "https://vimeo.com/303186440",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     }
   ],
   "evidence": {

@@ -33,13 +33,15 @@
       "_type": "link",
       "label": "Immersive Stroke Assessment Diagnostic Experience",
       "url": "https://vimeo.com/dtsxr/stroke-scal-assessment",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     },
     {
       "_type": "link",
       "label": "Heart hospital orientation demo",
       "url": "https://vimeo.com/383209930/50ac64b5eb",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     }
   ],
   "evidence": {

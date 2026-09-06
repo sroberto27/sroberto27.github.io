@@ -33,13 +33,15 @@
       "_type": "link",
       "label": "State Park Demo — Miles Partnership & LA Office of Tourism",
       "url": "https://vimeo.com/1209678624/b5ed428562",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     },
     {
       "_type": "link",
       "label": "Virtual Park Tour (short)",
       "url": "https://vimeo.com/1209665275/d14536542c",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     }
   ],
   "gallery": [

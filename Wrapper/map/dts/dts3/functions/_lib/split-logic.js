@@ -73,9 +73,17 @@ export function splitProjectDoc(doc) {
     }
   }
 
+  // Keyed on the resolved ACCESS LEVEL alone, never on link.kind. An earlier
+  // version also required kind === "treedis", which made the access field
+  // silently inert on every other kind of link: the Admin Board offers an
+  // access picker on all of them (js/admin.js's fList over p.links), the
+  // resolver gates all of them (functions/api/resource/[key].js's link
+  // branch), and js/app.js treats "url present" as "public" -- so a gated
+  // non-Treedis link was published in the clear AND never routed through the
+  // gate. Links that are meant to be public now say so in /data.
   if (Array.isArray(current.links)) {
     for (const link of current.links) {
-      if (link.kind === "treedis" && resolveAccessLevel(link.access, current.access) !== "public") {
+      if (resolveAccessLevel(link.access, current.access) !== "public") {
         if (link.url) delete link.url;
       }
     }

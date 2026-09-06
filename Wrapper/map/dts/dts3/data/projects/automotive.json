@@ -48,7 +48,8 @@
       "_type": "link",
       "label": "Watch the BMW dealership video",
       "url": "https://vimeo.com/1187103853",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     }
   ],
   "evidence": {

@@ -33,7 +33,8 @@
       "_type": "link",
       "label": "Immersive Stroke Assessment (clinical simulation)",
       "url": "https://vimeo.com/dtsxr/stroke-scal-assessment",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     }
   ],
   "evidence": {

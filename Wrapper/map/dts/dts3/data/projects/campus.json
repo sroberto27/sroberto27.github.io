@@ -34,13 +34,15 @@
       "_type": "link",
       "label": "Watch the SCSU Walkthrough",
       "url": "https://vimeo.com/1202389953/1e9b4d74aa",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     },
     {
       "_type": "link",
       "label": "SCSU Metaversity Course Structure Reel",
       "url": "https://vimeo.com/1152008581",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     }
   ],
   "gallery": [

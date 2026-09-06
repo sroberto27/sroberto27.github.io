@@ -33,13 +33,15 @@
       "_type": "link",
       "label": "Metal Shark shipbuilding training demo",
       "url": "https://vimeo.com/522913162/bf51023c68",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     },
     {
       "_type": "link",
       "label": "Energy Equipment Overview with AR interaction",
       "url": "https://vimeo.com/334052078",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     }
   ],
   "evidence": {

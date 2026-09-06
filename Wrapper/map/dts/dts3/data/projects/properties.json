@@ -27,19 +27,22 @@
       "_type": "link",
       "label": "Virgin Hotels Orientation Experience",
       "url": "https://vimeo.com/558259558",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     },
     {
       "_type": "link",
       "label": "Virgin Hotels staff-orientation walk-thru",
       "url": "https://vimeo.com/379311258",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     },
     {
       "_type": "link",
       "label": "Westin property twin (Matterport)",
       "url": "https://my.matterport.com/show/?m=D85w1F2sXiw",
-      "kind": "matterport"
+      "kind": "matterport",
+      "access": "public"
     }
   ],
   "gallery": [

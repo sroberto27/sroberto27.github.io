@@ -33,13 +33,15 @@
       "_type": "link",
       "label": "Silicon Bayou Initiative — highlight",
       "url": "https://vimeo.com/1109358698/e6ce9de564",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     },
     {
       "_type": "link",
       "label": "Lafayette fly-over",
       "url": "https://vimeo.com/1007749997",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     }
   ],
   "evidence": {

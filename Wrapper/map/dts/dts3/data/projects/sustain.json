@@ -33,13 +33,15 @@
       "_type": "link",
       "label": "ULL EESEC — full walkthrough",
       "url": "https://vimeo.com/986869653",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     },
     {
       "_type": "link",
       "label": "UL Lafayette Solar Energy Lab fly-over",
       "url": "https://vimeo.com/1029700958",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     }
   ],
   "evidence": {

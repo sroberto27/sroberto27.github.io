@@ -253,7 +253,11 @@ async function stripConfigJs() {
       }
       ex.links.forEach((link, i) => {
         const rawLink = rawLinks[i];
-        if (rawLink.kind !== "treedis") return; // vimeo links have no access field, always public by convention
+        // Access level only -- no kind test. The old "vimeo links have no
+        // access field, always public by convention" rule made the access
+        // field inert on every non-Treedis link; that convention is now
+        // authored explicitly as "access": "public" in /data instead, so this
+        // matches functions/_lib/split-logic.js exactly.
         const access = resolveAccessLevel(rawLink.access, rawDoc.access);
         if (access !== "public" && link.url) {
           delete link.url;

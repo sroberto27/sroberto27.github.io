@@ -33,13 +33,15 @@
       "_type": "link",
       "label": "Components of Communication module",
       "url": "https://vimeo.com/1073705160/a29eee9a63",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     },
     {
       "_type": "link",
       "label": "Electrical Safety training module",
       "url": "https://vimeo.com/522099868/9ac166f67f",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     }
   ],
   "evidence": {

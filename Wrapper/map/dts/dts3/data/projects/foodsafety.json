@@ -33,19 +33,22 @@
       "_type": "link",
       "label": "Retail Food Safety Inspection — in development",
       "url": "https://vimeo.com/403092357",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     },
     {
       "_type": "link",
       "label": "LDH VR capture (highlight)",
       "url": "https://vimeo.com/1109426072/0ddb5aa3aa",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     },
     {
       "_type": "link",
       "label": "Louisiana Department of Health demo",
       "url": "https://vimeo.com/390542485",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     }
   ],
   "gallery": [

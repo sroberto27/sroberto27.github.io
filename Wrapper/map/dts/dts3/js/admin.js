@@ -1139,7 +1139,7 @@
       accessLevelField(card, item, "access", {
         projectAccess: function () { return p.access; },
         resourceKey: function () { return "project." + p.id + ":link-" + (i + 1); },
-        hint: "A link's gated identity is its position in this list (link-1, link-2, …) — removing an earlier link shifts every link after it, along with any entitlements already granted to that position."
+        hint: "A link's gated identity is its position in this list (link-1, link-2, …) — removing an earlier link shifts every link after it, along with any entitlements already granted to that position. A link left on “Inherit” resolves to Registered unless the project itself is Public, and its URL is then withheld from the public site until a visitor signs in — choose Public explicitly for a marketing video or an open external link."
       });
     }, function () { return { _type: "link", label: "New link", url: "https://", kind: "external" }; }, "+ Add link");
 

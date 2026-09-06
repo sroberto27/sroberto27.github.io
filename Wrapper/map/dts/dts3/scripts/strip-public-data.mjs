@@ -68,9 +68,13 @@ for (const file of projectFiles) {
     }
   }
 
+  // Access level only, no kind test -- kept identical to
+  // functions/_lib/split-logic.js's splitProjectDoc(), which supersedes this
+  // file's version. See that function's comment for why the kind test was
+  // wrong.
   if (Array.isArray(doc.links)) {
     for (const link of doc.links) {
-      if (link.kind === "treedis" && resolve(link.access, doc.access) !== "public") {
+      if (resolve(link.access, doc.access) !== "public") {
         if (link.url) { delete link.url; changed = true; }
       }
     }

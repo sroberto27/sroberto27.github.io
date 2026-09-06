@@ -27,25 +27,29 @@
       "_type": "link",
       "label": "Watch: LSU Digital Twin — Iberia Parish Pilot",
       "url": "https://vimeo.com/1132293716",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     },
     {
       "_type": "link",
       "label": "Keller's Bakery — downtown business capture",
       "url": "https://vimeo.com/1176361159/56b48ef2bf",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     },
     {
       "_type": "link",
       "label": "Rock'n'Bowl — downtown business capture",
       "url": "https://vimeo.com/1176361349/a380192055",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     },
     {
       "_type": "link",
       "label": "Planning for Development and Growth",
       "url": "https://vimeo.com/1073705217/dd4b934aa9",
-      "kind": "vimeo"
+      "kind": "vimeo",
+      "access": "public"
     }
   ],
   "gallery": [
