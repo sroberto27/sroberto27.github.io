@@ -123,7 +123,25 @@ documented there so a fresh session doesn't rediscover them from scratch.
   means the bug is back, not that a fixture drifted. See
   `tests/security/README.md`. Add `--deployed` to the F-01 probe to check the
   **published** copy in R2 rather than the working tree; that one legitimately
-  stays red until someone runs "Publish to site" after a content fix.
+  stays red until someone runs "Publish to site" after a content fix. Add
+  `--live` to the F-S02 probe to fire the real anonymous insert against dev
+  Supabase instead of reading the migrations.
+
+  Three probes need a database or network connection and are therefore **not**
+  in the loop above. Run them when touching RLS, org membership, or the builds
+  table:
+
+  ```bash
+  PGPASSWORD="$SUPABASE_DB_PASSWORD" psql "$(head -1 supabase/.temp/pooler-url)" \
+    -f tests/security/probe-fs01-disabled-org-rls.sql
+  PGPASSWORD="$SUPABASE_DB_PASSWORD" psql "$(head -1 supabase/.temp/pooler-url)" \
+    -f tests/security/probe-fs03-client-apps-columns.sql
+  node tests/security/probe-fs02-events-anon-insert.mjs --live
+  ```
+
+  The two SQL ones are non-destructive: each does its work inside a transaction
+  that ends in `ROLLBACK`. Each prints what the expected values are next to the
+  actual ones — read the rows, not the exit code.
 
 ---
 

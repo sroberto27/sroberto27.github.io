@@ -488,3 +488,718 @@ red until a republish. Separately, the dead "Sign-in with `demo` / `1234`" check
 corrected to a real Supabase fixture account — unrelated to these findings, but it is a trap in a
 checklist people are told to run after every change, and it was already flagged in
 `references/00-conventions.md` as a known stale claim.
+
+---
+---
+
+# Scope: `supabase` — appended 2026-09-06
+
+**Target:** Supabase project `DTSdev` (`wsqvzyfvxjenqvqjpqjv`, `us-west-2`), reached both through
+the live Postgres catalog and through PostgREST with the publishable key ·
+**Commit:** `b1bec220` on `main` · **Working tree:** dirty — 3 paths
+(`.claude/skills/security-audit/scan/30-rls.sh`, `docs/DTS-Documentation-Guide.docx`, untracked
+`docs/CONTENT-VERIFICATION.md`); none is application code, so local greps and live probes describe
+the same site.
+**Scan evidence:** `.claude/skills/security-audit/scan/results/2026-09-06/` (archived `30-rls.txt`),
+plus two fresh runs made during this session.
+
+## Grounding (supabase scope)
+
+This scope audits exactly one of the two trust boundaries: **browser → Supabase direct**, where the
+publishable key ships to every visitor and RLS policies are the only enforcement. It does *not*
+cover the Cloudflare Functions, which query with the service role and bypass RLS entirely — that was
+the `app` scope earlier in this document. The practical consequence is that every `.from()` in `js/`
+is in scope and every `pgrst()` in `functions/` is not, and that a control implemented only in a
+Function is, from this scope's point of view, not a control at all.
+
+**Tooling.** Both scans ran at full strength, and this is a genuine upgrade on the last run. The
+archived `30-rls.txt` from earlier today records `[ERROR] rls-live` — psql could not resolve
+`db.wsqvzyfvxjenqvqjpqjv.supabase.co` — and fell back to `[DEGRADED] rls-static`, reading the
+committed migrations only. In this session the live read **succeeded**, via
+`supabase/.temp/pooler-url` + `SUPABASE_DB_PASSWORD` against `aws-1-us-west-2.pooler.supabase.com`.
+So the policy text, role grants, view list, storage-bucket list and `SECURITY DEFINER` `search_path`
+settings below are read from the **live catalog**, not inferred from migration files — which is what
+makes the grants section meaningful at all. `40-supabase-cfg.sh` read the live GoTrue settings
+endpoint and probed PostgREST anonymously. No check in this scope was skipped.
+
+Static-vs-live drift: **none.** The live catalog's 25 policies across 8 tables match the committed
+migrations exactly, table for table and predicate for predicate. That is a real result worth
+recording — it means the migrations can be trusted as a description of production for this scope.
+
+---
+
+## Findings (supabase scope)
+
+| ID | Severity | Component | Title | Status |
+|---|---|---|---|---|
+| F-S01 | Medium | `…_rls_policies.sql:18,31` | Disabling an organization revokes nothing on the RLS path — `is_org_member()`/`is_org_admin()` omit the org-status join that `activeOrgIdsFor()` has | Fixed, verified |
+| F-S02 | Medium | `…_rls_policies.sql:166` | `events_insert` gives every anonymous holder of the publishable key an unvalidated, unmetered direct write into `events`; no client code uses the policy | Fixed, verified |
+| F-S03 | Low | `…_rls_policies.sql:147` | `client_apps_select` exposes every column, including `r2_object_key`, to any authenticated user | Fixed, verified |
+
+Ranked by real exploitability. F-S02 is trivially reachable by anyone on the internet with no
+account and is the fix-first item; F-S01 has larger impact but needs a precondition that does not
+currently hold in the dev data.
+
+---
+
+### F-S01 — Disabling an organization does not revoke anything on the RLS path
+
+**Severity:** Medium — impact Medium-to-High (an org's full analytics history, member roster and
+entitlement list stay readable after revocation, and an `org_admin` keeps membership-management
+rights), exploitability Moderate (requires an active membership in the org at the time it was
+disabled), reachability Live-but-conditional (the code path is live and disabled orgs exist today;
+no disabled org currently has a member, so it is **not** exploitable against the present dataset —
+it opens the moment a populated org is disabled, which is the feature's entire purpose).
+
+**Location:** `supabase/migrations/20260807220100_rls_policies.sql:18` (`is_org_member`) and `:31`
+(`is_org_admin`).
+
+**What it is.** Both RLS helpers resolve the caller's org membership by filtering on the
+**membership row's** `status = 'active'` and nothing else. Neither joins `organizations` to check the
+**organization's** own `status`. The sibling function on the Functions path, `activeOrgIdsFor()`,
+does exactly that join — and its comment says it was added because this precise bug was found and
+fixed during Phase 5b. The RLS helpers were never given the same fix, so the bug still lives on the
+path where RLS is the only control.
+
+**Reachability trace.**
+- Entry point: `GET/POST/PATCH/DELETE https://wsqvzyfvxjenqvqjpqjv.supabase.co/rest/v1/<table>`,
+  called directly with the publishable key and the caller's own JWT. No Cloudflare Function is
+  involved, so no server-side guard applies.
+- Policy sites: `…_rls_policies.sql:107` (`organization_members_select`), `:87`
+  (`organizations_select`), `:129` (`resource_entitlements_select`), `:175` (`events_select`),
+  `:111`/`:115`/`:120` (member insert/update/delete).
+- Caller's auth state: a signed-in user holding an `active` membership row in an org whose own
+  `status` is `'disabled'`.
+- Parameter carrying the payload: none needed for the reads; `org_id` on the member-management
+  writes, checked against `is_org_admin(org_id)` — which returns `true` for a disabled org.
+- What the caller obtains that they should not: after an administrator has disabled the org, its
+  members can still read the `organizations` row, the **full member roster** (`user_id`, `org_role`,
+  `status` for every colleague), the org's `resource_entitlements` list, and **every `events` row
+  attributed to that org**. An `org_admin` of the disabled org can additionally still insert, update
+  and delete membership rows — including promoting someone to `org_admin`.
+
+**Evidence.**
+
+The RLS helper — membership status only (`…_rls_policies.sql:18-28`):
+
+```sql
+create or replace function public.is_org_member(check_org_id uuid)
+...
+  select exists (
+    select 1 from public.organization_members
+    where org_id = check_org_id and user_id = auth.uid() and status = 'active'
+  );
+```
+
+The Functions-path sibling, which does join, and says why (`functions/_lib/access.js:84-96`):
+
+```
+// Requires the ORGANIZATION's own status to be active too (PostgREST's
+// !inner embed + dot-filter on the embedded table), not just the membership
+// row's status -- found while building the Phase 5b "disable an
+// organization" feature and verified live before this fix existed: a
+// disabled org's still-"active" membership rows previously kept granting
+// client-level access with zero enforcement, making "disable" purely
+// cosmetic.
+```
+```js
+`organization_members?select=org_id,organizations!inner(status)&user_id=eq.${userId}&status=eq.active&organizations.status=eq.active`
+```
+
+What the product promises the operator when they click Disable (`js/admin.js:2777-2780`):
+
+```js
+if (next === "disabled" && !confirm(
+  "Disable “" + org.name + "”? Its members immediately lose client-level access. " +
+  "Membership and entitlement rows are kept, not deleted — reactivate any time to restore them."
+)) return;
+```
+
+Live state, read from the catalog this session (read-only query; UUIDs omitted):
+
+```
+acme-hotels|active                       beta-municipal|active|org_admin|active|1
+beta-municipal|active                    phase5b-cp-b-test-org|disabled  (0 members, 0 events)
+deployed-cp-b-test|active                test-1|disabled                 (0 members, 0 events)
+```
+
+**Confidence.** *Confirmed by reading the code* for the divergence between the two helpers and for
+what each policy permits. *Confirmed against the real service/data* for the live policy text (the
+catalog read reproduces `is_org_member(org_id)` with no org-status join) and for the current org
+inventory. **Not confirmed live** as an executed exploit: no session was minted for a member of a
+disabled org, because no such member exists — creating one means writing to the database, which the
+rules of engagement put behind your approval.
+
+**Blast radius.** Bounded, and worth being precise about: `checkAccess()` →
+`hasActiveOrgMembership()` → `activeOrgIdsFor()` **does** join org status, so the confirm dialog's
+headline promise — "members immediately lose client-level access" — genuinely holds. Gated projects,
+experiences, GIS maps and downloads all stay denied. What does not hold is everything else: the data
+directly readable through PostgREST, and the membership-management surface. The worst case is a
+contract termination or a compromised-account incident, where "disable the organization" is exactly
+the control an operator reaches for, and where it silently leaves the org's analytics history and
+roster readable and its admin still able to mutate membership.
+
+**Cross-scope note — the RLS fix alone will not close this.** `functions/_lib/admin.js:20-26`'s
+`isOrgAdmin()` has the *same* omission:
+
+```js
+`organization_members?user_id=eq.${userId}&org_id=eq.${orgId}&org_role=eq.org_admin&status=eq.active&select=org_id&limit=1`
+```
+
+It is the guard behind `requireOrgAdminOf()`, which gates `functions/api/org/members.js` (4 call
+sites) and `functions/api/org/invite.js:28`. So an `org_admin` of a disabled org can also still
+manage members *and create brand-new user accounts* through the Function path. That half is an
+`app`-scope finding by the scope split, but it shares one root cause with F-S01, and fixing only the
+RLS half would leave it open. Recorded here rather than deferred, because splitting one root cause
+across two reports is how the second half gets forgotten.
+
+**Proposed fix.** Add the organization-status join to both RLS helpers, in a new migration —
+mirroring what `activeOrgIdsFor()` already does:
+
+```sql
+create or replace function public.is_org_member(check_org_id uuid)
+returns boolean language sql security definer set search_path = public stable as $$
+  select exists (
+    select 1 from public.organization_members m
+    join public.organizations o on o.id = m.org_id
+    where m.org_id = check_org_id and m.user_id = auth.uid()
+      and m.status = 'active' and o.status = 'active'
+  );
+$$;
+```
+
+and the same `join` / `o.status = 'active'` in `is_org_admin`. Both are `create or replace`, so no
+policy needs dropping or recreating and no policy text changes. Then the matching join in
+`functions/_lib/admin.js:20-26`.
+
+This does **not** touch the do-not-break list. It is a schema change needing a migration and a
+deploy window, so it is also a human-action item below.
+
+Two consequences to weigh before approving, because they are behaviour changes rather than pure
+hardening:
+
+- A site_admin reactivating an org restores everything, since nothing is deleted — which already
+  matches the confirm dialog's second sentence.
+- `js/app.js:2071-2073`'s `buildSessionFromAuth()` also filters only on membership status, so a
+  disabled org still appears in `access.session.orgs` and its team panel still renders. After the RLS
+  fix that panel would render and then fail its reads, which is worse than not rendering. The
+  client-side filter should land in the same change.
+
+**Exploit test.** Not yet written — per the skill's flow, exploit tests are written only for approved
+findings, and this one additionally needs a seeded fixture (a member of a disabled org) that does not
+exist yet. The failing-first test to write: mint a session for a member of a disabled org, assert
+`GET /rest/v1/events?org_id=eq.<disabled>` returns rows before the fix and `[]` after, with a
+companion asserting a member of an *active* org still reads their own org's events.
+
+---
+
+### F-S02 — `events_insert` gives every anonymous visitor a direct, unvalidated write into `events`
+
+**Severity:** Medium — impact Medium (data integrity and availability: forged analytics, forged
+attribution to a real user or org, unbounded row growth; **no** confidentiality breach and **no** XSS
+— the Activity tile renders through Chart.js to a `<canvas>`, not to `innerHTML`), exploitability
+**Trivial** (one `curl`, no account, the key is a published static file), reachability Live. Per the
+rubric's own tie-breaker, a trivially exploitable Medium outranks a hard-to-reach High — this is the
+fix-first item, and the cheapest fix in the report.
+
+**Location:** `supabase/migrations/20260807220100_rls_policies.sql:166-169`.
+
+```sql
+create policy "events_insert"
+  on public.events for insert
+  to anon, authenticated
+  with check (true);
+```
+
+**What it is.** `with check (true)` for `anon` means anyone holding the publishable key — which ships
+to every visitor in a static file — can `POST /rest/v1/events` with a body of their choosing. Every
+application-side control on this table lives in `functions/api/track.js` and is bypassed entirely by
+talking to PostgREST directly: the 17-value `EVENT_TYPES` allowlist, the explicit rejection of
+caller-supplied `user_id`/`org_id`, and the server-side org stamping.
+
+The part that makes this cheap to fix: **nothing uses the policy.** A grep for `.insert(` across
+`js/` returns zero hits, and the only client-side `events` access is a SELECT at `js/app.js:2382`.
+Every legitimate write goes through `track.js`, which uses the **service role** and therefore
+bypasses RLS and needs no insert policy at all. The policy is pure attack surface with no functional
+counterpart.
+
+**Reachability trace.**
+- Entry point: `POST https://wsqvzyfvxjenqvqjpqjv.supabase.co/rest/v1/events`, headers
+  `apikey: sb_publishable_…` and `Content-Type: application/json`.
+- Caller's auth state: **anonymous.** The policy names `anon` explicitly.
+- Parameter carrying the payload: the whole request body — `type`, `user_id`, `org_id`,
+  `resource_key`, `project_id`, `metadata`.
+- What the caller obtains that they should not: the ability to write arbitrary rows into the
+  analytics table that the client portal's Activity tile and site_admin reporting read from.
+
+**Evidence.** Live catalog, section 4 ("Unconditional predicates"):
+
+```
+ schemaname | tablename |  policyname   |  cmd   |        roles         | with_check_expr
+ public     | events    | events_insert | INSERT | {anon,authenticated} | true
+```
+
+Live grants (section 6) confirm `anon` holds `INSERT` on `public.events`, so the policy is the only
+thing between an anonymous caller and the table.
+
+The key is genuinely public — fetched from the deployed site during this audit:
+
+```
+$ curl -s https://dts-website-4cu.pages.dev/js/supabase-init.js
+window.DTS_SUPABASE = supabase.createClient(
+  "https://wsqvzyfvxjenqvqjpqjv.supabase.co",
+  "sb_publishable_…"           # redacted here; publishable by design
+);
+```
+
+And `functions/api/track.js:1-11` already states the situation plainly — this finding is not a
+disagreement with the author, but the observation that the mitigation chosen at the time only works
+for a client that cooperates:
+
+```
+// ... Unlike admin_audit (service-role-only insert), events_insert's RLS
+// policy allows any caller -- anon or authenticated -- to insert directly
+// with the anon key. This Function exists anyway, and js/app.js is expected
+// to call it rather than write to Supabase directly, for one reason: only a
+// server-side process can be trusted to stamp user_id/org_id correctly. A
+// client-side insert could claim any org_id it wants; RLS's `with check
+// (true)` on events_insert does not stop that ...
+```
+
+**Confidence.** *Confirmed against the real service/data* for the policy text, the role grants and
+the publishable key being served. *Confirmed by reading the code* for "no client code inserts" and
+for what `track.js` validates. **Not confirmed live** as an executed exploit: I did not send the
+insert. That is a write to the database, and the rules of engagement put state-changing verbs behind
+your explicit approval — so this remains reasoned, not executed. One `curl` settles it either way
+whenever you want it settled.
+
+**Blast radius.**
+- **Availability / cost.** Unlimited anonymous rows into `events`, with no rate limit on this path.
+  (The known-gaps entry about `/api/track` having no limiter concerns a *different* path, which at
+  least validates its input.) On a free-tier project this is a storage and quota problem.
+- **Integrity of the org-facing dashboard.** `org_id` is FK-constrained to a real organization, but a
+  signed-in member can read their own `org_id` through `organizations_select`. They can inject
+  fabricated events attributed to their own org, which colleagues and any site_admin then see in the
+  Activity tile as genuine usage.
+- **Forged attribution to a specific person.** `user_id` is FK-constrained to `auth.users`, and
+  `organization_members_select` lets any org member read colleagues' `user_id`s. So one member can
+  write analytics rows attributed to another named colleague.
+- **Bypassing the type allowlist.** Arbitrary `type` strings and arbitrary `metadata` JSON land in a
+  table reporting reads. Not an injection sink today — the render path is Chart.js on a canvas — but
+  it is unvalidated attacker data at rest.
+- Notably **not** reachable: `events` has no UPDATE or DELETE policy (live catalog shows only
+  `events_insert` and `events_select`), so an attacker can add noise but cannot erase existing rows.
+
+**Proposed fix.** Drop the policy in a new migration:
+
+```sql
+drop policy "events_insert" on public.events;
+```
+
+`track.js` writes with the service role, which bypasses RLS, so this is expected to be
+behaviour-neutral for every legitimate path. That expectation is exactly what the companion test
+below must prove before the change ships — "deny everything" would otherwise pass the security test
+and silently break analytics.
+
+If you would rather keep a client-side insert path open for future use, the narrower version is to
+scope it `to authenticated` and constrain the columns a caller may set. Given nothing uses it today,
+dropping it is both stronger and simpler.
+
+**Exploit test.** Not yet written — approval first. Shape:
+`probe-fs02-events-anon-insert.mjs` posts a row to `/rest/v1/events` with a bogus `type` and a forged
+`org_id` using only the publishable key, asserting `201` before the fix and `401/403` after; the
+companion drives `/api/track` with a legitimate event and asserts it still lands — which is the test
+that actually protects the product here.
+
+---
+
+### F-S03 — `client_apps_select` exposes every column, including `r2_object_key`, to any authenticated user
+
+**Severity:** Low — impact Low (internal object-path disclosure; the build catalog itself is shown to
+signed-in users by design), exploitability Easy (any free self-registered account, one request),
+reachability Live.
+
+**Location:** `supabase/migrations/20260807220100_rls_policies.sql:147-149`.
+
+```sql
+create policy "client_apps_select"
+  on public.client_apps for select
+  using (auth.uid() is not null and (enabled = true or public.is_site_admin()));
+```
+
+**What it is.** RLS is row-level, not column-level, so a policy permitting the row permits every
+column of it. The client asks for four columns (`js/app.js:2204`:
+`.select("key, name, platform, version")`), but nothing stops any authenticated caller asking for
+`select=*` and receiving `r2_object_key`
+(`supabase/migrations/20260807220000_core_schema.sql:60`) for every enabled build.
+
+**Reachability trace.**
+- Entry point: `GET /rest/v1/client_apps?select=*` with any valid session JWT.
+- Caller's auth state: any registered user — including a self-registered account with no org and no
+  entitlement, since the predicate is only `auth.uid() is not null`.
+- What the caller obtains that they should not: the R2 object key for every enabled build.
+
+**Confidence.** *Confirmed by reading the code*, and *confirmed against the real service* for the
+policy text and grants. I did not execute the `select=*` — it is a read and would have been within
+the rules of engagement, but it needs a minted session and the policy text already settles it.
+
+**Blast radius.** Small, and worth saying plainly: `dts-builds` is a private R2 bucket reached
+through a Worker binding, so knowing an object key grants no access to the object. Downloads stay
+gated by `/api/download/<key>`, which re-checks entitlement server-side. This is internal-path
+disclosure and a slightly wider catalog view than the UI intends — defence-in-depth, not a live hole.
+Enumerating the build catalog is *by design*; the portal shows locked tiles to signed-in users.
+
+**Proposed fix.** Optional, and low priority. Either add a column grant
+(`revoke select (r2_object_key) on public.client_apps from anon, authenticated;` — RLS and column
+grants compose), or leave it and record it as accepted. The service role is unaffected either way.
+
+---
+
+## Investigated and dismissed (supabase scope)
+
+| Lead | Source | Why it is not a finding |
+|---|---|---|
+| Email-domain auto-assignment as privilege escalation (register as `anyone@clientdomain.com`, inherit the client's org) | `20-supabase.md` §4 — flagged **Critical** where a domain→org mapping exists, and one does exist here | **Closed by configuration, confirmed against the live project.** `40-supabase-cfg.sh` read GoTrue's live settings: `mailer_autoconfirm = false`. Email confirmation is required, so the attacker must control a mailbox at the target domain. This was the highest-risk hypothesis going into the scope. |
+| `handle_new_user()` auto-inserting membership from an email domain | `30-rls` trigger list | Reads correctly. `…_org_email_domains.sql:82-88` matches on `lower(oed.domain) = lower(split_part(new.email,'@',2))` — exact equality on the part after the `@`, not a substring or suffix match, so `evil-clientdomain.com` and `clientdomain.com.attacker.net` do not match. It joins `organizations o ... and o.status = 'active'`, and a unique index on `lower(domain)` makes a domain global to one org. It inserts `status='active'` deliberately (an `'invited'` row would pass "membership exists" while granting nothing). Note the contrast with F-S01: **this** path got the org-status join right. |
+| `USING(true)` / `WITH CHECK(true)` on `events_insert` | `30-rls` "permissive predicates" | This one *is* a finding — F-S02. Listed here only so the row is not double-counted as dismissed. |
+| Anonymous PostgREST read of all 8 tables | `40-supabase-cfg` | **Not a finding, and positively verifying.** All eight returned `HTTP 200` with a 2-byte body — `[]`. An empty array is RLS working correctly. Confirmed against the real service. |
+| `[LEAD] storage-bucket-list` — an unauthenticated caller can enumerate storage buckets | `40-supabase-cfg` | `GET /storage/v1/bucket` returns 200, but section 10 of the live catalog shows **zero buckets exist**. The endpoint enumerates an empty list. Supabase Storage is unused; binaries live in Cloudflare R2. Nothing to disclose. |
+| `SECURITY DEFINER` functions bypassing RLS with a hijackable `search_path` | `20-supabase.md` §2 | All 7 pin it. Confirmed against the live catalog (section 8): `handle_new_user`, `is_org_admin`, `is_org_member`, `is_site_admin`, `protect_site_role` all show `search_path=public`; the two `vault` functions are Supabase-managed with `search_path=""`. |
+| `protect_site_role()`'s bootstrap relaxation — the `auth.uid() is not null` escape in `…_fix_protect_site_role_bootstrap.sql` | `20-supabase.md` §2 ("read its bootstrap path — that path has already needed a fix in this schema") | **Traced and sound.** The relaxation lets the trigger pass when `auth.uid()` is NULL. For an anonymous PostgREST caller that is unreachable: `profiles_update`'s `USING (user_id = auth.uid() or is_site_admin())` evaluates to `NULL or false` → not true for every row, so RLS filters the update to zero rows and the trigger never fires. The only callers reaching it with NULL `auth.uid()` **and** a selected row are service-role connections, which already bypass RLS everywhere else. The migration's own comment makes this argument and it holds. |
+| Self-promotion to `site_admin` by updating one's own `profiles` row | `20-supabase.md` §2 ("is the identity column itself protected?") | Blocked. `protect_site_role_trigger` (BEFORE UPDATE, confirmed present in the live catalog, section 11) raises on any `site_role` change by a non-site_admin. `profiles` has only SELECT and UPDATE policies — no INSERT, no DELETE — so a user cannot sidestep it by deleting and re-creating their row, nor by inserting a crafted one. |
+| Membership self-grant — inserting yourself into an org you do not belong to, which would collapse every org-scoped policy at once | `20-supabase.md` §2 ("trace the chain to its root") | Blocked at the root. `organization_members_insert`'s `WITH CHECK (is_site_admin() or is_org_admin(org_id))` is false for a plain user, so the table `is_org_member()` resolves against cannot be seeded by its own beneficiary. |
+| Tenancy move via UPDATE — changing `org_id` on a membership row to escape into another org | `20-supabase.md` §2 (the `WITH CHECK` question) | Blocked on both sides. `USING` evaluates `is_org_admin(OLD.org_id)` and `WITH CHECK` evaluates `is_org_admin(NEW.org_id)`; an org_admin of A moving a row to B fails the `WITH CHECK`. An org_admin *can* set an arbitrary `user_id` within their own org — but that is the shipped "add existing member by email" feature, and it grants the added user access to the admin's own org only, which is not an escalation for the actor. |
+| Write policies missing `WITH CHECK` | `30-rls` | None. Confirmed against the live catalog (section 5 returns 0 rows). Every write-capable policy defines one. |
+| Views leaking past RLS | `20-supabase.md` §2 | No views exist. Confirmed against the live catalog (section 9, 0 rows). |
+| `admin_audit` writable by a client | `30-rls` grants | `anon` and `authenticated` hold the INSERT *grant*, but the table has exactly one policy (SELECT, `is_site_admin()`). No insert policy means insert is denied. The design intent recorded in `WEBSITE-STATE.md` §3 holds. |
+| Erasing evidence from `events` after forging it | follow-on from F-S02 | Not possible. `events` has only INSERT and SELECT policies; UPDATE and DELETE are denied despite the blanket grants. |
+| Realtime as a separate surface | `20-supabase.md` §3 | Not in use. No `.channel(`, `removeChannel` or `realtime` reference anywhere in `js/`. |
+| `is_org_member` / `is_org_admin` exposed as PostgREST RPC (both live in `public`) | reasoning | Callable, but each takes only a `uuid` and returns a boolean about **the caller**, resolved from `auth.uid()`. Useful as a membership oracle for yourself, which you already know. No argument lets a caller ask about anyone else. |
+| Static-vs-live policy drift | `30-rls` | None. The live catalog's 25 policies match the 5 committed migrations exactly. |
+
+---
+
+## Accepted and residual risk (supabase scope)
+
+- **No `FORCE ROW LEVEL SECURITY` on any table** (confirmed live, `rls_forced = f` on all 16). The
+  table owner therefore bypasses every policy. Normal for Supabase and harmless while the app
+  connects as `anon`/`authenticated` and the Functions as the service role — which is the case here.
+  Worth knowing before anyone asserts "the table is protected" unconditionally.
+- **Open signup is enabled** (`disable_signup = false`, live). Correct for this product: a
+  self-registered account reaches `registered` content and nothing further, and F-S03 is the only
+  place this scope found where such an account sees slightly more than intended.
+- **The publishable key is in a committed, world-readable static file.** By design, and correct — it
+  is a publishable key. Recorded only because F-S02's severity derives from it: any policy granting
+  `anon` a capability grants it to the entire internet.
+- **Events attributed to a multi-org or zero-org user carry `org_id = null`** and are therefore
+  invisible to everyone but a site_admin. A deliberate "don't guess" choice in `track.js`, not a gap.
+
+**Second-order consequence, recorded separately per the conventions:** `WEBSITE-STATE.md` §9 accepts
+"`/api/track` has no rate limiting" as a known gap. That acceptance covers the *Function*. It does
+not cover the direct PostgREST insert path, which has no rate limiting *and* no type validation *and*
+no `user_id`/`org_id` rejection — i.e. the controls `track.js` implements were never actually
+controls, because a second unguarded path to the same table was left open. That gap is F-S02, and is
+fair game rather than covered by the acceptance.
+
+---
+
+## Human action items (supabase scope)
+
+- **Approve or reject F-S01 and F-S02 before any code is written.** Both need a new migration and a
+  deploy window; neither can be applied without a schema change reaching the live database.
+- **Supabase Redirect URLs allow-list — still unconfirmed.** `WEBSITE-STATE.md` §9 has carried this
+  as an open question and this audit could not close it: GoTrue's public `/settings` endpoint does
+  not publish the allow-list, so it needs a dashboard check. Both directions matter — an unlisted
+  `redirectTo` silently breaks signup confirmation, OAuth return and password reset; an
+  over-permissive or wildcard entry turns the reset flow into token theft.
+- **Custom SMTP** remains unset (existing §9 item). Beyond the documented 2-emails/hour availability
+  problem, it is now load-bearing for *security*: `mailer_autoconfirm = false` is the single control
+  closing the email-domain escalation path (see the dismissed table), and it is only as strong as the
+  confirmation email actually being delivered.
+- **JWT expiry and refresh-token rotation were not verifiable from outside.** `config.toml` says
+  `jwt_expiry = 3600`, `enable_refresh_token_rotation = true`, `refresh_token_reuse_interval = 10`,
+  but that file describes the **local** stack, not the hosted project, and the live settings endpoint
+  does not publish these. Confirm in the dashboard. It matters because the session token lives in
+  `localStorage` and is readable by any XSS.
+- **`minimum_password_length = 6`** in `config.toml` — same caveat, local-stack only; confirm the
+  hosted value. Six is low if it is also the live setting.
+
+---
+
+## Untested areas (supabase scope)
+
+- **No exploit was executed.** Every finding here is reasoned from live policy text and real code,
+  not from a fired request. F-S02 in particular would be settled by a single `curl` and I did not
+  send it, because it is a write to the database and the rules of engagement require your approval.
+  F-S01 additionally has no fixture to exploit — no member exists in either disabled org — so a real
+  test needs a seeded one.
+- **Per-bucket storage visibility and signed-URL TTLs:** moot. Zero buckets exist, confirmed against
+  the live catalog.
+- **The Functions/service-role boundary is out of scope by construction** and was covered by the
+  `app` scope earlier in this document — with the one exception of `functions/_lib/admin.js`'s
+  `isOrgAdmin()`, recorded under F-S01 because it shares that finding's root cause.
+- **`cloudflare` and `deps` scopes remain unrun**, as recorded in `WEBSITE-STATE.md` §9.
+  `55-deploy-exposure.sh` has still never been executed as a script, though the invariant it exists to
+  test was checked directly during the 2026-09-06 deploy.
+- **The auth *flows* themselves were not exercised** — no signup, confirmation, password reset or
+  OAuth round trip was performed. This scope read configuration and policy, not runtime behaviour.
+
+---
+
+## Documentation updates — proposed, not applied (supabase scope)
+
+**`docs/WEBSITE-STATE.md`** — §9 gains a dated `supabase`-scope subsection recording: that the scope
+ran with a **live catalog read** (the previous run degraded to static analysis, so this is the first
+time the grants and the absence of drift were actually verified); that `mailer_autoconfirm = false`
+is the control closing the email-domain escalation path and should be treated as load-bearing; and
+F-S01/F-S02/F-S03 with their status. §3's "four resource access levels" table is accurate for the
+Functions path and should gain one sentence noting that the RLS helpers do **not** currently enforce
+org status, so the two paths disagree until F-S01 is fixed. §10's scope-status line should change
+from "`supabase`, `cloudflare` and `deps` scopes are still unrun" to name `supabase` as complete.
+
+**`docs/migration/PROGRESS.md`** — a session-log entry: the scope ran; the live read succeeded where
+the earlier same-day run failed DNS and degraded; the three findings; that no exploit was executed
+and why; and the cross-scope `isOrgAdmin()` sibling, so it is not lost between reports.
+
+**`CLAUDE.md`** — no change yet. It gains probe lines only if F-S01/F-S02 are approved and their
+regression tests land under `tests/security/`.
+
+---
+
+## Fixes applied — supabase scope, 2026-09-06
+
+All three findings were approved and fixed on branch
+`security-audit-supabase-2026-09-06`, one finding per commit. Every fix was
+proven **red before and green after**, against the real dev database, and each
+ships with a companion assertion showing legitimate access survived.
+
+**Applied to the live dev database** (`DTSdev`, the project backing
+<https://dts-website-4cu.pages.dev>) and recorded in
+`supabase_migrations.schema_migrations`, which now lists all eight migrations.
+The two JS changes are committed but **not yet deployed** — see "Deployment
+state" below, because that distinction has bitten this project before.
+
+### One process note worth keeping
+
+The F-S02 exploit **initially appeared not to reproduce**, returning `401` with
+`new row violates row-level security policy`. Taken at face value that would
+have moved a real finding to investigated-and-dismissed, exactly as the
+protocol says to do when an exploit cannot be executed. It was a bug in the
+probe, not a property of the system: `Prefer: return=representation` makes
+PostgREST add a `RETURNING` clause, which additionally requires the **SELECT**
+policy to pass — and `events_select` is false for an anonymous caller. The
+insert itself was permitted the whole time. Removing the header returned `201`
+and the row landed.
+
+The lesson generalises past this one probe: **a denial that arrives for the
+wrong reason looks exactly like a control working.** Read the error body, not
+the status code. The probe now carries a comment explaining why it must not ask
+for the row back.
+
+---
+
+### F-S01 — fix and verification
+
+**Diff.** `supabase/migrations/20260906190100_org_status_in_rls_helpers.sql`
+(new) rewrites both RLS helpers to join `organizations` and require
+`o.status = 'active'`, mirroring `activeOrgIdsFor()`. Both are
+`create or replace`, so no policy was dropped or recreated and none of the 25
+policy definitions changed — they simply get a correct answer now.
+
+Two more sites, same root cause, in the same commit:
+
+- `functions/_lib/admin.js:20-33` — `isOrgAdmin()` gained
+  `organizations!inner(status)` + `organizations.status=eq.active`. Without it,
+  an org_admin of a disabled org could still manage members through
+  `/api/org/members` and still create accounts through `/api/org/invite`.
+- `js/app.js:2065-2087` — `buildSessionFromAuth()` gained
+  `organizations!inner(...)` + `.eq("organizations.status", "active")`, so a
+  disabled org no longer appears in `access.session.orgs` and its team panel
+  stops rendering. `!inner` also means a row whose org is filtered out is
+  dropped rather than arriving with a null `organizations`, which the mapping
+  immediately below would dereference.
+
+**Exploit test.** `tests/security/probe-fs01-disabled-org-rls.sql` — disables a
+real populated org inside a transaction, checks what its members can still
+reach, and `ROLLBACK`s. Non-destructive by construction; the org is never
+actually disabled.
+
+```
+PGPASSWORD=… psql "$(head -1 supabase/.temp/pooler-url)" \
+  -f tests/security/probe-fs01-disabled-org-rls.sql
+```
+
+Before the fix:
+
+```
+ ACTIVE  (companion -- both must be t) | is_org_member: t | is_org_admin: t
+ DISABLED (exploit -- both must be f)  | is_org_member: t | is_org_admin: t   <-- the bug
+ rows still readable after disable     | orgs_visible: 1 | roster_visible: 2 | events_visible: 0
+```
+
+After the fix:
+
+```
+ ACTIVE  (companion -- both must be t) | is_org_member: t | is_org_admin: t   <-- preserved
+ DISABLED (exploit -- both must be f)  | is_org_member: f | is_org_admin: f
+ rows still readable after disable     | orgs_visible: 0 | roster_visible: 0 | events_visible: 0
+```
+
+`events_visible` was 0 in both runs only because the fixture org has no events;
+the org row and the 2-person roster are what demonstrate the leak and its
+closure.
+
+**Regression guard.** `tests/security/probe-fs01-org-status-enforced.mjs` —
+offline, no credentials, in the standard checklist loop. It checks **all four**
+sites rather than the two in the finding's title, because F-S01 existed
+precisely because the Phase 5b fix landed in one place and nowhere else.
+Confirmed red against the unfixed tree (4/4 denial assertions failed) by
+stashing the fix and re-running, then green (7/7) with it restored.
+
+**Confidence.** *Confirmed against the real service/data.* The live catalog now
+reports `is_org_member joins orgs: true` and `is_org_admin joins orgs: true`.
+
+---
+
+### F-S02 — fix and verification
+
+**Diff.** `supabase/migrations/20260906190000_drop_events_anon_insert.sql`
+(new): `drop policy if exists "events_insert" on public.events;`
+
+Nothing else changed. `events_select` is untouched, so reads behave exactly as
+before, and `functions/api/track.js` writes with the service role, which
+bypasses RLS and never needed the policy.
+
+**Exploit test.** `tests/security/probe-fs02-events-anon-insert.mjs`. Default
+mode is an offline structural check that walks every migration and tracks net
+policy state, so a `create` later followed by a `drop` reads as absent. `--live`
+fires the real request using only the publishable key read from
+`js/supabase-init.js`.
+
+Before the fix (`--live`):
+
+```
+[FAIL] anonymous PostgREST insert into events is refused
+       HTTP 201 returned data:
+```
+
+…and the row was confirmed present in the database, carrying a `type` outside
+`track.js`'s 17-value allowlist:
+
+```
+AUDIT-FS02-PROBE-not-an-allowed-type|t|t|AUDIT-FS02-PROBE
+```
+
+After the fix:
+
+```
+[PASS] anonymous PostgREST insert into events is refused
+       HTTP 401
+[PASS] POST /api/track still accepts a legitimate event
+       HTTP 201
+```
+
+The second line is the companion and is the one that matters: dropping a policy
+is only a fix if the real analytics path still works. Offline mode is green too
+(2/2), and was confirmed red beforehand (`anon-writable INSERT policies still
+present: events_insert`).
+
+**Cleanup.** The probe row was deleted in the same transaction as the policy
+drop; a follow-up count confirmed `leftover_probe_rows = 0`.
+
+**Confidence.** *Confirmed against the real service/data*, both directions.
+Live catalog now reports `events policies: events_select/SELECT` — no INSERT
+policy at all, so the table is deny-by-default for writes, the same shape
+`admin_audit` already had.
+
+---
+
+### F-S03 — fix and verification
+
+**Diff.** `supabase/migrations/20260906190200_client_apps_column_grants.sql`
+(new). The trap here is that a **column-level `REVOKE` does not carve an
+exception out of a table-level `GRANT`** — a table-level `SELECT` covers every
+column regardless. So the migration drops the table-level grant and re-grants
+the eight safe columns explicitly:
+
+```sql
+revoke select on public.client_apps from anon, authenticated;
+grant select (id, key, name, platform, version, enabled, created_at, updated_at)
+  on public.client_apps to anon, authenticated;
+```
+
+`r2_object_key` is deliberately absent. Because the columns are listed, a column
+added later is **not** browser-readable until someone adds it here on purpose.
+
+Verified beforehand that nothing legitimate breaks: `js/app.js:2214` selects
+four named columns, all still granted; the Admin Board reads builds through
+`adminFetch("/api/admin/apps")` (service role, unaffected), never a direct
+client-side Supabase read; `functions/api/download/[key].js` and the admin apps
+routes also use the service role.
+
+**Exploit test.** `tests/security/probe-fs03-client-apps-columns.sql` —
+read-only, two separate transactions (the expected post-fix result of the first
+is an error, which would otherwise abort the companion).
+
+Before the fix, a plain authenticated user read real R2 object paths:
+
+```
+ f0ed5d0c-… | builds/test-browser-app/EyeVrUpdated.apk
+ a3f1170c-… | builds/dummy-viewer-win/futureJoke.png
+```
+
+After the fix:
+
+```
+--- EXPLOIT ---   ERROR: permission denied for table client_apps
+--- COMPANION --- test-browser-app | test app-1         | android | 0.0.1-test
+                  dummy-viewer-win | Dummy Viewer (dev) | windows | 0.0.1-dev
+```
+
+**Confidence.** *Confirmed against the real service/data.* The live catalog
+lists exactly eight columns granted to `authenticated`, and `r2_object_key` is
+not one of them.
+
+---
+
+### Regression status
+
+The full checklist loop passes, including the three probes from the earlier
+`app` scope:
+
+```
+PASS tests/security/probe-f01-link-access-strip.mjs
+PASS tests/security/probe-f02-cms-html-injection.mjs
+PASS tests/security/probe-f03-invite-ledger-order.mjs
+PASS tests/security/probe-fs01-org-status-enforced.mjs
+PASS tests/security/probe-fs02-events-anon-insert.mjs
+PASS tests/regression/gis-resolver-connection-limit.mjs
+```
+
+`CLAUDE.md`'s checklist gained the three connection-requiring probes as a
+separate, explicitly-not-in-the-loop block, plus the `--live` flag note.
+
+### Deployment state — read this before assuming "done"
+
+Separating these two claims matters on this project; conflating them is what
+made the 2026-09-06 GIS outage hard to attribute.
+
+- **Live now, no deploy needed:** all three migrations. They are applied to the
+  `DTSdev` database and recorded in `schema_migrations` (8 rows). Because RLS
+  and grants are enforced by Postgres, F-S01's RLS half, F-S02 and F-S03 are
+  **already in force for the deployed site** — including against the currently
+  deployed JS.
+- **Committed but NOT deployed:** the two JS changes
+  (`functions/_lib/admin.js`, `js/app.js`). Until someone redeploys per
+  `docs/migration/DEPLOY-STAGING.md`, the live site still runs the old
+  `isOrgAdmin()` and the old `buildSessionFromAuth()`. The security consequence
+  is contained — the RLS half already denies the reads, so a disabled org's
+  org_admin cannot reach data — but `/api/org/members` and `/api/org/invite`
+  authorize through the Function-side `isOrgAdmin()`, which is still the
+  unfixed copy in production. **F-S01 is not fully closed until that deploy
+  happens.**
+- **Not confirmed in a browser:** the `js/app.js` change. `node --check` passes
+  and the query shape is the documented PostgREST embed syntax, but no one has
+  signed in and looked at the portal. Worth a click-through of the org-admin
+  team panel for an *active* org after deploying, since that is the path the
+  change touches.
