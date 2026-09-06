@@ -16,7 +16,7 @@
 // request is tighter than a presigned URL anyway -- a revoked entitlement
 // takes effect on the very next request, not after some TTL expires.
 
-import { json, pgrst, verifyUser, checkAccess } from "../../_lib/access.js";
+import { json, pgrst, verifyUser, checkAccess, SECURITY_HEADERS } from "../../_lib/access.js";
 
 export async function onRequestGet(context) {
   const { request, params, env } = context;
@@ -46,6 +46,7 @@ export async function onRequestGet(context) {
   return new Response(obj.body, {
     status: 200,
     headers: {
+      ...SECURITY_HEADERS,
       "content-type": "application/octet-stream",
       "content-disposition": `attachment; filename="${filename}"`,
       "content-length": String(obj.size),

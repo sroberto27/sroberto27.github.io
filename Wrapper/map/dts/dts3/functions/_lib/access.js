@@ -24,10 +24,32 @@ export function isUuid(value) {
   return typeof value === "string" && UUID_RE.test(value);
 }
 
+// Cloudflare Pages applies the repo's _headers file to STATIC ASSETS ONLY.
+// A Function builds its own response headers in code, so without this the
+// half of the site that serves gated data shipped with no security headers
+// at all -- confirmed against the deployed site 2026-09-06
+// (SECURITY-AUDIT-2026-09-06.md, F-C03). Spread into EVERY Response any
+// Function returns, including the plain-text and streamed-body ones that
+// don't go through json() below.
+//
+// The CSP here is deliberately stricter than _headers'. A Function response
+// is data (json/geojson/octet-stream), never a rendered document, so it
+// needs nothing loadable at all.
+export const SECURITY_HEADERS = {
+  "x-content-type-options": "nosniff",
+  "referrer-policy": "strict-origin-when-cross-origin",
+  "content-security-policy": "default-src 'none'",
+  "strict-transport-security": "max-age=31536000; includeSubDomains",
+};
+
 export function json(body, status) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "content-type": "application/json", "cache-control": "no-store" },
+    headers: {
+      ...SECURITY_HEADERS,
+      "content-type": "application/json",
+      "cache-control": "no-store",
+    },
   });
 }
 

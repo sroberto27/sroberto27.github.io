@@ -15,6 +15,8 @@
 // static assets are, so without this explicit cache-aside step every
 // request would hit R2 directly and a "purge" would have nothing to purge.
 
+import { SECURITY_HEADERS } from "../_lib/access.js";
+
 const CONTENT_TYPES = {
   json: "application/json",
   geojson: "application/geo+json",
@@ -25,7 +27,7 @@ export async function onRequestGet(context) {
   const segments = Array.isArray(params.path) ? params.path : [params.path];
 
   if (!segments.length || segments.some((s) => !s || s === ".." || s.includes("/"))) {
-    return new Response("not found", { status: 404 });
+    return new Response("not found", { status: 404, headers: { ...SECURITY_HEADERS } });
   }
 
   const cache = caches.default;
@@ -38,11 +40,12 @@ export async function onRequestGet(context) {
   const contentType = CONTENT_TYPES[ext] || "application/octet-stream";
 
   const obj = await env.DTS_CONTENT.get(key);
-  if (!obj) return new Response("not found", { status: 404 });
+  if (!obj) return new Response("not found", { status: 404, headers: { ...SECURITY_HEADERS } });
 
   const response = new Response(obj.body, {
     status: 200,
     headers: {
+      ...SECURITY_HEADERS,
       "content-type": contentType,
       // Short browser TTL (content can be republished any time) but long
       // enough for the edge cache-aside above to actually save R2 reads
