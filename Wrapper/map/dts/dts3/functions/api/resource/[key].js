@@ -53,12 +53,43 @@ function parseResourceKey(key) {
   return null;
 }
 
+// Cloudflare Workers allows at most 6 SIMULTANEOUSLY OPEN connections per
+// invocation, and an R2 object's body counts as one until it is consumed.
+// This is a different budget from the 50-subrequest ceiling that shaped
+// functions/api/publish.js, and parallelising reads does not reduce it -- it
+// is exactly what exhausts it.
+//
+// A previous version did `Promise.all` over every get(), then `Promise.all`
+// over every .json()`. That holds EVERY body open at once: 27 here (14 tours
+// + 13 feature tours). The runtime closed them with "Response closed due to
+// connection limit", this function threw, and onRequestGet()'s catch turned
+// it into a 500 -- so `gismap.iberia-coastal` became unresolvable for every
+// caller, signed in or not, since the resolve runs before the access check.
+// Confirmed live from the deployment's own logs, and by A/B against the
+// preceding deployment, which still returned a correct 401.
+//
+// Bounded concurrency keeps most of the win (~7 rounds instead of 27 serial
+// reads) without ever holding more than READ_CONCURRENCY bodies open. Each
+// task get()s AND fully reads its own body before taking the next key, so a
+// body is never left open waiting on an unrelated task.
+const READ_CONCURRENCY = 4; // under Workers' limit of 6, with headroom
+
+async function mapWithConcurrency(items, limit, task) {
+  const out = new Array(items.length);
+  let next = 0;
+  async function worker() {
+    for (let i = next++; i < items.length; i = next++) out[i] = await task(items[i]);
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+  return out;
+}
+
 async function listSourceJson(env, prefix, predicate) {
   const listing = await env.DTS_CONTENT.list({ prefix: `data/source/${prefix}` });
-  // Same object count as a sequential loop -- these R2 GETs just no longer
-  // wait on each other, since none depends on another's result.
-  const docs = await Promise.all(listing.objects.map((item) => env.DTS_CONTENT.get(item.key)));
-  const parsed = await Promise.all(docs.map((obj) => (obj ? obj.json() : null)));
+  const parsed = await mapWithConcurrency(listing.objects, READ_CONCURRENCY, async (item) => {
+    const obj = await env.DTS_CONTENT.get(item.key);
+    return obj ? await obj.json() : null;
+  });
   return predicate ? parsed.filter((doc) => doc && predicate(doc)) : parsed.filter(Boolean);
 }
 
