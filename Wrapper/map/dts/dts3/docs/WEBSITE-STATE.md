@@ -263,8 +263,13 @@ tag — `content-loader.js` injects it dynamically — so it never appears in a
 normal page-load network trace, but it is a deployed static file anyone can
 `curl`. The repo's committed copy holds all 16 real tour URLs. The deploy must
 overlay the **stripped** `.build/js/config.js` over it (see §8). Re-verify with
-`curl <site>/js/config.js | grep -c spaces.dtsxr.com` → expect **1** (the public
-homepage tour), never 16.
+`curl <site>/js/config.js | grep -c spaces.dtsxr.com` → expect **2**, never 16.
+(Corrected 2026-09-06 — it said "expect 1". `grep -c` counts *lines*, and the
+one public homepage tour occupies two: its `tourUrl` and its `origin`, which
+travel together as a pair. Both the staged and the deployed copy have always
+returned 2, so the old figure would have failed a correct deploy. What the
+check is really asserting is "only the public homepage tour survives"; 16 means
+the unstripped repo copy shipped.)
 
 ### Current content inventory
 
@@ -671,9 +676,19 @@ entry. Practical, current-state summary:
   not worth fixing at its corrected, smaller size, without adding real
   complexity to the universal (non-admin) boot path.
 
-**None of the above has been committed, deployed, or confirmed in a real
-browser as of 2026-09-05.** `docs/migration/FULL-SYSTEM-TESTING.md`'s new
-Part L (tests 144-156) is the manual pass that needs to happen once deployed.
+~~**None of the above has been committed, deployed, or confirmed in a real
+browser as of 2026-09-05.**~~ **Corrected 2026-09-06: it was committed
+(`d71c77ae`) and deployed the same day** — deployment `0cfe69ba`, ~15 hours
+before the 2026-09-06 session. The "not deployed" line above was already wrong
+when it was written, and it mattered: it is why nobody went looking when the
+GIS map broke. **One of these changes shipped a live outage** — see the GIS
+resolver entry below. `docs/migration/FULL-SYSTEM-TESTING.md`'s Part L (tests
+144-156) is still the manual pass that has not happened.
+
+The lesson worth keeping: "deployed" and "verified" are separate claims, and so
+are "deployed" and "believed to be deployed." A performance change that is
+reasoned about but never exercised against the real runtime can be both live
+and broken while the documentation says it is neither.
 
 ### Security audit, `app` scope — 2026-09-06
 
@@ -689,19 +704,75 @@ dismissed-lead list in `SECURITY-AUDIT-2026-09-06.md`. Practical current state:
   deliberately does *not* use `writeAudit()`, because that helper swallows its
   own failures — right for an audit trail, wrong for a counter.
 
-**Committed, not deployed, and — importantly — not published.** The link fix
-runs at publish time, so `data/current/` in R2 still holds the pre-fix copies
-until a `site_admin` runs "Publish to site". Nothing regresses in the meantime
-(the pre- and post-fix public output is identical for today's content), but the
-new control is not live until then. Part M (tests 157–164) is the manual pass;
-test 157 is the republish itself.
+**All three are now merged to `main`, deployed, and their R2 content synced**
+(deployment `fb6554dd`). The link fix runs at publish time, so `data/current/`
+was rewritten via `scripts/upload-content.mjs`, plus a hand-built
+`data/source/_latest.json` — see the note below on why that second step is not
+optional. Verified live: the deployed-mode F-01 probe reports 0 gated links
+leaking and 29 public links intact. Part M (tests 157–164) is the manual
+browser pass, still to run.
 
-**Still unverified, and it is the big one:** `55-deploy-exposure.sh` was not
-run, so whether raw `/data` is shipping as static files and shadowing
-`functions/data/[[path]].js` on the current deploy has **not** been checked.
-That is the single highest-severity invariant here (§7) — it would bypass every
-access check on the site at once, silently. The `supabase`, `cloudflare` and
-`deps` scopes are all still unrun.
+**A trap worth knowing about, found during that sync.** `_latest.json` is
+written **only** by `functions/api/publish.js` and read **only** by
+`/api/admin/content` — `scripts/upload-content.mjs` does not touch it. So after
+a CLI content upload the Admin Board still holds the *previous* content, and
+the next "Publish to site" would write that stale copy back over what the CLI
+just uploaded. Repo `/data` changes reach R2 through the CLI; Admin Board edits
+reach R2 through `/api/publish`; and the two paths do not see each other unless
+`_latest.json` is updated alongside a CLI upload. If you ever run
+`upload-content.mjs` by hand, regenerate `_latest.json` too.
+
+**The highest-severity invariant was checked during the deploy and it holds.**
+Raw `/data` is **not** shipping as static files: `/data/projects/campus.json`
+on the live site has no `tourUrl`, while the repo copy does — proof the request
+is being served the stripped `data/current/` copy through
+`functions/data/[[path]].js`, not a static file shadowing it. Every excluded
+path (`/.env`, `/scripts/`, `/supabase/`, `/docs/`, `/tools/gis-harvest.mjs`,
+`/CLAUDE.md`, `/wrangler.toml`, `/tests/`, the audit report) returns the
+64804-byte SPA fallback rather than real content. `55-deploy-exposure.sh` as a
+script still has not been run, but the question it exists to answer has been
+answered directly. The `supabase`, `cloudflare` and `deps` scopes are still
+unrun.
+
+### GIS map resolver outage — found and fixed 2026-09-06
+
+**`gismap.iberia-coastal` returned 500 to every caller for about 15 hours**, so
+the GFC project's map — the only GIS map — could not be opened by anyone. The
+resolve runs before the access check, so being signed in made no difference.
+
+Introduced by the 2026-09-05 performance commit (`d71c77ae`), which replaced a
+sequential read loop in `listSourceJson()` with `Promise.all` over every R2
+`get()` followed by `Promise.all` over every `.json()`. That holds all 27
+bodies open at once (14 tours + 13 feature tours). **Workers allows 6
+simultaneously open connections, and an unconsumed R2 body counts as one** — so
+the runtime closed them (`Response closed due to connection limit`, read from
+the deployment's own logs via `wrangler pages deployment tail`) and the
+resolver's `catch` turned that into a 500.
+
+The change reasoned about the **50-subrequest ceiling**, which it genuinely did
+leave unchanged. The connection limit is a **separate budget**, and
+parallelising does not reduce it — it is precisely what exhausts it. Worth
+holding onto, because this codebase has hit the subrequest ceiling before
+(`functions/api/publish.js`, `functions/api/admin/content.js`) and the habit of
+reaching for `Promise.all` came from those fixes.
+
+Fixed in `9ed89866` with bounded concurrency (`READ_CONCURRENCY = 4`): each task
+`get()`s **and fully consumes** its own body before taking the next key, so no
+more than 4 are ever open. Keeps most of the speedup — about 7 rounds instead
+of 27 serial reads. Confirmed live: 500 → 401 across 8/8 requests.
+
+`tests/regression/gis-resolver-connection-limit.mjs` drives the real handler
+against a fake R2 binding that enforces the same limit; it is red against the
+previous version with the identical error and 500 body seen in production. It
+is in `CLAUDE.md`'s testing checklist.
+
+**Two sibling sites carry the same shape and were deliberately left alone**:
+`functions/api/admin/entitlements.js:38` (a `pgrst()` per entitlement row) and
+`functions/api/publish.js:289` (a `caches.default.delete()` per published
+path). Both iterate small collections today and there is no evidence either
+fails; they are recorded here so the pattern is recognisable if one ever does.
+`functions/api/admin/users.js:14` is a fixed three-element `Promise.all` and is
+fine.
 
 ---
 
@@ -710,6 +781,12 @@ access check on the site at once, silently. The `supabase`, `cloudflare` and
 **Live dev site: <https://dts-website-4cu.pages.dev>** (the stable alias —
 always the latest deploy; per-deploy hash URLs change every redeploy, don't
 bookmark those).
+
+**Current deployment: `fb6554dd`, 2026-09-06, from `main`.** As of that deploy
+`main` and the live site are identical — worth keeping true, because for a
+while they were not and it made a live outage hard to attribute. R2 content was
+synced in the same session (`scripts/upload-content.mjs` plus a regenerated
+`data/source/_latest.json`).
 
 - **Migration Phases 0–9 are DONE.** Cloudflare foundation, secret scrub,
   Supabase schema + RLS + dummy seed, client auth swap + resource gating, admin

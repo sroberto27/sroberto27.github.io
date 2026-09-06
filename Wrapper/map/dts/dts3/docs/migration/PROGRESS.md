@@ -22,6 +22,65 @@ identity/access model each phase from 3 onward implements is defined in
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
 
+- 2026-09-06 (later, same session) — **Deployed the security fixes, synced R2,
+  then found and fixed a live GIS outage.** Deployment `fb6554dd` from `main`;
+  `main` and the live site are now identical.
+
+  **The outage.** `gismap.iberia-coastal` had been returning 500 to every
+  caller for ~15 hours — the GFC map was unopenable for everyone, signed in or
+  not, because the resolve runs before the access check. Introduced by
+  `d71c77ae` (the 2026-09-05 perf pass), deployed as `0cfe69ba`. Its change to
+  `listSourceJson()` replaced a sequential loop with `Promise.all` over every
+  R2 `get()` then `Promise.all` over every `.json()`, holding all 27 bodies
+  open at once. **Workers caps simultaneously open connections at 6 and an
+  unconsumed R2 body counts as one**, so the runtime closed them and the
+  resolver's catch produced a 500.
+
+  **The distinction that caused it:** the change reasoned about the
+  50-subrequest ceiling — which it genuinely did not change — but the
+  connection limit is a separate budget that parallelising exhausts rather than
+  relieves. This repo had already fixed two real subrequest-ceiling problems
+  (`publish.js`, `admin/content.js`), so `Promise.all` was a learned reflex
+  applied to a different problem.
+
+  **How it was diagnosed**, since the method transfers: A/B across three
+  deployments against identical R2 content isolated it to code (`655b9b66`
+  pre-perf → 401; `0cfe69ba` and the new deploy → 500), then
+  `wrangler pages deployment tail <deployment-id> --format json` gave the real
+  error, `Response closed due to connection limit`, instead of a guess. The
+  deployment id is required in non-interactive mode.
+
+  Fixed in `9ed89866` with bounded concurrency (`READ_CONCURRENCY = 4`), each
+  task consuming its own body before taking the next key. Live: 500 → 401 on
+  8/8 requests. `tests/regression/gis-resolver-connection-limit.mjs` (new
+  directory) reproduces the production failure exactly against the old code.
+
+  **A correction to this log and to WEBSITE-STATE.** The 2026-09-05 entry said
+  the perf work was "not committed, deployed, or confirmed." It was committed
+  and deployed the same day. That wrong line is why nobody looked when the map
+  broke — both documents now say so.
+
+  **R2 sync, and a trap found doing it.** `data/current/`, `data/source/` and
+  `_hashes.json` went up via `scripts/upload-content.mjs` (103 files, 0
+  failed). But `data/source/_latest.json` is written **only** by
+  `/api/publish` and read **only** by `/api/admin/content`, so a CLI upload
+  leaves the Admin Board holding stale content — and the next "Publish to site"
+  would write that stale copy back over the upload. Rebuilt `_latest.json` by
+  hand (61 docs matching the manifest, 6 layers) and uploaded it. Anyone
+  running `upload-content.mjs` must do the same.
+
+  **Also verified while deploying:** raw `/data` is not shipping statically —
+  the served `campus.json` has no `tourUrl` and the repo copy does, proving the
+  R2-backed Function serves it. That is the highest-severity invariant in §7
+  and it holds. Every excluded path returns the SPA-fallback byte count; all 34
+  manifest files 200; deployed-mode F-01 probe green (0 leaking, 29 public
+  intact).
+
+  **Not done:** nothing pushed to `origin` (`main` is ahead) — pushing also
+  updates the still-live GitHub Pages site, which is a separate decision. Part
+  L and Part M manual passes still unrun. Two sibling `Promise.all` sites
+  (`admin/entitlements.js:38`, `publish.js:289`) flagged, not changed.
+
 - 2026-09-06 — **First `security-audit` skill run, scope `app`; three fixes
   committed on branch `security-audit-2026-09-06`.** Full report with the
   reachability traces, the twelve dismissed leads and their reasons, and the

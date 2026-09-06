@@ -112,15 +112,15 @@ documented there so a fresh session doesn't rediscover them from scratch.
 - Safari check for the Vision Pro CTA
 - Browser back/forward through home → sector → project → close
 - Console clean on load and on every overlay
-- The security regression probes pass:
+- The security and regression tests pass:
 
   ```bash
-  for p in tests/security/probe-*.mjs; do node "$p" || echo "FAILED: $p"; done
+  for p in tests/security/probe-*.mjs tests/regression/*.mjs; do node "$p" || echo "FAILED: $p"; done
   ```
 
   These need no credentials and no network. Each was written against a real
-  finding, before its fix, and confirmed red against the unfixed code — a
-  failure means the bug is back, not that a fixture drifted. See
+  bug, before its fix, and confirmed red against the unfixed code — a failure
+  means the bug is back, not that a fixture drifted. See
   `tests/security/README.md`. Add `--deployed` to the F-01 probe to check the
   **published** copy in R2 rather than the working tree; that one legitimately
   stays red until someone runs "Publish to site" after a content fix.

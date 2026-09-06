@@ -2,6 +2,43 @@
 
 Newest first.
 
+## Fix: GIS map resolver hit the Workers connection limit (live outage)
+
+`gismap.iberia-coastal` — the only GIS map, reached from the GFC project —
+returned 500 to every caller for roughly 15 hours. The resolve runs before the
+access check, so signing in made no difference; nobody could open the map.
+
+The cause was the 2026-09-05 performance commit, which replaced a sequential R2
+read loop with `Promise.all` over every `get()` and then `Promise.all` over
+every `.json()`. That holds all 27 documents' bodies open simultaneously (14
+tours + 13 feature tours). **Cloudflare Workers allows 6 simultaneously open
+connections and an unconsumed R2 body counts as one**, so the runtime closed
+them — `Response closed due to connection limit` — and the resolver's `catch`
+returned a 500.
+
+The subtlety worth remembering: that change reasoned about the
+**50-subrequest ceiling** and correctly left it unchanged. The connection limit
+is a **different budget**, and parallelising doesn't reduce it — it's exactly
+what exhausts it. This codebase had hit the subrequest ceiling twice before, so
+reaching for `Promise.all` was a learned habit; it just solved a different
+problem from the one it was applied to.
+
+Fixed with bounded concurrency (4 at a time), where each task fetches and fully
+consumes its own body before taking the next key. Most of the speedup survives
+— about 7 rounds rather than 27 serial reads. Confirmed live: 500 → 401 across
+eight consecutive requests.
+
+Added `tests/regression/gis-resolver-connection-limit.mjs`, a new
+`tests/regression/` home for this kind of test. It drives the real handler
+against a fake R2 binding enforcing the same limit, and is red against the
+previous version with the identical error and 500 body seen in production. This
+outage shipped and stayed live *because* nothing exercised the path — the
+project's own convention of verifying against the real thing, not just
+reasoning about it, is what eventually caught it.
+
+Two sibling sites share the shape and were left alone with no evidence they
+fail: `functions/api/admin/entitlements.js:38` and `functions/api/publish.js:289`.
+
 ## Fix: security audit (app scope) — link gating, CMS escaping, invite ledger
 
 First run of the `security-audit` skill, scoped to `app` (the Cloudflare Pages

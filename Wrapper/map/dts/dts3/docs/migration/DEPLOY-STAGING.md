@@ -78,7 +78,21 @@ wholesale — one fewer thing to remember per deploy.)
    hitting the fallback, not a real file. Separately confirm
    `/data/manifest.json` returns a genuinely different size (proof the
    R2-backed Function route still works).
-5. Only report the deploy as verified once 1-4 all actually ran — "the
+5. **Confirm the `js/config.js` overlay actually happened.** The staged file
+   must be the stripped `.build` copy, not the repo one:
+   `grep -c spaces.dtsxr.com <stage>/js/config.js` → **2**, and the same
+   against the deployed URL afterwards. **16 means the unstripped repo copy
+   shipped** and every gated tour URL is public. (Two, not one: `grep -c`
+   counts lines, and the single public homepage tour has both its `tourUrl`
+   and its `origin` on separate lines. `WEBSITE-STATE.md` §4 said "expect 1"
+   until 2026-09-06, which would have failed a correct deploy.)
+6. **If `/data` project or GIS content changed this session, the static deploy
+   is not enough** — see "What this does NOT cover" below, and note that
+   `scripts/upload-content.mjs` does **not** write `data/source/_latest.json`,
+   which the Admin Board reads. Uploading content without regenerating that
+   file leaves the board holding stale content, and its next publish will
+   overwrite what you just uploaded.
+7. Only report the deploy as verified once 1-6 all actually ran — "the
    command exited 0" is not verification.
 
 ## What this does NOT cover

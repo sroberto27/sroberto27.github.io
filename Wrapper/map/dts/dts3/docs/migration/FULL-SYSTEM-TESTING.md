@@ -1533,6 +1533,42 @@ from test 163 when finished.
 Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
 Comments: ____________________________________
 
+## GIS map resolver connection limit (2026-09-06 outage)
+
+`gismap.iberia-coastal` returned 500 to everyone for ~15 hours because the
+resolver held 27 R2 bodies open at once, past Workers' limit of 6. Now read 4
+at a time. **This is the highest-value test in Part M** — it was a total
+feature outage that no automated check caught before it shipped.
+
+**165. The GFC map actually opens for a signed-in user.** Sign in as
+`testuser@example.com` (a plain registered account — the map is `registered`,
+so this is the lowest privilege that should work). Open the GFC project and its
+map experience. Confirm the map renders with its layers, not an error or a
+spinner that never resolves. Check the browser console is clean and that
+`/api/resource/gismap.iberia-coastal` returns 200 in the network tab, not 500.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**166. Guided tours and feature tours on that map still work.** These are the
+27 documents the resolver reads. Start a guided tour, step through it, and open
+a feature that has a feature tour attached. If the concurrency cap were wrong,
+the symptom would be missing tours rather than a hard error — a map that opens
+with an empty tour list is a FAIL here, not a pass.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**167. A signed-out visitor gets the sign-in gate, not an error.** In a
+private window, open the GFC project's map. Expect the locked placeholder and
+the sign-in prompt. Visiting
+`/api/resource/gismap.iberia-coastal` directly should show
+`{"error":"sign-in required"}` — if it shows `{"error":"resolution failed"}`
+the outage is back.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
 ---
 
 ## When you're done
