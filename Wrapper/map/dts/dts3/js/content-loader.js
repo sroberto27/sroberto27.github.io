@@ -42,13 +42,26 @@
     return null;
   }
 
+  /* A stalled connection (common on flaky mobile networks) never rejects
+     fetch() on its own -- without this, one hung request among the
+     manifest + all documents below can leave the whole Promise.all(), and
+     therefore the entire page, waiting forever instead of falling back to
+     js/config.js the way an outright failure already does. */
+  var FETCH_TIMEOUT_MS = 15000;
+  function fetchWithTimeout(path, init) {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, FETCH_TIMEOUT_MS);
+    var opts = Object.assign({}, init, { signal: ctrl.signal });
+    return fetch(path, opts).finally(function () { clearTimeout(timer); });
+  }
+
   /* fresh=true forces a real network hit (used only for manifest.json,
      which is tiny and must always reflect the latest publish). Every
      other document is fetched with normal HTTP caching -- safe because
      its URL carries a ?v=<contentVersion> suffix that only changes
      when the content actually changes (see admin.js exportData()). */
   function fetchJSON(path, fresh) {
-    return fetch(path, { cache: fresh ? "no-store" : "default" }).then(function (r) {
+    return fetchWithTimeout(path, { cache: fresh ? "no-store" : "default" }).then(function (r) {
       if (!r.ok) throw new Error(path + " " + r.status);
       return r.json();
     });
@@ -374,18 +387,49 @@
     return false;
   }
 
+  /* Same reasoning as gis-loader.js's injectCss() for the vendored Leaflet
+     CSS: a plain visitor should never download css/13-admin.css, so it's
+     only added to <head> once we already know this is an admin context --
+     right alongside js/admin.js joining the script list below. Not awaited
+     (matches gis-loader.js's own fire-and-forget style): openBoard() only
+     builds the board DOM after a real sign-in event, which is always much
+     later than this ~12KB file takes to load. */
+  function injectCss(href) {
+    if (document.querySelector('link[href="' + href + '"]')) return;
+    var link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = href;
+    document.head.appendChild(link);
+  }
+
   /* ---------- boot the app scripts in order ---------- */
   function appScripts() {
     var list = ["js/app.js", "js/smoke-depth.js", "js/vision-pro-spatial.js", "js/hex-media.js"];
-    if (isAdminContext()) list.push("js/admin.js");
+    if (isAdminContext()) {
+      injectCss("css/13-admin.css");
+      list.push("js/admin.js");
+    }
     return list;
   }
+  /* Fetch every script in the list concurrently (async=false still fetches
+     in parallel -- it only forces in-order EXECUTION once each has loaded,
+     same as a run of <script defer> tags) instead of one round trip at a
+     time. done() fires once every script has settled (loaded or errored),
+     matching the old recursive chain's all-or-nothing-continues behavior. */
   function injectScripts(list, done) {
     if (!list.length) { if (done) done(); return; }
-    var s = document.createElement("script");
-    s.src = list[0];
-    s.onload = s.onerror = function () { injectScripts(list.slice(1), done); };
-    document.body.appendChild(s);
+    var remaining = list.length;
+    function settled() {
+      remaining--;
+      if (remaining <= 0 && done) done();
+    }
+    list.forEach(function (src) {
+      var s = document.createElement("script");
+      s.src = src;
+      s.async = false;
+      s.onload = s.onerror = settled;
+      document.body.appendChild(s);
+    });
   }
 
   /* ---------- config.js fallback loader ----------
@@ -433,6 +477,13 @@
   }
   function ensureAdminBundle() {
     if (document.querySelector('script[src="js/admin.js"]')) return; // already loading/loaded
+    // Real path for a first-time admin on this browser: isAdminContext() is
+    // false (no ?admin/#admin flag, no draft yet) right up until they
+    // actually sign in through this same modal -- so this speculative
+    // preload is often the ONLY place js/admin.js gets requested at all,
+    // and it has to bring its CSS with it or the board renders unstyled
+    // the first time.
+    injectCss("css/13-admin.css");
     whenContentReady(function () { injectScripts(["js/admin.js"]); });
   }
   function wireAdminTrigger() {

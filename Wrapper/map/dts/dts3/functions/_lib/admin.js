@@ -89,3 +89,29 @@ export async function gotrue(env, path, opts) {
   if (!resp.ok) throw new Error(`GoTrue admin ${resp.status}: ${text}`);
   return data;
 }
+
+// The full user directory (up to 1000 users) -- used only to resolve ids to
+// emails for display, never for an access decision -- was being re-fetched
+// from GoTrue independently by every admin/org endpoint that needed it, with
+// no cache between them. This is a best-effort, per-isolate microcache, not
+// a correctness mechanism: Cloudflare doesn't guarantee an isolate survives
+// between requests, so a cache miss (cold isolate) just falls back to
+// exactly today's behavior -- one real GoTrue call. A short TTL keeps a
+// stale-roster window small; invalidateUserListCache() (called after any
+// mutation that changes who exists -- create/delete, see call sites) also
+// clears it immediately within the same isolate, which is the common case
+// for one admin doing a create-then-view in quick succession.
+let userListCache = null; // { data, expiresAt }
+const USER_LIST_CACHE_MS = 30000;
+
+export async function listAllUsers(env) {
+  const now = Date.now();
+  if (userListCache && userListCache.expiresAt > now) return userListCache.data;
+  const data = await gotrue(env, "/admin/users?per_page=1000");
+  userListCache = { data, expiresAt: now + USER_LIST_CACHE_MS };
+  return data;
+}
+
+export function invalidateUserListCache() {
+  userListCache = null;
+}

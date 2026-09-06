@@ -2,6 +2,39 @@
 
 Newest first.
 
+## Fix: memory and network performance audit pass
+
+Requested directly: a full audit of the site's memory usage (~1GB reported
+in Chrome) and its behavior on slow/unstable 4G-5G, followed by a fix pass.
+Full details: `docs/migration/PROGRESS.md`'s 2026-09-05 entry;
+`docs/WEBSITE-STATE.md` §9 has the practical current-state summary.
+
+Highlights: the home hero's `Buildings.glb` 3D model now decodes to ~33MB of
+GPU texture memory instead of ~129MB (same file-size-vs-VRAM distinction
+that motivated compressing `ToolBox.glb` earlier — GPU memory depends on
+texture resolution, not on-disk compression); a 7.66MB background image that
+was loading on every single page view regardless of whether the sign-in
+modal was ever opened is now a 38.7KB image loaded only when it opens; every
+previously timeout-less client fetch (lead form, sign-in, the boot-critical
+content fetch, others) now gives up and falls back after 15s instead of
+being able to hang forever on a stalled mobile connection; the GIS engine's
+local GeoJSON layers now load on idle time instead of blocking a map's
+initial interactivity; `css/13-admin.css` and `css/15-gis.css` no longer
+ship to every visitor, only whoever actually uses the Admin Board or opens a
+GIS map; a gated GIS map's resolver no longer reads its tours sequentially;
+and six admin/org endpoints re-fetching the entire user directory
+independently now share a short-lived cache.
+
+Two findings from the audit didn't hold up on closer inspection and nothing
+changed for them — worth noting so they aren't rediscovered: the Admin
+Board's full-content endpoint was already excluding the large GeoJSON
+bodies an initial measurement thought it included (real payload ~180KB, not
+~1.86MB), and admin sign-in's extra content fetch, while real, was confirmed
+not worth removing at its corrected, much smaller size.
+
+Not yet deployed as of this entry. `docs/migration/FULL-SYSTEM-TESTING.md`
+gained a new Part L for the manual verification pass this needs once live.
+
 ## Add: email-domain auto org-assignment
 
 New feature, requested directly: an admin configures one or more email

@@ -22,6 +22,142 @@ identity/access model each phase from 3 onward implements is defined in
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
 
+- 2026-09-05 — **Memory and network performance audit, then a fix pass across
+  three phases, requested directly (not part of the numbered phases).** Full
+  audit of the site's memory usage (~1GB reported in Chrome) and its behavior
+  on slow/unstable 4G-5G, using code-reading and direct measurement first per
+  this project's standing verification convention (three parallel Explore
+  passes, then every Critical/High finding independently re-read against the
+  actual source before being treated as real). The full findings list (every
+  item, including Medium/Low severity and the ones confirmed as
+  deliberate/reasonable and left alone) lived in the session's own planning
+  file, local to that Claude Code session and not part of this repo — this
+  entry is the durable summary of what actually shipped.
+
+  **Two findings were CONFIRMED CRITICAL and fixed (Phase 1-2):**
+  1. Two large 3D models on the home hero (`Buildings.glb`, `ToolBox.glb` —
+     the latter already compressed pre-audit) were fetched unconditionally
+     and rendered as permanent, continuously auto-rotating `<model-viewer>`
+     elements — the most plausible driver of the reported ~1GB. Measured
+     directly with `gltf-transform inspect`: `Buildings.glb`'s 31 textures
+     alone decode to ~129MB of GPU memory despite a 13.77MB file (JPEG
+     compression on disk has no bearing on decoded VRAM size — only
+     resolution does). Resized every texture over 512px, same `gltf-transform
+     copy` unpack → `jimp` resize → repack pipeline as the existing
+     `ToolBox.glb` precedent (this machine hits the same `sharp`/libvips
+     colorspace bug documented below for that fix). Result: file 13.77MB→
+     9.28MB, **GPU texture memory 129MB→33MB**. Validated clean
+     (`gltf-transform validate`, same pre-existing warning set, nothing new)
+     and visually verified via a real headless-Chrome + `<model-viewer>`
+     render at a fixed camera angle plus a close crop — no visible quality
+     loss. Original preserved at the session scratchpad (`glb-work/
+     Buildings.original.glb` — not durable, relocate if needed again). The
+     other half of this finding — lazy-mounting/pausing the models when the
+     home view isn't active, rather than relying on `display:none` on an
+     ancestor — is deliberately NOT done; it changes hero UX behavior and the
+     user chose to defer it pending a live Chrome memory profile to confirm
+     magnitude first.
+  2. `assets/logBackground.png` (7.66MB) was fetched on every single page
+     load, for every visitor, because `.access-window`'s background-image
+     was unscoped to `.is-open` and `.overlay` only ever uses
+     opacity/visibility (never `display:none`, needed for the fade
+     transition) — so the browser fetched it regardless of whether the
+     sign-in modal was ever opened. Fixed two ways: recompressed to a
+     38.7KB `.jpg` (resized 4234px→1600px; visually confirmed no artifacts
+     — it's a smooth gradient, which is why a lossy re-encode won by two
+     orders of magnitude) AND scoped the CSS rule to `.overlay.is-open
+     .access-window` so it now only loads when the modal actually opens.
+
+  **Three High findings fixed:**
+  3. `functions/api/resource/[key].js`'s gated-GIS-map resolver did up to 27
+     sequential (not parallelized) R2 reads in one Function invocation —
+     the exact "too many subrequests, read them one at a time" pattern this
+     codebase already fixed once elsewhere (`functions/api/admin/content.js`'s
+     combined-bundle read). Parallelized with `Promise.all`, mirroring the
+     same technique already used in `functions/api/admin/entitlements.js`.
+  4. Zero `AbortController`/timeout usage anywhere in the client-side
+     codebase — a stalled (not outright failed) request on bad 4G/5G could
+     hang indefinitely with no fallback ever firing, most concretely
+     defeating the lead form's own documented `mailto:` fallback (which only
+     ever triggered on a fast, outright rejection). Added a shared 15s
+     `fetchWithTimeout()`/`withTimeout()` helper to `js/app.js` (lead form,
+     sign-in, sign-up, session restore, resource/download fetches),
+     `js/admin.js` (`adminFetch`, plus fixed `ensureFullContent()` to
+     resolve-and-clear-its-cache on failure rather than leave `openBoard()`
+     waiting on a rejected promise with no `.catch()` at all), and
+     `js/content-loader.js` (the boot-critical manifest+61-doc fetch).
+  5. The GIS engine fetched all 6 local GeoJSON layers (shoreline/boundary,
+     ~1.63MB combined, 3 of them default-visible) eagerly and concurrently
+     the instant a map mounted, competing with the ArcGIS-backed layers for
+     bandwidth/priority before the map was even interactive. Deferred to
+     `requestIdleCallback` (200ms `setTimeout` fallback for Safari); added
+     the same fetch timeout to `buildGeoJsonLayer()`.
+
+  **Phase 1 (trivial-risk, all done):** the two Critical/High fixes above's
+  supporting pieces, plus: `js/gis/gis-viewer.js`'s `suspend()` now calls
+  `pauseTimeSeries()` (mirrors `destroy()`'s existing call — closes a real
+  gap where starting the GIS Timeline then backgrounding, not closing, the
+  map left its 1.8s interval running against a layer-suspended map); dynamic
+  script injection in `content-loader.js` now fetches all boot scripts
+  concurrently (`async=false`) instead of one round-trip at a time,
+  preserving execution order; four `<link rel="preconnect">` hints added
+  (Supabase, the Treedis iframe origin, jsdelivr, ajax.googleapis.com); two
+  orphaned inline placeholder images removed from the home hex cluster
+  (hex-2/hex-4 always become 3D models per `data/pages/home.json`, so their
+  static photo placeholders — ~156KB — were fetched and immediately
+  discarded every load).
+
+  **Phase 3 (lower-impact, mixed results — two real fixes, two retracted
+  findings, one deliberately left alone after investigation):**
+  - Deferred `help-content.js`/`help.js` with `defer` (matches the existing
+    `bg-video.js defer` precedent). Moved `css/13-admin.css` and
+    `css/15-gis.css` out of the static `<head>` list, injected dynamically
+    instead — admin CSS from BOTH real load points in `content-loader.js`
+    (`isAdminContext()`'s branch AND `ensureAdminBundle()`, the
+    click-triggered preload on "Access Your Twin", which is often the ONLY
+    place `admin.js` loads at all for a genuine first-time admin since
+    `isAdminContext()` is false until they actually sign in through that
+    same modal), GIS CSS from `gis-loader.js` alongside its pre-existing
+    vendor-CSS injection pattern. **`css/16-help.css` deliberately kept
+    static** — found while implementing, not assumed: it positions the
+    always-visible floating "?" fab itself, not just the overlay content, so
+    deferring it would flash the fab unstyled on every page load.
+  - Added a 30s best-effort per-isolate cache (`listAllUsers()`/
+    `invalidateUserListCache()` in `functions/_lib/admin.js`) for the
+    GoTrue full-user-directory call that 6 admin/org endpoints (7 call
+    sites) were each independently re-issuing with no cache between them.
+    Every mutation that changes the roster (account create ×2, ban/unban,
+    delete) invalidates it in the same request.
+  - **`/api/admin/content` "big payload" finding RETRACTED.** The original
+    measurement used a checked-in local mirror folder as a proxy for the
+    real R2 object and concluded ~1.86MB, ~1.63MB of it raw GeoJSON layer
+    bodies. Reading the actual Function showed it already destructures out
+    exactly that `layers` field before responding
+    (`functions/api/admin/content.js:45-46`) — confirmed the real payload is
+    ~180KB. No code change; the thing this finding worried about isn't
+    happening.
+  - **Admin sign-in's "double content fetch" investigated, left alone.**
+    With the retraction above, the actual duplicated cost is ~180KB, not
+    ~1.86MB. Checked whether it's safely avoidable: it isn't, without adding
+    real complexity to the universal (non-admin) boot path — the only way to
+    skip the public fetch for a known-admin browser would be waiting on auth
+    to resolve before the very first content fetch, which currently starts
+    immediately by design. Confirmed the plan's own original hedge
+    ("defer unless it becomes a real complaint") was correct rather than
+    just repeating it.
+
+  **Current status: NOT committed, NOT deployed, NOT verified in a real
+  browser.** All 20 touched files are syntax-checked clean
+  (`node --check`); the compressed image and the compressed GLB were each
+  independently visually verified outside the site itself (a rendered PNG
+  comparison and a headless-Chrome `<model-viewer>` render, respectively).
+  `docs/migration/FULL-SYSTEM-TESTING.md` gained a new **Part L** (tests
+  144-156) covering every change here that needs a real browser to confirm —
+  nothing in it has been run yet. Next: commit (scoped to exactly the
+  touched files — this is a shared monorepo with substantial unrelated dirty
+  state from other subprojects), then deploy per `DEPLOY-STAGING.md`, then
+  run Part L.
+
 - 2026-08-18 — **Email-domain auto org-assignment, requested directly (not
   part of the numbered phases).** An admin configures one or more email
   domains per organization from the Admin Board; a brand-new account whose

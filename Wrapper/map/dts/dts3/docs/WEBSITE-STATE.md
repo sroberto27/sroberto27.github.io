@@ -1,8 +1,10 @@
 # DTS Website — State of Knowledge
 
-**Last updated: 2026-08-10.** Written to be read cold. If you are a new session
-or a new developer, read this before `docs/migration/PROGRESS.md` (2,800+ lines
-of session log) or before reading source files from scratch.
+**Last updated: 2026-08-10, with a 2026-09-05 addition (§9, §10) covering a
+memory/network performance audit and fix pass — the rest of this document was
+not otherwise re-verified on that date.** Written to be read cold. If you are
+a new session or a new developer, read this before `docs/migration/PROGRESS.md`
+(2,800+ lines of session log) or before reading source files from scratch.
 
 This document **synthesizes**. Where an authoritative procedural document
 already exists and was hard-won, this file summarizes the practical points and
@@ -606,6 +608,51 @@ Everything below is **documented, not fixed**. None of it is a surprise.
   pass; the historical citations in `docs/CHANGES.md` were left alone, since
   rewriting a changelog's own history would be worse than a dangling reference.
   Don't spend time hunting for the missing specs.
+
+### Resolved 2026-09-05 — memory/network performance audit and fix pass
+
+Full findings list and reasoning: `docs/migration/PROGRESS.md`'s 2026-09-05
+entry. Practical, current-state summary:
+
+- The home hero's two 3D models (`Buildings.glb`, `ToolBox.glb`) now decode to
+  far less GPU texture memory (measured: `Buildings.glb` ~129MB→~33MB) via a
+  texture resolution cap, not just a smaller file — this was the leading
+  hypothesis for the site's reported ~1GB Chrome memory usage, though the
+  actual JS-heap-vs-GPU split has never been confirmed with a live memory
+  profile. The models still mount unconditionally and eagerly on home load
+  and keep auto-rotating/rendering even once the visitor navigates away
+  (`display:none` on an ancestor, not removed from the DOM) — deliberately
+  left as-is pending that profile, since changing it further affects hero UX.
+- `assets/logBackground.png` (7.66MB, fetched by every visitor on every page
+  load regardless of whether the sign-in modal was ever opened) is now a
+  38.7KB `.jpg`, loaded only when the modal actually opens.
+- The gated-GIS-map resolver (`functions/api/resource/[key].js`) no longer
+  does its tour/feature-tour R2 reads sequentially.
+- Every previously-timeout-less client fetch (lead form, sign-in/sign-up,
+  session restore, resource/download fetches, the boot-critical `/data`
+  fetch, the Admin Board's content fetch) now gives up and surfaces a
+  fallback/error after 15s instead of being able to hang indefinitely on a
+  stalled connection.
+- The GIS engine's local GeoJSON layers (shoreline/boundary, ~1.63MB) now
+  load on idle time instead of blocking a map's initial interactivity.
+- `css/13-admin.css` and `css/15-gis.css` are no longer in the static
+  `<head>` list — they're injected the first time each feature is actually
+  used, from both real load points for the admin one. `css/16-help.css`
+  stays static on purpose: it positions the always-visible help fab itself,
+  not just its overlay content.
+- A 30s best-effort cache was added for the GoTrue full-user-directory call
+  six admin/org endpoints were each independently re-issuing.
+- Two findings from that audit did NOT hold up on closer inspection and no
+  code changed for them: `/api/admin/content`'s real payload was already
+  ~180KB, not the ~1.86MB an initial proxy-based measurement suggested (it
+  already excludes the raw GeoJSON layer bodies); and admin sign-in's
+  "double content fetch" is real but was investigated and found genuinely
+  not worth fixing at its corrected, smaller size, without adding real
+  complexity to the universal (non-admin) boot path.
+
+**None of the above has been committed, deployed, or confirmed in a real
+browser as of 2026-09-05.** `docs/migration/FULL-SYSTEM-TESTING.md`'s new
+Part L (tests 144-156) is the manual pass that needs to happen once deployed.
 
 ---
 

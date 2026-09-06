@@ -11,7 +11,7 @@
 // it's simultaneously an account creation AND a membership grant.
 
 import { json, pgrst } from "../../_lib/access.js";
-import { requireOrgAdminOf, writeAudit, gotrue } from "../../_lib/admin.js";
+import { requireOrgAdminOf, writeAudit, gotrue, listAllUsers, invalidateUserListCache } from "../../_lib/admin.js";
 
 const INVITE_RATE_LIMIT = 20; // per actor, per rolling hour -- generous for a real onboarding batch, low enough to blunt abuse
 const INVITE_RATE_WINDOW_MS = 60 * 60 * 1000;
@@ -40,7 +40,7 @@ export async function onRequestPost(context) {
     return json({ error: "Too many invites sent recently — try again later." }, 429);
   }
 
-  const existingUsers = await gotrue(env, "/admin/users?per_page=1000");
+  const existingUsers = await listAllUsers(env);
   if ((existingUsers.users || []).some((u) => (u.email || "").toLowerCase() === email)) {
     return json({ error: "a user with that email already exists — add them instead of inviting" }, 409);
   }
@@ -48,6 +48,7 @@ export async function onRequestPost(context) {
   let created;
   try {
     created = await gotrue(env, "/admin/users", { method: "POST", body: { email, password, email_confirm: true } });
+    invalidateUserListCache(); // a real new account -- don't let the next listing call miss it
   } catch (err) {
     return json({ error: "couldn’t create account: " + err.message }, 400);
   }

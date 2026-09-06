@@ -4,7 +4,7 @@
 // functions/api/admin/organizations.js.
 
 import { json, pgrst } from "../../_lib/access.js";
-import { requireSiteAdmin, writeAudit, gotrue } from "../../_lib/admin.js";
+import { requireSiteAdmin, writeAudit, gotrue, listAllUsers, invalidateUserListCache } from "../../_lib/admin.js";
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -12,7 +12,7 @@ export async function onRequestGet(context) {
   if (auth.response) return auth.response;
 
   const [authData, profiles, memberships] = await Promise.all([
-    gotrue(env, "/admin/users?per_page=1000"),
+    listAllUsers(env),
     pgrst(env, "profiles?select=user_id,site_role"),
     pgrst(env, "organization_members?select=org_id,user_id,org_role,status,organizations(name,slug)"),
   ]);
@@ -63,6 +63,7 @@ export async function onRequestPost(context) {
   let created;
   try {
     created = await gotrue(env, "/admin/users", { method: "POST", body: { email, password, email_confirm: true } });
+    invalidateUserListCache(); // a real new account -- don't let the next listing call miss it
   } catch (err) {
     return json({ error: "couldn’t create account: " + err.message }, 400);
   }

@@ -9,10 +9,10 @@
 // Consistent with that, not a new pattern.
 
 import { json, pgrst } from "../../_lib/access.js";
-import { requireSiteAdmin, gotrue } from "../../_lib/admin.js";
+import { requireSiteAdmin, listAllUsers } from "../../_lib/admin.js";
 
 async function allUserEmails(env) {
-  const data = await gotrue(env, "/admin/users?per_page=1000");
+  const data = await listAllUsers(env);
   const map = new Map();
   (data.users || []).forEach((u) => map.set(u.id, u.email));
   return map;

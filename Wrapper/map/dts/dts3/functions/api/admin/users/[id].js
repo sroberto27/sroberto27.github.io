@@ -5,7 +5,7 @@
 // names, not one combined entry.
 
 import { json, pgrst, isUuid } from "../../../_lib/access.js";
-import { requireSiteAdmin, writeAudit, gotrue } from "../../../_lib/admin.js";
+import { requireSiteAdmin, writeAudit, gotrue, invalidateUserListCache } from "../../../_lib/admin.js";
 
 export async function onRequestPatch(context) {
   const { request, params, env } = context;
@@ -45,6 +45,7 @@ export async function onRequestPatch(context) {
     // pattern for "indefinite", "none" clears it.
     const banDuration = body.disabled ? "876000h" : "none";
     await gotrue(env, "/admin/users/" + userId, { method: "PUT", body: { ban_duration: banDuration } });
+    invalidateUserListCache(); // banned_until feeds the cached listing's `disabled` field
     await writeAudit(env, {
       actorUserId: auth.userId,
       action: body.disabled ? "account.disable" : "account.reactivate",
@@ -109,6 +110,7 @@ export async function onRequestDelete(context) {
   await pgrst(env, `resource_entitlements?subject_type=eq.user&subject_id=eq.${userId}`, { method: "DELETE", prefer: "return=minimal" });
 
   await gotrue(env, "/admin/users/" + userId, { method: "DELETE" });
+  invalidateUserListCache(); // the deleted account must not linger in the cached listing
 
   await writeAudit(env, {
     actorUserId: auth.userId,

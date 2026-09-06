@@ -1252,6 +1252,184 @@ Comments: ____________________________________
 
 ---
 
+# Part L — Memory/network performance audit fixes (added 2026-09-05)
+
+New, from the 2026-09-05 memory-and-network audit and its fix session (see
+`docs/migration/PROGRESS.md`'s 2026-09-05 entry for the full finding list).
+Every item below is real, shipped code whose behavior has **never been
+observed in a real browser** — the same "treat a failure as expected-possible,
+not surprising" caveat as Part A. Two small, purely non-functional changes from
+the same session aren't listed as their own tests because there's nothing a
+human can observe differently: scripts now fetch in parallel instead of one at
+a time (same execution order), and four `<link rel="preconnect">` hints were
+added for hosts already being contacted. If the site boots and behaves
+normally through the rest of this document, those two are fine.
+
+## Background image scoping (logBackground.png → .jpg)
+
+**144. The sign-in modal's background artwork loads only when opened, and
+still looks right.** Open DevTools → Network, filter for "logBackground",
+then load the homepage fresh. Confirm **zero** requests for it. Now click
+**ACCESS YOUR TWIN**. Confirm exactly one request fires (a ~39KB `.jpg`, not
+the old ~7.7MB `.png`) and the teal→purple gradient artwork renders correctly
+behind the CubeLogo/wordmark, with no layout shift or missing-image icon.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+## GIS Timeline + suspend/resume
+
+**145. Starting the Timeline, then leaving the map without pausing it,
+doesn't leave it running.** Open the GFC project's map, open the **Timeline**
+tool, click **Play** (steps through 1930s → Late 1940s → Late 1990s → 2008 →
+2015 on the shoreline layers) — then, **without clicking Pause**, close the
+project window. Reopen the same map. Confirm the Timeline shows its normal
+paused/reset state, not still auto-advancing or stuck on whatever step it
+was mid-animation on. (Fixes a real gap: `suspend()`, used when a map is
+backgrounded rather than fully closed, didn't stop the Timeline's own
+interval before this fix.)
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+## Gated GIS map resolve + progressive layer loading
+
+**146. A gated GIS map still opens correctly, and reasonably promptly.** As
+`testorgadmin@example.com`, open the GFC project's map experience. Confirm it
+resolves and opens normally — this endpoint's tour/feature-tour lookups were
+changed from sequential to parallel R2 reads server-side; a functional
+regression here would show as a slow resolve, an error, or missing
+tours/feature-tours, not a crash.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**147. The map becomes usable before the shoreline/boundary layers finish
+loading, and they still appear correctly a moment later.** Open the same map
+on a throttled connection (DevTools → Network → "Slow 4G"). Confirm the
+basemap and ArcGIS-backed layers appear and the map is pannable/zoomable
+promptly, and that the shoreline/parish-boundary layers (deferred to idle
+time) still show up correctly shortly after — not stuck in "loading"
+indefinitely, and not silently missing.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+## Home hero 3D models (texture compression)
+
+**148. Both hero 3D models still look acceptable, and the hex boxes don't
+flash a stray placeholder photo first.** Load the homepage fresh. Confirm the
+hex-2 slot's **Buildings.glb** model (textures resized, same as the
+already-shipped `ToolBox.glb` at hex-4 — see test 132) still looks
+acceptable at its actual display size — this is the one thing a code read
+can't confirm, texture resolution was measurably nearly-quartered. Also
+confirm neither hex-2 nor hex-4 briefly shows an unrelated stock photo before
+the 3D model mounts (their old placeholder images were removed; they should
+now just be a plain dark tile for the brief gap before the model loads).
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+## Network-stall timeouts (lead form, sign-in, content boot)
+
+These need a way to simulate a connection that **stalls** rather than fails
+outright — DevTools → Network → right-click the relevant request → "Block
+request URL" *after* it's already left the browser doesn't work for this;
+use Network throttling set to a custom profile with very low throughput, or
+block the domain at the OS/hosts level so the request hangs rather than
+getting an immediate connection-refused. All three should recover within
+~15 seconds, not hang indefinitely.
+
+**149. The lead form falls back to `mailto:` on a stall, not just an outright
+failure.** Block/throttle `api.web3forms.com` so a submit attempt stalls.
+Submit a lead form. Confirm that within ~15 seconds the form gives up and
+opens the pre-filled `mailto:` fallback, rather than leaving the button
+reading "Sending…" forever.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**150. Sign-in recovers from a stalled request instead of hanging on
+"Checking…" forever.** Block/throttle Supabase's auth endpoint, then attempt
+to sign in. Confirm within ~15 seconds the button re-enables and a
+"That's taking too long — check your connection and try again" message
+appears, rather than the button staying disabled indefinitely.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**151. A stalled (not just failed) `/data` fetch still falls back to
+`js/config.js` instead of leaving the site blank.** Block/throttle
+`/data/manifest.json` on a fresh load. Confirm the site still boots — via the
+`js/config.js` fallback, same as an outright failure already did before this
+fix — instead of sitting on the intro loader forever.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+## Admin Board / GIS CSS now load dynamically, not statically
+
+`css/13-admin.css` and `css/15-gis.css` were moved out of the page's static
+`<head>` list and are now injected by JS the first time each feature is
+actually needed. The risk here is exactly the kind of thing code-reading
+can't fully rule out: a real flash of unstyled content if the CSS doesn't
+arrive before the DOM it styles is shown.
+
+**152. The Admin Board is fully styled the FIRST time it's ever opened on a
+brand-new browser profile (no prior admin flag).** In a fresh private
+window, go straight to the homepage (no `?admin`/`#admin`), click **ACCESS
+YOUR TWIN**, and sign in as `testadmin@example.com`. Confirm the board opens
+correctly styled from the first frame — no unstyled/plain-HTML flash, no
+missing layout. (This is the click-triggered preload path,
+`ensureAdminBundle()` — the one most likely to be missed by a CSS-loading
+fix, since it fires before this browser is known to be an admin context at
+all.)
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**153. The Admin Board is still fully styled via the `?admin`/returning-admin
+path.** Load the homepage with `?admin` in the URL (or on a browser that's
+already signed in as admin before), sign in, confirm the board again opens
+fully styled — this is the OTHER of the two places admin CSS gets injected
+from.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**154. The GIS map is fully styled the first time it's opened in a session.**
+Open any GIS-map project experience. Confirm the map, its panel/toolbar
+chrome, and the Timeline/Layers panels all render with their real styling
+from the moment they appear — no unstyled flash.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**155. The floating "?" help icon still works normally now that its scripts
+load with `defer`.** Re-run tests 22–25 (icon appears correctly positioned,
+overlay opens/closes, first-visit hint). A regression here would most likely
+show as the icon appearing in the wrong position briefly, or the click
+handler not being wired up yet on a very fast click right after load.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+## Admin user-directory cache
+
+**156. Creating, then immediately viewing, a user doesn't show stale data.**
+As `testadmin`, create a throwaway user (Admin Board → Users → create). Within
+the same minute, without reloading, check that the new user is immediately
+findable in a **different** admin screen that also lists users — e.g. the
+Access screen's entitlement-picker search, or Organizations' "add existing
+user" search. Confirm it appears right away, not only after the ~30-second
+cache window elapses. Then delete the throwaway user and confirm it
+disappears from that same search immediately too.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+---
+
 ## When you're done
 
 Report results back with the failures called out specifically — a failing test

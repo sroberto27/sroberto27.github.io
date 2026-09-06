@@ -15,6 +15,12 @@
     esriLeaflet: "vendor/leaflet/esri-leaflet.js"
   };
 
+  // DTS's own GIS engine styles used to be a static <link> in index.html's
+  // <head>, downloaded by every visitor regardless of whether they ever
+  // open a GIS map. Injected here, alongside the vendor CSS above, so it
+  // only loads the first time this loader actually runs.
+  const DTS_GIS_CSS = "css/15-gis.css";
+
   let pending = null;
 
   function injectCss(href) {
@@ -43,6 +49,7 @@
 
     pending = Promise.resolve()
       .then(() => injectCss(VENDOR.css))
+      .then(() => injectCss(DTS_GIS_CSS))
       .then(() => injectScript(VENDOR.leaflet))
       .then(() => {
         if (!window.L) throw new Error("Leaflet failed to initialise");

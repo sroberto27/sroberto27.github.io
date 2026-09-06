@@ -22,6 +22,35 @@
   const $  = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
 
+  const NETWORK_TIMEOUT_MS = 15000;
+
+  // A stalled connection (TCP/TLS established, server just never answers --
+  // common on flaky mobile networks) never rejects fetch() on its own, so
+  // without this every await here can hang indefinitely with no error and
+  // no fallback ever firing. Aborting turns that into a normal rejection
+  // the existing catch/finally blocks already know how to handle.
+  function fetchWithTimeout(input, init, timeoutMs) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), timeoutMs || NETWORK_TIMEOUT_MS);
+    return fetch(input, Object.assign({}, init, { signal: ctrl.signal }))
+      .finally(() => clearTimeout(timer));
+  }
+
+  // Same problem for calls that go through the Supabase SDK rather than a
+  // fetch() we control directly -- can't abort the SDK's own request, but
+  // racing it unsticks the UI (button state, error message) instead of
+  // leaving it on "Checking..."/"Creating..." forever; the real request is
+  // simply ignored if it resolves after the race is already lost.
+  function withTimeout(promise, timeoutMs) {
+    return new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error("timeout")), timeoutMs || NETWORK_TIMEOUT_MS);
+      promise.then(
+        (v) => { clearTimeout(timer); resolve(v); },
+        (e) => { clearTimeout(timer); reject(e); }
+      );
+    });
+  }
+
   // Real bug, found live testing Phase 4's deep-link restore (05-SPEC
   // criterion 4, `?...&map=<state>`): openExample()'s own syncURL() call
   // rewrites the address bar from category/project/exp alone (buildStateURL()
@@ -1806,7 +1835,7 @@
     }
     let resp;
     try {
-      resp = await fetch("/api/resource/" + encodeURIComponent(resourceKey), { headers });
+      resp = await fetchWithTimeout("/api/resource/" + encodeURIComponent(resourceKey), { headers });
     } catch (_) {
       return { ok: false, reason: "error", resourceKey };
     }
@@ -1936,10 +1965,18 @@
         return;
       }
       btn.disabled = true; btn.textContent = "Creating…";
-      const { data, error } = await window.DTS_SUPABASE.auth.signUp({
-        email, password,
-        options: { emailRedirectTo: window.location.origin + window.location.pathname }
-      });
+      let data, error;
+      try {
+        ({ data, error } = await withTimeout(window.DTS_SUPABASE.auth.signUp({
+          email, password,
+          options: { emailRedirectTo: window.location.origin + window.location.pathname }
+        })));
+      } catch (_) {
+        btn.disabled = false; btn.textContent = label;
+        $("#accessError").textContent = "That's taking too long. Check your connection and try again.";
+        $("#accessError").hidden = false;
+        return;
+      }
       btn.disabled = false; btn.textContent = label;
 
       if (error) {
@@ -1970,10 +2007,18 @@
     }
 
     btn.disabled = true; btn.textContent = "Checking…";
-    const { data, error } = await window.DTS_SUPABASE.auth.signInWithPassword({
-      email: $("#accessId").value.trim(),
-      password: $("#accessCode").value
-    });
+    let data, error;
+    try {
+      ({ data, error } = await withTimeout(window.DTS_SUPABASE.auth.signInWithPassword({
+        email: $("#accessId").value.trim(),
+        password: $("#accessCode").value
+      })));
+    } catch (_) {
+      btn.disabled = false; btn.textContent = label;
+      $("#accessError").textContent = "That's taking too long. Check your connection and try again.";
+      $("#accessError").hidden = false;
+      return;
+    }
     btn.disabled = false; btn.textContent = label;
 
     if (error) {
@@ -2050,7 +2095,12 @@
   async function restoreSession() {
     localAuthInFlight = true;
     try {
-      const { data } = await window.DTS_SUPABASE.auth.getSession();
+      let data;
+      try {
+        ({ data } = await withTimeout(window.DTS_SUPABASE.auth.getSession()));
+      } catch (_) {
+        return; // stalled/failed -- same as "no session found", stays silent
+      }
       if (!data || !data.session) return;
       await buildSessionFromAuth(data.session);
       document.dispatchEvent(new CustomEvent("dts:signed-in",
@@ -2166,7 +2216,7 @@
     if (access.session && access.session.accessToken) headers.Authorization = "Bearer " + access.session.accessToken;
     let resp;
     try {
-      resp = await fetch("/api/download/" + encodeURIComponent(key), { headers });
+      resp = await fetchWithTimeout("/api/download/" + encodeURIComponent(key), { headers });
     } catch (_) {
       window.alert("Download failed. Please try again.");
       return;
@@ -2908,7 +2958,7 @@
     });
 
     try {
-      const res = await fetch("https://api.web3forms.com/submit", {
+      const res = await fetchWithTimeout("https://api.web3forms.com/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json", Accept: "application/json" },
         body: JSON.stringify(payload)

@@ -55,14 +55,11 @@ function parseResourceKey(key) {
 
 async function listSourceJson(env, prefix, predicate) {
   const listing = await env.DTS_CONTENT.list({ prefix: `data/source/${prefix}` });
-  const docs = [];
-  for (const item of listing.objects) {
-    const obj = await env.DTS_CONTENT.get(item.key);
-    if (!obj) continue;
-    const doc = await obj.json();
-    if (!predicate || predicate(doc)) docs.push(doc);
-  }
-  return docs;
+  // Same object count as a sequential loop -- these R2 GETs just no longer
+  // wait on each other, since none depends on another's result.
+  const docs = await Promise.all(listing.objects.map((item) => env.DTS_CONTENT.get(item.key)));
+  const parsed = await Promise.all(docs.map((obj) => (obj ? obj.json() : null)));
+  return predicate ? parsed.filter((doc) => doc && predicate(doc)) : parsed.filter(Boolean);
 }
 
 // matches content-loader.js's srcValue() -- both kind:"path" and kind:"url"

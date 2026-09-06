@@ -53,12 +53,23 @@
 .form-success-x:hover{ background:var(--gold-bright); }
 
 /* ---------- Welcome Back sign-in ----------
-   Backed by the teal→purple gradient artwork (logBackground.png)
+   Backed by the teal→purple gradient artwork (logBackground.jpg)
    with the CubeLogo + wordmark brand block; the form sits in a
-   translucent dark glass card. */
+   translucent dark glass card. The image itself is only applied by
+   the .is-open rule below -- .overlay hides this modal via
+   opacity/visibility, not display:none (needed for the fade
+   transition), so an unscoped background-image here would be
+   fetched by every visitor on every page load whether or not they
+   ever open this modal. */
 .access-window{
-  background:#0b1626 url("../assets/logBackground.png") center / cover no-repeat;
+  background-color:#0b1626;
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
   border-radius:22px;
+}
+.overlay.is-open .access-window{
+  background-image:url("../assets/logBackground.jpg");
 }
 .access-brand{ display:flex; flex-direction:column; align-items:flex-start; margin-bottom:6px; }
 .access-brand-cube{ height:72px; width:auto; object-fit:contain; margin-bottom:8px; }
@@ -689,7 +700,6 @@ body.portal-open{ overflow:hidden; }
   .access-window{
     width:calc(100vw - 24px); max-height:92dvh; overflow-y:auto;
     border-radius:20px;
-    background:#0b1626 url("../assets/logBackground.png") center / cover no-repeat;
   }
   .access-brand-cube{ height:54px; }
   .access-brand-word{ font-size:15px; }

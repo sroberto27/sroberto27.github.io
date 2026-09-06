@@ -12,7 +12,7 @@
 // EXISTING account to an org.
 
 import { json, pgrst, isUuid } from "../../_lib/access.js";
-import { requireOrgAdminOf, writeAudit, gotrue } from "../../_lib/admin.js";
+import { requireOrgAdminOf, writeAudit, listAllUsers } from "../../_lib/admin.js";
 
 export async function onRequestGet(context) {
   const { request, env } = context;
@@ -23,7 +23,7 @@ export async function onRequestGet(context) {
   if (auth.response) return auth.response;
 
   const rows = await pgrst(env, `organization_members?org_id=eq.${orgId}&select=user_id,org_role,status,created_at&order=created_at.asc`);
-  const data = await gotrue(env, "/admin/users?per_page=1000");
+  const data = await listAllUsers(env);
   const emailById = new Map((data.users || []).map((u) => [u.id, u.email]));
   const members = rows.map((r) => ({
     userId: r.user_id,
@@ -48,7 +48,7 @@ export async function onRequestPost(context) {
   const orgRole = body.orgRole === "org_admin" ? "org_admin" : "member";
   if (!email) return json({ error: "email is required" }, 400);
 
-  const data = await gotrue(env, "/admin/users?per_page=1000");
+  const data = await listAllUsers(env);
   const user = (data.users || []).find((u) => (u.email || "").toLowerCase() === email);
   if (!user) return json({ error: "no existing user with that email -- inviting a brand-new user isn't available yet" }, 404);
 

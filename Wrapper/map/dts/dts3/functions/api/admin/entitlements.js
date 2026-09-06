@@ -4,10 +4,10 @@
 // instead of through the draft/export path.
 
 import { json, pgrst, isUuid } from "../../_lib/access.js";
-import { requireSiteAdmin, writeAudit, gotrue } from "../../_lib/admin.js";
+import { requireSiteAdmin, writeAudit, listAllUsers } from "../../_lib/admin.js";
 
 async function allUserEmails(env) {
-  const data = await gotrue(env, "/admin/users?per_page=1000");
+  const data = await listAllUsers(env);
   const map = new Map();
   (data.users || []).forEach((u) => map.set(u.id, u.email));
   return map;

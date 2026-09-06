@@ -103,7 +103,6 @@
 @media (min-width:761px){
   .access-window{
     width:min(1060px,90vw); min-height:min(660px,84vh);
-    background:#0b1626 url("../assets/logBackground.png") center / cover no-repeat;
     border:0; border-radius:26px;
     display:grid; grid-template-columns:1.05fr 1fr;
     align-items:center;

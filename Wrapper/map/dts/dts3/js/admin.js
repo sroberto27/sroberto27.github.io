@@ -492,13 +492,24 @@
   /* Attaches the caller's own Supabase session token, the same one
      js/app.js's fetchResource() sends -- these admin Functions verify
      site_admin server-side from it, same as every other gate. */
+  // Same reasoning as app.js's fetchWithTimeout: a stalled connection never
+  // rejects fetch() on its own, so without this an admin action can hang
+  // indefinitely with no error shown.
+  var ADMIN_FETCH_TIMEOUT_MS = 15000;
+  function fetchWithTimeout(input, init) {
+    var ctrl = new AbortController();
+    var timer = setTimeout(function () { ctrl.abort(); }, ADMIN_FETCH_TIMEOUT_MS);
+    var opts = Object.assign({}, init, { signal: ctrl.signal });
+    return fetch(input, opts).finally(function () { clearTimeout(timer); });
+  }
+
   function adminFetch(path, opts) {
     opts = opts || {};
     var headers = {};
     var session = window.DTS_ACCESS && window.DTS_ACCESS.session;
     if (session && session.accessToken) headers.Authorization = "Bearer " + session.accessToken;
     if (opts.body) headers["content-type"] = "application/json";
-    return fetch(path, {
+    return fetchWithTimeout(path, {
       method: opts.method || "GET",
       headers: headers,
       body: opts.body ? JSON.stringify(opts.body) : undefined
@@ -3502,6 +3513,15 @@
       // showed them.
       content.manifest = res.data.manifest;
       Object.keys(res.data.docs).forEach(function (f) { docs[f] = res.data.docs[f]; });
+    }).catch(function (err) {
+      // A timed-out/failed fetch (bad connection, not a 4xx/5xx) used to
+      // leave this promise pending forever, which left openBoard() waiting
+      // on it forever too -- resolve instead of reject, same degraded-but-
+      // functional path as the !res.ok branch above, and clear the cached
+      // promise so the next openBoard() (e.g. closing and reopening) retries
+      // rather than reusing this failed attempt for the rest of the session.
+      console.warn("[admin] full source content request failed:", err);
+      fullContentPromise = null;
     });
     return fullContentPromise;
   }

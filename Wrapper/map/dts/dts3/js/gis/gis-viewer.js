@@ -166,8 +166,19 @@
     return { leaflet: L.esri.imageMapLayer(opts), query: null };
   }
 
+  // A stalled connection never rejects fetch() on its own -- without this a
+  // local geojson layer (up to ~625KB, see shoreline files) can leave its
+  // loadLayer() promise pending forever on bad 4G/5G instead of surfacing
+  // through the existing markUnavailable() error path below.
+  const GEOJSON_FETCH_TIMEOUT_MS = 15000;
+  function fetchWithTimeout(url) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(function () { ctrl.abort(); }, GEOJSON_FETCH_TIMEOUT_MS);
+    return fetch(url, { signal: ctrl.signal }).finally(function () { clearTimeout(timer); });
+  }
+
   function buildGeoJsonLayer(def, ctx) {
-    return fetch(def.url).then(function (res) {
+    return fetchWithTimeout(def.url).then(function (res) {
       if (!res.ok) throw new Error("HTTP " + res.status + " fetching " + def.url);
       return res.json();
     }).then(function (data) {
@@ -704,7 +715,20 @@
       });
     }
 
-    Object.keys(layers).forEach(loadLayer);
+    // esri* layers build near-instantly and fetch lazily per-tile/extent
+    // (esri-leaflet's own behavior) -- load those immediately so the map is
+    // interactive as soon as possible. geojson layers do one real, eager,
+    // full-document fetch each (the shoreline files run up to ~625KB) and
+    // don't need to block that -- deferred to idle time so they don't
+    // compete for bandwidth/priority with the layers the map needs first.
+    const idleLoad = window.requestIdleCallback || function (cb) { return setTimeout(cb, 200); };
+    Object.keys(layers).forEach(function (id) {
+      if (layers[id].def.sourceType === "geojson") {
+        idleLoad(function () { loadLayer(id); });
+      } else {
+        loadLayer(id);
+      }
+    });
 
     /* ---- identify, continued: esriDynamic is a raster image, so a click
        on it never reaches a Leaflet layer object -- it always falls through
@@ -1600,6 +1624,7 @@
     let suspendedLayers = null;
     function suspend() {
       if (suspendedLayers) return;
+      pauseTimeSeries(); // would otherwise keep firing against layers pulled off the map below
       suspendedLayers = [];
       map.eachLayer(function (layer) { suspendedLayers.push(layer); map.removeLayer(layer); });
     }

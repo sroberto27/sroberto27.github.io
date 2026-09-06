@@ -6,7 +6,7 @@
 // never part of).
 
 import { json, pgrst } from "../../_lib/access.js";
-import { requireSiteAdmin, gotrue } from "../../_lib/admin.js";
+import { requireSiteAdmin, listAllUsers } from "../../_lib/admin.js";
 
 // Strips characters meaningful to PostgREST's own filter mini-syntax
 // (`,` separates or() clauses, `()` group them, `*` is the ilike wildcard)
@@ -41,7 +41,7 @@ export async function onRequestGet(context) {
     }, 200);
   }
 
-  const data = await gotrue(env, "/admin/users?per_page=1000");
+  const data = await listAllUsers(env);
   const needle = q.toLowerCase();
   const results = (data.users || [])
     .filter((u) => (u.email || "").toLowerCase().includes(needle))

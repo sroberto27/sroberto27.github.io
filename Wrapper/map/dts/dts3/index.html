@@ -10,6 +10,16 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
+  <!-- Cross-origin hosts actually contacted during boot (Supabase auth,
+       the homepage Treedis demo iframe, and the CDN-hosted Supabase JS
+       SDK + model-viewer) -- overlaps their DNS/TLS handshake with the
+       rest of page load instead of paying it serially once each script
+       or the iframe actually starts loading. -->
+  <link rel="preconnect" href="https://wsqvzyfvxjenqvqjpqjv.supabase.co">
+  <link rel="preconnect" href="https://spaces.dtsxr.com">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="preconnect" href="https://ajax.googleapis.com">
+
   <!-- Stylesheets load in numeric order; later files override earlier ones. -->
   <link rel="stylesheet" href="css/01-base.css" />
   <link rel="stylesheet" href="css/02-home.css" />
@@ -23,9 +33,14 @@
   <link rel="stylesheet" href="css/10-vision-pro.css" />
   <link rel="stylesheet" href="css/11-desktop.css" />
   <link rel="stylesheet" href="css/12-smoke.css" />
-  <link rel="stylesheet" href="css/13-admin.css" />
+  <!-- css/13-admin.css and css/15-gis.css are injected dynamically --
+       js/content-loader.js (admin context) and js/gis/gis-loader.js (first
+       GIS map open) -- so a visitor who never touches either feature never
+       downloads its CSS. css/16-help.css stays here: it styles the
+       always-visible floating "?" fab (position, layout), not just the
+       overlay content, so deferring it would flash the fab unstyled on
+       every single page load -- not worth the ~9.5KB. -->
   <link rel="stylesheet" href="css/14-intro.css" />
-  <link rel="stylesheet" href="css/15-gis.css" />
   <link rel="stylesheet" href="css/16-help.css" />
   <!-- ============================================================
         INTRO CLOAK
@@ -218,7 +233,12 @@
           </div>
           <div class="hex hexbox hex-2" data-slot="hex-2" role="button" tabindex="0"
                aria-label="Expand hexagon 2">
-            <div class="hex-clip"><div class="hex-media hex-img" style="background-image:url('assets/assets-droplet.jpg')"></div></div>
+            <!-- No inline background-image here: home.json always overrides
+                 hex-2 to a 3D model (js/hex-media.js), so a real placeholder
+                 photo would just be fetched and immediately discarded.
+                 .hex-img's own background-color fallback (css/02-home.css)
+                 covers the brief gap before the model mounts. -->
+            <div class="hex-clip"><div class="hex-media hex-img"></div></div>
             <svg class="hex-border" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
               <polygon points="25,0 75,0 100,50 75,100 25,100 0,50" vector-effect="non-scaling-stroke"/>
             </svg>
@@ -266,7 +286,12 @@
           </div>
           <div class="hex hexbox hex-4" data-slot="hex-4" role="button" tabindex="0"
                aria-label="Expand hexagon 4">
-            <div class="hex-clip"><div class="hex-media hex-img" style="background-image:url('assets/assets-wave.jpg')"></div></div>
+            <!-- No inline background-image here: home.json always overrides
+                 hex-4 to a 3D model (js/hex-media.js), so a real placeholder
+                 photo would just be fetched and immediately discarded.
+                 .hex-img's own background-color fallback (css/02-home.css)
+                 covers the brief gap before the model mounts. -->
+            <div class="hex-clip"><div class="hex-media hex-img"></div></div>
             <svg class="hex-border" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
               <polygon points="25,0 75,0 100,50 75,100 25,100 0,50" vector-effect="non-scaling-stroke"/>
             </svg>
@@ -1015,7 +1040,7 @@
      app.js/admin.js exist (both are injected dynamically by
      content-loader.js) -- see js/help.js's own header comment for how it
      handles that ordering. -->
-<script src="js/help-content.js"></script>
-<script src="js/help.js"></script>
+<script src="js/help-content.js" defer></script>
+<script src="js/help.js" defer></script>
 </body>
 </html>
