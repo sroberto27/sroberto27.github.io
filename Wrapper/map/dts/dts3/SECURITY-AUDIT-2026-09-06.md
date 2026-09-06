@@ -1,7 +1,7 @@
 # Security audit — 2026-09-06
 
 **Target:** https://dts-website-4cu.pages.dev · **Commit:** 964d7df0 · **Working tree:** 3 uncommitted files (a skill script, a .docx, one new doc — none affect this scope)
-**Scopes completed:** app · **Fixes:** branch `security-audit-2026-09-06` (`3be4dec0`, `ea805d19`, `84922d80`)
+**Scopes completed:** app · supabase · cloudflare · **Fixes:** branch `security-audit-2026-09-06` (`3be4dec0`, `ea805d19`, `84922d80`)
 **Scan evidence:** `00-inventory.sh` (run 2026-09-06) plus the targeted greps recorded inline below
 
 ## Grounding
@@ -1257,3 +1257,811 @@ which is not the same claim.
 **Not pushed.** `main` and `security-audit-supabase-2026-09-06` are both ahead
 of `origin`. Pushing also updates the still-live GitHub Pages site, which
 `PROGRESS.md` records as a separate decision; it was deliberately left alone.
+
+---
+---
+
+# Scope: `cloudflare` — 2026-09-06
+
+**Target:** https://dts-website-4cu.pages.dev (deployment `3eada530`) ·
+**Commit:** `b4504b9e` · **Working tree:** 3 uncommitted (a scan script, a
+`.docx`, one untracked doc — none of them shipped code)
+**Scan evidence:** `.claude/skills/security-audit/scan/results/2026-09-06/`
+(the pre-deploy morning run of the same day is preserved alongside it as
+`results/2026-09-06-pre-deploy-am/`)
+
+## Grounding
+
+Third scope of the day, after `app` and `supabase`. Same site: a Cloudflare
+Pages deployment of a vanilla-JS app shell with a real Pages Functions backend,
+Supabase behind it, and two R2 buckets — not the "static files on GitHub Pages"
+that `CLAUDE.md`'s header still describes. Users run from anonymous visitor to
+`site_admin`. The audited target is the dev preview at deployment `3eada530`,
+built from a staged directory per `DEPLOY-STAGING.md`; production does not
+exist yet and handoff has not happened, so everything still runs on the
+developer's personal Cloudflare and Supabase accounts. Known-broken going in,
+from `WEBSITE-STATE.md` §9: no custom SMTP, OAuth providers disabled,
+placeholder GA4/Clarity IDs, `/api/track` unrate-limited, the CLI content tools
+neither deleting removed objects nor purging the edge cache, the access-blind
+`js/config.js` fallback, positional link identity, Treedis URLs being bearer
+URLs once issued, and the deferred decision to leave the old GitHub repo
+public. Two of those turn out to matter here.
+
+**Tooling.** Every tool the scan asks for was present — `git`, `node`, `curl`,
+`gitleaks`, `osv-scanner`, `psql`, `supabase`, `jq`. **No check ran degraded
+and none skipped**, so nothing in this scope is weakened by a fallback path.
+`rg` and `semgrep` are absent, and no check uses them.
+
+One tooling defect found and worth recording, because it produced nine of the
+scan's leads and all nine are artifacts: `lib/common.sh`'s `fetch_headers()`
+probes with `curl --head`, and Cloudflare Pages does not route a **HEAD**
+request to a Function that exports only `onRequestGet`/`onRequestPost` — it
+falls through to the static asset handler and answers with the SPA shell. So
+`50-headers.sh` and `60-cors.sh` measured the static half of the site while
+believing they were measuring `/api/*`. Every "ACAO `*`" and "cacheable" lead
+against a Function route came from that. The fix is to probe with
+`curl -X GET -o /dev/null -D -` instead; it is a change to the skill's own
+scripts, not to the project, and is not applied here.
+
+---
+
+## Findings
+
+| ID | Severity | Component | Title | Status |
+|---|---|---|---|---|
+| F-C01 | High | deploy (GitHub Pages) | The parallel `sroberto27.github.io` host serves the unstripped repo, bypassing every content access control the migration built | Human action required — deferred to handoff by the owner |
+| F-C02 | **High** (revised from Medium) | Cloudflare Pages retained deployments | 53 deployments, not the 25 first probed. 29 served excluded files, 9 served the unstripped `js/config.js`, and **5 served raw `/data` as static files** — the Critical invariant. 50 deleted | Partially fixed — **deleted, but the hostnames still serve; see Fix record** |
+| F-C03 | Low | `_headers` / Functions | `_headers` does not apply to Pages Functions responses — every `/data` and `/api` response ships with no CSP, HSTS, `nosniff` or `Referrer-Policy` | Fixed, verified — **not deployed** |
+| F-C04 | Low | `_headers` | No `frame-ancestors` and no `X-Frame-Options`; no `form-action` | Fixed, verified — **not deployed** |
+| F-C05 | Low | `_headers` | `script-src 'unsafe-inline'` is forced by exactly one inline script that could be hashed instead | Accepted — owner's decision, left as is |
+
+Ranked by real exploitability. F-C01 is first because it is one anonymous
+`curl` against a well-known URL and it returns content the entire access model
+exists to withhold.
+
+---
+
+### F-C01 — The parallel GitHub Pages host serves the unstripped repo
+
+**Severity:** High — impact High (every gated content URL and 27 documents the
+access model withholds entirely, read by an anonymous stranger), exploitability
+Trivial (one `curl`, no account, a guessable public URL), reachability Live
+(confirmed against the real service, 2026-09-06). Not Critical: it reaches no
+credential, no database row, no write path, and no Supabase or R2 object — it
+is a content disclosure, not a compromise. Not Medium: gating *is* the product
+here, and this defeats it wholesale rather than at the margin.
+
+**Location:** not a code defect. `https://sroberto27.github.io/Wrapper/map/dts/dts3/…`
+— GitHub Pages serving the repository subtree that also holds the Cloudflare
+source. Recorded as a deferred decision in `docs/migration/PROGRESS.md:2919`
+and `docs/WEBSITE-STATE.md:574`.
+
+**What it is.** The Cloudflare site enforces content access in exactly one
+place before the browser ever asks: the publish pipeline writes a *stripped*
+copy to `data/current/` and withholds gated documents from it entirely, and the
+deploy overlays a stripped `js/config.js` over the repo's copy
+(`WEBSITE-STATE.md` §4, §8). Both controls operate on **what gets published**.
+The old GitHub Pages site publishes the repository directly, so it serves the
+unstripped originals of both. Every access decision the Functions make is
+irrelevant there, because nothing routes through a Function at all.
+
+**Reachability trace.**
+- Entry point: `GET https://sroberto27.github.io/Wrapper/map/dts/dts3/<any repo path>`
+- Route file: none — GitHub Pages static hosting, no Function in the path
+- Caller's auth state: **anonymous**, no session, no referer requirement
+- Parameter carrying the payload: the path itself
+- What the caller obtains: the 8 gated Treedis tour URLs, the raw unstripped
+  `/data` documents including the 27 the live manifest withholds, the gated
+  GIS map document and its local GeoJSON layers, plus the RLS migration
+  source, the internal migration documents, and the operator tooling
+
+**Evidence.** All confirmed against the real service on 2026-09-06.
+
+```
+$ curl -s .../js/config.js | grep -oE '"https://spaces\.dtsxr\.com/tour/[^"]*"' | sort -u
+  github.io    : 026593c5 352ad07a 4fb22059 56111605 8e4ca3fc bfab6d52
+                 ea18f14b fee23e79 scsu-campus-ade0f346      -> 9 distinct
+  pages.dev    : 4fb22059                                    -> 1 distinct
+```
+
+Nine tours against one. `4fb22059` is the public homepage tour; the other
+**eight are gated** and are exactly what the `.build/js/config.js` overlay in
+`DEPLOY-STAGING.md` step 3 exists to remove.
+
+```
+manifest entries  repo data/manifest.json ................ 61
+                  pages.dev /data/manifest.json .......... 34   (filtered)
+                  github.io /data/manifest.json .......... 61   (unfiltered)
+```
+
+27 documents that the live site withholds are listed and served there. Spot
+checks, status and byte count:
+
+```
+/data/projects/campus.json          200   2883   contains tourUrl  (live copy: 2769, none)
+/data/gis/maps/iberia-coastal.json  200  27247   the gated map document itself
+/data/gis/layers/shoreline-1935.geojson
+                                    200 112923   (live: 404 — withheld)
+/supabase/migrations/20260807220100_rls_policies.sql
+                                    200   6247
+/tools/gis-harvest.mjs              200  16513
+/scripts/seed-dev.mjs               200   6936
+/docs/migration/ACCESS-MODEL.md     200  23356
+/docs/migration/PROGRESS.md         200 199639
+/CLAUDE.md                          200   7111
+/wrangler.toml                      200    712
+/.env                               404          (never committed — correct)
+/SECURITY-AUDIT-2026-09-06.md       404          (not pushed yet)
+/tests/security/_harness.mjs        404          (not pushed yet)
+```
+
+**Confidence.** Confirmed against the real service/data. Every line above is a
+real response fetched during this audit, not inferred from the repo.
+
+**Blast radius.** All 16 project documents in full, the 8 gated tour URLs
+(which `WEBSITE-STATE.md` §9 already records as bearer URLs for the Treedis
+session's lifetime — obtaining one is the whole control), the only GIS map and
+its harvested layer data, the complete RLS policy source and access model, the
+seeded dev account list, and the Cloudflare account id at
+`docs/migration/PROGRESS.md:2995`. It reaches no key: `.env` was never
+committed and returns 404, and the only credential in the served tree is the
+Supabase publishable key, which is public by design.
+
+**Why this is reported rather than filed as accepted risk.** The deferral on
+record (`PROGRESS.md:2919`, Phase 2, 2026-08-07, user-agreed) is *"don't make
+the old repo private yet, because it is still the live GitHub Pages host."*
+That was decided when the site's gating was a Google-Sheet sign-in and every
+tour URL sat in `js/config.js` in the clear anyway — the decision accepted the
+status quo. Phases 4 and 6 then built an access model whose entire content-side
+enforcement is the publish-time strip. Nobody accepted the consequence that the
+new control would be nullified on a second live host; that consequence is the
+second-order case `references/00-conventions.md` §3 explicitly keeps in scope.
+
+**Proposed fix.** This is an operator decision, not a code change, and it is
+listed under Human action items. The options, in the order I would pick them:
+
+1. **Stop serving the DTS subtree from GitHub Pages** — in practice: move
+   `Wrapper/map/dts/dts3` out of the Pages-served branch, or switch the Pages
+   source to a branch that omits it. Immediate, reversible, keeps the rest of
+   the personal site live.
+2. **Make the repository private** and accept that GitHub Pages stops serving —
+   this is the Phase 2 item, and it is only viable once the Cloudflare deploy
+   is the sole live site (domain cutover).
+3. Do neither, and accept that the Cloudflare access model protects nothing
+   that also lives in this repo. That is a coherent choice only if the gated
+   content is not actually sensitive — which is the owner's call, not mine.
+
+Whichever is chosen, the 8 exposed tour URLs stay valid until Treedis reissues
+them; see Human action items.
+
+**Exploit test.** Not written. A probe here would assert against a third-party
+host's serving behaviour rather than this codebase, and the failing condition
+is a deploy/hosting decision, not a code path a regression test can hold. If
+option 1 or 2 is taken, the right check is a one-line addition to the
+deploy-verification block: `curl -s -o /dev/null -w '%{http_code}'
+https://sroberto27.github.io/Wrapper/map/dts/dts3/js/config.js` must return
+404. Say the word and I will add it to `tests/security/`.
+
+**Verification.** Not fixed. Reported only.
+
+---
+
+### F-C02 — Retained Pages deployments still serve excluded files
+
+**Severity:** Medium — impact High in kind but almost entirely duplicative of
+F-C01 while that stands (the same 8 tour URLs), exploitability Trivial (a
+`curl` against a URL published in a public document), reachability Live
+(confirmed 2026-09-06). It is ranked below F-C01 and reported separately for
+one reason: **it survives F-C01's fix.** Taking GitHub Pages down leaves these
+serving the same content.
+
+**Location:** Cloudflare Pages project `dts-website`, 25 retained deployments,
+each permanently addressable at `https://<8-hex>.dts-website-4cu.pages.dev`.
+
+**What it is.** Cloudflare Pages keeps every deployment live at its own
+hostname forever. Redeploying moves the alias; it does not retract what an
+older deployment serves. Two mistakes that were found and fixed by redeploying
+are therefore still live at their original URLs.
+
+**Reachability trace.**
+- Entry point: `GET https://101ac885.dts-website-4cu.pages.dev/js/config.js`
+- Route file: none — a static asset in a historical deployment
+- Caller's auth state: **anonymous**
+- Parameter carrying the payload: the hostname
+- What the caller obtains: the 8 gated tour URLs (three deployments), and
+  `tools/gis-harvest.mjs` (seven deployments)
+
+**Evidence.** All 25 retained deployments were probed. Each row compares the
+byte count of the path against that deployment's own `/` SPA fallback, which is
+the only sound test here — status codes are all 200 either way.
+
+```
+deployment   /tools/gis-harvest.mjs   js/config.js tour-URL lines
+101ac885     LEAKED 16886 bytes       16   <- unstripped
+1d8b2ad5     LEAKED 16886 bytes       16   <- unstripped
+984686cf     LEAKED 16886 bytes       16   <- unstripped
+1eab93e9     LEAKED 16886 bytes        2
+5e8bbb3e     LEAKED 16886 bytes        2
+9af92d1c     LEAKED 16886 bytes        2
+b4ed6f66     LEAKED 16886 bytes        2
+(the other 18, including the current 3eada530: fallback / 2)
+```
+
+`/.env` returned the SPA fallback on all 25. Raw `/data` is **not** shipping
+statically on any of them either — `data/projects/campus.json` comes back at
+2769 bytes with no `tourUrl`, and `data/source/_latest.json` returns the
+Function's own 9-byte `not found`, on every deployment. All deployments share
+the current Functions and R2 content, so `/data` and `/api` behave identically
+across them.
+
+The hash is not a secret. `docs/migration/PROGRESS.md` — served publicly per
+F-C01, and in the public GitHub repo regardless — names `101ac885`,
+`1d8b2ad5`, `984686cf`, `b4ed6f66` and `1eab93e9` among roughly two dozen
+per-deploy URLs recorded as the audit trail of each phase.
+
+**Confidence.** Confirmed against the real service/data.
+
+**Blast radius.** The same 8 gated tour URLs as F-C01, plus the GIS harvest
+tool. Nothing further: no credential, no `/data` shadowing, no `.env`.
+
+**Proposed fix.** Delete the historical deployments, or at minimum the seven
+named above (`wrangler pages deployment delete <id> --project-name dts-website`,
+or the dashboard). Keeping the last few for rollback is reasonable; keeping
+four weeks of them is what created this. Separately, decide whether per-deploy
+URLs belong in a document that is itself publicly served — a deployment id
+would serve the same audit purpose without handing out a working hostname.
+Both are operator actions; neither is applied here.
+
+**Exploit test.** Not written — same reasoning as F-C01. The check that would
+hold this closed belongs in the deploy runbook, not in `tests/security/`:
+after deleting a deployment, confirm its `/js/config.js` no longer resolves.
+
+**Verification.** Not fixed. Reported only.
+
+---
+
+### F-C03 — `_headers` does not apply to Pages Functions responses
+
+**Severity:** Low — impact Low (defence-in-depth absent on responses that are
+JSON and not rendered as documents), exploitability n/a (this is a missing
+control, not an exploit), reachability Live. Reported because the operator has
+every reason to believe otherwise: `50-headers.sh` reports
+`[OK] headers-not-applied — every header declared in _headers appears in the
+response`, and that is true only of the static half of the site.
+
+**Location:** `_headers:1` (`/*`), versus every file under `functions/`.
+
+**What it is.** `_headers` declares HSTS, `X-Content-Type-Options`,
+`Referrer-Policy` and the full CSP for `/*`. Cloudflare Pages applies that file
+to **static assets only**. A Function builds its own response headers in code,
+and none of the route files add any of the four. So the half of the site that
+serves gated data is the half with no declared security headers.
+
+**Evidence.** Real `GET` responses, 2026-09-06 (not HEAD — see the tooling
+note):
+
+```
+GET /data/manifest.json    ->  Content-Type, Cache-Control, CF-RAY, NEL ... and nothing else
+GET /api/admin/users       ->  401, Content-Type, Cache-Control: no-store ... and nothing else
+GET /  (static)            ->  HSTS + CSP + nosniff + Referrer-Policy, all present
+```
+
+**Confidence.** Confirmed against the real service/data.
+
+**Blast radius.** Small, and worth saying why rather than inflating it. HSTS is
+host-scoped, so one visit to `/` pins the whole hostname for a year — the
+Function responses are covered in practice. CSP governs document rendering and
+these responses are `application/json` consumed by `fetch`. `nosniff` matters
+most where a body is attacker-controlled and served with a sniffable type;
+`functions/api/download/[key].js:46-52` already forces
+`application/octet-stream` plus `attachment` and does not echo the uploader's
+stored content-type, and `functions/data/[[path]].js:35` maps only
+`.json`/`.geojson` and falls back to `application/octet-stream`. So this is
+genuinely defence-in-depth today. It stops being that the moment any Function
+returns HTML.
+
+**Proposed fix.** Add the four headers where the Functions build responses —
+the natural place is `json()` in `functions/_lib/access.js`, which every route
+already returns through, plus the two `new Response(...)` sites that stream R2
+bodies (`functions/data/[[path]].js:42`, `functions/api/download/[key].js:46`).
+`nosniff` and `Referrer-Policy` are unconditional; a Function-appropriate CSP
+is `default-src 'none'`. This touches no do-not-break item, but it does touch
+the shared `json()` helper that every route returns through, so it wants the
+regression suite run against it.
+
+**Exploit test.** None proposed — there is no exploit to reproduce. The
+verification is a header check on a real `GET`, which belongs in the deploy
+runbook next to the existing byte-count checks.
+
+**Verification.** Not fixed. Reported only.
+
+---
+
+### F-C04 — No framing control, and no `form-action`
+
+**Severity:** Low — impact Low (see below; the payoff from a clickjack here is
+small *because of an existing control*, not by accident), exploitability Easy
+(a crafted link a victim clicks), reachability Live.
+
+**Location:** `_headers:1` — the CSP has no `frame-ancestors`, and there is no
+`X-Frame-Options` anywhere.
+
+**What it is.** Any origin can frame the site. The interesting target is a
+signed-in `site_admin` with the Admin Board open, or an `org_admin` with the
+team panel open, lured into clicking through an invisible overlay.
+
+**Why it is Low and not Medium.** I went looking for a clickjack that achieves
+something and mostly did not find one. Every destructive Admin Board action is
+behind a native `window.confirm()` — 17 of them, including
+`js/admin.js:2791` (delete organization), `:2875` (grant/remove `site_admin`),
+`:2900` (delete user), `:2930` (remove member), `:1168` (delete project) and
+`:3418` (**Publish to site**), plus `js/app.js:2589` in the org-admin panel. A
+framing page cannot overlay or auto-accept browser chrome, so the second click
+is not available to an attacker. What remains is single-click state that
+carries little value on its own.
+
+**Evidence.**
+
+```
+$ curl -s -D- .../  | grep -iE 'frame-ancestors|x-frame-options'
+(no output)
+$ grep -c "confirm(" js/admin.js
+17
+```
+
+**Confidence.** Confirmed against the real service (the absent header) and by
+reading the code (the `confirm()` coverage).
+
+**Blast radius.** One unconfirmed admin click. Nothing that survives a page
+reload.
+
+**Proposed fix.** One line in `_headers`, appended to the existing CSP:
+`frame-ancestors 'none'; form-action 'self'`. Both are safe here and I checked
+rather than assumed — the site embeds third-party iframes but is never itself
+framed by anything, and all three `<form>` elements (`index.html:441`, `:759`,
+`:943`) are JS-handled with no `action` attribute, so `'self'` breaks nothing.
+`form-action` is bundled in because it is the same edit and the same deploy;
+on its own it would not have earned a finding, since an injected form needs an
+injection first. Editing `_headers` is not on the do-not-break list, but the
+change is not live until someone runs `DEPLOY-STAGING.md`.
+
+**Exploit test.** Not proposed. A clickjacking proof needs a hostile page and a
+human clicking it; the honest check is a header assertion after deploy.
+
+**Verification.** Not fixed. Reported only.
+
+---
+
+### F-C05 — `script-src 'unsafe-inline'` is forced by one hashable script
+
+**Severity:** Low — impact Low on its own (it is a missing mitigation, not a
+hole), exploitability n/a, reachability Live. It is here because of what it is
+a mitigation *for*: this project's CSP decisions were approved on the reasoning
+that `script-src` stays strict, and it is not strict.
+
+**Location:** `_headers:1` (`script-src … 'unsafe-inline' …`), forced by
+`index.html:55-64`.
+
+**What it is.** The CSP's fetch directives were deliberately broadened to any
+`https:` source for `img-src`, `media-src`, `frame-src` and `connect-src` — a
+real, user-approved decision recorded at `docs/migration/PROGRESS.md:3117-3180`,
+because the CMS accepts arbitrary external URLs. That approval rested on
+`script-src` remaining the strict boundary. But `script-src` carries
+`'unsafe-inline'`, so a stored-XSS in CMS content — the exact class the `app`
+scope found and fixed at `js/app.js:116` and `:546` — executes with no CSP
+resistance, and with `connect-src https:` there is no exfiltration limit
+either. The session token lives in `localStorage`, not a cookie
+(`60-cors.sh`: no `Set-Cookie` on any response), so script on the page reads
+it directly.
+
+**Evidence.** The whole justification for `'unsafe-inline'` is one 10-line IIFE
+at `index.html:55` that sets an `intro-cloak` class and clears it after 4s.
+There are **zero** inline event handlers in the document:
+
+```
+$ grep -n "<script" index.html | grep -v "src="
+55:   <script>
+$ grep -c "on\(click\|load\|error\)=" index.html
+0
+```
+
+**Confidence.** Confirmed by reading the code.
+
+**Blast radius.** Nothing on its own. It raises the ceiling on any XSS that
+reaches the page — which the `app` scope ranked Medium under this project's
+`site_admin` calibration, and which the same calibration says is real for
+persistence and for a phished admin.
+
+**Proposed fix.** Compute the SHA-256 of that one inline script, put
+`'sha256-…'` in `script-src`, and drop `'unsafe-inline'`. Note the maintenance
+cost honestly: the hash must be recomputed whenever those ten lines change, and
+a stale hash blanks the intro cloak (the script's own 4s failsafe means the
+site still reveals itself, so the failure is cosmetic rather than fatal).
+`style-src 'unsafe-inline'` must stay — the inline `<style>` at `index.html:50`
+and a great deal of JS-set styling depend on it, and style is not the
+XSS-relevant boundary here. Not applied.
+
+**Exploit test.** The existing `tests/security/probe-f02-cms-html-injection.mjs`
+already covers the injection this would mitigate; a CSP-hash change needs a
+header assertion after deploy, not a new probe.
+
+**Verification.** Not fixed. Reported only.
+
+---
+
+## Investigated and dismissed
+
+| Lead | Source | Why it is not a finding |
+|---|---|---|
+| `cors/` ×6 — "ACAO `*` — confirm this route never returns per-user data" on `/`, `/data/manifest.json`, `/api/track`, `/api/resource/project.test`, `/api/admin/users`, `/api/publish` | `60-cors` | HEAD-probe artifact (see Tooling). A real `GET` with `Origin: https://evil.example.com` returns **no** `Access-Control-Allow-Origin` at all on any Function route — the secure state, and per `references/30-cloudflare.md` §6 that is a pass, not an untested area. The `*` belongs to Cloudflare Pages' default on static assets, which serve only public marketing files. |
+| `cache-/data/manifest.json`, `cache-/api/track`, `cache-/api/resource/test` — "cacheable" | `50-headers` | Same artifact. Real `GET`: `/api/resource/*`, `/api/download/*` and `/api/admin/*` all return `Cache-Control: no-store`. `/data/*` returns `public, max-age=30, s-maxage=300` and is shared-cached (`CF-Cache-Status: HIT`) **by design** — it serves only the stripped `data/current/` copy, which is public content, and the cache-aside exists so `/api/publish`'s `caches.default.delete()` purge has something to purge (`functions/data/[[path]].js:12-16`). No route returning per-user content is cacheable. |
+| `hdr-permissions-policy` — camera/microphone/geolocation unrestricted | `50-headers` | The default permission allowlist is already `self`, so cross-origin frames get nothing unless the embedding code delegates. It delegates narrowly and deliberately: `js/app.js:619`, `js/app.js:917`, `js/hex-media.js:222`, `js/gis/gis-tour.js:240` — `xr-spatial-tracking`, `fullscreen`, `autoplay`, `gyroscope`, `accelerometer`, `picture-in-picture`, `clipboard-write`. No camera, no microphone, no geolocation, no payment. A `Permissions-Policy` header would also have to keep `geolocation=(self)` alive for the GIS locate tool (`js/gis/gis-viewer.js:872`). Hardening with nothing behind it. |
+| `route-guards` — one route file calls no guard | `00-inventory` | `functions/data/[[path]].js` — public by design (`WEBSITE-STATE.md` §5.10). Read it: the R2 key is always the file's own hardcoded `data/current/` prefix plus the request path (`:36`), never a caller-supplied prefix, and `:28` rejects any segment that is empty, `..`, or contains `/`. It cannot resolve `data/source/`. Confirmed live: `/data/source/_latest.json` returns the Function's own 9-byte `not found` on every deployment probed. |
+| `deploy-exposure` — 15 paths that must never be published | `55-deploy-exposure` | All 15 return exactly the 64804-byte SPA fallback on the current deployment, including `/tools/gis-harvest.mjs`, the directory that leaked once before. Byte-compared, not status-compared. **Pass.** |
+| `csp-unsafe-eval` — eval-family call in client code | `50-headers` | `js/admin.js:3159` is the text `no new Function needed for the listing itself` inside a comment. There is no eval-family call. |
+| Uploader-controlled `content-type` stored on R2 objects (`functions/api/admin/apps/upload.js:38`) | manual | Never echoed. `functions/api/download/[key].js:46-52` hardcodes `application/octet-stream`, `content-disposition: attachment`, and `no-store`. The `filename` interpolated into the disposition comes from a `site_admin`-set `r2_object_key`; a CRLF there would be rejected by the Workers `Headers` setter, and a quote is a cosmetic break for the person who typed it. |
+| Cache poisoning via unkeyed input | manual | Only two request headers are read anywhere in `functions/`: `Authorization` (`_lib/access.js:41`) and the upload `content-type` above. Nothing is reflected into a response body, a header, or a redirect, so there is no unkeyed input to poison an entry with. |
+| Orphaned Pages secrets from the removed `/api/lead` | `references/30-cloudflare.md` §2 | Checked against the real account rather than the repo: the project's configured secrets are exactly `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` — the same three `functions/_lib/access.js` and `_lib/admin.js` reference, no more. No leftover Turnstile or Web3Forms secret from Phase 7's revert. |
+| `account-hardcode` — account-specific values in committed files | `00-inventory` | `wrangler.toml` carries no `account_id` (deliberate, and it says so at `wrangler.toml:14-18`). Bucket and binding names are disclosure, not compromise. The one account-specific value that *is* committed is the Supabase project ref in `_headers`' CSP — a handoff item, below, not a vulnerability. |
+| R2 buckets publicly reachable | manual | Both `dts-content` and `dts-builds`: `Public access via the r2.dev URL is disabled`, and no custom domains connected. Confirmed against the real service. Neither bucket is reachable except through a Function. |
+| Working tree drift (3 uncommitted files) | `00-inventory` | A scan script, a `.docx` and an untracked markdown file. No shipped code differs from `b4504b9e`, so the deployed site and the citations in this report describe the same version. |
+
+### Bindings and blast radius (context, not a finding)
+
+Bindings are ambient authority — any Function can use any binding the project
+declares. `DTS_CONTENT` is referenced by six route files and `DTS_BUILDS` by
+three (`functions/api/download/[key].js:42`,
+`functions/api/admin/apps/upload.js:37`, `functions/api/admin/apps/[key].js:48,78`).
+Both buckets are writable by declaration; only the code's restraint limits
+that. So the content bucket and the build-artifact bucket share one blast
+radius, and any `app`-scope Function bug reaches both. Recorded here because
+this scope is where that ceiling gets established, not because anything is
+currently wrong with it.
+
+---
+
+## Accepted and residual risk
+
+- **`pages_build_output_dir = "."`** would publish `.env`, `scripts/`,
+  `supabase/`, `docs/` and raw `data/` if anyone deployed the repo root. The
+  only control is a human following `DEPLOY-STAGING.md`. That control has
+  failed once in this project's history (`tools/gis-harvest.mjs`, Aug 2026) and
+  the runbook grew a file-list diff and an exclusion-presence check in response.
+  Verified holding on the current deployment.
+- **Broadened `img-src` / `media-src` / `frame-src` / `connect-src` to any
+  `https:`** — a real, audited, user-approved decision recorded at
+  `docs/migration/PROGRESS.md:3117-3180`, because the CMS accepts arbitrary
+  external URLs by design. Not re-litigated here. Its stated premise — that
+  `script-src` remains the strict boundary — is F-C05.
+- **`/api/track` has no rate limit** (`WEBSITE-STATE.md` §9). Pages Functions
+  get none by default, and this one is deliberately callable without a session.
+  Worth noting which layer does what elsewhere: the auth endpoints are
+  Supabase's, rate-limited by GoTrue and, in practice today, hard-capped by the
+  built-in email service's 2 messages/hour; `functions/api/org/invite.js` has
+  its own limiter using `admin_audit` as the ledger. So the project has made
+  this choice per-endpoint rather than by omission — `track` is the one gap.
+- **A Treedis tour URL is a bearer URL once issued** (`WEBSITE-STATE.md` §9).
+  Relevant because F-C01 and F-C02 hand out eight of them.
+- **Second-order note.** The Phase 2 decision to leave the old repo public
+  (`PROGRESS.md:2919`) predates the access model built in Phases 4 and 6. What
+  was accepted was "the old site keeps serving what it already served"; what
+  followed was "the new site's only content-side control does not apply there."
+  That is F-C01, and it is why it is a finding rather than an accepted-risk
+  line.
+
+---
+
+## Human action items
+
+- **Decide what happens to the GitHub Pages host (F-C01).** Three options are
+  laid out in the finding. This is a hosting and go-live decision, not a code
+  change, and I have not touched it.
+- **Reissue the eight exposed Treedis tours, if that is possible.** They have
+  been publicly fetchable for the life of the GitHub Pages copy, and taking the
+  host down does not invalidate a URL someone already has. Only Treedis can
+  reissue them; DTS controls who obtains a URL, not what happens after. If
+  reissuing is not possible, that is worth knowing before handoff, because it
+  bounds what "gated" can mean for those tours.
+- **Delete the historical Pages deployments (F-C02)**, at minimum the seven
+  named. `wrangler pages deployment delete <id> --project-name dts-website`.
+  Decide separately whether per-deploy URLs should keep being written into
+  `PROGRESS.md`, which is itself publicly served today.
+- **Handoff: the Supabase project ref is committed in more places than the
+  handoff document names.** `docs/migration/ACCOUNT-SETUP-AND-HANDOFF.md:360`
+  says re-pointing is "that one file edit" (`js/supabase-init.js`). The ref
+  appears in three places: that file (`:15`), an `index.html` preconnect
+  (`:18`), and — until this session — `_headers`' CSP.
+
+  **Correction, made the same day this section was written.** The first draft
+  of this item said missing the `_headers` entry at handoff would produce "a
+  silent CSP block, not an error." **That is wrong**, and it overstated the
+  item. `connect-src` already permits `https:`, i.e. any secure origin, so a
+  new project's ordinary REST and auth traffic is allowed regardless of what
+  that line names. The explicit entry only ever permitted the **`wss:`**
+  scheme to the old project — and nothing in the codebase uses Supabase
+  Realtime (no `.channel(`, `realtime`, `WebSocket` or `wss://` anywhere in
+  `js/` or `index.html`). So nothing would have broken. The real consequence
+  was smaller: a client's live site would keep naming the developer's personal
+  dev project in its page source, and the browser would warm up a connection
+  to a project the site no longer uses.
+
+  The dead `wss://<ref>.supabase.co` entry was **deleted** from `_headers` in
+  this session's F-C04 commit rather than carried to handoff. If Realtime is
+  ever adopted, a `wss:` entry gets added then, pointing at whatever project
+  is current. `index.html:18` is deliberately left alone — it is a real
+  performance hint for the project actually in use today — and is now named in
+  the handoff document instead.
+- **The Cloudflare account id is in a publicly-served document**
+  (`docs/migration/PROGRESS.md:2995`). Disclosure, not a credential — an
+  account id alone grants nothing without an API token, and no token is in the
+  repo (`.env` was never committed; it 404s on both hosts).
+
+  **Deliberately not scrubbed, and the reason matters.** The repository is
+  public on github.com (`"visibility": "public"`, checked directly), so the id
+  is in the git history whatever the current file says. Editing it out of the
+  working copy would look like a fix and change nothing an attacker can reach.
+  The control that actually works is the one already in place: the API token
+  lives only in `.env`/Pages secrets, and `wrangler.toml` deliberately carries
+  no `account_id`. The forward-looking fix is to keep the **client's** account
+  id out of committed documents at handoff, since theirs is not published yet
+  — now stated in `ACCOUNT-SETUP-AND-HANDOFF.md`.
+- **Fix the audit skill's own header probing.** `lib/common.sh:214` uses
+  `curl --head`; Pages answers HEAD on a Function route with the static SPA
+  shell, which is what produced nine misleading leads this run. Changing it to
+  a `GET` with a discarded body is a change to `.claude/skills/`, and I have
+  not made it without a go-ahead.
+
+---
+
+## Untested areas
+
+- **No authenticated cache-behaviour test.** No session was minted this run, so
+  every `/api/*` response observed is an unauthenticated 400/401/404. `no-store`
+  was read off those; I did not confirm it on a **200** carrying real gated
+  content. Reading the code says the header is set unconditionally in `json()`
+  and in the two streaming responses, so I expect it holds — but that is
+  "confirmed by reading the code", not "confirmed against the real service".
+- **WAF and rate-limiting rules were not inspected.** A `pages.dev` project is
+  not a zone, so there is no zone-level WAF or rate-limiting configuration to
+  read from the CLI. What I can say is what Cloudflare's defaults are: Pages
+  Functions get no rate limiting. Whether anything else sits in front of this
+  project is a dashboard question I did not answer.
+- **Only the `production` environment's secrets were enumerated.** If a
+  `preview` environment exists with its own variables, it was not listed. Every
+  deploy this project has made went to `--branch main`, i.e. production.
+- **SRI on the two external scripts was not adjudicated** — it belongs to the
+  `deps` scope. For that session: `index.html:1019` loads
+  `@supabase/supabase-js@2` from jsDelivr, an unpinned major, so SRI is
+  structurally impossible without pinning an exact version first; and
+  `index.html:1029` loads Turnstile from `challenges.cloudflare.com`, which
+  Cloudflare updates in place and documents as not SRI-pinnable.
+- **Nothing in this scope was confirmed in a browser.** No finding here depends
+  on rendering or interaction, so that is a smaller gap than usual — but the
+  `_headers` changes proposed in F-C04 and F-C05 would need a real page load to
+  confirm nothing broke, and the F-C05 hash approach in particular should be
+  eyeballed once.
+- **The `deps` scope remains unrun.** It is now the only one.
+
+---
+
+## Documentation updates — proposed, not applied
+
+**`docs/WEBSITE-STATE.md`**
+
+- §9, "Blocked on external accounts / handoff": rewrite the **Old GitHub repo
+  privacy** row. It currently reads as a tidiness item ("making it private
+  would break that immediately"). It should say what is actually true — that
+  the host serves the unstripped repo, that 27 withheld documents and 8 gated
+  tour URLs are reachable there anonymously, and that the Cloudflare access
+  model does not apply to it.
+- §9: add that the Cloudflare Pages project retains ~25 historical deployments
+  at permanent hostnames, that three of them serve the pre-overlay
+  `js/config.js` and seven the pre-exclusion `tools/gis-harvest.mjs`, and that
+  redeploying does not retract them.
+- §7 or §8: record that `_headers` applies to static assets only and **not** to
+  Functions responses — the half of the site serving gated data has no declared
+  security headers. This is exactly the kind of thing a future session would
+  otherwise assume from reading the file.
+- §10: append a line that the `cloudflare` scope ran on 2026-09-06 with no
+  degraded checks, that the raw-`/data` invariant and the excluded-path set
+  were both re-verified against deployment `3eada530`, and that both R2 buckets
+  have public access disabled.
+- §9's handoff table: add the `_headers` CSP and `index.html` preconnect to the
+  list of places the Supabase project ref must be re-pointed, and note the
+  `wss:` entry is unused.
+
+**`docs/migration/PROGRESS.md`**
+
+- A session-log entry for this scope: the five findings, the eleven dismissed
+  leads and why, the clean results (deploy exposure, CORS, `no-store` on gated
+  routes, no orphaned secrets, R2 buckets private), the HEAD-probe tooling
+  defect, and the fact that nothing was fixed or deployed.
+- Consider whether per-deploy URLs should keep being recorded in this file at
+  all while it is publicly served (F-C02).
+
+**`docs/migration/ACCOUNT-SETUP-AND-HANDOFF.md`**
+
+- Step 6 ("Re-point config") currently says the swap is one file edit. Add
+  `_headers` and `index.html`, per Human action items.
+
+**`CLAUDE.md`**
+
+- No change proposed. Nothing new landed in `tests/security/` this scope, and
+  the two checks worth adding (an excluded-path header assertion, and the
+  GitHub Pages 404 check) only make sense once F-C01 and F-C04 are decided.
+
+---
+
+## Fix record — 2026-09-06, same session
+
+Applied after the report above was written, on the owner's instruction. Read
+this section as authoritative where it corrects the findings above.
+
+### F-C02 was understated. Two corrections, both material.
+
+**Correction 1 — the deployment list is paginated, and the audit only saw the
+first page.** The report says "all 25 retained deployments were probed." That
+was 25 because `wrangler pages deployment list` returns 25 per page and the
+audit read one page. The project actually held **53 deployments**. Deleting
+the first 22 revealed 22 more; deleting those revealed more again, three pages
+deep. Anything in this report phrased as "all 25" should be read as "the newest
+25."
+
+**Correction 2 — five old deployments were shipping raw `/data` as static
+files.** That is the project's single highest-severity invariant
+(`WEBSITE-STATE.md` §7, and `references/10-severity.md` ranks it **Critical**),
+and the report states plainly that it "is **not** shipping statically on any of
+them." That statement was true of every deployment the audit had looked at, and
+false of the project as a whole.
+
+Confirmed against the real service before deletion, on `05fa51de`, `a30b1e22`,
+`ac9f971e`, `987a897b` and `efc0ce12`:
+
+```
+/data/manifest.json          61 entries   (the live filtered copy has 34)
+/data/projects/campus.json   2883 bytes, contains "tourUrl": "https://spaces.dtsxr.com/tour/…"
+                             (the live stripped copy is 2769 bytes and contains none)
+/data/gis/maps/iberia-coastal.json
+                             200, 23191 bytes — the gated GIS map document itself
+```
+
+These are pre-Phase-6 builds, from before the `data/current/` + `data/source/`
+split existed — so this is the *old* static site shape still being served,
+not a regression in the current pipeline. That distinction matters for how it
+happened and not at all for what it exposed: an anonymous caller could read
+the unstripped content from those hostnames today.
+
+**Full tally across all 53.** 46 of the 50 deleted deployments were probed
+first; 4 (`71a041ec`, `e6dc6df8`, `e8768a2e`, `f356b143`) were deleted without
+probing, so what they served is unknown and now unknowable.
+
+| Exposure | Deployments found serving it |
+|---|---|
+| `tools/gis-harvest.mjs` | **29** (report said 7) |
+| Unstripped `js/config.js` — 9 tour URLs, 8 of them gated | **9** (report said 3) |
+| **Raw `/data` as static files** — unfiltered manifest, gated `tourUrl`, gated GIS map | **5** (report said 0) |
+| `/.env` | 0 — clean on every deployment probed, at every age |
+
+### What was done
+
+**50 deployments deleted, 3 kept:** `3eada530` (the live alias), `fb6554dd`,
+`ecb262ed`. Every deployment carrying any of the three exposures above is in
+the deleted set.
+
+`wrangler pages deployment delete <id> --project-name dts-website --force` —
+`--force` is documented as "delete even if the deployment has an active alias",
+but it also skips the interactive confirmation, which is what makes the command
+usable non-interactively. Without it the CLI asks "are you sure?" and answers
+itself **no** in a non-interactive shell, reporting nothing useful.
+
+### ⚠ The exposure is NOT yet closed — deletion has not taken the hostnames down
+
+**This is the honest state and it should not be read as a completed fix.**
+
+All 50 deployments are gone from `wrangler pages deployment list` (the project
+now lists exactly 3). But **the deleted `<hash>.dts-website-4cu.pages.dev`
+hostnames are still serving their old builds**, 45+ minutes after the first
+deletion. Verified with cache-busting query strings, so this is not an edge-cache
+artifact:
+
+```
+23:45Z, first deletion ~23:00Z
+  1eab93e9  200, 57182 bytes    05fa51de  9 tour URLs, campus.json still carries tourUrl
+  5e8bbb3e  200, 57182 bytes    987a897b  9 tour URLs, campus.json still carries tourUrl
+  101ac885  200, 57182 bytes    a30b1e22  9 tour URLs, campus.json still carries tourUrl
+```
+
+A path that never existed on `05fa51de` still returns that deployment's *own*
+56316-byte SPA fallback rather than a 404 — so the deployment is still running,
+not replaying one cached response. Response headers show
+`cache-control: public, max-age=0, must-revalidate` and no `CF-Cache-Status`,
+which rules out the edge cache as the explanation.
+
+So deletion appears to remove the deployment **record** synchronously and
+retire the **hostname** on some slower schedule, or not at all. The audit could
+not determine which, and the difference matters:
+
+- If it is a propagation delay, this closes on its own and simply needs
+  re-checking.
+- If the hostname is retained after deletion, then **deleting deployments is
+  not a remedy for this class of exposure at all**, and the only real controls
+  are (a) never deploying the excluded files in the first place, which
+  `DEPLOY-STAGING.md` already covers, and (b) rotating anything that leaked.
+
+**Re-check before treating F-C02 as fixed:**
+
+```
+for u in 1eab93e9 05fa51de a30b1e22 987a897b 101ac885; do
+  printf '%-10s ' "$u"
+  curl -s -o /dev/null -w '%{http_code} %{size_download}\n' \
+    "https://$u.dts-website-4cu.pages.dev/?x=$RANDOM"
+done
+```
+
+Expect a non-200, or the current 64804-byte shell. A 200 at the old byte count
+means the old build is still live and Cloudflare support is the next step.
+
+**This does not change the F-C01 recommendation, and it strengthens the tour-URL
+one.** Eight gated tour URLs have now been confirmed publicly readable from two
+independent hosts over an extended period. Reissuing them is the only action
+that does not depend on someone else's infrastructure behaving as documented.
+
+### F-C03 — fixed
+
+`functions/_lib/access.js` gained an exported `SECURITY_HEADERS` constant
+(`nosniff`, `Referrer-Policy`, `Content-Security-Policy: default-src 'none'`,
+HSTS), spread into `json()` and into every hand-built `Response` in the three
+route files that do not go through it: `functions/data/[[path]].js` (3
+responses), `functions/api/download/[key].js` (1), and
+`functions/api/resource/gismap/[mapId]/layer/[layerId].js` (5). The report's
+proposed fix named only two such sites; there were nine.
+
+**Verified by executing the real handlers** against fake R2 bindings and a
+stubbed `caches.default`, reading the headers off the Responses they actually
+return — not by reading the source:
+
+```
+ok   access.json() 200            status=200 ct=application/json cache=no-store
+ok   access.json() 401            status=401 ct=application/json cache=no-store
+ok   data/[[path]] rejects '..'   status=404
+ok   data/[[path]] miss -> 404    status=404
+ok   data/[[path]] hit -> 200     status=200 cache=public, max-age=30, s-maxage=300
+ok   gismap layer, unknown map    status=404
+all responses carry the four headers
+```
+
+Existing `content-type` and `cache-control` values are unchanged on every
+response, and the `..` path-traversal rejection still fires. Full
+credential-free suite green: 5 security probes + the GIS resolver regression.
+
+**Committed, not deployed.** These headers do not exist on the live site until
+someone runs `DEPLOY-STAGING.md`.
+
+### F-C04 — fixed
+
+`_headers`' CSP gained `frame-ancestors 'none'; form-action 'self'`. All 13
+directives verified present after the edit.
+
+The same edit **deleted the dead `wss://<dev-project-ref>.supabase.co` entry**
+from `connect-src`. Nothing in the codebase uses Supabase Realtime, and
+`connect-src` already permits `https:`, so the entry granted only the `wss:`
+scheme to a project nobody connects to. It also carried the developer's
+personal dev project ref into every response header — see the corrected handoff
+item above.
+
+**Committed, not deployed.**
+
+### F-C05 — accepted, not fixed
+
+The owner's decision: leave `script-src 'unsafe-inline'` as it is. Recorded as
+an accepted risk rather than an open finding. The reasoning in F-C05 still
+stands and is worth revisiting if a second person ever holds `site_admin`, or
+if the intro-cloak script is removed for other reasons — at which point
+dropping `'unsafe-inline'` costs nothing.
+
+### F-C01 — deferred to handoff by the owner
+
+The GitHub Pages host stays up until the Cloudflare version is handed over to
+DTS, at which point the old repo/site is retired. That is a deliberate,
+recorded decision by the owner and the audit is not treating it as an open
+action item. The tour-URL reissue recommendation stands independently of it.

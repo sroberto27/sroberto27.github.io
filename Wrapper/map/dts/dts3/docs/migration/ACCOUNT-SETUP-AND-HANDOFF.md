@@ -278,6 +278,13 @@ committed files**, except two spots —
 - `js/supabase-init.js` — the public Supabase project URL + anon key (not
   secret; safe to be public, it's what every browser needs to talk to
   Supabase's public API)
+- `index.html:18` — a `<link rel="preconnect">` to the same Supabase host.
+  Not a connection, just a "warm this up early" hint to the browser, so a
+  stale one costs a wasted DNS/TLS handshake rather than breaking anything.
+  Easy to miss precisely because nothing fails when it's wrong. (Found by the
+  2026-09-06 `cloudflare` security audit, which also removed a third spot —
+  `_headers` used to name the dev project in a CSP `wss:` entry for Supabase
+  Realtime, which this codebase does not use.)
 - Cloudflare Pages environment variables / secrets — set via
   `wrangler pages secret put`, never written to a file at all
 
@@ -357,9 +364,21 @@ one Claude actually follows; this is the plain-language walkthrough.
    (`data/current/` + `data/source/`) get uploaded. All secrets — Cloudflare
    API token, Web3Forms key, Supabase service key — are generated FRESH on
    the client's side. Nothing is copied over from your dev secrets, ever.
-6. **Re-point config.** `js/supabase-init.js` gets edited to the client's
-   project URL + anon key. That one file edit, plus the fresh secrets in
-   step 5, is the entire account swap — no other code changes.
+6. **Re-point config — two files, not one.** `js/supabase-init.js:15` gets
+   edited to the client's project URL + anon key, **and** `index.html:18`'s
+   `preconnect` gets pointed at the same new host. Those two edits, plus the
+   fresh secrets in step 5, are the entire account swap — no other code
+   changes. Grep before declaring it done: `grep -rn "<old-project-ref>" .`
+   over the staged deploy directory should return nothing.
+
+   **Never write the client's Cloudflare account id into a committed file.**
+   Not into `wrangler.toml` (which deliberately has none — the account comes
+   from the authenticated `wrangler login` / `CLOUDFLARE_API_TOKEN`), and not
+   into a document under `docs/`. The dev account's id is already in
+   `docs/migration/PROGRESS.md` and in this repo's public git history, which
+   cannot be undone; the client's does not have to follow it. An account id
+   is not a credential on its own, but it is one half of a pair and there is
+   no reason to publish it.
 7. **Google/Microsoft OAuth, if self-registration's social login is going
    live with this handoff — otherwise skip and note the deferral.** The
    client's new Supabase project has a different callback URL, so both OAuth
