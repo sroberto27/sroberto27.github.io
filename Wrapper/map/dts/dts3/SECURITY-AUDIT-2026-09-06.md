@@ -2127,7 +2127,15 @@ content that uses them.
   `content-security-policy: default-src 'none'`, HSTS) alongside their
   existing `cache-control: no-store`.
 
-**One loose end on `/data/*`, cosmetic but stated honestly.** The plain
+**One loose end on `/data/*` — now closed.** Re-checked at 00:09Z, about
+16 minutes after the deploy: the plain `/data/manifest.json` URL returns
+`x-content-type-options: nosniff` and `content-security-policy: default-src
+'none'`, with `CF-Cache-Status: HIT` and `Age: 6` — a fresh entry populated
+from the new Function. The cache rolled over on its own, as expected, with no
+publish or purge needed. What follows is the original observation, kept
+because the reasoning is what made the wait safe rather than worrying.
+
+The plain
 `/data/manifest.json` URL was still answering from cache without the new
 headers for at least the first several minutes after deploy
 (`CF-Cache-Status: HIT`, `Age: 158`). The same document fetched with any fresh
@@ -2137,10 +2145,11 @@ problem. It resolves itself as entries age out of the route's own
 `caches.default` cache-aside and the CDN copy above it; a `site_admin`
 "Publish to site" also purges it explicitly (`functions/api/publish.js` calls
 `caches.default.delete()` per path). I was not able to fully account for the
-observed `Age` relative to the deploy time, so the honest statement is: the
-code emits the headers, and the cached copies had not all rolled over when I
-stopped checking. Worth one confirming fetch later; nothing is exposed either
-way, since `/data/current` is public content by design.
+observed `Age` relative to the deploy time, so the honest statement at that
+moment was: the code emits the headers, and the cached copies had not all
+rolled over yet. Nothing was exposed either way — `/data/current` is public
+content by design, and the only difference between the cached and fresh
+copies was the presence of the new headers.
 
 **Still open, unchanged by this deploy:** the deleted deployment hostnames
 (F-C02) were still serving their old builds at 23:57Z, ~57 minutes after the
