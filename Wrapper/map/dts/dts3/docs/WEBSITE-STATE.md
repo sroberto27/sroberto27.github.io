@@ -831,11 +831,18 @@ fine.
 always the latest deploy; per-deploy hash URLs change every redeploy, don't
 bookmark those).
 
-**Current deployment: `fb6554dd`, 2026-09-06, from `main`.** As of that deploy
-`main` and the live site are identical — worth keeping true, because for a
-while they were not and it made a live outage hard to attribute. R2 content was
-synced in the same session (`scripts/upload-content.mjs` plus a regenerated
-`data/source/_latest.json`).
+**Current deployment: `c66be075`, 2026-09-07, from branch
+`content-migration-2026-09-07`** (the portfolio content migration, commit
+`000d0422`). R2 content was synced in the same session:
+`scripts/upload-content.mjs` (85 objects), then the 14 removed projects deleted
+by hand from both prefixes (28 objects — the CLI uploader does not delete), then
+a regenerated `data/source/_latest.json`.
+
+**Note the live site is currently ahead of `main`.** That branch has not been
+merged yet. The previous deployment was `fb6554dd`, 2026-09-06, from `main`,
+and keeping `main` and the live site identical is normally worth doing — for a
+while they were not and it made a live outage hard to attribute. Merge the
+branch once the Part N manual pass has actually been run.
 
 - **Migration Phases 0–9 are DONE.** Cloudflare foundation, secret scrub,
   Supabase schema + RLS + dummy seed, client auth swap + resource gating, admin

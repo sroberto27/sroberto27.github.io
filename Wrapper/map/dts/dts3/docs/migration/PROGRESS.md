@@ -90,9 +90,39 @@ identity/access model each phase from 3 onward implements is defined in
   embeddable via Vimeo's oEmbed API; all 4 Treedis URLs return 200.
   `split-content.mjs` stages cleanly.
 
-  **Not confirmed live in a browser.** `FULL-SYSTEM-TESTING.md` **Part N (tests
-  168–195)** is the manual pass — structure, the two layout fixes, the
+  **Deployed and content-synced the same session** — deployment `c66be075`
+  from branch `content-migration-2026-09-07`. Sequence, which matters because
+  the obvious one is wrong: repo `/data` changes reach R2 through the **CLI**,
+  not through the Admin Board's "Publish to site" (the board reads
+  `data/source/_latest.json` from R2, so before the sync it still held all 17
+  old projects and a publish would have written them straight back). Correct
+  order: `upload-content.mjs` (26 objects to `data/current/`, 59 to
+  `data/source/`, plus `_hashes.json`) → delete the 14 removed projects from
+  both prefixes by hand, 28 objects, since the CLI uploader never deletes →
+  regenerate and upload `_latest.json` → static deploy per DEPLOY-STAGING.md.
+
+  Verified live: public manifest 8 projects / 25 listed files, all 25 return
+  200; the 14 deleted project documents now 404; deployed `js/config.js` parses
+  to 4 categories, 8 examples, **0** gated tourUrls, all 8 public videos intact;
+  `spaces.dtsxr.com` count 2 and `my.treedis.com` 0; every excluded path returns
+  the 64898-byte SPA fallback; `/data/projects/gfc.json` has no `tourUrl`,
+  proving the stripped copy is served through the Function and not a static
+  file. Anonymous resolves of `gismap.iberia-coastal`, `project.gfc:map`,
+  `project.gfc:tour`, `project.solar:tour`, `project.automotive:tour` and
+  `project.lafayette:tour` all return 401; deleted keys like
+  `project.campus:link-1` return 404. The **deployed-mode** F-01 probe passes
+  3/3, including the retargeted gated-experience assertion.
+
+  A note for the next session: an edge-cached `/data/manifest.json` kept
+  showing the old 17-project list for a few minutes after the upload — the
+  known CLI-path limitation (`caches.default` is Workers-runtime-only, so the
+  CLI cannot purge). A cache-busting query param showed the correct content
+  immediately. Don't diagnose a stale manifest as a failed upload.
+
+  **Still not confirmed in a browser.** `FULL-SYSTEM-TESTING.md` **Part N
+  (tests 168–195)** is the manual pass — structure, the two layout fixes, the
   public/gated split, the GIS map, images, Admin Board, and a regression sweep.
+  Merge to `main` after that pass, not before.
 
 - 2026-09-06 (later, same session) — **Deployed the security fixes, synced R2,
   then found and fixed a live GIS outage.** Deployment `fb6554dd` from `main`;
