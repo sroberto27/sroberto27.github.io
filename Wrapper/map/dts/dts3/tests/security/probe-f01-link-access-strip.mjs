@@ -126,12 +126,20 @@ expectAllowed(
 /* ---- deployed-only: the gate itself is still a real gate ----------------- */
 
 if (DEPLOYED) {
-  // A Treedis link that has always been correctly stripped -- proves the
-  // resolver still refuses an anonymous caller rather than the whole gating
-  // layer having been switched off.
+  // A gated Treedis experience that is correctly stripped from the public
+  // copy -- proves the resolver still refuses an anonymous caller rather than
+  // the whole gating layer having been switched off.
+  //
+  // Targets project.gfc:tour deliberately. Before the September 2026 content
+  // migration this checked project.campus:link-1; `campus` no longer exists,
+  // and a deleted project resolves 404, which is NOT the same claim as "the
+  // gate refused me" -- expectDenied would have kept passing for the wrong
+  // reason. `gfc` is the one project id guaranteed to survive (it carries the
+  // GIS map and the seeded project.gfc:map entitlement), and its `tour`
+  // experience is `registered`, so an anonymous caller must get 401.
   expectDenied(
-    "anonymous resolve of a gated Treedis link is still refused",
-    await req(`${TARGET}/api/resource/project.campus%3Alink-1`)
+    "anonymous resolve of a gated Treedis experience is still refused",
+    await req(`${TARGET}/api/resource/project.gfc%3Atour`)
   );
 }
 

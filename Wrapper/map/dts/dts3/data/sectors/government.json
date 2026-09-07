@@ -5,39 +5,25 @@
   "order": 3,
   "label": "Government",
   "navSub": "City",
-  "blurb": "Government provides structure and oversight.",
+  "blurb": "Immersive practice environments for public service, safety, compliance, and technical workforce training.",
   "active": true,
   "accent": "#34598F",
   "kicker": "GOVERNMENT",
-  "title": "Public & Civic",
-  "sub": "Digital Twin of your city",
-  "body": "Where collective output becomes public infrastructure. Government has a fundamentally different procurement process, budget authority, and decision timeline. DTS is SAM.gov qualified. Organized by function — not agency level.",
+  "title": "Turn critical procedures into repeatable practice.",
+  "sub": "Interactive simulations make complex public-service and technical workflows easier to learn, assess, and scale.",
+  "body": "Government and public-sector teams often train for work where consistency, procedure, and technical judgment matter. DTS builds interactive environments that let learners recognize conditions, practice decisions, and repeat workflows without depending on a live facility for every training session. The same approach can support regulatory compliance, public health, and advanced technical workforce development.",
   "cards": [
     {
-      "projectId": "municipal",
-      "title": "Infrastructure & Cities",
-      "text": "Municipal twins, transportation, utility grids, urban planning."
-    },
-    {
-      "projectId": "gfc",
-      "title": "Coastal Resilience",
-      "short": "Coastal",
-      "text": "Parish-scale digital twins, GIS, and scenario planning for coastal risk."
-    },
-    {
       "projectId": "foodsafety",
-      "title": "Regulatory & Compliance",
-      "text": "Food safety, environmental compliance, inspection training."
+      "title": "Sanitarian Training Enhancement",
+      "short": "Sanitarian",
+      "text": "A modular VR and PC training suite for Louisiana food-safety inspectors to identify hazards, apply inspection criteria, and practice response in simulated food-service environments."
     },
     {
-      "projectId": "civic",
-      "title": "Civic Services",
-      "text": "Libraries, transit, parks, civic engagement, accessibility."
-    },
-    {
-      "projectId": "emergency",
-      "title": "Safety & Emergency",
-      "text": "GOHSEP, FEMA PA documentation, disaster response twins."
+      "projectId": "honeywell",
+      "title": "Advanced Manufacturing Training Demo",
+      "short": "Adv. Manufacturing",
+      "text": "An immersive metrology and manufacturing simulation that lets users practice equipment interaction, measurement workflows, and technical procedures inside a virtual workcell."
     }
   ]
 }

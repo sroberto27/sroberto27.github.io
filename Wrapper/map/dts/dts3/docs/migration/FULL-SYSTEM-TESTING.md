@@ -1571,6 +1571,281 @@ Comments: ____________________________________
 
 ---
 
+# Part N — Portfolio content migration (2026-09-07)
+
+The whole public portfolio was replaced: **17 projects across 4 sectors became
+8, exactly 2 per sector.** Every project document, every sector's copy and
+cards, and `js/config.js` were rewritten; 14 project documents were deleted.
+
+Nothing below has been confirmed in a real browser. What *has* been confirmed:
+all 6 automated test files pass, the real `content-loader.js` produces the
+correct `DTS_CONFIG` from the new `/data`, all 33 supplied images resolve
+case-exact on disk, all 8 Vimeo URLs return real embeddable videos via Vimeo's
+oEmbed API, and all 4 Treedis URLs return 200. That is file- and API-level
+confidence only — it says nothing about what renders.
+
+The expected portfolio, for reference while testing:
+
+| Category | Card 1 | Card 2 |
+|---|---|---|
+| Education | BRCC Film Production Orientation | Louisiana Solar Energy Lab Digital Twin |
+| Industry | Shell - Permian Basin Assessment Training | Automotive Dealership Digital Twin |
+| Government | Sanitarian Training Enhancement | Advanced Manufacturing Training Demo |
+| Community | Downtown Lafayette | Iberia Parish Clean Energy Hub Digital Twin |
+
+## Structure — the counts have to be exactly right
+
+**168. Four categories, two cards each, and nothing else.** Walk all four
+sector pages. Each must show **exactly two** cards, matching the table above.
+A third card, a card with an old name ("Campus & Schools", "Civic Services",
+"Energy & Manufacturing", "Cultural & Heritage"…), or an empty slot is a FAIL.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**169. Every card opens its own project.** Click all 8 cards. Each must open
+the project named on it — check the window's title line, not just that
+*something* opened. A card opening the wrong project is a FAIL.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**170. No obsolete project is reachable by normal navigation.** In each sector,
+open the bottom dock tabs and the "More from {Sector}" rail inside an open
+project. Every destination must be one of the 8. There should be exactly one
+"More from this sector" card per project (each sector has only one *other*
+project now) — zero cards, or a card naming a deleted project, is a FAIL.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**171. A deep link to a deleted project degrades gracefully.** Open
+`?category=education&project=campus` directly. Expect the Education category
+page with no project window and **no console error**. A blank overlay, a stuck
+loading spinner, or a thrown exception is a FAIL. (`campus` was deleted; the
+URL validator is supposed to drop it.)
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+## Layout — both fixed regressions from the 4→2 card change
+
+**172. The desktop "VIEW {SECTOR} PROJECTS" sheet lays out two cards
+properly.** On a desktop-width window, open each sector's projects sheet. Two
+cards should sit side by side and fill the row. The old mosaic pinned cards to
+four named grid areas, so the failure mode is a half-empty sheet with a large
+gap on the right — that is a FAIL.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**173. Category cards are not absurdly tall.** On a desktop-width window, look
+at each sector's two use-case cards. They should size to their content and sit
+at the top of the cards area, not stretch to fill the full height with a short
+paragraph floating in a tall empty box.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**174. The projects sheet shows each project's real capture and platform.**
+In the sheet from test 172, read the "Captured with:" and "Platform:" chips.
+They must vary per project and match the project window's own chips — e.g.
+Sanitarian Training shows Unity VR/PC, BRCC shows interactive 3D. If every card
+still says "Matterport Pro2 / Treedis", the fix did not take: FAIL.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+## Experiences — the public/gated split per the content forms
+
+**175. Every project's showcase video plays for a signed-out visitor.** In a
+private window, open all 8 projects. Each opens on its video tab and the Vimeo
+player must actually load and play — no sign-in prompt, no locked tile. This is
+the whole point of those videos being `public`.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**176. The four gated Treedis tours are locked for a guest.** Same private
+window. Solar, Automotive, Downtown Lafayette and Iberia Parish each have a
+second stage tab. Each must show the locked placeholder and the sign-in prompt,
+not a tour and not an error.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**177. Those tours open after signing in.** As `testuser@example.com`, open all
+four and confirm each tour actually loads. **Downtown Lafayette is the one to
+watch**: its URL is the content form's `my.treedis.com` link verbatim,
+including a `?s=…` share token and an `x`/`y` opening pose — a different host
+from every other tour on the site. If it fails to load, the share token having
+expired is the first thing to check.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**178. Switching stage tabs does not reload the Treedis tour.** Open Iberia
+Parish signed in. It has three tabs (video, tour, GIS map). Move to the tour,
+then to the video, then back to the tour. The tour must still be where you left
+it, not re-loading from the start.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**179. Still exactly one Treedis iframe.** With Iberia Parish open and its tour
+tab active, run in DevTools:
+`document.querySelectorAll('iframe[src*="treedis"],iframe[src*="dtsxr"]').length`.
+Note the number, switch tabs a few times, and run it again. It must not grow.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+## The GIS map — this is the migration's highest-risk claim
+
+The map moved from the old GFC project to the new Iberia Parish project. The
+project **id** (`gfc`) and the GIS experience node were deliberately kept
+byte-identical, and no file in `js/gis/`, `data/gis/`, `vendor/leaflet/` or
+`css/15-gis.css` was edited. These tests exist to prove that held.
+
+**180. The map opens from its new home.** Signed in, open **Community → Iberia
+Parish Clean Energy Hub Digital Twin** and select the **GIS Map** tab. The map
+must load with its layers drawn. Note that the map lives under Community now,
+not Government.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**181. All 17 layers, the basemap switcher, and the tools behave as before.**
+Toggle layers on and off, switch basemaps, and exercise the tool UIs (query,
+table, measure, share). Anything that worked before this migration must still
+work. This is a "nothing changed" test — treat any difference as a FAIL and say
+what differed.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**182. Guided tours and feature tours still run.** Start a guided tour and step
+through it, then click a feature that has a feature tour attached. A map that
+opens with an empty tour list is a FAIL, not a pass — the tours are matched to
+the map by `mapId`, and 14 tours + 13 feature tours should be reachable.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**183. A guest gets the gate, not an error.** In a private window, open the
+Iberia Parish project's GIS Map tab. Expect the locked placeholder and the
+sign-in prompt. `/api/resource/gismap.iberia-coastal` must still return
+`{"error":"sign-in required"}`, and `/api/resource/project.gfc%3Amap` must too
+— **not** `{"error":"resolution failed"}` and not `404`. A 404 there would mean
+the project id changed, which would orphan the seeded entitlement.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+## Images
+
+**184. All 33 gallery images load, on all 8 projects.** Open each project and
+check its "Photos and Video" strip with the network panel open. No 404s. The
+filenames contain spaces and some have irregular hyphens
+(`Edu - BRCC -04.webp`, `Gov - Honeywell -03.webp`, folder `Edu- Sola`) — those
+are correct as supplied, but they are exactly where a path bug would show.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**185. Shell and Honeywell show four images, not five.** Both supply five; the
+renderer caps at four by design (owner's call — the fifth stays authored in
+`/data` so an editor can reorder). Confirm four render cleanly with no broken
+tile or gap where a fifth would be.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+## Admin Board
+
+**186. The board shows 4 sectors and 8 projects — and nothing deleted.**
+As `testadmin`, open the Admin Board. The SECTORS group must list exactly the
+four sectors with two projects nested under each, and there must be **no
+"Unassigned" group** and no old project anywhere. If you see old projects,
+discard any saved draft (a stale `dtsAdminDraft` in localStorage holds the old
+content) and reload before calling it a FAIL.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**187. A project's new content is fully editable.** Open any project and
+confirm every field from the content form is present and editable: title,
+tagline, overview, client name, status, description, capture method, platform,
+the experiences list (with per-experience access levels), gallery images with
+captions, and all five evidence fields.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**188. The GIS experience still edits correctly.** Open Iberia Parish →
+experiences → the GIS item. Its map picker must show `iberia-coastal` selected
+and its tour picker `iberia-coastal-intro`, with **no mismatch warning**.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**189. GIS MAPS group is untouched.** Confirm the GIS MAPS nav group still
+shows `iberia-coastal` with its tours nested beneath, exactly as before.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**190. Draft → preview → discard still round-trips.** Edit a project title,
+save draft, preview (the site should show the edit), then discard and reload
+(the edit should be gone).
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**191. Publish to site, then re-check a guest.** Use "Publish to site". Then in
+a private window confirm the 8 projects still render, the public videos still
+play, and the gated tours are still locked. Publishing is what deletes the 14
+removed documents from R2 — the CLI upload path does not.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+## Regression sweep
+
+**192. Mobile.** On a phone: the drawer lists the four sectors, sector swipe
+works, each sector shows its two cards, and a project opens and scrolls. Dock
+tab labels use the short names (BRCC Film, Solar Lab, Shell Permian,
+Dealership, Sanitarian, Adv. Manufacturing, Downtown Lafayette, Iberia Parish).
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**193. Browser back / forward.** Home → a sector → a project → close, then walk
+back and forward through the whole chain. Each step must land where it did
+before the migration.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**194. Console clean.** With DevTools open, load the site and open every
+sector, every project, every stage tab, the projects sheet, the lead form and
+the portal. No errors, no 404s. `[dts] no example for …` in particular means a
+card is pointing at a project that no longer exists.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+**195. Home page and the rest of the site are untouched.** The hero, hex
+cluster, "Try a Digital Twin" reveal (the tour must not reload), FAQ, fun
+facts, contact panel, a lead form send, sign-in and the client portal should
+all behave exactly as before — none of them were part of this migration, so any
+change here is an unintended side effect.
+
+Result: - [ ] PASS - [ ] FAIL - [ ] NOT TESTED
+Comments: ____________________________________
+
+---
+
 ## When you're done
 
 Report results back with the failures called out specifically — a failing test

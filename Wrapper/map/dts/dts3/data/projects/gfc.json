@@ -2,46 +2,76 @@
   "_id": "project.gfc",
   "_type": "project",
   "id": "gfc",
-  "sectorId": "government",
-  "title": "Coastal Resilience — Gulf Futures Challenge",
-  "tagline": "A parish-scale digital twin for coastal risk, drainage, and planning.",
-  "overview": "An integrated digital twin platform for Gulf coastal resilience, joining spatial capture, live environmental data, and a parish's own GIS so land change, flood exposure, and drainage capacity can be examined together instead of in separate systems. Iberia Parish is the demonstration community.",
+  "sectorId": "community",
+  "title": "Iberia Parish Clean Energy Hub Digital Twin",
+  "tagline": "Make clean-energy, resilience, environmental, and infrastructure context visible at community scale.",
+  "overview": "The Iberia Parish experience brings community-scale aerial context, local destinations, infrastructure, and environmental data into one digital twin. It is connected to the Iberia Parish Clean Energy Hub initiative in the National Academies' Gulf Futures Challenge.",
   "project": {
-    "name": "Gulf Futures Challenge — Phase 2",
-    "kind": "Active project · Multi-institution research partnership",
+    "name": "Iberia Parish Clean Energy Hub - Gulf Futures Challenge",
+    "kind": "Gulf Futures Challenge finalist project / digital twin pilot",
     "illustrative": false,
-    "blurb": "Digital Twin Studios leads platform engineering for the Gulf Futures Challenge — 3D visualization, real-time data integration, and AI-assisted scenario modeling — built with Louisiana State University, the University of Louisiana at Lafayette, and Do It Greener Foundation. The partnership pairs technical development with sustained community engagement."
+    "blurb": "The Iberia Parish digital twin is designed to make place-based clean-energy and resilience concepts easier to explore. Supplied imagery shows a location-navigation menu, community-scale 3D aerial views, an environmental surface-temperature visualization, and industrial/transportation infrastructure context. Within the Iberia Parish Clean Energy Hub initiative, the digital twin component supports a broader concept integrating solar, agrivoltaics, carbon capture, workforce training, environmental restoration, and community resilience."
   },
-  "capturedWith": "Matterport Pro3",
-  "platform": "Treedis · DTS GIS",
+  "capturedWith": "Aerial/3D spatial capture combined with map, GIS, location, infrastructure, and environmental data layers.",
+  "platform": "Treedis; 3D aerial / GIS-style data layers",
   "experiences": [
+    {
+      "_type": "video",
+      "id": "video",
+      "provider": "vimeo",
+      "label": "The Iberia Parish Digital Twin",
+      "embed": { "kind": "url", "value": "https://player.vimeo.com/video/1132293716" },
+      "watch": { "kind": "url", "value": "https://vimeo.com/1132293716" },
+      "default": true,
+      "access": "public"
+    },
     {
       "_type": "treedis",
       "id": "tour",
-      "label": "Site experience",
+      "label": "Explore the Iberia Parish Digital Twin",
       "tourUrl": "https://spaces.dtsxr.com/tour/56111605",
       "origin": "https://spaces.dtsxr.com",
       "sweepId": null,
-      "default": true,
       "access": "registered"
     },
     {
       "_type": "gis",
       "id": "map",
-      "label": "Parish Map",
+      "label": "GIS Map",
       "mapId": "iberia-coastal",
       "tourId": "iberia-coastal-intro",
       "access": "registered"
     }
   ],
   "links": [],
-  "gallery": [],
+  "gallery": [
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Com - GFC/Com - GFC - 01.webp" },
+      "alt": "Aerial 3D view of Iberia Parish with a location menu linking community sites and data layers."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Com - GFC/Com - GFC - 02.webp" },
+      "alt": "Community-scale aerial context for exploring the parish and surrounding built environment."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Com - GFC/Com - GFC - 03.webp" },
+      "alt": "Environmental data visualization layer showing modeled surface-temperature conditions."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Com - GFC/Com - GFC - 04.webp" },
+      "alt": "Aerial view of industrial and transportation infrastructure included in the parish digital twin."
+    }
+  ],
   "sweepId": null,
   "evidence": {
-    "Case Studies": "Iberia Parish demonstration deployment — spatial capture joined to parish GIS, flood and drainage data, and coastal-change layers in a single planning surface.",
+    "Case Studies": "Community-scale Iberia Parish digital twin work tied to the Iberia Parish Clean Energy Hub concept, combining place-based exploration with clean-energy and resilience context.",
     "Awards": "—",
     "Client Feedback": "—",
-    "Press & Research": "Findings, methods, and platform architecture intended for peer-reviewed publication and public technical documentation, to support replication in other Gulf communities.",
-    "Project Data": "Research data, processed datasets, and platform architecture documented for replication in approved public repositories."
+    "Press & Research": "The Iberia Parish Clean Energy Hub was named one of ten finalists in the National Academies' $50 million Gulf Futures Challenge.",
+    "Project Data": "The Gulf Futures Challenge concept integrates solar, agrivoltaics, carbon capture, workforce training, environmental restoration, and digital twin simulations; supplied imagery shows aerial context, environmental data layers, and infrastructure views."
   }
 }

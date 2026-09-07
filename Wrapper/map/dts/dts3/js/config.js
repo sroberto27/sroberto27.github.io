@@ -43,72 +43,60 @@ window.DTS_CONFIG = {
       id: "education",
       label: "Education",
       navSub: "Campus",                  // pillar sublabel
-      blurb: "Education develops people.",
-      active: true,
-      accent: "#E9B44C",                 // sector accent color
+      blurb: "Digital twins that turn campuses, labs, and training environments into places to learn by doing.",
+      accent: "#E9B44C",
       kicker: "EDUCATION",
-      title: "Campus & Schools",
-      sub: "Digital Twin of your campus",
-      body: "Where human potential is built. DTS creates living spatial ecosystems for learning environments \u2014 from recruitment through graduation. One twin. Every stage of the student and faculty relationship with your institution.",
+      title: "Build the campus as a living learning environment.",
+      sub: "Immersive spaces connect orientation, workforce readiness, and hands-on technical learning.",
+      body: "Education digital twins translate real campuses, specialized facilities, and professional workflows into interactive learning environments. From film-production orientation to renewable-energy research, learners can explore places, equipment, and processes before they arrive on site. The result is a persistent spatial resource that supports instruction, orientation, workforce development, and future immersive content.",
       cards: [
-        { id: "campus",     title: "Campus & Schools",     text: "Spatial navigation, orientation, LMS gateway, K-12 through university." },
-        { id: "workforce",  title: "Workforce & Trade",    text: "Skills labs, certification, DOL-funded programs, economic mobility." },
-        { id: "healthcare", title: "Healthcare Training",  text: "Staff orientation, clinical simulation, patient safety environments." },
-        { id: "workplace",  title: "Workplace Learning",   text: "Corporate onboarding, continuing ed, Betaversity, EON Reality." }
+        { id: "brcc",  title: "BRCC Film Production Orientation",     short: "BRCC Film", text: "A career-oriented digital twin and interactive orientation experience that lets film students explore the Celtic Media Centre, production spaces, equipment, and learning content before working on set." },
+        { id: "solar", title: "Louisiana Solar Energy Lab Digital Twin", short: "Solar Lab", text: "A spatial digital twin of UL Lafayette's solar research environment for virtual exploration, education, workforce development, and lab visualization." }
       ]
     },
     {
       id: "industry",
       label: "Industry",
       navSub: "Company",
-      blurb: "Industry creates economic value.",
-      active: false,
+      blurb: "Immersive training and spatial tools for complex operations, equipment, and customer environments.",
       accent: "#2E8BFF",
       kicker: "INDUSTRY",
-      title: "Commercial & Industrial",
-      sub: "Digital Twin of your company",
-      body: "Where capability creates economic value. Manufacturing holds 30%+ of the digital twin market. Automotive holds 22%+. Healthcare is the fastest-growing segment. DTS has active or adjacent work across all four commercial verticals.",
+      title: "Make complex operations understandable, repeatable, and ready to practice.",
+      sub: "From field procedures to product exploration, digital twins bring work into an interactive environment.",
+      body: "Industry experiences use XR, 3D visualization, and digital twins to make complex systems easier to see, learn, and rehearse. Teams can practice procedures in modeled operating environments, inspect equipment in context, or extend a physical customer experience into a remotely explorable space. The focus is practical: connect the virtual environment to the way people actually work, train, and make decisions.",
       cards: [
-        { id: "energy",     title: "Energy & Manufacturing",       text: "Oil/gas, solar, utilities, industrial ops, FEMA PA documentation." },
-        { id: "automotive", title: "Automotive & Transportation",  short: "Automotive", text: "Showrooms, vehicle twins, EV facilities, franchise audits." },
-        { id: "healthfac",  title: "Healthcare Facilities",        text: "Hospital systems, clinical environments, pharmaceutical facilities." },
-        { id: "properties", title: "Properties & Places",          text: "Commercial, residential, hospitality, tourism, film locations." }
+        { id: "shell",      title: "Shell - Permian Basin Assessment Training", short: "Shell Permian", text: "A 3D oilfield training environment that guides users through wellpad and saltwater-disposal assessment tasks, equipment identification, and valve-selection procedures." },
+        { id: "automotive", title: "Automotive Dealership Digital Twin",        short: "Dealership",    text: "An interactive dealership and vehicle experience combining spatial capture with detailed product exploration for remote viewing, orientation, and demonstration." }
       ]
     },
     {
       id: "government",
       label: "Government",
       navSub: "City",
-      blurb: "Government provides structure and oversight.",
-      active: false,
+      blurb: "Immersive practice environments for public service, safety, compliance, and technical workforce training.",
       accent: "#34598F",
       kicker: "GOVERNMENT",
-      title: "Public & Civic",
-      sub: "Digital Twin of your city",
-      body: "Where collective output becomes public infrastructure. Government has a fundamentally different procurement process, budget authority, and decision timeline. DTS is SAM.gov qualified. Organized by function \u2014 not agency level.",
+      title: "Turn critical procedures into repeatable practice.",
+      sub: "Interactive simulations make complex public-service and technical workflows easier to learn, assess, and scale.",
+      body: "Government and public-sector teams often train for work where consistency, procedure, and technical judgment matter. DTS builds interactive environments that let learners recognize conditions, practice decisions, and repeat workflows without depending on a live facility for every training session. The same approach can support regulatory compliance, public health, and advanced technical workforce development.",
       cards: [
-        { id: "municipal",  title: "Infrastructure & Cities",   text: "Municipal twins, transportation, utility grids, urban planning." },
-        { id: "gfc",        title: "Coastal Resilience",        short: "Coastal", text: "Parish-scale digital twins, GIS, and scenario planning for coastal risk." },
-        { id: "foodsafety", title: "Regulatory & Compliance",   text: "Food safety, environmental compliance, inspection training." },
-        { id: "civic",      title: "Civic Services",            text: "Libraries, transit, parks, civic engagement, accessibility." }
+        { id: "foodsafety", title: "Sanitarian Training Enhancement",     short: "Sanitarian",         text: "A modular VR and PC training suite for Louisiana food-safety inspectors to identify hazards, apply inspection criteria, and practice response in simulated food-service environments." },
+        { id: "honeywell",  title: "Advanced Manufacturing Training Demo", short: "Adv. Manufacturing", text: "An immersive metrology and manufacturing simulation that lets users practice equipment interaction, measurement workflows, and technical procedures inside a virtual workcell." }
       ]
     },
     {
       id: "community",
       label: "Community",
       navSub: "Community",
-      blurb: "Community represents the lived outcomes of those systems.",
-      active: false,
+      blurb: "Spatial experiences that connect people to local places, culture, public data, and future resilience.",
       accent: "#D27049",
       kicker: "COMMUNITY",
-      title: "Civic & Social",
-      sub: "Digital Twin of your community",
-      body: "Where all systems converge into human flourishing. The community twin accumulates \u2014 each project adds to a growing spatial record, building by building, until the community itself is spatially documented and interconnected.",
+      title: "Make the community itself the interface.",
+      sub: "Digital twins help people explore destinations, understand local systems, and engage with the places they share.",
+      body: "Community-scale digital twins can connect real places with stories, destinations, infrastructure, and data in one spatial experience. For tourism, that can mean turning local businesses and culture into an explorable destination; for resilience and planning, it can mean making environmental and infrastructure context easier to see. The common goal is to keep the experience grounded in place and accessible across the devices people already use.",
       cards: [
-        { id: "economic",   title: "Economic Development",         text: "Downtown BIDs, chambers, EDCs, commercial corridors." },
-        { id: "nonprofit",  title: "Nonprofit & Social Impact",    text: "NGOs, foundations, DIG, faith communities, social services." },
-        { id: "sustain",    title: "Sustainability & Environment", short: "Sustainability", text: "Green infrastructure, ESG twins, environmental monitoring." },
-        { id: "heritage",   title: "Cultural & Heritage",          text: "Historic preservation, Section 106, museums, heritage tourism." }
+        { id: "lafayette", title: "Downtown Lafayette",                        short: "Downtown Lafayette", text: "A living destination experience linking Lafayette's urban core, businesses, culture, and stories in one interactive tour that can be explored across web and immersive devices." },
+        { id: "gfc",       title: "Iberia Parish Clean Energy Hub Digital Twin", short: "Iberia Parish",    text: "A community-scale Iberia Parish digital twin that combines aerial context, local places, environmental data, infrastructure, and clean-energy resilience storytelling in an explorable spatial experience." }
       ]
     }
   ],
@@ -214,545 +202,319 @@ window.DTS_CONFIG = {
 ,
 
   /* ============================================================
-     SUB-VERTICAL EXAMPLES — windows opened by card / tab clicks
+     PROJECT EXAMPLES — windows opened by card / tab clicks
      ------------------------------------------------------------
-     Keyed by the card `id` in categories[].cards. Fields:
-       media    — main experience pane: a Treedis tour or a Vimeo
-                  embed; omit to reuse the shared showcase iframe.
-       links    — related tours/videos shown as chips.
-       gallery  — real project imagery (assets/portfolio/).
-       sweepId  — optional sweep for the shared showcase fallback.
-       illustrative: true flags placeholder projects to be swapped
-                  for real ones later.
+     Keyed by the card `id` in categories[].cards. This file is the
+     /data-unreachable FALLBACK only (js/content-loader.js's
+     loadConfigFallback), so it deliberately carries ONLY the public
+     showcase video of each project:
+
+       experiences — already in the CONVERTED shape buildConfig()
+                     produces (type/embedUrl/watchUrl), not the raw
+                     /data shape (_type/embed/watch).
+       media       — legacy alias for experiences[0], same as
+                     buildConfig() sets. Keep both.
+       links       — related tours/videos shown as chips.
+       gallery     — converted {src, alt}, not {source:{kind,value}}.
+
+     NO gated target (a Treedis tourUrl, a `registered` link url) is
+     ever written here. /data + functions/api/resource/* are the only
+     places a gated URL lives, so this deployed static file cannot leak
+     one no matter what scripts/split-content.mjs does or doesn't strip.
      ============================================================ */
   examples: {
     /* ---------------- EDUCATION ---------------- */
-    campus: {
+    brcc: {
       sector: "education",
-      title: "Campus & Schools",
-      tagline: "Spatial navigation, orientation, an LMS gateway — K-12 through university.",
-      overview: "A campus twin turns a sprawling, hard-to-navigate institution into a space a prospective student, parent, or new hire can walk before they ever arrive. The world is the interface: wayfinding, recruitment tours, orientation, and an LMS launch point all live in one persistent spatial layer.",
+      title: "BRCC Film Production Orientation",
+      tagline: "Bring the production environment into the learning experience before a student's first day on set.",
+      overview: "Baton Rouge Community College's Film and New Media Production Program uses an immersive digital twin of the Celtic Media Centre as a bridge between classroom learning and real production environments. The experience combines spatial orientation, interactive 3D content, and embedded media to help learners become familiar with production spaces and tools.",
       project: {
-        name: "South Carolina State University — Virtual Campus",
-        kind: "Active project · USDA-commissioned",
+        name: "Baton Rouge Community College (BRCC) - Film and New Media Production Program",
+        kind: "Immersive learning program development",
         illustrative: false,
-        blurb: "A campus-scale digital twin of one of America's historically Black universities: full-campus map, guided tours, and VR-enabled immersive locations built on Matterport + Treedis. Students walk the campus and drop into immersive VR before they ever set foot on it. Commissioned by the USDA; currently under development."
+        blurb: "Digital Twin Studios is collaborating with BRCC on a career-oriented film-production program centered on a digital twin set at the Celtic Media Centre. The supplied experience imagery includes the Celtic Media Centre entrance, Stage 8, interactive 3D lighting-equipment content, and embedded orientation media. The broader program is aligned with industry needs and includes advisement from the International Alliance for Theatrical and Stage Employees (IATSE), connecting virtual course content with practical film-production preparation."
       },
-      capturedWith: "Matterport Pro3 + Insta360 Pro 2",
-      platform: "Treedis",
-      media: {
-        type: "treedis",
-        label: "Explore the Virtual Campus",
-        tourUrl: "https://spaces.dtsxr.com/tour/8e4ca3fc",
-        origin: "https://spaces.dtsxr.com"
+      capturedWith: "Custom 3D modeling of Celtic Media Centre spaces and production equipment, with embedded interactive and video learning elements.",
+      platform: "Interactive 3D / immersive learning modules; Vimeo showcase / Eon Reality.",
+      experiences: [
+        { id: "video", label: "Watch the BRCC Film Production Orientation", default: true, access: "public",
+          type: "vimeo", embedUrl: "https://player.vimeo.com/video/1046222253", watchUrl: "https://vimeo.com/1046222253" }
+      ],
+      media: { id: "video", label: "Watch the BRCC Film Production Orientation", default: true, access: "public",
+               type: "vimeo", embedUrl: "https://player.vimeo.com/video/1046222253", watchUrl: "https://vimeo.com/1046222253" },
+      links: [],
+      gallery: [
+        { src: "assets/Edu - BRCC/Edu - BRCC - 01.webp", alt: "3D view of the Celtic Media Centre entrance used in the film-production orientation environment." },
+        { src: "assets/Edu - BRCC/Edu - BRCC - 02.webp", alt: "Stage 8 at the Celtic Media Centre recreated as part of the virtual orientation experience." },
+        { src: "assets/Edu - BRCC/Edu - BRCC - 03.webp", alt: "Interactive 3D lighting-equipment lesson with labeled components and embedded learning media." },
+        { src: "assets/Edu - BRCC/Edu - BRCC -04.webp", alt: "Virtual production-space view with an embedded orientation-video touchpoint." }
+      ],
+      sweepId: null,
+      evidence: {
+        "Case Studies": "DTS is collaborating with BRCC on a career-oriented Film and New Media Production Program based on a digital twin set at the Celtic Media Centre.",
+        "Awards": "\u2014",
+        "Client Feedback": "\u2014",
+        "Press & Research": "BRCC received a $750,000 Louisiana Entertainment Development Fund grant over three years for its Film and New Media Production Program and collaboration with Celtic Media Centre and IATSE.",
+        "Project Data": "Public DTS project experience lists the BRCC engagement from March 2023 onward; supplied imagery shows Celtic Media Centre / Stage 8 spatial content, interactive equipment lessons, and embedded orientation media."
+      }
+    },
+
+    solar: {
+      sector: "education",
+      title: "Louisiana Solar Energy Lab Digital Twin",
+      tagline: "Make a large-scale solar research facility explorable for learning, workforce development, and technical visualization.",
+      overview: "Digital Twin Studios is developing an immersive digital twin of the University of Louisiana at Lafayette's Louisiana Solar Energy Lab. The experience pairs spatial capture of the photovoltaic research site with an explorable Treedis environment and aerial flyover media.",
+      project: {
+        name: "University of Louisiana at Lafayette - Louisiana Solar Energy Lab",
+        kind: "Immersive digital twin development",
+        illustrative: false,
+        blurb: "The Louisiana Solar Energy Lab digital twin gives learners, researchers, industry stakeholders, and workforce audiences a remote way to understand the scale and layout of a real photovoltaic testing facility. The supplied media includes a ground-level spatial tour, a dollhouse-style 3D view, and field imagery showing solar arrays and research equipment, while a separate flyover provides broader site context. The project extends the physical lab into a reusable visualization and learning environment that can support education, workforce development, and future simulation content."
       },
+      capturedWith: "3D/360 spatial capture of the solar site plus aerial/flyover video / Eon Reality.",
+      platform: "Treedis; Vimeo",
+      experiences: [
+        { id: "video", label: "UL Lafayette Solar Energy Lab", default: true, access: "public",
+          type: "vimeo", embedUrl: "https://player.vimeo.com/video/1058364652?h=f98b84dae1", watchUrl: "https://vimeo.com/1058364652/f98b84dae1" }
+      ],
+      media: { id: "video", label: "UL Lafayette Solar Energy Lab", default: true, access: "public",
+               type: "vimeo", embedUrl: "https://player.vimeo.com/video/1058364652?h=f98b84dae1", watchUrl: "https://vimeo.com/1058364652/f98b84dae1" },
       links: [
-        { label: "SCSU Campus — VR-enabled tour", url: "https://spaces.dtsxr.com/tour/scsu-campus-ade0f346" },
-        { label: "Watch the SCSU Walkthrough", url: "https://vimeo.com/1202389953/1e9b4d74aa" },
-        { label: "SCSU Metaversity Course Structure Reel", url: "https://vimeo.com/1152008581" }
+        { id: "link-1", label: "Watch the Solar Energy Lab Flyover", url: "https://vimeo.com/1058364652/f98b84dae1", kind: "vimeo", access: "public" }
       ],
       gallery: [
-        { src: "assets/portfolio/scsu-virtual-campus.jpg", alt: "SCSU Virtual Campus — full-campus map with guided-tour sidebar" }
+        { src: "assets/Edu- Sola/Edu - Sola - 01.webp", alt: "Ground-level virtual tour view among photovoltaic arrays at the solar research site." },
+        { src: "assets/Edu- Sola/Edu - Sola - 02.webp", alt: "Dollhouse-style 3D spatial view of the captured solar facility." },
+        { src: "assets/Edu- Sola/Edu - Sola - 03.webp", alt: "Captured solar arrays and field equipment used for research, testing, and training." }
       ],
       sweepId: null,
       evidence: {
-        "Case Studies": "SC State Virtual Campus — a campus-scale HBCU digital twin with a full-campus map, guided tours, and VR-enabled immersive locations, spanning recruitment through orientation.",
-        "Awards": "Commissioned by the USDA — a federal vote of confidence in campus-scale spatial platforms.",
-        "Client Feedback": "\u201cStudents can find Financial Aid before their first day\u201d — campus administration.",
-        "Press & Research": "The SCSU framework is the reference architecture every later DTS spatial-navigation build adapts from — multi-location mapping, guided tours, VR deep-links.",
-        "Project Data": "Campus scale · Matterport + Treedis · Desktop, mobile, and Meta Quest VR profiles."
-      }
-    },
-    workforce: {
-      sector: "education",
-      title: "Workforce & Trade",
-      tagline: "Skills labs, certification, DOL-funded programs, economic mobility.",
-      overview: "Workforce twins capture skills labs and training floors so learners can rehearse procedures and equipment before touching the real thing — the fastest-growing segment in immersive training, and the one most tied to funded economic-mobility programs.",
-      project: {
-        name: "Laser-Scanned VR Training Environment",
-        kind: "Deployed capability",
-        illustrative: false,
-        blurb: "A real industrial workspace laser-scanned and integrated into VR, where trainees rehearse trade skills in a dimensionally accurate copy of the floor they'll work on. Companion builds include the Metal Shark shipbuilding demo and AR equipment overviews with hands-on interaction."
-      },
-      capturedWith: "Laser scan + XR tools for Unity",
-      platform: "VR / AR",
-      media: {
-        type: "vimeo",
-        label: "Laser Scanned Environment Integrated into VR — Demo",
-        embedUrl: "https://player.vimeo.com/video/293449698",
-        watchUrl: "https://vimeo.com/293449698"
-      },
-      links: [
-        { label: "Metal Shark shipbuilding training demo", url: "https://vimeo.com/522913162/bf51023c68" },
-        { label: "Energy Equipment Overview with AR interaction", url: "https://vimeo.com/334052078" }
-      ],
-      gallery: [],
-      sweepId: null,
-      evidence: {
-        "Case Studies": "Laser-scanned VR training floor — trainees rehearse trade procedures in an exact spatial copy of the real workspace; Metal Shark shipbuilding demo extends the same approach to marine manufacturing.",
+        "Case Studies": "DTS project experience describes immersive digital twin development for UL Lafayette's Louisiana Solar Energy Lab for education, workforce development, and lab simulation.",
         "Awards": "\u2014",
-        "Client Feedback": "\u201cWe can pre-train a cohort before they ever queue for a machine.\u201d",
-        "Press & Research": "Immersive training is the fastest-growing segment of the workforce-development market.",
-        "Project Data": "Laser scan + VR integration · AR equipment modules · Reusable across every cohort."
-      }
-    },
-    healthcare: {
-      sector: "education",
-      title: "Healthcare Training",
-      tagline: "Staff orientation, clinical simulation, patient-safety environments.",
-      overview: "Placed in Education because the buyer is an educator or training coordinator — not a clinician. The purchase is instructional: staff orientation, clinical simulation, and patient-safety rehearsal in a true-to-life spatial environment.",
-      project: {
-        name: "Immersive Stroke Assessment Diagnostic Experience",
-        kind: "Deployed simulation",
-        illustrative: false,
-        blurb: "A biomedical training simulation in which clinical learners run a stroke-scale assessment on a virtual patient — rehearsing a time-critical diagnostic protocol with unlimited repetition and zero patient risk. Part of a healthcare-training line that includes hospital walkthrough demos and heart-hospital orientation builds."
-      },
-      capturedWith: "3D modeling & XR tools for Unity",
-      platform: "PC / VR",
-      media: {
-        type: "vimeo",
-        label: "Healthcare Training Demo",
-        embedUrl: "https://player.vimeo.com/video/368534955",
-        watchUrl: "https://vimeo.com/368534955"
-      },
-      links: [
-        { label: "Immersive Stroke Assessment Diagnostic Experience", url: "https://vimeo.com/dtsxr/stroke-scal-assessment" },
-        { label: "Heart hospital orientation demo", url: "https://vimeo.com/383209930/50ac64b5eb" }
-      ],
-      gallery: [],
-      sweepId: null,
-      evidence: {
-        "Case Studies": "Immersive stroke-scale assessment — clinical learners rehearse a time-critical diagnostic on a virtual patient, with unlimited repetition and zero ward disruption.",
-        "Awards": "\u2014",
-        "Client Feedback": "\u201cDay-one staff already know where everything is.\u201d",
-        "Press & Research": "Simulation-based clinical training reduces first-week error rates.",
-        "Project Data": "Diagnostic protocol simulation · Hospital walkthrough demos · VR-ready."
-      }
-    },
-    workplace: {
-      sector: "education",
-      title: "Workplace Learning",
-      tagline: "Corporate onboarding, continuing ed, Betaversity, EON Reality.",
-      overview: "The platform play. Immersive-learning content — from state-agency staff modules to soft-skills and safety training — that scales corporate onboarding and continuing education across every other category. One immersive layer, reused everywhere.",
-      project: {
-        name: "LDH WIC Program — Staff Learning Modules",
-        kind: "Deployed training",
-        illustrative: false,
-        blurb: "Workplace-learning modules built for the Louisiana Department of Health's WIC program, sitting alongside soft-skills builds (Components of Communication) and safety modules (Electrical Safety) — the reusable training layer that turns one build into every new hire's onboarding."
-      },
-      capturedWith: "3D modeling & XR tools for Unity",
-      platform: "EON Reality \u00b7 PC / VR",
-      media: {
-        type: "vimeo",
-        label: "LDH WIC Demo",
-        embedUrl: "https://player.vimeo.com/video/373647092",
-        watchUrl: "https://vimeo.com/373647092"
-      },
-      links: [
-        { label: "Components of Communication module", url: "https://vimeo.com/1073705160/a29eee9a63" },
-        { label: "Electrical Safety training module", url: "https://vimeo.com/522099868/9ac166f67f" }
-      ],
-      gallery: [],
-      sweepId: null,
-      evidence: {
-        "Case Studies": "LDH WIC staff modules — immersive workplace learning deployed for a state agency, with communication and electrical-safety modules reused across teams.",
-        "Awards": "\u2014",
-        "Client Feedback": "\u201cOne build, every new hire.\u201d",
-        "Press & Research": "Platform-scale immersive learning lowers per-trainee cost over time.",
-        "Project Data": "Modular builds · Scales horizontally across sectors and cohorts."
+        "Client Feedback": "\u2014",
+        "Press & Research": "In April 2025, UL Lafayette was designated the U.S. Department of Energy's sixth Regional Test Center for Emerging Solar Technologies, overseen by Sandia National Laboratories.",
+        "Project Data": "The Louisiana Solar Energy Lab includes a 6-acre, 4,200-panel solar field and a 4,500-square-foot Antoun Hall research hub; supplied project media includes a public Treedis tour and Vimeo flyover."
       }
     },
 
     /* ---------------- INDUSTRY ---------------- */
-    energy: {
+    shell: {
       sector: "industry",
-      title: "Energy & Manufacturing",
-      tagline: "Oil/gas, solar, utilities, industrial ops, FEMA PA documentation.",
-      overview: "The compliance-mandated market — oil/gas, solar, and utility infrastructure buyers driven by regulatory pressure, insurance requirements, and FEMA documentation obligations. The fastest path to a closed contract.",
+      title: "Shell - Permian Basin Assessment Training",
+      tagline: "Turn oilfield assessment procedures into repeatable practice inside a modeled operating environment.",
+      overview: "Digital Twin Studios' Shell work applies immersive simulation to oilfield assessment and procedure training. The Permian Basin sample places learners in modeled wellpad and saltwater-disposal environments where they identify equipment and respond to task prompts.",
       project: {
-        name: "Solar Farm Capture",
-        kind: "Live Treedis experience",
+        name: "Shell",
+        kind: "Immersive training engagement",
         illustrative: false,
-        blurb: "A Matterport capture of a working solar installation published on Treedis — the kind of infrastructure twin used for insurance documentation, compliance records, and remote inspection. Sits alongside the UL Lafayette Solar Energy Lab fly-over and a deep oil-and-gas catalog: Central Processing Facility, wellpad, degasser, and saltwater-disposal twins built for Permian Basin operators."
+        blurb: "The Permian Basin Assessment Training sample turns field-oriented oil and gas procedures into structured 3D learning tasks. Supplied scenes ask the learner to assess a wellpad or saltwater-disposal site, identify the main shutdown valve and saltwater pipeline inlet, distinguish production-related components, and select block valves. The experience demonstrates how a modeled industrial environment can support repeatable procedural practice and equipment recognition before or alongside work in the field."
       },
-      capturedWith: "Matterport Pro3",
-      platform: "Treedis",
-      media: {
-        type: "treedis",
-        label: "Explore the Solar Farm",
-        tourUrl: "https://spaces.dtsxr.com/tour/ea18f14b",
-        origin: "https://spaces.dtsxr.com"
-      },
-      links: [
-        { label: "UL Lafayette Solar Energy Lab — fly-over", url: "https://vimeo.com/1058364652/f98b84dae1" },
-        { label: "Energy: Central Processing Facility", url: "https://vimeo.com/376724255" },
-        { label: "Shell demo", url: "https://vimeo.com/303186440" }
+      capturedWith: "Custom 3D modeling of wellpad, SWD, piping, valves, and oilfield equipment informed by real operating procedures.",
+      platform: "Immersive 3D / VR training simulation; Vimeo showcase",
+      experiences: [
+        { id: "video", label: "Watch the Permian Basin Assessment Sample", default: true, access: "public",
+          type: "vimeo", embedUrl: "https://player.vimeo.com/video/376913308", watchUrl: "https://vimeo.com/376913308" }
       ],
-      gallery: [],
+      media: { id: "video", label: "Watch the Permian Basin Assessment Sample", default: true, access: "public",
+               type: "vimeo", embedUrl: "https://player.vimeo.com/video/376913308", watchUrl: "https://vimeo.com/376913308" },
+      links: [],
+      gallery: [
+        { src: "assets/Ind - Shell/Ind - Shell - 01.webp", alt: "Wellpad assessment training scenario inside the 3D oilfield environment." },
+        { src: "assets/Ind - Shell/Ind - Shell - 02.webp", alt: "Learner prompt to identify the facility's main shutdown valve." },
+        { src: "assets/Ind - Shell/Ind - Shell - 03.webp", alt: "Saltwater-disposal assessment scenario focused on identifying the pipeline inlet." },
+        { src: "assets/Ind - Shell/Ind - Shell - 04.webp", alt: "Production assessment task asking the learner to identify the oil to be produced." },
+        { src: "assets/Ind - Shell/Ind - Shell - 05.webp", alt: "Interactive equipment-identification task focused on selecting a block valve." }
+      ],
       sweepId: null,
       evidence: {
-        "Case Studies": "Solar Farm Capture and the ULL Solar Energy Lab fly-over — infrastructure twins for compliance and insurance documentation; Permian Basin facility twins (CPF, wellpad, degasser, saltwater disposal) for operator training and remote inspection.",
+        "Case Studies": "DTS/Kheiron secured Shell as an early major client and developed customized immersive training for oil and gas operations.",
         "Awards": "\u2014",
-        "Client Feedback": "\u201cWe can document the whole site without a truck roll.\u201d",
-        "Press & Research": "Energy is the compliance-driven, fastest-to-close digital-twin vertical.",
-        "Project Data": "Captured with Matterport Pro3 · Published on Treedis · VR variants for facility training."
+        "Client Feedback": "\u2014",
+        "Press & Research": "\u2014",
+        "Project Data": "Supplied training scenes cover wellpad assessment, SWD assessment, shutdown valves, pipeline inlets, production selection, and block-valve identification."
       }
     },
-    healthfac: {
-      sector: "industry",
-      title: "Healthcare Facilities",
-      tagline: "Hospital systems, clinical environments, pharmaceutical facilities.",
-      overview: "The fastest-growing commercial digital-twin segment: hospital systems, clinical environments, and pharmaceutical facilities documented spatially for planning, compliance, and operations.",
-      project: {
-        name: "Immersive Facility Flythrough — CAD to Unity",
-        kind: "Deployed capability",
-        illustrative: false,
-        blurb: "A healthcare facility's CAD data integrated seamlessly into Unity and rendered as an immersive flythrough — letting operations teams and stakeholders review a clinical environment spatially before and after it is built."
-      },
-      capturedWith: "CAD data + 3D modeling",
-      platform: "Unity",
-      media: {
-        type: "vimeo",
-        label: "Immersive Flythrough — Seamless CAD Integration",
-        embedUrl: "https://player.vimeo.com/video/390616842",
-        watchUrl: "https://vimeo.com/390616842"
-      },
-      links: [
-        { label: "Immersive Stroke Assessment (clinical simulation)", url: "https://vimeo.com/dtsxr/stroke-scal-assessment" }
-      ],
-      gallery: [],
-      sweepId: null,
-      evidence: {
-        "Case Studies": "CAD-to-Unity facility flythrough — clinical space reviewed immersively for planning and operations.",
-        "Awards": "\u2014",
-        "Client Feedback": "\u201cWe review the facility without walking it.\u201d",
-        "Press & Research": "Healthcare is the fastest-growing digital-twin segment.",
-        "Project Data": "CAD data pipeline · Unity rendering · Clinical environments to compliance standards."
-      }
-    },
+
     automotive: {
       sector: "industry",
-      title: "Automotive & Transportation",
-      tagline: "Showrooms, vehicle twins, EV facilities, franchise audits.",
-      overview: "Showroom and vehicle twins that plug straight into the sales process — letting buyers explore inventory and configurations spatially, anchored by the BMW Lafayette proof point.",
+      title: "Automotive Dealership Digital Twin",
+      tagline: "Extend a physical dealership and its vehicles into a browsable, product-focused digital experience.",
+      overview: "This automotive demonstration combines a spatially explorable dealership/vehicle environment with detailed vehicle views and 3D presentation. Visitors can move through the space, inspect exteriors and interiors, and access contextual controls or information remotely.",
       project: {
-        name: "BMW Lafayette — Dealership & Vehicle Twins",
-        kind: "Live Treedis experiences",
+        name: "BMW dealership",
+        kind: "Public demonstration capability",
         illustrative: false,
-        blurb: "A showroom twin plus vehicle-level captures of the BMW X1, X5, and X7: buyers walk the dealership floor and step inside individual vehicles remotely, turning the twin into a direct extension of the sales process. A Range Rover Sport SVR capture extends the same approach."
+        blurb: "The automotive demo shows how a digital twin can connect place and product in one remote experience. Supplied imagery includes a virtual showroom with 3D vehicle models, spatial capture of a BMW SUV, detailed cockpit and dashboard views, and an exterior vehicle view with embedded navigation and information controls. The approved Treedis tour and Vimeo video demonstrate a reusable pattern for remote dealership exploration, orientation, product presentation, and training without asserting a commissioning relationship that is not identified in the supplied materials."
       },
-      capturedWith: "Matterport Pro3",
-      platform: "Treedis",
-      media: {
-        type: "treedis",
-        label: "Walk the Dealership",
-        tourUrl: "https://spaces.dtsxr.com/tour/fee23e79",
-        origin: "https://spaces.dtsxr.com"
-      },
-      links: [
-        { label: "BMW X1 vehicle twin", url: "https://spaces.dtsxr.com/tour/026593c5" },
-        { label: "BMW X5 vehicle twin", url: "https://spaces.dtsxr.com/tour/352ad07a" },
-        { label: "BMW X7 vehicle twin", url: "https://spaces.dtsxr.com/tour/bfab6d52" },
-        { label: "Watch the BMW dealership video", url: "https://vimeo.com/1187103853" }
+      capturedWith: "360-degree spatial capture of dealership/vehicle environments plus detailed 3D vehicle visualization.",
+      platform: "Treedis; Vimeo",
+      experiences: [
+        { id: "video", label: "BMW Dealership", default: true, access: "public",
+          type: "vimeo", embedUrl: "https://player.vimeo.com/video/1187103853", watchUrl: "https://vimeo.com/1187103853" }
       ],
-      gallery: [],
-      sweepId: null,
-      evidence: {
-        "Case Studies": "BMW Lafayette — dealership twin plus X1 / X5 / X7 vehicle twins used as an automotive-retail proof point.",
-        "Awards": "\u2014",
-        "Client Feedback": "\u201cBuyers walk the floor before they ever visit.\u201d",
-        "Press & Research": "Automotive is one of four dominant commercial twin verticals through 2030.",
-        "Project Data": "Showroom + per-vehicle capture · Published on Treedis · Tied to the sales funnel."
-      }
-    },
-    properties: {
-      sector: "industry",
-      title: "Properties & Places",
-      tagline: "Commercial, residential, hospitality, tourism, film locations.",
-      overview: "Twins for downtowns, hotels, venues, and destination-marketing organizations — letting guests, planners, and visitors experience a place before they arrive. One build, every device: phone, desktop, Meta Quest Pro, Apple Vision Pro.",
-      project: {
-        name: "Downtown Lafayette — Living Destination Experience",
-        kind: "Commissioned · Lafayette CVC",
-        illustrative: false,
-        blurb: "A living-downtown destination experience connecting visitors to the businesses, culture, and stories of Lafayette's urban core — commissioned by the Lafayette Convention and Visitors Commission. Alongside it: the Virgin Hotels orientation experience, deployed and managed remotely across VR headset fleets for a global hospitality brand, plus Westin and Marriott property captures."
-      },
-      capturedWith: "Matterport Pro3 + Insta360 Pro 2",
-      platform: "Treedis",
-      media: {
-        type: "treedis",
-        label: "Explore Downtown Lafayette",
-        tourUrl: "https://spaces.dtsxr.com/tour/4fb22059",
-        origin: "https://spaces.dtsxr.com"
-      },
-      links: [
-        { label: "Virgin Hotels Orientation Experience", url: "https://vimeo.com/558259558" },
-        { label: "Virgin Hotels staff-orientation walk-thru", url: "https://vimeo.com/379311258" },
-        { label: "Westin property twin (Matterport)", url: "https://my.matterport.com/show/?m=D85w1F2sXiw" }
-      ],
+      media: { id: "video", label: "BMW Dealership", default: true, access: "public",
+               type: "vimeo", embedUrl: "https://player.vimeo.com/video/1187103853", watchUrl: "https://vimeo.com/1187103853" },
+      links: [],
       gallery: [
-        { src: "assets/portfolio/downtown-lafayette.jpg", alt: "Downtown Lafayette urban core — destination experience capture" },
-        { src: "assets/portfolio/virgin-hotels-vr.jpg", alt: "Virgin Hotels orientation experience on a VR headset" }
+        { src: "assets/Ind - Auto/Ind - Auto - 01.webp", alt: "Virtual showroom scene with detailed 3D vehicle models." },
+        { src: "assets/Ind - Auto/Ind - Auto - 02.webp", alt: "Spatial capture of a BMW SUV in the dealership/parking environment." },
+        { src: "assets/Ind - Auto/Ind - Auto - 03.webp", alt: "Interactive interior view highlighting the vehicle cockpit and dashboard." },
+        { src: "assets/Ind - Auto/Ind - Auto - 04.webp", alt: "Exterior vehicle view with embedded navigation and information controls." }
       ],
       sweepId: null,
       evidence: {
-        "Case Studies": "Downtown Lafayette destination experience (Lafayette CVC) and the Virgin Hotels orientation experience — hospitality twins deployed across remote VR headset fleets to global brand standards.",
-        "Awards": "Virgin Hotels engagement — proof the work meets the brand standards and device logistics of world-class hospitality.",
-        "Client Feedback": "\u201cPlanners book the room they already walked.\u201d",
-        "Press & Research": "One build, every device: phone, desktop, Meta Quest Pro, and Apple Vision Pro.",
-        "Project Data": "Downtown-scale + property-scale captures · Westin & Marriott twins in catalog."
+        "Case Studies": "Interactive automotive demonstration combining an explorable spatial environment with detailed vehicle visualization.",
+        "Awards": "\u2014",
+        "Client Feedback": "\u2014",
+        "Press & Research": "\u2014",
+        "Project Data": "The supplied inventory includes an approved public Treedis dealership tour and an approved public Vimeo video titled \u201cBMW Dealership.\u201d The supplied materials do not identify a commissioning client."
       }
     },
 
     /* ---------------- GOVERNMENT ---------------- */
-    civic: {
-      sector: "government",
-      title: "Civic Services",
-      tagline: "Libraries, transit, parks, civic engagement, accessibility.",
-      overview: "Public-facing civic spaces — parks, campuses, and public venues — twinned so residents and visitors can navigate, plan visits, and engage with public services accessibly from anywhere.",
-      project: {
-        name: "LSU Performance Innovation POC",
-        kind: "Proof of concept · 2 weeks",
-        illustrative: false,
-        blurb: "A proof of concept developed with LSU exploring immersive technology for design and performance innovation — evidence of how quickly DTS moves (two weeks) from concept to working experience with flagship institutions. Alongside it: the State Park Experience Demo built for Miles Partnership and the Louisiana Office of Tourism, with aerial context, accessibility-first navigation, and place-based storytelling.",
-      },
-      capturedWith: "3D modeling & XR tools for Unity",
-      platform: "PC / VR",
-      media: {
-        type: "vimeo",
-        label: "Watch the LSU POC",
-        embedUrl: "https://player.vimeo.com/video/1171910011?h=0758e149fc",
-        watchUrl: "https://vimeo.com/1171910011/0758e149fc"
-      },
-      links: [
-        { label: "State Park Demo — Miles Partnership & LA Office of Tourism", url: "https://vimeo.com/1209678624/b5ed428562" },
-        { label: "Virtual Park Tour (short)", url: "https://vimeo.com/1209665275/d14536542c" }
-      ],
-      gallery: [
-        { src: "assets/portfolio/lsu-performance-poc.jpg", alt: "LSU Performance Innovation POC — immersive facilities render" },
-        { src: "assets/portfolio/state-park-demo.jpg", alt: "State Park virtual tour demo — aerial context and guided navigation" }
-      ],
-      sweepId: null,
-      evidence: {
-        "Case Studies": "LSU Performance Innovation POC (concept to working experience in two weeks) and the State Park Experience Demo for Miles Partnership & the Louisiana Office of Tourism — accessibility-first navigation and place-based storytelling for one of Louisiana's most visited parks.",
-        "Awards": "\u2014",
-        "Client Feedback": "\u201cResidents arrive already knowing the place.\u201d",
-        "Press & Research": "Built for demonstration with a state tourism office and its agency of record.",
-        "Project Data": "Aerial context · Accessibility-first navigation · Two-week concept-to-demo cycle."
-      }
-    },
-    gfc: {
-      sector: "government",
-      title: "Coastal Resilience \u2014 Gulf Futures Challenge",
-      tagline: "A parish-scale digital twin for coastal risk, drainage, and planning.",
-      overview: "An integrated digital twin platform for Gulf coastal resilience, joining spatial capture, live environmental data, and a parish's own GIS so land change, flood exposure, and drainage capacity can be examined together instead of in separate systems. Iberia Parish is the demonstration community.",
-      project: {
-        name: "Gulf Futures Challenge \u2014 Phase 2",
-        kind: "Active project \u00b7 Multi-institution research partnership",
-        illustrative: false,
-        blurb: "Digital Twin Studios leads platform engineering for the Gulf Futures Challenge \u2014 3D visualization, real-time data integration, and AI-assisted scenario modeling \u2014 built with Louisiana State University, the University of Louisiana at Lafayette, and Do It Greener Foundation. The partnership pairs technical development with sustained community engagement."
-      },
-      capturedWith: "Matterport Pro3",
-      platform: "Treedis \u00b7 DTS GIS",
-      sweepId: null,
-      evidence: {
-        "Case Studies": "Iberia Parish demonstration deployment \u2014 spatial capture joined to parish GIS, flood and drainage data, and coastal-change layers in a single planning surface.",
-        "Awards": "\u2014",
-        "Client Feedback": "\u2014",
-        "Press & Research": "Findings, methods, and platform architecture intended for peer-reviewed publication and public technical documentation, to support replication in other Gulf communities.",
-        "Project Data": "Research data, processed datasets, and platform architecture documented for replication in approved public repositories."
-      }
-    },
-    municipal: {
-      sector: "government",
-      title: "Infrastructure & Cities",
-      tagline: "Municipal twins, transportation, utility grids, urban planning.",
-      overview: "City-scale twins — the fastest-growing government segment worldwide. Infrastructure, venues, and public spaces documented as a living municipal record that planners, agencies, and citizens can all walk.",
-      project: {
-        name: "Lafayette Digital Twin Initiative",
-        kind: "Municipal initiative",
-        illustrative: false,
-        blurb: "A city-scale digital-twin initiative for Lafayette, Louisiana — documenting the city's infrastructure and urban core as a navigable municipal record, extended by the Silicon Bayou technology-corridor work and city fly-over captures."
-      },
-      capturedWith: "Aerial capture + 3D modeling",
-      platform: "Unity",
-      media: {
-        type: "vimeo",
-        label: "Lafayette Digital Twin Initiative",
-        embedUrl: "https://player.vimeo.com/video/959296524",
-        watchUrl: "https://vimeo.com/959296524"
-      },
-      links: [
-        { label: "Silicon Bayou Initiative — highlight", url: "https://vimeo.com/1109358698/e6ce9de564" },
-        { label: "Lafayette fly-over", url: "https://vimeo.com/1007749997" }
-      ],
-      gallery: [],
-      sweepId: null,
-      evidence: {
-        "Case Studies": "Lafayette Digital Twin Initiative — a city documenting its own urban core spatially; Silicon Bayou extends the record across the region's technology corridor.",
-        "Awards": "\u2014",
-        "Client Feedback": "\u201cThe city can show the venue to the world.\u201d",
-        "Press & Research": "Municipal/smart-city is the fastest-growing government twin segment.",
-        "Project Data": "City-scale capture · Aerial + street-level layers."
-      }
-    },
     foodsafety: {
       sector: "government",
-      title: "Regulatory & Compliance",
-      tagline: "Food safety, environmental compliance, inspection training.",
-      overview: "Sits in Government because the buyer is a regulatory authority, not a commercial food company. The procurement is regulatory: twins support inspection, training, and standards enforcement — and the state's investment keeps extending because the builds are modular.",
+      title: "Sanitarian Training Enhancement",
+      tagline: "Give food-safety inspectors a realistic place to practice hazard recognition and response before entering the field.",
+      overview: "Digital Twin Studios served as lead design and development firm for immersive Louisiana Department of Health food-safety training modules delivered on VR and PC. The simulations place inspectors in realistic food-service environments where they identify hazards and make inspection decisions.",
       project: {
-        name: "Sanitarian Training Enhancement — Louisiana Department of Health",
-        kind: "Award-winning deployment",
+        name: "Louisiana Department of Health (LDH)",
+        kind: "Completed / deployed capability",
         illustrative: false,
-        blurb: "Virtual training simulations for Louisiana's retail food-safety inspectors on PC and Meta Quest, built modular so the state's investment keeps extending. Winner of the Unity \u201cBest Public Health Solution\u201d Award (I/ITSEC) and showcased at the Association of Food & Drug Officials Conference 2026."
+        blurb: "The LDH Sanitarian Training Enhancement project converts food-safety inspection work into interactive, repeatable scenarios. Modules 1-4 address Tier 1-4 food-safety violations and ask learners to recognize hazardous conditions, evaluate storage and sanitation practices, and respond inside simulated food-service environments. The suite was developed for VR and PC and deployed across state platforms and devices including Meta Quest 2, creating a modular training resource for field inspectors."
       },
-      capturedWith: "3D modeling & XR tools for Unity",
-      platform: "PC + Meta Quest",
-      media: {
-        type: "vimeo",
-        label: "LDH Sanitarian Training Demo",
-        embedUrl: "https://player.vimeo.com/video/672407780",
-        watchUrl: "https://vimeo.com/672407780"
-      },
-      links: [
-        { label: "Retail Food Safety Inspection — in development", url: "https://vimeo.com/403092357" },
-        { label: "LDH VR capture (highlight)", url: "https://vimeo.com/1109426072/0ddb5aa3aa" },
-        { label: "Louisiana Department of Health demo", url: "https://vimeo.com/390542485" }
+      capturedWith: "Custom 3D modeling of food-service environments, equipment, hazards, and interactive inspection scenarios.",
+      platform: "Unity VR and PC (including Meta Quest 2); Vimeo showcase",
+      experiences: [
+        { id: "video", label: "Watch the Sanitarian Training Demo", default: true, access: "public",
+          type: "vimeo", embedUrl: "https://player.vimeo.com/video/672407780", watchUrl: "https://vimeo.com/672407780" }
       ],
+      media: { id: "video", label: "Watch the Sanitarian Training Demo", default: true, access: "public",
+               type: "vimeo", embedUrl: "https://player.vimeo.com/video/672407780", watchUrl: "https://vimeo.com/672407780" },
+      links: [],
       gallery: [
-        { src: "assets/portfolio/ldh-logo.jpg", alt: "Louisiana Department of Health" }
+        { src: "assets/Gov - LDH/Gov - LDH - 01.webp", alt: "Food-safety hazard-identification exercise at a hot-holding station." },
+        { src: "assets/Gov - LDH/Gov - LDH - 02.webp", alt: "Interactive confirmation step for a sanitation hazard in the simulated kitchen." },
+        { src: "assets/Gov - LDH/Gov - LDH - 03.webp", alt: "Inspection task focused on date labeling and storage conditions." },
+        { src: "assets/Gov - LDH/Gov - LDH - 04.webp", alt: "Cold-storage scenario used to practice product handling and inspection decisions." }
       ],
       sweepId: null,
       evidence: {
-        "Case Studies": "Sanitarian Training Enhancement — virtual retail food-safety inspection training for the Louisiana Department of Health, deployed on PC and Meta Quest. Full case study available upon request.",
-        "Awards": "Unity \u201cBest Public Health Solution\u201d Award · I/ITSEC. Showcased at the Association of Food & Drug Officials Conference 2026.",
-        "Client Feedback": "\u201cInspectors train on the real layout, remotely.\u201d",
-        "Press & Research": "Presented to the national food-safety regulatory community at AFDO 2026.",
-        "Project Data": "Modular Unity builds · PC + Meta Quest · Built so the state's investment keeps extending."
+        "Case Studies": "DTS led design and development of Modules 1-4 for Louisiana Department of Health food-safety orientation, training, and assessment on VR and PC.",
+        "Awards": "Unity \u201cBest Public Health Solution\u201d Award at I/ITSEC.",
+        "Client Feedback": "\u2014",
+        "Press & Research": "Showcased at the Association of Food & Drug Officials Conference 2026.",
+        "Project Data": "Modules 1-4 address Tier 1-4 food-safety violations; the project was deployed on state platforms and devices including Meta Quest 2."
+      }
+    },
+
+    honeywell: {
+      sector: "government",
+      title: "Advanced Manufacturing Training Demo",
+      tagline: "Practice metrology and manufacturing procedures inside an interactive virtual workcell.",
+      overview: "The Advanced Manufacturing Training Demo recreates a technical workcell where a learner can interact with metrology equipment, fixtures, controls, workstation displays, and tools in an immersive environment. The supplied scenes focus on guided setup and measurement tasks rather than passive visualization.",
+      project: {
+        name: "Honeywell - Advanced Manufacturing Training Demo",
+        kind: "Training demonstration / R&D engagement",
+        illustrative: false,
+        blurb: "This advanced-manufacturing experience turns a specialized metrology workflow into step-by-step immersive practice. The supplied imagery shows a Navigator One measurement system, measurement fixtures, operator controls, a dual-monitor workstation, and interactive tool selection inside a virtual workcell. By modeling the equipment and sequence in context, the experience demonstrates how technical training can support equipment recognition, setup, measurement practice, and procedural familiarity before a learner works at the physical station."
+      },
+      capturedWith: "Custom 3D modeling of the metrology/manufacturing workcell, equipment, fixtures, controls, workstation, and tools.",
+      platform: "Unity Immersive VR training simulation; Vimeo showcase",
+      experiences: [
+        { id: "video", label: "Watch the Advanced Manufacturing Training Demo", default: true, access: "public",
+          type: "vimeo", embedUrl: "https://player.vimeo.com/video/1017539252", watchUrl: "https://vimeo.com/1017539252" }
+      ],
+      media: { id: "video", label: "Watch the Advanced Manufacturing Training Demo", default: true, access: "public",
+               type: "vimeo", embedUrl: "https://player.vimeo.com/video/1017539252", watchUrl: "https://vimeo.com/1017539252" },
+      links: [],
+      gallery: [
+        { src: "assets/Gov - Honeywell/Gov - Honeywell - 01.webp", alt: "Immersive metrology workcell with the simulated Navigator One measurement system." },
+        { src: "assets/Gov - Honeywell/Gov - Honeywell - 02.webp", alt: "Virtual measurement setup and controller interaction inside the manufacturing training environment." },
+        { src: "assets/Gov - Honeywell/Gov - Honeywell -03.webp", alt: "Workstation view used to support equipment setup and technical workflow practice." },
+        { src: "assets/Gov - Honeywell/Gov - Honeywell - 04.webp", alt: "Hands-on measurement task guided inside the simulated workcell." },
+        { src: "assets/Gov - Honeywell/Gov - Honeywell -05.webp", alt: "Interactive tool-selection step in the advanced manufacturing training scenario." }
+      ],
+      sweepId: null,
+      evidence: {
+        "Case Studies": "Immersive advanced-manufacturing/metrology training demonstration in the Honeywell project context, focused on equipment interaction and measurement workflow practice.",
+        "Awards": "\u2014",
+        "Client Feedback": "\u2014",
+        "Press & Research": "\u2014",
+        "Project Data": "Supplied scenes include the Navigator One metrology system, measurement fixtures, operator controls, workstation displays, and interactive tool selection."
       }
     },
 
     /* ---------------- COMMUNITY ---------------- */
-    economic: {
+    lafayette: {
       sector: "community",
-      title: "Economic Development",
-      tagline: "Downtown BIDs, chambers, EDCs, commercial corridors.",
-      overview: "Twins that showcase a downtown, parish, or commercial corridor to attract investment and tenants — proof that a place is worth building in. Each business added becomes another grain of the community's spatial record.",
+      title: "Downtown Lafayette",
+      tagline: "Connect visitors to the businesses, culture, and stories of Lafayette's urban core through one spatial destination experience.",
+      overview: "Commissioned by the Lafayette Convention and Visitors Commission, Downtown Lafayette is a living destination experience that brings local places, businesses, culture, and stories into a connected interactive tour. The same experience can be opened on phone or desktop and has been demonstrated on Meta Quest Pro and Apple Vision Pro.",
       project: {
-        name: "LSU Digital Twin — Iberia Parish Pilot",
-        kind: "Parish-scale pilot",
+        name: "Lafayette Convention and Visitors Commission (LCVC)",
+        kind: "Deployed destination activation",
         illustrative: false,
-        blurb: "A parish-scale economic-development twin piloted with LSU for Iberia Parish, published live on Treedis — paired with a growing series of downtown business captures (Keller's Bakery, Rock'n'Bowl, Carpe Diem, Pop's, Borden's, Spoonbill) that document a commercial corridor one storefront at a time."
+        blurb: "Downtown Lafayette extends destination storytelling beyond a static page by making individual places part of a connected spatial experience. Visitors can explore captured venue interiors and move through the broader downtown context while encountering the businesses, culture, and stories that define Lafayette's urban core. The experience is designed around one build that works across phone and desktop and has also been demonstrated on Meta Quest Pro and Apple Vision Pro, giving the destination a reusable experience across devices."
       },
-      capturedWith: "Matterport Pro3 + Insta360 Pro 2",
-      platform: "Treedis",
-      media: {
-        type: "treedis",
-        label: "Explore the Iberia Parish Twin",
-        tourUrl: "https://spaces.dtsxr.com/tour/56111605",
-        origin: "https://spaces.dtsxr.com"
-      },
-      links: [
-        { label: "Watch: LSU Digital Twin — Iberia Parish Pilot", url: "https://vimeo.com/1132293716" },
-        { label: "Keller's Bakery — downtown business capture", url: "https://vimeo.com/1176361159/56b48ef2bf" },
-        { label: "Rock'n'Bowl — downtown business capture", url: "https://vimeo.com/1176361349/a380192055" },
-        { label: "Planning for Development and Growth", url: "https://vimeo.com/1073705217/dd4b934aa9" }
+      capturedWith: "360-degree / spatial capture of Downtown Lafayette destinations and venue interiors.",
+      platform: "Treedis; web/desktop/mobile; demonstrated on Meta Quest Pro and Apple Vision Pro",
+      experiences: [
+        { id: "video", label: "Watch Downtown Lafayette", default: true, access: "public",
+          type: "vimeo", embedUrl: "https://player.vimeo.com/video/1210236846?h=b81cbc0210", watchUrl: "https://vimeo.com/1210236846/b81cbc0210" }
       ],
-      gallery: [
-        { src: "assets/portfolio/downtown-lafayette.jpg", alt: "Downtown commercial corridor — living destination capture" }
-      ],
-      sweepId: null,
-      evidence: {
-        "Case Studies": "Iberia Parish pilot with LSU — a parish documented as an investable, navigable place; downtown business series turns a corridor into a spatial showcase, storefront by storefront.",
-        "Awards": "\u2014",
-        "Client Feedback": "\u201cWe can tour a prospect down the whole corridor.\u201d",
-        "Press & Research": "Spatial showcases lower the friction of attracting commercial tenants.",
-        "Project Data": "Parish-scale twin on Treedis · Six-plus storefront captures and growing."
-      }
-    },
-    nonprofit: {
-      sector: "community",
-      title: "Nonprofit & Social Impact",
-      tagline: "NGOs, foundations, DIG, faith communities, social services.",
-      overview: "Mission-driven twins that give an organization a credible, sharable impact narrative — anchored by the Do It Greener Foundation, which pairs DTS's commercial work with genuine community impact.",
-      project: {
-        name: "Do It Greener Foundation — Sample Experience",
-        kind: "Anchor relationship",
-        illustrative: false,
-        blurb: "An interactive sample experience built with the Do It Greener Foundation — letting a mission-driven organization show, spatially, the places and outcomes its coastal and community work touches, so donors and partners can see exactly where support lands."
-      },
-      capturedWith: "3D modeling & XR tools for Unity",
-      platform: "Interactive experience",
-      media: {
-        type: "vimeo",
-        label: "Do It Greener Sample Experience",
-        embedUrl: "https://player.vimeo.com/video/1072371346?h=4c1279364c",
-        watchUrl: "https://vimeo.com/1072371346/4c1279364c"
-      },
+      media: { id: "video", label: "Watch Downtown Lafayette", default: true, access: "public",
+               type: "vimeo", embedUrl: "https://player.vimeo.com/video/1210236846?h=b81cbc0210", watchUrl: "https://vimeo.com/1210236846/b81cbc0210" },
       links: [],
-      gallery: [],
-      sweepId: null,
-      evidence: {
-        "Case Studies": "Do It Greener Foundation sample experience — a spatial impact story for coastal and community work.",
-        "Awards": "\u2014",
-        "Client Feedback": "\u201cDonors can see exactly where their support lands.\u201d",
-        "Press & Research": "Spatial storytelling strengthens nonprofit impact reporting.",
-        "Project Data": "Impact-site documentation for grant and donor reporting."
-      }
-    },
-    sustain: {
-      sector: "community",
-      title: "Sustainability & Environment",
-      tagline: "Green infrastructure, ESG twins, environmental monitoring.",
-      overview: "Twins that document green infrastructure and civic-sustainability projects — a growing market where the spatial record is the evidence of environmental commitments delivered.",
-      project: {
-        name: "ULL Energy Efficiency & Sustainable Energy Center",
-        kind: "Deployed capture",
-        illustrative: false,
-        blurb: "A digital twin of the University of Louisiana at Lafayette's Energy Efficiency & Sustainable Energy Center — green infrastructure and applied-sustainability research documented spatially, the evidence layer behind the institution's environmental commitments."
-      },
-      capturedWith: "Aerial capture + 3D modeling",
-      platform: "Video walkthrough",
-      media: {
-        type: "vimeo",
-        label: "ULL Energy Efficiency & Sustainable Energy Center",
-        embedUrl: "https://player.vimeo.com/video/1109361463",
-        watchUrl: "https://vimeo.com/1109361463"
-      },
-      links: [
-        { label: "ULL EESEC — full walkthrough", url: "https://vimeo.com/986869653" },
-        { label: "UL Lafayette Solar Energy Lab fly-over", url: "https://vimeo.com/1029700958" }
+      gallery: [
+        { src: "assets/Com - LCVC/Com - LCVC - 01.webp", alt: "Captured interior of a Downtown Lafayette entertainment destination within the interactive tour." },
+        { src: "assets/Com - LCVC/Com - LCVC - 02.webp", alt: "Interactive venue view with bowling and event-space features." },
+        { src: "assets/Com - LCVC/Com - LCVC - 03.webp", alt: "Wide spatial view showing the destination's entertainment and gathering areas." },
+        { src: "assets/Com - LCVC/Com - LCVC - 04.webp", alt: "Front-counter and retail-area capture included in the Downtown Lafayette experience." }
       ],
-      gallery: [],
       sweepId: null,
       evidence: {
-        "Case Studies": "ULL Energy Efficiency & Sustainable Energy Center — a sustainability facility captured as a navigable spatial record.",
+        "Case Studies": "A living Downtown Lafayette destination experience commissioned by the Lafayette Convention and Visitors Commission to connect visitors with local businesses, culture, and stories.",
         "Awards": "\u2014",
-        "Client Feedback": "\u201cThe report points at the place, not a paragraph.\u201d",
-        "Press & Research": "ESG documentation is a growing civic-sustainability market.",
-        "Project Data": "Verifiable spatial record of delivered green infrastructure."
+        "Client Feedback": "\u2014",
+        "Press & Research": "\u2014",
+        "Project Data": "One experience is designed for phone and desktop and has been demonstrated on Meta Quest Pro and Apple Vision Pro; the supplied inventory includes a public Treedis tour."
       }
     },
-    heritage: {
+
+    gfc: {
       sector: "community",
-      title: "Cultural & Heritage",
-      tagline: "Historic preservation, Section 106, museums, heritage tourism.",
-      overview: "Documentation-driven, compliance-mandated work that is underserved by existing digital-twin vendors: historic tax-credit and Section 106 review capture that preserves cultural and heritage sites precisely.",
+      title: "Iberia Parish Clean Energy Hub Digital Twin",
+      tagline: "Make clean-energy, resilience, environmental, and infrastructure context visible at community scale.",
+      overview: "The Iberia Parish experience brings community-scale aerial context, local destinations, infrastructure, and environmental data into one digital twin. It is connected to the Iberia Parish Clean Energy Hub initiative in the National Academies' Gulf Futures Challenge.",
       project: {
-        name: "Historic Tax-Credit / Section 106 Capture",
-        kind: "Compliance engagement",
-        illustrative: true,
-        blurb: "Heritage-preservation capture for historic tax-credit and Section 106 compliance: a precise spatial record of a historic structure — a documentation-mandated market existing twin vendors largely overlook."
+        name: "Iberia Parish Clean Energy Hub - Gulf Futures Challenge",
+        kind: "Gulf Futures Challenge finalist project / digital twin pilot",
+        illustrative: false,
+        blurb: "The Iberia Parish digital twin is designed to make place-based clean-energy and resilience concepts easier to explore. Supplied imagery shows a location-navigation menu, community-scale 3D aerial views, an environmental surface-temperature visualization, and industrial/transportation infrastructure context. Within the Iberia Parish Clean Energy Hub initiative, the digital twin component supports a broader concept integrating solar, agrivoltaics, carbon capture, workforce training, environmental restoration, and community resilience."
       },
-      capturedWith: "Preservation-grade reality capture",
-      platform: "Spatial documentation",
+      capturedWith: "Aerial/3D spatial capture combined with map, GIS, location, infrastructure, and environmental data layers.",
+      platform: "Treedis; 3D aerial / GIS-style data layers",
+      experiences: [
+        { id: "video", label: "The Iberia Parish Digital Twin", default: true, access: "public",
+          type: "vimeo", embedUrl: "https://player.vimeo.com/video/1132293716", watchUrl: "https://vimeo.com/1132293716" }
+      ],
+      media: { id: "video", label: "The Iberia Parish Digital Twin", default: true, access: "public",
+               type: "vimeo", embedUrl: "https://player.vimeo.com/video/1132293716", watchUrl: "https://vimeo.com/1132293716" },
+      links: [],
+      gallery: [
+        { src: "assets/Com - GFC/Com - GFC - 01.webp", alt: "Aerial 3D view of Iberia Parish with a location menu linking community sites and data layers." },
+        { src: "assets/Com - GFC/Com - GFC - 02.webp", alt: "Community-scale aerial context for exploring the parish and surrounding built environment." },
+        { src: "assets/Com - GFC/Com - GFC - 03.webp", alt: "Environmental data visualization layer showing modeled surface-temperature conditions." },
+        { src: "assets/Com - GFC/Com - GFC - 04.webp", alt: "Aerial view of industrial and transportation infrastructure included in the parish digital twin." }
+      ],
       sweepId: null,
       evidence: {
-        "Case Studies": "Historic-structure twin used for tax-credit and Section 106 review.",
+        "Case Studies": "Community-scale Iberia Parish digital twin work tied to the Iberia Parish Clean Energy Hub concept, combining place-based exploration with clean-energy and resilience context.",
         "Awards": "\u2014",
-        "Client Feedback": "\u201cThe building is preserved even as it changes.\u201d",
-        "Press & Research": "Heritage compliance is an underserved digital-twin market.",
-        "Project Data": "Preservation-grade capture of a historic structure."
+        "Client Feedback": "\u2014",
+        "Press & Research": "The Iberia Parish Clean Energy Hub was named one of ten finalists in the National Academies' $50 million Gulf Futures Challenge.",
+        "Project Data": "The Gulf Futures Challenge concept integrates solar, agrivoltaics, carbon capture, workforce training, environmental restoration, and digital twin simulations; supplied imagery shows aerial context, environmental data layers, and infrastructure views."
       }
     }
   },

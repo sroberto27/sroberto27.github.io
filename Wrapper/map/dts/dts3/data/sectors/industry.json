@@ -5,34 +5,25 @@
   "order": 2,
   "label": "Industry",
   "navSub": "Company",
-  "blurb": "Industry creates economic value.",
+  "blurb": "Immersive training and spatial tools for complex operations, equipment, and customer environments.",
   "active": true,
   "accent": "#2E8BFF",
   "kicker": "INDUSTRY",
-  "title": "Commercial & Industrial",
-  "sub": "Digital Twin of your company",
-  "body": "Where capability creates economic value. Manufacturing holds 30%+ of the digital twin market. Automotive holds 22%+. Healthcare is the fastest-growing segment. DTS has active or adjacent work across all four commercial verticals.",
+  "title": "Make complex operations understandable, repeatable, and ready to practice.",
+  "sub": "From field procedures to product exploration, digital twins bring work into an interactive environment.",
+  "body": "Industry experiences use XR, 3D visualization, and digital twins to make complex systems easier to see, learn, and rehearse. Teams can practice procedures in modeled operating environments, inspect equipment in context, or extend a physical customer experience into a remotely explorable space. The focus is practical: connect the virtual environment to the way people actually work, train, and make decisions.",
   "cards": [
     {
-      "projectId": "energy",
-      "title": "Energy & Manufacturing",
-      "text": "Oil/gas, solar, utilities, industrial ops, FEMA PA documentation."
+      "projectId": "shell",
+      "title": "Shell - Permian Basin Assessment Training",
+      "short": "Shell Permian",
+      "text": "A 3D oilfield training environment that guides users through wellpad and saltwater-disposal assessment tasks, equipment identification, and valve-selection procedures."
     },
     {
       "projectId": "automotive",
-      "title": "Automotive & Transportation",
-      "short": "Automotive",
-      "text": "Showrooms, vehicle twins, EV facilities, franchise audits."
-    },
-    {
-      "projectId": "healthfac",
-      "title": "Healthcare Facilities",
-      "text": "Hospital systems, clinical environments, pharmaceutical facilities."
-    },
-    {
-      "projectId": "properties",
-      "title": "Properties & Places",
-      "text": "Commercial, residential, hospitality, tourism, film locations."
+      "title": "Automotive Dealership Digital Twin",
+      "short": "Dealership",
+      "text": "An interactive dealership and vehicle experience combining spatial capture with detailed product exploration for remote viewing, orientation, and demonstration."
     }
   ]
 }

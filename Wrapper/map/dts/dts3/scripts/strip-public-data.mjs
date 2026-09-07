@@ -46,7 +46,7 @@ for (const file of projectFiles) {
   // produces: treedis uses a flat `tourUrl` string, but video uses NESTED
   // `embed`/`watch` source objects ({kind, value}) -- confirmed by reading
   // content-loader.js's convertExperience() AND a real raw video document
-  // (civic.json) directly, not assumed from the converted shape.
+  // (a raw video document) directly, not assumed from the converted shape.
   function stripTarget(m) {
     let did = false;
     if (m.tourUrl) { delete m.tourUrl; did = true; }

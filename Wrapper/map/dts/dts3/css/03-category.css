@@ -50,6 +50,16 @@
   gap:clamp(14px,1.4vw,22px);
   min-height:0;
 }
+/* Count-driven rows (data-count set by renderCategory() in js/app.js, same
+   pattern as .example-media-grid). grid-auto-rows:1fr above assumes the cards
+   fill two rows; a sector with only two cards lands on ONE row and both cards
+   stretch to the whole cards area, leaving a short paragraph floating in a
+   very tall box. Cap the single row to its content and park it at the top. */
+.cat-cards[data-count="1"],
+.cat-cards[data-count="2"]{
+  grid-auto-rows:minmax(0,auto);
+  align-content:start;
+}
 .uc-card{
   background:linear-gradient(160deg, rgba(18,26,43,.9), rgba(10,15,24,.9));
   border:1px solid var(--line); border-radius:12px;

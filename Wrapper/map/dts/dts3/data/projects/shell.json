@@ -1,0 +1,65 @@
+{
+  "_id": "project.shell",
+  "_type": "project",
+  "id": "shell",
+  "sectorId": "industry",
+  "title": "Shell - Permian Basin Assessment Training",
+  "tagline": "Turn oilfield assessment procedures into repeatable practice inside a modeled operating environment.",
+  "overview": "Digital Twin Studios' Shell work applies immersive simulation to oilfield assessment and procedure training. The Permian Basin sample places learners in modeled wellpad and saltwater-disposal environments where they identify equipment and respond to task prompts.",
+  "project": {
+    "name": "Shell",
+    "kind": "Immersive training engagement",
+    "illustrative": false,
+    "blurb": "The Permian Basin Assessment Training sample turns field-oriented oil and gas procedures into structured 3D learning tasks. Supplied scenes ask the learner to assess a wellpad or saltwater-disposal site, identify the main shutdown valve and saltwater pipeline inlet, distinguish production-related components, and select block valves. The experience demonstrates how a modeled industrial environment can support repeatable procedural practice and equipment recognition before or alongside work in the field."
+  },
+  "capturedWith": "Custom 3D modeling of wellpad, SWD, piping, valves, and oilfield equipment informed by real operating procedures.",
+  "platform": "Immersive 3D / VR training simulation; Vimeo showcase",
+  "experiences": [
+    {
+      "_type": "video",
+      "id": "video",
+      "provider": "vimeo",
+      "label": "Watch the Permian Basin Assessment Sample",
+      "embed": { "kind": "url", "value": "https://player.vimeo.com/video/376913308" },
+      "watch": { "kind": "url", "value": "https://vimeo.com/376913308" },
+      "default": true,
+      "access": "public"
+    }
+  ],
+  "links": [],
+  "gallery": [
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Ind - Shell/Ind - Shell - 01.webp" },
+      "alt": "Wellpad assessment training scenario inside the 3D oilfield environment."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Ind - Shell/Ind - Shell - 02.webp" },
+      "alt": "Learner prompt to identify the facility's main shutdown valve."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Ind - Shell/Ind - Shell - 03.webp" },
+      "alt": "Saltwater-disposal assessment scenario focused on identifying the pipeline inlet."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Ind - Shell/Ind - Shell - 04.webp" },
+      "alt": "Production assessment task asking the learner to identify the oil to be produced."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Ind - Shell/Ind - Shell - 05.webp" },
+      "alt": "Interactive equipment-identification task focused on selecting a block valve."
+    }
+  ],
+  "sweepId": null,
+  "evidence": {
+    "Case Studies": "DTS/Kheiron secured Shell as an early major client and developed customized immersive training for oil and gas operations.",
+    "Awards": "—",
+    "Client Feedback": "—",
+    "Press & Research": "—",
+    "Project Data": "Supplied training scenes cover wellpad assessment, SWD assessment, shutdown valves, pipeline inlets, production selection, and block-valve identification."
+  }
+}

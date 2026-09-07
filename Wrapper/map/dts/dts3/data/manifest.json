@@ -1,8 +1,8 @@
 {
   "_type": "contentManifest",
   "schemaVersion": "1.0.0",
-  "contentVersion": "2026-08-14T00-00-00Z",
-  "generatedFrom": "js/config.js, js/clients.js, index.html (July 2026)",
+  "contentVersion": "2026-09-07T00-00-00Z",
+  "generatedFrom": "docs/New_Category_Content_Form_{Education,Industry,Government,Community}.docx (September 2026)",
   "description": "Index of every content document in /data. The site loader and the future Admin Board (mini CMS) both read this file to discover content. Add a new document = add its file and register it here.",
   "mediaConvention": {
     "summary": "Any image, video, or 3D-model reference uses source: {kind, value}. kind='path' means a file inside the website folder structure (relative to site root, e.g. assets/portfolio/x.jpg). kind='url' means an external link (https://...). Renderers must support both.",
@@ -63,29 +63,19 @@
     ],
     "projects": [
       {
-        "file": "projects/campus.json",
+        "file": "projects/brcc.json",
         "type": "project",
-        "id": "project.campus"
+        "id": "project.brcc"
       },
       {
-        "file": "projects/workforce.json",
+        "file": "projects/solar.json",
         "type": "project",
-        "id": "project.workforce"
+        "id": "project.solar"
       },
       {
-        "file": "projects/healthcare.json",
+        "file": "projects/shell.json",
         "type": "project",
-        "id": "project.healthcare"
-      },
-      {
-        "file": "projects/workplace.json",
-        "type": "project",
-        "id": "project.workplace"
-      },
-      {
-        "file": "projects/energy.json",
-        "type": "project",
-        "id": "project.energy"
+        "id": "project.shell"
       },
       {
         "file": "projects/automotive.json",
@@ -93,59 +83,24 @@
         "id": "project.automotive"
       },
       {
-        "file": "projects/healthfac.json",
-        "type": "project",
-        "id": "project.healthfac"
-      },
-      {
-        "file": "projects/properties.json",
-        "type": "project",
-        "id": "project.properties"
-      },
-      {
-        "file": "projects/municipal.json",
-        "type": "project",
-        "id": "project.municipal"
-      },
-      {
-        "file": "projects/gfc.json",
-        "type": "project",
-        "id": "project.gfc"
-      },
-      {
         "file": "projects/foodsafety.json",
         "type": "project",
         "id": "project.foodsafety"
       },
       {
-        "file": "projects/civic.json",
+        "file": "projects/honeywell.json",
         "type": "project",
-        "id": "project.civic"
+        "id": "project.honeywell"
       },
       {
-        "file": "projects/economic.json",
+        "file": "projects/lafayette.json",
         "type": "project",
-        "id": "project.economic"
+        "id": "project.lafayette"
       },
       {
-        "file": "projects/nonprofit.json",
+        "file": "projects/gfc.json",
         "type": "project",
-        "id": "project.nonprofit"
-      },
-      {
-        "file": "projects/sustain.json",
-        "type": "project",
-        "id": "project.sustain"
-      },
-      {
-        "file": "projects/heritage.json",
-        "type": "project",
-        "id": "project.heritage"
-      },
-      {
-        "file": "projects/emergency.json",
-        "type": "project",
-        "id": "project.emergency"
+        "id": "project.gfc"
       }
     ],
     "forms": [

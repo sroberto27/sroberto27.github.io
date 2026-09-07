@@ -194,15 +194,27 @@ async function main() {
 // played in Phase 4, just now produced here instead of hand-invoked per
 // deploy.
 //
-// config.js carries no `access` field anywhere on its own -- resolved here
-// by cross-referencing each example's id against the REAL project document
-// in data/projects/<id>.json (confirmed structurally identical ordering: a
-// project's single legacy `media` object maps 1:1 to the example's `media`,
-// and `links[]` is index-matched in the same order -- verified directly
-// against automotive.json/config.js before relying on it). gfc (the only
-// experiences[]-based, multi-experience project) has neither `media` nor
-// `links` in config.js today, so it needs no handling here; a guard below
-// fails loudly if that ever changes without this script being updated.
+// config.js carries no `access` field of its own that can be trusted as the
+// source of truth, so the level is resolved here by cross-referencing each
+// example against the REAL project document in data/projects/<id>.json.
+//
+// Two raw shapes have to be handled, because /data carries both:
+//   - `experiences[]` (every project since the September 2026 content
+//     migration) -- matched to a config.js node by its authored `id`, which
+//     is exactly the identity convention content-loader.js's
+//     projectExperiences()/convertExperience() and the resource resolver's
+//     resolveExperienceTarget() already share.
+//   - a single legacy `media` object -- matched positionally, 1:1, the way
+//     this function originally worked.
+// An earlier version knew only about `media`. Once every project moved to
+// `experiences[]`, `rawDoc.media` was always undefined, every lookup fell
+// through to the "registered" default, and the strip became unconditional --
+// safe, but it silently emptied the fallback of the PUBLIC showcase videos
+// it exists to serve. Resolve against whichever shape the document actually
+// uses; never guess from the absence of one.
+//
+// `links[]` stays index-matched in the same order (verified against a real
+// document before relying on it), with the same length-mismatch fallback.
 async function stripConfigJs() {
   const rel = "js/config.js";
   const src = await readFile(new URL(rel, root), "utf8");
@@ -224,17 +236,41 @@ async function stripConfigJs() {
     }
     if (!rawDoc) continue;
 
-    if (ex.media) {
-      const access = resolveAccessLevel(rawDoc.media?.access, rawDoc.access);
-      if (access === "public") {
-        keptPublicMedia++;
-      } else {
-        delete ex.media.tourUrl;
-        delete ex.media.origin; // travels with tourUrl, same reasoning as split-logic.js's stripTarget()
-        delete ex.media.embedUrl;
-        delete ex.media.watchUrl;
-        strippedMedia++;
+    // The raw node behind one config.js experience/media node: by authored
+    // id when the document uses experiences[], else the legacy media object.
+    const rawNodeFor = (node) => {
+      if (Array.isArray(rawDoc.experiences) && rawDoc.experiences.length) {
+        return rawDoc.experiences.find((e) => e.id === node.id) || null;
       }
+      return rawDoc.media || null;
+    };
+
+    // `origin` travels WITH tourUrl as one navigable-target pair -- same
+    // reasoning as split-logic.js's stripTarget().
+    const stripNode = (node) => {
+      delete node.tourUrl;
+      delete node.origin;
+      delete node.embedUrl;
+      delete node.watchUrl;
+    };
+
+    // A config.js node with no matching raw node cannot be resolved, so it is
+    // stripped rather than published on the strength of an assumption.
+    const nodeIsPublic = (node) => {
+      const raw = rawNodeFor(node);
+      return !!raw && resolveAccessLevel(raw.access, rawDoc.access) === "public";
+    };
+
+    for (const node of Array.isArray(ex.experiences) ? ex.experiences : []) {
+      if (nodeIsPublic(node)) keptPublicMedia++;
+      else { stripNode(node); strippedMedia++; }
+    }
+
+    // `media` is buildConfig()'s alias for experiences[0]; config.js repeats
+    // it as a separate object literal, so it needs its own pass.
+    if (ex.media) {
+      if (nodeIsPublic(ex.media)) keptPublicMedia++;
+      else { stripNode(ex.media); strippedMedia++; }
     }
 
     if (Array.isArray(ex.links)) {

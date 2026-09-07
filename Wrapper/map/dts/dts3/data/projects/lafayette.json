@@ -1,0 +1,69 @@
+{
+  "_id": "project.lafayette",
+  "_type": "project",
+  "id": "lafayette",
+  "sectorId": "community",
+  "title": "Downtown Lafayette",
+  "tagline": "Connect visitors to the businesses, culture, and stories of Lafayette's urban core through one spatial destination experience.",
+  "overview": "Commissioned by the Lafayette Convention and Visitors Commission, Downtown Lafayette is a living destination experience that brings local places, businesses, culture, and stories into a connected interactive tour. The same experience can be opened on phone or desktop and has been demonstrated on Meta Quest Pro and Apple Vision Pro.",
+  "project": {
+    "name": "Lafayette Convention and Visitors Commission (LCVC)",
+    "kind": "Deployed destination activation",
+    "illustrative": false,
+    "blurb": "Downtown Lafayette extends destination storytelling beyond a static page by making individual places part of a connected spatial experience. Visitors can explore captured venue interiors and move through the broader downtown context while encountering the businesses, culture, and stories that define Lafayette's urban core. The experience is designed around one build that works across phone and desktop and has also been demonstrated on Meta Quest Pro and Apple Vision Pro, giving the destination a reusable experience across devices."
+  },
+  "capturedWith": "360-degree / spatial capture of Downtown Lafayette destinations and venue interiors.",
+  "platform": "Treedis; web/desktop/mobile; demonstrated on Meta Quest Pro and Apple Vision Pro",
+  "experiences": [
+    {
+      "_type": "video",
+      "id": "video",
+      "provider": "vimeo",
+      "label": "Watch Downtown Lafayette",
+      "embed": { "kind": "url", "value": "https://player.vimeo.com/video/1210236846?h=b81cbc0210" },
+      "watch": { "kind": "url", "value": "https://vimeo.com/1210236846/b81cbc0210" },
+      "default": true,
+      "access": "public"
+    },
+    {
+      "_type": "treedis",
+      "id": "tour",
+      "label": "Explore Downtown Lafayette",
+      "tourUrl": "https://my.treedis.com/tour/4fb22059?s=ncf2bmftf30t0cfxzmy0r01ba&x=-9.707495141577843&y=103.76885006932474",
+      "origin": "https://my.treedis.com",
+      "sweepId": null,
+      "access": "registered"
+    }
+  ],
+  "links": [],
+  "gallery": [
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Com - LCVC/Com - LCVC - 01.webp" },
+      "alt": "Captured interior of a Downtown Lafayette entertainment destination within the interactive tour."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Com - LCVC/Com - LCVC - 02.webp" },
+      "alt": "Interactive venue view with bowling and event-space features."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Com - LCVC/Com - LCVC - 03.webp" },
+      "alt": "Wide spatial view showing the destination's entertainment and gathering areas."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Com - LCVC/Com - LCVC - 04.webp" },
+      "alt": "Front-counter and retail-area capture included in the Downtown Lafayette experience."
+    }
+  ],
+  "sweepId": null,
+  "evidence": {
+    "Case Studies": "A living Downtown Lafayette destination experience commissioned by the Lafayette Convention and Visitors Commission to connect visitors with local businesses, culture, and stories.",
+    "Awards": "—",
+    "Client Feedback": "—",
+    "Press & Research": "—",
+    "Project Data": "One experience is designed for phone and desktop and has been demonstrated on Meta Quest Pro and Apple Vision Pro; the supplied inventory includes a public Treedis tour."
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "_id": "project.brcc",
+  "_type": "project",
+  "id": "brcc",
+  "sectorId": "education",
+  "title": "BRCC Film Production Orientation",
+  "tagline": "Bring the production environment into the learning experience before a student's first day on set.",
+  "overview": "Baton Rouge Community College's Film and New Media Production Program uses an immersive digital twin of the Celtic Media Centre as a bridge between classroom learning and real production environments. The experience combines spatial orientation, interactive 3D content, and embedded media to help learners become familiar with production spaces and tools.",
+  "project": {
+    "name": "Baton Rouge Community College (BRCC) - Film and New Media Production Program",
+    "kind": "Immersive learning program development",
+    "illustrative": false,
+    "blurb": "Digital Twin Studios is collaborating with BRCC on a career-oriented film-production program centered on a digital twin set at the Celtic Media Centre. The supplied experience imagery includes the Celtic Media Centre entrance, Stage 8, interactive 3D lighting-equipment content, and embedded orientation media. The broader program is aligned with industry needs and includes advisement from the International Alliance for Theatrical and Stage Employees (IATSE), connecting virtual course content with practical film-production preparation."
+  },
+  "capturedWith": "Custom 3D modeling of Celtic Media Centre spaces and production equipment, with embedded interactive and video learning elements.",
+  "platform": "Interactive 3D / immersive learning modules; Vimeo showcase / Eon Reality.",
+  "experiences": [
+    {
+      "_type": "video",
+      "id": "video",
+      "provider": "vimeo",
+      "label": "Watch the BRCC Film Production Orientation",
+      "embed": { "kind": "url", "value": "https://player.vimeo.com/video/1046222253" },
+      "watch": { "kind": "url", "value": "https://vimeo.com/1046222253" },
+      "default": true,
+      "access": "public"
+    }
+  ],
+  "links": [],
+  "gallery": [
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Edu - BRCC/Edu - BRCC - 01.webp" },
+      "alt": "3D view of the Celtic Media Centre entrance used in the film-production orientation environment."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Edu - BRCC/Edu - BRCC - 02.webp" },
+      "alt": "Stage 8 at the Celtic Media Centre recreated as part of the virtual orientation experience."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Edu - BRCC/Edu - BRCC - 03.webp" },
+      "alt": "Interactive 3D lighting-equipment lesson with labeled components and embedded learning media."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Edu - BRCC/Edu - BRCC -04.webp" },
+      "alt": "Virtual production-space view with an embedded orientation-video touchpoint."
+    }
+  ],
+  "sweepId": null,
+  "evidence": {
+    "Case Studies": "DTS is collaborating with BRCC on a career-oriented Film and New Media Production Program based on a digital twin set at the Celtic Media Centre.",
+    "Awards": "—",
+    "Client Feedback": "—",
+    "Press & Research": "BRCC received a $750,000 Louisiana Entertainment Development Fund grant over three years for its Film and New Media Production Program and collaboration with Celtic Media Centre and IATSE.",
+    "Project Data": "Public DTS project experience lists the BRCC engagement from March 2023 onward; supplied imagery shows Celtic Media Centre / Stage 8 spatial content, interactive equipment lessons, and embedded orientation media."
+  }
+}

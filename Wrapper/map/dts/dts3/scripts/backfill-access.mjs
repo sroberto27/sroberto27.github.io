@@ -20,7 +20,7 @@ async function writeJson(relPath, data) {
 }
 
 const manifest = await readJson("data/manifest.json");
-// manifest paths are relative to data/ (e.g. "projects/campus.json"), so
+// manifest paths are relative to data/ (e.g. "projects/brcc.json"), so
 // normalize to match the "data/projects/<file>.json" paths used below.
 const registeredProjectFiles = new Set(manifest.documents.projects.map((p) => `data/${p.file}`));
 
@@ -47,27 +47,44 @@ for (const file of projectFiles) {
   const doc = await readJson(rel);
   const notes = [];
 
+  // BACKFILL ONLY: fill in a MISSING access level, never overwrite an
+  // authored one. The original Phase 3 version assigned `registered`
+  // unconditionally, which was correct exactly once -- when no node in /data
+  // carried the field yet. It is not correct now: every project authored in
+  // the September 2026 content migration marks its public showcase video
+  // `"access": "public"` deliberately (that is what lets a visitor watch it
+  // without signing in, per each content form's "Requires sign-in? No"), and
+  // an unconditional rewrite would silently gate all eight of them. A backfill
+  // that clobbers real editorial decisions is a downgrade, not a migration.
+  const needsBackfill = (node) => node.access === undefined || node.access === null || node.access === "";
+
   if (Array.isArray(doc.experiences) && doc.experiences.length) {
     for (const exp of doc.experiences) {
-      if (exp.access !== "registered") {
+      if (needsBackfill(exp)) {
         exp.access = "registered";
-        notes.push(`experiences[id=${exp.id}].access = 'registered'`);
+        notes.push(`experiences[id=${exp.id}].access = 'registered' (was unset)`);
       }
     }
   } else if (doc.media) {
-    if (doc.media.access !== "registered") {
+    if (needsBackfill(doc.media)) {
       doc.media.access = "registered";
-      notes.push(`media.access = 'registered'`);
+      notes.push(`media.access = 'registered' (was unset)`);
     }
   }
-  // heritage.json / emergency.json: neither experiences nor media -> nothing
-  // to do here, left untouched, matches the plan exactly.
+  // A project with neither experiences nor media -> nothing to do here, left
+  // untouched. (heritage.json / emergency.json were the two such documents
+  // when this ran in Phase 4; both were removed in the September 2026 content
+  // migration, and every surviving project carries experiences[].)
 
   if (Array.isArray(doc.links)) {
     doc.links.forEach((link, i) => {
-      if (link.kind === "treedis" && link.access !== "registered") {
+      // Same backfill-only rule as above. The `kind === "treedis"` test is
+      // kept because that is what this one-shot script was scoped to, but the
+      // real enforcement is access-level-based and lives in
+      // functions/_lib/split-logic.js -- see SECURITY-AUDIT-2026-09-06.md F-01.
+      if (link.kind === "treedis" && needsBackfill(link)) {
         link.access = "registered";
-        notes.push(`links[${i}].access = 'registered' (${link.label})`);
+        notes.push(`links[${i}].access = 'registered' (${link.label}, was unset)`);
       }
     });
   }
@@ -75,9 +92,9 @@ for (const file of projectFiles) {
   if (notes.length) {
     changes.push({ file: rel, doc, note: notes.join(", "), unregistered: !isRegistered });
   } else if (!isRegistered) {
-    // emergency.json specifically: on disk, has content, but not touched
-    // because it has no experience/media/links to gate anyway. Still worth
-    // surfacing its manifest status regardless.
+    // On disk with content, but nothing to gate. Still worth surfacing its
+    // manifest status: an unregistered project document is invisible to the
+    // site and to the Admin Board alike.
     changes.push({ file: rel, doc: null, note: "NO CHANGE NEEDED, but flagged below", unregistered: true });
   }
 }
@@ -90,13 +107,12 @@ for (const c of changes) {
 }
 
 const unregisteredFlag = changes.find((c) => c.unregistered);
-if (registeredProjectFiles.has("data/projects/emergency.json") === false) {
+if (unregisteredFlag) {
   console.log("\n" + "=".repeat(70));
-  console.log("FLAG: data/projects/emergency.json exists on disk but is NOT");
+  console.log(`FLAG: ${unregisteredFlag.file} exists on disk but is NOT`);
   console.log("registered in data/manifest.json. This script does not add it to");
   console.log("the manifest -- that's a content decision for the user, not this");
-  console.log("script. It has no experience/media to gate either way, so this");
-  console.log("backfill doesn't need to touch it regardless of that decision.");
+  console.log("script, and an unregistered document never reaches the site.");
   console.log("=".repeat(70));
 }
 

@@ -1,0 +1,65 @@
+{
+  "_id": "project.honeywell",
+  "_type": "project",
+  "id": "honeywell",
+  "sectorId": "government",
+  "title": "Advanced Manufacturing Training Demo",
+  "tagline": "Practice metrology and manufacturing procedures inside an interactive virtual workcell.",
+  "overview": "The Advanced Manufacturing Training Demo recreates a technical workcell where a learner can interact with metrology equipment, fixtures, controls, workstation displays, and tools in an immersive environment. The supplied scenes focus on guided setup and measurement tasks rather than passive visualization.",
+  "project": {
+    "name": "Honeywell - Advanced Manufacturing Training Demo",
+    "kind": "Training demonstration / R&D engagement",
+    "illustrative": false,
+    "blurb": "This advanced-manufacturing experience turns a specialized metrology workflow into step-by-step immersive practice. The supplied imagery shows a Navigator One measurement system, measurement fixtures, operator controls, a dual-monitor workstation, and interactive tool selection inside a virtual workcell. By modeling the equipment and sequence in context, the experience demonstrates how technical training can support equipment recognition, setup, measurement practice, and procedural familiarity before a learner works at the physical station."
+  },
+  "capturedWith": "Custom 3D modeling of the metrology/manufacturing workcell, equipment, fixtures, controls, workstation, and tools.",
+  "platform": "Unity Immersive VR training simulation; Vimeo showcase",
+  "experiences": [
+    {
+      "_type": "video",
+      "id": "video",
+      "provider": "vimeo",
+      "label": "Watch the Advanced Manufacturing Training Demo",
+      "embed": { "kind": "url", "value": "https://player.vimeo.com/video/1017539252" },
+      "watch": { "kind": "url", "value": "https://vimeo.com/1017539252" },
+      "default": true,
+      "access": "public"
+    }
+  ],
+  "links": [],
+  "gallery": [
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Gov - Honeywell/Gov - Honeywell - 01.webp" },
+      "alt": "Immersive metrology workcell with the simulated Navigator One measurement system."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Gov - Honeywell/Gov - Honeywell - 02.webp" },
+      "alt": "Virtual measurement setup and controller interaction inside the manufacturing training environment."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Gov - Honeywell/Gov - Honeywell -03.webp" },
+      "alt": "Workstation view used to support equipment setup and technical workflow practice."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Gov - Honeywell/Gov - Honeywell - 04.webp" },
+      "alt": "Hands-on measurement task guided inside the simulated workcell."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Gov - Honeywell/Gov - Honeywell -05.webp" },
+      "alt": "Interactive tool-selection step in the advanced manufacturing training scenario."
+    }
+  ],
+  "sweepId": null,
+  "evidence": {
+    "Case Studies": "Immersive advanced-manufacturing/metrology training demonstration in the Honeywell project context, focused on equipment interaction and measurement workflow practice.",
+    "Awards": "—",
+    "Client Feedback": "—",
+    "Press & Research": "—",
+    "Project Data": "Supplied scenes include the Navigator One metrology system, measurement fixtures, operator controls, workstation displays, and interactive tool selection."
+  }
+}

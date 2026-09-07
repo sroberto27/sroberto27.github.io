@@ -103,49 +103,265 @@
       "_type": "image",
       "source": {
         "kind": "path",
-        "value": "assets/portfolio/scsu-virtual-campus.jpg"
+        "value": "assets/Edu - BRCC/Edu - BRCC - 01.webp"
       },
-      "alt": "SCSU Virtual Campus"
+      "alt": "3D view of the Celtic Media Centre entrance used in the film-production orientation environment."
     },
     {
       "_type": "image",
       "source": {
         "kind": "path",
-        "value": "assets/portfolio/downtown-lafayette.jpg"
+        "value": "assets/Edu - BRCC/Edu - BRCC - 02.webp"
       },
-      "alt": "Downtown Lafayette"
+      "alt": "Stage 8 at the Celtic Media Centre recreated as part of the virtual orientation experience."
     },
     {
       "_type": "image",
       "source": {
         "kind": "path",
-        "value": "assets/portfolio/virgin-hotels-vr.jpg"
+        "value": "assets/Edu - BRCC/Edu - BRCC - 03.webp"
       },
-      "alt": "Virgin Hotels VR orientation"
+      "alt": "Interactive 3D lighting-equipment lesson with labeled components and embedded learning media."
     },
     {
       "_type": "image",
       "source": {
         "kind": "path",
-        "value": "assets/portfolio/lsu-performance-poc.jpg"
+        "value": "assets/Edu - BRCC/Edu - BRCC -04.webp"
       },
-      "alt": "LSU Performance Innovation POC"
+      "alt": "Virtual production-space view with an embedded orientation-video touchpoint."
     },
     {
       "_type": "image",
       "source": {
         "kind": "path",
-        "value": "assets/portfolio/state-park-demo.jpg"
+        "value": "assets/Edu- Sola/Edu - Sola - 01.webp"
       },
-      "alt": "State Park virtual tour demo"
+      "alt": "Ground-level virtual tour view among photovoltaic arrays at the solar research site."
     },
     {
       "_type": "image",
       "source": {
         "kind": "path",
-        "value": "assets/portfolio/ldh-logo.jpg"
+        "value": "assets/Edu- Sola/Edu - Sola - 02.webp"
       },
-      "alt": "Louisiana Department of Health"
+      "alt": "Dollhouse-style 3D spatial view of the captured solar facility."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Edu- Sola/Edu - Sola - 03.webp"
+      },
+      "alt": "Captured solar arrays and field equipment used for research, testing, and training."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Ind - Shell/Ind - Shell - 01.webp"
+      },
+      "alt": "Wellpad assessment training scenario inside the 3D oilfield environment."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Ind - Shell/Ind - Shell - 02.webp"
+      },
+      "alt": "Learner prompt to identify the facility's main shutdown valve."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Ind - Shell/Ind - Shell - 03.webp"
+      },
+      "alt": "Saltwater-disposal assessment scenario focused on identifying the pipeline inlet."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Ind - Shell/Ind - Shell - 04.webp"
+      },
+      "alt": "Production assessment task asking the learner to identify the oil to be produced."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Ind - Shell/Ind - Shell - 05.webp"
+      },
+      "alt": "Interactive equipment-identification task focused on selecting a block valve."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Ind - Auto/Ind - Auto - 01.webp"
+      },
+      "alt": "Virtual showroom scene with detailed 3D vehicle models."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Ind - Auto/Ind - Auto - 02.webp"
+      },
+      "alt": "Spatial capture of a BMW SUV in the dealership/parking environment."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Ind - Auto/Ind - Auto - 03.webp"
+      },
+      "alt": "Interactive interior view highlighting the vehicle cockpit and dashboard."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Ind - Auto/Ind - Auto - 04.webp"
+      },
+      "alt": "Exterior vehicle view with embedded navigation and information controls."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Gov - LDH/Gov - LDH - 01.webp"
+      },
+      "alt": "Food-safety hazard-identification exercise at a hot-holding station."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Gov - LDH/Gov - LDH - 02.webp"
+      },
+      "alt": "Interactive confirmation step for a sanitation hazard in the simulated kitchen."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Gov - LDH/Gov - LDH - 03.webp"
+      },
+      "alt": "Inspection task focused on date labeling and storage conditions."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Gov - LDH/Gov - LDH - 04.webp"
+      },
+      "alt": "Cold-storage scenario used to practice product handling and inspection decisions."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Gov - Honeywell/Gov - Honeywell - 01.webp"
+      },
+      "alt": "Immersive metrology workcell with the simulated Navigator One measurement system."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Gov - Honeywell/Gov - Honeywell - 02.webp"
+      },
+      "alt": "Virtual measurement setup and controller interaction inside the manufacturing training environment."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Gov - Honeywell/Gov - Honeywell -03.webp"
+      },
+      "alt": "Workstation view used to support equipment setup and technical workflow practice."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Gov - Honeywell/Gov - Honeywell - 04.webp"
+      },
+      "alt": "Hands-on measurement task guided inside the simulated workcell."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Gov - Honeywell/Gov - Honeywell -05.webp"
+      },
+      "alt": "Interactive tool-selection step in the advanced manufacturing training scenario."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Com - LCVC/Com - LCVC - 01.webp"
+      },
+      "alt": "Captured interior of a Downtown Lafayette entertainment destination within the interactive tour."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Com - LCVC/Com - LCVC - 02.webp"
+      },
+      "alt": "Interactive venue view with bowling and event-space features."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Com - LCVC/Com - LCVC - 03.webp"
+      },
+      "alt": "Wide spatial view showing the destination's entertainment and gathering areas."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Com - LCVC/Com - LCVC - 04.webp"
+      },
+      "alt": "Front-counter and retail-area capture included in the Downtown Lafayette experience."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Com - GFC/Com - GFC - 01.webp"
+      },
+      "alt": "Aerial 3D view of Iberia Parish with a location menu linking community sites and data layers."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Com - GFC/Com - GFC - 02.webp"
+      },
+      "alt": "Community-scale aerial context for exploring the parish and surrounding built environment."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Com - GFC/Com - GFC - 03.webp"
+      },
+      "alt": "Environmental data visualization layer showing modeled surface-temperature conditions."
+    },
+    {
+      "_type": "image",
+      "source": {
+        "kind": "path",
+        "value": "assets/Com - GFC/Com - GFC - 04.webp"
+      },
+      "alt": "Aerial view of industrial and transportation infrastructure included in the parish digital twin."
     },
     {
       "_type": "model",

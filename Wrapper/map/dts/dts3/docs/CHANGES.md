@@ -2,6 +2,142 @@
 
 Newest first.
 
+## Content: portfolio replaced — 17 projects across 4 sectors become 8
+
+The whole public portfolio was replaced from four content-submission documents
+(`docs/New_Category_Content_Form_{Education,Industry,Government,Community}.docx`,
+dated 2026-09-06). The site now carries **4 categories, 8 projects, exactly 2
+per category**, all real named engagements rather than generic sub-vertical
+narratives:
+
+| Category | Projects |
+|---|---|
+| Education | BRCC Film Production Orientation (`brcc`) · Louisiana Solar Energy Lab Digital Twin (`solar`) |
+| Industry | Shell — Permian Basin Assessment Training (`shell`) · Automotive Dealership Digital Twin (`automotive`) |
+| Government | Sanitarian Training Enhancement (`foodsafety`) · Advanced Manufacturing Training Demo (`honeywell`) |
+| Community | Downtown Lafayette (`lafayette`) · Iberia Parish Clean Energy Hub Digital Twin (`gfc`) |
+
+14 project documents were deleted (`campus`, `workforce`, `healthcare`,
+`workplace`, `energy`, `healthfac`, `properties`, `municipal`, `civic`,
+`emergency`, `economic`, `nonprofit`, `sustain`, `heritage`); three ids were
+kept and rewritten in place; five are new.
+
+**No schema change was needed.** Every field in the four documents already had
+a home — the three-places rule is satisfied vacuously, so `buildConfig()` in
+`js/content-loader.js` and the Admin Board editors are untouched. Verified by
+running the real `content-loader.js` against the new `/data`: 4 categories, 8
+examples, every experience converted, `cfg.gisMaps`/`gisTours`/`gisFeatureTours`
+still 1/14/13.
+
+### The GIS map was preserved by keeping the `gfc` id
+
+The Community document asks for the existing GFC GIS map, "the same map exactly
+with same functionalities." Tracing it showed the GIS subsystem has **zero
+coupling to any project**: `mountGis()` keys on `target.mapId`, tours match on
+`ft.mapId === mapDoc.id`, and the resolver reads `gis/maps/<mapId>.json`. Not
+one reference to `gfc` exists in `js/gis/*`, `data/gis/**`, `vendor/leaflet/`,
+`css/15-gis.css`, or any GIS Function route.
+
+So the map moved by rewriting `data/projects/gfc.json` in place — new Iberia
+Parish content, `sectorId` `government` → `community` — carrying its GIS
+experience node across unchanged (`id: "map"`, `mapId: "iberia-coastal"`,
+`tourId: "iberia-coastal-intro"`, `access: "registered"`; only the display
+label changed to "GIS Map"). Keeping the id is what preserves the published
+`project.gfc:map` resource_key, which `scripts/seed-dev.mjs` grants a real
+entitlement on. Nothing in the GIS subsystem was edited.
+
+`automotive` and `foodsafety` were kept for the same reason — their new content
+reuses the exact Treedis tour and Vimeo videos those ids already publish.
+
+### Three things this exposed that were already broken or would have broken
+
+- **`scripts/backfill-access.mjs` would have silently gated all 8 public
+  videos.** It set `access = "registered"` on every experience
+  *unconditionally* — correct exactly once, as a Phase 3 one-shot when no node
+  carried the field. Now every project marks its showcase video `"public"`
+  deliberately. Changed to fill in a **missing** level only, never overwrite an
+  authored one. A backfill that clobbers editorial decisions is a downgrade,
+  not a migration. Dry run is now a clean no-op.
+- **`stripConfigJs()` in `scripts/split-content.mjs` only understood the legacy
+  `media` shape.** With every project on `experiences[]`, `rawDoc.media` was
+  always undefined, every lookup fell through to the `registered` default, and
+  the strip became unconditional — safe, but it would have emptied the fallback
+  of the public videos it exists to serve. It now resolves an `experiences[]`
+  node by its authored `id` (the same identity convention the resource resolver
+  uses) and falls back to `media`.
+- **The desktop "VIEW {SECTOR} PROJECTS" mosaic only ever worked for exactly
+  four cards.** `css/11-desktop.css` pins `.project-card:nth-child(1..4)` to
+  four named grid areas — with two cards, half the mosaic was empty; with the
+  five-card government sector it had *already* been dropping a card outside the
+  grid. Both the projects sheet and the category card grid now publish a
+  `data-count` attribute (the pattern `buildExampleGallery()` already used) and
+  the CSS lays out 1–4 cards properly.
+
+Also fixed: the projects sheet printed a hardcoded "Matterport Pro2 / Treedis"
+chip pair on every card, ignoring the project's real `capturedWith`/`platform`.
+Actively wrong for the new Unity-VR and interactive-3D projects; it now reads
+the real fields, as the example window already did.
+
+### `js/config.js` rebuilt with public URLs only
+
+The `/data`-unreachable fallback now mirrors the 4 sectors and 8 projects but
+carries **only each project's public Vimeo showcase** — no Treedis `tourUrl`
+anywhere. This closes the gap recorded in WEBSITE-STATE §9 (config.js has no
+`access` field and its strip was access-blind): there is no longer anything
+gated in the file for a stripper to miss. `grep -c spaces.dtsxr.com js/config.js`
+→ 2 (the public homepage tour's URL and origin), `my.treedis.com` → 0.
+
+It also gained `experiences[]` arrays alongside the legacy `media` alias,
+matching what `buildConfig()` produces — so in fallback mode the public videos
+actually play instead of falling through to the shared showcase iframe.
+
+### Content decisions worth recording
+
+- **Evidence fields the documents marked "N/A" are authored as `—`**, the
+  existing convention `buildExampleEvidence()` renders as "No {label} published
+  for this project yet."
+- **Shell and Honeywell each supply 5 gallery images; the renderer shows 4**
+  (`buildExampleGallery()`'s `.slice(0, 4)`). All five are authored in `/data`
+  so an editor can reorder them in the Admin Board; the fifth is currently not
+  displayed. Deliberate, at the owner's call.
+- **Downtown Lafayette's Treedis URL is the document's `my.treedis.com` one,
+  verbatim**, including its `?s=` share token and `x`/`y` opening pose, at the
+  owner's call. The site's other tours use the `spaces.dtsxr.com` white-label
+  host; the same tour id (`4fb22059`) resolves on both. If the share token
+  expires, that is the thing to check first.
+- **The document gives the same title to Lafayette's video and its tour.** The
+  video is labelled "Watch Downtown Lafayette" and the tour "Explore Downtown
+  Lafayette" so the two stage tabs are distinguishable.
+- **Image paths were used exactly as supplied**, only dropping the documents'
+  leading `/` to match the site's `kind: "path"` convention. The odd filenames
+  (`Edu - BRCC -04.webp`, `Gov - Honeywell -03.webp`, the folder
+  `assets/Edu- Sola/`) match the filesystem and were deliberately not renamed.
+  All 33 verified present, case-exact.
+- **`assets/portfolio/*.jpg` (6 files) were left on disk** but every reference
+  to them is gone from `/data`, `js/config.js`, and `data/media/library.json`.
+  Deleting the binaries is a separate call.
+- The FAQ answer and fun facts still cite the SCSU virtual campus twin, whose
+  project document is gone. Left alone — rewriting marketing copy was outside
+  this migration's scope. Worth a follow-up.
+
+### Verified
+
+All 6 automated test files pass, before and after (baseline was clean, so no
+pre-existing failures to separate out). F-01 now inspects 8 documents: 0 gated
+links leaking, 1 public link keeping its url. Its deployed-mode assertion was
+retargeted from `project.campus:link-1` (a deleted project, which would 404 —
+not the same claim as "the gate refused me") to `project.gfc:tour`.
+
+Structural assertions confirm 8 projects, 4 sectors, 2 cards each, every card
+resolving to a project whose `sectorId` agrees, no orphans, all 33 images
+resolving case-exact, and the GIS node intact. `split-content.mjs` stages
+cleanly: the gated Treedis tours and the GIS map's `mapId`/`tourId` are stripped
+from `data/current/`, the map reduced to its 4-field stub, and all 8 public
+videos survive.
+
+Not yet confirmed live in a browser — `docs/migration/FULL-SYSTEM-TESTING.md`
+Part N is the manual pass.
+
 ## Fix: GIS map resolver hit the Workers connection limit (live outage)
 
 `gismap.iberia-coastal` — the only GIS map, reached from the GFC project —

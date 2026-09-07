@@ -5,34 +5,25 @@
   "order": 4,
   "label": "Community",
   "navSub": "Community",
-  "blurb": "Community represents the lived outcomes of those systems.",
+  "blurb": "Spatial experiences that connect people to local places, culture, public data, and future resilience.",
   "active": true,
   "accent": "#D27049",
   "kicker": "COMMUNITY",
-  "title": "Civic & Social",
-  "sub": "Digital Twin of your community",
-  "body": "Where all systems converge into human flourishing. The community twin accumulates — each project adds to a growing spatial record, building by building, until the community itself is spatially documented and interconnected.",
+  "title": "Make the community itself the interface.",
+  "sub": "Digital twins help people explore destinations, understand local systems, and engage with the places they share.",
+  "body": "Community-scale digital twins can connect real places with stories, destinations, infrastructure, and data in one spatial experience. For tourism, that can mean turning local businesses and culture into an explorable destination; for resilience and planning, it can mean making environmental and infrastructure context easier to see. The common goal is to keep the experience grounded in place and accessible across the devices people already use.",
   "cards": [
     {
-      "projectId": "economic",
-      "title": "Economic Development",
-      "text": "Downtown BIDs, chambers, EDCs, commercial corridors."
+      "projectId": "lafayette",
+      "title": "Downtown Lafayette",
+      "short": "Downtown Lafayette",
+      "text": "A living destination experience linking Lafayette's urban core, businesses, culture, and stories in one interactive tour that can be explored across web and immersive devices."
     },
     {
-      "projectId": "nonprofit",
-      "title": "Nonprofit & Social Impact",
-      "text": "NGOs, foundations, DIG, faith communities, social services."
-    },
-    {
-      "projectId": "sustain",
-      "title": "Sustainability & Environment",
-      "short": "Sustainability",
-      "text": "Green infrastructure, ESG twins, environmental monitoring."
-    },
-    {
-      "projectId": "heritage",
-      "title": "Cultural & Heritage",
-      "text": "Historic preservation, Section 106, museums, heritage tourism."
+      "projectId": "gfc",
+      "title": "Iberia Parish Clean Energy Hub Digital Twin",
+      "short": "Iberia Parish",
+      "text": "A community-scale Iberia Parish digital twin that combines aerial context, local places, environmental data, infrastructure, and clean-energy resilience storytelling in an explorable spatial experience."
     }
   ]
 }

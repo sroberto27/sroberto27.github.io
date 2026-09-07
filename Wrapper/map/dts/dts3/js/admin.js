@@ -3398,7 +3398,7 @@
         });
         alert("Zip library unavailable — files downloaded individually" +
           (layerFiles.length ? (", including " + layerFiles.length + " harvested GIS layer file(s)") : "") +
-          ". Filenames use \u201c__\u201d for folders (projects__campus.json → data/projects/campus.json).");
+          ". Filenames use \u201c__\u201d for folders (projects__brcc.json → data/projects/brcc.json).");
       });
     }).catch(function (err) {
       // Fail loudly (06-SPEC §8): never ship a data/ folder silently missing a layer snapshot.

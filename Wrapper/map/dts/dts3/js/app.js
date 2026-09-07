@@ -333,7 +333,7 @@
      has to describe the project's real home so that reloading or
      sharing it rebuilds the correct backdrop underneath. Using
      state.category here would emit URLs like
-     ?category=education&project=civic for a government project. */
+     ?category=education&project=foodsafety for a government project. */
   function currentURLParams() {
     const params = new URLSearchParams();
 
@@ -538,6 +538,12 @@
     // use-case cards — clicking one opens that sub-vertical's example window.
     const grid = $("#catCards");
     grid.innerHTML = "";
+    /* The real card count drives the layout, the same way
+       buildExampleGallery() drives .example-media-grid. The grid is a fixed
+       two columns with grid-auto-rows:1fr, so a sector with only two cards
+       would otherwise stretch both to the full height of the cards area.
+       css/03-category.css reads this attribute. */
+    grid.dataset.count = String(c.cards.length);
     c.cards.forEach((card) => {
       const el = document.createElement("div");
       el.className = "uc-card";
@@ -1517,8 +1523,10 @@
     links.forEach((lk) => {
       // A link with its url already present is public (never stripped) —
       // a plain <a>, exactly as before. One WITHOUT a url was stripped
-      // because it's gated (automotive/campus's treedis links are the
-      // real case today) — render a locked tile that resolves-then-opens
+      // because it's gated (no project ships a gated link today — every
+      // links[] entry in /data is an explicitly public Vimeo — but the
+      // Admin Board can author one at any time, and an experience node
+      // takes the same path) — render a locked tile that resolves-then-opens
       // on click instead of a raw href a guest could just read out of
       // the page source.
       if (lk.url) {
@@ -2720,12 +2728,22 @@
 
     const list = $("#projectsList");
     list.innerHTML = "";
+    /* The desktop mosaic in css/11-desktop.css pins .project-card:nth-child(1..4)
+       to four named grid areas, so it only ever laid out correctly for a
+       four-card sector. Publish the real count and let the CSS pick a layout
+       that matches it. */
+    list.dataset.count = String(c.cards.length);
     c.cards.forEach((card) => {
       const ex = (cfg.examples || {})[card.id];
       const proj = ex && ex.project;
       const el = document.createElement("button");
       el.type = "button";
       el.className = "project-card";
+      /* Capture method and platform are per-project CMS content — the
+         example window has always read them (see openExample's #exCapture /
+         #exPlatform). This sheet used to print a hardcoded "Matterport Pro2 /
+         Treedis" pair on every card, which is simply wrong for a Unity VR or
+         interactive-3D project. Same fallbacks openExample() uses. */
       el.innerHTML =
         '<span class="project-card-media">' +
           '<span class="project-card-name">' +
@@ -2734,9 +2752,9 @@
         '</span>' +
         '<span class="project-card-chips">' +
           '<span class="project-chip-label">Captured with:</span>' +
-          '<span class="project-chip">Matterport Pro2</span>' +
+          '<span class="project-chip">' + escapeHTML((ex && ex.capturedWith) || "Matterport Pro3") + '</span>' +
           '<span class="project-chip-label">Platform:</span>' +
-          '<span class="project-chip">Treedis</span>' +
+          '<span class="project-chip">' + escapeHTML((ex && ex.platform) || "Treedis") + '</span>' +
         '</span>';
       el.addEventListener("click", () => {
         closeProjects();

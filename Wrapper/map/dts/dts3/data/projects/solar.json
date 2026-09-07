@@ -1,0 +1,72 @@
+{
+  "_id": "project.solar",
+  "_type": "project",
+  "id": "solar",
+  "sectorId": "education",
+  "title": "Louisiana Solar Energy Lab Digital Twin",
+  "tagline": "Make a large-scale solar research facility explorable for learning, workforce development, and technical visualization.",
+  "overview": "Digital Twin Studios is developing an immersive digital twin of the University of Louisiana at Lafayette's Louisiana Solar Energy Lab. The experience pairs spatial capture of the photovoltaic research site with an explorable Treedis environment and aerial flyover media.",
+  "project": {
+    "name": "University of Louisiana at Lafayette - Louisiana Solar Energy Lab",
+    "kind": "Immersive digital twin development",
+    "illustrative": false,
+    "blurb": "The Louisiana Solar Energy Lab digital twin gives learners, researchers, industry stakeholders, and workforce audiences a remote way to understand the scale and layout of a real photovoltaic testing facility. The supplied media includes a ground-level spatial tour, a dollhouse-style 3D view, and field imagery showing solar arrays and research equipment, while a separate flyover provides broader site context. The project extends the physical lab into a reusable visualization and learning environment that can support education, workforce development, and future simulation content."
+  },
+  "capturedWith": "3D/360 spatial capture of the solar site plus aerial/flyover video / Eon Reality.",
+  "platform": "Treedis; Vimeo",
+  "experiences": [
+    {
+      "_type": "video",
+      "id": "video",
+      "provider": "vimeo",
+      "label": "UL Lafayette Solar Energy Lab",
+      "embed": { "kind": "url", "value": "https://player.vimeo.com/video/1058364652?h=f98b84dae1" },
+      "watch": { "kind": "url", "value": "https://vimeo.com/1058364652/f98b84dae1" },
+      "default": true,
+      "access": "public"
+    },
+    {
+      "_type": "treedis",
+      "id": "tour",
+      "label": "Enter the Solar Farm Digital Twin",
+      "tourUrl": "https://spaces.dtsxr.com/tour/ea18f14b",
+      "origin": "https://spaces.dtsxr.com",
+      "sweepId": null,
+      "access": "registered"
+    }
+  ],
+  "links": [
+    {
+      "_type": "link",
+      "label": "Watch the Solar Energy Lab Flyover",
+      "url": "https://vimeo.com/1058364652/f98b84dae1",
+      "kind": "vimeo",
+      "access": "public"
+    }
+  ],
+  "gallery": [
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Edu- Sola/Edu - Sola - 01.webp" },
+      "alt": "Ground-level virtual tour view among photovoltaic arrays at the solar research site."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Edu- Sola/Edu - Sola - 02.webp" },
+      "alt": "Dollhouse-style 3D spatial view of the captured solar facility."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Edu- Sola/Edu - Sola - 03.webp" },
+      "alt": "Captured solar arrays and field equipment used for research, testing, and training."
+    }
+  ],
+  "sweepId": null,
+  "evidence": {
+    "Case Studies": "DTS project experience describes immersive digital twin development for UL Lafayette's Louisiana Solar Energy Lab for education, workforce development, and lab simulation.",
+    "Awards": "—",
+    "Client Feedback": "—",
+    "Press & Research": "In April 2025, UL Lafayette was designated the U.S. Department of Energy's sixth Regional Test Center for Emerging Solar Technologies, overseen by Sandia National Laboratories.",
+    "Project Data": "The Louisiana Solar Energy Lab includes a 6-acre, 4,200-panel solar field and a 4,500-square-foot Antoun Hall research hub; supplied project media includes a public Treedis tour and Vimeo flyover."
+  }
+}

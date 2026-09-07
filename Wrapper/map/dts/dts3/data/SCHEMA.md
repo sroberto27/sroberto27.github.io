@@ -67,15 +67,15 @@ A related-content chip. `kind` is derived from the URL and drives the icon/behav
 `kicker`, `headline`, `headlineAccent`, `body`, `footnote`, `ctas[]` (id, stage, label, primary, `formId` → a `leadForm` `_id`).
 
 ### `sector` — `sectors/*.json`
-`id`, `order`, `label`, `navSub`, `blurb`, `active`, `accent` (hex color), `kicker`, `title`, `sub`, `body`, `cards[]` (`projectId` → a `project` id, title, optional short, text). The four cards are what render in the sector slider; `projectId` links each card to its example window.
+`id`, `order`, `label`, `navSub`, `blurb`, `active`, `accent` (hex color), `kicker`, `title`, `sub`, `body`, `cards[]` (`projectId` → a `project` id, title, optional short, text). The cards are what render in the sector slider; `projectId` links each card to its example window. Every sector ships **two** cards since the September 2026 content migration — the count is not fixed in the schema, but `js/app.js` publishes it as `data-count` on `#catCards` and `#projectsList` and the CSS lays out 1–4 accordingly, so a sector with more than four cards has no desktop mosaic layout.
 
-### `project` — `projects/*.json` (16 documents)
-The example window for one sub-vertical.
+### `project` — `projects/*.json` (8 documents)
+The example window for one project.
 - `id`, `sectorId` (→ a `sector` id), `title`, `tagline`, `overview`
 - `project`: featured project (name, kind, illustrative:boolean — true flags a placeholder to swap later, blurb)
 - `capturedWith`, `platform`
-- `media` *(optional)*: `treedis` **or** `video` — omit to reuse the shared showcase iframe
-- `links[]`: link chips
+- `experiences[]`: the stage tabs — one or more of `treedis` / `video` / `gis`, each with its own `id`, `label`, `access`, and exactly one carrying `default: true`. The `id` is the second half of the `resource_key` (`project.<id>:<expId>`), so **never rename a published one**. A single legacy `media` object (`treedis` **or** `video`, no array) is still read and still renders — `content-loader.js`'s `projectExperiences()` normalises it — but no document uses that shape any more.
+- `links[]`: link chips. A link with no explicit `access` resolves to `registered` and its `url` is withheld from `data/current/`, so a link meant to be publicly clickable must say `"access": "public"`.
 - `gallery[]`: images
 - `sweepId`: optional sweep for the shared-showcase fallback
 - `evidence`: object keyed by the labels in `siteSettings.evidenceFilterLabels` ("Case Studies", "Awards", "Client Feedback", "Press & Research", "Project Data")

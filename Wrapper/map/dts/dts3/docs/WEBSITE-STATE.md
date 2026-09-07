@@ -1,9 +1,11 @@
 # DTS Website — State of Knowledge
 
 **Last updated: 2026-08-10, with a 2026-09-05 addition (§9, §10) covering a
-memory/network performance audit and fix pass, and a 2026-09-06 addition (§4,
-§9) covering the first `security-audit` run (`app` scope) — the rest of this
-document was not otherwise re-verified on either date.** Written to be read
+memory/network performance audit and fix pass, a 2026-09-06 addition (§4,
+§9) covering the first `security-audit` run (`app` scope), and a 2026-09-07
+addition (§1, §4, §5.5, §9) covering the portfolio content migration from 17
+projects to 8 — the rest of this document was not otherwise re-verified on any
+of those dates.** Written to be read
 cold. If you are
 a new session or a new developer, read this before `docs/migration/PROGRESS.md`
 (2,800+ lines of session log) or before reading source files from scratch.
@@ -29,8 +31,9 @@ single-page, app-shell experience — fixed viewport, no long scroll — with:
 
 - a home view with a hex-image cluster and a live embedded Treedis digital-twin
   tour ("Try a Digital Twin");
-- four sector views (Education / Industry / Government / Community) with card
-  sliders into 17 project documents;
+- four sector views (Education / Industry / Government / Community), each with
+  **exactly two cards**, into **8 project documents** (see §4's inventory —
+  replaced wholesale on 2026-09-07 from four client content-submission forms);
 - per-project "example windows" containing one or more **experiences** (Treedis
   tour, Vimeo video, or an interactive GIS map);
 - lead-capture forms (discovery / proposal / pilot);
@@ -273,11 +276,34 @@ the unstripped repo copy shipped.)
 
 ### Current content inventory
 
-61 documents in `data/manifest.json`: 2 site, 2 pages, 4 sectors, 17 projects,
-3 forms, 2 faq, 1 access, 1 media, and 29 GIS (1 map + 14 tours + 13 feature
-tours + 1 sources doc). Plus 6 local `.geojson` layer files under
-`data/gis/layers/` that are **not** manifest documents and are fetched directly
-by the GIS engine.
+**52 documents** in `data/manifest.json` (was 61 before the 2026-09-07 content
+migration): 2 site, 2 pages, 4 sectors, **8 projects**, 3 forms, 2 faq, 1
+access, 1 media, and 29 GIS (1 map + 14 tours + 13 feature tours + 1 sources
+doc). Plus 6 local `.geojson` layer files under `data/gis/layers/` that are
+**not** manifest documents and are fetched directly by the GIS engine.
+
+The portfolio — 4 categories, 8 projects, **exactly 2 per category**:
+
+| Category | Projects (`id`) |
+|---|---|
+| Education | BRCC Film Production Orientation (`brcc`) · Louisiana Solar Energy Lab Digital Twin (`solar`) |
+| Industry | Shell — Permian Basin Assessment Training (`shell`) · Automotive Dealership Digital Twin (`automotive`) |
+| Government | Sanitarian Training Enhancement (`foodsafety`) · Advanced Manufacturing Training Demo (`honeywell`) |
+| Community | Downtown Lafayette (`lafayette`) · Iberia Parish Clean Energy Hub Digital Twin (`gfc`) |
+
+Every project now carries an `experiences[]` array (before the migration only
+`gfc` did; the other 16 used a single legacy `media` object). Each has a
+`public` Vimeo showcase as its default tab; four also carry a `registered`
+Treedis tour, and `gfc` additionally carries the GIS map. The legacy `media`
+shape is still read by `content-loader.js` and the resolver, but no document
+uses it — worth knowing before assuming a code path is dead.
+
+Three ids were deliberately kept rather than renamed, because their
+`resource_key`s are published: **`gfc`** (carries the GIS map and the
+`project.gfc:map` entitlement `scripts/seed-dev.mjs` seeds), **`automotive`**
+and **`foodsafety`** (their new content reuses the exact tour/videos those ids
+already publish). Their `sectorId` and content changed; their ids did not. `gfc`
+moved from `government` to `community`.
 
 ---
 
@@ -363,6 +389,24 @@ to `gis-viewer.js`, since its `fetch(def.url)` simply receives a different URL.
 
 Today there is exactly one map: `iberia-coastal` (17 layers, `registered`
 level), referenced by `project.gfc`, with 14 tours and 13 feature tours.
+
+**The GIS subsystem is coupled to no project.** `mountGis()` keys on
+`target.mapId`, tours and feature tours match on `mapId === mapDoc.id`, and the
+resolver reads `gis/maps/<mapId>.json` — grep `js/gis/*`, `data/gis/**`,
+`vendor/leaflet/`, `css/15-gis.css` and the GIS Function routes and you will not
+find the string `gfc` in any of them. A project reaches the map through exactly
+one thing: a `{_type:"gis", id, mapId, tourId, access}` node in its
+`experiences[]`. That is why the 2026-09-07 content migration could re-home the
+map onto an entirely new project (Iberia Parish Clean Energy Hub) by rewriting
+`data/projects/gfc.json` in place and carrying that one node across untouched.
+Keeping the `gfc` **id** is what kept `project.gfc:map` valid; a rename would
+have orphaned the seeded entitlement row that references it as plain text.
+
+Note the two-step resolve for a gated map, because the first step is easy to
+miss: `stripTarget()` removes `mapId`/`tourId` from the published experience
+node, so the client must first resolve `project.<id>:map` to learn *which* map
+to ask for, then resolve `gismap.<mapId>` for the map itself. Both keys are
+live at runtime.
 
 ### 5.6 Analytics and audit
 
@@ -589,10 +633,15 @@ Everything below is **documented, not fixed**. None of it is a surprise.
   Workers-runtime-only API, so `upload-content.mjs`/`rollback-content.mjs` can
   serve a stale cached response for up to the 5-minute edge TTL. Not observed in
   practice.
-- **`js/config.js` has no `access` field and its strip is access-blind.** In the
-  degraded `/data`-unreachable fallback, the 9 now-`public` Vimeo videos would
-  incorrectly appear gated. Stricter than reality, which is the safe direction,
-  but still wrong.
+- ~~**`js/config.js` has no `access` field and its strip is access-blind.**~~
+  **RESOLVED 2026-09-07** by the content migration. `js/config.js` was rebuilt
+  carrying **only** each project's public Vimeo showcase — no Treedis `tourUrl`
+  anywhere in the file — so there is nothing gated left for the strip to get
+  wrong. `grep -c spaces.dtsxr.com js/config.js` → **2** (the public homepage
+  tour's `tourUrl` and `origin`), `my.treedis.com` → **0**. It also gained
+  `experiences[]` arrays alongside the legacy `media` alias, matching
+  `buildConfig()`'s output, so the fallback actually plays those videos instead
+  of falling through to the shared showcase iframe.
 - **Link identity is positional.** `link-<n>` is frozen at backfill time, so
   removing an earlier link shifts the meaning of every later link's
   `resource_key`. Flagged inline in the editor's own hint. Pre-existing.

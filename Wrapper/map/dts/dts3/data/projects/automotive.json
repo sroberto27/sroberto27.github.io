@@ -3,62 +3,67 @@
   "_type": "project",
   "id": "automotive",
   "sectorId": "industry",
-  "title": "Automotive & Transportation",
-  "tagline": "Showrooms, vehicle twins, EV facilities, franchise audits.",
-  "overview": "Showroom and vehicle twins that plug straight into the sales process — letting buyers explore inventory and configurations spatially, anchored by the BMW Lafayette proof point.",
+  "title": "Automotive Dealership Digital Twin",
+  "tagline": "Extend a physical dealership and its vehicles into a browsable, product-focused digital experience.",
+  "overview": "This automotive demonstration combines a spatially explorable dealership/vehicle environment with detailed vehicle views and 3D presentation. Visitors can move through the space, inspect exteriors and interiors, and access contextual controls or information remotely.",
   "project": {
-    "name": "BMW Lafayette — Dealership & Vehicle Twins",
-    "kind": "Live Treedis experiences",
+    "name": "BMW dealership",
+    "kind": "Public demonstration capability",
     "illustrative": false,
-    "blurb": "A showroom twin plus vehicle-level captures of the BMW X1, X5, and X7: buyers walk the dealership floor and step inside individual vehicles remotely, turning the twin into a direct extension of the sales process. A Range Rover Sport SVR capture extends the same approach."
+    "blurb": "The automotive demo shows how a digital twin can connect place and product in one remote experience. Supplied imagery includes a virtual showroom with 3D vehicle models, spatial capture of a BMW SUV, detailed cockpit and dashboard views, and an exterior vehicle view with embedded navigation and information controls. The approved Treedis tour and Vimeo video demonstrate a reusable pattern for remote dealership exploration, orientation, product presentation, and training without asserting a commissioning relationship that is not identified in the supplied materials."
   },
-  "capturedWith": "Matterport Pro3",
-  "platform": "Treedis",
-  "media": {
-    "_type": "treedis",
-    "label": "Walk the Dealership",
-    "tourUrl": "https://spaces.dtsxr.com/tour/fee23e79",
-    "origin": "https://spaces.dtsxr.com",
-    "sweepId": null,
-    "access": "registered"
-  },
-  "links": [
+  "capturedWith": "360-degree spatial capture of dealership/vehicle environments plus detailed 3D vehicle visualization.",
+  "platform": "Treedis; Vimeo",
+  "experiences": [
     {
-      "_type": "link",
-      "label": "BMW X1 vehicle twin",
-      "url": "https://spaces.dtsxr.com/tour/026593c5",
-      "kind": "treedis",
-      "access": "registered"
-    },
-    {
-      "_type": "link",
-      "label": "BMW X5 vehicle twin",
-      "url": "https://spaces.dtsxr.com/tour/352ad07a",
-      "kind": "treedis",
-      "access": "registered"
-    },
-    {
-      "_type": "link",
-      "label": "BMW X7 vehicle twin",
-      "url": "https://spaces.dtsxr.com/tour/bfab6d52",
-      "kind": "treedis",
-      "access": "registered"
-    },
-    {
-      "_type": "link",
-      "label": "Watch the BMW dealership video",
-      "url": "https://vimeo.com/1187103853",
-      "kind": "vimeo",
+      "_type": "video",
+      "id": "video",
+      "provider": "vimeo",
+      "label": "BMW Dealership",
+      "embed": { "kind": "url", "value": "https://player.vimeo.com/video/1187103853" },
+      "watch": { "kind": "url", "value": "https://vimeo.com/1187103853" },
+      "default": true,
       "access": "public"
+    },
+    {
+      "_type": "treedis",
+      "id": "tour",
+      "label": "Enter the Dealership Digital Twin",
+      "tourUrl": "https://spaces.dtsxr.com/tour/fee23e79",
+      "origin": "https://spaces.dtsxr.com",
+      "sweepId": null,
+      "access": "registered"
     }
   ],
+  "links": [],
+  "gallery": [
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Ind - Auto/Ind - Auto - 01.webp" },
+      "alt": "Virtual showroom scene with detailed 3D vehicle models."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Ind - Auto/Ind - Auto - 02.webp" },
+      "alt": "Spatial capture of a BMW SUV in the dealership/parking environment."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Ind - Auto/Ind - Auto - 03.webp" },
+      "alt": "Interactive interior view highlighting the vehicle cockpit and dashboard."
+    },
+    {
+      "_type": "image",
+      "source": { "kind": "path", "value": "assets/Ind - Auto/Ind - Auto - 04.webp" },
+      "alt": "Exterior vehicle view with embedded navigation and information controls."
+    }
+  ],
+  "sweepId": null,
   "evidence": {
-    "Case Studies": "BMW Lafayette — dealership twin plus X1 / X5 / X7 vehicle twins used as an automotive-retail proof point.",
+    "Case Studies": "Interactive automotive demonstration combining an explorable spatial environment with detailed vehicle visualization.",
     "Awards": "—",
-    "Client Feedback": "“Buyers walk the floor before they ever visit.”",
-    "Press & Research": "Automotive is one of four dominant commercial twin verticals through 2030.",
-    "Project Data": "Showroom + per-vehicle capture · Published on Treedis · Tied to the sales funnel."
-  },
-  "gallery": [],
-  "sweepId": null
+    "Client Feedback": "—",
+    "Press & Research": "—",
+    "Project Data": "The supplied inventory includes an approved public Treedis dealership tour and an approved public Vimeo video titled \"BMW Dealership.\" The supplied materials do not identify a commissioning client."
+  }
 }

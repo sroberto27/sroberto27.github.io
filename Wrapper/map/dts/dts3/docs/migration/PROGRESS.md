@@ -22,6 +22,78 @@ identity/access model each phase from 3 onward implements is defined in
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
 
+- 2026-09-07 — **Portfolio content migration: 17 projects → 8.** Replaced the
+  entire public portfolio from four client content-submission forms
+  (`docs/New_Category_Content_Form_*.docx`). Final shape: 4 categories, 8
+  projects, exactly 2 per category. Deleted 14 project documents, rewrote 3 in
+  place (`gfc`, `automotive`, `foodsafety` — ids kept because their
+  `resource_key`s are published), created 5 (`brcc`, `solar`, `shell`,
+  `honeywell`, `lafayette`). All four sector documents got new copy and new
+  cards; their `id`/`order`/`accent`/`navSub`/`kicker` are unchanged, and the
+  forms' nav sub-labels happened to match the existing ones exactly.
+
+  **No schema change was required** — every field in the forms already had a
+  home, so the three-places rule was satisfied vacuously and `buildConfig()`
+  was not touched. Confirmed by running the real `js/content-loader.js` in a
+  sandbox against the new `/data`: 4 categories, 8 examples, every experience
+  converted to the right type, `cfg.gisMaps`/`gisTours`/`gisFeatureTours` still
+  1/14/13.
+
+  **The GIS map was preserved by keeping the `gfc` id, not by moving code.**
+  Tracing showed the GIS subsystem is coupled to no project at all — it keys on
+  `mapId` throughout, and the string `gfc` appears nowhere in `js/gis/*`,
+  `data/gis/**`, `vendor/leaflet/`, `css/15-gis.css`, or any GIS Function
+  route. A project reaches the map through exactly one `{_type:"gis", …}` node
+  in its `experiences[]`. So `data/projects/gfc.json` was rewritten in place
+  with the Iberia Parish content, `sectorId` moved `government` → `community`,
+  and that node carried across unchanged (only its display label changed).
+  `project.gfc:map` and `project.gfc:tour` survive intact, which is what keeps
+  `scripts/seed-dev.mjs:117`'s seeded entitlement row valid. Zero GIS files
+  edited.
+
+  **Three latent problems surfaced, all fixed:**
+  1. `scripts/backfill-access.mjs` set `access = "registered"` on every
+     experience *unconditionally*. Correct exactly once, as a Phase 3 one-shot
+     when nothing carried the field; now it would have silently gated all 8
+     public showcase videos. Changed to fill in a **missing** level only. Its
+     dry run is now a clean no-op.
+  2. `stripConfigJs()` in `scripts/split-content.mjs` only understood the
+     legacy `media` shape. With every project on `experiences[]`,
+     `rawDoc.media` was always undefined and the strip became unconditional —
+     safe, but it would have emptied the fallback of the very videos it exists
+     to serve. Now resolves an `experiences[]` node by its authored `id`.
+  3. `css/11-desktop.css`'s projects-sheet mosaic pinned
+     `.project-card:nth-child(1..4)` to four named grid areas, so it only ever
+     worked for a 4-card sector — and had *already* been dropping a card for
+     the 5-card government sector. Both that sheet and the category card grid
+     now publish `data-count` (the pattern `buildExampleGallery()` already
+     used) and the CSS handles 1–4.
+
+  Also: `openProjects()` printed hardcoded "Matterport Pro2 / Treedis" chips on
+  every card, ignoring the real `capturedWith`/`platform` — actively wrong for
+  the new Unity-VR and interactive-3D projects, now reads the real fields.
+
+  `js/config.js` rebuilt carrying **public Vimeo showcases only** — no Treedis
+  `tourUrl` anywhere — which resolves the WEBSITE-STATE §9 gap about its
+  access-blind strip. `grep -c spaces.dtsxr.com js/config.js` → 2 (homepage
+  tour only), `my.treedis.com` → 0. It also gained `experiences[]` arrays
+  matching `buildConfig()`'s output, so the fallback actually plays the videos.
+
+  **Tested:** all 6 automated test files pass, before and after — the baseline
+  was clean, so there are no pre-existing failures to separate out. F-01 now
+  inspects 8 documents (0 gated links leaking, 1 public link keeping its url);
+  its deployed-mode assertion was retargeted from `project.campus:link-1` to
+  `project.gfc:tour`, because a deleted project 404s and `expectDenied` would
+  have kept passing for the wrong reason. Structural assertions confirm the
+  counts, the card↔project wiring, no orphans, all 33 images resolving
+  case-exact, and the GIS node intact. All 8 Vimeo URLs verified real and
+  embeddable via Vimeo's oEmbed API; all 4 Treedis URLs return 200.
+  `split-content.mjs` stages cleanly.
+
+  **Not confirmed live in a browser.** `FULL-SYSTEM-TESTING.md` **Part N (tests
+  168–195)** is the manual pass — structure, the two layout fixes, the
+  public/gated split, the GIS map, images, Admin Board, and a regression sweep.
+
 - 2026-09-06 (later, same session) — **Deployed the security fixes, synced R2,
   then found and fixed a live GIS outage.** Deployment `fb6554dd` from `main`;
   `main` and the live site are now identical.

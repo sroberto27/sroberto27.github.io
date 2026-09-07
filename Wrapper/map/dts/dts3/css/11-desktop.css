@@ -452,6 +452,23 @@ img.example-tile-photo{
   .projects-list .project-card:nth-child(2){ grid-area:b; }
   .projects-list .project-card:nth-child(3){ grid-area:c; }
   .projects-list .project-card:nth-child(4){ grid-area:d; }
+  /* The mosaic above only resolves for exactly four cards: with fewer, areas
+     c/d stay empty and the sheet reads as half-built; with more, the extra
+     cards have no area at all. data-count is set by openProjects() in
+     js/app.js from the sector's real card count. Every sector ships two
+     cards today, so this is the live path, not a defensive branch. */
+  .projects-list[data-count="1"],
+  .projects-list[data-count="2"],
+  .projects-list[data-count="3"]{
+    grid-template-areas:none;
+    grid-template-rows:minmax(240px, 1fr);
+  }
+  .projects-list[data-count="1"]{ grid-template-columns:minmax(0, 720px); justify-content:center; }
+  .projects-list[data-count="2"]{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+  .projects-list[data-count="3"]{ grid-template-columns:repeat(3, minmax(0, 1fr)); }
+  .projects-list[data-count="1"] .project-card,
+  .projects-list[data-count="2"] .project-card,
+  .projects-list[data-count="3"] .project-card{ grid-area:auto; }
   .project-card{ background:#4a4a4a; border-radius:18px; min-height:0; }
 }
 
