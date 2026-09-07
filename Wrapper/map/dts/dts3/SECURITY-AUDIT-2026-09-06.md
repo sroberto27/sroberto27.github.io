@@ -1311,8 +1311,8 @@ scripts, not to the project, and is not applied here.
 |---|---|---|---|---|
 | F-C01 | High | deploy (GitHub Pages) | The parallel `sroberto27.github.io` host serves the unstripped repo, bypassing every content access control the migration built | Human action required — deferred to handoff by the owner |
 | F-C02 | **High** (revised from Medium) | Cloudflare Pages retained deployments | 53 deployments, not the 25 first probed. 29 served excluded files, 9 served the unstripped `js/config.js`, and **5 served raw `/data` as static files** — the Critical invariant. 50 deleted | Partially fixed — **deleted, but the hostnames still serve; see Fix record** |
-| F-C03 | Low | `_headers` / Functions | `_headers` does not apply to Pages Functions responses — every `/data` and `/api` response ships with no CSP, HSTS, `nosniff` or `Referrer-Policy` | Fixed, verified — **not deployed** |
-| F-C04 | Low | `_headers` | No `frame-ancestors` and no `X-Frame-Options`; no `form-action` | Fixed, verified — **not deployed** |
+| F-C03 | Low | `_headers` / Functions | `_headers` does not apply to Pages Functions responses — every `/data` and `/api` response ships with no CSP, HSTS, `nosniff` or `Referrer-Policy` | Fixed, verified, **deployed** (`a5e4c407`) |
+| F-C04 | Low | `_headers` | No `frame-ancestors` and no `X-Frame-Options`; no `form-action` | Fixed, verified, **deployed** (`a5e4c407`) |
 | F-C05 | Low | `_headers` | `script-src 'unsafe-inline'` is forced by exactly one inline script that could be hashed instead | Accepted — owner's decision, left as is |
 
 Ranked by real exploitability. F-C01 is first because it is one anonymous
@@ -2065,3 +2065,84 @@ The GitHub Pages host stays up until the Cloudflare version is handed over to
 DTS, at which point the old repo/site is retired. That is a deliberate,
 recorded decision by the owner and the audit is not treating it as an open
 action item. The tour-URL reissue recommendation stands independently of it.
+
+### Deployment — `a5e4c407`, 2026-09-06
+
+F-C03 and F-C04 are now **deployed and confirmed live**, not just committed.
+Built per `docs/migration/DEPLOY-STAGING.md`, every step run rather than
+assumed.
+
+**Pre-deploy (runbook steps 1–2, 5).**
+
+- File lists diffed source vs staged for all six included directories.
+  `css`, `js`, `vendor`, `functions` **identical**. `models` differs only by
+  the two oversized Backrooms `.usdz` files (the intended exclusion).
+  `assets` differs only by a deliberate extra exclusion, below.
+- `functions/data/[[path]].js` confirmed present in staging — the
+  double-bracket catch-all that has silently vanished from a staged build
+  before.
+- All 21 excluded paths confirmed absent from the staged directory.
+- `js/config.js` overlay applied: staged copy greps **2**, not the repo
+  copy's 16.
+
+**One deliberate deviation from the runbook, recorded because it is a
+deviation.** The working tree carries 8 untracked `assets/` folders (39
+`.webp` files plus some stray `.DS_Store`, ~4.5MB) — new sector imagery, not
+referenced by any `/data` document or by `js/config.js`, and not present on
+the live site. The runbook says to include `assets/` wholesale, which predates
+these existing. They were **excluded**, so this deploy corresponds exactly to
+commit `de350360` and ships nothing that no commit records. Nothing references
+them, so nothing breaks; they will ship with whatever commit introduces the
+content that uses them.
+
+**Post-deploy (runbook step 4), against the stable alias.**
+
+- `/` is 64804 bytes. All 16 excluded paths probed — `/.env`,
+  `/.env.example`, `/scripts/seed-dev.mjs`, `/supabase/config.toml`,
+  `/docs/migration/PROGRESS.md`, `/docs/WEBSITE-STATE.md`,
+  `/tools/gis-harvest.mjs`, `/CLAUDE.md`, `/README.md`, `/wrangler.toml`,
+  `/package.json`, `/package-lock.json`, `/tests/security/_harness.mjs`,
+  `/SECURITY-AUDIT-2026-09-06.md`, `/.gitignore`, and a `..` traversal —
+  each returns **exactly** 64804. Byte-compared, not status-compared.
+- `/data/manifest.json` returns 5043 bytes, genuinely different, so the
+  R2-backed Function still owns that route. **The raw-`/data` invariant
+  holds.**
+- Deployed `js/config.js` greps **2**.
+- All **34** manifest-listed documents return 200 — the check that exists
+  because one missing file once took the whole site to the `config.js`
+  fallback.
+- Core assets 200: `js/app.js`, `js/content-loader.js`, `js/supabase-init.js`,
+  `css/01-base.css`, `vendor/leaflet/leaflet.js`.
+- Gated routes still deny anonymous callers: `/api/resource/gismap.iberia-coastal`
+  **401** (not the 500 of the September outage — the resolver is healthy) and
+  `/api/admin/users` 401.
+
+**Both fixes confirmed live.**
+
+- F-C04: the served `/` carries `frame-ancestors 'none'` and
+  `form-action 'self'`, and **no** `wss://` entry — the dead one carrying the
+  dev project ref is gone from the live CSP.
+- F-C03: `/api/admin/users`, `/api/resource/*` and `/api/download/*` each
+  return all four headers (`x-content-type-options`, `referrer-policy`,
+  `content-security-policy: default-src 'none'`, HSTS) alongside their
+  existing `cache-control: no-store`.
+
+**One loose end on `/data/*`, cosmetic but stated honestly.** The plain
+`/data/manifest.json` URL was still answering from cache without the new
+headers for at least the first several minutes after deploy
+(`CF-Cache-Status: HIT`, `Age: 158`). The same document fetched with any fresh
+query string returns all four headers, and so does a `/data` 404 — so the
+deployed code is correct and this is a cache-rollover artifact, not a code
+problem. It resolves itself as entries age out of the route's own
+`caches.default` cache-aside and the CDN copy above it; a `site_admin`
+"Publish to site" also purges it explicitly (`functions/api/publish.js` calls
+`caches.default.delete()` per path). I was not able to fully account for the
+observed `Age` relative to the deploy time, so the honest statement is: the
+code emits the headers, and the cached copies had not all rolled over when I
+stopped checking. Worth one confirming fetch later; nothing is exposed either
+way, since `/data/current` is public content by design.
+
+**Still open, unchanged by this deploy:** the deleted deployment hostnames
+(F-C02) were still serving their old builds at 23:57Z, ~57 minutes after the
+first deletion. That is independent of this deploy and needs the re-check
+already described above.
