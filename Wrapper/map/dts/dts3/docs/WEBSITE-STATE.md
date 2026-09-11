@@ -1,14 +1,16 @@
 # DTS Website — State of Knowledge
 
-**Last updated: 2026-08-10, with a 2026-09-05 addition (§9, §10) covering a
-memory/network performance audit and fix pass, a 2026-09-06 addition (§4,
-§9) covering the first `security-audit` run (`app` scope), and a 2026-09-07
-addition (§1, §4, §5.5, §9) covering the portfolio content migration from 17
-projects to 8 — the rest of this document was not otherwise re-verified on any
-of those dates.** Written to be read
-cold. If you are
-a new session or a new developer, read this before `docs/migration/PROGRESS.md`
-(2,800+ lines of session log) or before reading source files from scratch.
+**Last updated: 2026-09-11.** On that date every section was re-verified against
+the working tree and against the live dev site; §4, §5.2, §5.3, §5.10, §6, §9,
+§10 and §11 were corrected. Written to be read cold. If you are a new session or
+a new developer, read this before `docs/migration/PROGRESS.md` (3,300+ lines of
+session log) or before reading source files from scratch.
+
+**One caveat about the session log.** `PROGRESS.md` has no entry for the
+`supabase`- or `cloudflare`-scope security audits, even though nine commits
+from them sit between its newest entry and `main`. Both sessions wrote to
+`SECURITY-AUDIT-2026-09-06.md` instead. For anything after 2026-09-06, that
+file is the authority and the session log is silent.
 
 This document **synthesizes**. Where an authoritative procedural document
 already exists and was hard-won, this file summarizes the practical points and
@@ -242,9 +244,9 @@ holding on to:
 
 - A link with **no** `access` resolves to `registered` and its URL is withheld
   from `data/current/`. Links that should be publicly visible say so
-  explicitly — 29 Vimeo/Matterport links carry `"access": "public"` for exactly
-  this reason. A newly added link in the Admin Board defaults to "Inherit",
-  which means gated until someone chooses otherwise.
+  explicitly — the portfolio's one remaining link carries `"access": "public"`
+  for exactly this reason. A newly added link in the Admin Board defaults to
+  "Inherit", which means gated until someone chooses otherwise.
 - For links, **the strip is the enforcement.** `js/app.js`'s
   `resolveExperienceNode()` returns early with no network call when a node
   already carries a `url`, and `buildExampleLinks()` renders such a link as a
@@ -309,7 +311,7 @@ moved from `government` to `community`.
 
 ## 5. Subsystems — what each does and where it lives
 
-### 5.1 App shell (`js/app.js`, ~3,400 lines)
+### 5.1 App shell (`js/app.js`, ~3,500 lines)
 
 One state machine. Home and category views swap via JS state, never scroll;
 everything else (example windows, lead forms, sign-in, portal) layers as
@@ -323,22 +325,30 @@ Access-relevant entry points: `resolveExperienceNode()`, `resolveGisMapById()`,
 gating layer sits at the **mount boundary** — `mountTreedis()`/`mountVideo()`/
 `mountGis()` themselves know nothing about access.
 
-### 5.2 Content loader (`js/content-loader.js`, 464 lines)
+### 5.2 Content loader (`js/content-loader.js`, ~515 lines)
 
 Checks localStorage for an admin draft; otherwise fetches
 `data/manifest.json` + every listed document, converts them to the legacy
 `DTS_CONFIG` shape via `buildConfig()`, applies home content to the DOM, then
-injects `app.js`, `smoke-depth.js`, `vision-pro-spatial.js`, and `admin.js`.
-Falls back to `js/config.js` if `/data` is unreachable.
+injects `app.js`, `smoke-depth.js`, `vision-pro-spatial.js` and `hex-media.js`
+(`appScripts()`), plus `admin.js` when `isAdminContext()` is true. There is a
+second, speculative path for `admin.js`: `ensureAdminBundle()` fires on the
+sign-in trigger and injects `css/13-admin.css` + `js/admin.js` — for a
+first-time admin on a fresh browser that is usually the *only* place the board
+is requested at all, because `isAdminContext()` is still false until they sign
+in. Falls back to `js/config.js` if `/data` is unreachable.
 
-### 5.3 Admin Board (`js/admin.js` ~3,670 lines, `css/13-admin.css`)
+### 5.3 Admin Board (`js/admin.js` ~3,780 lines, `css/13-admin.css`)
 
 Opens **only** for `site_admin` — it listens for `app.js`'s `dts:signed-in`
 event and checks `siteRole`, and also reads `window.DTS_ACCESS` synchronously
 in case it lost the race to register the listener. Nav groups:
 
-- **CONTENT** — Home page, Contact panel, FAQ answers, Fun facts
-- **SECTORS** — one per category page, with its projects nested
+- **SITE** — Home page, Contact panel, FAQ answers, Fun facts
+- **CATEGORY PAGES** — one per sector, plus "+ Add category page"
+- **PROJECTS** — a separate top-level group, its projects sub-grouped under
+  each sector's label (and an "Unassigned" group for any project whose
+  `sectorId` matches no sector), plus "+ Add project"
 - **GIS MAPS** — each map as a bold parent row with a collapse/expand toggle,
   its tours nested one level deeper; plus Data sources
 - **ADMIN** — Organizations (each with an inline "Email domains" editor,
@@ -356,9 +366,10 @@ Two different write models, and the distinction trips people up:
 
 The board loads the **full** content set (including gated documents) via
 `GET /api/admin/content`, which reads a single combined bundle at
-`data/source/_latest.json` — one R2 read rather than 62, because Cloudflare's
-free plan caps a Worker invocation at 50 subrequests. It skips this entirely
-when a local draft is active, so it can never overwrite unsaved edits.
+`data/source/_latest.json` — one R2 read rather than one per document, because
+Cloudflare's free plan caps a Worker invocation at 50 subrequests and the
+document count has already exceeded that. It skips this entirely when a local
+draft is active, so it can never overwrite unsaved edits.
 
 ### 5.4 Client portal (`js/app.js`, `#portalLayer` in `index.html`)
 
@@ -374,7 +385,7 @@ remove, and a member↔org_admin toggle.
 
 Lazy-loaded — no GIS bytes reach a visitor who never opens a map.
 `gis-loader.js` injects vendored Leaflet + esri-leaflet on first use;
-`gis-viewer.js` (~1,575 lines) owns `DTSGis.mount(containerEl, mapDoc)`, map
+`gis-viewer.js` (~1,740 lines) owns `DTSGis.mount(containerEl, mapDoc)`, map
 init, view/bounds, basemaps, and the layer factory for six source types;
 `gis-esri.js` handles ArcGIS layers; `gis-tools.js` the tool UIs;
 `gis-tour.js` guided tours.
@@ -489,12 +500,15 @@ bridge.
 ### 5.10 Function routes (`functions/`)
 
 ```
-functions/_lib/access.js           isUuid, verifyUser, pgrst, isSiteAdmin,
-                                   activeOrgIdsFor, checkAccess
-functions/_lib/admin.js            requireSiteAdmin, requireOrgAdminOf,
-                                   writeAudit, gotrue
+functions/_lib/access.js           isUuid, json, getSourceJson, verifyUser,
+                                   pgrst, isSiteAdmin, activeOrgIdsFor,
+                                   checkAccess, SECURITY_HEADERS
+functions/_lib/admin.js            requireSiteAdmin, isOrgAdmin,
+                                   requireOrgAdminOf, writeAudit, gotrue,
+                                   listAllUsers, invalidateUserListCache
 functions/_lib/split-logic.js      resolveAccessLevel, splitProjectDoc,
-                                   splitGisDocSet, filterManifestForPublic
+                                   splitGisDocSet, filterManifestForPublic,
+                                   isLocalGisLayer
 functions/data/[[path]].js         public read of data/current/* from R2
 functions/api/resource/[key].js    the gate: resolve a resource_key
 functions/api/resource/gismap/[mapId]/layer/[layerId].js
@@ -511,6 +525,14 @@ functions/api/admin/…              site_admin: content, organizations, users,
 `/api/foo` route. Moving or renaming anything in this tree changes what URL
 serves it. A leading `_` excludes a path from routing, which is why `_lib/`
 works.
+
+**Every Function response carries its own security headers.** `SECURITY_HEADERS`
+(`nosniff`, `Referrer-Policy`, `Content-Security-Policy: default-src 'none'`,
+HSTS) is spread into `json()` and into each hand-built `Response` that streams
+an R2 body. This exists because **`_headers` applies to static assets only** and
+does not reach a Function response — the half of the site that serves gated data
+was the half with no declared headers until this was added. Anything new that
+builds a `Response` outside `json()` has to spread it too.
 
 ---
 
@@ -529,8 +551,16 @@ URL, `https://dts-website-4cu.pages.dev`, not localhost.** Local serving is for
 confirming a file parses and serves, not for acceptance testing.
 
 Node tooling lives in `scripts/` (`seed-dev.mjs`, `split-content.mjs`,
-`upload-content.mjs`, `rollback-content.mjs`, `backfill-access.mjs`,
-`import-clients.mjs`) and `tools/gis-harvest.mjs`. None of it is browser code.
+`strip-public-data.mjs`, `upload-content.mjs`, `upload-source-to-r2.mjs`,
+`rollback-content.mjs`, `backfill-access.mjs`, `import-clients.mjs`) and
+`tools/gis-harvest.mjs`. None of it is browser code.
+
+The credential-free test suite is `tests/security/probe-*.mjs` (5 probes) and
+`tests/regression/*.mjs` (1), run by the loop in `CLAUDE.md`'s checklist. Three
+further probes need a live database or network and sit outside that loop —
+`probe-fs01-disabled-org-rls.sql`, `probe-fs03-client-apps-columns.sql`, and
+`probe-fs02-events-anon-insert.mjs --live`. Each probe was written against a
+real bug and confirmed red before its fix, so a failure means the bug is back.
 
 ---
 
@@ -615,7 +645,7 @@ Everything below is **documented, not fixed**. None of it is a surprise.
 | **GA4 + Clarity IDs** | placeholder-empty in `js/analytics-init.js` | `loadGA4()`/`loadClarity()` are no-ops. Nothing breaks; nothing is tracked third-party. Real IDs come from the client's accounts at handoff. |
 | **`ownerEmail` for leads** | `robertoenrique2710@hotmail.com` | Not a `dtsxr.com` mailbox yet. Deliberate, flagged for handoff. |
 | **Supabase Redirect URLs allow-list** | never confirmed done | An un-whitelisted `redirectTo` would silently break signup confirmation, OAuth return, **and** forgot-password. Worth checking in the dashboard. |
-| **Old GitHub repo privacy** | deferred | It is still the live GitHub Pages host; making it private would break that immediately. Revisit at domain cutover. |
+| **Old GitHub repo privacy** | deferred by the owner | It is still the live GitHub Pages host; making it private would break that immediately. This is security finding **F-C01 (High)**, not housekeeping — that host serves the **unstripped** repo, so it bypasses every content access control the migration built. Re-confirmed live 2026-09-11: `/js/config.js` there greps **16** `spaces.dtsxr.com` lines (the Cloudflare copy greps 2) and `/data/projects/campus.json` returns raw content with its `tourUrl` intact. Revisit at domain cutover. |
 
 ### Code-level, known and unaddressed
 
@@ -653,6 +683,13 @@ Everything below is **documented, not fixed**. None of it is a surprise.
   an authorized browser, it is a bearer URL for that Treedis session's lifetime.
   DTS controls **who obtains** the URL, not what they do with it afterward.
   Stated so no later work assumes stronger guarantees.
+- **`spatialBackdrop` in `data/site/settings.json` is dead content.** Nothing
+  reads it — `grep -rn spatialBackdrop js/ functions/ scripts/` returns nothing.
+  The real Vision Pro backdrop path hardcodes its filename at
+  `js/vision-pro-spatial.js:54`. The dead field also holds a filename that has
+  never existed (`…_V2.1.usdz`; the file on disk is `…_V2.usdz`), which is why
+  an older note calls this a live 404 — it is not, because nothing loads it.
+  Editing it in the Admin Board would change nothing.
 
 ### Found during this documentation pass — new, not previously recorded
 
@@ -758,7 +795,7 @@ dismissed-lead list in `SECURITY-AUDIT-2026-09-06.md`. Practical current state:
 was rewritten via `scripts/upload-content.mjs`, plus a hand-built
 `data/source/_latest.json` — see the note below on why that second step is not
 optional. Verified live: the deployed-mode F-01 probe reports 0 gated links
-leaking and 29 public links intact. Part M (tests 157–164) is the manual
+leaking and every public link intact. Part M (tests 157–167) is the manual
 browser pass, still to run.
 
 **A trap worth knowing about, found during that sync.** `_latest.json` is
@@ -771,17 +808,89 @@ reach R2 through `/api/publish`; and the two paths do not see each other unless
 `_latest.json` is updated alongside a CLI upload. If you ever run
 `upload-content.mjs` by hand, regenerate `_latest.json` too.
 
-**The highest-severity invariant was checked during the deploy and it holds.**
-Raw `/data` is **not** shipping as static files: `/data/projects/campus.json`
-on the live site has no `tourUrl`, while the repo copy does — proof the request
-is being served the stripped `data/current/` copy through
-`functions/data/[[path]].js`, not a static file shadowing it. Every excluded
-path (`/.env`, `/scripts/`, `/supabase/`, `/docs/`, `/tools/gis-harvest.mjs`,
-`/CLAUDE.md`, `/wrangler.toml`, `/tests/`, the audit report) returns the
-64804-byte SPA fallback rather than real content. `55-deploy-exposure.sh` as a
-script still has not been run, but the question it exists to answer has been
-answered directly. The `supabase`, `cloudflare` and `deps` scopes are still
-unrun.
+**The highest-severity invariant holds, and it is worth re-proving rather than
+trusting.** Raw `/data` is **not** shipping as static files. The check used to
+use `campus.json`, which the content migration deleted; the current equivalent
+is `gfc.json` — the repo copy carries a `tourUrl` and a `mapId`, the live copy
+carries neither, which proves the request is served the stripped
+`data/current/` copy through `functions/data/[[path]].js` and not a static file
+shadowing it. Re-confirmed 2026-09-11, along with every excluded path (`/.env`,
+`/scripts/`, `/supabase/`, `/docs/`, `/tools/gis-harvest.mjs`, `/CLAUDE.md`,
+`/wrangler.toml`, `/package.json`, `/tests/`, the audit report) returning the
+**64898-byte** SPA fallback rather than real content. Compare against `/`'s own
+byte count each time — it changes with every content deploy, so a hardcoded
+figure from a previous session is the wrong baseline.
+
+### Security audit, `supabase` scope — 2026-09-06
+
+Three fixes, branch `security-audit-supabase-2026-09-06`, all deployed. Full
+report: `SECURITY-AUDIT-2026-09-06.md`. What is worth carrying forward:
+
+- **F-S01 — disabling an organization revoked nothing on the RLS path.**
+  `is_org_member()`/`is_org_admin()` filtered on the *membership* row's status
+  and never on the *organization's* own. `activeOrgIdsFor()` in
+  `functions/_lib/access.js` had always joined `organizations` and checked its
+  status, so the Functions path was correct and only the direct
+  browser→PostgREST path was wrong — which is exactly the path where RLS is the
+  only control. Both helpers are now `create or replace`d with the org-status
+  join, so no policy text changed and all 25 policies keep working.
+  `20260906190100_org_status_in_rls_helpers.sql`.
+- **F-S02 — `events_insert` handed the entire internet a direct write.** The
+  policy granted `anon, authenticated` an INSERT `with check (true)`, and the
+  publishable key ships to every visitor, so anyone could write any `type`
+  (bypassing `track.js`'s 17-value allowlist), any `user_id`/`org_id` (which
+  that Function rejects outright), unmetered. Nothing used it — every real write
+  goes through `functions/api/track.js` on the service role, which bypasses RLS
+  and never needed a policy. Dropped.
+  `20260906190000_drop_events_anon_insert.sql`.
+- **F-S03 — `client_apps_select` exposed every column**, `r2_object_key`
+  included, to any authenticated user. Now column-grant-limited.
+  `20260906190200_client_apps_column_grants.sql`.
+
+`events_select` was deliberately left alone: site_admin sees everything, an org
+member sees their own org's rows.
+
+### Security audit, `cloudflare` scope — 2026-09-06
+
+Five findings, branch `security-audit-cloudflare-2026-09-06`. Current state:
+
+- **F-C01 (High) — the parallel GitHub Pages host, still open.** See the handoff
+  table above. Deferred by the owner, not fixed.
+- **F-C02 (High) — retained Pages deployments. Now closed, by waiting.** 53 old
+  deployments were reachable at their `<hash>.dts-website-4cu.pages.dev`
+  hostnames; 29 served excluded files, 9 served the unstripped `js/config.js`,
+  and 5 served **raw `/data` as static files**. 50 were deleted. The audit could
+  not close the finding, because the deleted hostnames were still serving their
+  old builds 45–57 minutes later, and it mattered which explanation was true:
+  a propagation delay closes on its own, whereas permanent hostname retention
+  would mean deleting deployments is not a remedy for this class of exposure at
+  all. **Re-checked 2026-09-11 — it was propagation delay.** All five sampled
+  hostnames now return a real 404 (16,140 bytes, Cloudflare's own page), as does
+  `0cfe69ba`. The three retained deployments (`c66be075`, `fb6554dd`,
+  `a5e4c407`) were each checked and are clean: `js/config.js` greps 2, `/.env`
+  returns the SPA fallback.
+  **What does not expire is what leaked while they were up.** Eight gated tour
+  URLs were publicly readable from two independent hosts over an extended
+  period, and a Treedis URL is a bearer URL. Reissuing them is still the only
+  action that does not depend on someone else's infrastructure.
+- **F-C03 (Low) — `_headers` never reached Function responses.** Fixed and
+  deployed; see §5.10. Re-confirmed live 2026-09-11 on `/data/manifest.json`,
+  `/api/resource/*` and `/api/admin/users`, all four headers present.
+  **Check this with `GET`, never `HEAD`** — a `HEAD` to a Function path falls
+  through to the static SPA shell and returns `_headers`' CSP instead, which
+  looks like the fix is absent when it is not.
+- **F-C04 (Low) — no `frame-ancestors`, no `form-action`.** Both added. The
+  same edit dropped a dead `wss://<dev-project-ref>.supabase.co` entry from
+  `connect-src`: nothing uses Supabase Realtime, and the entry was leaking the
+  developer's personal dev project ref into every response header.
+- **F-C05 — `script-src 'unsafe-inline'`.** Forced by one inline script that
+  could be hashed instead. **Accepted, owner's decision.** Worth revisiting if a
+  second person ever holds `site_admin`.
+
+The `deps` scope has not been run as an audit session. Its scan did run clean
+on 2026-09-06 (`npm audit` 0 advisories, `osv-scanner` no issues over 9
+packages), and `55-deploy-exposure.sh` has now been run too — results for every
+scan script are in `.claude/skills/security-audit/scan/results/2026-09-06/`.
 
 ### GIS map resolver outage — found and fixed 2026-09-06
 
@@ -838,11 +947,22 @@ bookmark those).
 by hand from both prefixes (28 objects — the CLI uploader does not delete), then
 a regenerated `data/source/_latest.json`.
 
-**Note the live site is currently ahead of `main`.** That branch has not been
-merged yet. The previous deployment was `fb6554dd`, 2026-09-06, from `main`,
-and keeping `main` and the live site identical is normally worth doing — for a
-while they were not and it made a live outage hard to attribute. Merge the
-branch once the Part N manual pass has actually been run.
+Confirmed still current 2026-09-11: `c66be075`'s own hostname and the stable
+alias return the identical 64,898-byte shell, and the public manifest lists 8
+projects / 25 files.
+
+**Note the live site is well ahead of `main`, and `main` is ahead of
+`origin`.** `main` is at `b1bec220`; the live branch is nine commits past it
+(3 supabase-audit, 4 cloudflare-audit, 2 content-migration), and nothing has
+been pushed to `origin` — which also matters because pushing updates the
+still-live GitHub Pages site, a separate decision. Keeping `main` and the live
+site identical is normally worth doing: for a while they were not, and it made a
+live outage hard to attribute. Merge once the Part N manual pass has actually
+been run.
+
+The Cloudflare project retains exactly three deployments: `c66be075` (live),
+`fb6554dd` and `a5e4c407`. All three were checked on 2026-09-11 and none leaks
+(see F-C02 in §9).
 
 - **Migration Phases 0–9 are DONE.** Cloudflare foundation, secret scrub,
   Supabase schema + RLS + dummy seed, client auth swap + resource gating, admin
@@ -901,6 +1021,7 @@ This is exactly what `docs/migration/FULL-SYSTEM-TESTING.md` exists to close.
 | Go live on the client's accounts | `docs/migration/ACCOUNT-SETUP-AND-HANDOFF.md`, then `/migrate-handoff` |
 | Work on the GIS build package | `docs/plans/gis/09-BUILD-PLAN.md` |
 | Know the working rules | `CLAUDE.md` |
+| Understand any security finding, or what a scope already covered | `SECURITY-AUDIT-2026-09-06.md` (the only record of the `supabase` and `cloudflare` scopes — `docs/README.md` does not index it and `PROGRESS.md` does not mention it) |
 
 ### How to report verification honestly (this project's standing rule)
 
