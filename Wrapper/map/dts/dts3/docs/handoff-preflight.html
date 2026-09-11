@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DTS Handoff Pre-Flight</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style id="css">
+:root{
+  --bg:#eef1f4; --surface:#fff; --surface-2:#f6f8fa;
+  --ink:#16202b; --ink-2:#3d4d5c; --muted:#64778a;
+  --line:#d5dde4; --line-2:#e6ecf1;
+  --accent:#1f5f8b; --accent-ink:#154561;
+  --block:#a33a2c; --block-bg:#f7e9e6;
+  --req:#8a6012; --req-bg:#f9f0dd;
+  --cond:#4a6272; --cond-bg:#eaeff3;
+  --ok:#2e6b4f; --ok-bg:#e4f0e9;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f151b; --surface:#161e27; --surface-2:#1b242e;
+    --ink:#e4eaf0; --ink-2:#bac7d3; --muted:#8b9caa;
+    --line:#28333e; --line-2:#212b35;
+    --accent:#6aa8d4; --accent-ink:#8cc0e4;
+    --block:#e08b7d; --block-bg:#2e1d1a;
+    --req:#d6ae62; --req-bg:#2b2317;
+    --cond:#9fb3c2; --cond-bg:#1e262e;
+    --ok:#7dbd9b; --ok-bg:#17251e;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f151b; --surface:#161e27; --surface-2:#1b242e;
+  --ink:#e4eaf0; --ink-2:#bac7d3; --muted:#8b9caa;
+  --line:#28333e; --line-2:#212b35;
+  --accent:#6aa8d4; --accent-ink:#8cc0e4;
+  --block:#e08b7d; --block-bg:#2e1d1a;
+  --req:#d6ae62; --req-bg:#2b2317;
+  --cond:#9fb3c2; --cond-bg:#1e262e;
+  --ok:#7dbd9b; --ok-bg:#17251e;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:940px;margin:0 auto;padding-inline:20px;padding-block:44px 80px}
+code,.mono{font-family:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,monospace;font-size:.88em}
+code{background:var(--surface-2);border:1px solid var(--line-2);border-radius:3px;padding:.05em .34em;color:var(--ink-2);word-break:break-word}
+
+/* masthead */
+.mast{border-bottom:2px solid var(--ink);padding-bottom:20px;margin-bottom:8px}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+h1{font-family:Spectral,Georgia,serif;font-weight:600;font-size:clamp(30px,5.4vw,44px);line-height:1.1;margin:0 0 12px;text-wrap:balance;letter-spacing:-.01em}
+.standfirst{margin:0;max-width:64ch;color:var(--ink-2);font-size:16px}
+.standfirst em{font-family:Spectral,Georgia,serif;font-style:italic}
+
+/* progress */
+.meter{display:flex;flex-wrap:wrap;gap:20px 28px;align-items:baseline;margin:22px 0 0;padding:16px 18px;background:var(--surface);border:1px solid var(--line);border-radius:4px}
+.meter-fig{display:flex;flex-direction:column;gap:2px}
+.meter-n{font-family:Spectral,Georgia,serif;font-size:26px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.meter-l{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.bar{flex:1 1 200px;min-width:180px;height:7px;border-radius:4px;background:var(--surface-2);border:1px solid var(--line-2);overflow:hidden;display:flex}
+.bar i{display:block;height:100%}
+.bar i.have{background:var(--ok)}
+.bar i.def{background:var(--cond)}
+
+/* sections */
+section{margin-top:52px}
+h2{font-family:Spectral,Georgia,serif;font-weight:600;font-size:23px;margin:0 0 6px;letter-spacing:-.005em;text-wrap:balance}
+.sec-note{margin:0 0 22px;color:var(--muted);max-width:66ch;font-size:14.5px}
+h3{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin:30px 0 12px;font-weight:500}
+
+/* gate rows */
+.rows{display:flex;flex-direction:column;gap:9px}
+.row{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--line);border-radius:4px;padding:14px 16px;display:grid;grid-template-columns:30px 1fr;gap:4px 12px;align-items:start}
+.row[data-sev="block"]{border-left-color:var(--block)}
+.row[data-sev="req"]{border-left-color:var(--req)}
+.row[data-sev="cond"]{border-left-color:var(--cond)}
+.row[data-st="have"]{background:var(--ok-bg);border-left-color:var(--ok)}
+.row[data-st="def"]{opacity:.72}
+.rnum{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted);padding-top:3px;font-variant-numeric:tabular-nums}
+.rmain{min-width:0}
+.rtitle{font-weight:600;font-size:15.5px;margin:0 0 3px;color:var(--ink)}
+.rmeta{margin:0 0 8px;font-size:13.5px;color:var(--ink-2)}
+.rmeta b{font-weight:500;color:var(--muted);font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-right:6px}
+.rbreak{margin:8px 0 0;padding:9px 11px;background:var(--surface-2);border-radius:3px;font-size:13.5px;color:var(--ink-2);border-left:2px solid var(--line)}
+.row[data-sev="block"] .rbreak{border-left-color:var(--block)}
+.rbreak b{color:var(--ink);font-weight:600}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 7px}
+.chip{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:2.5px 7px;border-radius:3px;font-weight:500;white-space:nowrap}
+.chip.block{background:var(--block-bg);color:var(--block)}
+.chip.req{background:var(--req-bg);color:var(--req)}
+.chip.cond{background:var(--cond-bg);color:var(--cond)}
+.chip.src{background:transparent;color:var(--muted);border:1px solid var(--line);text-transform:none;letter-spacing:.02em;font-size:10.5px}
+
+/* segmented tri-state */
+.seg{grid-column:2;display:inline-flex;border:1px solid var(--line);border-radius:4px;overflow:hidden;margin-top:10px;background:var(--surface-2)}
+.seg button{
+  appearance:none;border:0;background:transparent;cursor:pointer;
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;
+  padding:6px 11px;color:var(--muted);border-right:1px solid var(--line);transition:background .12s,color .12s;
+}
+.seg button:last-child{border-right:0}
+.seg button:hover{background:var(--line-2);color:var(--ink-2)}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.seg button[aria-pressed="true"][data-v="have"]{background:var(--ok);color:#fff}
+.seg button[aria-pressed="true"][data-v="def"]{background:var(--cond);color:#fff}
+:root[data-theme="dark"] .seg button[aria-pressed="true"][data-v="have"],
+:root[data-theme="dark"] .seg button[aria-pressed="true"][data-v="def"]{color:#0f151b}
+.seg button:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+
+/* plain list items */
+.items{display:flex;flex-direction:column;gap:14px;margin:0;padding:0;list-style:none}
+.item{border-left:2px solid var(--line);padding-left:15px}
+.item.flag{border-left-color:var(--block)}
+.item h4{margin:0 0 4px;font-size:15px;font-weight:600}
+.item p{margin:0 0 6px;color:var(--ink-2);font-size:14.5px}
+.item p:last-child{margin-bottom:0}
+
+/* decision block */
+.decide{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:18px}
+.decide h4{margin:0 0 8px;font-family:Spectral,Georgia,serif;font-size:17px;font-weight:600}
+.decide p{margin:0 0 10px;color:var(--ink-2);font-size:14.5px}
+.decide p:last-of-type{margin-bottom:14px}
+
+/* footer */
+footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+footer p{margin:0 0 6px;max-width:70ch}
+.saving{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-left:10px}
+
+@media (max-width:560px){
+  .wrap{padding-block:30px 60px}
+  .row{grid-template-columns:1fr;gap:3px}
+  .rnum{padding-top:0}
+  .seg{grid-column:1;flex-wrap:wrap}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap"><main id="root"></main></div>
+
+<script id="state" type="application/json">{"v":1,"items":{}}</script>
+<script id="app">
+(function(){
+  var GATE = [
+    {id:"cf-acct",n:"01",sev:"block",t:"Client's Cloudflare account",
+     use:"Production Pages project + both R2 buckets",
+     src:"Client creates it, or adds you as collaborator",
+     brk:"Nothing else in the Cloudflare column can start. This is the account that will hold the live site and its content buckets."},
+    {id:"cf-token",n:"02",sev:"block",t:"Cloudflare scoped API token + Account ID",
+     use:"Automated deploy and R2 upload",
+     src:"Client's Cloudflare dashboard → My Profile → API Tokens. Scope it Pages:Edit, R2:Edit — nothing wider.",
+     brk:"The deploy and content-upload steps are scripted against this token. Without it every upload becomes a manual dashboard click, which is exactly how the three documented deploy-staging bugs happened."},
+    {id:"sb-acct",n:"03",sev:"block",t:"Client's Supabase account + a new project",
+     use:"Production database, auth, RLS",
+     src:"Client creates it, or adds you as collaborator",
+     brk:"No database means no auth, no gating, no client portal. The whole access model lives here."},
+    {id:"sb-keys",n:"04",sev:"block",t:"Supabase project URL, anon key, service role key, project ref, DB password",
+     use:"Schema push, the config re-point, every Function",
+     src:"Client's Supabase project → Settings → API / Database",
+     brk:"The service role key is what every Cloudflare Function uses to talk to Postgres — without it the entire Functions layer 500s. The project URL and anon key are half of the two-file config swap."},
+    {id:"sb-token",n:"05",sev:"block",t:"Supabase account-level access token",
+     use:"CLI supabase link, to push migrations",
+     src:"Client's Supabase account → Access Tokens. Account-level, not project-level — these are different things and the project one will not link.",
+     brk:"Migrations cannot be pushed from the CLI. You would be recreating eight tables and their RLS policies by hand in the dashboard."},
+    {id:"web3",n:"06",sev:"req",t:"Web3Forms — a decision, not a credential",
+     use:"Lead form delivery",
+     src:"Decide with the client: does this stay on DTS's own account, or move to theirs? The docs are explicit that you must ask rather than assume.",
+     brk:"Nothing breaks technically either way — but if it silently stays on DTS's account, DTS keeps owning the client's inbound leads and the client has no way to change the destination without you."},
+    {id:"google",n:"07",sev:"cond",t:"Google Cloud Console access",
+     use:"Production OAuth client ID + secret",
+     src:"Client's Google account, or a DTS-managed Workspace acting for them — confirm which.",
+     brk:"Only if Google sign-in is launching. Skip explicitly and note the deferral; do not block on it. The dev OAuth app is registered under a personal account and can never be reused."},
+    {id:"azure",n:"08",sev:"cond",t:"Azure Portal access",
+     use:"Production Microsoft OAuth app registration + secret",
+     src:"Client's Microsoft/Azure tenant",
+     brk:"Only if Microsoft sign-in is launching. Same deferral rule as Google. Azure AD app registration itself is free — no Azure subscription needed."},
+    {id:"dns",n:"09",sev:"block",t:"Domain registrar / DNS access",
+     use:"Pointing the real domain at production — and SPF/DKIM for SMTP",
+     src:"Wherever the domain is currently registered",
+     brk:"Two things, not one. No domain cutover, and no custom SMTP either — the SMTP provider will not send anything until you add its DNS records. This single item gates item 11."},
+    {id:"clients",n:"10",sev:"block",t:"The real client list",
+     use:"The organization and membership import",
+     src:"From the client directly — never guessed from old sheet data. Must say which staff belong to which company and who is org_admin at each.",
+     brk:"The import script creates real organizations, real users and real entitlements in one run. A flat email list is not enough: without the org mapping you cannot assign anyone, and near-duplicate company spellings silently create two organizations that then cannot see each other's resources."},
+    {id:"smtp",n:"11",sev:"block",t:"Custom SMTP provider + a verified sending domain",
+     use:"Password reset and signup confirmation emails",
+     src:"Resend, SES, Postmark, SendGrid, Brevo — any of them. Free tier is fine. Depends on item 9.",
+     brk:"NOT skippable the way OAuth is. Supabase's built-in email is capped at two messages per hour, project-wide, shared across every auth email type — and Supabase's own docs call it unsuitable for production. Password reset will appear to work and simply never arrive."},
+    {id:"ga4",n:"12",sev:"req",t:"GA4 Measurement ID + Microsoft Clarity Project ID",
+     use:"Marketing tags",
+     src:"Client's Google Analytics (Admin → Data Streams) and clarity.microsoft.com. Both free, both public IDs, neither is a secret.",
+     brk:"Both currently ship as empty strings, and the loaders check for a real id before injecting anything — so nothing errors, nothing loads, and nothing is measured. Silent by design. Also decide whose account they live on, same question as Web3Forms."},
+    {id:"collab",n:"13",sev:"block",t:"The collaborator-vs-self-service decision",
+     use:"Determines who clicks what for the whole run",
+     src:"Decide with the client before starting: are you added as a collaborator on their accounts, or do they run the setup clicks and hand you tokens in a git-ignored .env.prod?",
+     brk:"Not a credential, but the docs call it a hard-gate item because it changes the shape of every step after it. Deciding it mid-run is how tokens end up in the wrong place."}
+  ];
+  var LABEL = {have:"In hand", def:"Deferred", none:"Not yet"};
+
+  var stateEl = document.getElementById("state");
+  var state;
+  try { state = JSON.parse(stateEl.textContent) || {}; } catch(e){ state = {}; }
+  if(!state.items) state.items = {};
+
+  function stOf(id){ var s = state.items[id]; return (s==="have"||s==="def") ? s : "none"; }
+
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]; }); }
+
+  function sevChip(sev){
+    if(sev==="block") return '<span class="chip block">Blocking</span>';
+    if(sev==="req")   return '<span class="chip req">Required if launching</span>';
+    return '<span class="chip cond">Conditional</span>';
+  }
+
+  function rowHTML(it){
+    var st = stOf(it.id);
+    return '<div class="row" data-sev="'+it.sev+'" data-st="'+st+'">'
+      + '<div class="rnum">'+it.n+'</div>'
+      + '<div class="rmain">'
+        + '<div class="chips">'+sevChip(it.sev)+'<span class="chip src">'+esc(it.use)+'</span></div>'
+        + '<p class="rtitle">'+esc(it.t)+'</p>'
+        + '<p class="rmeta"><b>Where</b>'+esc(it.src)+'</p>'
+        + '<p class="rbreak"><b>If skipped —</b> '+esc(it.brk)+'</p>'
+      + '</div>'
+      + '<div class="seg" role="group" aria-label="'+esc(it.t)+' status">'
+        + ['have','def','none'].map(function(v){
+            return '<button type="button" data-id="'+it.id+'" data-v="'+v+'" aria-pressed="'+(st===v)+'">'+LABEL[v]+'</button>';
+          }).join('')
+      + '</div>'
+    + '</div>';
+  }
+
+  function counts(){
+    var have=0, def=0;
+    GATE.forEach(function(it){ var s=stOf(it.id); if(s==="have")have++; else if(s==="def")def++; });
+    return {have:have, def:def, none:GATE.length-have-def, total:GATE.length};
+  }
+
+  function meterHTML(){
+    var c = counts();
+    var pH = (c.have/c.total*100).toFixed(1), pD = (c.def/c.total*100).toFixed(1);
+    return '<div class="meter">'
+      + '<div class="meter-fig"><span class="meter-n">'+c.have+'</span><span class="meter-l">In hand</span></div>'
+      + '<div class="meter-fig"><span class="meter-n">'+c.def+'</span><span class="meter-l">Deferred</span></div>'
+      + '<div class="meter-fig"><span class="meter-n">'+c.none+'</span><span class="meter-l">Outstanding</span></div>'
+      + '<div class="bar" role="img" aria-label="'+c.have+' of '+c.total+' in hand, '+c.def+' deferred">'
+        + '<i class="have" style="width:'+pH+'%"></i><i class="def" style="width:'+pD+'%"></i>'
+      + '</div>'
+      + '<div class="meter-fig"><span class="meter-n">'+(c.none===0?"Clear":"Held")+'</span><span class="meter-l">Gate status</span></div>'
+    + '</div>';
+  }
+
+  var FORCED = [
+    {t:"Custom SMTP", p:["Supabase's built-in sender allows <b>two emails per hour across the entire project</b>, shared between signup confirmation and password recovery. Their own documentation calls it unsuitable for production.",
+      "What breaks: a real user clicks “forgot password”, sees a success message, and no email ever arrives. The failure is silent on both ends. Worse at launch, when a batch of new client accounts is consuming the same two-per-hour budget for their confirmation emails."]},
+    {t:"Supabase Pro, on the client's billing", p:["The free tier pauses a project after seven days of inactivity.",
+      "What breaks: the site goes down for real users, and it goes down precisely during a quiet week when nobody is watching. $25/month, and it has to be on the client's card, not yours."]},
+    {t:"The Supabase redirect-URL allow-list", p:["A brand-new project has an empty allow-list, and nothing warns you.",
+      "What breaks: <b>three flows at once</b>, all with the same cause — signup confirmation, OAuth return, and password reset. You will get three separate bug reports that look unrelated. Re-check it after the real domain is live, because the domain is not final until then."]},
+    {t:"The lead-form destination mailbox", p:["It currently points at the developer's personal hotmail address, not a dtsxr.com mailbox.",
+      "What breaks: nothing technical. Every enquiry from the client's own website keeps arriving in a personal inbox belonging to someone who has just handed the site over. This is the item most likely to be noticed by the client rather than by you."]},
+    {t:"Real GA4 and Clarity IDs — if marketing tags are launching", p:["Both ship as empty strings, and both loaders check for a real id before injecting a script.",
+      "What breaks: nothing visibly. No error, no console warning, no analytics. If the client believes they have analytics from day one, they will discover months later that they have none."]},
+    {t:"OAuth recreation — only if social sign-in is launching", p:["The client's project has a different callback URL, so both OAuth apps must be registered fresh under the client's own Google and Microsoft accounts. The dev apps are on personal accounts and never transfer.",
+      "What breaks: the buttons are already live in the UI. If the providers are not enabled, clicking one shows a raw Supabase “provider not enabled” error to a real user. Also move Google's consent screen from Testing to Published, or every real user meets an “unverified app” warning."]}
+  ];
+
+  var EXTRA = [
+    {flag:false, t:"Treedis tour URLs — decided: not reissuing",
+     p:["Owner’s decision, recorded so it is not re-raised as an open item mid-handoff. The eight gated tour URLs stay as they are. If they are ever regenerated it will be as ordinary content work, on its own schedule — not as a handoff prerequisite.",
+        "What that accepts: those URLs were readable from two independent hosts over an extended period, and a Treedis URL stays valid for its session’s lifetime regardless of who is holding it. Anyone who captured one keeps working access to that tour until it is regenerated. The handoff does not change that in either direction, which is why it is not a gate item.",
+        "Stated once here so no later work assumes a stronger guarantee than the system actually offers."]},
+    {flag:true, t:"GitHub Pages host — delete it, then take the repo private",
+     p:["Decided: the parallel host is fully deleted after a transition period, and the project moves to a private repository once the client handoff is complete.",
+        "This dissolves the original blocker rather than working around it. That host was only ever deferred because making the repo private would break it <em>immediately</em> — if it is being deleted anyway, the conflict disappears and the two become one ordered pair: retire the Pages host, then flip the repo to private.",
+        "Until both are done it keeps serving the <b>unstripped</b> repo, which bypasses every content access control the migration built. Re-confirmed live on 2026-09-11: the config fallback there exposes sixteen tour URLs against the Cloudflare copy’s two, and project documents return raw with their tour URLs intact. Worth putting a date on rather than leaving as “after a while”."]},
+    {flag:false, t:"The account inventory is completely empty",
+     p:["Every field in the session log's inventory section is still a blank underscore. Fill it in as you go — labels only, never a key or a password.",
+        "One hard rule: never write the client's Cloudflare account id into a committed file. The dev account's id is already in this repo's public git history and cannot be undone; the client's does not have to follow it."]},
+    {flag:false, t:"Two stale details in the handoff docs themselves",
+     p:["The handoff command's step 2 says “same seven tables” and lists seven. There are <b>eight</b> — the email-domain table was added on 2026-08-18. The migration push creates it regardless, so nothing breaks, but the count is wrong if you are verifying by eye.",
+        "The setup doc's redirect-URL step is written against the dev project. At handoff it has to be redone against the client's project and then revisited once the real domain is live."]}
+  ];
+
+  function render(){
+    var h = '';
+    h += '<header class="mast">'
+      + '<p class="eyebrow">Preparation only · no account or infrastructure config touched</p>'
+      + '<h1>Handoff pre-flight</h1>'
+      + '<p class="standfirst">Everything that has to be in hand <em>before</em> the first account gets touched, what stops being optional the moment this goes to a client, and what actually breaks in each case. Thirteen gate items; the run does not start until every one is either held or deliberately deferred.</p>'
+      + '</header>';
+    h += meterHTML();
+
+    h += '<section><h2>Gate one — credentials and access</h2>'
+      + '<p class="sec-note">Numbered to match the handoff command’s own inventory table, so a row here and a row there are the same row. Three states, because the source treats “deferred with sign-off” as a legitimate way to clear the gate — an unanswered item is not the same as a decided one.</p>'
+      + '<div class="rows">' + GATE.map(rowHTML).join('') + '</div></section>';
+
+    h += '<section><h2>What stops being optional</h2>'
+      + '<p class="sec-note">These are live today on the dev build and cause nothing, because dev has no real users. Each one changes character the moment a real person depends on it.</p>'
+      + '<ul class="items">'
+      + FORCED.map(function(f){
+          return '<li class="item"><h4>'+esc(f.t)+'</h4>' + f.p.map(function(x){return '<p>'+x+'</p>';}).join('') + '</li>';
+        }).join('')
+      + '</ul></section>';
+
+    h += '<section><h2>Not on the standard list</h2>'
+      + '<p class="sec-note">Four things the handoff docs do not carry, surfaced by the 2026-09-11 verification pass. Two now have owner decisions recorded against them; one of those is closed, the other became a post-handoff sequence.</p>'
+      + '<ul class="items">'
+      + EXTRA.map(function(f){
+          return '<li class="item'+(f.flag?' flag':'')+'"><h4>'+esc(f.t)+'</h4>' + f.p.map(function(x){return '<p>'+x+'</p>';}).join('') + '</li>';
+        }).join('')
+      + '</ul></section>';
+
+    h += '<section><h2>Decide before, not during</h2>'
+      + '<div class="decide">'
+      + '<h4>Do you keep access after handoff?</h4>'
+      + '<p>Whether you retain any ongoing access to the client’s production accounts — to ship future fixes, or not — is a business arrangement, not something the migration kit decides. It only has one technically correct moment: <b>before</b> the collaborator decision in item 13.</p>'
+      + '<p>Settle it there and it is a deliberate, named collaborator grant. Settle it afterwards and it becomes whatever the handoff happened to leave behind, which is both harder to audit and harder to revoke.</p>'
+      + '<p class="rmeta"><b>Also</b>Nothing transfers by design: not the dev auth users, not a single secret, not the dev OAuth apps. Every secret is generated fresh on the client’s side. Copying one across would mean a personal account can still act on the client’s live data after the handoff is done.</p>'
+      + '</div></section>';
+
+    h += '<footer>'
+      + '<p>Cost to the client after launch: Supabase Pro $25/mo, R2 roughly $1–5/mo, the domain, and optionally a code-signing certificate. Everything else — Pages, Functions, Web3Forms free tier — is $0. Re-check live pricing before quoting.</p>'
+      + '<p>Status is saved to this page for everyone who opens it.<span class="saving" id="saving"></span></p>'
+      + '</footer>';
+
+    document.getElementById("root").innerHTML = h;
+  }
+
+  // ---- persistence -------------------------------------------------
+  var api = null, timer = null, pending = false;
+  var savingEl = function(){ return document.getElementById("saving"); };
+
+  function note(msg){ var e = savingEl(); if(e) e.textContent = msg || ""; }
+
+  function buildDoc(){
+    var css = document.getElementById("css").textContent;
+    var app = document.getElementById("app").textContent;
+    var open = "<scr"+"ipt", close = "</scr"+"ipt>";
+    return '<!doctype html>\n<html lang="en">\n<head>\n'
+      + '<meta charset="utf-8">\n'
+      + '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+      + '<title>DTS Handoff Pre-Flight</title>\n'
+      + '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,600;1,400&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">\n'
+      + '<style id="css">' + css + '</style>\n'
+      + '</head>\n<body>\n'
+      + '<div class="wrap"><main id="root"></main></div>\n'
+      + open + ' id="state" type="application/json">' + JSON.stringify(state) + close + '\n'
+      + open + ' id="app">' + app + close + '\n'
+      + '</body>\n</html>';
+  }
+
+  function flush(){
+    timer = null;
+    if(!api){ return; }
+    note("saving…");
+    api.publish(buildDoc()).then(function(){
+      note("");
+    }).catch(function(err){
+      var c = err && err.code;
+      if(c === "conflict"){ note(""); return; }
+      if(c === "not_writer" || c === "not_granted" || c === "not_declared" || c === "capability_disabled"){
+        api = null; note("read-only view");
+        return;
+      }
+      if(c === "rate_limited"){ note("saving…"); schedule(4000); return; }
+      note("not saved");
+    });
+  }
+
+  function schedule(ms){
+    if(timer) clearTimeout(timer);
+    timer = setTimeout(flush, ms || 1400);
+  }
+
+  document.addEventListener("click", function(e){
+    var b = e.target.closest ? e.target.closest(".seg button") : null;
+    if(!b) return;
+    var id = b.getAttribute("data-id"), v = b.getAttribute("data-v");
+    if(stOf(id) === v) return;
+    if(v === "none") delete state.items[id]; else state.items[id] = v;
+    stateEl.textContent = JSON.stringify(state);
+    render();
+    if(api) schedule();
+  });
+
+  render();
+
+  if(window.claude && window.claude.use){
+    window.claude.use("artifact").then(function(a){
+      if(!a){ note("not saved — offline copy"); return; }
+      api = a;
+      if(pending) schedule(200);
+    }).catch(function(){ note(""); });
+  }
+})();
+</script>
+</body>
+</html>

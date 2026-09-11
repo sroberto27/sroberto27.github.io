@@ -94,6 +94,17 @@ accounts, same as everything else in this section.
    so worth checking regardless): Supabase Dashboard → Authentication → URL
    Configuration → Redirect URLs includes your dev site's origin
    (`https://<your-pages-project>.pages.dev/*`).
+
+   **This step is written for the DEV project and does not carry over.** A
+   brand-new Supabase project starts with an empty allow-list and warns
+   about nothing, so it has to be redone against the CLIENT's project at
+   handoff — and then **revisited a second time once the real domain is
+   live**, since the production origin isn't final until the domain is
+   pointed (`migrate-handoff.md` step 5 says this; it is repeated here
+   because §6 is where people actually look). An un-whitelisted
+   `redirectTo` silently breaks three separate flows at once — signup
+   confirmation, OAuth return, and password reset — which presents as
+   three unrelated bug reports with one cause.
 4. **These do NOT transfer at handoff** — see Part 3 below. The client's
    production Supabase project has a different URL, so the redirect URI
    changes and both OAuth apps must be recreated under the client's own

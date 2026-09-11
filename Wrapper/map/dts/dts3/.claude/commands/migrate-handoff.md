@@ -69,9 +69,10 @@ Plan, then do:
 2. **Client Supabase (production).** User creates the project in the CLIENT's
    org and provides production tokens in a SEPARATE `.env.prod`
    (git-ignored). Claude `supabase link`s to it and re-runs the SAME
-   `supabase/migrations/` (`db push`) — same seven tables
-   (`profiles, organizations, organization_members, resource_entitlements,
-   client_apps, events, admin_audit`), same RLS. Create the first real
+   `supabase/migrations/` (`db push`) — same eight tables
+   (`profiles, organizations, organization_members,
+   organization_email_domains, resource_entitlements, client_apps, events,
+   admin_audit`), same RLS. Create the first real
    `site_admin` account (the DTS operator, not a client). **Upgrade to Pro
    ($25/mo) on the client's billing** to remove the 7-day pause before real
    users log in. **Also configure custom SMTP now** (inventory item 11) —
