@@ -255,8 +255,22 @@ verification.
 OAuth, the real organization/client import, the domain cutover, marketing tags,
 and final live checks all stay with `/migrate-handoff`.
 
-Parts L, M and N of `docs/migration/FULL-SYSTEM-TESTING.md` remain unrun. **Part
-N is worth running before Step 3** — it covers the 17-projects-to-8 content
-migration, which Step 3 uploads to the client's R2. Without it, a content fault
-and a new-infrastructure fault look alike at exactly the step where a clean
-signal is worth most.
+Parts L and M of `docs/migration/FULL-SYSTEM-TESTING.md` remain unrun.
+
+**Part N is not a blocker for this run — decided 2026-09-11, do not re-raise
+it.** Its highest-risk items were confirmed in a developer smoke pass: the
+tour not reloading on a stage-tab switch and still exactly one Treedis iframe
+(178-179), the GIS map drawing all 17 layers from its new home with its tours
+running (180-183), the Admin Board editing the new content (186-191), and a
+clean console (194). The remainder — counts, deleted-project reachability, the
+two desktop layout regressions, the guest/signed-in split, images, mobile and
+back/forward — is a cleanup pass for before go-live, not before provisioning.
+See that Part's own header for the exact split.
+
+Two things make this safe rather than optimistic. Gating **enforcement** is
+proven without a browser (F-01 probe green, live 401s on gated keys, 404s on
+deleted ones), so what is unconfirmed there is rendering, not exposure. And
+**dev stays live as the workspace**, so it remains the control group: if
+something looks wrong on the client's deployment, compare against dev and the
+difference says which layer it is in. Content is re-uploaded at go-live
+regardless, so a defect found later costs a scripted re-run, not a rebuild.

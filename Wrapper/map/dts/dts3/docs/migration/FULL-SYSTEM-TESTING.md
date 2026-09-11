@@ -1577,12 +1577,40 @@ The whole public portfolio was replaced: **17 projects across 4 sectors became
 8, exactly 2 per sector.** Every project document, every sector's copy and
 cards, and `js/config.js` were rewritten; 14 project documents were deleted.
 
-Nothing below has been confirmed in a real browser. What *has* been confirmed:
-all 6 automated test files pass, the real `content-loader.js` produces the
-correct `DTS_CONFIG` from the new `/data`, all 33 supplied images resolve
-case-exact on disk, all 8 Vimeo URLs return real embeddable videos via Vimeo's
-oEmbed API, and all 4 Treedis URLs return 200. That is file- and API-level
-confidence only — it says nothing about what renders.
+**Partly confirmed in a browser as of 2026-09-11 — read the distinction.**
+In a developer smoke pass (informal browsing, not this checklist run step by
+step), the owner confirmed working: **178, 179** (the tour does not reload on a
+stage-tab switch, and there is still exactly one Treedis iframe), **180–183**
+(the GIS map draws all 17 layers from its new home on Iberia Parish, guided and
+feature tours run, a guest gets the gate), **186–191** (the Admin Board shows
+and edits the new content, the GIS node included), and **194** (console clean).
+
+Those were the highest-risk items in this Part and the ones nothing but a
+browser could settle. The boxes below are deliberately left unticked: a smoke
+pass is not the same as running each test as written, and only the person who
+ran it should tick them.
+
+**Still unconfirmed:** 168–171 (the counts, and that a deleted project is
+neither reachable nor an ugly failure on a deep link — you would have to go
+looking for a dead URL to hit these), 172–173 (the two desktop layout
+regressions from the 4→2 card change), 175–177 (the guest-versus-signed-in
+split, which needs a private window), 184–185 (all 33 images, and that Shell
+and Honeywell show four rather than the five each supplied), 192–193 (mobile
+drawer and swipe, browser back/forward), 195 (the home page untouched).
+
+Note what 175–177 does and does not carry: gating **enforcement** is already
+proven without a browser — the F-01 probe reports 0 gated links leaking, and
+anonymous resolves of `gismap.iberia-coastal`, `project.gfc:map` and
+`project.gfc:tour` return 401 live while deleted keys return 404. What is
+unconfirmed there is whether the locked state *renders* well, not whether it
+holds.
+
+What was confirmed without a browser, before any of the above: all 6 automated
+test files pass, the real `content-loader.js` produces the correct
+`DTS_CONFIG` from the new `/data`, all 33 supplied images resolve case-exact
+on disk, all 8 Vimeo URLs return real embeddable videos via Vimeo's oEmbed API,
+and all 4 Treedis URLs return 200. That is file- and API-level confidence only
+— it says nothing about what renders.
 
 The expected portfolio, for reference while testing:
 
