@@ -111,7 +111,8 @@ Confirm every row before anything else moves. Do not proceed on assumption.
   is not the same as holding the grant, and the run stops dead at whichever one
   was missed.
 - `.env.prod` exists, is git-ignored (`.gitignore` covers `.env.*`), and carries
-  the client's seven values. Never `.env` — that is dev.
+  the client's **eight** values (the same keys as `.env.example`). Never
+  `.env` — that is dev, and the two are one careless `source` apart.
 - The shell has **prod** env loaded. `npx wrangler whoami` and confirm the
   account is the client's.
 - Report which rows are satisfied and which are not. Stop if any is unresolved.
