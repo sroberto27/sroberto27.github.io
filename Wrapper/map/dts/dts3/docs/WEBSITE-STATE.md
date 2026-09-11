@@ -645,7 +645,7 @@ Everything below is **documented, not fixed**. None of it is a surprise.
 | **GA4 + Clarity IDs** | placeholder-empty in `js/analytics-init.js` | `loadGA4()`/`loadClarity()` are no-ops. Nothing breaks; nothing is tracked third-party. Real IDs come from the client's accounts at handoff. |
 | **`ownerEmail` for leads** | `robertoenrique2710@hotmail.com` | Not a `dtsxr.com` mailbox yet. Deliberate, flagged for handoff. |
 | **Supabase Redirect URLs allow-list** | never confirmed done | An un-whitelisted `redirectTo` would silently break signup confirmation, OAuth return, **and** forgot-password. Worth checking in the dashboard. |
-| **Old GitHub repo privacy** | deferred by the owner | It is still the live GitHub Pages host; making it private would break that immediately. This is security finding **F-C01 (High)**, not housekeeping — that host serves the **unstripped** repo, so it bypasses every content access control the migration built. Re-confirmed live 2026-09-11: `/js/config.js` there greps **16** `spaces.dtsxr.com` lines (the Cloudflare copy greps 2) and `/data/projects/campus.json` returns raw content with its `tourUrl` intact. Revisit at domain cutover. |
+| **Old GitHub repo privacy** | **dated: after the full client migration** | It is still the live GitHub Pages host; making it private would break that immediately. This is security finding **F-C01 (High)**, not housekeeping — that host serves the **unstripped** repo, so it bypasses every content access control the migration built. Re-confirmed live 2026-09-11: `/js/config.js` there greps **16** `spaces.dtsxr.com` lines (the Cloudflare copy greps 2) and `/data/projects/campus.json` returns raw content with its `tourUrl` intact. **Decided 2026-09-11:** the host is deleted and the repo goes private once the full client migration completes — an ordered pair, retire the host then flip the repo. That is also the correct sequencing, since the Pages host is still live in parallel and deleting it before the domain points at the client's Cloudflare would take down something still serving. |
 
 ### Code-level, known and unaddressed
 
@@ -854,8 +854,11 @@ member sees their own org's rows.
 
 Five findings, branch `security-audit-cloudflare-2026-09-06`. Current state:
 
-- **F-C01 (High) — the parallel GitHub Pages host, still open.** See the handoff
-  table above. Deferred by the owner, not fixed.
+- **F-C01 (High) — the parallel GitHub Pages host, still open, now dated.**
+  See the handoff table above. **Decided 2026-09-11:** delete the host and take
+  the repo private once the full client migration completes — one ordered pair,
+  host first. Not a vague deferral and not fixed either: it keeps serving the
+  unstripped repo until both halves are done.
 - **F-C02 (High) — retained Pages deployments. Now closed, by waiting.** 53 old
   deployments were reachable at their `<hash>.dts-website-4cu.pages.dev`
   hostnames; 29 served excluded files, 9 served the unstripped `js/config.js`,
