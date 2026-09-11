@@ -66,6 +66,21 @@ h1{font-family:Spectral,Georgia,serif;font-weight:600;font-size:clamp(30px,5.4vw
 .bar i.have{background:var(--ok)}
 .bar i.def{background:var(--cond)}
 
+/* run plan */
+.plan{margin-top:42px;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:22px 20px}
+.plan h2{margin-bottom:4px}
+.plan .sec-note{margin-bottom:18px}
+.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:6px;margin-bottom:20px}
+.stepcell{display:flex;flex-direction:column;gap:3px;padding:10px 11px;border-radius:3px;border:1px solid var(--line);background:var(--surface-2);min-width:0}
+.stepcell.go{border-color:var(--ok);background:var(--ok-bg)}
+.stepcell.halt{opacity:.6;border-style:dashed}
+.stepn{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--muted);font-variant-numeric:tabular-nums}
+.stept{font-size:12.5px;font-weight:600;line-height:1.25;color:var(--ink)}
+.stepv{font-family:"IBM Plex Mono",monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.stepcell.go .stepv{color:var(--ok)}
+.plan-notes{margin-top:4px}
+.meter-n.is-clear{color:var(--ok)}
+
 /* sections */
 section{margin-top:52px}
 h2{font-family:Spectral,Georgia,serif;font-weight:600;font-size:23px;margin:0 0 6px;letter-spacing:-.005em;text-wrap:balance}
@@ -88,6 +103,23 @@ h3{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.13em;tex
 .rbreak{margin:8px 0 0;padding:9px 11px;background:var(--surface-2);border-radius:3px;font-size:13.5px;color:var(--ink-2);border-left:2px solid var(--line)}
 .row[data-sev="block"] .rbreak{border-left-color:var(--block)}
 .rbreak b{color:var(--ink);font-weight:600}
+
+/* how-to steps */
+.how{margin-top:13px;border-top:1px dashed var(--line);padding-top:12px}
+.how-h{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin:0 0 9px;font-weight:500}
+.how-l{margin:0;padding:0;list-style:none;counter-reset:hs;display:flex;flex-direction:column;gap:8px}
+.how-l li{counter-increment:hs;position:relative;padding-left:27px;font-size:14px;color:var(--ink-2);line-height:1.55}
+.how-l li::before{
+  content:counter(hs);position:absolute;left:0;top:1px;
+  width:18px;height:18px;border-radius:50%;
+  background:var(--surface-2);border:1px solid var(--line);
+  font-family:"IBM Plex Mono",monospace;font-size:10px;font-variant-numeric:tabular-nums;
+  color:var(--muted);display:flex;align-items:center;justify-content:center;
+}
+.how-l b{color:var(--ink);font-weight:600}
+.how-l em{font-style:italic}
+.how-store{margin:12px 0 0;font-size:13px;color:var(--muted);padding-top:10px;border-top:1px solid var(--line-2)}
+.how-store b{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.09em;text-transform:uppercase;margin-right:7px;color:var(--muted);font-weight:500}
 .chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 7px}
 .chip{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:2.5px 7px;border-radius:3px;font-weight:500;white-space:nowrap}
 .chip.block{background:var(--block-bg);color:var(--block)}
@@ -142,64 +174,168 @@ footer p{margin:0 0 6px;max-width:70ch}
 <body>
 <div class="wrap"><main id="root"></main></div>
 
-<script id="state" type="application/json">{"v":1,"items":{}}</script>
+<script id="state" type="application/json">{"v":1,"items":{"cf-acct":"have","cf-token":"have","sb-acct":"have","sb-keys":"have","sb-token":"have","collab":"have","web3":"def","google":"def","azure":"def","ga4":"def"}}</script>
 <script id="app">
 (function(){
   var GATE = [
     {id:"cf-acct",n:"01",sev:"block",t:"Client's Cloudflare account",
      use:"Production Pages project + both R2 buckets",
-     src:"Client creates it, or adds you as collaborator",
-     brk:"Nothing else in the Cloudflare column can start. This is the account that will hold the live site and its content buckets."},
+     brk:"Nothing else in the Cloudflare column can start. This is the account that will hold the live site and its content buckets.",
+     store:"No value to capture yet — this step is access, not a credential.",
+     how:["Client goes to <b>cloudflare.com → Sign Up</b> and creates a free account. Skip if they already have one — but confirm it is an account <em>they</em> control, not one an old agency set up for them.",
+          "Settle item 13 first, because it decides who does the rest of this list.",
+          "If you are going in as a collaborator: client opens <b>Manage Account → Members → Invite</b> and sends it to your work address. You accept from the email.",
+          "Nothing to authenticate yet. The deploy step later runs <code>npx wrangler login</code>, which opens a browser window for whoever is signed in to approve — so be signed into the right account when that happens."]},
+
     {id:"cf-token",n:"02",sev:"block",t:"Cloudflare scoped API token + Account ID",
      use:"Automated deploy and R2 upload",
-     src:"Client's Cloudflare dashboard → My Profile → API Tokens. Scope it Pages:Edit, R2:Edit — nothing wider.",
-     brk:"The deploy and content-upload steps are scripted against this token. Without it every upload becomes a manual dashboard click, which is exactly how the three documented deploy-staging bugs happened."},
+     brk:"The deploy and content-upload steps are scripted against this token. Without it every upload becomes a manual dashboard click, which is exactly how the three documented deploy-staging bugs happened.",
+     store:"<code>CLOUDFLARE_API_TOKEN</code> and <code>CLOUDFLARE_ACCOUNT_ID</code> in <code>.env.prod</code>",
+     how:["In the client's Cloudflare dashboard, click the <b>account icon, top right → My Profile</b>.",
+          "<b>API Tokens → Create Token</b>.",
+          "Choose <b>Create Custom Token</b> (the “Get started” button at the bottom) — <em>not</em> one of the templates above it. The templates grant more than this needs.",
+          "Add exactly two permission rows: <b>Account → Cloudflare Pages → Edit</b>, and <b>Account → Workers R2 Storage → Edit</b>. Nothing else. Never the Global API Key.",
+          "Under <b>Account Resources</b>, restrict it to the client's account only.",
+          "<b>Continue → Create Token</b>, then <b>copy it immediately</b> — Cloudflare shows the value exactly once and there is no way to read it back.",
+          "For the Account ID: it sits in the <b>right-hand sidebar of almost any dashboard page</b>. Copy it from there.",
+          "Paste both into <code>.env.prod</code>. Never into <code>wrangler.toml</code>, and never into anything under <code>docs/</code>."]},
+
     {id:"sb-acct",n:"03",sev:"block",t:"Client's Supabase account + a new project",
      use:"Production database, auth, RLS",
-     src:"Client creates it, or adds you as collaborator",
-     brk:"No database means no auth, no gating, no client portal. The whole access model lives here."},
-    {id:"sb-keys",n:"04",sev:"block",t:"Supabase project URL, anon key, service role key, project ref, DB password",
+     brk:"No database means no auth, no gating, no client portal. The whole access model lives here.",
+     store:"<code>SUPABASE_DB_PASSWORD</code> in <code>.env.prod</code>",
+     how:["Client signs up at <b>supabase.com</b> if they do not already have an account.",
+          "<b>New project</b> — and check the <b>organization selector at the top</b> before clicking. It must be created inside the <em>client's</em> organization, not yours. This is the single easiest thing to get wrong, and moving a project between orgs afterwards is painful.",
+          "Pick a region near the client's actual users.",
+          "Set a <b>database password</b> when prompted and record it right then. You cannot read it back later — only reset it, which invalidates anything already using it.",
+          "<b>Decided: no Pro yet</b> — activate when required. Expect, rather than debug, that the free tier pauses the project after seven days idle, because it will sit unused while dev stays the workspace. Restoring a paused project from the dashboard <em>loses no data</em>; it is a known manual step, not an incident. Pro becomes required before real users log in."]},
+
+    {id:"sb-keys",n:"04",sev:"block",t:"Supabase project URL, anon key, service role key, project ref",
      use:"Schema push, the config re-point, every Function",
-     src:"Client's Supabase project → Settings → API / Database",
-     brk:"The service role key is what every Cloudflare Function uses to talk to Postgres — without it the entire Functions layer 500s. The project URL and anon key are half of the two-file config swap."},
+     brk:"The service role key is what every Cloudflare Function uses to talk to Postgres — without it the entire Functions layer 500s. The project URL and anon key are half of the two-file config swap.",
+     store:"<code>SUPABASE_URL</code>, <code>SUPABASE_ANON_KEY</code>, <code>SUPABASE_SERVICE_ROLE_KEY</code>, <code>SUPABASE_PROJECT_REF</code>",
+     how:["Open the client's project → <b>Settings → API</b>.",
+          "Copy <b>Project URL</b> → <code>SUPABASE_URL</code>.",
+          "Copy the <b>anon / public</b> key → <code>SUPABASE_ANON_KEY</code>. This one is <em>designed</em> to be public — it is the value that ends up in the committed <code>js/supabase-init.js</code>, so it is not a secret and does not need hiding.",
+          "Copy the <b>service_role</b> key → <code>SUPABASE_SERVICE_ROLE_KEY</code>. This one bypasses row-level security entirely. It must never reach a browser, never enter <code>js/supabase-init.js</code>, and never be committed. If you only guard one value on this whole page, guard this one.",
+          "Go to <b>Settings → General → Reference ID</b> → <code>SUPABASE_PROJECT_REF</code>. It is also the subdomain in the project URL.",
+          "The DB password comes from item 3 — it is not displayed anywhere in these screens."]},
+
     {id:"sb-token",n:"05",sev:"block",t:"Supabase account-level access token",
      use:"CLI supabase link, to push migrations",
-     src:"Client's Supabase account → Access Tokens. Account-level, not project-level — these are different things and the project one will not link.",
-     brk:"Migrations cannot be pushed from the CLI. You would be recreating eight tables and their RLS policies by hand in the dashboard."},
+     brk:"Migrations cannot be pushed from the CLI. You would be recreating eight tables and their RLS policies by hand in the dashboard.",
+     store:"<code>SUPABASE_ACCESS_TOKEN</code> in <code>.env.prod</code>",
+     how:["This is an <b>account</b> token, not a project key — a different thing in a different place. The keys from item 4 will not work here.",
+          "Click the <b>account avatar, top right → Access Tokens</b> (or go to <code>supabase.com/dashboard/account/tokens</code>).",
+          "<b>Generate new token</b>. Name it something traceable like <code>dts-handoff-cli</code>, so it can be revoked later without guessing what it was for.",
+          "<b>Copy it immediately</b> — shown once, same as the Cloudflare token.",
+          "If the client generates it rather than you, it grants access to <em>their whole Supabase account</em>, not just this project. Say that out loud before asking for it, and revoke it when the handoff run is finished."]},
+
     {id:"web3",n:"06",sev:"req",t:"Web3Forms — a decision, not a credential",
      use:"Lead form delivery",
-     src:"Decide with the client: does this stay on DTS's own account, or move to theirs? The docs are explicit that you must ask rather than assume.",
-     brk:"Nothing breaks technically either way — but if it silently stays on DTS's account, DTS keeps owning the client's inbound leads and the client has no way to change the destination without you."},
+     brk:"Nothing breaks technically either way — but if it silently stays on DTS's account, DTS keeps owning the client's inbound leads and the client has no way to change the destination without you.",
+     store:"Goes in site content, not <code>.env</code> — the key is public by design.",
+     how:["Ask the client directly: <b>whose account should own lead delivery?</b> The docs are explicit that you ask rather than assume.",
+          "If it moves to them: client registers a free key at <b>web3forms.com</b> using their own email, and copies the <b>Access Key</b>.",
+          "The key goes into <code>data/site/lead.json</code> (field <code>accessKey</code>) and the matching entry in <code>js/config.js</code>. It is public by design — Web3Forms documents it as safe for client-side use.",
+          "In the same file, set <code>ownerEmail</code> to the real destination mailbox. <b>Do not skip this</b> — it currently points at a personal address, so leaving it means the client's own enquiries keep arriving in someone else's inbox after handoff.",
+          "Send one real test enquiry through the live form and confirm it lands where it should."]},
+
     {id:"google",n:"07",sev:"cond",t:"Google Cloud Console access",
      use:"Production OAuth client ID + secret",
-     src:"Client's Google account, or a DTS-managed Workspace acting for them — confirm which.",
-     brk:"Only if Google sign-in is launching. Skip explicitly and note the deferral; do not block on it. The dev OAuth app is registered under a personal account and can never be reused."},
+     brk:"Only if Google sign-in is launching. Skip explicitly and note the deferral; do not block on it. The dev OAuth app is registered under a personal account and can never be reused.",
+     store:"Pasted straight into the client's Supabase dashboard — nothing in <code>.env</code>.",
+     how:["Sign in to <b>console.cloud.google.com as the client</b>, and create (or select) a project of theirs.",
+          "<b>APIs &amp; Services → OAuth consent screen</b>. Choose <b>External</b>, fill in app name, support email and logo. This is what real users will see, so use the client's branding, not DTS's.",
+          "<b>APIs &amp; Services → Credentials → Create Credentials → OAuth client ID → Web application</b>.",
+          "Authorized redirect URI: <code>https://&lt;client-project-ref&gt;.supabase.co/auth/v1/callback</code>, using the ref from item 4. <b>Not the dev one</b> — that is the whole reason these cannot be copied over.",
+          "Copy the <b>Client ID</b> and <b>Client Secret</b>.",
+          "In the client's Supabase: <b>Authentication → Providers → Google</b> → enable, paste both, save.",
+          "Back in Google, move the consent screen from <b>Testing to Published</b> (or complete their verification). Skip this and every real user meets an “unverified app” warning."]},
+
     {id:"azure",n:"08",sev:"cond",t:"Azure Portal access",
      use:"Production Microsoft OAuth app registration + secret",
-     src:"Client's Microsoft/Azure tenant",
-     brk:"Only if Microsoft sign-in is launching. Same deferral rule as Google. Azure AD app registration itself is free — no Azure subscription needed."},
+     brk:"Only if Microsoft sign-in is launching. Same deferral rule as Google. App registration itself is free — no Azure subscription needed.",
+     store:"Pasted straight into the client's Supabase dashboard — nothing in <code>.env</code>.",
+     how:["Sign in to <b>portal.azure.com as the client</b>.",
+          "Go to <b>Microsoft Entra ID</b> — this is what Azure Active Directory was renamed to; the older repo docs still call it Azure AD, same thing.",
+          "<b>App registrations → New registration</b>. Name it for the client's site.",
+          "Redirect URI: platform <b>Web</b>, value <code>https://&lt;client-project-ref&gt;.supabase.co/auth/v1/callback</code> — the client's ref from item 4.",
+          "From <b>Overview</b>, copy the <b>Application (client) ID</b> and the <b>Directory (tenant) ID</b>.",
+          "<b>Certificates &amp; secrets → New client secret</b>. Copy the <b>Value</b> column, not the Secret ID — and do it before navigating away, because the value is masked afterwards and cannot be recovered.",
+          "In the client's Supabase: <b>Authentication → Providers → Azure</b> → enable, paste Client ID, Secret, and the tenant URL."]},
+
     {id:"dns",n:"09",sev:"block",t:"Domain registrar / DNS access",
      use:"Pointing the real domain at production — and SPF/DKIM for SMTP",
-     src:"Wherever the domain is currently registered",
-     brk:"Two things, not one. No domain cutover, and no custom SMTP either — the SMTP provider will not send anything until you add its DNS records. This single item gates item 11."},
+     brk:"Two things, not one. No domain cutover, and no custom SMTP either — the SMTP provider will not send anything until you add its DNS records. This single item gates item 11.",
+     store:"No value — this is access. Note in the inventory <em>where</em> DNS is hosted.",
+     how:["Establish where the domain is actually <b>registered</b>, and separately where its <b>DNS is hosted</b> — they are often two different companies, and the records you need live with the second one.",
+          "A <code>whois</code> lookup gives you the registrar if nobody remembers. Ask the client who has the login.",
+          "Get real access: the client's registrar account, a delegated user on it, or the domain moved into the client's Cloudflare.",
+          "Confirm you can create <b>TXT</b> and <b>CNAME</b> records. That is the minimum for SMTP domain verification and for the Pages custom domain.",
+          "<b>Before touching anything, screenshot the existing records — especially MX.</b> If the client's email runs on this domain, an accidental MX change takes their mail down, and that is a far worse outage than a website being late.",
+          "Do this early. It is the item most often owned by someone outside the room, and it blocks item 11."]},
+
     {id:"clients",n:"10",sev:"block",t:"The real client list",
      use:"The organization and membership import",
-     src:"From the client directly — never guessed from old sheet data. Must say which staff belong to which company and who is org_admin at each.",
-     brk:"The import script creates real organizations, real users and real entitlements in one run. A flat email list is not enough: without the org mapping you cannot assign anyone, and near-duplicate company spellings silently create two organizations that then cannot see each other's resources."},
+     brk:"The import script creates real organizations, real users and real entitlements in one run. A flat email list is not enough: without the org mapping you cannot assign anyone, and near-duplicate company spellings silently create two organizations that then cannot see each other's resources.",
+     store:"A spreadsheet from the client. Never guessed from old sheet data.",
+     how:["Ask the client for one row per <b>person</b>, with these columns: company name · full name · email · is this person the company's <b>org_admin</b>? · which projects or tours that company should be able to see.",
+          "Insist on <b>one exact spelling per company</b>. “Acme Hotels” and “Acme Hotel” on two rows silently become two separate organizations, and members of one then cannot see the other's resources.",
+          "Confirm the org_admin for each company <b>by name, with the client</b>. Do not infer it from a job title — the docs call this out specifically.",
+          "Read the whole mapping back to the client before the import runs. This is the step most likely to hand a resource to the wrong company, and it is much cheaper to catch on a spreadsheet than in production.",
+          "The import also sends password-set invites, so a wrong address here emails a stranger."]},
+
     {id:"smtp",n:"11",sev:"block",t:"Custom SMTP provider + a verified sending domain",
      use:"Password reset and signup confirmation emails",
-     src:"Resend, SES, Postmark, SendGrid, Brevo — any of them. Free tier is fine. Depends on item 9.",
-     brk:"NOT skippable the way OAuth is. Supabase's built-in email is capped at two messages per hour, project-wide, shared across every auth email type — and Supabase's own docs call it unsuitable for production. Password reset will appear to work and simply never arrive."},
+     brk:"NOT skippable the way OAuth is. Supabase's built-in email is capped at two messages per hour, project-wide, shared across every auth email type — and Supabase's own docs call it unsuitable for production. Password reset will appear to work and simply never arrive.",
+     store:"Provider API key goes into the Supabase dashboard, not <code>.env</code>.",
+     how:["Pick a provider. <b>Resend</b> is the one Supabase's own docs use as the worked example; SES, Postmark, SendGrid, ZeptoMail and Brevo all work the same way. Free tier is fine.",
+          "Create the account — client's own, or DTS-managed on their behalf. Decide which, same question as Web3Forms.",
+          "Add the <b>sending domain</b> in the provider and copy the SPF/DKIM records it gives you.",
+          "Add those records at the DNS host from item 9, then wait for the provider to show the domain <b>verified</b>. Nothing sends until it does — this is the step that was blocked during dev.",
+          "Generate an <b>API key</b> in the provider.",
+          "In Supabase: <b>Authentication → Emails → SMTP Settings</b> → enable custom SMTP. For Resend: host <code>smtp.resend.com</code>, port <code>587</code>, username literally <code>resend</code>, password = the API key. Sender address at the verified domain (e.g. <code>no-reply@dtsxr.com</code>), sender name “Digital Twin Studios”.",
+          "Then go to <b>Authentication → Rate Limits → “Rate limit for sending emails”</b>. Supabase applies a new default of 30/hour once custom SMTP is active, <b>but the field may still display the old value of 2</b>. Raise it by hand; do not assume it updated.",
+          "Test <b>both</b> flows for real — a signup confirmation and a password reset. Two separate code paths sharing one budget."]},
+
     {id:"ga4",n:"12",sev:"req",t:"GA4 Measurement ID + Microsoft Clarity Project ID",
      use:"Marketing tags",
-     src:"Client's Google Analytics (Admin → Data Streams) and clarity.microsoft.com. Both free, both public IDs, neither is a secret.",
-     brk:"Both currently ship as empty strings, and the loaders check for a real id before injecting anything — so nothing errors, nothing loads, and nothing is measured. Silent by design. Also decide whose account they live on, same question as Web3Forms."},
+     brk:"Both currently ship as empty strings, and the loaders check for a real id before injecting anything — so nothing errors, nothing loads, and nothing is measured. Silent by design. Also decide whose account they live on, same question as Web3Forms.",
+     store:"Pasted into <code>js/analytics-init.js</code> and committed. Public IDs, no <code>.env</code> entry.",
+     how:["<b>GA4:</b> go to <b>analytics.google.com</b> signed in as the client → <b>Admin</b> (the gear, bottom left) → <b>Create → Property</b> → fill in the details.",
+          "Then <b>Data Streams → Web</b>, enter the site URL, and copy the <b>Measurement ID</b> — it looks like <code>G-XXXXXXXXXX</code>. That is the ID you want, not the Stream ID next to it.",
+          "<b>Clarity:</b> go to <b>clarity.microsoft.com</b>, sign in, <b>New project</b>, enter the site URL, then copy the <b>Project ID</b> from the project's settings.",
+          "Paste both into <code>js/analytics-init.js</code> — fields <code>ga4MeasurementId</code> and <code>clarityProjectId</code>. Neither is a secret; commit them directly.",
+          "Expect no data until someone clicks <b>Accept</b> on the cookie banner — both tags are gated behind real consent, so your own test visit will not register if you dismiss it."]},
+
     {id:"collab",n:"13",sev:"block",t:"The collaborator-vs-self-service decision",
      use:"Determines who clicks what for the whole run",
-     src:"Decide with the client before starting: are you added as a collaborator on their accounts, or do they run the setup clicks and hand you tokens in a git-ignored .env.prod?",
-     brk:"Not a credential, but the docs call it a hard-gate item because it changes the shape of every step after it. Deciding it mid-run is how tokens end up in the wrong place."}
+     brk:"Not a credential, but the docs call it a hard-gate item because it changes the shape of every step after it. Deciding it mid-run is how tokens end up in the wrong place.",
+     store:"<b>Decided: Route A — collaborator.</b> Record it in the session log’s account inventory, labels only.",
+     how:["<b>Chosen: Route A.</b> The client adds you as a collaborator — Cloudflare <b>Manage Account → Members → Invite</b>, Supabase <b>Organization → Team → Invite</b> — and your CLI then runs the automated steps directly against their projects.",
+          "<b>Confirm the invites are actually accepted on both.</b> Choosing the route is not the same as holding the grant, and the run stops dead at whichever one was missed.",
+          "<b>Reconcile this against how you already got items 2, 4 and 5.</b> If those values were handed to you rather than generated from your own collaborator session, you are on Route B in practice whatever the paperwork says. Worth straightening out now: a named collaborator grant is cleanly revocable later, a handed-over token is not.",
+          "Route B, not taken: the client would have performed items 2, 4 and 5 themselves and handed over the values in a <code>.env.prod</code> built together in one sitting — never over email or chat in plain text.",
+          "The underlying question, if it is not already settled: <b>do you keep any access after handoff?</b> That is a business arrangement, and Route A is the moment it gets decided — a collaborator grant left in place by default is not the same as one the client agreed to.",
+          "<code>.gitignore</code> already covers <code>.env</code> and <code>.env.*</code>, so <code>.env.prod</code> is git-ignored the moment you create it. Verify with <code>git status</code> anyway before your first commit of the run."]}
   ];
   var LABEL = {have:"In hand", def:"Deferred", none:"Not yet"};
+  // Which items this provisioning run actually needs. Everything else is a
+  // go-live concern and is deferred on purpose, not outstanding by accident.
+  var PROV = {"cf-acct":1,"cf-token":1,"sb-acct":1,"sb-keys":1,"sb-token":1,"collab":1};
+  function isProv(id){ return !!PROV[id]; }
+
+  var PLAN = [
+    {n:1, t:"Credential inventory", run:true},
+    {n:2, t:"Client Supabase", run:true, note:"minus SMTP"},
+    {n:3, t:"Client Cloudflare", run:true},
+    {n:4, t:"Re-point config", run:true, note:"overlay only"},
+    {n:5, t:"OAuth", run:false},
+    {n:6, t:"Org + client import", run:false},
+    {n:7, t:"Domain", run:false},
+    {n:8, t:"Final live checks", run:false}
+  ];
 
   var stateEl = document.getElementById("state");
   var state;
@@ -224,8 +360,10 @@ footer p{margin:0 0 6px;max-width:70ch}
       + '<div class="rmain">'
         + '<div class="chips">'+sevChip(it.sev)+'<span class="chip src">'+esc(it.use)+'</span></div>'
         + '<p class="rtitle">'+esc(it.t)+'</p>'
-        + '<p class="rmeta"><b>Where</b>'+esc(it.src)+'</p>'
         + '<p class="rbreak"><b>If skipped —</b> '+esc(it.brk)+'</p>'
+        + '<div class="how"><p class="how-h">How to get it</p><ol class="how-l">'
+          + it.how.map(function(s){ return '<li>'+s+'</li>'; }).join('')
+        + '</ol><p class="how-store"><b>Record as</b> '+it.store+'</p></div>'
       + '</div>'
       + '<div class="seg" role="group" aria-label="'+esc(it.t)+' status">'
         + ['have','def','none'].map(function(v){
@@ -236,9 +374,13 @@ footer p{margin:0 0 6px;max-width:70ch}
   }
 
   function counts(){
-    var have=0, def=0;
-    GATE.forEach(function(it){ var s=stOf(it.id); if(s==="have")have++; else if(s==="def")def++; });
-    return {have:have, def:def, none:GATE.length-have-def, total:GATE.length};
+    var have=0, def=0, provHeld=0;
+    GATE.forEach(function(it){
+      var s=stOf(it.id);
+      if(s==="have")have++; else if(s==="def")def++;
+      if(isProv(it.id) && s!=="have" && s!=="def") provHeld++;
+    });
+    return {have:have, def:def, none:GATE.length-have-def, total:GATE.length, provHeld:provHeld};
   }
 
   function meterHTML(){
@@ -251,8 +393,37 @@ footer p{margin:0 0 6px;max-width:70ch}
       + '<div class="bar" role="img" aria-label="'+c.have+' of '+c.total+' in hand, '+c.def+' deferred">'
         + '<i class="have" style="width:'+pH+'%"></i><i class="def" style="width:'+pD+'%"></i>'
       + '</div>'
-      + '<div class="meter-fig"><span class="meter-n">'+(c.none===0?"Clear":"Held")+'</span><span class="meter-l">Gate status</span></div>'
+      + '<div class="meter-fig"><span class="meter-n'+(c.provHeld===0?" is-clear":"")+'">'+(c.provHeld===0?"Clear":"Held")+'</span><span class="meter-l">This run</span></div>'
+      + '<div class="meter-fig"><span class="meter-n">'+(c.none===0?"Clear":"Held")+'</span><span class="meter-l">Go-live</span></div>'
     + '</div>';
+  }
+
+  function planHTML(){
+    return '<section class="plan"><h2>This run is provisioning, not handoff</h2>'
+      + '<p class="sec-note">The goal is that the client owns both accounts and the billing from day one, while development continues against dev. That is steps 1–4 of the handoff command and a hard stop before 5 — so say so when you start it, and it will plan to that scope rather than to a full go-live.</p>'
+      + '<div class="strip">'
+      + PLAN.map(function(s){
+          return '<div class="stepcell'+(s.run?' go':' halt')+'">'
+            + '<span class="stepn">'+s.n+'</span>'
+            + '<span class="stept">'+esc(s.t)+'</span>'
+            + '<span class="stepv">'+(s.run?(s.note||"run"):"stop")+'</span>'
+          + '</div>';
+        }).join('')
+      + '</div>'
+      + '<ul class="items plan-notes">'
+      + '<li class="item flag"><h4>Step 4 is a one-way switch, and you are not ready to be one-way</h4>'
+        + '<p>Re-pointing <code>js/supabase-init.js</code> in the repo would aim your dev work at the client’s production database. Use the pattern the deploy already relies on: <code>DEPLOY-STAGING.md</code> builds a staging directory and overlays a different <code>js/config.js</code> into it rather than editing the committed copy. Overlay <code>js/supabase-init.js</code> the same way — and <code>index.html</code>’s <code>preconnect</code> alongside it, which is the half people miss because nothing fails when it is wrong.</p>'
+        + '<p><b>Repo keeps dev values; production gets client values.</b> No branch, no second config file, and it reuses a mechanism already proven here.</p></li>'
+      + '<li class="item"><h4>Two things inside step 2</h4>'
+        + '<p><b>Skip the SMTP half</b> — blocked on DNS, and not needed until real users exist. It becomes non-negotiable before step 6, because the org import sends password-set invites and without custom SMTP those hit the two-per-hour cap and mostly never arrive.</p>'
+        + '<p><b>Create the first <code>site_admin</code> with auto-confirm.</b> With no SMTP configured a normal signup confirmation will not reliably send; the dashboard’s user-creation has an auto-confirm option that sidesteps the email entirely.</p></li>'
+      + '<li class="item"><h4>Two decisions already taken — recorded, not re-opened</h4>'
+        + '<p><b>No Supabase Pro yet</b>, activate when required. So expect the free tier to pause the project after seven days idle, because it <em>will</em> sit unused while dev stays the workspace. Restoring it from the dashboard loses no data — a known manual step, not an incident. Pro becomes required before real users log in.</p>'
+        + '<p><b>DTS keeps collaborator access after go-live</b>, agreed with the client. That makes the Route A grant deliberately permanent rather than a handoff-run grant nobody got around to revoking — worth recording as <em>agreed</em>, so a later reader can tell the two apart.</p></li>'
+      + '<li class="item"><h4>When you stop, you will have</h4>'
+        + '<p>Client-owned accounts and billing, your collaborator access on both, schema pushed, content uploaded, config pointing correctly — and no domain, no real users, no marketing tags, nothing shared.</p>'
+        + '<p><b>Do not circulate the production URL.</b> The lead form still carries a personal address as <code>ownerEmail</code> until item 6 is settled. And you now have two environments that can drift: dev stays the workspace, prod is a destination. Re-run the content upload at go-live rather than assuming prod is current — this repo has already had one outage made hard to attribute by exactly that kind of divergence.</p></li>'
+      + '</ul></section>';
   }
 
   var FORCED = [
@@ -292,13 +463,21 @@ footer p{margin:0 0 6px;max-width:70ch}
     h += '<header class="mast">'
       + '<p class="eyebrow">Preparation only · no account or infrastructure config touched</p>'
       + '<h1>Handoff pre-flight</h1>'
-      + '<p class="standfirst">Everything that has to be in hand <em>before</em> the first account gets touched, what stops being optional the moment this goes to a client, and what actually breaks in each case. Thirteen gate items; the run does not start until every one is either held or deliberately deferred.</p>'
+      + '<p class="standfirst">Everything that has to be in hand <em>before</em> the first account gets touched — each one with the actual click-path through the client’s dashboard, where to record the value, and what breaks if it is skipped. Thirteen gate items; the run does not start until every one is either held or deliberately deferred.</p>'
       + '</header>';
     h += meterHTML();
+    h += planHTML();
+
+    var provRows = GATE.filter(function(it){ return isProv(it.id); });
+    var liveRows = GATE.filter(function(it){ return !isProv(it.id); });
 
     h += '<section><h2>Gate one — credentials and access</h2>'
       + '<p class="sec-note">Numbered to match the handoff command’s own inventory table, so a row here and a row there are the same row. Three states, because the source treats “deferred with sign-off” as a legitimate way to clear the gate — an unanswered item is not the same as a decided one.</p>'
-      + '<div class="rows">' + GATE.map(rowHTML).join('') + '</div></section>';
+      + '<h3>Needed for this run — steps 1 to 4</h3>'
+      + '<div class="rows">' + provRows.map(rowHTML).join('') + '</div>'
+      + '<h3>Needed before go-live — not before this run</h3>'
+      + '<p class="sec-note">Deferring these is the decision, not an omission: four are settled as go-live concerns, and the three still outstanding are the ones with real lead time. Item 9 is the long pole — it gates both SMTP and the domain, and it is usually owned by someone outside the room.</p>'
+      + '<div class="rows">' + liveRows.map(rowHTML).join('') + '</div></section>';
 
     h += '<section><h2>What stops being optional</h2>'
       + '<p class="sec-note">These are live today on the dev build and cause nothing, because dev has no real users. Each one changes character the moment a real person depends on it.</p>'
@@ -325,6 +504,7 @@ footer p{margin:0 0 6px;max-width:70ch}
       + '</div></section>';
 
     h += '<footer>'
+      + '<p><b>On the click-paths.</b> Menu names and exact wording come from this project’s own setup notes, written while these steps were actually performed on the dev accounts — so they describe a route that worked, not a guess. Cloud consoles do get reorganised, and Azure AD has already been renamed to Microsoft Entra ID since those notes were written. If a menu is not where this says, trust the screen in front of you and correct the step here.</p>'
       + '<p>Cost to the client after launch: Supabase Pro $25/mo, R2 roughly $1–5/mo, the domain, and optionally a code-signing certificate. Everything else — Pages, Functions, Web3Forms free tier — is $0. Re-check live pricing before quoting.</p>'
       + '<p>Status is saved to this page for everyone who opens it.<span class="saving" id="saving"></span></p>'
       + '</footer>';
