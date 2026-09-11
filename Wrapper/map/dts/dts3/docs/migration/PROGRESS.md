@@ -22,6 +22,87 @@ identity/access model each phase from 3 onward implements is defined in
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
 
+- 2026-09-11 — **Re-verified `docs/WEBSITE-STATE.md` against the code and the
+  live site.** Documentation only; no site code, content or infrastructure was
+  touched. Commit `0789c7e1` (169 insertions, 48 deletions). Claims that were
+  no longer true were removed rather than annotated.
+
+  **The meta-finding, and the reason this entry exists.** This log has **no
+  entry for the `supabase`- or `cloudflare`-scope security audits**, even
+  though nine commits from them sit between the 2026-09-07 entry and `main`.
+  Both sessions wrote to `SECURITY-AUDIT-2026-09-06.md` and stopped there. That
+  is what let WEBSITE-STATE keep asserting "the `supabase`, `cloudflare` and
+  `deps` scopes are still unrun" for five days after two of them had run and
+  shipped six deployed fixes. No retroactive entries were invented for those
+  sessions; WEBSITE-STATE now names the report as the authority for anything
+  after 2026-09-06, and §11 links it, since `docs/README.md` does not index it
+  either.
+
+  **Corrected in WEBSITE-STATE:** the Admin Board nav (documented as
+  CONTENT/SECTORS with projects nested under sectors; `buildNav()` actually
+  builds SITE / CATEGORY PAGES / PROJECTS / GIS MAPS / ADMIN / HELP, with
+  projects as their own top-level group); "29 public links" (the content
+  migration left exactly one); the raw-`/data` proof, which used the deleted
+  `campus.json` and so could not be run at all; the SPA-fallback byte count
+  (64804 → 64898, now expressed as "read it off `/` each time"); the audit
+  scope claim above; `content-loader`'s injection list (`hex-media.js` missing,
+  `admin.js` reached by two paths); Part M's range (157–167, not 157–164); four
+  line counts, the `_lib` export lists, the `scripts/` list, and the "one R2
+  read rather than 62" figure; and the branch divergence (nine commits, not
+  "ahead", with `main` itself nine ahead of `origin`).
+
+  **Added:** the two missing audit scopes; the fact that Function responses
+  carry their own `SECURITY_HEADERS` because `_headers` reaches static assets
+  only; the credential-free test suite, which the document never mentioned
+  despite it being in `CLAUDE.md`'s checklist; and one new small finding —
+  `data/site/settings.json`'s `spatialBackdrop` is **dead content**, read by
+  nothing (`grep -rn spatialBackdrop js/ functions/ scripts/` is empty) and
+  holding a filename that has never existed (`…_V2.1.usdz`; the real file is
+  `…_V2.usdz`). The real path hardcodes its own filename at
+  `js/vision-pro-spatial.js:54`, so this is not the live 404 an older blocker
+  note calls it — but editing that field in the Admin Board would do nothing.
+
+  **F-C02 is now closed, and the answer was not knowable when the audit ran.**
+  The cloudflare scope deleted 50 retained Pages deployments but could not tell
+  whether deletion retires the `<hash>.dts-website-4cu.pages.dev` hostname or
+  merely the deployment record — the hostnames were still serving their old
+  builds 45–57 minutes later. That distinction decided whether deleting
+  deployments is a remedy for the exposure class at all. Re-ran the audit's own
+  re-check loop: all five sampled hostnames now return a real 404 (16,140
+  bytes, Cloudflare's own page), as does `0cfe69ba`. **It was propagation
+  delay.** The three retained deployments (`c66be075`, `fb6554dd`, `a5e4c407`)
+  were each checked and are clean. What does **not** expire is what leaked while
+  they were up: eight gated tour URLs were publicly readable from two
+  independent hosts, and a Treedis URL is a bearer URL — reissuing them is
+  still the only action that does not depend on someone else's infrastructure.
+
+  **F-C01 re-confirmed live and still fully open.** The parallel GitHub Pages
+  host serves the unstripped repo: `js/config.js` there greps **16**
+  `spaces.dtsxr.com` lines against the Cloudflare copy's 2, and
+  `/data/projects/campus.json` returns raw content with its `tourUrl` intact.
+  Deferred to handoff by the owner; recorded in WEBSITE-STATE's handoff table as
+  a High finding rather than as housekeeping.
+
+  **A verification trap worth keeping.** Check Function security headers with
+  `GET`, never `HEAD`. A `HEAD` to a Function path falls through to the static
+  SPA shell and returns `_headers`' CSP instead of the Function's
+  `default-src 'none'`, which looks exactly like the fix being absent. It
+  produced a false negative here before a real `GET` settled it.
+
+  **Tested:** all 6 credential-free files pass (5 security probes + the GIS
+  resolver regression), before and after. Live checks by `curl` against the dev
+  URL: deployment `c66be075` still current, public manifest 8 projects / 25
+  files, every excluded path returning the 64,898-byte fallback, gated resolves
+  401 and deleted keys 404, Function security headers present on `/data`,
+  `/api/resource/*` and `/api/admin/users`. Every file reference in the document
+  re-checked; the only unresolved ones are the GIS specs the document itself
+  identifies as never committed.
+
+  **Blocked / not done:** nothing browser-verified — Parts L, M and N are all
+  still unrun, and Part N remains the gate before merging this branch to
+  `main`. Nothing pushed to `origin`. The `deps` audit scope is still unrun as
+  a session, though its scan came back clean on 2026-09-06.
+
 - 2026-09-07 — **Portfolio content migration: 17 projects → 8.** Replaced the
   entire public portfolio from four client content-submission forms
   (`docs/New_Category_Content_Form_*.docx`). Final shape: 4 categories, 8
