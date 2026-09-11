@@ -63,6 +63,25 @@ say with certainty which account a command is about to write to, stop.
 buckets are `dts-content` / `dts-builds`, matching `wrangler.toml`. Any other
 naming means editing hardcoded strings in three scripts for no benefit.
 
+### How the credentials actually reach a command
+
+Nothing auto-loads `.env` or `.env.prod` — no `dotenv` anywhere, and the
+scripts read bare `process.env` (`seed-dev.mjs:10-11`,
+`import-clients.mjs:48-49`). **Shell state does not persist between tool
+calls**, so exporting in one command and running `wrangler` in the next fails:
+the second call starts from a fresh shell with none of it set.
+
+Load them in the **same invocation** as the command that needs them:
+
+```bash
+set -a; . ./.env.prod; set +a; npx wrangler whoami
+```
+
+That constraint is useful here rather than annoying: it makes "confirm which
+account I am pointed at" and "write to it" one atomic step instead of two that
+can drift apart between calls. Do it for every credentialed command in Steps
+1-4, not once at the start.
+
 ---
 
 ## Decisions already taken (2026-09-11) — record, do not re-prompt
