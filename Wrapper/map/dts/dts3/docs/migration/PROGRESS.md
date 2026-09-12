@@ -17,10 +17,121 @@ identity/access model each phase from 3 onward implements is defined in
 | 7 — Lead form | **DONE** | https://dts-website-4cu.pages.dev (deployed, `b4ed6f66...`) | Original server-side design (Turnstile-verified `/api/lead` proxying to Web3Forms) hit a real chain of debugging problems (documented in the session log below) and was deliberately reverted to a simpler client-side design at the user's explicit call. **User confirmed a real lead submit works end-to-end** against the simplified version — the fix is complete, not just deployed. |
 | 8 — Builds (org/user entitlement-gated) | **DONE** | https://dts-website-4cu.pages.dev (deployed, `101ac885...`) | Full scripted end-to-end battery against the real deployed site passes: guest 401, direct-user-entitlement 200, org-entitlement 200 (different account than the direct grant), site_admin bypass 200 with zero entitlement, non-entitled 403, unknown key 404, a disabled build 403s an otherwise-entitled user then 200s again once re-enabled, admin routes (list/create/update/upload/delete) all site_admin-gated and a non-admin gets 403, and a `public`-level app serves with no token at all. **User ran the full manual browser pass** (`docs/migration/PHASE8-BUILDS-TESTING.md`) — 12/13 passed; the one failure (no way to delete a build) was fixed same session, redeployed, and re-verified scripted end-to-end. Not re-run in the browser after that fix — the fix itself is proven at the API level, same confidence level as the rest of this row. |
 | 9 — Analytics & audit | **DONE — dev build complete** | https://dts-website-4cu.pages.dev (deployed, `40291069...`) | 23 scripted assertions pass (8 adversarial RLS on `events`/`admin_audit` against real dev Supabase, 15 live against `/api/track`/`/api/admin/audit` on the real deployed site) + full deploy-staging exclusion diff. **User needs to run** `docs/migration/PHASE9-TESTING.md` (browser click-through: consent banner, Activity chart, Audit screen, event-instrumented flows, final README regression) — nothing in it marked passed on their behalf. |
+| **Provisioning — client-owned infrastructure** | **DONE — 2026-09-12** | **https://dts-website-cdc.pages.dev** (client's Cloudflare account; dev `dts-website-4cu` stays the workspace) | Schema/RLS/3 security migrations verified by direct query; first `site_admin` created; 85 content objects + `_latest.json` uploaded and read back; static deploy verified (12 excluded paths at fallback byte count, all 25 manifest docs 200, gated resource 401, 4 security headers via GET, `config.js` greps 2); repo confirmed still on dev values |
 | Handoff — go live (real orgs + members) | not started | — | — |
 
 ## Session log
 (Newest first. One short entry per working session: what changed, what was tested, what's blocked.)
+
+- 2026-09-12 — **Provisioning run (`/migrate-provision`). Client-owned
+  Cloudflare + Supabase now exist and hold a full copy of the site; dev remains
+  the workspace and was not retargeted.** Infrastructure only — no site code,
+  content or schema changed, and nothing was committed.
+
+  **What was stood up.** Supabase: the client's project (already created inside
+  their org) received all 8 migrations via `supabase db push`; verified by
+  direct query rather than exit code — 8 tables, `relrowsecurity` true on every
+  one, and the three 2026-09-06 security migrations confirmed *in effect*, not
+  merely recorded (`events` has only a SELECT policy; `r2_object_key` and
+  `access` are unreadable by `anon`/`authenticated`; `is_org_member` /
+  `is_org_admin` both test `o.status` as well as `m.status`). First real
+  `site_admin` created via the dashboard with auto-confirm, then promoted by
+  direct SQL — the bootstrap path
+  `20260807220200_fix_protect_site_role_bootstrap` exists for. Cloudflare:
+  Pages project `dts-website` (Direct Upload, no git), R2 `dts-content` +
+  `dts-builds`, and the three Function secrets (`SUPABASE_URL`,
+  `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`) set fresh via
+  `wrangler pages secret put` — nothing copied from dev. Content: 26
+  `data/current` + 59 `data/source` objects, `_hashes.json`, and a
+  hand-built `data/source/_latest.json` (52 docs / 6 layers), which
+  `scripts/upload-content.mjs` does not write and
+  `functions/api/admin/content.js` is the only reader of.
+
+  **Deliberately NOT done, and why.** No Supabase Pro — the project will
+  idle-pause after ~7 days unused, which is expected rather than an incident;
+  restoring from the dashboard loses no data, and Pro becomes required before
+  real users log in. No custom SMTP — blocked on DNS (checklist item 9); it
+  becomes non-negotiable before `/migrate-handoff`'s org import, whose
+  password-set invites would otherwise hit the 2/hour cap and mostly never
+  arrive. OAuth, the real org/client import and the domain all stay with
+  `/migrate-handoff`.
+
+  **The repo deliberately still points at dev.** `js/supabase-init.js` and
+  `index.html`'s preconnect were overlaid in the *staged* copy only; `git
+  status` is clean on both, and that is this run's pass condition — the inverse
+  of `/migrate-handoff` step 4's. Deploy staging therefore carried three
+  overlays rather than one — later corrected to four, see below. `git grep`
+  confirms the client's project ref,
+  account id and Pages hostname appear in zero tracked files.
+
+  **Three things the plan did not anticipate.** (0) **There is a THIRD
+  account-specific committed value and the docs denied it.**
+  `js/turnstile-init.js` holds the lead form's Turnstile **site key**, which is
+  both account-owned and hostname-locked. Four documents
+  (`ACCOUNT-SETUP-AND-HANDOFF.md`, `migrate-phase4.md`,
+  `migrate-provision.md`, and this run's own first draft of
+  `migrate-handoff.md`) all asserted "exactly two" account-specific spots, so it
+  was on nobody's overlay list and the dev widget shipped to the client's site,
+  where it renders "Unable to connect to website" — found by the user testing the
+  contact form, not by any automated check. The lead still sent, which is *by
+  design*: since the Phase 7 revert nothing verifies the token server-side
+  (`functions/api/lead.js` does not exist and no `TURNSTILE_SECRET_KEY` is
+  read anywhere), and `js/app.js`'s `error-callback` deliberately re-enables
+  submit rather than trapping the user. So this is cosmetic, not a security
+  regression — but `js/turnstile-init.js`'s own header is now stale, still
+  claiming the secret is "read by functions/api/lead.js". All four documents were
+  corrected; the overlay list is now four files.
+
+  **Resolved the same day.** A new Turnstile widget was created in the client's
+  own Cloudflare account with `dts-website-cdc.pages.dev` on its hostname list,
+  `js/turnstile-init.js` was added as the fourth staged overlay, and the site
+  was redeployed (1 file changed, 115 already uploaded). Confirmed live: the
+  served key is the client's, the dev key and dev Supabase ref appear in zero
+  files on the deployed site, and the full battery still passes (6 excluded paths
+  at the fallback byte count, `/data/manifest.json` distinct, `config.js`
+  greps 2, gated resource 401, 4/4 security headers). The user confirmed the
+  widget completes its challenge in the browser — the one part not checkable from
+  here. The repo still holds the dev Turnstile key, exactly as it holds the dev
+  Supabase values. (1) The dev
+  `SUPABASE_ACCESS_TOKEN` in `.env` is revoked — 401 on `orgs list`,
+  `projects list` and `link`. It was already dead before this session; the
+  dev *database* password still works, so the psql probes are unaffected, but
+  `supabase db push` against dev will fail until a new token is minted. The
+  dev link state was restored from a pre-run backup of `supabase/.temp/`
+  rather than by re-linking. (2) Both R2 buckets report `location: EEUR`.
+  They were deleted and recreated with `--location enam` while still empty;
+  wrangler accepted and echoed the hint but placement stayed EEUR, so it appears
+  account-determined and not settable from the CLI. The impact was measured
+  rather than guessed: `functions/data/[[path]].js` does cache-aside through
+  `caches.default` with `s-maxage=300`, so only the first request per edge
+  per 5 minutes pays the round trip. Separately, `r2 bucket info`'s
+  `object_count` lags badly — it read 0 for objects already read back
+  successfully, so it is not a usable verification and was replaced by direct
+  object read-backs.
+
+  **Blocked / needs a human.** Two commands were refused by the permission
+  classifier as production actions and were run by the user instead
+  (`supabase db push`, `wrangler pages deploy`) — the intended shape for this
+  command, not a defect. The `tre-ven@dtsxr.com` invite on the client's
+  Supabase org shows EXPIRED and should be revoked or re-sent. Six `.DS_Store`
+  files sit under `assets/` — harmless (Pages skips them, which is the entire
+  122→116 file-count gap) but worth deleting from the repo.
+
+  **Checklist item 9 (DNS) has an external dependency that was not previously
+  recorded, and it is the critical path.** `digitaltwinstudios.com` and the
+  existing WordPress site are still controlled by the client's **previous
+  developer**, so the domain is not simply a decision the client can make — it
+  waits on a third party. This matters more than its position in the checklist
+  suggests, because item 11 (custom SMTP) needs DNS records, and the org import
+  needs working SMTP: the real ordering is **domain → SMTP → org import**, and
+  the whole chain is gated on someone outside the project. Two risks worth
+  holding: an unowned renewal can let the domain lapse irrecoverably, and if
+  company mail runs on that domain, a nameserver change without first carrying
+  the `MX`/`SPF`/`DKIM`/`DMARC` records across breaks email before anyone
+  notices the website. What to request (registrar access or a transfer with the
+  auth code, a full DNS zone export, the mail configuration, renewal/expiry
+  details, and the plan for the existing WordPress site) is written up for the
+  client in `docs/client-infrastructure-status.html` item 07.
 
 - 2026-09-11 — **Re-verified `docs/WEBSITE-STATE.md` against the code and the
   live site.** Documentation only; no site code, content or infrastructure was
@@ -3446,10 +3557,41 @@ identity/access model each phase from 3 onward implements is defined in
   real client scale before handoff (see `00-VERIFY-FIRST.md`).
 
 ## Account inventory (fill in as you go — NEVER put secret values here)
-- Dev Cloudflare account: ____
-- Dev Supabase project URL: ____  (anon key lives in js/supabase-init.js)
-- Domain (dev *.pages.dev or real): ____
-- Client Cloudflare account (handoff): ____
-- Client Supabase project (handoff): ____
-- GA4 Measurement ID: ____  (placeholder-empty in js/analytics-init.js until set)
-- Microsoft Clarity Project ID: ____  (placeholder-empty in js/analytics-init.js until set)
+
+Two environments exist as of the 2026-09-12 provisioning run. **Dev is the
+workspace; client production is a destination.** See §10 of
+`docs/WEBSITE-STATE.md`.
+
+- Dev Cloudflare account: developer's personal account (`robertoenrique2710@hotmail.com`);
+  Pages project `dts-website` → <https://dts-website-4cu.pages.dev>
+- Dev Supabase project URL: <https://wsqvzyfvxjenqvqjpqjv.supabase.co> (`DTSdev`,
+  `us-west-2`) — anon key lives in `js/supabase-init.js`, which the repo
+  deliberately still points at. **The dev account-level access token in `.env`
+  is revoked** (401 on `orgs list`/`projects list`/`link`); the dev DB
+  password still works. Mint a new token before the next `supabase db push`
+  against dev.
+- Domain (dev *.pages.dev or real): dev <https://dts-website-4cu.pages.dev>;
+  client production <https://dts-website-cdc.pages.dev>. No real domain yet —
+  registrar/DNS is checklist item 9, deferred to `/migrate-handoff`.
+- Client Cloudflare account (handoff): the client's own account, holding Pages
+  project `dts-website` → <https://dts-website-cdc.pages.dev> and R2 buckets
+  `dts-content` + `dts-builds` (both placed in `EEUR`; a `--location enam`
+  recreate was attempted while empty and did not take). **Account id deliberately
+  NOT recorded here** — see `ACCOUNT-SETUP-AND-HANDOFF.md` Part 3 step 6; it is
+  in `.env.prod` (git-ignored) only. **DTS holds a standing collaborator grant
+  on this account — agreed with the client, deliberately permanent, not a
+  handoff-run grant left in place by accident.**
+- Client Supabase project (handoff): inside the client's `Digital Twin Studios`
+  org, created 2026-09-11, region `us-west-1`, free tier. Schema pushed and
+  verified 2026-09-12; first `site_admin` is the DTS operator
+  (`roberto@dtsxr.com`). Project ref/URL/keys live in `.env.prod` only —
+  deliberately not recorded here while the committed runtime config still points
+  at dev. DTS access is an **Administrator** grant on the org (standing, agreed);
+  the client is Owner. Note a third org invite (`tre-ven@dtsxr.com`) shows
+  EXPIRED and should be revoked or re-sent. **No Pro upgrade** — expect a ~7-day
+  idle pause; restoring from the dashboard loses no data. **No custom SMTP** —
+  blocked on checklist item 9, mandatory before the org import.
+- GA4 Measurement ID: ____  (placeholder-empty in js/analytics-init.js until set;
+  checklist item 12, deferred)
+- Microsoft Clarity Project ID: ____  (placeholder-empty in js/analytics-init.js
+  until set; checklist item 12, deferred)

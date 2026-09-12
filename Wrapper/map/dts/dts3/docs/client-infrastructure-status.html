@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Your Accounts — Status</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Spectral:ital,wght@0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --bg:#eef1f4; --surface:#fff; --surface-2:#f6f8fa;
+  --ink:#16202b; --ink-2:#3d4d5c; --muted:#64778a;
+  --line:#d5dde4; --line-2:#e6ecf1;
+  --accent:#1f5f8b;
+  --block:#a33a2c; --block-bg:#f7e9e6;
+  --req:#8a6012; --req-bg:#f9f0dd;
+  --cond:#4a6272; --cond-bg:#eaeff3;
+  --ok:#2e6b4f; --ok-bg:#e4f0e9;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f151b; --surface:#161e27; --surface-2:#1b242e;
+    --ink:#e4eaf0; --ink-2:#bac7d3; --muted:#8b9caa;
+    --line:#28333e; --line-2:#212b35;
+    --accent:#6aa8d4;
+    --block:#e08b7d; --block-bg:#2e1d1a;
+    --req:#d6ae62; --req-bg:#2b2317;
+    --cond:#9fb3c2; --cond-bg:#1e262e;
+    --ok:#7dbd9b; --ok-bg:#17251e;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f151b; --surface:#161e27; --surface-2:#1b242e;
+  --ink:#e4eaf0; --ink-2:#bac7d3; --muted:#8b9caa;
+  --line:#28333e; --line-2:#212b35;
+  --accent:#6aa8d4;
+  --block:#e08b7d; --block-bg:#2e1d1a;
+  --req:#d6ae62; --req-bg:#2b2317;
+  --cond:#9fb3c2; --cond-bg:#1e262e;
+  --ok:#7dbd9b; --ok-bg:#17251e;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:940px;margin:0 auto;padding-inline:20px;padding-block:44px 80px}
+code{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-size:.88em;background:var(--surface-2);border:1px solid var(--line-2);border-radius:3px;padding:.05em .34em;color:var(--ink-2);word-break:break-word}
+a{color:var(--accent);text-underline-offset:2px}
+.mast{border-bottom:2px solid var(--ink);padding-bottom:20px;margin-bottom:8px}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin:0 0 10px}
+h1{font-family:Spectral,Georgia,serif;font-weight:600;font-size:clamp(30px,5.4vw,44px);line-height:1.1;margin:0 0 12px;text-wrap:balance;letter-spacing:-.01em}
+.standfirst{margin:0;max-width:64ch;color:var(--ink-2);font-size:16px}
+.standfirst em{font-family:Spectral,Georgia,serif;font-style:italic}
+.howto-note{margin:14px 0 0;padding:11px 13px;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:4px;font-size:14px;color:var(--ink-2);max-width:68ch}
+.meter{display:flex;flex-wrap:wrap;gap:20px 28px;align-items:baseline;margin:22px 0 0;padding:16px 18px;background:var(--surface);border:1px solid var(--line);border-radius:4px}
+.meter-fig{display:flex;flex-direction:column;gap:2px}
+.meter-n{font-family:Spectral,Georgia,serif;font-size:26px;font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.meter-n.is-clear{color:var(--ok)}
+.meter-l{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.live{margin-top:42px;background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--ok);border-radius:4px;padding:20px}
+.live h2{margin-bottom:6px}
+.live p{margin:0 0 10px;color:var(--ink-2);font-size:14.5px;max-width:68ch}
+.live p:last-child{margin-bottom:0}
+.livelink{font-family:"IBM Plex Mono",monospace;font-size:14px;word-break:break-all}
+section{margin-top:52px}
+h2{font-family:Spectral,Georgia,serif;font-weight:600;font-size:23px;margin:0 0 6px;letter-spacing:-.005em;text-wrap:balance}
+.sec-note{margin:0 0 22px;color:var(--muted);max-width:68ch;font-size:14.5px}
+.rows{display:flex;flex-direction:column;gap:9px}
+.row{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--line);border-radius:4px;padding:14px 16px;display:grid;grid-template-columns:30px 1fr;gap:4px 12px;align-items:start}
+.row[data-sev="block"]{border-left-color:var(--block)}
+.row[data-sev="req"]{border-left-color:var(--req)}
+.row[data-sev="cond"]{border-left-color:var(--cond)}
+.row[data-st="have"]{background:var(--ok-bg);border-left-color:var(--ok)}
+.rnum{font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--muted);padding-top:3px;font-variant-numeric:tabular-nums}
+.rmain{min-width:0}
+.rtitle{font-weight:600;font-size:15.5px;margin:0 0 3px;color:var(--ink)}
+.rmeta{margin:0 0 8px;font-size:13.5px;color:var(--ink-2)}
+.rmeta b{font-weight:500;color:var(--muted);font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.08em;text-transform:uppercase;margin-right:6px}
+.rmeta:last-child{margin-bottom:0}
+.rbreak{margin:8px 0 0;padding:9px 11px;background:var(--surface-2);border-radius:3px;font-size:13.5px;color:var(--ink-2);border-left:2px solid var(--line)}
+.row[data-sev="block"] .rbreak{border-left-color:var(--block)}
+.rbreak b{color:var(--ink);font-weight:600}
+.how{margin-top:13px;border-top:1px dashed var(--line);padding-top:12px}
+.how-h{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--accent);margin:0 0 9px;font-weight:500}
+.how-l{margin:0;padding:0;list-style:none;counter-reset:hs;display:flex;flex-direction:column;gap:8px}
+.how-l li{counter-increment:hs;position:relative;padding-left:27px;font-size:14px;color:var(--ink-2);line-height:1.55}
+.how-l li::before{
+  content:counter(hs);position:absolute;left:0;top:1px;
+  width:18px;height:18px;border-radius:50%;
+  background:var(--surface-2);border:1px solid var(--line);
+  font-family:"IBM Plex Mono",monospace;font-size:10px;font-variant-numeric:tabular-nums;
+  color:var(--muted);display:flex;align-items:center;justify-content:center;
+}
+.how-l b{color:var(--ink);font-weight:600}
+.how-l em{font-style:italic}
+.how-f{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:7px}
+.how-f li{font-size:14px;color:var(--ink-2);line-height:1.55;padding-left:15px;position:relative}
+.how-f li::before{content:"";position:absolute;left:0;top:.62em;width:5px;height:5px;border-radius:50%;background:var(--line)}
+.how-f b{color:var(--ink);font-weight:600}
+.how-store{margin:12px 0 0;font-size:13px;color:var(--muted);padding-top:10px;border-top:1px solid var(--line-2)}
+.how-store b{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.09em;text-transform:uppercase;margin-right:7px;color:var(--muted);font-weight:500}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 7px}
+.chip{font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:2.5px 7px;border-radius:3px;font-weight:500;white-space:nowrap}
+.chip.block{background:var(--block-bg);color:var(--block)}
+.chip.req{background:var(--req-bg);color:var(--req)}
+.chip.cond{background:var(--cond-bg);color:var(--cond)}
+.chip.ok{background:var(--ok-bg);color:var(--ok)}
+table.cost{width:100%;border-collapse:collapse;font-size:14.5px;background:var(--surface);border:1px solid var(--line);border-radius:4px;overflow:hidden}
+table.cost th,table.cost td{text-align:left;padding:11px 14px;border-bottom:1px solid var(--line-2);vertical-align:top}
+table.cost th{font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:500;background:var(--surface-2)}
+table.cost tr:last-child td{border-bottom:0}
+table.cost td.amt{font-family:"IBM Plex Mono",monospace;white-space:nowrap;font-variant-numeric:tabular-nums}
+.tablewrap{overflow-x:auto}
+.items{display:flex;flex-direction:column;gap:14px;margin:0;padding:0;list-style:none}
+.item{border-left:2px solid var(--line);padding-left:15px}
+.item h4{margin:0 0 4px;font-size:15px;font-weight:600}
+.item p{margin:0 0 6px;color:var(--ink-2);font-size:14.5px;max-width:68ch}
+.item p:last-child{margin-bottom:0}
+footer{margin-top:56px;padding-top:20px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+footer p{margin:0 0 6px;max-width:70ch}
+@media (max-width:560px){
+  .wrap{padding-block:30px 60px}
+  .row{grid-template-columns:1fr;gap:3px}
+  .rnum{padding-top:0}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<main>
+
+<header class="mast">
+  <p class="eyebrow">Digital Twin Studios &middot; Infrastructure status &middot; 12 September 2026</p>
+  <h1>What now lives in your accounts</h1>
+  <p class="standfirst">Your website&rsquo;s hosting, database and file storage have been created on
+  <em>your own</em> Cloudflare and Supabase accounts, and a complete working copy of the site is
+  deployed and tested there. You own the accounts and the billing from today. This page lists what
+  was set up, what is now yours, and what still has to happen before the site goes live publicly.</p>
+  <p class="howto-note"><b>How to read this.</b> Each item starts with a plain summary, then a
+  <span style="color:var(--accent)">TECHNICAL DETAIL</span> block underneath with exact names,
+  settings and steps. Skip the technical blocks unless you or your IT contact need them &mdash;
+  nothing in the plain summaries depends on reading them.</p>
+</header>
+
+<div class="meter">
+  <div class="meter-fig"><span class="meter-n is-clear">6</span><span class="meter-l">Set up &amp; verified</span></div>
+  <div class="meter-fig"><span class="meter-n">7</span><span class="meter-l">Still to come</span></div>
+  <div class="meter-fig"><span class="meter-n">2</span><span class="meter-l">Accounts yours</span></div>
+  <div class="meter-fig"><span class="meter-n is-clear">$0</span><span class="meter-l">Billed so far</span></div>
+</div>
+
+<section class="live">
+  <h2>The site is up, on your account, right now</h2>
+  <p class="livelink"><a href="https://dts-website-cdc.pages.dev">https://dts-website-cdc.pages.dev</a></p>
+  <p>This is a private preview address on your own hosting, not the public launch. It is the real
+  site with the real content, so it is worth clicking through. It is not linked from anywhere and
+  search engines will not surface it, but anyone given the address can open it &mdash; so treat it
+  as shareable-on-purpose rather than secret.</p>
+  <p>Nothing about your day-to-day is affected yet. Your current public site is untouched, and
+  ongoing development continues on a separate working environment, so that building new things can
+  never disturb what sits in your account.</p>
+</section>
+
+<section>
+  <h2>Done &mdash; and now in your accounts</h2>
+  <p class="sec-note">Each of these was set up directly in your accounts and then checked
+  afterwards, rather than assumed to have worked.</p>
+  <div class="rows">
+
+    <div class="row" data-st="have">
+      <div class="rnum">01</div>
+      <div class="rmain">
+        <div class="chips"><span class="chip ok">Complete</span><span class="chip ok">Your Supabase account</span></div>
+        <p class="rtitle">Your database, with its security rules</p>
+        <p class="rmeta"><b>What it holds</b> Accounts and sign-ins, which company each person belongs to, and who is allowed to see which private tour, map or download.</p>
+        <p class="rmeta"><b>Checked</b> All eight data tables exist, every one has its access rules switched on, and three specific security fixes were confirmed genuinely active rather than merely listed as installed.</p>
+        <div class="how">
+          <p class="how-h">Technical detail</p>
+          <ul class="how-f">
+            <li><b>Platform.</b> Supabase (managed PostgreSQL 17) in region <code>us-west-1</code>, inside your own organization. Schema applied by running the project&rsquo;s eight versioned migration files with the Supabase CLI (<code>supabase db push</code>) &mdash; the same files, unmodified, that run on the development database.</li>
+            <li><b>Tables (8).</b> <code>profiles</code>, <code>organizations</code>, <code>organization_members</code>, <code>organization_email_domains</code>, <code>resource_entitlements</code>, <code>client_apps</code>, <code>events</code>, <code>admin_audit</code>.</li>
+            <li><b>Row Level Security</b> is enabled on all eight, each with its own policies. RLS is enforced by PostgreSQL itself, so access rules cannot be bypassed by a bug in the website code.</li>
+            <li><b>Verified by direct SQL query</b>, not by trusting the tool&rsquo;s exit code: <code>relrowsecurity</code> true on all eight tables, and all eight migration versions present in <code>supabase_migrations.schema_migrations</code>.</li>
+            <li><b>The three security fixes</b>, each confirmed in effect: the <code>events</code> table has only a SELECT policy, so anonymous visitors cannot write to it; the columns <code>r2_object_key</code> and <code>access</code> on <code>client_apps</code> are not readable by the <code>anon</code> or <code>authenticated</code> roles, so private download locations stay hidden; and the helper functions <code>is_org_member()</code> / <code>is_org_admin()</code> check the <em>organization&rsquo;s</em> status as well as the membership&rsquo;s, so disabling a company actually revokes its people.</li>
+            <li><b>No development data was copied.</b> The migration run reported <code>seeds: []</code>, and the organization, membership, app and entitlement tables all return a count of zero.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" data-st="have">
+      <div class="rnum">02</div>
+      <div class="rmain">
+        <div class="chips"><span class="chip ok">Complete</span><span class="chip ok">Your Supabase account</span></div>
+        <p class="rtitle">The first administrator account</p>
+        <p class="rmeta"><b>Who</b> A Digital Twin Studios operator account, so the site can be managed from day one. Your own staff accounts are created later, from the real list you provide.</p>
+        <p class="rbreak">Because custom email sending is not set up yet (item 09), this account&rsquo;s password cannot currently be reset by email. Keep it safe until that is in place.</p>
+        <div class="how">
+          <p class="how-h">Technical detail</p>
+          <ul class="how-f">
+            <li><b>Created</b> through the Supabase dashboard under Authentication &rarr; Users, with <b>Auto Confirm User</b> ticked &mdash; necessary because no SMTP provider exists yet, so a normal confirmation email would not reliably send.</li>
+            <li><b>Elevated</b> by setting <code>profiles.site_role</code> to <code>site_admin</code> (the column accepts only <code>user</code> or <code>site_admin</code>). The <code>profiles</code> row itself is created automatically by a database trigger on user signup.</li>
+            <li><b>This is a deliberate bootstrap path.</b> A database trigger normally blocks changes to <code>site_role</code>, but permits them from a direct database connection precisely so the very first administrator can be created. Once that account exists, further role changes go through it.</li>
+            <li><b>Current count:</b> exactly one <code>site_admin</code>, and one user in total.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" data-st="have">
+      <div class="rnum">03</div>
+      <div class="rmain">
+        <div class="chips"><span class="chip ok">Complete</span><span class="chip ok">Your Cloudflare account</span></div>
+        <p class="rtitle">Website hosting</p>
+        <p class="rmeta"><b>What it is</b> The service that serves the site to visitors worldwide, plus the small programs behind sign-in, private content and the contact form.</p>
+        <p class="rmeta"><b>Cost</b> Free at your expected traffic, and it stays free on this plan.</p>
+        <div class="how">
+          <p class="how-h">Technical detail</p>
+          <ul class="how-f">
+            <li><b>Cloudflare Pages</b> project named <code>dts-website</code>, created in <b>Direct Upload</b> mode with <b>no Git connection</b> &mdash; deploys are pushed deliberately rather than triggered by a code commit, so nothing reaches your account without an explicit action.</li>
+            <li><b>Pages Functions</b> provide the server-side behaviour: sign-in checks, serving private content, and access-gated downloads. These run at Cloudflare&rsquo;s edge; there is no server to patch or maintain.</li>
+            <li><b>Three secrets</b> are configured on the project&rsquo;s production environment &mdash; the Supabase URL, the public key and the service key. All were generated fresh on your side; none were copied from the development environment. They are stored encrypted by Cloudflare and are not readable back, not even by us.</li>
+            <li><b>Storage bindings</b> connect the Functions to your two file-storage buckets by name, resolved at deploy time rather than hardcoded.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" data-st="have">
+      <div class="rnum">04</div>
+      <div class="rmain">
+        <div class="chips"><span class="chip ok">Complete</span><span class="chip ok">Your Cloudflare account</span></div>
+        <p class="rtitle">Two file-storage areas</p>
+        <p class="rmeta"><b>What they hold</b> One for website content &mdash; text, project pages, maps. One for downloadable applications you make available to specific clients.</p>
+        <div class="how">
+          <p class="how-h">Technical detail</p>
+          <ul class="how-f">
+            <li><b>Cloudflare R2</b> buckets named <code>dts-content</code> and <code>dts-builds</code>. The names are fixed &mdash; they are referenced by the site&rsquo;s configuration and by three of its maintenance scripts.</li>
+            <li><b>Neither bucket is public.</b> R2 buckets are private by default, and these were never given a public address. Everything is served through the Pages Functions, which is what allows access checks to happen before a file is handed over.</li>
+            <li><b>Placement.</b> Cloudflare placed both buckets in its Eastern Europe region. A relocation to North America was attempted while they were still empty; Cloudflare accepted the request but kept its own placement, which appears to be determined by the account rather than selectable. The practical effect is small and was measured rather than assumed: content responses are cached at the edge for five minutes, so only the first request per edge location per five minutes involves the bucket at all.</li>
+            <li><b>Downloads bucket</b> is currently empty. Applications are uploaded through the site&rsquo;s own admin screen, not by this setup process.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" data-st="have">
+      <div class="rnum">05</div>
+      <div class="rmain">
+        <div class="chips"><span class="chip ok">Complete</span><span class="chip ok">Your Cloudflare account</span></div>
+        <p class="rtitle">All website content uploaded</p>
+        <p class="rmeta"><b>Checked</b> Every page the site asks for loads correctly, and the public copy of each project genuinely has its private tour and map links stripped out &mdash; verified on the stored files themselves, not just in the code that writes them.</p>
+        <div class="how">
+          <p class="how-h">Technical detail</p>
+          <ul class="how-f">
+            <li><b>Content is split into two sets</b> before upload. A public set (26 files) contains only what any visitor may see. A private master set (59 files) holds the complete originals, including the private tour addresses and map identifiers. Only the public set is ever reachable from the web.</li>
+            <li><b>How the split is proved.</b> One example project carries both a private tour address and a map identifier in the master copy, and neither in the public copy. This was checked by downloading both files back out of your storage and comparing them &mdash; not by reading the code that produces them.</li>
+            <li><b>A content index</b> lists every public document. Every entry in it was requested over the live site and all returned successfully. This matters: a single index entry pointing at a file that does not exist previously took an entire site to a fallback state, for all visitors.</li>
+            <li><b>Two supporting files</b> were also written: a checksum ledger used to work out what changed on the next publish, and a combined bundle of the full document set (52 documents and 6 map data layers) that the admin screen reads so an administrator can edit private content as well as public.</li>
+            <li><b>Integrity check.</b> Nine files spanning both sets &mdash; map data, project documents, site settings and both indexes &mdash; were downloaded back and confirmed byte-for-byte identical to the local originals.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" data-st="have">
+      <div class="rnum">06</div>
+      <div class="rmain">
+        <div class="chips"><span class="chip ok">Complete</span><span class="chip ok">Your Cloudflare account</span></div>
+        <p class="rtitle">The site deployed, and its protections tested</p>
+        <p class="rmeta"><b>Checked</b> Internal files are not reachable from the web. A visitor who is not signed in, asking for a private map, is correctly refused rather than shown an error. Security headers are present on every response. Nothing sensitive was published.</p>
+        <p class="rbreak"><b>Worth being straight about:</b> these checks were run against the live address by machine. A full human click-through of every page, on desktop and phone, has not been done yet &mdash; see the last section.</p>
+        <div class="how">
+          <p class="how-h">Technical detail &mdash; what was tested, and how</p>
+          <ul class="how-f">
+            <li><b>What was published.</b> 116 static files plus the Functions bundle. Only the site itself was uploaded: the content master files, maintenance scripts, database migrations, internal documentation, tests and developer notes were all excluded by building the upload from an explicit list of what belongs, rather than copying everything and deleting.</li>
+            <li><b>Proving exclusion is harder than it looks.</b> Cloudflare Pages answers a missing address with the site&rsquo;s own home page rather than a &ldquo;not found&rdquo; error, so a success code proves nothing. Instead, the home page&rsquo;s exact size was measured (64,898 bytes) and twelve internal paths were each requested and confirmed to return <em>exactly</em> that size &mdash; proof they are hitting the fallback and no real file exists there.</li>
+            <li><b>Access control.</b> An anonymous request for a private map returns <code>401 &ldquo;sign-in required&rdquo;</code>. The distinction between 401 and a 500 error matters: a 500 would mean the check crashed rather than refused, which can fail open.</li>
+            <li><b>Security headers</b> &mdash; <code>x-content-type-options</code>, <code>referrer-policy</code>, <code>content-security-policy</code> and <code>strict-transport-security</code> &mdash; confirmed present on server responses, using a full request rather than a headers-only one. A headers-only request falls through to the static page and returns different headers, which can look exactly like the protection being absent.</li>
+            <li><b>Configuration leak check.</b> The deployed fallback configuration file contains one public tour address, not the sixteen in the internal copy. Confirmed on the live site.</li>
+            <li><b>Anti-spam widget.</b> The contact form&rsquo;s check now uses a widget created in your own Cloudflare account. This was found broken during testing &mdash; the widget is locked to specific web addresses and had not been re-issued for the new one &mdash; then fixed, redeployed and confirmed working in a browser.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <h2>Still to come before the site goes public</h2>
+  <p class="sec-note">Roughly in the order they need to happen. The first four are the ones that
+  actually gate a public launch.</p>
+  <div class="rows">
+
+    <div class="row" data-sev="block">
+      <div class="rnum">07</div>
+      <div class="rmain">
+        <div class="chips"><span class="chip block">Blocks launch</span><span class="chip block">Third party</span><span class="chip cond">Start this first</span></div>
+        <p class="rtitle">Control of <code>digitaltwinstudios.com</code> &mdash; currently held by the previous developer</p>
+        <p class="rmeta"><b>Why</b> The site answers on a temporary preview address. Pointing the real domain at it is a launch-day step, and item 09 cannot even begin until the DNS records are reachable.</p>
+        <p class="rmeta"><b>The actual blocker</b> The domain and the existing WordPress site are still under the control of the previous developer. This is not a decision you can simply make &mdash; it depends on a third party responding, which is why it should be started before anything else on this list.</p>
+        <p class="rbreak"><b>Treat this as the critical path.</b> Everything else here is work that can be scheduled; this one waits on somebody outside the project. Two risks worth naming early: if nobody is clearly responsible for the renewal, the domain can lapse and be bought by someone else, which is effectively unrecoverable; and if company email runs on this domain, a careless change breaks mail before anyone notices the website.</p>
+        <div class="how">
+          <p class="how-h">What to request from the previous developer</p>
+          <ol class="how-l">
+            <li><b>Registrar account access</b> &mdash; where the domain is actually registered (GoDaddy, Namecheap, Google Domains and so on), and login or administrative access to it. Preferably the domain is <em>transferred</em> into an account you own outright, rather than access being shared.</li>
+            <li><b>If transferring:</b> ask them to unlock the domain and supply the <b>authorisation code</b> (also called an EPP or transfer code). Transfers typically take 5&ndash;7 days and cannot be rushed, which is the main reason to start now.</li>
+            <li><b>A full export of the current DNS zone</b> &mdash; every record as it stands today. This is the single most important item. Recreating it from memory is how mail and third-party services get broken during a move.</li>
+            <li><b>Confirmation of the email setup.</b> Specifically whether <code>MX</code> records point at Google Workspace, Microsoft 365, or the web host&rsquo;s own mail &mdash; plus any <code>SPF</code>, <code>DKIM</code> and <code>DMARC</code> records. These must be carried across <em>before</em> any nameserver change, or email stops.</li>
+            <li><b>Renewal and expiry details</b> &mdash; the expiry date, who currently pays, and whether auto-renew is on.</li>
+            <li><b>What happens to the existing WordPress site</b> &mdash; whether it stays reachable during the transition, who hosts it, and when it can be retired. Nothing needs to be switched off until you choose to.</li>
+          </ol>
+          <p class="how-store"><b>Meanwhile</b> Nothing above blocks the rest of this list except item 09. The preview address keeps working, and continues to after the domain is live.</p>
+        </div>
+        <div class="how">
+          <p class="how-h">Once the domain is in your hands</p>
+          <ol class="how-l">
+            <li><b>Add it to the Pages project</b> under Custom domains. Cloudflare issues the HTTPS certificate automatically once DNS resolves.</li>
+            <li><b>Point the DNS record</b> at the Pages project &mdash; a <code>CNAME</code> for a subdomain such as <code>www</code>, or Cloudflare&rsquo;s flattened <code>CNAME</code> at the root. Moving the domain into Cloudflare&rsquo;s own DNS handles this for you and makes the rest simpler.</li>
+            <li><b>Recreate every non-web record first</b> &mdash; mail and any third-party verification records &mdash; and confirm mail still flows <em>before</em> switching the web records over. Keep the WordPress site reachable until that is confirmed.</li>
+            <li><b>Then re-point two site settings</b> and redeploy: the Supabase connection hint, and the anti-spam widget&rsquo;s allowed-address list. Neither breaks loudly if forgotten &mdash; the first costs a wasted network round trip, the second shows a red box on the contact form, exactly as happened on the preview.</li>
+            <li><b>Finally, item 09 becomes possible</b> &mdash; the email provider&rsquo;s verification records need this same DNS access.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" data-sev="block">
+      <div class="rnum">08</div>
+      <div class="rmain">
+        <div class="chips"><span class="chip block">Blocks launch</span><span class="chip cond">Needs you</span></div>
+        <p class="rtitle">Your real list of client companies and people</p>
+        <p class="rmeta"><b>Why</b> This is what turns the access system on: which companies exist, who works at each, and who among them can manage their own team.</p>
+        <p class="rmeta"><b>From you</b> The list itself, from your records &mdash; not guessed from older spreadsheets. You approve the full mapping before a single invitation email is sent.</p>
+        <div class="how">
+          <p class="how-h">What this involves</p>
+          <ol class="how-l">
+            <li><b>Supply the list:</b> company names, the people at each, their email addresses, and which of them should be able to manage their own company&rsquo;s members.</li>
+            <li><b>Decide access per company</b> &mdash; which private tours, maps and downloads each one may see. Access can also be granted to an individual rather than a whole company.</li>
+            <li><b>Review the proposed mapping in full before it runs.</b> This step exists specifically to catch the same company appearing twice under slightly different spellings, which would otherwise split one client into two and give neither the right access.</li>
+            <li><b>The import then creates</b> the organization records, the memberships with their roles, and the access grants &mdash; and sends each person an invitation to set their own password.</li>
+            <li><b>Optionally, email-domain rules</b> can be attached to a company, so someone signing up with a matching work address joins automatically rather than waiting to be added.</li>
+          </ol>
+          <p class="how-store"><b>Depends on</b> Item 09 must be working first, or the invitations will not arrive.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" data-sev="block">
+      <div class="rnum">09</div>
+      <div class="rmain">
+        <div class="chips"><span class="chip block">Blocks launch</span><span class="chip req">Waiting on the domain</span></div>
+        <p class="rtitle">Custom email sending (SMTP provider + verified sending domain)</p>
+        <p class="rmeta"><b>Why</b> Invitations, sign-up confirmations and password resets all send email. The built-in allowance is capped at two messages an hour across the whole site, which is unusable for real people.</p>
+        <p class="rbreak"><b>This is not optional the way social sign-in is.</b> The cap is two messages per hour, project-wide, shared across every type of authentication email &mdash; Supabase&rsquo;s own documentation calls it unsuitable for production. Password reset will appear to work and simply never arrive. It has to be in place <b>before</b> inviting your real users (item 08), and it needs DNS access first &mdash; so it inherits item 07&rsquo;s wait on the previous developer. In practice that makes the chain <b>07 &rarr; 09 &rarr; 08</b>, and the whole chain starts with a third party responding.</p>
+        <div class="how">
+          <p class="how-h">How to get it</p>
+          <ol class="how-l">
+            <li><b>Pick a provider.</b> Resend is the worked example in Supabase&rsquo;s own documentation; Amazon SES, Postmark, SendGrid, ZeptoMail and Brevo all work the same way. A free tier is sufficient.</li>
+            <li><b>Create the account</b> &mdash; yours, or managed by Digital Twin Studios on your behalf. This is the same ownership question as the contact form in item 11; decide it rather than defaulting.</li>
+            <li><b>Add the sending domain</b> in the provider, and copy the <code>SPF</code> and <code>DKIM</code> records it gives you.</li>
+            <li><b>Add those records at the DNS host</b> from item 07 &mdash; which requires the domain access being requested there &mdash; then wait until the provider shows the domain as <em>verified</em>. Nothing sends until it does; this is exactly the step that was blocked throughout development.</li>
+            <li><b>Generate an API key</b> in the provider.</li>
+            <li><b>In Supabase:</b> Authentication &rarr; Emails &rarr; SMTP Settings &rarr; enable custom SMTP. For Resend that is host <code>smtp.resend.com</code>, port <code>587</code>, username literally <code>resend</code>, password = the API key. Set the sender address at the verified domain (for example <code>no-reply@yourdomain.com</code>) and the sender name to <b>Digital Twin Studios</b>.</li>
+            <li><b>Then raise the rate limit by hand.</b> Authentication &rarr; Rate Limits &rarr; &ldquo;Rate limit for sending emails&rdquo;. Supabase applies a new default of 30/hour once custom SMTP is active, but the field may still display the old value of 2. Do not assume it updated.</li>
+            <li><b>Test both flows for real</b> &mdash; a signup confirmation and a password reset. They are two separate code paths sharing one budget.</li>
+          </ol>
+          <p class="how-store"><b>Where it lives</b> The provider API key goes into the Supabase dashboard, not into any project file.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" data-sev="block">
+      <div class="rnum">10</div>
+      <div class="rmain">
+        <div class="chips"><span class="chip block">Before real users</span><span class="chip req">$25 / month</span></div>
+        <p class="rtitle">Upgrade the database to the paid plan (Supabase Pro)</p>
+        <p class="rmeta"><b>Why</b> The free plan pauses a database that goes unused for about a week. That is harmless while nobody is signing in, and nothing is lost &mdash; it restarts on request &mdash; but it is not acceptable once real people depend on it.</p>
+        <p class="rbreak">Left on the free plan deliberately for now, so you are not paying for something idle. <b>Expect the preview to pause</b> if you do not open it for a week; that is normal, not a fault.</p>
+        <div class="how">
+          <p class="how-h">Technical detail</p>
+          <ul class="how-f">
+            <li><b>What the free tier does.</b> A project with no activity for seven days is paused. Restoring it is a manual click in the dashboard, takes a couple of minutes, and loses no data &mdash; but while paused, sign-in and every private area of the site are unavailable.</li>
+            <li><b>What Pro adds</b> beyond removing the pause: daily backups with point-in-time recovery, longer log retention, and higher limits. At $25/month, billed to your account.</li>
+            <li><b>Upgrade path.</b> Supabase dashboard &rarr; the organization &rarr; Billing. It applies to the project immediately with no downtime and no configuration change on the website side.</li>
+            <li><b>Timing.</b> Do it before item 08 &mdash; there is no sense inviting real users onto a database that can pause underneath them.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" data-sev="req">
+      <div class="rnum">11</div>
+      <div class="rmain">
+        <div class="chips"><span class="chip req">A decision</span></div>
+        <p class="rtitle">Who receives contact-form enquiries</p>
+        <p class="rmeta"><b>Decision</b> Whether enquiries keep arriving through the Digital Twin Studios account, or move onto an account of your own. Either works; it should be chosen rather than defaulted into. Until then, enquiries sent from the preview arrive with us.</p>
+        <div class="how">
+          <p class="how-h">Technical detail</p>
+          <ul class="how-f">
+            <li><b>How it works.</b> The form posts directly from the visitor&rsquo;s browser to Web3Forms, using a public access key. Web3Forms documents this key as safe for browser use; their own abuse protection and rate limiting sit on their side.</li>
+            <li><b>To move it:</b> create a Web3Forms account under your own address, generate an access key, and it replaces the current one in the site&rsquo;s content settings &mdash; editable through the admin screen, no code change.</li>
+            <li><b>Fallback.</b> If the key is ever missing, the form degrades to opening the visitor&rsquo;s own mail application with the answers pre-filled, rather than failing silently.</li>
+            <li><b>Anti-spam.</b> A Cloudflare Turnstile widget, now on your account, gates the submit button in the browser. It is a deterrent rather than a strict gate: if the widget cannot load, the form deliberately still allows submission rather than trapping a legitimate visitor. There is no server-side token verification in the current design &mdash; a simplification made deliberately during development, and worth knowing rather than discovering.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" data-sev="cond">
+      <div class="rnum">12</div>
+      <div class="rmain">
+        <div class="chips"><span class="chip cond">Optional</span></div>
+        <p class="rtitle">&ldquo;Sign in with Google&rdquo; and &ldquo;Sign in with Microsoft&rdquo;</p>
+        <p class="rmeta"><b>Optional</b> Convenient for your clients, but not required &mdash; email and password works without it. If you want it, it has to be registered under your own Google and Microsoft accounts, which is a separate short setup.</p>
+        <div class="how">
+          <p class="how-h">What this involves</p>
+          <ol class="how-l">
+            <li><b>Google:</b> in Google Cloud Console, create OAuth client credentials and add your Supabase project&rsquo;s callback address as an authorised redirect address.</li>
+            <li><b>Microsoft:</b> in the Azure Portal, register an application and add the same callback address.</li>
+            <li><b>In Supabase:</b> Authentication &rarr; Providers &rarr; enable each and paste its client ID and secret.</li>
+            <li><b>Publish Google&rsquo;s consent screen</b> (move it out of Testing, or complete verification), or real users see an &ldquo;unverified app&rdquo; warning.</li>
+          </ol>
+          <p class="how-store"><b>Note</b> These cannot be carried over from development &mdash; the callback address differs per project, so both must be created fresh under your accounts.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="row" data-sev="cond">
+      <div class="rnum">13</div>
+      <div class="rmain">
+        <div class="chips"><span class="chip cond">Optional</span></div>
+        <p class="rtitle">Visitor analytics</p>
+        <p class="rmeta"><b>Optional</b> The site is already wired for Google Analytics and a session-recording tool, but both sit switched off until you supply the identifiers. No visitor tracking of any kind is running today.</p>
+        <div class="how">
+          <p class="how-h">What this involves</p>
+          <ul class="how-f">
+            <li><b>Google Analytics 4</b> &mdash; supply a Measurement ID (the <code>G-</code> prefixed value from the GA4 property).</li>
+            <li><b>Microsoft Clarity</b> &mdash; supply a Project ID, for heatmaps and session replay.</li>
+            <li><b>Both are empty placeholders</b> in the site&rsquo;s analytics configuration. Neither script is requested at all while blank, so there is nothing to disable and no performance cost today.</li>
+            <li><b>Consent.</b> The site has a consent banner, and analytics only load once a visitor accepts. Worth reviewing against your own privacy policy before switching them on.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<section>
+  <h2>What it will cost you to run</h2>
+  <p class="sec-note">Nothing has been billed to you so far. Re-check current pricing before
+  treating these as firm &mdash; providers change them.</p>
+  <div class="tablewrap">
+  <table class="cost">
+    <thead><tr><th>Item</th><th>Cost</th><th>When it starts</th></tr></thead>
+    <tbody>
+      <tr><td>Database &mdash; Supabase Pro</td><td class="amt">$25 / month</td><td>Before real users sign in (item 10)</td></tr>
+      <tr><td>File storage &mdash; Cloudflare R2</td><td class="amt">~$1&ndash;5 / month</td><td>Scales with content and downloads</td></tr>
+      <tr><td>Domain name</td><td class="amt">~$10&ndash;20 / year</td><td>Whenever you register it</td></tr>
+      <tr><td>Hosting &mdash; Cloudflare Pages</td><td class="amt">$0</td><td>Free at this scale</td></tr>
+      <tr><td>Email sending &mdash; SMTP provider</td><td class="amt">$0</td><td>Free tier covers this volume</td></tr>
+      <tr><td>Contact form &mdash; Web3Forms</td><td class="amt">$0</td><td>Free tier is sufficient</td></tr>
+      <tr><td>Anti-spam &mdash; Cloudflare Turnstile</td><td class="amt">$0</td><td>Free, unlimited</td></tr>
+    </tbody>
+  </table>
+  </div>
+</section>
+
+<section>
+  <h2>Access, plainly stated</h2>
+  <ul class="items">
+    <li class="item">
+      <h4>The accounts are yours</h4>
+      <p>Both the Cloudflare and Supabase accounts belong to you, including the billing. Nothing
+      about the site depends on a Digital Twin Studios account any more.</p>
+    </li>
+    <li class="item">
+      <h4>Digital Twin Studios keeps working access &mdash; on purpose</h4>
+      <p>We hold an administrator invitation on both accounts so we can keep building, fixing and
+      deploying. This was agreed with you and is intended to be ongoing, not a temporary setup
+      permission someone forgot to remove. You can withdraw it at any time from either
+      provider&rsquo;s dashboard.</p>
+      <p><b>Technical detail.</b> On Supabase this is an <em>Administrator</em> role on your
+      organization, with you as <em>Owner</em>. On Cloudflare it is a member grant on the account.
+      Removing either immediately stops us deploying, so it is worth telling us before you do.</p>
+    </li>
+    <li class="item">
+      <h4>No passwords or keys were copied across</h4>
+      <p>Every credential on your side was generated fresh. None of the development-environment
+      keys were reused, which means no older system retains the ability to act on your live data.</p>
+      <p><b>Technical detail.</b> This was verified rather than asserted: all eight values in the
+      production credentials file were compared against the development ones by checksum, and every
+      one differs. The credentials file itself is excluded from version control.</p>
+    </li>
+    <li class="item">
+      <h4>One housekeeping item</h4>
+      <p>An invitation to a third address on your Supabase account is showing as expired. It grants
+      nothing while expired, but it is worth either re-sending or removing so the member list stays
+      accurate.</p>
+    </li>
+  </ul>
+</section>
+
+<section>
+  <h2>What has <em>not</em> been done yet</h2>
+  <p class="sec-note">Stated plainly, so that nothing here is a surprise later.</p>
+  <ul class="items">
+    <li class="item">
+      <h4>No real users exist yet</h4>
+      <p>The database is empty apart from the one administrator account. No companies, no staff, no
+      access grants &mdash; those arrive with item 08. None of the test data from development was
+      copied across, deliberately.</p>
+    </li>
+    <li class="item">
+      <h4>The content is a snapshot, not a live mirror</h4>
+      <p>Content was copied across on 12 September and does not update itself. Anything edited
+      during continued development will need re-publishing at launch. That is planned for, and is a
+      routine step rather than redone work.</p>
+      <p><b>Technical detail.</b> Nothing synchronises the two environments. Re-running the publish
+      at launch is a scripted step of a few minutes, and it is treated as mandatory rather than
+      conditional &mdash; assuming a copy is current, when it is not, has caused a hard-to-diagnose
+      outage on this project before.</p>
+    </li>
+    <li class="item">
+      <h4>A full human testing pass is still outstanding</h4>
+      <p>Automated checks confirm the protections work &mdash; private content stays private, and
+      internal files are unreachable. What has not happened is a person clicking through every page
+      on desktop and phone on this specific copy. That pass is scheduled before launch, and the
+      development environment stays available as a reference to compare against.</p>
+      <p><b>Technical detail.</b> What is proven is <em>enforcement</em>: refusals, exclusions and
+      headers, all checked against the live address. What is unproven is <em>presentation</em> on
+      this copy &mdash; layout, images, the mobile menu, and browser navigation. The distinction
+      matters: the unverified part is how things look, not whether private content could leak.</p>
+    </li>
+    <li class="item">
+      <h4>This is not the launch</h4>
+      <p>The infrastructure moved early, deliberately, so that you own it from the start and the
+      launch itself becomes a smaller, calmer step. Going live remains a separate, scheduled piece
+      of work.</p>
+    </li>
+  </ul>
+</section>
+
+<footer>
+  <p>Prepared by Digital Twin Studios, 12 September 2026. Reflects the state of your accounts as of
+  that date.</p>
+  <p>This document deliberately contains no account identifiers, keys or passwords. Those live only
+  in a credentials file that is never shared and never stored alongside the project code.</p>
+</footer>
+
+</main>
+</div>
+</body>
+</html>

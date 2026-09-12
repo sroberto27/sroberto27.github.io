@@ -19,8 +19,11 @@ Plan, then do:
 
 1. **`index.html`** — add, BEFORE `content-loader.js`: the supabase-js CDN
    bundle, then a new `js/supabase-init.js` (creates the client from the dev
-   project URL + anon key — these are the ONLY account-specific values in a
-   committed file, by design; read them from the values recorded in Phase 3).
+   project URL + anon key — account-specific values that are public by design;
+   read them from the values recorded in Phase 3). Note these are not the *only*
+   such values: `index.html`'s Supabase `preconnect` and, later,
+   `js/turnstile-init.js`'s site key are the other two — see
+   `ACCOUNT-SETUP-AND-HANDOFF.md` Part 3 for the authoritative list of three.
    Remove or dev-gate the `clients.js` tag (Phase 2 already scoped it to
    localhost). Final order:
    `config.js -> supabase-init.js -> tour-bridge.js -> content-loader.js`.

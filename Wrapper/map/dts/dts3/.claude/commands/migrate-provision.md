@@ -2,6 +2,27 @@
 description: Provisioning — stand up client-owned Cloudflare + Supabase early, keep building on dev
 ---
 
+> # ⛔ SPENT — RAN 2026-09-12. DO NOT RUN AGAIN.
+>
+> This command is single-use and has been used. The client's Cloudflare and
+> Supabase accounts are stood up, content is uploaded, and the site is deployed
+> at <https://dts-website-cdc.pages.dev>. The record is the **Provisioning** row
+> and the 2026-09-12 session entry in `docs/migration/PROGRESS.md`, the account
+> inventory in that same file, and §10 of `docs/WEBSITE-STATE.md`.
+>
+> `.claude/commands/migrate-handoff.md` steps 2-4 have been rewritten to
+> *verify* this work rather than redo it, and its step 4 grep has been scoped to
+> the staged deploy directory so it no longer contradicts the overlay.
+>
+> **Re-running this would re-create infrastructure that already exists.** If you
+> need to push content or a deploy to the client's account again, do that
+> directly (Steps 3 and 4 below are still accurate as procedure) — or go to
+> `/migrate-handoff`, which is the next command in the sequence.
+>
+> Deferred out of this run and still owed at go-live: Supabase Pro, custom SMTP
+> (blocked on DNS, checklist item 9), OAuth, the real org/client import, the
+> domain, and marketing tags.
+
 Provisioning phase. **Single-use.** Prerequisite: dev build complete
 (`PROGRESS.md` phase table), credential checklist items 1-5 and 13 in hand, and
 6/7/8/12 recorded as deferred go-live concerns.
@@ -182,7 +203,9 @@ Follow `docs/migration/DEPLOY-STAGING.md` exactly, with two extra overlays:
 - **New:** overlay `js/supabase-init.js` in the staged copy with the client's
   project URL + anon key.
 - **New:** overlay `index.html`'s Supabase `preconnect` to the same host. This
-  is the second of exactly two account-specific spots, and the one that gets
+  is the second of three account-specific spots (the third,
+  `js/turnstile-init.js`'s Turnstile site key, was MISSED on this run — see the
+  2026-09-12 PROGRESS.md entry), and the one that gets
   missed because nothing fails when it is wrong — a stale preconnect costs a
   wasted DNS/TLS handshake and no error.
 - Run the runbook's verification 1-6 in full: per-directory file-list diff (the

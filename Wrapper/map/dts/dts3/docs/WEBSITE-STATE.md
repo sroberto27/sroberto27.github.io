@@ -971,13 +971,42 @@ The Cloudflare project retains exactly three deployments: `c66be075` (live),
   Supabase schema + RLS + dummy seed, client auth swap + resource gating, admin
   auth swap to `site_role`, CMS access editors + org management, the R2 content
   pipeline, the lead form, entitlement-gated builds, and analytics/audit.
-- **Handoff has NOT happened.** The site still runs entirely on the
-  **developer's personal dev accounts** — Cloudflare account
-  `robertoenrique2710@hotmail.com`, Supabase project `DTSdev`
-  (`wsqvzyfvxjenqvqjpqjv`, `us-west-2`). Swapping to the client's own
-  Cloudflare/Supabase accounts is the remaining step, driven by
-  `/migrate-handoff` and `docs/migration/ACCOUNT-SETUP-AND-HANDOFF.md`. Nothing
-  in ordinary work should touch account or infrastructure config.
+- **TWO ENVIRONMENTS NOW EXIST (since the 2026-09-12 provisioning run).**
+  Read this before assuming where anything lives.
+
+  - **Dev is the workspace.** <https://dts-website-4cu.pages.dev>, on the
+    developer's personal accounts — Cloudflare `robertoenrique2710@hotmail.com`,
+    Supabase `DTSdev` (`wsqvzyfvxjenqvqjpqjv`, `us-west-2`). All ordinary
+    development continues here, and the committed
+    `js/supabase-init.js`/`index.html` deliberately still point at it.
+  - **Client production is a destination.** <https://dts-website-cdc.pages.dev>,
+    on the client's own Cloudflare + Supabase accounts (they own the billing).
+    It holds the full schema, a first `site_admin`, all content, and a verified
+    static deploy — but **no real users, organizations or entitlements yet**.
+
+  **The account swap is NOT committed, on purpose.** Deploying to the client
+  works by overlaying `js/supabase-init.js`, `index.html`'s preconnect and
+  `js/turnstile-init.js` in the *staged* copy only (four overlays total,
+  counting `.build/js/config.js`). There are **three** account-specific
+  committed values, not two — several documents said two until 2026-09-12, which
+  is why the Turnstile key was missed on the provisioning deploy.
+  Under provisioning, a clean `git status` on those two files is the pass
+  condition — the inverse of `/migrate-handoff` step 4's check. At real go-live
+  the swap does get committed and the overlay disappears.
+
+  **Content on the client's R2 is a point-in-time copy, not a live mirror.**
+  It was uploaded 2026-09-12 and nothing keeps it in sync: every later publish
+  or `upload-content.mjs` run against dev leaves the client's copy further
+  behind. **Re-upload at go-live rather than assuming it is current.** This repo
+  has already had one outage made hard to attribute by exactly that kind of
+  divergence (see §10's note on `main` vs. the live site).
+
+- **Handoff has NOT happened.** Infrastructure has moved; go-live has not.
+  Still outstanding and owned by `/migrate-handoff`: OAuth, the real
+  organization/client import, custom SMTP (blocked on DNS), the domain cutover,
+  marketing tags, and final live checks. See
+  `docs/migration/ACCOUNT-SETUP-AND-HANDOFF.md`. Nothing in ordinary work should
+  touch account or infrastructure config.
 - All data is **dummy/test data**. Seeded accounts: `testadmin@example.com`
   (site_admin), `testorgadmin@example.com` (org_admin at Beta Municipal, member
   at Acme Hotels — note `seed-dev.mjs`'s own console log is stale and prints

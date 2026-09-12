@@ -53,6 +53,31 @@ Claude cannot click through login/signup screens or create the initial cloud
 - Claude never prints secret values back into the chat or into committed files.
 - If a required env var is missing, Claude stops and tells you exactly which one
   and where to get it — it does not guess or hardcode.
+- **Never copy a value from `.env.prod` into `.env`, in either direction, for
+  any reason.** This became a live hazard on 2026-09-12, when provisioning stood
+  up the client's accounts while dev stayed the workspace. Both accounts now hold
+  an R2 bucket named `dts-content` and a Supabase project carrying this same
+  schema. Every script resolves *which account it writes to* purely from the
+  environment loaded at the time — the bucket name is hardcoded
+  (`upload-content.mjs`, `upload-source-to-r2.mjs`, `rollback-content.mjs`)
+  and the Supabase target comes from `SUPABASE_URL` /
+  `SUPABASE_SERVICE_ROLE_KEY` (`seed-dev.mjs`, `import-clients.mjs`). So with
+  prod values in `.env`, `node scripts/seed-dev.mjs` seeds **dummy test data
+  into the client's production database**, and `upload-content.mjs` or
+  `rollback-content.mjs` overwrite **the client's live content** — same command,
+  same output, no warning.
+
+  The separation is currently self-enforcing and worth keeping that way: the prod
+  Cloudflare token cannot see the dev account, and the prod Supabase token cannot
+  see the dev organization. Copying a value across is what would break it.
+
+  **When a dev credential expires, mint a new dev one.** For Supabase that is
+  supabase.com → Account settings → Access Tokens, signed in as the account that
+  owns `DTSdev` — note that is a different login from the one holding the
+  client's organization. Replace only the single expired field. Check the format
+  before saving: Supabase access tokens start `sbp_`, Cloudflare API tokens
+  start `cfut_`, and pasting one into the other's line fails with an error that
+  names neither file.
 
 ## What "automated" means per phase
 - **Phase 3:** Claude writes `supabase/migrations/` (tables, RLS, roles) and runs

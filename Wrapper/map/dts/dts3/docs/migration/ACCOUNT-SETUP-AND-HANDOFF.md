@@ -284,7 +284,7 @@ of truth for "where are we," updated at the end of every phase.
 
 The entire migration was designed around one rule (`00-VERIFY-FIRST.md`,
 `WORKFLOW.md` golden rule 3): **nothing account-specific is ever hardcoded in
-committed files**, except two spots —
+committed files**, except three spots —
 
 - `js/supabase-init.js` — the public Supabase project URL + anon key (not
   secret; safe to be public, it's what every browser needs to talk to
@@ -296,6 +296,21 @@ committed files**, except two spots —
   2026-09-06 `cloudflare` security audit, which also removed a third spot —
   `_headers` used to name the dev project in a CSP `wss:` entry for Supabase
   Realtime, which this codebase does not use.)
+- `js/turnstile-init.js` — the Turnstile **site key** for the lead form's bot
+  widget. Public by design (it is embedded in every page that renders the
+  widget), but **account-specific AND hostname-locked**: a Turnstile widget
+  belongs to the Cloudflare account that created it and only runs on the
+  hostnames listed against it. Deploy the dev key to a new hostname and the
+  widget renders "Unable to connect to website".
+
+  **This document said "two spots" until 2026-09-12 and was wrong.** The key was
+  therefore missing from every overlay list, and the dev widget shipped to the
+  client's deployment during provisioning, where it failed exactly as described.
+  The failure is cosmetic rather than a security regression — since the Phase 7
+  revert, Turnstile is a client-side deterrent that nothing verifies server-side,
+  and `js/app.js`'s `error-callback` deliberately re-enables submit when the
+  widget fails — but it looks broken, which is its own cost.
+
 - Cloudflare Pages environment variables / secrets — set via
   `wrangler pages secret put`, never written to a file at all
 

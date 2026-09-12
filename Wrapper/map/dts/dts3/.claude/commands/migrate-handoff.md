@@ -66,36 +66,78 @@ Plan, then do:
    git-ignored `.env.prod`? Either works; decide before step 2 so it's clear
    who clicks what.
 
-2. **Client Supabase (production).** User creates the project in the CLIENT's
-   org and provides production tokens in a SEPARATE `.env.prod`
-   (git-ignored). Claude `supabase link`s to it and re-runs the SAME
-   `supabase/migrations/` (`db push`) — same eight tables
-   (`profiles, organizations, organization_members,
-   organization_email_domains, resource_entitlements, client_apps, events,
-   admin_audit`), same RLS. Create the first real
-   `site_admin` account (the DTS operator, not a client). **Upgrade to Pro
-   ($25/mo) on the client's billing** to remove the 7-day pause before real
-   users log in. **Also configure custom SMTP now** (inventory item 11) —
-   Supabase's built-in email service caps out at 2 messages/hour project-wide
-   and is not viable for real users resetting passwords or confirming
-   sign-up; this is not optional the way OAuth is, and it's independent of
-   whether self-registration/OAuth are in use. Follow
-   `ACCOUNT-SETUP-AND-HANDOFF.md` §7 against the client's own SMTP provider
-   account and verified domain, not the dev one used for testing.
+2. **Client Supabase (production) — VERIFY, already done on 2026-09-12 by
+   `/migrate-provision`.** Do not re-create or re-push. Confirm, against the
+   client's project, that: all 8 migrations are in
+   `supabase_migrations.schema_migrations`; the 8 tables exist
+   (`profiles, organizations, organization_members, organization_email_domains,
+   resource_entitlements, client_apps, events, admin_audit`) with
+   `relrowsecurity` true on each; the three 2026-09-06 security migrations are
+   in *effect* (`events` has only a SELECT policy; `r2_object_key` and
+   `access` are unreadable by `anon`/`authenticated`; `is_org_member` and
+   `is_org_admin` test `o.status` as well as `m.status`); and the first
+   `site_admin` (the DTS operator) exists and is confirmed.
 
-3. **Client Cloudflare (production).** User provides a scoped prod Cloudflare
-   token. Claude creates the Pages project (Direct Upload) +
-   `dts-content`/`dts-builds` buckets in the CLIENT's account, uploads the
-   same site files + the split `data/current/`+`data/source/` content
-   (scripted, reusing `scripts/split-content.mjs`/`upload-content.mjs` from
-   Phase 6), and sets ALL secrets FRESH via `wrangler pages secret put`
-   (Cloudflare API token, Web3Forms key, Supabase service key). NEVER copy
-   secrets across accounts.
+   **Two things WERE deliberately deferred and are now yours to do:**
+   - **Upgrade to Pro ($25/mo) on the client's billing** — removes the free
+     tier's 7-day idle pause. If the project has paused since provisioning,
+     restore it from the dashboard first; that loses no data and is expected.
+   - **Configure custom SMTP (inventory item 11).** Supabase's built-in email
+     caps at 2 messages/hour project-wide. This is **blocking for step 6** —
+     the org import sends password-set invites that would otherwise mostly never
+     arrive. Follow `ACCOUNT-SETUP-AND-HANDOFF.md` §7 against the client's own
+     provider account and verified domain, not the dev one.
 
-4. **Re-point config.** Edit `js/supabase-init.js` to the client's project URL
-   + anon key. That plus the fresh secrets is the ENTIRE account swap. Claude
-   greps once more to confirm no stray personal-account value remains
-   anywhere.
+3. **Client Cloudflare (production) — VERIFY, already done on 2026-09-12 by
+   `/migrate-provision`.** Do not re-create. Confirm the Pages project
+   `dts-website` (Direct Upload, no git) and both R2 buckets
+   `dts-content`/`dts-builds` exist in the CLIENT's account, and that
+   `wrangler pages secret list --project-name dts-website` shows
+   `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` — the
+   only non-binding env vars `functions/` reads. All three were set fresh from
+   `.env.prod`; NEVER copy a secret across accounts.
+
+   **Content must be RE-UPLOADED, not assumed current.** The copy in the
+   client's R2 is a point-in-time snapshot from provisioning and nothing has
+   kept it in sync with dev since. Re-run
+   `scripts/split-content.mjs` → `scripts/upload-content.mjs` with prod env
+   loaded, then **regenerate and upload `data/source/_latest.json` by hand** —
+   `upload-content.mjs` does not write it, and
+   `functions/api/admin/content.js` is its only reader, so a stale one leaves
+   the Admin Board holding old content whose next "Publish to site" overwrites
+   what you just uploaded.
+
+   Note `r2 bucket info`'s `object_count` lags by a long way and reads 0 for
+   objects that are demonstrably present — verify with direct
+   `wrangler r2 object get ... --remote` read-backs instead.
+
+4. **Re-point config — and THIS is the step that changes from provisioning.**
+   Until now the repo deliberately kept **dev** values so ongoing development
+   kept hitting dev, and the client deploy worked by overlaying
+   `js/supabase-init.js` and `index.html`'s preconnect in the staged copy.
+   Now dev is being retired, so commit the swap for real: edit
+   `js/supabase-init.js` to the client's project URL + anon key **and**
+   `index.html`'s Supabase `preconnect` to the same host, **and
+   `js/turnstile-init.js` to a Turnstile site key created in the CLIENT's
+   Cloudflare account with the real domain on its hostname list.** Those three
+   spots plus the fresh secrets are the ENTIRE account swap. The staged-copy
+   overlays for those three files go away; `.build/js/config.js` is still
+   overlaid, as on every deploy.
+
+   **Do not skip the Turnstile one because nothing errors loudly.** Its site key
+   is hostname-locked, so a stale key renders "Unable to connect to website" in
+   the lead form on any new domain. This was missed during provisioning
+   precisely because the docs claimed there were only two spots.
+
+   **Then grep the STAGED DEPLOY DIRECTORY — not the repo — for the dev project
+   ref:** `grep -rl wsqvzyfvxjenqvqjpqjv <stage>` must return nothing.
+   (Scoping matters. An unscoped `grep -rn` over the repo also hits
+   `.env`, `docs/` and `supabase/.temp/`, which legitimately still name dev
+   and are all excluded from the deploy. Before this step is committed the repo
+   itself *should* still show dev values — that was provisioning's pass
+   condition, and reading a repo hit as a failure is what would push someone to
+   commit the swap early and aim ongoing development at the client's production
+   database.)
 
 5. **Google/Microsoft OAuth (production) — only if self-registration's
    social login is going live with this handoff.** Skip entirely, and note

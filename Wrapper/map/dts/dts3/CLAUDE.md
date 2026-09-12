@@ -38,6 +38,17 @@ Deployed as static files to GitHub Pages.
 - The legacy `DTS_CONFIG` shape produced by `js/content-loader.js`. Extend it;
   don't reshape it. `js/app.js` depends on it.
 - localStorage keys `dtsAdminDraft` and `dtsAdminSession`.
+- **`.env` is dev, `.env.prod` is the client's production accounts, and no
+  value ever moves between them.** Not one field, not "just the token", not
+  temporarily. Since the 2026-09-12 provisioning run both accounts hold a bucket
+  named `dts-content` and a Supabase project with this same schema, and the
+  scripts resolve which account they hit *only* from the loaded environment —
+  `scripts/upload-content.mjs` hardcodes the bucket name, as do
+  `upload-source-to-r2.mjs` and `rollback-content.mjs`. Copying prod values
+  into `.env` therefore aims `seed-dev.mjs` (dummy data), `upload-content.mjs`
+  and `rollback-content.mjs` at the client's live data, with byte-identical
+  command lines and no warning. If a dev credential expires, mint a new **dev**
+  one; never borrow from `.env.prod`.
 
 ---
 
