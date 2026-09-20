@@ -30,3 +30,13 @@ party continuing to serve a given version.
 
 Changing a version here makes a different build for verification purposes, and
 the change belongs in the research change log with its date.
+
+
+## 2026-09-20 optional exterior tiles
+
+Added `3d-tiles-renderer@0.5.1` from the official npm package, retaining its MIT
+LICENSE and five build modules reachable from the Three renderer and core plugin
+entry points. Added the `three@0.183.0` GLTF/Draco/KTX2 loader dependency closure,
+Draco/Basis decoder assets and MIT LICENSE. Files are vendored verbatim from npm.
+The application's import map resolves these modules locally; Google tile content
+is requested only after the operator selects 3D with a configured browser key.

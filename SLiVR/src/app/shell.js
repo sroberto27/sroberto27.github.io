@@ -405,6 +405,15 @@ export function createShell({ root, store, actions, win = globalThis }) {
   function imageryPlate(state) {
     const imagery = state.imagery;
     const mapError = state.map.error;
+    const tiles = state.tiles;
+
+    if (tiles?.state === "active") {
+      return el("div", { class: "imagery-plate" }, [
+        el("div", { class: "imagery-headline", text: "Google Maps · Photorealistic 3D" }),
+        el("p", { class: "imagery-accuracy", text: tiles.attribution }),
+        el("p", { class: "imagery-accuracy", text: "Approximate exterior context. Not verified for measurements or object placement." }),
+      ]);
+    }
 
     if (mapError) {
       return el("div", { class: "imagery-plate is-unavailable" }, [
@@ -431,6 +440,9 @@ export function createShell({ root, store, actions, win = globalThis }) {
       "div",
       { class: `imagery-plate is-${imagery.state}${imagery.isFallback ? " is-fallback" : ""}` },
       [
+        tiles && tiles.state !== "off"
+          ? el("p", { class: "imagery-accuracy", role: "status", text: tiles.message })
+          : null,
         el("div", { class: "imagery-headline" }, [
           el("span", { class: "imagery-year", text: neutral ? "None" : String(imagery.year) }),
           el("span", {

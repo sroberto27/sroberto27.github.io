@@ -38,16 +38,19 @@
       runtime.
     -->
     <!--
-      Optional local configuration, absent by default and gitignored. A 404
-      here is the normal case and leaves every optional provider switched off;
-      the application reports that state rather than failing.
+      Public browser configuration approved for this deployment. This must ship
+      with the page; an ignored local override is not a deployment artifact.
     -->
-    <script src="config/runtime.js"></script>
+    <script src="config/deployment.js"></script>
     <script src="vendor/maplibre-gl/maplibre-gl.js"></script>
     <script type="importmap">
       {
         "imports": {
-          "slivr/": "./src/"
+          "slivr/": "./src/",
+          "three": "./vendor/three/three.module.js",
+          "three/addons/": "./vendor/three/addons/",
+          "3d-tiles-renderer": "./vendor/3d-tiles-renderer/index.three.js",
+          "3d-tiles-renderer/core/plugins": "./vendor/3d-tiles-renderer/index.core-plugins.js"
         }
       }
     </script>

@@ -40,3 +40,13 @@
 | L035 | Reproducibility | No browser was connected for the 2026-09-20 reference repair. Browser discovery returned an empty list and Chrome and in-app browser creation both returned `Browser is not available` | F03; L033; tests 28, 29, 50–53, 175 | Reconnect a supported browser and compare the same Lafayette entry in SLiVR and a top-level tab; verify all 11 entries, shared downtown switching, Magnolia and a non-downtown capture. Preserve console/network output if data still fail | Open; the earlier API 403 was not reproduced and is not claimed fixed |
 
 Add threats when discovered; do not delete resolved entries. Change status to `Mitigated for {version/study}` and link the evidence while retaining the original limitation.
+
+
+### 2026-09-20 ? Optional 3D deployment correction (D057)
+
+The initial deployment's 3D button only tilted raster imagery and must not count
+as evidence of rendered exterior geometry. The replacement adapts the reference
+renderer but has no live Google-rendering evidence yet. Shared-origin key reuse
+was requested by the owner; provider acceptance, quotas and coverage remain
+unverified. The owner will test after publication. Placements against streamed
+geometry remain approximate and are not surveyed measurement evidence.

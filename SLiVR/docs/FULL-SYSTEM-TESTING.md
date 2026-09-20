@@ -1626,3 +1626,25 @@ veil despite the unresponsive state. Inspection identified the flex/hidden casca
 and transparent-overlay pointer interception; neither CSS correction establishes
 that the API failure is resolved. Both base links opening directly is owner-reported
 evidence. L033 remains open pending the embedded manual check.
+
+
+## 2026-09-20 ? Explore 3D deployment correction, D057
+
+Owner screenshot: tilted DOTD raster and runtime.js 404, with no Google renderer
+connected to Explore. Added the reference-derived custom layer, vendored loaders,
+explicit fallback/loading, per-view attribution and lifecycle cleanup. The owner
+requested the existing reference browser key and stopped further testing before
+the deployment-configuration edits. The final build is NOT TESTED; manual review
+is assigned to the owner after push. Tests 26 and 128 remain open for live evidence.
+
+Before that instruction, `node --test tests/google-tiles.test.mjs
+ tests/imagery.test.mjs` passed 37 checks. Rendering/provider lifecycle checks used
+doubles; imports and coordinate calculations used pinned library code. Browser
+verification was unavailable. These results do not validate the final build or
+provider access. No subsequent tests or live credential requests were executed.
+
+Manual retest: at downtown street scale, select 3D, verify real building geometry,
+rotate through four bearings, check Google Maps/data attribution, return to 2D,
+repeat toggles, leave/re-enter Explore, and exercise absent/denied/slow-provider
+and graphics-context failure. Confirm a labelled aerial fallback, intact catalog
+selection, and no deletion of saved project data. No phase completion is claimed.

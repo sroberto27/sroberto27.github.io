@@ -131,9 +131,14 @@ export function checkDeployScope(files = publishableFiles(), { verifyExceptions 
     // Skip anything unusually large; the catalog is the biggest text asset.
     if (stats.size > 2_000_000) continue;
     const content = readFileSync(absolute, "utf8");
+    // Owner-approved public browser key; this exception is confined to this
+    // property in this deployment file. Other credentials are still rejected.
+    const scannedContent = path === "config/deployment.js"
+      ? content.replace(/(\bgoogleMapsApiKey:\s*")AIza[0-9A-Za-z_-]{35}("\s*[,}])/g, "$1$2")
+      : content;
 
     for (const { name, pattern } of CREDENTIAL_PATTERNS) {
-      if (pattern.test(content)) error(path, `contains what looks like a ${name}`);
+      if (pattern.test(scannedContent)) error(path, `contains what looks like a ${name}`);
     }
     if (isAppFile(path)) {
       for (const pattern of LSU_PATTERNS) {

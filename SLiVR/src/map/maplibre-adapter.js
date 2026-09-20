@@ -27,6 +27,7 @@ import {
 import { boundsArray } from "./region-config.js";
 import { createMarkers } from "./markers.js";
 import { createDimensionControl, TILTED_PITCH_DEG } from "./controls.js";
+import { createGoogleTiles } from "./google-tiles.js";
 
 export const MAP_ERROR_CODES = Object.freeze({
   libraryUnavailable: "map-library-unavailable",
@@ -42,7 +43,7 @@ export const MAP_ERROR_CODES = Object.freeze({
  * @param {(event: object) => void} [options.onEvent] Receives adapter events.
  * @param {boolean|string} [options.webgl] Capability as reported by `app/capabilities.js`.
  */
-export function createMapAdapter({ container, region, maplibre, onEvent = null, webgl = true }) {
+export function createMapAdapter({ container, region, maplibre, onEvent = null, webgl = true, runtimeConfig = null }) {
   const failover = createImageryFailover({
     region,
     onChange: (status) => emit({ type: "imagery-changed", status }),
@@ -58,6 +59,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
   let markers = null;
   let tilted = false;
   let dimensionControl = null;
+  let googleTiles = null;
 
   /** Whether the style is already loaded, tolerating a library that cannot say. */
   function isLoaded() {
@@ -144,6 +146,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
       if (styleReady || disposed) return;
       styleReady = true;
       applyImagerySource();
+      if (tilted) activateTiles();
       emit({ type: "ready" });
     };
     if (isLoaded()) onStyleReady();
@@ -228,19 +231,22 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
         return;
       }
       styledSourceId = source.id;
+      googleTiles?.refreshVisibility();
     } catch (cause) {
       emit({ type: "error", message: `The imagery source could not be swapped: ${cause.message}` });
     }
   }
 
-  /**
-   * Tilts the camera, or returns it flat and north-up.
-   *
-   * Aerial imagery seen at an angle is what makes a street read as a space
-   * with height rather than a plan. Terrain is deliberately not added: this
-   * region is almost flat, and a digital elevation provider would be a third
-   * party this project has not validated or recorded.
-   */
+  function activateTiles() {
+    if (!map || disposed || !styleReady) return;
+    googleTiles ??= createGoogleTiles({
+      map, maplibre, region, runtimeConfig,
+      onStatus: (status) => emit({ type: "tiles-changed", status }),
+    });
+    void googleTiles.activate();
+  }
+
+  /** Enters streamed 3D with an explicit aerial fallback, or returns north-up. */
   function setTilted(next) {
     tilted = Boolean(next);
     dimensionControl?.refresh();
@@ -253,6 +259,8 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
     } catch (cause) {
       emit({ type: "error", message: `The view could not be tilted: ${cause.message}` });
     }
+    if (tilted) activateTiles();
+    else googleTiles?.deactivate();
     emit({ type: "dimension", tilted });
     return tilted;
   }
@@ -271,6 +279,8 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
     resizeObserver = null;
     markers?.dispose();
     markers = null;
+    googleTiles?.dispose();
+    googleTiles = null;
     try {
       map?.remove();
     } finally {

@@ -658,3 +658,14 @@ divergence remains.
 Use [CLAUDE_CLI_PLAN_MODE_PROMPT.md](CLAUDE_CLI_PLAN_MODE_PROMPT.md) from `E:\sroberto27.github.io\SLiVR` to begin the next step. The prompt makes this guide the controlling specification, identifies the read-only LSU3D reference and supporting evidence, requires a dependency-based plan for essential Phases 0–5 plus the separate post-prototype Phase 6 research pipeline, and forbids implementation while Claude CLI remains in plan mode.
 
 The first Claude response should be a reviewable implementation plan rather than code. It must report contradictions, missing inputs and unverifiable provider assumptions explicitly; those items become validation tasks or blockers only when they prevent the relevant phase exit gate. Later-roadmap features must not enter the prototype plan unless the user revises this guide.
+
+
+### 2026-09-20 owner-directed deployment exception (D057)
+
+For the shared GitHub Pages prototype, the owner explicitly requested reuse of
+the existing reference application's Google Maps browser key and publication of
+the 3D fix. `config/deployment.js` ships that public browser configuration instead
+of the ignored runtime.js. This narrowly supersedes section 6.2.2's prohibition
+on committed provider credentials for this browser key only. Provider access and
+rendering are left for the owner's manual testing after push; no live success
+is claimed.
