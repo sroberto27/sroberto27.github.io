@@ -1,0 +1,667 @@
+{
+  "schemaVersion": "1.0.0",
+  "catalogVersion": "1.0.0",
+  "sources": [
+    {
+      "id": "SRC-001",
+      "locationIds": [],
+      "scopeNote": "All 17 inventory records",
+      "title": "Current treedis experinece sweeps building starts.txt",
+      "publisher": "User-supplied project document",
+      "type": "Primary project inventory",
+      "url": null,
+      "reference": "docs/Current treedis experinece sweeps building starts.txt",
+      "availability": "private project document",
+      "accessed": "2026-09-19",
+      "factsSupported": "Current Treedis URLs, model IDs, sweep IDs, start rotations and six future candidates",
+      "authorityLimitation": "Authoritative for project intent; live Treedis state/capture date not independently verified"
+    },
+    {
+      "id": "SRC-002",
+      "locationIds": [
+        "LOC-001"
+      ],
+      "scopeNote": null,
+      "title": "Reservations / contact",
+      "publisher": "Carpe Diem Cafe & Wine Bar",
+      "type": "Official venue website",
+      "url": "https://www.carpediemcafeandwinebar.com/reservations",
+      "reference": "https://www.carpediemcafeandwinebar.com/reservations",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Address, phone and public hours",
+      "authorityLimitation": "Filming policy and property owner not stated"
+    },
+    {
+      "id": "SRC-003",
+      "locationIds": [
+        "LOC-002"
+      ],
+      "scopeNote": null,
+      "title": "Restaurant",
+      "publisher": "Pop's Poboys",
+      "type": "Official venue website",
+      "url": "https://www.popspoboys.com/restaurant",
+      "reference": "https://www.popspoboys.com/restaurant",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Address, phone and public hours",
+      "authorityLimitation": "Filming policy and property owner not stated"
+    },
+    {
+      "id": "SRC-004",
+      "locationIds": [
+        "LOC-003"
+      ],
+      "scopeNote": null,
+      "title": "Bank of Lafayette / Old City Hall HABS record",
+      "publisher": "Library of Congress",
+      "type": "Federal historic survey",
+      "url": "https://www.loc.gov/item/la0177/",
+      "reference": "https://www.loc.gov/item/la0177/",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Historic identity, 1898 construction, history and coordinates",
+      "authorityLimitation": "Historic record does not establish current booking authority"
+    },
+    {
+      "id": "SRC-005",
+      "locationIds": [
+        "LOC-003"
+      ],
+      "scopeNote": null,
+      "title": "Accessibility / contact",
+      "publisher": "CODOFIL",
+      "type": "Official agency website",
+      "url": "https://codofil.org/accessibility/",
+      "reference": "https://codofil.org/accessibility/",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Current occupant contact information",
+      "authorityLimitation": "Office hours and filming process not stated"
+    },
+    {
+      "id": "SRC-006",
+      "locationIds": [
+        "LOC-003"
+      ],
+      "scopeNote": null,
+      "title": "LCG ADA / Title VI policy document",
+      "publisher": "Lafayette Consolidated Government",
+      "type": "Official government PDF",
+      "url": "https://www.lafayettela.gov/docs/default-source/civil-service-documents/lcg-ada-titlevi-compliance-policy-statement9421ae6df1714fa8806cecb0cf716784.pdf",
+      "reference": "https://www.lafayettela.gov/docs/default-source/civil-service-documents/lcg-ada-titlevi-compliance-policy-statement9421ae6df1714fa8806cecb0cf716784.pdf",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Facility/agency context",
+      "authorityLimitation": "Does not confirm current legal title or filming authority"
+    },
+    {
+      "id": "SRC-007",
+      "locationIds": [
+        "LOC-004"
+      ],
+      "scopeNote": null,
+      "title": "Contact",
+      "publisher": "Spoonbill Watering Hole & Restaurant",
+      "type": "Official venue website",
+      "url": "https://www.spoonbillrestaurant.com/contact/",
+      "reference": "https://www.spoonbillrestaurant.com/contact/",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Address, phone and public hours",
+      "authorityLimitation": "Filming policy and property owner not stated"
+    },
+    {
+      "id": "SRC-008",
+      "locationIds": [
+        "LOC-005"
+      ],
+      "scopeNote": null,
+      "title": "Rock'n'Bowl de Lafayette",
+      "publisher": "Rock'n'Bowl",
+      "type": "Official venue website",
+      "url": "https://www.rocknbowl.com/",
+      "reference": "https://www.rocknbowl.com/",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Address, phone, public/event hours and venue character",
+      "authorityLimitation": "Production rates and filming rules require direct confirmation"
+    },
+    {
+      "id": "SRC-009",
+      "locationIds": [
+        "LOC-006"
+      ],
+      "scopeNote": null,
+      "title": "Contact Us",
+      "publisher": "Borden's Ice Cream Shoppe",
+      "type": "Official venue website",
+      "url": "https://bordensicecreamshoppe.com/contact-us",
+      "reference": "https://bordensicecreamshoppe.com/contact-us",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Address, phone and public hours",
+      "authorityLimitation": "Filming policy and property owner not stated"
+    },
+    {
+      "id": "SRC-010",
+      "locationIds": [
+        "LOC-006"
+      ],
+      "scopeNote": null,
+      "title": "Borden's Milk Plant HABS record",
+      "publisher": "Library of Congress",
+      "type": "Federal historic survey",
+      "url": "https://www.loc.gov/item/la0432/",
+      "reference": "https://www.loc.gov/item/la0432/",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "1940 historic complex and architectural documentation",
+      "authorityLimitation": "Historic record does not establish current booking authority"
+    },
+    {
+      "id": "SRC-011",
+      "locationIds": [
+        "LOC-007"
+      ],
+      "scopeNote": null,
+      "title": "Driving directions / place listing",
+      "publisher": "Waze",
+      "type": "Secondary place listing",
+      "url": "https://www.waze.com/live-map/directions/play-n-trade-johnston-st-2668-lafayette?to=place.w.175636782.1756105677.2183762",
+      "reference": "https://www.waze.com/live-map/directions/play-n-trade-johnston-st-2668-lafayette?to=place.w.175636782.1756105677.2183762",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Address, phone and hours",
+      "authorityLimitation": "Not an owner-controlled source; validate directly"
+    },
+    {
+      "id": "SRC-012",
+      "locationIds": [
+        "LOC-007"
+      ],
+      "scopeNote": null,
+      "title": "Play N Trade listing",
+      "publisher": "Loc8NearMe",
+      "type": "Secondary directory",
+      "url": "https://www.loc8nearme.com/louisiana/lafayette/play-n-trade/104087/",
+      "reference": "https://www.loc8nearme.com/louisiana/lafayette/play-n-trade/104087/",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Suite, ZIP, phone and hours",
+      "authorityLimitation": "Secondary listing; validate directly"
+    },
+    {
+      "id": "SRC-013",
+      "locationIds": [
+        "LOC-008"
+      ],
+      "scopeNote": null,
+      "title": "Givens House property page",
+      "publisher": "Belle Vie Hospitality",
+      "type": "Official operator website",
+      "url": "https://belleviehospitality.com/properties/givens-house",
+      "reference": "https://belleviehospitality.com/properties/givens-house",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Operating address, phone, email and hospitality use",
+      "authorityLimitation": "Legal owner and filming policy not stated"
+    },
+    {
+      "id": "SRC-014",
+      "locationIds": [
+        "LOC-008"
+      ],
+      "scopeNote": null,
+      "title": "The Givens House history",
+      "publisher": "Belle Vie Hospitality",
+      "type": "Official operator website",
+      "url": "https://belleviehospitality.com/the-givens-house",
+      "reference": "https://belleviehospitality.com/the-givens-house",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Historic date, alternate street number and named owners",
+      "authorityLimitation": "Conflicts with operating address; current title needs validation"
+    },
+    {
+      "id": "SRC-015",
+      "locationIds": [
+        "LOC-009"
+      ],
+      "scopeNote": null,
+      "title": "Magnolia Pantry",
+      "publisher": "Magnolia Pantry",
+      "type": "Official website",
+      "url": "https://www.magnoliapantry.com/",
+      "reference": "https://www.magnoliapantry.com/",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Official web identity",
+      "authorityLimitation": "Crawler exposed little operational detail"
+    },
+    {
+      "id": "SRC-016",
+      "locationIds": [
+        "LOC-009"
+      ],
+      "scopeNote": null,
+      "title": "LCG agenda / resolution naming Magnolia Pantry LLC",
+      "publisher": "Lafayette Consolidated Government",
+      "type": "Official government PDF",
+      "url": "https://apps.lafayettela.gov/obcouncil/api/Document/2492446/",
+      "reference": "https://apps.lafayettela.gov/obcouncil/api/Document/2492446/",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Legal operating entity context",
+      "authorityLimitation": "Does not establish property title or filming authority"
+    },
+    {
+      "id": "SRC-017",
+      "locationIds": [
+        "LOC-009"
+      ],
+      "scopeNote": null,
+      "title": "Magnolia Pantry in Downtown Lafayette",
+      "publisher": "The Lafayette Mom",
+      "type": "Secondary local article",
+      "url": "https://thelafayettemom.com/lafayette/dining-out/magnolia-pantry-in-downtown-lafayette-made-my-dreams-come-true/",
+      "reference": "https://thelafayettemom.com/lafayette/dining-out/magnolia-pantry-in-downtown-lafayette-made-my-dreams-come-true/",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Address, hours, patio and Parc Sans Souci context",
+      "authorityLimitation": "Validate hours and filming arrangements directly"
+    },
+    {
+      "id": "SRC-018",
+      "locationIds": [
+        "LOC-010"
+      ],
+      "scopeNote": null,
+      "title": "Community center proposed for old Truman school campus",
+      "publisher": "The Current",
+      "type": "Local reporting",
+      "url": "https://thecurrentla.com/2024/community-center-proposed-for-old-truman-school-campus/",
+      "reference": "https://thecurrentla.com/2024/community-center-proposed-for-old-truman-school-campus/",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Former address, 1959 construction and proposed lease/use",
+      "authorityLimitation": "2024 report; current status must be rechecked"
+    },
+    {
+      "id": "SRC-019",
+      "locationIds": [
+        "LOC-010"
+      ],
+      "scopeNote": null,
+      "title": "Truman Early Childhood Education Center",
+      "publisher": "Lafayette Parish School System",
+      "type": "Official school website",
+      "url": "https://www.lpssonline.com/schools/trumanec/index",
+      "reference": "https://www.lpssonline.com/schools/trumanec/index",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Confirms the active school now operates elsewhere",
+      "authorityLimitation": "Does not describe access to the former Clara Street campus"
+    },
+    {
+      "id": "SRC-020",
+      "locationIds": [
+        "LOC-011"
+      ],
+      "scopeNote": null,
+      "title": "Visit Moncus Park",
+      "publisher": "Moncus Park",
+      "type": "Official park website",
+      "url": "https://moncuspark.org/visit/",
+      "reference": "https://moncuspark.org/visit/",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Address, hours, parking, restrooms, accessibility and photography/drone rules",
+      "authorityLimitation": "Production-specific terms still require park approval"
+    },
+    {
+      "id": "SRC-021",
+      "locationIds": [
+        "LOC-011"
+      ],
+      "scopeNote": null,
+      "title": "Book Your Event",
+      "publisher": "Moncus Park",
+      "type": "Official park website",
+      "url": "https://moncuspark.org/book-your-event/",
+      "reference": "https://moncuspark.org/book-your-event/",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Event inquiry process and lead time",
+      "authorityLimitation": "Final rates/conditions depend on proposal"
+    },
+    {
+      "id": "SRC-022",
+      "locationIds": [
+        "LOC-011"
+      ],
+      "scopeNote": null,
+      "title": "Contact",
+      "publisher": "Moncus Park",
+      "type": "Official park website",
+      "url": "https://moncuspark.org/contact/",
+      "reference": "https://moncuspark.org/contact/",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Office and events contacts",
+      "authorityLimitation": "Property title not provided"
+    },
+    {
+      "id": "SRC-023",
+      "locationIds": [
+        "LOC-011"
+      ],
+      "scopeNote": null,
+      "title": "Moncus Park home/about content",
+      "publisher": "Moncus Park",
+      "type": "Official park website",
+      "url": "https://moncuspark.org/",
+      "reference": "https://moncuspark.org/",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Nonprofit operator and long-term public lease context",
+      "authorityLimitation": "Current lease/title documents not reviewed"
+    },
+    {
+      "id": "SRC-024",
+      "locationIds": [
+        "LOC-012"
+      ],
+      "scopeNote": null,
+      "title": "About Us",
+      "publisher": "CAJUNDOME",
+      "type": "Official venue website",
+      "url": "https://www.cajundome.com/about-us",
+      "reference": "https://www.cajundome.com/about-us",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Address, university ownership and commission oversight",
+      "authorityLimitation": "Production details require venue proposal"
+    },
+    {
+      "id": "SRC-025",
+      "locationIds": [
+        "LOC-012"
+      ],
+      "scopeNote": null,
+      "title": "Contact Us",
+      "publisher": "CAJUNDOME",
+      "type": "Official venue website",
+      "url": "https://www.cajundome.com/about-us/contact-us",
+      "reference": "https://www.cajundome.com/about-us/contact-us",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Main, box office and event contacts",
+      "authorityLimitation": "Role assignments may change"
+    },
+    {
+      "id": "SRC-026",
+      "locationIds": [
+        "LOC-012"
+      ],
+      "scopeNote": null,
+      "title": "Know Before You Go",
+      "publisher": "CAJUNDOME",
+      "type": "Official venue website",
+      "url": "https://www.cajundome.com/know-before-you-go",
+      "reference": "https://www.cajundome.com/know-before-you-go",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Parking/drop-off, accessibility and camera/recording restrictions",
+      "authorityLimitation": "Event-specific policies can supersede general guidance"
+    },
+    {
+      "id": "SRC-027",
+      "locationIds": [
+        "LOC-013"
+      ],
+      "scopeNote": null,
+      "title": "Cajun Field",
+      "publisher": "Louisiana Ragin' Cajuns",
+      "type": "Official athletics website",
+      "url": "https://ragincajuns.com/sports/2012/8/14/Cajun%20Field",
+      "reference": "https://ragincajuns.com/sports/2012/8/14/Cajun%20Field",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Address, capacity, surface and facility history",
+      "authorityLimitation": "Filming/booking authority not fully described"
+    },
+    {
+      "id": "SRC-028",
+      "locationIds": [
+        "LOC-013",
+        "LOC-016"
+      ],
+      "scopeNote": null,
+      "title": "Lease Space",
+      "publisher": "UL Lafayette Facility Management",
+      "type": "Official university website",
+      "url": "https://facilities.louisiana.edu/resource-center/lease-space",
+      "reference": "https://facilities.louisiana.edu/resource-center/lease-space",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Auxiliary Services manages leases for Cajun Field lots/green space and Blackham",
+      "authorityLimitation": "Specific rates, insurance and approval path require inquiry"
+    },
+    {
+      "id": "SRC-029",
+      "locationIds": [
+        "LOC-014"
+      ],
+      "scopeNote": null,
+      "title": "Contact",
+      "publisher": "LITE Center",
+      "type": "Official university website",
+      "url": "https://lite.louisiana.edu/contact",
+      "reference": "https://lite.louisiana.edu/contact",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Address, suite, phone and business hours",
+      "authorityLimitation": "Filming and tenant-access policy not stated"
+    },
+    {
+      "id": "SRC-030",
+      "locationIds": [
+        "LOC-015"
+      ],
+      "scopeNote": null,
+      "title": "Campus Tours",
+      "publisher": "University of Louisiana at Lafayette",
+      "type": "Official university website",
+      "url": "https://louisiana.edu/admissions-aid/visit-campus/campus-tours",
+      "reference": "https://louisiana.edu/admissions-aid/visit-campus/campus-tours",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Tour start point and schedule context",
+      "authorityLimitation": "Tour schedule is not filming availability"
+    },
+    {
+      "id": "SRC-031",
+      "locationIds": [
+        "LOC-015"
+      ],
+      "scopeNote": null,
+      "title": "Employers, businesses and community partners",
+      "publisher": "University of Louisiana at Lafayette",
+      "type": "Official university website",
+      "url": "https://louisiana.edu/research-impact/employers-businesses-community-partners",
+      "reference": "https://louisiana.edu/research-impact/employers-businesses-community-partners",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "General university contact and event/partnership routing",
+      "authorityLimitation": "Does not replace facility-specific approval"
+    },
+    {
+      "id": "SRC-032",
+      "locationIds": [
+        "LOC-015"
+      ],
+      "scopeNote": null,
+      "title": "Parking and Transit location/hours",
+      "publisher": "University of Louisiana at Lafayette",
+      "type": "Official university website",
+      "url": "https://louisiana.edu/park/about/location-hours",
+      "reference": "https://louisiana.edu/park/about/location-hours",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Parking office address and hours",
+      "authorityLimitation": "Production parking plans require separate approval"
+    },
+    {
+      "id": "SRC-033",
+      "locationIds": [
+        "LOC-016"
+      ],
+      "scopeNote": null,
+      "title": "Property & Retail / Blackham Coliseum",
+      "publisher": "UL Lafayette Auxiliary Services",
+      "type": "Official university website",
+      "url": "https://louisiana.edu/auxiliaryservices/property-retail",
+      "reference": "https://louisiana.edu/auxiliaryservices/property-retail",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Blackham ownership/management, size, capacity, barns and parking description",
+      "authorityLimitation": "Current condition and technical specifications require a scout"
+    },
+    {
+      "id": "SRC-034",
+      "locationIds": [
+        "LOC-016"
+      ],
+      "scopeNote": null,
+      "title": "Physical building list",
+      "publisher": "UL Lafayette Facility Management",
+      "type": "Official university website",
+      "url": "https://facilities.louisiana.edu/node/26",
+      "reference": "https://facilities.louisiana.edu/node/26",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Blackham street address",
+      "authorityLimitation": "Does not provide production details"
+    },
+    {
+      "id": "SRC-035",
+      "locationIds": [
+        "LOC-017"
+      ],
+      "scopeNote": null,
+      "title": "Break Hours",
+      "publisher": "UL Lafayette Recreational Sports",
+      "type": "Official university website",
+      "url": "https://recsports.louisiana.edu/about-us/hours/break-hours-0",
+      "reference": "https://recsports.louisiana.edu/about-us/hours/break-hours-0",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Published break hours, address and phone",
+      "authorityLimitation": "Hours are date-specific and can change"
+    },
+    {
+      "id": "SRC-036",
+      "locationIds": [
+        "LOC-017"
+      ],
+      "scopeNote": null,
+      "title": "Parking",
+      "publisher": "UL Lafayette Recreational Sports",
+      "type": "Official university website",
+      "url": "https://recsports.louisiana.edu/parking",
+      "reference": "https://recsports.louisiana.edu/parking",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Lot 350 counts, accessible spaces and timing rules",
+      "authorityLimitation": "Production reservation/control requires approval"
+    },
+    {
+      "id": "SRC-037",
+      "locationIds": [],
+      "scopeNote": "All locations except LOC-003 authoritative coordinate",
+      "title": "Search results for street addresses",
+      "publisher": "OpenStreetMap Nominatim",
+      "type": "Open geocoder",
+      "url": "https://nominatim.openstreetmap.org/",
+      "reference": "https://nominatim.openstreetmap.org/",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Planning-level latitude/longitude",
+      "authorityLimitation": "Approximate geocodes; validate entrances and survey-grade positions"
+    },
+    {
+      "id": "SRC-038",
+      "locationIds": [
+        "LOC-017"
+      ],
+      "scopeNote": null,
+      "title": "Facility reservation fees",
+      "publisher": "UL Lafayette Recreational Sports",
+      "type": "Official university website",
+      "url": "https://recsports.louisiana.edu/node/241",
+      "reference": "https://recsports.louisiana.edu/node/241",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Reservation contact and fee categories",
+      "authorityLimitation": "Current production quote required"
+    },
+    {
+      "id": "SRC-039",
+      "locationIds": [],
+      "scopeNote": "All Lafayette locations",
+      "title": "Planning and Development",
+      "publisher": "Lafayette Consolidated Government",
+      "type": "Official government website",
+      "url": "https://www.lafayettela.gov/business-development/planning-and-development/",
+      "reference": "https://www.lafayettela.gov/business-development/planning-and-development/",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Local planning/permitting contact and office hours",
+      "authorityLimitation": "Does not state a film-specific permit"
+    },
+    {
+      "id": "SRC-040",
+      "locationIds": [],
+      "scopeNote": "All locations when an event footprint applies",
+      "title": "Special Event Permit Application",
+      "publisher": "Lafayette Consolidated Government",
+      "type": "Official government PDF",
+      "url": "https://www.lafayettela.gov/media/gvbama12/special-event-application.pdf",
+      "reference": "https://www.lafayettela.gov/media/gvbama12/special-event-application.pdf",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Local special-event application factors including property permission and security",
+      "authorityLimitation": "Applicability depends on the production footprint"
+    },
+    {
+      "id": "SRC-041",
+      "locationIds": [],
+      "scopeNote": "All locations when amplified sound applies",
+      "title": "Sound Variance Application and Cover Letter",
+      "publisher": "Lafayette Consolidated Government",
+      "type": "Official government PDF",
+      "url": "https://www.lafayettela.gov/media/gizncka1/sound-variance-application-and-cover-letter.pdf",
+      "reference": "https://www.lafayettela.gov/media/gizncka1/sound-variance-application-and-cover-letter.pdf",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "Owner permission and local sound-variance procedure",
+      "authorityLimitation": "Applicability depends on sound plan and location"
+    },
+    {
+      "id": "SRC-042",
+      "locationIds": [],
+      "scopeNote": "All Louisiana locations",
+      "title": "Film Resources: Fees & Permits",
+      "publisher": "Louisiana Entertainment",
+      "type": "Official state website",
+      "url": "https://www.louisianaentertainment.gov/film/resources",
+      "reference": "https://www.louisianaentertainment.gov/film/resources",
+      "availability": "public",
+      "accessed": "2026-09-19",
+      "factsSupported": "No state fees or permits are required for filming; state-property fees are case-by-case; local offices may impose requirements",
+      "authorityLimitation": "Does not waive property, local, safety, insurance or agency approvals"
+    }
+  ]
+}

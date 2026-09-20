@@ -1,0 +1,130 @@
+{
+  "schemaVersion": "1.0.0",
+  "catalogVersion": "1.0.0",
+  "areas": [
+    {
+      "id": "AREA-01",
+      "name": "Downtown Core",
+      "description": "Jefferson Street, Main Street and Vermilion Street around the downtown core",
+      "productImplication": "Highest-density launch zone. Six places share one navigable experience and Magnolia adds a separate nearby interior. Treat street transitions and model handoffs as first-class UX.",
+      "priority": "Phase 1 reference area",
+      "validationBeforeCommitment": "Confirm exact shared-model spatial limits, public-right-of-way filming contacts and loading/parking rules",
+      "workbookCurrentCount": 7,
+      "workbookFutureCount": 0,
+      "locationIds": [
+        "LOC-001",
+        "LOC-002",
+        "LOC-003",
+        "LOC-004",
+        "LOC-005",
+        "LOC-006",
+        "LOC-009"
+      ],
+      "sourceIds": [
+        "SRC-001",
+        "SRC-039",
+        "SRC-041",
+        "SRC-042"
+      ]
+    },
+    {
+      "id": "AREA-02",
+      "name": "Sterling Grove / North Sterling",
+      "description": "North Sterling Street northeast of downtown",
+      "productImplication": "Adds a historic residential/hospitality context outside the downtown commercial cluster.",
+      "priority": "Phase 2 enrichment",
+      "validationBeforeCommitment": "Resolve 324 vs 338 N Sterling address and present owner/booking authority",
+      "workbookCurrentCount": 1,
+      "workbookFutureCount": 0,
+      "locationIds": [
+        "LOC-008"
+      ],
+      "sourceIds": [
+        "SRC-001",
+        "SRC-013",
+        "SRC-014"
+      ]
+    },
+    {
+      "id": "AREA-03",
+      "name": "Johnston Street / Moncus / Blackham",
+      "description": "Johnston Street corridor southwest of downtown",
+      "productImplication": "Connects retail, park landscape and a future historic arena. These are separate properties and should remain separate permission packages.",
+      "priority": "Phase 2 expansion",
+      "validationBeforeCommitment": "Validate corridor map framing, each property boundary, parking/loading and event calendars",
+      "workbookCurrentCount": 2,
+      "workbookFutureCount": 1,
+      "locationIds": [
+        "LOC-007",
+        "LOC-011",
+        "LOC-016"
+      ],
+      "sourceIds": [
+        "SRC-001",
+        "SRC-011",
+        "SRC-020",
+        "SRC-033"
+      ]
+    },
+    {
+      "id": "AREA-04",
+      "name": "Northside / Clara Street",
+      "description": "Former Truman campus north of downtown",
+      "productImplication": "Extends coverage north to a former institutional campus with uncertain current occupancy and authority.",
+      "priority": "Hold until authority is confirmed",
+      "validationBeforeCommitment": "Confirm current lease, custodian, safe access, occupied zones and hazard documentation",
+      "workbookCurrentCount": 1,
+      "workbookFutureCount": 0,
+      "locationIds": [
+        "LOC-010"
+      ],
+      "sourceIds": [
+        "SRC-001",
+        "SRC-018",
+        "SRC-019"
+      ]
+    },
+    {
+      "id": "AREA-05",
+      "name": "Cajundome / South Campus",
+      "description": "Cajundome Boulevard and West Congress complex west of UL's main campus",
+      "productImplication": "Largest future scan cluster. Design a campus-scale hierarchy: complex, facility, entrance, interior zone and sweep.",
+      "priority": "Phase 3 capture campaign",
+      "validationBeforeCommitment": "Coordinate university/venue approvals, event blackouts, credentials, privacy, parking and scan scheduling",
+      "workbookCurrentCount": 0,
+      "workbookFutureCount": 4,
+      "locationIds": [
+        "LOC-012",
+        "LOC-013",
+        "LOC-014",
+        "LOC-017"
+      ],
+      "sourceIds": [
+        "SRC-001",
+        "SRC-024",
+        "SRC-027",
+        "SRC-029",
+        "SRC-035"
+      ]
+    },
+    {
+      "id": "AREA-06",
+      "name": "UL Main Campus",
+      "description": "Main academic campus centered around University Circle",
+      "productImplication": "A campus record is too broad for production use. Subdivide into named buildings, quads, streets, entrances and controllable zones before scanning.",
+      "priority": "Phase 3 discovery then phased capture",
+      "validationBeforeCommitment": "Build a campus sublocation inventory and confirm university-wide approval workflow",
+      "workbookCurrentCount": 0,
+      "workbookFutureCount": 1,
+      "locationIds": [
+        "LOC-015"
+      ],
+      "sourceIds": [
+        "SRC-001",
+        "SRC-030",
+        "SRC-031",
+        "SRC-032"
+      ]
+    }
+  ]
+}
