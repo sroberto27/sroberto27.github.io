@@ -14,7 +14,7 @@ No test is pre-marked. A passing unit test, code review, HTTP response or earlie
 | Architecture baseline | SLiVR architecture 0.19 or later |
 | Created | 2026-09-19 |
 | Last updated | 2026-09-20 |
-| Current implementation phase | Phase 0.4 — reference repair; live acceptance remains open |
+| Current implementation phase | Phase 0 COMPLETE with approved exceptions; Phase 1 map framing/pin increment implemented, visual acceptance pending |
 | First-prototype gate | Parts A–H and J, using the phase applicability rules below |
 | Post-prototype gate | Part I plus affected regression tests |
 
@@ -1734,3 +1734,146 @@ loading presentation and behavior; no additional automated tests were run and
 no detailed timing trace or new browser/device information was supplied. This
 supersedes the pending manual acceptance of that update, without asserting that
 every failure-path regression was separately re-executed.
+
+## 2026-09-20 - Phase 0 technical closeout verification
+
+See [the closeout report](../research/PHASE_0_CLOSEOUT.md) for the gate mapping,
+Part J applicability review, archived imagery summary and precise pending
+exceptions; see [the provider matrix](../research/PROVIDER_CAPABILITY_MATRIX.md)
+for all 11 entries and preserved unknown capabilities/metadata.
+
+Runtime baseline efa64612 (local equivalent 31877b35). First closeout suite:
+326 tests, 318 PASS, 8 FAIL. Obsolete deep-link, pre-polling loading-state and
+25-second cancel expectations were reconciled with D056/D059. The six-downtown
+shell test now drives TourReady, waits 600 ms, checks each distinct Navigate
+sweep/orientation and transitionTime 0, then acknowledges arrival through the
+correct frame/origin. Final suite: 326 PASS, 0 FAIL, Node v24.18.0. No production
+Treedis implementation was modified to make these checks pass.
+
+Catalog validation: 0 errors, 1 retained name-alias warning. Deployment-scope
+scan: 0 errors. Full linked-record and schema cases pass through deterministic
+IndexedDB/DOM doubles; that is not a new live browser result. The owner already
+reported all eight manual checks PASS and accepted the D059 loading update.
+The diagnostic demonstration now references the shipped deployment.js; fresh
+live console verification remains pending. Browser discovery returned no enabled
+surfaces. No new provider requests were made during closeout.
+
+Part J reviewed for Phase 0 applicability, with later-phase editor/export/search
+features explicitly outside this closeout. Do not overwrite historical browser
+NOT TESTED entries with automated results. Formal Phase 0 completion awaits the
+bounded exception decision described in the closeout report.
+
+## Final Phase 0 acceptance - 2026-09-20
+
+**Phase 0 is COMPLETE with explicit owner-approved exceptions.** The owner
+responded: "Approve these exceptions and close Phase 0."
+
+Acceptance combines 326 passing automated tests, catalog validation (zero errors,
+one retained alias warning), clean deployment-scope scan, all eight owner manual
+checklist passes and the separately accepted immersive loading update. Test 27
+also has screenshot evidence. The known diagnostic runtime.js reference is fixed.
+
+Approved exceptions and mandatory retest conditions:
+- Tests 13 and 16-19 live corrupted-catalog/storage/index/full linked-fixture
+  checks: first browser-connected Phase 1 integration check, before persistence
+  expansion. Existing automated results remain PASS; missing live evidence is
+  not relabelled PASS.
+- Remaining real-device/provider variants of 26 and 180-181, and fresh diagnostic
+  console check 183: next deployment, desktop/tablet. No all-device claim yet.
+- Test 28 raw per-entry capability reports and capture date/extent/reuse rights:
+  before Phase 2 provider-dependent features or media/freshness claims. Preserve
+  unknowns until provider/administrative evidence exists.
+
+Research traceability (30): PASS by this closeout review. All required research
+registers, source decisions and the provider matrix are linked from
+research/PHASE_0_CLOSEOUT.md; no participant benefit or unobserved API capability
+is claimed. Part J applicability and remaining exceptions are recorded there.
+This final acceptance supersedes earlier pending-closeout statements without
+rewriting historical results. Phase 1 is next; no Phase 1 work starts here.
+
+
+## 2026-09-20 - Phase 1 map presentation increment (D062)
+
+Affected tests: 31 (initial framing), 32 (inventory/identity), 33 (capture state),
+34 (selection), 36 (overlap), 179-180 (context and accessible interaction).
+Only co-located grouping is implemented; proximity clustering is still pending.
+
+Automated execution: Node v24.18.0, `node --test tests/*.test.mjs`, 331 PASS,
+0 FAIL; `node tools/check-deploy-scope.mjs`, zero errors. New tests assert tight
+bounds contain all actual coordinates, small viewport padding/max zoom, fitting
+on size changes but not selection/unchanged redraws, shared-coordinate member
+selection/disposal and six-decimal grouping that leaves distinct points separate.
+DOM/MapLibre doubles provide behavioral evidence, not visual rendering evidence.
+
+Manual check on next deployment: open Explore on wide and narrow screens; all
+17 markers fit the visible map without the prior empty planning-envelope margin.
+Resize and change orientation; verify provenance/controls do not cover edge pins.
+Pan/zoom manually, select a record, and confirm the map does not snap back. Check
+number readability and captured/future distinction. With a disposable fixture
+containing duplicate coordinates, verify hover, focus, Enter/Space, touch and Escape,
+individual selection, selected-member visibility and grouping near viewport edges.
+No browser visual PASS is recorded for this change.
+
+## 2026-09-20 - Map controls extension (D063)
+
+Stable test **200**: Explore map control interactions and lifecycle. Automated
+fixtures cover menu search/select, previous/next boundaries, Escape close and
+focus return, overlay disposal, independent toggle state, disabling aerial toggle
+while Google geometry is active, lazy street overlay and aerial-off retention
+through provider failover. Explicit Recenter fits all catalog coordinates. Related
+existing checks: 31-36, 179-184; Part J deployment scope and catalog checks rerun.
+
+Execution: Node v24.18.0, `node --test tests/*.test.mjs`, 334 PASS, zero failures.
+`node tools/check-deploy-scope.mjs`: 150 publishable files, zero errors.
+`node tools/validate-catalog.mjs`: zero errors, one existing Old City Hall alias
+warning. This is automated behavior evidence, not live browser acceptance.
+
+Pending manual test 200: open Explore; pan/zoom then use both Recenter buttons.
+Check all pins fit. Use zoom/compass, toggle streets and aerial independently,
+enter/leave 3D and check preserved settings, labels and attribution. Test location
+permission allow/deny, fullscreen enter/exit, search by name/ID and no results,
+previous/next at first/last record, menu keyboard focus/Escape, and resize between
+wide/portrait/landscape. Confirm controls, strip and provenance do not obscure
+pins or each other. Leave and return to Explore to check lifecycle cleanup.
+No new live PASS is claimed. Approved Phase 0 exceptions remain unchanged.
+
+## 2026-09-20 - Catalog 1.1.0 and selection focus (D064-D065)
+
+Current test fixture supersedes the former solar-exclusion requirement in test 12
+and the fixed 17-record/six-area counts in tests 11 and 173. Historical recorded
+results remain unchanged. Current catalog: 18 locations, 11 current/7 future,
+7 areas, 18 captures/details, 46 sources, research snapshot 2026-09-20.
+
+- **201. Coordinate and workbook reconciliation:** all 14 supplied coordinate
+  pairs (including Moncus Park and LaSEL) match exactly in the workbook and JSON;
+  axis order is correct. Stable IDs remain; LaSEL has a future capture placeholder
+  and sources, with no invented provider identity. Original facts/unknowns outside
+  scope are unchanged. PASS, automated; workbook views also rendered/reviewed.
+- **202. Selection focus:** list action, actual marker callback and repeat selection
+  move to the intended point. A later selection, Recenter or disposal cancels stale
+  scheduled focus; unchanged redraws do not recenter; resize retains explicit
+  selection focus. PASS, automated doubles. Manual desktop/tablet/3D check pending.
+- **203. XLSX empty elements:** self-closing blank cells/rows cannot consume the next
+  populated cell, including a future capture-date unknown marker. PASS, synthetic
+  OOXML fixture and full catalog validation.
+
+Executed `node --test tests/*.test.mjs`: 338 PASS, zero failures (Node v24.18.0).
+Catalog validation: zero errors, existing Old City Hall naming warning retained.
+Part J deployment boundary: 151 publishable files, zero errors; no workbook/private
+output is deployed. Workbook cached totals are 18/11/7; styles, widths, panes,
+merges, validations and unchanged field-guide values are preserved.
+
+Next manual check: select Moncus Park and LaSEL from the left rail, then select
+other numbered pins. Pan away and click the same selected record again. Verify
+centering after the panel settles, readable pins above the imagery plate, no
+bearing/pitch reset in 3D, and all 18 pins after Recenter and viewport resizing.
+Verify the workbook opens in Excel with the corrected coordinate columns and new
+future-candidate rows. No live browser or native Excel PASS is claimed.
+
+Test 201 follow-up, 2026-09-20: Play N Trade, Givens House and Former Truman have
+also been corrected from owner-supplied pairs. Verification now covers all 17
+supplied pairs, not the earlier 14. Workbook numeric precision, longitude-first
+JSON, bounds and unchanged record fields checked; affected workbook rows rendered
+and reviewed. Full suite rerun: 338 PASS; catalog/deployment checks zero errors
+(with the existing Old City Hall alias warning). Browser verification remains
+pending; catalog counts and schema are unchanged.

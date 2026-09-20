@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "catalogVersion": "1.0.0",
+  "catalogVersion": "1.1.0",
   "sources": [
     {
       "id": "SRC-001",
@@ -662,6 +662,86 @@
       "accessed": "2026-09-19",
       "factsSupported": "No state fees or permits are required for filming; state-property fees are case-by-case; local offices may impose requirements",
       "authorityLimitation": "Does not waive property, local, safety, insurance or agency approvals"
+    },
+    {
+      "id": "SRC-043",
+      "locationIds": [
+        "LOC-002",
+        "LOC-003",
+        "LOC-004",
+        "LOC-005",
+        "LOC-006",
+        "LOC-007",
+        "LOC-008",
+        "LOC-009",
+        "LOC-010",
+        "LOC-011",
+        "LOC-012",
+        "LOC-013",
+        "LOC-014",
+        "LOC-015",
+        "LOC-016",
+        "LOC-017",
+        "LOC-018"
+      ],
+      "scopeNote": null,
+      "title": "Catalog coordinate corrections and LaSEL addition, 2026-09-20",
+      "publisher": "Project owner",
+      "type": "Owner-supplied project record",
+      "url": null,
+      "reference": "docs/CATALOG_COORDINATE_UPDATES_2026-09-20.md",
+      "availability": "private project document",
+      "accessed": "2026-09-20",
+      "factsSupported": "Replacement map-pin coordinates for 16 existing locations and requested LaSEL future candidate",
+      "authorityLimitation": "Not a survey or independent verification of entrances, ownership or access"
+    },
+    {
+      "id": "SRC-044",
+      "locationIds": [
+        "LOC-018"
+      ],
+      "scopeNote": null,
+      "title": "Off-Site Facility Locations",
+      "publisher": "UL Lafayette Energy Institute of Louisiana",
+      "type": "Official university website",
+      "url": "https://energy.louisiana.edu/about-us/contact-us/facility-locations",
+      "reference": "https://energy.louisiana.edu/about-us/contact-us/facility-locations",
+      "availability": "public",
+      "accessed": "2026-09-20",
+      "factsSupported": "LaSEL physical address and institute contact",
+      "authorityLimitation": "Contact is institutional; filming authority and public visiting hours are not established"
+    },
+    {
+      "id": "SRC-045",
+      "locationIds": [
+        "LOC-018"
+      ],
+      "scopeNote": null,
+      "title": "Antoun Hall dedication, May 6, 2025",
+      "publisher": "UL Lafayette College of Engineering",
+      "type": "Official university website",
+      "url": "https://engineering.louisiana.edu/news-events/news/20250506/antoun-hall-dedicated-thanks-vision-and-generosity-georges-and-martha",
+      "reference": "https://engineering.louisiana.edu/news-events/news/20250506/antoun-hall-dedicated-thanks-vision-and-generosity-georges-and-martha",
+      "availability": "public",
+      "accessed": "2026-09-20",
+      "factsSupported": "Antoun Hall identity, April 25, 2025 dedication and LaSEL institutional association",
+      "authorityLimitation": "Does not establish current production availability or filming permission"
+    },
+    {
+      "id": "SRC-046",
+      "locationIds": [
+        "LOC-018"
+      ],
+      "scopeNote": null,
+      "title": "Louisiana Solar Energy Lab",
+      "publisher": "UL Lafayette Energy Efficiency and Sustainable Energy Center",
+      "type": "Official university website",
+      "url": "https://eese.louisiana.edu/facilities/photovoltaic-applied-research-testing-part-lab",
+      "reference": "https://eese.louisiana.edu/facilities/photovoltaic-applied-research-testing-part-lab",
+      "availability": "public",
+      "accessed": "2026-09-20",
+      "factsSupported": "Solar testing, education and outreach functions; description of planned building spaces",
+      "authorityLimitation": "Building description includes planning-era wording; current layout, occupancy and access require confirmation"
     }
   ]
 }

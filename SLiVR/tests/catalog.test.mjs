@@ -25,38 +25,38 @@ const catalog = { manifest, areas, locations, captures, scoutDetails, sources };
 /** The shared downtown experience, which six separate records enter. */
 const SHARED_DOWNTOWN_EXPERIENCE = "5eb11a1b";
 
-test("the catalog holds exactly 17 locations, 11 current and 6 future", () => {
-  assert.equal(locations.length, 17);
+test("the catalog holds exactly 18 locations, 11 current and 7 future", () => {
+  assert.equal(locations.length, 18);
   assert.equal(locations.filter((l) => l.captureStatus === "current").length, 11);
-  assert.equal(locations.filter((l) => l.captureStatus === "future").length, 6);
-  assert.equal(captures.length, 17);
-  assert.equal(scoutDetails.length, 17);
-  assert.equal(areas.length, 6);
+  assert.equal(locations.filter((l) => l.captureStatus === "future").length, 7);
+  assert.equal(captures.length, 18);
+  assert.equal(scoutDetails.length, 18);
+  assert.equal(areas.length, 7);
 });
 
 test("the manifest counts agree with the catalog it describes", () => {
   assert.deepEqual(manifest.counts, {
-    locations: 17,
+    locations: 18,
     current: 11,
-    future: 6,
-    areas: 6,
-    captures: 17,
+    future: 7,
+    areas: 7,
+    captures: 18,
     sources: sources.length,
   });
-  assert.equal(manifest.researchSnapshot, "2026-09-19");
-  assert.equal(manifest.catalogVersion, "1.0.0");
+  assert.equal(manifest.researchSnapshot, "2026-09-20");
+  assert.equal(manifest.catalogVersion, "1.1.0");
 });
 
 test("location identifiers are the documented stable sequence", () => {
-  const expected = Array.from({ length: 17 }, (_, i) => `LOC-${String(i + 1).padStart(3, "0")}`);
+  const expected = Array.from({ length: 18 }, (_, i) => `LOC-${String(i + 1).padStart(3, "0")}`);
   assert.deepEqual([...locations.map((l) => l.id)].sort(), expected);
   assert.deepEqual(
     [...captures.map((c) => c.id)].sort(),
-    Array.from({ length: 17 }, (_, i) => `CAP-${String(i + 1).padStart(3, "0")}`),
+    Array.from({ length: 18 }, (_, i) => `CAP-${String(i + 1).padStart(3, "0")}`),
   );
   assert.deepEqual(
     [...areas.map((a) => a.id)].sort(),
-    ["AREA-01", "AREA-02", "AREA-03", "AREA-04", "AREA-05", "AREA-06"],
+    ["AREA-01", "AREA-02", "AREA-03", "AREA-04", "AREA-05", "AREA-06", "AREA-07"],
   );
 });
 
@@ -102,7 +102,7 @@ test("the current inventory uses exactly the six allowlisted experiences", () =>
 
 test("every future candidate has no provider identity and no tour URL", () => {
   const future = captures.filter((c) => c.state === "future");
-  assert.equal(future.length, 6);
+  assert.equal(future.length, 7);
   for (const capture of future) {
     assert.equal(capture.experienceId, null, capture.id);
     assert.equal(capture.sweepId, null, capture.id);
@@ -157,7 +157,7 @@ test("the research vocabulary survives the build verbatim", () => {
   const oldCityHall = locations.find((l) => l.id === "LOC-003");
   assert.equal(oldCityHall.publicHours.text, "Information has not been found");
   assert.equal(oldCityHall.ownershipStatus, "Need validation");
-  assert.equal(oldCityHall.positionEvidence, "Library of Congress HABS coordinate");
+  assert.match(oldCityHall.positionEvidence, /Owner-supplied map-pin coordinate/);
   assert.equal(unknownMarkerIn(oldCityHall.filmingAccess), "Need validation");
 });
 
@@ -166,9 +166,8 @@ test("coordinate provenance is recorded for every location", () => {
     assert.equal(typeof location.positionEvidence, "string");
     assert.ok(location.positionEvidence.length > 0, location.id);
   }
-  // Most coordinates are geocoded approximations rather than surveyed points.
-  const approximate = locations.filter((l) => /geocode/i.test(l.positionEvidence));
-  assert.ok(approximate.length >= 15, `${approximate.length} geocoded coordinates`);
+  const corrected = locations.filter((l) => /Owner-supplied map-pin coordinate, 2026-09-20/.test(l.positionEvidence));
+  assert.equal(corrected.length, 17);
 });
 
 test("every coordinate sits inside the configured envelope", () => {
@@ -207,12 +206,30 @@ test("area membership reconciles with the workbook counts", () => {
     future += area.workbookFutureCount;
   }
   assert.equal(current, 11);
-  assert.equal(future, 6);
+  assert.equal(future, 7);
 });
 
-test("the solar-energy destination is absent from the committed inventory", () => {
-  const serialised = JSON.stringify({ locations, captures, areas }).toLowerCase();
-  assert.ok(!serialised.includes("solar"), "no solar-energy record may be in the committed 17");
+test("the owner-requested LaSEL destination is a linked future record without an invented capture", () => {
+  const location = locations.find(l => l.id === "LOC-018");
+  assert.match(location.name, /LaSEL.*Antoun Hall/);
+  assert.equal(location.captureStatus, "future");
+  assert.deepEqual(location.position, [-92.04441771641942, 30.228764095274858]);
+  assert.equal(location.address.street, "439 Eraste Landry Rd");
+  assert.ok(areas.find(a => a.id === location.areaId).locationIds.includes(location.id));
+  const capture = captures.find(c => c.locationId === location.id);
+  assert.equal(capture.url, null);
+  assert.equal(capture.captureDate, "Information has not been found");
+  assert.ok(scoutDetails.find(d => d.locationId === location.id));
+  assert.ok(location.sourceIds.every(id => sources.some(s => s.id === id)));
+});
+
+test("all owner-supplied coordinate pairs are published exactly in longitude-first order", () => {
+  const evidence = readFileSync(resolve(ROOT, "docs/CATALOG_COORDINATE_UPDATES_2026-09-20.md"), "utf8");
+  const points = [...evidence.matchAll(/^\| (LOC-\d+) \| [^|]+ \| ([\d.]+) \| (-[\d.]+) \|$/gm)];
+  assert.equal(points.length, 17);
+  for (const [, id, lat, lon] of points) {
+    assert.deepEqual(locations.find(l => l.id === id).position, [Number(lon), Number(lat)], id);
+  }
 });
 
 test("no published value contains an absolute local path", () => {

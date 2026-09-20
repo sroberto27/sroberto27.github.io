@@ -247,8 +247,10 @@ test("196: independent experience gets a fresh frame that rejects abandoned read
   assert.notEqual(host.frame, oldFrame, "a persistent WindowProxy cannot distinguish old-model messages");
   host.frame.contentWindow = h.makeFrame().contentWindow;
   h.send({ type: "TourReady" }, oldFrame.contentWindow);
-  assert.equal(store.getState().viewer.status, "loading");
+  assert.equal(store.getState().viewer.status, "handshaking");
   h.send({ type: "TourReady" }, host.frame.contentWindow);
+  h.advance(600);
+  h.send({ type: "PoseChanged", sweep: captures[8].sweepId }, host.frame.contentWindow);
   assert.equal(store.getState().viewer.status, "ready");
   assert.equal(oldFrame.getAttribute("src"), "about:blank");
   assert.equal(host.element.children.filter(node => node.tagName === "IFRAME").length, 1);

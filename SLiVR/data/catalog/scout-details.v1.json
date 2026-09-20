@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "catalogVersion": "1.0.0",
+  "catalogVersion": "1.1.0",
   "scoutDetails": [
     {
       "locationId": "LOC-001",
@@ -505,6 +505,35 @@
         "SRC-036",
         "SRC-037",
         "SRC-038"
+      ],
+      "recordStatus": "Open validation items"
+    },
+    {
+      "locationId": "LOC-018",
+      "visualCharacter": "Contemporary university energy-research building and outdoor solar-testing field",
+      "knownSpaces": "Official facility page describes research/testing spaces and planned teaching, seminar, conference and visitor rooms; current layout and occupancy Need validation",
+      "parking": "Need validation",
+      "loading": "Need validation",
+      "basecamp": "Need validation",
+      "power": "Need validation: production power supply and authorized circuits; research equipment is not a crew power source",
+      "restrooms": "Need validation",
+      "accessibility": "Need validation",
+      "ambientSound": "Need validation: HVAC, research equipment and road noise",
+      "trafficImpact": "Need validation: maintain research access and emergency routes",
+      "lightOrientation": "Need validation: solar reflections, daylight direction and safe camera positions",
+      "security": "Need validation: research-area access and equipment restrictions",
+      "catering": "Information has not been found",
+      "filmingRules": "Need validation: commercial filming, branding, research confidentiality and equipment imagery",
+      "permits": "Need validation: institute, university and legal property authority approval",
+      "availabilityConstraints": "Need validation: research, teaching and maintenance schedules; public hours not found",
+      "hazards": "Need validation: electrical equipment, solar-array access, glare, heat and emergency procedures",
+      "onSiteValidationPriorities": "Confirm access authority, approved zones, current room layout, power, sound, loading, parking, occupancy and safe routes",
+      "immersiveCaptureNotes": "Future scan candidate; no Treedis experience or capture date supplied",
+      "sourceIds": [
+        "SRC-043",
+        "SRC-044",
+        "SRC-045",
+        "SRC-046"
       ],
       "recordStatus": "Open validation items"
     }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "catalogVersion": "1.0.0",
+  "catalogVersion": "1.1.0",
   "locations": [
     {
       "id": "LOC-001",
@@ -52,10 +52,10 @@
         "zip": "70501"
       },
       "position": [
-        -92.018878,
-        30.2223961
+        -92.01888930086452,
+        30.221791783112568
       ],
-      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "positionEvidence": "Owner-supplied map-pin coordinate, 2026-09-20; not surveyed; validate intended access point",
       "operator": "Pop's Poboys",
       "propertyAuthority": "Need validation",
       "ownershipStatus": "Need validation",
@@ -71,7 +71,8 @@
       "sourceIds": [
         "SRC-001",
         "SRC-003",
-        "SRC-037"
+        "SRC-037",
+        "SRC-043"
       ]
     },
     {
@@ -88,10 +89,10 @@
         "zip": "70501"
       },
       "position": [
-        -92.020438,
-        30.222433
+        -92.01856289832287,
+        30.221813099119423
       ],
-      "positionEvidence": "Library of Congress HABS coordinate",
+      "positionEvidence": "Owner-supplied map-pin coordinate, 2026-09-20; not surveyed; validate intended access point",
       "operator": "Council for the Development of French in Louisiana (CODOFIL) occupies the building",
       "propertyAuthority": "Current legal property owner requires title/agency confirmation",
       "ownershipStatus": "Need validation",
@@ -108,7 +109,8 @@
         "SRC-001",
         "SRC-004",
         "SRC-005",
-        "SRC-006"
+        "SRC-006",
+        "SRC-043"
       ]
     },
     {
@@ -125,10 +127,10 @@
         "zip": "70501"
       },
       "position": [
-        -92.018717,
-        30.221108
+        -92.01879921960045,
+        30.221033881140237
       ],
-      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "positionEvidence": "Owner-supplied map-pin coordinate, 2026-09-20; not surveyed; validate intended access point",
       "operator": "Spoonbill Watering Hole & Restaurant",
       "propertyAuthority": "Need validation",
       "ownershipStatus": "Need validation",
@@ -144,7 +146,8 @@
       "sourceIds": [
         "SRC-001",
         "SRC-007",
-        "SRC-037"
+        "SRC-037",
+        "SRC-043"
       ]
     },
     {
@@ -161,10 +164,10 @@
         "zip": "70501"
       },
       "position": [
-        -92.018567,
-        30.2212115
+        -92.01816495477823,
+        30.221076479889902
       ],
-      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "positionEvidence": "Owner-supplied map-pin coordinate, 2026-09-20; not surveyed; validate intended access point",
       "operator": "Rock'n'Bowl de Lafayette",
       "propertyAuthority": "Need validation",
       "ownershipStatus": "Need validation",
@@ -180,7 +183,8 @@
       "sourceIds": [
         "SRC-001",
         "SRC-008",
-        "SRC-037"
+        "SRC-037",
+        "SRC-043"
       ]
     },
     {
@@ -197,10 +201,10 @@
         "zip": "70501"
       },
       "position": [
-        -92.0169738,
-        30.2200357
+        -92.01694578268373,
+        30.220135402234423
       ],
-      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "positionEvidence": "Owner-supplied map-pin coordinate, 2026-09-20; not surveyed; validate intended access point",
       "operator": "Borden's Ice Cream Shoppe",
       "propertyAuthority": "Need validation",
       "ownershipStatus": "Need validation",
@@ -217,7 +221,8 @@
         "SRC-001",
         "SRC-009",
         "SRC-010",
-        "SRC-037"
+        "SRC-037",
+        "SRC-043"
       ]
     },
     {
@@ -234,10 +239,10 @@
         "zip": "70503"
       },
       "position": [
-        -92.037989,
-        30.2076103
+        -92.03807366561004,
+        30.208862318751077
       ],
-      "positionEvidence": "Nominatim geocode; ZIP conflicts across public listings",
+      "positionEvidence": "Owner-supplied map-pin coordinate, 2026-09-20; not surveyed; validate intended access point",
       "operator": "Play N Trade Lafayette",
       "propertyAuthority": "Need validation",
       "ownershipStatus": "Need validation",
@@ -254,7 +259,8 @@
         "SRC-001",
         "SRC-011",
         "SRC-012",
-        "SRC-037"
+        "SRC-037",
+        "SRC-043"
       ]
     },
     {
@@ -271,10 +277,10 @@
         "zip": "70501"
       },
       "position": [
-        -92.0103782,
-        30.2315502
+        -92.01009055972463,
+        30.231726314135525
       ],
-      "positionEvidence": "Nominatim geocode; historic page cites 324 Sterling, so site address needs confirmation",
+      "positionEvidence": "Owner-supplied map-pin coordinate, 2026-09-20; not surveyed; validate intended access point",
       "operator": "Belle Vie Hospitality",
       "propertyAuthority": "Historic page names Thomas and Amy Powers; current legal owner needs confirmation",
       "ownershipStatus": "Need validation",
@@ -291,7 +297,8 @@
         "SRC-001",
         "SRC-013",
         "SRC-014",
-        "SRC-037"
+        "SRC-037",
+        "SRC-043"
       ]
     },
     {
@@ -308,10 +315,10 @@
         "zip": "70501"
       },
       "position": [
-        -92.0175165,
-        30.2241606
+        -92.01709163907725,
+        30.224214556430134
       ],
-      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "positionEvidence": "Owner-supplied map-pin coordinate, 2026-09-20; not surveyed; validate intended access point",
       "operator": "Magnolia Pantry LLC",
       "propertyAuthority": "Need validation",
       "ownershipStatus": "Need validation",
@@ -329,7 +336,8 @@
         "SRC-015",
         "SRC-016",
         "SRC-017",
-        "SRC-037"
+        "SRC-037",
+        "SRC-043"
       ]
     },
     {
@@ -346,10 +354,10 @@
         "zip": "70501"
       },
       "position": [
-        -92.031775,
-        30.248618
+        -92.0319459359573,
+        30.248526056527083
       ],
-      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "positionEvidence": "Owner-supplied map-pin coordinate, 2026-09-20; not surveyed; validate intended access point",
       "operator": "Former LPSS campus; proposed SUN Community Housing Development Organization use",
       "propertyAuthority": "Lafayette Parish School System / lease status requires current confirmation",
       "ownershipStatus": "Need validation",
@@ -366,7 +374,8 @@
         "SRC-001",
         "SRC-018",
         "SRC-019",
-        "SRC-037"
+        "SRC-037",
+        "SRC-043"
       ]
     },
     {
@@ -383,10 +392,10 @@
         "zip": "70503"
       },
       "position": [
-        -92.0409975,
-        30.2055904
+        -92.03966956609332,
+        30.202416010615966
       ],
-      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "positionEvidence": "Owner-supplied map-pin coordinate, 2026-09-20; not surveyed; validate intended access point",
       "operator": "Moncus Park nonprofit",
       "propertyAuthority": "City of Lafayette lease/title relationship requires current document confirmation",
       "ownershipStatus": "Need validation",
@@ -405,7 +414,8 @@
         "SRC-021",
         "SRC-022",
         "SRC-023",
-        "SRC-037"
+        "SRC-037",
+        "SRC-043"
       ]
     },
     {
@@ -422,10 +432,10 @@
         "zip": "70506"
       },
       "position": [
-        -92.0389935,
-        30.2177758
+        -92.03889991032072,
+        30.2184102834574
       ],
-      "positionEvidence": "Nominatim geocode; postal code differs in geocoder output",
+      "positionEvidence": "Owner-supplied map-pin coordinate, 2026-09-20; not surveyed; validate intended access point",
       "operator": "CAJUNDOME Commission / venue management",
       "propertyAuthority": "University of Louisiana at Lafayette",
       "ownershipStatus": "Verified on official venue page",
@@ -443,7 +453,8 @@
         "SRC-024",
         "SRC-025",
         "SRC-026",
-        "SRC-037"
+        "SRC-037",
+        "SRC-043"
       ]
     },
     {
@@ -460,10 +471,10 @@
         "zip": "70506"
       },
       "position": [
-        -92.0416225,
-        30.2184179
+        -92.04167769636373,
+        30.21586314371861
       ],
-      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "positionEvidence": "Owner-supplied map-pin coordinate, 2026-09-20; not surveyed; validate intended access point",
       "operator": "Louisiana Ragin' Cajuns Athletics / UL Lafayette",
       "propertyAuthority": "University of Louisiana at Lafayette",
       "ownershipStatus": "Institutional ownership supported; exact booking authority needs confirmation",
@@ -480,7 +491,8 @@
         "SRC-001",
         "SRC-027",
         "SRC-028",
-        "SRC-037"
+        "SRC-037",
+        "SRC-043"
       ]
     },
     {
@@ -497,10 +509,10 @@
         "zip": "70506"
       },
       "position": [
-        -92.0429691,
-        30.2202685
+        -92.04324855500217,
+        30.220329131506578
       ],
-      "positionEvidence": "Nominatim identifies LITE Center; validate survey-grade position",
+      "positionEvidence": "Owner-supplied map-pin coordinate, 2026-09-20; not surveyed; validate intended access point",
       "operator": "University of Louisiana at Lafayette LITE Center",
       "propertyAuthority": "University of Louisiana at Lafayette / exact title entity needs confirmation",
       "ownershipStatus": "Need validation",
@@ -516,7 +528,8 @@
       "sourceIds": [
         "SRC-001",
         "SRC-029",
-        "SRC-037"
+        "SRC-037",
+        "SRC-043"
       ]
     },
     {
@@ -533,10 +546,10 @@
         "zip": "70503"
       },
       "position": [
-        -92.0186439,
-        30.21586
+        -92.02029438772688,
+        30.21239687993731
       ],
-      "positionEvidence": "Campus anchor geocode; each building requires its own coordinates",
+      "positionEvidence": "Owner-supplied map-pin coordinate, 2026-09-20; not surveyed; validate intended access point",
       "operator": "University of Louisiana at Lafayette",
       "propertyAuthority": "University/public entities vary by parcel and facility",
       "ownershipStatus": "Need validation",
@@ -554,7 +567,8 @@
         "SRC-030",
         "SRC-031",
         "SRC-032",
-        "SRC-037"
+        "SRC-037",
+        "SRC-043"
       ]
     },
     {
@@ -571,10 +585,10 @@
         "zip": "70503"
       },
       "position": [
-        -92.0318328,
-        30.2097052
+        -92.03320319442778,
+        30.210459486562183
       ],
-      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "positionEvidence": "Owner-supplied map-pin coordinate, 2026-09-20; not surveyed; validate intended access point",
       "operator": "UL Lafayette Auxiliary Services",
       "propertyAuthority": "University of Louisiana at Lafayette",
       "ownershipStatus": "Verified on official university page",
@@ -592,7 +606,8 @@
         "SRC-028",
         "SRC-033",
         "SRC-034",
-        "SRC-037"
+        "SRC-037",
+        "SRC-043"
       ]
     },
     {
@@ -609,10 +624,10 @@
         "zip": "70506"
       },
       "position": [
-        -92.0372342,
-        30.2134132
+        -92.03839173959166,
+        30.212608907470905
       ],
-      "positionEvidence": "Nominatim geocode; official pages show ZIP 70504 and 70506",
+      "positionEvidence": "Owner-supplied map-pin coordinate, 2026-09-20; not surveyed; validate intended access point",
       "operator": "UL Lafayette Recreational Sports",
       "propertyAuthority": "University of Louisiana at Lafayette",
       "ownershipStatus": "Verified institution; address ZIP needs confirmation",
@@ -630,7 +645,45 @@
         "SRC-035",
         "SRC-036",
         "SRC-037",
-        "SRC-038"
+        "SRC-038",
+        "SRC-043"
+      ]
+    },
+    {
+      "id": "LOC-018",
+      "name": "UL Louisiana Solar Energy Laboratory (LaSEL) / Antoun Hall",
+      "areaId": "AREA-07",
+      "captureStatus": "future",
+      "venueType": "University solar-energy research laboratory",
+      "coverageSummary": "Future 360 scan candidate",
+      "address": {
+        "street": "439 Eraste Landry Rd",
+        "city": "Lafayette",
+        "state": "LA",
+        "zip": "70506"
+      },
+      "position": [
+        -92.04441771641942,
+        30.228764095274858
+      ],
+      "positionEvidence": "Owner-supplied map-pin coordinate, 2026-09-20; not surveyed; validate intended access point",
+      "operator": "UL Lafayette Energy Institute of Louisiana",
+      "propertyAuthority": "University of Louisiana at Lafayette; filming authority Need validation",
+      "ownershipStatus": "Verified institutional association; legal title and filming authority Need validation",
+      "publicHours": {
+        "text": "Information has not been found",
+        "evidence": "Public visiting hours not stated by the cited official pages"
+      },
+      "publicPhone": "337-482-2946",
+      "accessContact": "Energy Institute of Louisiana: energy@louisiana.edu",
+      "website": "https://eese.louisiana.edu/facilities/photovoltaic-applied-research-testing-part-lab",
+      "filmingAccess": "Research-facility access, equipment restrictions, filming approval, insurance and fees Need validation",
+      "researchStatus": "Partially verified",
+      "sourceIds": [
+        "SRC-043",
+        "SRC-044",
+        "SRC-045",
+        "SRC-046"
       ]
     }
   ]

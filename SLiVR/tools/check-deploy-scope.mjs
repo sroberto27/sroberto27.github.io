@@ -26,12 +26,15 @@ const PROJECT = `${relative(REPO, ROOT).split("\\").join("/")}/`;
 export const PRIVATE_PATHS = ["docs/", "outputs/", "config/runtime.js"];
 
 /**
- * The one file inside a private directory that is published on purpose. The
- * living verification record has to survive in source control, and it carries
- * no private reference material. Adding to this list is a deliberate decision,
+ * Public verification and coordinate provenance records inside the otherwise
+ * private reference directory. These contain no private reference material.
+ * Adding to this list is a deliberate decision,
  * not a way to silence the check.
  */
-export const PUBLISHED_EXCEPTIONS = ["docs/FULL-SYSTEM-TESTING.md"];
+export const PUBLISHED_EXCEPTIONS = [
+  "docs/FULL-SYSTEM-TESTING.md",
+  "docs/CATALOG_COORDINATE_UPDATES_2026-09-20.md",
+];
 
 /** Paths the application ships, where no LSU identity is acceptable. */
 const APP_PATHS = ["src/", "data/", "styles/", "config/", "index.html", "sw.js", "manifest.webmanifest"];

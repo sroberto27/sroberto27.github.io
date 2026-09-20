@@ -12,6 +12,7 @@ outputs/
 # procedures and execution history that must survive in source control, and it
 # contains no private reference material.
 !docs/FULL-SYSTEM-TESTING.md
+!docs/CATALOG_COORDINATE_UPDATES_2026-09-20.md
 
 # Optional runtime configuration: provider credentials never enter committed source.
 config/runtime.js

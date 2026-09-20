@@ -11,12 +11,12 @@
   },
   "boundsNote": "Padded planning envelope around the reviewed inventory. It is a configuration extent, not a legal boundary, a property boundary or a claim of immersive coverage.",
   "inventoryBounds": {
-    "west": -92.0429691,
-    "south": 30.2055904,
-    "east": -92.0103782,
-    "north": 30.248618
+    "west": -92.04441771641942,
+    "south": 30.202416010615966,
+    "east": -92.01009055972463,
+    "north": 30.248526056527083
   },
-  "inventoryBoundsNote": "Derived from the 17 catalog coordinates in catalog version 1.0.0. Most coordinates are geocoded approximations that still need checking at the intended entrance.",
+  "inventoryBoundsNote": "Derived from the 18 positions in catalog 1.1.0: 16 owner-supplied corrections and one new owner-supplied LaSEL pin on 2026-09-20; only Carpe Diem retains its prior position. Planning points, not surveyed boundaries.",
   "defaultView": {
     "center": [
       -92.026674,

@@ -24,8 +24,9 @@ const END_OF_CENTRAL = 0x06054b50;
  * a longer one, for example <c> against <col>.
  */
 const TAG = {
-  row: /<row(?=[\s/>])[^>]*>[\s\S]*?<\/row>|<row(?=[\s/>])[^>]*\/>/g,
-  cell: /<c(?=[\s/>])[^>]*>[\s\S]*?<\/c>|<c(?=[\s/>])[^>]*\/>/g,
+  // Match empty elements first so they cannot consume the following populated cell or row.
+  row: /<row(?=[\s/>])[^>]*\/>|<row(?=[\s/>])[^>]*>[\s\S]*?<\/row>/g,
+  cell: /<c(?=[\s/>])[^>]*\/>|<c(?=[\s/>])[^>]*>[\s\S]*?<\/c>/g,
   relationship: /<Relationship(?=[\s/>])[^>]*\/>/g,
   sheet: /<sheet(?=[\s/>])[^>]*\/>/g,
 };

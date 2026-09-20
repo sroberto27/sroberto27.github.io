@@ -257,7 +257,7 @@ test("the adapter posts to the configured origin, never to a wildcard", () => {
   h.advance(region.readyPingIntervalMs ?? 2000);
   assert.ok(h.posted.length > 0, "a ping must have been sent");
   for (const { targetOrigin } of h.posted) assert.equal(targetOrigin, ORIGIN);
-  assert.equal(h.frame.attributes.src, ENTRY.url);
+  assert.equal(h.frame.attributes.src, new URL(ENTRY.url).origin + new URL(ENTRY.url).pathname);
 });
 
 test("a viewer that answers reaches ready and asks for its sweeps", () => {
@@ -441,7 +441,7 @@ test("re-entering the same capture does not reload the viewer", () => {
 
   const first = adapter.attach(h.frame, ENTRY);
   assert.equal(first.reloaded, true);
-  assert.equal(h.frame.attributes.src, ENTRY.url);
+  assert.equal(h.frame.attributes.src, new URL(ENTRY.url).origin + new URL(ENTRY.url).pathname);
 
   const again = adapter.attach(h.frame, ENTRY);
   assert.equal(again.reloaded, false, "the same capture must be reused");

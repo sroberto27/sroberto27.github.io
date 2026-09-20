@@ -127,3 +127,51 @@ No tests were executed by the assistant. The screenshot also shows the known
 optional runtime.js 404, which does not invalidate the optics/rendering check
 and remains separate from console-cleanliness acceptance. Full Phase 0 closure
 still requires the remaining evidence review; no participant outcomes claimed.
+
+
+### Phase 0 closeout technical evidence, 2026-09-20
+
+Foundation implementation and eight-item owner manual acceptance are complete.
+Current regression suite: 326 PASS, 0 FAIL, including linked fixture persistence,
+versioned transfer, invalid schemas, optics, six-entry navigation and lifecycle.
+See PHASE_0_CLOSEOUT.md for gate coverage and later-phase exclusions, and
+PROVIDER_CAPABILITY_MATRIX.md for the 11-entry evidence inventory. Detailed
+browser/device and administrative metadata gaps remain explicitly pending;
+no participant benefit or complete provider capability is inferred.
+
+
+### Final Phase 0 status - COMPLETE, 2026-09-20 (D061)
+
+Owner approved the closeout report's bounded exceptions. Phase 0 foundations are
+accepted; later-phase feature families remain planned. Evidence is 326 automated
+PASS plus owner manual acceptance, including the Three.js screenshot. Deferred
+live checks and metadata collection retain their actual unverified status and
+scheduled retest conditions. No user-benefit or human-participant result claimed.
+
+
+### Phase 1 map refinement - D062, 2026-09-20
+
+F01 implemented increment: viewport-derived catalog fit, numbered status-colored
+pins, six-decimal co-located grouping with hover/focus/tap selection. Automated
+behavior evidence: 331-test suite PASS. Visual desktop/tablet acceptance pending.
+Proximity clustering, search/filter and complete dossiers remain unfinished; this
+is not full Phase 1 completion. The catalog and coordinate provenance are unchanged.
+
+### Map control extension - D063, 2026-09-20
+
+F01 adds explicit Recenter, streets/aerial visibility, geolocation, fullscreen,
+search/help menu and ordered location navigation, with SLiVR-themed map controls.
+Automated evidence: 334 PASS including control interaction/lifecycle and imagery
+failover preferences. Live permission, fullscreen, provider and responsive visual
+checks remain pending. Catalog menu search is implemented; advanced filters,
+proximity clustering and full dossiers remain pending. No usability result claimed.
+
+### Catalog 1.1.0 and focused selection - D064-D065
+
+F01: thirteen existing owner-corrected positions plus new LaSEL / Antoun Hall future
+candidate. Official sources support identity/address/contact, not filming access.
+F01 selection now centers the chosen point from the list, pins, search and catalog
+step controls. Repeated selection recenters; unrelated redraws do not. Automated
+suite 338 PASS; workbook/catalog reconciliation and rendered workbook views checked.
+Live map/device animation evidence remains pending. Historical Phase 0 acceptance
+and 17-record observations apply to catalog 1.0.0, not this new snapshot.

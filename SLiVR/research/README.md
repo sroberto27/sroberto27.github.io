@@ -20,6 +20,8 @@ Never describe Level 1 as an observed benefit or Level 2 as proof of user effect
 
 | File | Purpose | Update point |
 |---|---|---|
+| [PHASE_0_CLOSEOUT.md](PHASE_0_CLOSEOUT.md) | Phase 0 gate evidence, limitations and closure decision | Phase 0 closeout |
+| [PROVIDER_CAPABILITY_MATRIX.md](PROVIDER_CAPABILITY_MATRIX.md) | Per-entry provider evidence and unknowns | Provider verification |
 | [FEATURE_EVIDENCE_REGISTER.md](FEATURE_EVIDENCE_REGISTER.md) | Connect feature IDs to workflow problems, research rationale, constructs, measures, evidence and limitations | Every feature change and phase exit |
 | [DECISION_RECORD.md](DECISION_RECORD.md) | Preserve design alternatives, rationale, consequences and validation state | Every material product, architecture or study decision |
 | [RESEARCH_CHANGELOG.md](RESEARCH_CHANGELOG.md) | Record research-relevant changes by artifact version | Every reviewable build or phase exit |
@@ -38,6 +40,7 @@ Never describe Level 1 as an observed benefit or Level 2 as proof of user effect
 | `BOOK` | Supplied professional location-scouting book |
 | `SHOT` | Shot Designer product/tutorial review and supplied example image |
 | `LSU3D` | Read-only source-project implementation and tests |
+| `SCSU` | Read-only Experimental source-project implementation and tests |
 | `USER` | User-approved product decision or workflow requirement |
 | `INVENTORY` | Supplied Treedis inventory and reviewed location workbook |
 | `TEST` | Repeatable technical or acceptance test |

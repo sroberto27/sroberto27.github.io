@@ -144,3 +144,97 @@ loading presentation and behavior; no additional automated tests were run and
 no detailed timing trace or new browser/device information was supplied. This
 supersedes the pending manual acceptance of that update, without asserting that
 every failure-path regression was separately re-executed.
+
+
+## 2026-09-20 - Phase 0 closeout verification and evidence consolidation
+
+Owner instruction to finish the stated technical closeout authorized the needed
+verification following the earlier manual-only testing period. Initial suite:
+318/326 PASS; eight stale expectations failed after the accepted loading changes.
+Updated those assertions and strengthened all-six-downtown command/arrival checks.
+Final suite 326/326 PASS; catalog validation zero errors/one alias warning;
+deployment scope zero errors. Fixed only the diagnostic page configuration path
+in runtime assets. Added PHASE_0_CLOSEOUT.md and PROVIDER_CAPABILITY_MATRIX.md.
+Manual and automated evidence remain distinguished. No new live provider tests;
+no browser surface available. Formal closure awaits the bounded exception decision.
+
+
+## 2026-09-20 - Phase 0 formally closed (D061)
+
+The owner explicitly approved the bounded exceptions in PHASE_0_CLOSEOUT.md and
+instructed closure. Phase 0 is COMPLETE, supported by 326 automated PASS results,
+valid catalog, clean deployment scope and all eight owner manual checks. Missing
+live storage/device/provider/admin evidence is carried with named retest conditions
+rather than falsely marked PASS. Updated the implementation plan and final
+acceptance record. Phase 1 is the next work package and has not started.
+
+
+## 2026-09-20 - Explore framing and numbered pin groups (D062)
+
+Owner-requested Phase 1 map refinement: automatic fitting uses actual catalog
+bounds rather than the padded planning envelope, recalculating with map-container
+size and reserving controls/provenance space. Unchanged catalog redraws and selection
+do not reset the camera. Numbered teardrop pins use SLiVR capture/future colors and
+44-pixel button targets. Shared-coordinate records become expandable ordered groups
+without moving their stored coordinates. Adapted LSU3D after comparing SCSU.
+
+Verification: Node v24.18.0, 331/331 tests PASS, including five added grouping and
+viewport cases; deployment scope zero errors (148 publishable files). No browser
+visual execution available. Pin appearance, screen-edge group expansion and live
+portrait/landscape resizing remain manual checks on the next deployment. Phase 0
+acceptance remains historical; this starts only the requested Phase 1 map work.
+
+## 2026-09-20 - Explore map controls (D063)
+
+Added catalog Recenter in the map toolbar and records rail; street/building/place
+reference overlay, aerial toggle, fullscreen, user-triggered geolocation with
+accuracy visualization, menu search/help and previous/next catalog navigation.
+Retained zoom/compass/scale and real Google 3D switching with a visible mode badge.
+Controls use SLiVR colors and 44px targets. Source adaptations and architecture
+exceptions are recorded in D063. Map overlay DOM is removed with its control.
+The imagery plate now updates on tiles status and explicitly reports hidden aerials.
+
+Validation: Node v24.18.0, 334/334 tests PASS; deployment scope 150 publishable
+files, zero errors; catalog zero errors and one pre-existing Old City Hall alias
+warning. No browser/device visual PASS. Full Phase 1 remains incomplete.
+
+## 2026-09-20 - Catalog 1.1.0 and selection focus (D064-D065)
+
+Updated 13 existing locations to owner-supplied coordinates, including the later
+Moncus Park correction. Added LOC-018 LaSEL / Antoun Hall with official UL sources,
+AREA-07 UL Research Park, CAP-018 future placeholder and scout questions. Revised
+the existing six-sheet workbook, then regenerated the public catalog: 18 locations
+(11 current/7 future), 7 areas, 18 captures/details and 46 sources. Four untouched
+positions, existing captures and unrelated facts remain unchanged. Exact supplied
+pairs are preserved as numeric cells and longitude-first JSON, with owner provenance.
+
+Workbook verification: summary 18/11/7 recalculated; all 14 supplied pairs exact;
+original rows outside authorized fields, field guide, existing cell styles, column
+widths, freeze panes, merges and validation preserved. Added rows extend the tables,
+use wrapped text and matching conditional rules; changed views rendered and reviewed.
+A malformed import of a future capture date exposed an XLSX-reader empty-element
+regex defect; matching self-closing cells/rows first fixes it, with regression coverage.
+
+List and pin selection now move the camera, including repeat selection. Search and
+catalog stepping share the behavior. Two layout frames, 550 ms duration, zoom cap 19,
+current bearing/pitch and protected overlay space follow the reference adaptation.
+Camera work is cancelled when superseded, recentered or disposed.
+
+Verification: Node v24.18.0, 338/338 PASS; catalog zero errors/one existing Old City
+Hall alias warning; deployment scope 151 publishable files, zero errors. Initial
+suite failures reflected old 17-record/solar-exclusion expectations and old camera
+behavior; replaced with the owner's new requirements. Tests 201-203 track this
+increment. Live map animation/desktop/tablet and native Excel application checks
+remain unexecuted. No commit, push or human-participant finding is recorded.
+
+### 2026-09-20 - Additional owner coordinate corrections (D064 follow-up)
+
+Applied the owner's additional positions for LOC-007 Play N Trade, LOC-008 Givens
+House and LOC-010 Former Truman Early Childhood Education Center to the workbook
+and regenerated catalog 1.1.0. SRC-043 now covers 16 corrected existing locations
+plus the new LaSEL pin. Only LOC-001 Carpe Diem retains its original position.
+The catalog remains 18 locations (11 current/7 future), seven areas and 46 sources.
+Updated the derived map bounds. All 17 supplied coordinate pairs match exactly;
+unchanged facts, captures and workbook field-guide content reconcile with the
+original workbook. Reviewed the affected workbook rows. Automated suite: 338 PASS;
+catalog zero errors/one existing alias warning; deployment scope zero errors.

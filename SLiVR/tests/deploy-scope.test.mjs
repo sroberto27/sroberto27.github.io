@@ -81,16 +81,18 @@ test("provenance documents may name the reference project", () => {
   assert.deepEqual(result.errors, []);
 });
 
-test("the verification record is published and nothing else in docs is", () => {
+test("only the verification and public coordinate records are published from docs", () => {
   const files = publishableFiles();
   const published = files.filter((path) => path.startsWith("docs/"));
-  assert.deepEqual(published, ["docs/FULL-SYSTEM-TESTING.md"]);
-  assert.deepEqual(PUBLISHED_EXCEPTIONS, ["docs/FULL-SYSTEM-TESTING.md"]);
+  const expected = ["docs/CATALOG_COORDINATE_UPDATES_2026-09-20.md", "docs/FULL-SYSTEM-TESTING.md"];
+  assert.deepEqual(published.sort(), expected);
+  assert.deepEqual([...PUBLISHED_EXCEPTIONS].sort(), expected);
 });
 
 test("an exception does not open the rest of its directory", () => {
   const result = checkDeployScope([
     "docs/FULL-SYSTEM-TESTING.md",
+    "docs/CATALOG_COORDINATE_UPDATES_2026-09-20.md",
     "docs/locationScoutingBookOCR_compressed.pdf",
     "docs/Elsevier_2026_VR_based_Location_Scouting.docx",
   ]);

@@ -252,6 +252,9 @@ export function createActions({
 
   function navigate(route) {
     router.navigate(route);
+    if (route.name === "location" && route.params?.locationId) {
+      mapAdapter?.focusLocation(route.params.locationId);
+    }
   }
 
   async function createProject(name) {
@@ -553,6 +556,7 @@ export function createActions({
   /** The part of imagery status the interface shows. */
   function describeImagery(status) {
     return {
+      visible: mapAdapter?.imageryVisible ?? true,
       state: status.state,
       sourceId: status.sourceId,
       year: status.year,
@@ -768,6 +772,7 @@ export function createActions({
     mountMap,
     unmountMap,
     retryImagery,
+    recenterMap: () => mapAdapter?.recenter(),
     mountViewer,
     unmountViewer,
     viewerGoToSweep,

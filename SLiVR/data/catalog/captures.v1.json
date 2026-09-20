@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "catalogVersion": "1.0.0",
+  "catalogVersion": "1.1.0",
   "captures": [
     {
       "id": "CAP-001",
@@ -255,6 +255,21 @@
       "url": null,
       "captureDate": "Information has not been found",
       "coverageNotes": "Define reservable courts/rooms, circulation, exterior fields and privacy exclusions",
+      "validationStatus": "Need validation"
+    },
+    {
+      "id": "CAP-018",
+      "locationId": "LOC-018",
+      "workbookLocationName": "UL Louisiana Solar Energy Laboratory (LaSEL) / Antoun Hall",
+      "state": "future",
+      "grouping": "Future scan candidate",
+      "experienceId": null,
+      "sweepId": null,
+      "startX": null,
+      "startY": null,
+      "url": null,
+      "captureDate": "Information has not been found",
+      "coverageNotes": "Plan approved building and solar-field coverage; exclude restricted research and equipment zones",
       "validationStatus": "Need validation"
     }
   ]
