@@ -9,7 +9,7 @@
  * (`js/04-street-view.js:194-250`), including its escalation. The provider can
  * take twenty to sixty seconds to boot a model on a slow connection, and a
  * spinner that says nothing for a minute is indistinguishable from a hang, so
- * the wording changes at eight seconds and a way out appears at twenty-five.
+ * the wording changes at fifteen seconds and a way out appears at thirty.
  *
  * The iframe attributes follow Experimental/map.html:299-306, widened
  * to the set the reconnaissance harness uses. Without `xr-spatial-tracking`
@@ -22,8 +22,8 @@
 /** Veil copy, escalating with the wait. */
 const VEIL_DEFAULT = "Loading the captured location…";
 const VEIL_SLOW = "Still loading. A captured model can take a moment on a slower connection.";
-const SLOW_NOTICE_MS = 8000;
-const CANCEL_OFFER_MS = 25000;
+const SLOW_NOTICE_MS = 15000;
+const CANCEL_OFFER_MS = 30000;
 
 /**
  * @param {object} options
@@ -87,6 +87,7 @@ export function createViewerHost({
    * first one, so every escalation is rebuilt rather than left running.
    */
   function show() {
+    if (visible) return;
     visible = true;
     element.classList.add("is-waiting");
     veil.hidden = false;
@@ -113,6 +114,7 @@ export function createViewerHost({
     // Independent experiences need distinct WindowProxy identities so a queued
     // message from the previous model cannot pass the event.source check.
     renewFrame() {
+      hide();
       frame.setAttribute("src", "about:blank");
       frame = makeFrame();
       element.replaceChildren(frame, veil);
@@ -125,7 +127,7 @@ export function createViewerHost({
      * claiming that the viewer rendered or reached the requested sweep.
      */
     setAdapterState(state) {
-      if (state === "loading" || state === "handshaking") show();
+      if (state === "loading" || state === "handshaking" || state === "navigating") show();
       else hide();
     },
     get waiting() {

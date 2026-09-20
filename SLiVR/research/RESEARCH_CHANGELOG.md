@@ -90,3 +90,57 @@ Those results precede the final deployment-configuration edits. No test executio
 after the instruction; deployed geometry, provider access and browser lifecycle
 are left for the owner's manual verification. No participant evidence or new
 telemetry is introduced.
+
+## 2026-09-20 - Owner reports Phase 0 manual acceptance results
+
+For deployed build 59a980ac, the owner reports all supplied manual checklist
+items passed except the Three.js feasibility demonstration (test 27), which
+remains NOT TESTED pending instructions. Recorded items 1-7 and the additional
+save-failure procedure as PASS in FULL-SYSTEM-TESTING.md, explicitly attributing
+them to the owner. No browser/device details or evidence files were supplied
+with this confirmation. No new automated or provider tests executed. Broader
+fixture/schema, metadata and audit gates are not inferred from the checklist;
+Phase 0 completion remains pending test 27 and the remaining evidence review.
+
+## 2026-09-20 - Shared code-reference policy for future phases (D058)
+
+Owner approved both LSU3D and Experimental/SCSU as read-only code ground-truth
+and refactoring sources across all phases. Updated project instructions, added
+AGENTS.md pointing to the shared rules, and aligned architecture, implementation
+plan, reusable session prompts and test 184. SCSU remains preferred for Treedis
+and is also available for any other applicable feature. Neither reference was
+modified. Documentation-only update; no tests executed.
+
+### 2026-09-20 - Three.js manual feasibility PASS
+
+Owner-supplied Chrome screenshot and explicit PASS confirmation show the
+published tools/three-spike.html rendering its grid, camera, actor and frustum
+with all 10 assertions passing. Horizontal/vertical FOV are 39.598/26.991 degrees
+and camera height is 1.50 m. Test 27 is now PASS; this supersedes its earlier
+NOT TESTED status. All eight supplied manual checklist items have passed.
+No tests were executed by the assistant. The screenshot also shows the known
+optional runtime.js 404, which does not invalidate the optics/rendering check
+and remains separate from console-cleanliness acceptance. Full Phase 0 closure
+still requires the remaining evidence review; no participant outcomes claimed.
+
+
+## 2026-09-20 - Transparent immersive loading and SCSU timing alignment
+
+D059: changed the loading veil from opaque to 55% dark opacity so the provider's
+own loading surface remains visible. Aligned slow/cancel notices to 15/30 seconds,
+ready settling to the existing 600 ms, sweep transition to configured 0 ms,
+retry spacing to the existing 1500 ms/four attempts, and navigation recovery to
+6 seconds. Readiness polling starts on attachment with a 2-second first delay;
+SLiVR retains bounded failure handling. Veil timers survive intermediate loading
+states; a new frame resets them. Updated existing affected assertions by inspection.
+No tests executed, per owner instruction; manual validation of this build remains
+pending. Earlier owner PASS results apply to deployed 59a980ac, not these edits.
+
+## 2026-09-20 - Owner accepts immersive loading update
+
+The owner reports the D059 loading/timing update is working and authorizes its
+publication. Record this as owner-reported manual acceptance of the current
+loading presentation and behavior; no additional automated tests were run and
+no detailed timing trace or new browser/device information was supplied. This
+supersedes the pending manual acceptance of that update, without asserting that
+every failure-path regression was separately re-executed.

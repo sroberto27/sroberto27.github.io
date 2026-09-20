@@ -254,6 +254,7 @@ test("the adapter posts to the configured origin, never to a wildcard", () => {
   adapter.attach(h.frame, ENTRY);
   h.frame.fire("load");
 
+  h.advance(region.readyPingIntervalMs ?? 2000);
   assert.ok(h.posted.length > 0, "a ping must have been sent");
   for (const { targetOrigin } of h.posted) assert.equal(targetOrigin, ORIGIN);
   assert.equal(h.frame.attributes.src, ENTRY.url);
@@ -269,7 +270,7 @@ test("a viewer that answers reaches ready and asks for its sweeps", () => {
   assert.equal(adapter.state, "handshaking");
 
   h.send({ type: "TourReady" });
-  assert.equal(adapter.state, "ready");
+  assert.equal(adapter.state, "handshaking", "entry loading continues through the ready-settle delay");
   assert.equal(adapter.capabilities.ready, true);
   assert.equal(adapter.capabilities.messaging, true);
   assert.equal(adapter.capabilities.embedding, true);

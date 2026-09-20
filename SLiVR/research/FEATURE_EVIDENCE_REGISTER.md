@@ -105,3 +105,25 @@ The owner-approved browser key now ships in deployment.js. Module/coordinate
 and injected lifecycle checks passed before the manual-testing instruction;
 real Google geometry, Lafayette coverage, attribution layout and repeat toggles
 remain NOT TESTED for this build. No usability or measurement benefit claimed.
+
+### 2026-09-20 owner manual report - build 59a980ac
+
+The owner confirms the supplied shell/catalog, routing, basic persistence/JSON,
+aerial coverage/fallback, Google 3D geometry/lifecycle/fallback, and all-entry
+Treedis navigation checklist passed. This supersedes the earlier absence of
+manual acceptance for those surfaces; it is owner-reported evidence without an
+attached browser/version record or capability report. The Three.js feasibility
+demonstration (test 27) remains NOT TESTED. No participant-benefit findings or
+full Phase 0 completion are claimed.
+
+### 2026-09-20 - Three.js manual feasibility PASS
+
+Owner-supplied Chrome screenshot and explicit PASS confirmation show the
+published tools/three-spike.html rendering its grid, camera, actor and frustum
+with all 10 assertions passing. Horizontal/vertical FOV are 39.598/26.991 degrees
+and camera height is 1.50 m. Test 27 is now PASS; this supersedes its earlier
+NOT TESTED status. All eight supplied manual checklist items have passed.
+No tests were executed by the assistant. The screenshot also shows the known
+optional runtime.js 404, which does not invalidate the optics/rendering check
+and remains separate from console-cleanliness acceptance. Full Phase 0 closure
+still requires the remaining evidence review; no participant outcomes claimed.

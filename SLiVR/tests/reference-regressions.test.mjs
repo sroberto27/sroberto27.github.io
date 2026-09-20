@@ -75,7 +75,7 @@ test("185: SCSU entry navigation waits for readiness and carries the supplied or
   assert.equal(h.posted.filter(p => p.message.type === "Navigate").length, 0);
   h.advance(1);
   assert.deepEqual(h.posted.find(p => p.message.type === "Navigate")?.message, {
-    type: "Navigate", sweepId: entry.sweepId, transitionTime: 1500, rotation: { x: 0, y: 0 },
+    type: "Navigate", sweepId: entry.sweepId, transitionTime: 0, rotation: { x: 0, y: 0 },
   });
   h.send({ type: "PoseChanged", sweep: entry.sweepId, x: 0 });
   assert.equal(h.timers.size, 0, "arrival at the entry sweep clears verification timers");
@@ -100,7 +100,7 @@ test("187: another frame on the provider origin cannot report ready for this vie
   const adapter = createTreedisAdapter({ region: region.immersive, win: h.win });
   adapter.attach(h.frame, entry);
   h.send({ type: "TourReady" }, h.makeFrame().contentWindow);
-  assert.equal(adapter.state, "loading");
+  assert.equal(adapter.state, "handshaking");
   assert.equal(adapter.capabilities.ready, "unknown");
   adapter.dispose();
 });

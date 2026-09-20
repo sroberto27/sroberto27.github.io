@@ -46,6 +46,17 @@ LOC-001…LOC-011 are current Treedis; LOC-012…LOC-017 are future candidates. 
 
 ## 2. Source reuse matrix
 
+**All-phase source amendment, 2026-09-20 (D058).** Both
+`E:\sroberto27.github.io\Wrapper\map\LSU3D` and
+`E:\sroberto27.github.io\Wrapper\map\Experimental` (SCSU) are approved
+read-only code ground-truth and refactoring sources for every phase. Inspect
+both for relevant implementations before writing new code. This matrix is an
+existing inventory, not a restriction to LSU3D. Extend it with SCSU counterparts
+as each work package is planned. Select proven behavior compatible with SLiVR,
+record the source project/file/line and rationale, and keep all edits in SLiVR.
+SCSU remains the preferred Treedis source, but may supply other features too.
+
+
 **Treedis source amendment, 2026-09-20 (D053).** The two LSU3D Treedis rows below
 remain as the historical defect analysis, but their implementation source is now
 Experimental/SCSU: `js/03-tour-bridge.js` for commands and the 600 ms readiness
@@ -264,7 +275,7 @@ A provider uncertainty becomes a Phase 0 validation task with a fallback. Exactl
 
 **User-visible outcome.** A running SLiVR shell at `…/SLiVR/#/explore` with the four mode buttons, a Lafayette map on DOTD imagery, all 17 catalog records loaded and listed, a local project that survives reload and round-trips through JSON, and a diagnostics page recording what each provider actually did.
 
-**Dependencies/inputs.** The workbook; the Treedis inventory text; the architecture guide; LSU3D as read-only reference.
+**Dependencies/inputs.** The workbook; the Treedis inventory text; the architecture guide; LSU3D and Experimental/SCSU as read-only code references.
 
 **Work, in dependency order.**
 1. `.gitignore` (`docs/`, `outputs/`, `config/runtime.js`); `index.html` shell with import map; `styles/00-tokens.css` + `10-shell.css`; neutral filmmaking visual system, no LSU branding.

@@ -2,6 +2,17 @@
 
 You are working in **plan mode**. Perform read-only analysis and produce a reviewable implementation plan. Do not create, edit, move, rename or delete files; do not install dependencies; do not scaffold the application; and do not implement code. The user will authorize implementation separately after reviewing the plan.
 
+## Code reference policy for every phase
+
+Follow `CLAUDE.md` and architecture section 10.5. Both
+`E:\sroberto27.github.io\Wrapper\map\LSU3D` and
+`E:\sroberto27.github.io\Wrapper\map\Experimental` (SCSU) are approved
+read-only code ground-truth and refactoring sources. Inspect both before
+proposing new implementations. Reuse applicable working code from either;
+SCSU is not limited to Treedis. For each planned module, identify the selected
+source project/file and explain required deviations. Preserve SLiVR's identity,
+validation and lifecycle requirements; never modify either reference.
+
 ## Objective
 
 Plan a new static web application named **SLiVR** for film-location scouting and shot planning in Lafayette, Louisiana. It adapts useful architectural ideas and proven algorithms from the existing LSU3D campus-map project while replacing its recruitment purpose, Baton Rouge content and LSU-specific assumptions.
@@ -10,7 +21,7 @@ The new project root is:
 
 `E:\sroberto27.github.io\SLiVR`
 
-The existing reference project is:
+The LSU3D reference project is (SCSU is also approved above):
 
 `E:\sroberto27.github.io\Wrapper\map\LSU3D`
 
@@ -31,7 +42,7 @@ Read these before producing the plan, in this priority order:
 9. `E:\sroberto27.github.io\SLiVR\docs\Example of shot designer.png` — visual reference for the downtown shot-planning acceptance scenario.
 10. `E:\sroberto27.github.io\SLiVR\docs\TreedisResearch mode information.txt` — prior proxy/probe/collector and conditional-manipulation research; reference material requiring SLiVR-specific security, authorization and compatibility validation.
 11. `E:\sroberto27.github.io\SLiVR\research\TREEDIS_RESEARCH_MODE_PLAN.md` — controlling Phase 6 interpretation and exit boundary for that reference material.
-12. The LSU3D source code, tests, data and its `CLAUDE.md`, used only to understand reusable behavior and constraints.
+12. Both LSU3D and Experimental/SCSU source code, tests, configuration and project instructions, used read-only to identify reusable implementations and constraints.
 
 If a supporting source conflicts with the approved architecture, follow the architecture and report the conflict. Preserve the exact catalog uncertainty values `Need validation` and `Information has not been found`. Do not treat a URL, public hour, operator name, virtual capture or map coordinate as proof of filming permission, current availability, ownership, measured geometry or present physical condition.
 
