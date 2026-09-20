@@ -166,7 +166,7 @@ const currentCapture = {
   sweepId: "sebf1e31m9u7dk7twchgfz1mc",
   startX: 4.479141140601165,
   startY: 76.06015671262044,
-  url: "https://my.treedis.com/tour/5eb11a1b?s=sebf1e31m9u7dk7twchgfz1mc&x=4.479141140601165&y=76.06015671262044",
+  url: "https://spaces.dtsxr.com/tour/5eb11a1b?s=sebf1e31m9u7dk7twchgfz1mc&x=4.479141140601165&y=76.06015671262044",
   captureDate: "Information has not been found",
   coverageNotes: "Entry sweep supplied; coverage extent and capture date not documented",
   validationStatus: "User-supplied URL parsed; live experience not independently validated",
@@ -188,7 +188,7 @@ const futureCapture = {
   validationStatus: "Need validation",
 };
 
-const region = { experienceAllowlist: ["5eb11a1b"], origin: "https://my.treedis.com" };
+const region = { experienceAllowlist: ["5eb11a1b"], origin: "https://spaces.dtsxr.com" };
 
 test("a current capture needs its whole provider identity", () => {
   assert.equal(validateCapture(currentCapture, region).ok, true);
@@ -209,7 +209,7 @@ test("a future candidate cannot carry provider identity or a tour URL", () => {
   assert.equal(validateCapture(futureCapture, region).ok, true);
   assert.equal(entryUrl(futureCapture), null);
 
-  const fabricated = { ...futureCapture, experienceId: "5eb11a1b", url: "https://my.treedis.com/tour/5eb11a1b" };
+  const fabricated = { ...futureCapture, experienceId: "5eb11a1b", url: "https://spaces.dtsxr.com/tour/5eb11a1b" };
   const result = validateCapture(fabricated, region);
   assert.equal(result.ok, false);
   assert.ok(result.errors.some((e) => e.path === "experienceId"));
@@ -229,7 +229,7 @@ test("a capture outside the region allowlist or origin is rejected", () => {
 test("a URL that does not reference its own sweep is rejected", () => {
   const mismatched = {
     ...currentCapture,
-    url: "https://my.treedis.com/tour/5eb11a1b?s=dkz7wtb0t8rqzzc01gn5z7bpd&x=0&y=0",
+    url: "https://spaces.dtsxr.com/tour/5eb11a1b?s=dkz7wtb0t8rqzzc01gn5z7bpd&x=0&y=0",
   };
   const result = validateCapture(mismatched, region);
   assert.equal(result.ok, false);

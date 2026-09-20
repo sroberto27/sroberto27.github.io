@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SLiVR — Three.js transform and optics spike</title>
+    <link rel="stylesheet" href="../styles/00-tokens.css" />
+    <link rel="stylesheet" href="../styles/10-shell.css" />
+    <link rel="stylesheet" href="recon.css" />
+    <!--
+      Vendored at the version the implementation plan names, like the map
+      library, so a recorded result stays reproducible from the repository
+      alone and no third-party host is contacted at runtime.
+    -->
+    <!-- Optional local configuration; absent by default. -->
+    <script src="../config/runtime.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "slivr/": "../src/",
+          "three": "../vendor/three/three.module.js"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-name">SPIKE</span>
+        <span class="brand-sub">Three.js transforms, optics and optional 3D context</span>
+      </div>
+      <div class="topbar-context">
+        <p class="breadcrumb" id="build"></p>
+      </div>
+    </header>
+
+    <main class="spike">
+      <section class="spike-canvas" id="canvas-host"></section>
+      <aside class="rail rail-right" aria-label="Spike readings">
+        <div class="rail-head"><h2>Readings</h2></div>
+        <div class="rail-body">
+          <section class="rail-section">
+            <h3>Rendered scene</h3>
+            <dl class="fields" id="scene-fields"></dl>
+          </section>
+          <section class="rail-section">
+            <h3>Assertions</h3>
+            <ol class="assertion-list" id="assertions"></ol>
+          </section>
+          <section class="rail-section">
+            <h3>Optional 3D context</h3>
+            <dl class="fields" id="tiles-fields"></dl>
+            <p class="empty-note" id="tiles-note"></p>
+          </section>
+        </div>
+      </aside>
+    </main>
+
+    <script type="module" src="./three-spike.js"></script>
+  </body>
+</html>

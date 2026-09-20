@@ -601,6 +601,35 @@ Priority verification:
 
 Do not treat the original project's passing tests as proof of new functionality. Browser/device tests and representative calibrated assets will be needed for the new application.
 
+### 10.5 Reference-first implementation
+
+The read-only `E:\sroberto27.github.io\Wrapper\map\Experimental` SCSU project is
+the source of truth for the Treedis wrapper and immersive street viewer, as
+directed on September 20, 2026. Adapt its `js/03-tour-bridge.js`,
+`js/04-street-view.js`, `map.html` and provider configuration. Preserve SLiVR's
+multiple-experience identity, validation, cancellation and disposal requirements.
+Its working implementation is the source; Lafayette provider behavior still
+requires live verification. LSU3D remains the reference for its other capabilities.
+
+LSU3D is the ground-truth reference for anything it already does. Every phase adapts its
+code in preference to deriving a new solution, and plumbing follows its working
+configuration exactly: library loading, stylesheet order, container setup, source and
+layer identifiers, lifecycle and teardown, request shapes and provider parameters.
+
+Deviation is permitted only where this specification or the implementation plan requires
+a different approach, where the reference behaviour is a recorded defect, or where no
+counterpart exists. Each deviation is recorded in the decision record naming the LSU3D
+file it departs from. The reference is not authoritative where it was never executed:
+its Treedis bridge has no live evidence behind it, and observed provider behaviour
+supersedes its transcribed protocol.
+
+Before a phase closes, the phase's modules are compared against their LSU3D counterparts.
+A divergence that qualifies under one of the three reasons is written down; every other
+divergence is corrected in that phase by changing SLiVR to match the reference. Neither a
+divergence nor its correction is deferred to a later phase, because the next phase builds
+on whatever is left. Test 184 carries this check and does not pass while an unjustified
+divergence remains.
+
 ## 11. Approved prototype operating decisions
 
 | Decision | Approved boundary |

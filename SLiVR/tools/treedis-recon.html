@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SLiVR — Treedis reconnaissance harness</title>
+    <link rel="stylesheet" href="../styles/00-tokens.css" />
+    <link rel="stylesheet" href="../styles/10-shell.css" />
+    <link rel="stylesheet" href="recon.css" />
+    <script type="importmap">
+      {
+        "imports": {
+          "slivr/": "../src/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">
+        <span class="brand-name">RECON</span>
+        <span class="brand-sub">Treedis capability reconnaissance · not part of the application</span>
+      </div>
+      <div class="topbar-context">
+        <p class="breadcrumb" id="scope"></p>
+        <button type="button" id="download" class="primary">Download report</button>
+      </div>
+    </header>
+
+    <main class="recon">
+      <aside class="rail rail-left" aria-label="Supplied entries">
+        <div class="rail-head">
+          <h2>Supplied entries</h2>
+          <span class="rail-count" id="entry-count"></span>
+        </div>
+        <div class="rail-body" id="entries"></div>
+      </aside>
+
+      <section class="recon-surface">
+        <div class="recon-controls">
+          <div class="recon-current" id="current">No entry loaded.</div>
+          <div class="actions" id="controls"></div>
+        </div>
+        <div class="recon-frame">
+          <iframe
+            id="viewer"
+            title="Treedis viewer under reconnaissance"
+            src="about:blank"
+            allow="xr-spatial-tracking; fullscreen; accelerometer; gyroscope; magnetometer"
+            allowfullscreen
+          ></iframe>
+        </div>
+      </section>
+
+      <aside class="rail rail-right" aria-label="Observations">
+        <div class="rail-head"><h2>Capabilities</h2></div>
+        <div class="rail-body">
+          <section class="rail-section">
+            <dl class="fields" id="capabilities"></dl>
+          </section>
+          <section class="rail-section">
+            <h3>Message log</h3>
+            <ol class="log" id="log"></ol>
+          </section>
+        </div>
+      </aside>
+    </main>
+
+    <script type="module" src="./treedis-recon.js"></script>
+  </body>
+</html>

@@ -42,3 +42,56 @@ First implementation work package, 2026-09-19, publishable-tree digest `89aae7a8
 | F20 | Record schema and identifier rules that reject structural damage before any write, and a deployment-scope guard that keeps private reference material unpublishable | Technical validation | No persistence, no export, no recovery path, no accessibility surface. |
 
 Measures with a working implementation to test against: `fov_error_deg` (exercised) and `json_roundtrip_loss` (schema half only). `plan_scale_error_pct` remains defined but unexercised until floor-plan calibration exists.
+
+## Phase 0.2 implementation notes
+
+Second implementation work package, 2026-09-20, publishable-tree digest `a8f4b4e4bd59`. No feature status changes. F20 now has working foundations, but nothing here has been observed in a browser, so no entry moves to `Implemented` or `Validated technically`: this package delivers the reliability and portability machinery that F20 is about, and F20 is exactly the feature whose claims cannot be supported without a rendered, operated interface.
+
+| Feature | What now exists | Evidence level | What is still absent |
+|---|---|---|---|
+| F20 | Local workspace persistence in IndexedDB (`slivr-workspace`, schema 1, eleven stores) behind one repository module; validation before every write; revision-ordered writes that discard a completing older write; versioned JSON export and import with validate-before-mutate, classified rejections and three explicit conflict outcomes; emergency export serialised from memory with no storage access; a save-status surface with retry; a capability object that reports unconfirmed provider behaviour as `unknown` | Technical validation against an in-memory IndexedDB double | Real browser storage behaviour, quota handling and durability across a reload; the download and file-picker paths; keyboard operation, focus visibility and tablet layout; accessibility findings of any kind |
+| F20, F01, F02 | Hash routing for every approved route with deterministic serialisation, a single application path into route state, Back and Forward handling, and a recoverable not-found state that names the unknown identifier and the catalog version | Technical validation against a window stand-in | Direct opening and link sharing in a real browser; whether the shell restores the intended context |
+| F01, F02 | A catalog repository that loads the region configuration, the manifest and all five catalog files as one unit, refuses a mixed catalog version, validates the whole set, and returns a frozen read-only catalog with lookup indexes, or no catalog at all | Technical validation | Any map, list, search, filter or dossier. The Explore panel lists the 17 records only to prove that routing and loading work |
+| F19 | Capture records reach the interface through the catalog repository with their provider identity, coverage notes, capture date and validation status intact; the Immersive foundation panel shows a future candidate as having no capture rather than as an empty viewer | Technical validation | The viewer itself, and the provider reconnaissance that would establish what a capture can actually do |
+
+Measures with a working implementation to test against: `json_roundtrip_loss` is now fully exercised, over a fixture covering every workspace store, and measured as a deep comparison of normalised records after export and re-import. `fov_error_deg` remains exercised from Phase 0.1. `plan_scale_error_pct` remains defined but unexercised until floor-plan calibration exists.
+
+Interface state for every approved feature remains unobserved. No screenshot, interaction trace or device configuration is recorded for this build.
+
+## Phase 0.3 implementation notes
+
+Third implementation work package, 2026-09-20, code-and-data digest `50dcb29e0e57`. No feature status changes. This package produced the first live provider evidence in the project, but nothing has been rendered in a browser, so no feature moves to `Validated technically`.
+
+| Feature | What now exists | Evidence level | What is still absent |
+|---|---|---|---|
+| F01 | An imagery contract that refuses a misconfigured source, a failover from the 2025 primary to the 2024 fallback to a flat neutral ground with the active year always named, a MapLibre adapter that reports a classified failure instead of throwing, and a map mounted in the Explore foundation panel | Technical validation, plus live provider evidence for coverage | Markers, clustering, search, filters, and any confirmation that tiles actually render. The library is pinned but has never been loaded |
+| F01, F19 | Confirmed coverage over all six operational areas from both configured services, with endpoint, bounding box, ground sample distance, byte counts, timings and pixel statistics recorded per point, and no-coverage controls recorded in the same run | Live provider evidence, dated 2026-09-20 | Coverage was sampled at one location per area, not across each area. Provider services change independently of this artifact (L013, L027) |
+| F20 | Imagery failure is a recoverable state rather than a blank map: the neutral ground is always the bottom layer, a retry returns to the primary, and an absent library or absent WebGL leaves the mode usable with a message naming what still works | Technical validation | None of these states has been seen. Whether the failure messages are legible and the retry reachable by keyboard is unobserved |
+
+Measures with a working implementation to test against: unchanged from Phase 0.2. Imagery provenance is now recorded in enough detail that a later screenshot can be tied to a specific service, year and request.
+
+## Phase 0.4 implementation notes
+
+Fourth implementation work package, 2026-09-20, code-and-data digest `6e0130e240ad`. No feature status changes. This package produced the first contact with the immersive provider, but nothing has run in a browser, so no feature moves to `Validated technically`.
+
+| Feature | What now exists | Evidence level | What is still absent |
+|---|---|---|---|
+| F03 | A viewer adapter with an explicit lifecycle — load, handshake, ready, unresponsive, failed — that posts only to the configured origin, refuses inbound messages from anywhere else, and stops rather than hanging when the bridge never answers. All 11 supplied entries confirmed reachable, inside the allowlist, with their own sweep identifiers echoed by the provider | Technical validation, plus live availability evidence | Whether the viewer embeds, answers, lists sweeps, switches without a reload or reports pose. Every one reads `unknown` |
+| F04 | A pose reader that records only the fields actually reported, so an absent yaw stays absent instead of becoming zero, and a capability record that downgrades bookmark restore to entry-point-only when no pose is available | Technical validation | No pose has ever been observed, so bookmark restore currently has no supported path beyond the entry URL |
+| F19 | Per-entry reconnaissance producing capture identity, experience identity, sweep identity, availability and declared embedding policy, recorded as a dated report | Live provider evidence, dated 2026-09-20 | Capture date, coverage and reuse rights remain unknown for all 11 entries (L030) |
+| F08, F09 | Scene geometry as plain data: camera basis from heading and pitch, frustum corners from the lens, containment-based framing, and a single ENU to Y-up conversion. Library placement is separated so a rendering fault cannot be read as a maths fault | Technical validation | Nothing rendered. The spike page exists but has not been loaded |
+| F20 | The optional 3D context classified into absent, disabled, configured, denied, slow, unreachable and available, with the blank grid available in every one of those states and every unavailable option carrying a reason | Technical validation against injected responses | The available path, which needs a credential (L031) |
+
+Measures with a working implementation to test against: `fov_error_deg` is now exercised through the scene builder as well as the optics module, against an independently derived value rather than a quoted one.
+
+## Immersive viewer surface implementation notes
+
+Viewer wiring, 2026-09-20, code-and-data digest `65ccbfbf7da7`. No feature status changes: F03 and F04 stay
+Phase 2, and only the surface those features need was brought forward, recorded as D051.
+
+| Feature | What now exists | Evidence level | What is still absent |
+|---|---|---|---|
+| F03 | An Immersive mode that opens the capture the catalog holds for the selected record, in the same window, with the record list and the capture detail beside it. The frame is persistent for the session, carries the provider attributes the reference uses, refuses any experience outside the approved list, and is released on leaving. A wait that becomes long explains itself and offers a way out rather than showing an unexplained blank frame | Technical validation only | Whether anything renders. No browser has opened this surface, so embedding, the bridge, sweep listing, sweep switching and pose reporting are all still `unknown`, exactly as before |
+| F04 | The pose the viewer reports is carried into application state as the viewer reports it, and the rail states the connection, the current sweep and how many sweeps were listed, with `Not reported` where the viewer said nothing | Technical validation only | Any pose observed from a running viewer. Bookmarks, saved viewpoints and the handoff into a scene remain Phase 2 |
+| F19 | The adapter's per-entry reconnaissance record is reachable from the running application rather than only from the standalone harness, which is what tests 28 and 29 need to cover all 11 entries through the product itself | Technical validation only | The eleven records themselves. One entry has been observed live, from the harness, not from the application |
+

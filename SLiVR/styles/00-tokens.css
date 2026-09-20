@@ -1,0 +1,84 @@
+/*
+ * Design tokens.
+ *
+ * A neutral, low-chroma working surface: the interface sits behind aerial
+ * imagery, photographic captures and reference plans, and a saturated shell
+ * would compete with the material being judged. The scene is a desk, indoors,
+ * with photographic material on screen for long stretches, so the shell is
+ * dark and the imagery carries the brightness.
+ *
+ * The evidence colours are a fixed vocabulary. Known, approximate and unknown
+ * must stay visually distinct everywhere they appear, because an unknown that
+ * reads like a confirmed value is a research-integrity failure rather than a
+ * styling preference. They are distinguished by lightness as well as hue, so
+ * they survive greyscale printing and the common colour-vision deficiencies.
+ */
+
+:root {
+  color-scheme: dark;
+
+  /* Surfaces, from the map backdrop up to a raised control. */
+  --surface-0: #101316;
+  --surface-1: #171b1f;
+  --surface-2: #1e2328;
+  --surface-3: #262c32;
+  --surface-raised: #2f363d;
+
+  --line: #2b3238;
+  --line-strong: #414a52;
+
+  --text: #eef1f4;
+  --text-muted: #adb7c0;
+  /* Clears 4.5:1 on every surface it is used on, including a raised control. */
+  --text-faint: #8e97a0;
+
+  --accent: #7fb3d5;
+  --accent-strong: #a8cfe8;
+  --accent-ink: #0b1114;
+  --accent-wash: #7fb3d51a;
+
+  /* Evidence vocabulary. */
+  --evidence-known: #7fc8a9;
+  --evidence-approximate: #e0b978;
+  --evidence-unknown: #d98b8b;
+  --evidence-future: #a9a0d4;
+
+  --warning: #e0b978;
+  --warning-wash: #e0b9781f;
+  --danger: #e08585;
+  --danger-wash: #e085851f;
+  --ok: #7fc8a9;
+
+  /* 4-unit base: the middle steps an 8-only scale misses matter in a rail. */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+
+  --radius: 5px;
+  --radius-lg: 9px;
+
+  --font-ui: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "Consolas", "SFMono-Regular", monospace;
+
+  --text-xs: 0.6875rem;
+  --text-sm: 0.8125rem;
+  --text-base: 0.875rem;
+  --text-md: 1rem;
+  --text-lg: 1.25rem;
+  --text-xl: 1.625rem;
+
+  --focus-ring: 2px solid var(--accent-strong);
+
+  /* Frame geometry. The rails are sized to the content they hold: a record
+     line in the left, a labelled field pair in the right. */
+  --topbar-height: 3.25rem;
+  --rail-left: 19rem;
+  --rail-right: 23rem;
+
+  --shadow-raised: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px -12px rgb(0 0 0 / 65%);
+  --shadow-overlay: 0 4px 12px rgb(0 0 0 / 45%), 0 24px 64px -24px rgb(0 0 0 / 70%);
+}

@@ -38,13 +38,23 @@ LOC-001…LOC-011 are current Treedis; LOC-012…LOC-017 are future candidates. 
 
 **Explicitly out of the prototype:** F07 visit planner, F13 sun/weather, F14 logistics map, F15 permissions/costs, F16 technical-scout handoff, F17 wrap, F18 collaboration, F19 management UI, the F20 dedicated phone field toolkit, and F21 Treedis Research Mode. No accounts, backend, cloud sync or shared workspace. No field anywhere for contracts, insurance, access codes or private contacts (test 83).
 
-**Read-only LSU3D rule.** LSU3D is inspected, never written, staged, formatted, deployed over or cleaned. Reuse is *conceptual and algorithmic*: patterns and maths are re-implemented in SLiVR's own module system. LSU editorial content, coordinates, branding, **credentials** and command files are never copied. Every commit contains only `SLiVR/` paths, verified before commit and before push (tests 1, 2).
+**Read-only reference rule (D044, D053).** LSU3D and Experimental/SCSU are inspected, never written, staged, formatted, deployed over or cleaned. Adapt their existing code into SLiVR's module system; conceptual similarity alone is not reuse. LSU3D supplies existing map behavior; Experimental supplies the working Treedis wrapper and immersive street viewer. Record required deviations, and add new code where the approved architecture needs behavior with no counterpart. Campus content, coordinates, branding, credentials and command files are not copied into application source. Every commit contains only `SLiVR/` paths, verified before commit and before push (tests 1, 2).
 
 **Truth rules that constrain every surface.** `Need validation` and `Information has not been found` are preserved verbatim and never rendered as a favourable claim. Operator ≠ property owner ≠ filming authority ≠ public contact. Public hours ≠ production availability. A capture ≠ filming permission. Aerial imagery ≠ measured geometry. A virtual visit ≠ a completed technical scout.
 
 ---
 
 ## 2. Source reuse matrix
+
+**Treedis source amendment, 2026-09-20 (D053).** The two LSU3D Treedis rows below
+remain as the historical defect analysis, but their implementation source is now
+Experimental/SCSU: `js/03-tour-bridge.js` for commands and the 600 ms readiness
+delay, `js/04-street-view.js` for queued sweep/orientation, four 1500 ms arrival
+attempts and shared-session reuse, and `map.html:299-306` for the iframe surface.
+SLiVR retains exact origin/source/payload validation, bounded load/navigation
+timeouts and disposal. Independent experiences use a new frame identity; shared
+entries reuse a responsive session. These differences implement the approved
+multiple-model lifecycle, not a replacement viewer design.
 
 Verified by tracing LSU3D's runtime modules, data files and test suites. LSU3D is a classic-script app: 22 `<script src>` tags in one shared global scope, with later files **reassigning earlier global functions** (`14-redesign.js:142` wraps `updateTourbar`, `17-router.js:328` wraps `selectFeature`, `12-start-screen.js:885` wraps `openStreetView`). That wrapper chain is the single thing this plan most deliberately does **not** carry forward.
 
@@ -219,19 +229,32 @@ Envelope: `{ schemaVersion: "1.0.0", appVersion, exportedAt, catalogVersion, kin
 
 ## 5. Provider feasibility matrix
 
+**Evidence correction, 2026-09-20 (D055):** the URL-entry fallback below is a
+candidate recovery path, not a guarantee that loading "always works." A valid
+entry URL and an iframe `load` event establish neither a rendered tour nor arrival
+at its sweep. L033 remains open; new tests 185–199 cover client behavior with
+deterministic doubles and do not establish provider availability.
+
 | Provider | Category | Expected capability | Phase 0 validation | Fallback | Evidence |
 |---|---|---|---|---|---|
 | **DOTD 2025 Various 6-Inch RGBI** (primary) | Verifiable | MapLibre raster source: `exportImage?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=512,512&format=jpg&f=image&bandIds=0,1,2`, `tileSize:512`, `maxzoom:20` (the exact form proven in `config.js:68-78`) | One request per operational area (6 points), inspecting **pixel content** — decode and reject uniform/near-black responses. Run in `tools/probe-imagery.mjs` **and** live in-browser; record endpoint, bbox, date, bytes, screenshot | 2024 Lafayette service → neutral background layer | Tests **22**, **24** |
 | **DOTD 2024 Lafayette 6-Inch RGBI** (fallback) | Verifiable | Same request shape, Lafayette extent | Block the primary host; confirm equivalent coverage renders with the fallback year in the attribution | Neutral background + status message | Test **23** |
 | **DOTD MapServer layer 187** | **Confirmed negative** | 2026 6-inch, but published extent and sample requests returned no-data over this inventory | Configuration + network inspection: never the configured Lafayette primary; an all-black response must never silently substitute | n/a | Test **25** |
 | **Google Photorealistic 3D Tiles** | User-supplied credential (**confirmed available**) | Optional exterior 3D context. Key lives in gitignored `config/runtime.js`, **a new key referrer-restricted to the SLiVR path** | Exercise with key, missing key, denied request, slow response, disabled config. Reuse LSU3D's dual-camera LOD maths and generation guard; **add** WebGL context-loss handling and disposal | Aerial / imported plan / blank-grid workspace; authored objects unaffected | Tests **7**, **26**, **99** |
-| **Treedis viewer — 11 supplied entries** | Verified inventory; unverified runtime | **Verified from evidence:** experience IDs, sweep IDs, start X/Y and exact URLs; six share `5eb11a1b`. **Unverified:** whether `my.treedis.com` permits iframe embedding from this origin, whether the documented `Ping`/`Navigate`/`TourReady`/`PoseChanged`/`SweepsChanged` protocol actually responds, whether sweep switching works without reload, and whether pose is emitted. LSU3D's bridge was **never run against a live model** (all `sweepId: null`, `tourUrl: ""`) | Embed all 11 URLs; per entry record load success, inbound message origin/type/shape, sweep navigation without reload, pose availability, failure behaviour. **Because the user administers these experiences**, also retrieve capture date, coverage and reuse rights, and check whether Treedis offers a supported SDK/embed configuration | **URL-parameter entry with a full iframe load always works** — the supplied URLs encode experience+sweep+x+y. No-reload sweep switching, pose-linked mini-map orientation and screenshots are capability-gated enhancements | Tests **28**, **29**; produces the Phase 0 provider-capability matrix |
+| **Treedis viewer — 11 supplied entries** | Verified inventory; unverified runtime | **Verified from evidence:** experience IDs, sweep IDs, start X/Y and exact URLs; six share `5eb11a1b`. **Unverified:** whether the configured provider host permits iframe embedding from this origin, whether the documented `Ping`/`Navigate`/`TourReady`/`PoseChanged`/`SweepsChanged` protocol actually responds, whether sweep switching works without reload, and whether pose is emitted. LSU3D's bridge was **never run against a live model** (all `sweepId: null`, `tourUrl: ""`) | Embed all 11 URLs; per entry record load success, inbound message origin/type/shape, sweep navigation without reload, pose availability, failure behaviour. **Because the user administers these experiences**, also retrieve capture date, coverage and reuse rights, and check whether Treedis offers a supported SDK/embed configuration | **URL-parameter entry with a full iframe load always works** — the supplied URLs encode experience+sweep+x+y. No-reload sweep switching, pose-linked mini-map orientation and screenshots are capability-gated enhancements | Tests **28**, **29**; produces the Phase 0 provider-capability matrix |
 | **Treedis administrative REST API** | Out of scope | Not used in Phases 0–5 | — | — | Documented |
 | **Three.js `0.183.0` + `3d-tiles-renderer@0.5.1`** | Verifiable | Exact import-map pins; camera/actor/frustum scene with known transforms and FOV | Node fixtures for FOV and ENU transforms; a browser spike rendering camera + actor + frustum | Plan-only editing on WebGL loss | Tests **27**, **95–98** |
 | **MapLibre GL JS** (patch-pinned) | Verifiable | Raster sources, markers/clustering, GeoJSON, feature-state selection | Boot on the Lafayette envelope with DOTD imagery and all 17 markers | List-only Explore | Tests **31**, **46** |
 | **Browser canvas read-back** | Unconfirmed | Only needed if the imagery content check runs in-browser | Attempt `crossOrigin="anonymous"`; if CORS is refused the canvas is tainted | The Node probe supplies pixel evidence; the browser check degrades to load/error only | Recorded with test **22** |
 
-A provider uncertainty becomes a Phase 0 validation task with a fallback. Exactly one can block a gate: **if `my.treedis.com` refuses iframe embedding from this origin**, the Phase 2 exit gate cannot be demonstrated as specified (see §10).
+**Provider host, recorded 2026-09-20.** The catalog records `https://spaces.dtsxr.com`, not the provider's
+primary `https://my.treedis.com`. Both serve byte-identical tour documents for the same experiences. The
+primary host failed to fetch its own tour data while embedded (L033), and the working reference project
+embeds the white-label host, so the catalog follows the reference. Whether the change resolves the failure
+is Need validation. The region configures the other host as an alias, and the `viewerOrigin` diagnostic
+selects it, so the two can be compared without editing the catalog.
+
+A provider uncertainty becomes a Phase 0 validation task with a fallback. Exactly one can block a gate: **if the configured provider host refuses iframe embedding from this origin, or refuses to serve tour data inside a frame**, the Phase 2 exit gate cannot be demonstrated as specified (see §10).
 
 ---
 
@@ -303,7 +326,7 @@ A provider uncertainty becomes a Phase 0 validation task with a fallback. Exactl
 **Adapter contract.**
 - One controlled session; a monotonic **generation token** bumped on every open, navigate and dispose, re-checked after every `await` and in every timer callback (pattern lifted from `16-google-tiles.js:52`).
 - States `notLoaded | loading | ready | navigating | unavailable | unauthorized | timedOut | failed`, each with retry and/or return actions.
-- Inbound validation: `event.origin === 'https://my.treedis.com'` **and** `event.source === iframe.contentWindow` **and** a known `type` from the configurable message map **and** payload shape checks using `Number.isFinite`, so a legitimate `0` survives.
+- Inbound validation: `event.origin` equals the origin the frame was actually pointed at, which is the region's configured host and not necessarily the provider's primary one, **and** `event.source === iframe.contentWindow` **and** a known `type` from the configurable message map **and** payload shape checks using `Number.isFinite`, so a legitimate `0` survives.
 - Outbound `postMessage` targets the exact Treedis origin, never `"*"`.
 - Configurable timeout → `timedOut` with retry; bounded ping attempts with backoff and an explicit give-up (LSU3D pings forever and separately polls for 60 s).
 - `dispose()` removes the listener, clears every timer, blanks the iframe `src` and removes the node. Repeated open/close does not grow iframe, listener or timer counts.
@@ -363,13 +386,36 @@ A provider uncertainty becomes a Phase 0 validation task with a fallback. Exactl
 
 ---
 
+
+**Binding reuse obligations for this phase (D044, recorded 2026-09-20).** These were
+identified by the first reference comparison and must be adopted, not re-derived. Each
+names the file to start from.
+
+- **Photorealistic 3D renders inside MapLibre's own WebGL context**, as a
+  `type: "custom"` layer, not as a separate canvas over the map — `js/16-google-tiles.js`.
+  A second context means a second depth buffer and no shared camera, and the reference
+  records that this pattern was proven before it was adopted.
+- **Every awaited step in an asynchronous 3D activation is guarded by an incrementing
+  generation counter** — `js/16-google-tiles.js:46-47`. Leaving 3D mid-load must not let
+  a stale activation clobber a newer one. The same file also caches the dynamic imports,
+  records an outright failure so the session stops retrying, and covers the map with a
+  veil until the tile loader has gone quiet, so a coarse intermediate frame is never
+  shown as though it were finished.
+- **The camera projection maths is derived, not guessed** — the reference states its
+  ECEF/ENU geo-referencing was verified against the package source and the upstream
+  examples, and documents why a view-projection matrix cannot be substituted for a
+  projection matrix. Start from that derivation.
+- **Disposal and WebGL context loss are SLiVR additions.** The reference deliberately
+  disposes nothing, and says so. This phase adds both, which is a deviation under
+  reason 1 rather than an oversight to copy.
+
 ### Phase 5 — Integrated prototype and release validation (F20 baseline)
 
 **Outcome.** The complete workflow connected, the four exports plus emergency recovery finished, routing/context transitions hardened, resources disposed, accessibility and tablet behaviour verified, deployment and isolation documented.
 
 **Modules.** `exports/packet-html.js`, `project-json.js` completion, `styles/90-print.css`, `sw.js` + registration driver, `ui/a11y.js` hardening, `tools/check-deploy-scope.mjs`.
 
-**Work order.** Save-before-transition for all mode switches → history traversal correctness → resource disposal/suspension per mode → print-ready packet with user-selected sections → export filename policy → accessibility pass (keyboard, focus, contrast, non-colour status encoding, reduced motion) → tablet layout → service worker (scope `/SLiVR/`, cache `slivr-shell-v1`, a SLiVR never-cache list covering `maps.dotd.la.gov`, `my.treedis.com`, `tile.googleapis.com`, kill-switch files network-first, ships **off** by default, and **`getRegistrations()` filtered by `reg.scope` before any `unregister()`**) → deployment scope check → research-record close-out.
+**Work order.** Save-before-transition for all mode switches → history traversal correctness → resource disposal/suspension per mode → print-ready packet with user-selected sections → export filename policy → accessibility pass (keyboard, focus, contrast, non-colour status encoding, reduced motion) → tablet layout → service worker (scope `/SLiVR/`, cache `slivr-shell-v1`, a SLiVR never-cache list covering `maps.dotd.la.gov`, `spaces.dtsxr.com`, `tile.googleapis.com`, kill-switch files network-first, ships **off** by default, and **`getRegistrations()` filtered by `reg.scope` before any `unregister()`**) → deployment scope check → research-record close-out.
 
 **Automated tests.** Packet HTML section selection and escaping; filename collisions across a representative set; a precache-list ↔ `index.html` text-diff (adapting `service-worker.test.mjs:34-46`); a deploy-scope test asserting no tracked path under `SLiVR/` matches the private allowlist and no committed file contains a credential pattern or LSU identifier.
 
@@ -401,7 +447,7 @@ A provider uncertainty becomes a Phase 0 validation task with a fallback. Exactl
  └──────────────┬─────────────────────────────────────────────┘
                 │ bounded, schema-validated event batches
  ┌──────────────▼── Research origin (dedicated) ──────────────┐
- │  proxy: upstream allowlist → my.treedis.com only           │
+ │  proxy: upstream allowlist → configured Treedis host only  │
  │  collector: launch claim + origin + schema + rate + size   │
  │  private store: immutable raw batches, no public read      │
  └──────────────┬─────────────────────────────────────────────┘
@@ -506,7 +552,7 @@ Each phase closes by updating all five records plus the test document.
 Static/no-build ES modules; MapLibre; DOTD 2025 primary with 2024 Lafayette fallback and layer 187 excluded; optional Google 3D from external runtime configuration; isolated Treedis adapter; Three.js for authored scenes; IndexedDB + versioned JSON; read-only versioned catalog; desktop-first with tablet support; 17 records / six areas; no backend or accounts; Phase 6 after the prototype; hash routing (D016); private references gitignored (D017).
 
 **B. Phase 0 validation tasks (each has a fallback; none is assumed).**
-- **B1 — Treedis iframe embedding.** Whether `my.treedis.com` permits framing from `sroberto27.github.io` is unverified, and LSU3D's bridge has never run against a live model. *Fallback:* URL-parameter entry with a full load. *Escalation:* if no entry embeds at all, the Phase 2 exit gate is BLOCKED with a documented retest condition — the one genuine gate risk in the plan. Because the user administers these experiences, an embed/allowlist setting or a supported SDK path may resolve it directly.
+- **B1 — Treedis iframe embedding.** Framing itself is now evidenced: on 2026-09-20 the viewer document loaded and started inside the frame. What failed was the provider's own tour-data requests from inside that frame (L033), so the risk has moved rather than closed, and LSU3D's bridge has still never run against a live model. *Fallback:* URL-parameter entry with a full load. *Escalation:* if no entry embeds at all, the Phase 2 exit gate is BLOCKED with a documented retest condition — the one genuine gate risk in the plan. Because the user administers these experiences, an embed/allowlist setting or a supported SDK path may resolve it directly.
 - **B2 — Treedis message protocol.** The `Ping`/`Navigate`/`TourReady`/`PoseChanged`/`SweepsChanged` vocabulary comes from documentation, not observed behaviour. *Fallback:* the adapter's configurable message map plus URL reload.
 - **B3 — Capture dates, coverage and reuse rights.** Currently `Information has not been found` for all 11. Obtainable now that the user administers the experiences; results become a catalog v1.1 update with recorded provenance, not a silent edit.
 - **B4 — DOTD content coverage and CORS.** Pixel-content validation per area; canvas read-back may be blocked, in which case the Node probe carries the evidence.

@@ -1,0 +1,167 @@
+/*
+ * Reconnaissance harness layout.
+ *
+ * Diagnostic pages, not application surfaces. They borrow the shell tokens so
+ * the readings are legible in the same palette, and they are deliberately
+ * plainer: nothing here should be mistaken for a product screen in a
+ * screenshot attached to a test result.
+ */
+
+.recon {
+  display: grid;
+  grid-template-columns: var(--rail-left) minmax(0, 1fr) var(--rail-right);
+  min-height: 0;
+}
+
+.recon-surface {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  background: var(--surface-0);
+}
+
+.recon-controls {
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--line);
+}
+
+.recon-current {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+.recon-controls .actions {
+  margin-top: var(--space-3);
+}
+
+.recon-frame {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+}
+
+.recon-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: var(--surface-2);
+}
+
+/* Verdict colours reuse the evidence vocabulary: an unknown must not read as
+   a finding, and a refusal must be unmistakable. */
+.verdict-available,
+.verdict-ready,
+.verdict-true {
+  color: var(--evidence-known);
+}
+
+.verdict-unknown,
+.verdict-not-tried,
+.verdict-idle,
+.verdict-loading,
+.verdict-handshaking {
+  color: var(--text-faint);
+}
+
+.verdict-not-available,
+.verdict-false,
+.verdict-failed,
+.verdict-unresponsive {
+  color: var(--evidence-unknown);
+}
+
+.log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.6;
+}
+
+.log li {
+  display: grid;
+  grid-template-columns: 9rem minmax(0, 1fr);
+  gap: var(--space-2);
+  padding: var(--space-1) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.log-kind {
+  color: var(--accent-strong);
+}
+
+.log-detail {
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* ---- Three.js spike ---------------------------------------------------- */
+
+.spike {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--rail-right);
+  min-height: 0;
+}
+
+.spike-canvas {
+  position: relative;
+  min-width: 0;
+  background: var(--surface-0);
+}
+
+.spike-canvas canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.assertion-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: var(--text-sm);
+}
+
+.assertion-list li {
+  display: grid;
+  grid-template-columns: 3.5rem minmax(0, 1fr);
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.assertion-pass {
+  color: var(--evidence-known);
+  font-weight: 600;
+}
+
+.assertion-fail {
+  color: var(--evidence-unknown);
+  font-weight: 600;
+}
+
+.assertion-list .detail {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 64rem) {
+  .recon,
+  .spike {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .recon-frame,
+  .spike-canvas {
+    min-height: 60vh;
+  }
+}

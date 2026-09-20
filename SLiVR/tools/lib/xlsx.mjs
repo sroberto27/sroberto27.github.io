@@ -1,5 +1,5 @@
 /**
- * Minimal read-only XLSX reader.
+ * Minimal XLSX reader, with just enough writing to edit text in place.
  *
  * The catalog is generated from a reviewed workbook, but the application ships
  * no build step and installs no packages, so this reads only the parts of the
@@ -12,8 +12,8 @@
  * name that starts with the same letters.
  */
 
-import { readFileSync } from "node:fs";
-import { inflateRawSync } from "node:zlib";
+import { readFileSync, writeFileSync } from "node:fs";
+import { inflateRawSync, deflateRawSync, crc32 } from "node:zlib";
 
 const LOCAL_HEADER = 0x04034b50;
 const CENTRAL_HEADER = 0x02014b50;
@@ -64,6 +64,68 @@ function readZip(filePath) {
     offset += 46 + nameLength + extraLength + commentLength;
   }
   return entries;
+}
+
+/** The container's parts, name to inflated bytes, in the order stored. */
+export function readParts(filePath) {
+  return readZip(filePath);
+}
+
+/**
+ * Writes parts back as a ZIP container.
+ *
+ * Everything is deflated and no data descriptors, ZIP64 records or extra
+ * fields are produced, which keeps the writer small and is within what the
+ * format allows for a workbook of this size. Entry order is preserved,
+ * because some consumers read the parts in the order the directory lists them.
+ */
+export function writeParts(filePath, parts) {
+  const locals = [];
+  const central = [];
+  let offset = 0;
+
+  for (const [name, content] of parts) {
+    const nameBytes = Buffer.from(name, "utf8");
+    const body = Buffer.from(content);
+    const deflated = deflateRawSync(body, { level: 9 });
+    const checksum = crc32(body);
+
+    const local = Buffer.alloc(30);
+    local.writeUInt32LE(LOCAL_HEADER, 0);
+    local.writeUInt16LE(20, 4); // version needed
+    local.writeUInt16LE(1 << 11, 6); // UTF-8 names
+    local.writeUInt16LE(8, 8); // deflate
+    local.writeUInt32LE(checksum, 14);
+    local.writeUInt32LE(deflated.length, 18);
+    local.writeUInt32LE(body.length, 22);
+    local.writeUInt16LE(nameBytes.length, 26);
+    locals.push(local, nameBytes, deflated);
+
+    const entry = Buffer.alloc(46);
+    entry.writeUInt32LE(CENTRAL_HEADER, 0);
+    entry.writeUInt16LE(20, 4); // version made by
+    entry.writeUInt16LE(20, 6); // version needed
+    entry.writeUInt16LE(1 << 11, 8);
+    entry.writeUInt16LE(8, 10);
+    entry.writeUInt32LE(checksum, 16);
+    entry.writeUInt32LE(deflated.length, 20);
+    entry.writeUInt32LE(body.length, 24);
+    entry.writeUInt16LE(nameBytes.length, 28);
+    entry.writeUInt32LE(offset, 42);
+    central.push(entry, nameBytes);
+
+    offset += 30 + nameBytes.length + deflated.length;
+  }
+
+  const directory = Buffer.concat(central);
+  const end = Buffer.alloc(22);
+  end.writeUInt32LE(END_OF_CENTRAL, 0);
+  end.writeUInt16LE(parts.size, 8);
+  end.writeUInt16LE(parts.size, 10);
+  end.writeUInt32LE(directory.length, 12);
+  end.writeUInt32LE(offset, 16);
+
+  writeFileSync(filePath, Buffer.concat([...locals, directory, end]));
 }
 
 /**

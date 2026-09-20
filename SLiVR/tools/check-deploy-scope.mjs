@@ -36,6 +36,16 @@ export const PUBLISHED_EXCEPTIONS = ["docs/FULL-SYSTEM-TESTING.md"];
 /** Paths the application ships, where no LSU identity is acceptable. */
 const APP_PATHS = ["src/", "data/", "styles/", "config/", "index.html", "sw.js", "manifest.webmanifest"];
 
+/**
+ * Third-party code vendored verbatim.
+ *
+ * It is still checked for credentials, because a committed key would be just
+ * as public here. It is not checked for this project's identity rules: the
+ * wording checks are about what SLiVR says, and matching them against minified
+ * library source only produces false positives.
+ */
+const VENDOR_PATHS = ["vendor/"];
+
 const CREDENTIAL_PATTERNS = [
   { name: "Google API key", pattern: /AIza[0-9A-Za-z_-]{35}/ },
   { name: "private key block", pattern: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
@@ -80,6 +90,7 @@ function isTextFile(path) {
 }
 
 function isAppFile(path) {
+  if (VENDOR_PATHS.some((prefix) => path.startsWith(prefix))) return false;
   return APP_PATHS.some((prefix) => (prefix.endsWith("/") ? path.startsWith(prefix) : path === prefix));
 }
 

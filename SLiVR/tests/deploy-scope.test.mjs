@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 
 import {
   checkDeployScope,
@@ -38,11 +39,36 @@ test("a committed private path is reported", () => {
 });
 
 test("the workbook and a runtime credential file are reported", () => {
-  const result = checkDeployScope(
-    ["outputs/location_database/SLiVR_Location_Scouting_Database.xlsx", "config/runtime.js"],
-    { verifyExceptions: false },
-  );
-  assert.equal(result.errors.length, 2);
+  const paths = [
+    "outputs/location_database/SLiVR_Location_Scouting_Database.xlsx",
+    "config/runtime.js",
+  ];
+  const result = checkDeployScope(paths, { verifyExceptions: false });
+
+  // Both are private material, whatever else is also wrong with them.
+  for (const path of paths) {
+    assert.ok(
+      result.errors.some((e) => e.path === path && /private reference material/.test(e.reason)),
+      `${path} must be reported as private`,
+    );
+  }
+});
+
+test("a credential inside a would-be-published file is caught as well", () => {
+  // The runtime configuration is gitignored, so this only fires when a real
+  // one exists locally. When it does, the check has to see the key: the
+  // gitignore is the first defence, not the only one.
+  const existing = existsSync(new URL("../config/runtime.js", import.meta.url));
+  const result = checkDeployScope(["config/runtime.js"], { verifyExceptions: false });
+
+  if (existing) {
+    assert.ok(
+      result.errors.some((e) => /looks like a/.test(e.reason)),
+      "a credential in the file must be reported, not only its path",
+    );
+  } else {
+    assert.equal(result.errors.length, 1, "with no such file, only the path rule applies");
+  }
 });
 
 test("provenance documents may name the reference project", () => {

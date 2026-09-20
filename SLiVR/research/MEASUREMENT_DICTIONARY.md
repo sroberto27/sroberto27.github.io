@@ -89,3 +89,13 @@ Qualitative sources may include think-aloud observations, post-task interviews, 
 | `save_result` / `export_result` | operation type, result/failure class, schema version | Reliability and recovery |
 
 Free-text content, screenshots and precise view poses require separate protocol justification. Event logging must be visible, opt-in and disabled outside an approved study session.
+
+## How an implemented measure is computed
+
+No measure definition changed in Phase 0.2. This records how the ones with an implementation are now calculated, so a result can be reproduced from the artifact.
+
+| Measure | Implementation, as of tree `a8f4b4e4bd59` | What the number does not cover |
+|---|---|---|
+| `json_roundtrip_loss` | `normalizeBundle` in `src/data/transfer.js` sorts every record by identifier and every object key, giving a deep comparison across all ten transferred stores. A round trip is counted as lossless only when the normalised bundle after export and re-import is deeply equal to the one before. An unsupported schema version returns a classified rejection with the version named, which is counted as a refusal, never as a loss of zero | The export and import were driven in code against an in-memory database. A browser download, a file picker and real storage are not covered |
+| `fov_error_deg` | `fieldOfView` in `src/spatial/optics.js`, compared against published gate and focal-length fixtures and against an independent geometric derivation | Lens distortion, focus breathing and real depth of field are outside the model |
+| `plan_scale_error_pct` | Defined only. Floor-plan calibration does not exist yet | Everything |

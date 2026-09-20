@@ -292,7 +292,7 @@ test("a fabricated tour for a future candidate is reported", () => {
     const future = c.captures.find((cap) => cap.state === "future");
     future.experienceId = SHARED_DOWNTOWN_EXPERIENCE;
     future.sweepId = "sebf1e31m9u7dk7twchgfz1mc";
-    future.url = `https://my.treedis.com/tour/${SHARED_DOWNTOWN_EXPERIENCE}?s=sebf1e31m9u7dk7twchgfz1mc`;
+    future.url = `https://spaces.dtsxr.com/tour/${SHARED_DOWNTOWN_EXPERIENCE}?s=sebf1e31m9u7dk7twchgfz1mc`;
   });
   assert.equal(result.ok, false);
   assert.ok(result.errors.some((e) => e.reason.includes("must be null for a future candidate")));

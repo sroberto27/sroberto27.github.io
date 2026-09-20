@@ -18,7 +18,10 @@
   },
   "inventoryBoundsNote": "Derived from the 17 catalog coordinates in catalog version 1.0.0. Most coordinates are geocoded approximations that still need checking at the intended entrance.",
   "defaultView": {
-    "center": [-92.026674, 30.227104],
+    "center": [
+      -92.026674,
+      30.227104
+    ],
     "zoom": 13.5,
     "bearing": 0,
     "pitch": 0
@@ -34,7 +37,9 @@
       "maxZoom": 20,
       "attribution": "Imagery: Louisiana DOTD, 2025 6-inch aerial",
       "formatNote": "JPEG is requested because the equivalent PNG32 response is roughly nine times larger for the same tile. JPEG is opaque at coverage edges; jpgpng is the escape hatch if edge transparency becomes necessary.",
-      "resolutionNote": "One 512-pixel request replaces four 256-pixel requests, so maxZoom is 20 rather than 21 for the same ground resolution."
+      "resolutionNote": "One 512-pixel request replaces four 256-pixel requests, so maxZoom 20 at 512 pixels is the same ground resolution as maxZoom 21 at 256. Measured on 2026-09-20 that is about 0.064 m per pixel at this latitude, finer than the 0.150 m the source holds, so the top zoom level upsamples. The value is kept because it is the shape proven to render; whether to lower it is a visual judgement that needs a browser.",
+      "sourcePixelSizeM": 0.1499900139804275,
+      "sourcePixelSizeNote": "Ground sample distance reported by the service metadata, about six inches. It sets the finest detail any request can actually return."
     },
     "fallback": {
       "id": "dotd-2024-lafayette-6in-rgbi",
@@ -44,7 +49,8 @@
       "tileTemplate": "https://maps.dotd.la.gov/imagery/rest/services/Imagery/2024_Lafayette_6IN_RGBI/ImageServer/exportImage?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=512,512&format=jpg&f=image&bandIds=0,1,2",
       "tileSize": 512,
       "maxZoom": 20,
-      "attribution": "Imagery: Louisiana DOTD, 2024 Lafayette 6-inch aerial"
+      "attribution": "Imagery: Louisiana DOTD, 2024 Lafayette 6-inch aerial",
+      "sourcePixelSizeM": 0.14998546091759923
     },
     "neutralBackgroundColor": "#2b2f33",
     "accuracyNote": "Aerial imagery is scouting context. It is supplied as-is and is not authoritative for navigation, engineering, legal, property-transfer or other high-precision site-specific work, and it is not evidence of present physical condition.",
@@ -58,7 +64,11 @@
   },
   "immersive": {
     "provider": "treedis",
-    "origin": "https://my.treedis.com",
+    "origin": "https://spaces.dtsxr.com",
+    "originAliases": [
+      "https://my.treedis.com"
+    ],
+    "originNote": "The catalog records this host because the working reference project embeds it and the primary provider host failed to load its own tour data inside a frame on 2026-09-20 (L033). Both hosts serve byte-identical tour documents. Whether the change resolves that failure is Need validation. Only these origins may be loaded, posted to, or accepted from.",
     "tourPathPrefix": "/tour/",
     "experienceAllowlist": [
       "5eb11a1b",

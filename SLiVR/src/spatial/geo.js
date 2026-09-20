@@ -88,3 +88,47 @@ export function withinBounds(position, bounds) {
     lon >= bounds.west && lon <= bounds.east && lat >= bounds.south && lat <= bounds.north
   );
 }
+
+/**
+ * Web Mercator (EPSG:3857) limits.
+ *
+ * The projection is defined on a sphere of this radius, not on the WGS84
+ * ellipsoid, and it cannot represent the poles at all. Imagery services speak
+ * this projection, so the conversion lives here rather than in the map layer.
+ */
+export const WEB_MERCATOR = Object.freeze({
+  radiusM: 6378137.0,
+  maxLatitudeDeg: 85.05112878,
+});
+
+/** Projects [longitude, latitude] to EPSG:3857 metres. */
+export function toWebMercator(position) {
+  if (!isLonLat(position)) throw new RangeError("position must be [longitude, latitude]");
+  const [lon, lat] = position;
+  const clampedLat = Math.min(
+    WEB_MERCATOR.maxLatitudeDeg,
+    Math.max(-WEB_MERCATOR.maxLatitudeDeg, lat),
+  );
+  return [
+    degToRad(lon) * WEB_MERCATOR.radiusM,
+    Math.log(Math.tan(Math.PI / 4 + degToRad(clampedLat) / 2)) * WEB_MERCATOR.radiusM,
+  ];
+}
+
+/** Inverse of `toWebMercator`. */
+export function fromWebMercator([x, y]) {
+  return [
+    radToDeg(x / WEB_MERCATOR.radiusM),
+    radToDeg(2 * Math.atan(Math.exp(y / WEB_MERCATOR.radiusM)) - Math.PI / 2),
+  ];
+}
+
+/**
+ * Ground metres per pixel at a latitude, for a Web Mercator tile pyramid.
+ * Used to request a probe image at the source resolution rather than at an
+ * arbitrary scale that would hide or invent detail.
+ */
+export function metresPerPixel(latDeg, zoom, tileSize = 256) {
+  const circumference = 2 * Math.PI * WEB_MERCATOR.radiusM;
+  return (circumference * Math.cos(degToRad(latDeg))) / (tileSize * 2 ** zoom);
+}
