@@ -26,8 +26,10 @@ import {
 } from "./imagery.js";
 import { boundsArray } from "./region-config.js";
 import { createMarkers } from "./markers.js";
-import { createDimensionControl, TILTED_PITCH_DEG } from "./controls.js";
+import { TILTED_PITCH_DEG } from "./controls.js";
+import { createExploreControls } from "./explore-controls.js";
 import { createGoogleTiles } from "./google-tiles.js";
+import { locationBounds, inventoryFitOptions } from "./viewport.js";
 
 export const MAP_ERROR_CODES = Object.freeze({
   libraryUnavailable: "map-library-unavailable",
@@ -60,6 +62,92 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
   let tilted = false;
   let dimensionControl = null;
   let googleTiles = null;
+  let inventoryBounds = null;
+  let inventoryKey = null;
+  let lastSize = "";
+  let imageryVisible = true;
+  let referenceVisible = false;
+  let locations = [];
+  let selectLocation = null;
+  let selectedLocationId = null;
+  let focusedLocationId = null;
+  let focusGeneration = 0;
+  const referenceSource = "slivr-reference-source";
+  const referenceLayer = "slivr-reference-layer";
+
+  function syncVisibility() {
+    if (!map || disposed || !styleReady) return;
+    const active = googleTiles?.status.state === "active";
+    if (map.getLayer(IMAGERY_LAYER_ID)) map.setLayoutProperty(IMAGERY_LAYER_ID, "visibility", imageryVisible && !active ? "visible" : "none");
+    if (map.getLayer(referenceLayer)) map.setLayoutProperty(referenceLayer, "visibility", referenceVisible ? "visible" : "none");
+    if (map.getLayer(referenceLayer) && map.getStyle().layers.at(-1)?.id !== referenceLayer) {
+      map.moveLayer(referenceLayer);
+    }
+    dimensionControl?.refresh();
+  }
+
+  function toggleReference() {
+    if (!styleReady) return;
+    referenceVisible = !referenceVisible;
+    // The reference overlay is a translucent street map, not a label-only layer.
+    if (referenceVisible && !map.getSource(referenceSource)) {
+      map.addSource(referenceSource, {
+        type: "raster", tiles: ["https://tile.openstreetmap.org/{z}/{x}/{y}.png"],
+        tileSize: 256, maxzoom: 19,
+        attribution: '<a href="https://www.openstreetmap.org/copyright">© OpenStreetMap contributors</a>',
+      });
+      map.addLayer({ id: referenceLayer, type: "raster", source: referenceSource,
+        paint: { "raster-opacity": 0.35 } });
+    }
+    syncVisibility();
+  }
+
+  function visit(locationId) {
+    const location = locations.find(item => item.id === locationId);
+    if (!location || disposed) return;
+    selectLocation?.(locationId);
+    focusLocation(locationId);
+  }
+
+  function focusLocation(locationId) {
+    const location = locations.find(item => item.id === locationId);
+    if (!map || disposed || !location) return;
+    focusedLocationId = locationId;
+    const generation = ++focusGeneration;
+    const settle = globalThis.requestAnimationFrame ?? (callback => callback());
+    // Wait for the selected record's panels to settle before measuring the map.
+    settle(() => settle(() => {
+      if (disposed || generation !== focusGeneration) return;
+      const plateHeight = container.parentElement?.querySelector(".imagery-plate")?.getBoundingClientRect().height ?? 0;
+      map.resize?.();
+      map.flyTo?.({
+        center: location.position,
+        zoom: Math.min(map.getMaxZoom?.() ?? 20, 19),
+        duration: 550,
+        padding: inventoryFitOptions(container.clientWidth, container.clientHeight, plateHeight).padding,
+        retainPadding: false,
+      });
+    }));
+  }
+
+  function recenter() {
+    focusedLocationId = null;
+    focusGeneration++;
+    fitInventory();
+  }
+
+  function fitInventory() {
+    if (!map || disposed || !inventoryBounds) return;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    if (!(width > 0 && height > 0)) return;
+    const plateHeight = container.parentElement?.querySelector(".imagery-plate")?.getBoundingClientRect().height ?? 0;
+    map.fitBounds(inventoryBounds, {
+      ...inventoryFitOptions(width, height, plateHeight),
+      bearing: map.getBearing(),
+      pitch: map.getPitch(),
+    });
+  }
 
   /** Whether the style is already loaded, tolerating a library that cannot say. */
   function isLoaded() {
@@ -100,10 +188,8 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
       map = new maplibre.Map({
         container,
         style: baseStyle(region),
-        // `bounds` overrides centre and zoom, so passing all three would leave
-        // the configured default view silently doing nothing. The envelope is
-        // what Explore is meant to open on; `defaultView` stays the reference
-        // view other callers measure against.
+        // The planning envelope is a temporary view until the catalog supplies
+        // actual pin bounds. It is not used to constrain user navigation.
         bounds: boundsArray(region),
         fitBoundsOptions: { padding: 24 },
         bearing: region.defaultView.bearing ?? 0,
@@ -127,9 +213,28 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
       if (typeof maplibre.ScaleControl === "function") {
         map.addControl(new maplibre.ScaleControl({ maxWidth: 140, unit: "metric" }), "bottom-right");
       }
-      dimensionControl = createDimensionControl({
-        isTilted: () => tilted,
-        onToggle: () => setTilted(!tilted),
+      if (typeof maplibre.GeolocateControl === "function") {
+        const geolocate = new maplibre.GeolocateControl({
+          positionOptions: { enableHighAccuracy: false, maximumAge: 60000, timeout: 10000 },
+          trackUserLocation: false, showAccuracyCircle: true, showUserLocation: true,
+        });
+        geolocate.on("error", () => emit({ type: "error", message: "Your location could not be retrieved. Check browser location permissions or use Recenter." }));
+        map.addControl(geolocate, "top-right");
+      }
+      if (typeof maplibre.FullscreenControl === "function") {
+        map.addControl(new maplibre.FullscreenControl({ container: container.parentElement ?? container }), "top-right");
+      }
+      dimensionControl = createExploreControls({
+        getState: () => ({ tilted, imagery: imageryVisible, layers: referenceVisible, tiles: googleTiles?.status.state ?? "off" }),
+        recenter,
+        toggleLayers: toggleReference,
+        toggleImagery: () => {
+          imageryVisible = !imageryVisible;
+          syncVisibility();
+          emit({ type: "imagery-changed", status: failover.status });
+        },
+        toggleDimension: () => setTilted(!tilted),
+        visit,
       });
       map.addControl(dimensionControl, "top-right");
     } catch (cause) {
@@ -146,6 +251,8 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
       if (styleReady || disposed) return;
       styleReady = true;
       applyImagerySource();
+      if (focusedLocationId) focusLocation(focusedLocationId);
+      else fitInventory();
       if (tilted) activateTiles();
       emit({ type: "ready" });
     };
@@ -161,6 +268,12 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
       resizeObserver = new ResizeObserver(() => {
         try {
           map?.resize();
+          const size = `${container.clientWidth}x${container.clientHeight}`;
+          if (size !== lastSize) {
+            lastSize = size;
+            if (focusedLocationId) focusLocation(focusedLocationId);
+            else fitInventory();
+          }
         } catch {
           // The map is being torn down; nothing to resize.
         }
@@ -232,6 +345,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
       }
       styledSourceId = source.id;
       googleTiles?.refreshVisibility();
+      syncVisibility();
     } catch (cause) {
       emit({ type: "error", message: `The imagery source could not be swapped: ${cause.message}` });
     }
@@ -241,7 +355,10 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
     if (!map || disposed || !styleReady) return;
     googleTiles ??= createGoogleTiles({
       map, maplibre, region, runtimeConfig,
-      onStatus: (status) => emit({ type: "tiles-changed", status }),
+      onStatus: (status) => {
+        syncVisibility();
+        emit({ type: "tiles-changed", status });
+      },
     });
     void googleTiles.activate();
   }
@@ -261,6 +378,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
     }
     if (tilted) activateTiles();
     else googleTiles?.deactivate();
+    syncVisibility();
     emit({ type: "dimension", tilted });
     return tilted;
   }
@@ -273,6 +391,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
   /** Releases the WebGL context and every listener. */
   function dispose() {
     disposed = true;
+    focusGeneration++;
     styleReady = false;
     styledSourceId = null;
     resizeObserver?.disconnect();
@@ -297,6 +416,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
     get imagery() {
       return failover.status;
     },
+    get imageryVisible() { return imageryVisible; },
     /** Abandons the current source now, used by the fallback check. */
     forceImageryFailure(reason) {
       const status = failover.reportSourceUnusable(reason);
@@ -304,15 +424,32 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
       return status;
     },
     /** Draws a marker per location. Selection is reported, never written. */
-    setLocations(locations, onSelect) {
+    setLocations(nextLocations, onSelect) {
       if (!map || disposed) return 0;
-      markers ??= createMarkers({ map, maplibre, onSelect });
+      locations = nextLocations;
+      selectLocation = onSelect;
+      dimensionControl?.setLocations(locations);
+      markers ??= createMarkers({ map, maplibre, onSelect: visit });
       markers.setLocations(locations);
+      const nextKey = JSON.stringify(locations.map(location => [location.id, location.position]));
+      if (nextKey !== inventoryKey) {
+        inventoryKey = nextKey;
+        inventoryBounds = locationBounds(locations);
+        fitInventory();
+      }
       return markers.count;
     },
     setSelectedLocation(locationId) {
       markers?.setSelected(locationId ?? null);
+      dimensionControl?.setSelected(locationId ?? null);
+      if (selectedLocationId !== locationId) {
+        selectedLocationId = locationId;
+        if (locationId) focusLocation(locationId);
+        else { focusedLocationId = null; focusGeneration++; }
+      }
     },
+    recenter,
+    focusLocation,
     setTilted,
     get tilted() {
       return tilted;

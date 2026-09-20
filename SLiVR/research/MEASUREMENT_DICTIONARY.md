@@ -109,3 +109,57 @@ provider/library failure, no geometry by deadline, or graphics context loss).
 Active is an implementation status, not independent proof of correct geometry,
 coverage, calibration or visual quality. These states are UI state only; no
 background participant logging was added.
+
+
+### Phase 0 closeout evidence classification, 2026-09-20
+
+Record three separate categories: automated PASS (named suite/build/runtime),
+owner-reported manual PASS (described task/build, absent device details explicit),
+and screenshot-supported manual PASS (only visible readings/assertions).
+A phase acceptance exception changes the release decision, not the underlying
+NOT TESTED result. No background telemetry or participant measures were enabled.
+
+
+### Phase acceptance decision - 2026-09-20 (D061)
+
+Phase 0 status is complete with explicit owner-approved exceptions. Do not count
+an accepted exception as an executed test or a PASS observation. Retain separate
+counts for automated results (326 PASS), owner-reported manual items (eight PASS),
+and deferred live checks. The screenshot corroborates manual item 8/test 27;
+it is not an additional independent participant trial.
+
+
+### D062 framing and co-location semantics
+
+Viewport bounds are the min/max longitude/latitude of the loaded pin inventory,
+with screen-space padding and maximum fit zoom 18. Co-location key is longitude
+and latitude rounded to six decimals, following the reference. Record count remains
+the number of locations, not the number of rendered group markers. Grouping never
+changes stored coordinates or merges catalog identity. No telemetry added.
+
+### D063 control verification definitions
+
+Recenter restores viewport-derived bounds containing all catalog positions;
+selection-only redraw does not refit. Aerial visibility is a user preference
+independent of source availability and reference-overlay visibility. The aerial
+toggle is disabled while rendered Google geometry covers it. Catalog navigation
+means previous/next in existing catalog order, not a planned production itinerary.
+Search matches case-insensitive location name or ID. Geolocation is ephemeral
+browser state following explicit button activation; no participant measure or
+background telemetry is added. Live UI/provider checks are separately pending.
+
+### Catalog 1.1.0 provenance and selection focus
+
+Coordinate source classes distinguish owner-supplied map-pin corrections from the
+four retained prior positions. Decimal precision describes the supplied values,
+not survey accuracy. JSON uses [longitude, latitude], while workbook columns name
+each axis. The snapshot has 18 records, 11 current/7 future, across seven areas.
+Selection focus means moving the view to the stable record's stored coordinate,
+with reference zoom cap 19 and 550 ms animation after layout settles. Recenter
+means all-location fit. These are technical behavior definitions, not task-time or
+usability findings; no participant or location telemetry is collected.
+
+D064 coordinate-source update: after the additional Play N Trade, Givens House and
+Former Truman corrections, 17 of 18 positions are owner-supplied (16 existing
+corrections plus LaSEL). Only Carpe Diem retains its prior coordinate provenance.
+Precision remains distinct from positional accuracy; no new measurement claim.

@@ -1,15 +1,15 @@
 {
   "schemaVersion": "1.0.0",
-  "catalogVersion": "1.0.0",
+  "catalogVersion": "1.1.0",
   "generatedAt": "2026-09-20",
   "sourceWorkbook": "SLiVR_Location_Scouting_Database.xlsx",
-  "researchSnapshot": "2026-09-19",
+  "researchSnapshot": "2026-09-20",
   "counts": {
-    "locations": 17,
+    "locations": 18,
     "current": 11,
-    "future": 6,
-    "areas": 6,
-    "captures": 17,
-    "sources": 42
+    "future": 7,
+    "areas": 7,
+    "captures": 18,
+    "sources": 46
   }
 }

@@ -1,5 +1,20 @@
 # SLiVR — implementation plan (Phases 0–5 prototype, Phase 6 post-prototype)
 
+## Current execution status - 2026-09-20
+
+**Phase 0 COMPLETE with owner-approved bounded acceptance exceptions.**
+326 automated tests pass; all eight manual checklist items passed, including
+the screenshot-supported Three.js demonstration. Catalog/deployment checks pass.
+See [Phase 0 closeout](research/PHASE_0_CLOSEOUT.md) for build identity, evidence,
+provider matrix and approved retest conditions. The live storage/schema checks
+are assigned to Phase 1; remaining device/provider variants to the next deployment;
+Treedis administrative metadata and raw capability reports to Phase 2 before
+provider-dependent claims/features. Unknown results remain unknown.
+
+**Phase 1 started: owner-requested map framing, numbered markers and co-located pin groups (D062), plus reference-style map controls, Recenter and catalog navigation (D063).** Other Phase 1 work remains pending. The context and
+planning decisions below are historical; D057 supersedes the original dedicated,
+uncommitted Google-key requirement, and D058 approves both read-only code sources.
+
 ## Context
 
 `E:\sroberto27.github.io\SLiVR` currently holds only specifications and research records — no application code (`git ls-files SLiVR` returns 0 tracked files). The approved guide `SLIVR_ARCHITECTURE_AND_FEATURES.md` v0.19 calls for a static, no-build, map-centred film **location scouting and shot planning** web application for Lafayette, Louisiana, adapting proven behaviour from the read-only LSU3D campus map at `E:\sroberto27.github.io\Wrapper\map\LSU3D` while discarding its recruitment purpose, Baton Rouge content and LSU assumptions.
@@ -21,7 +36,7 @@ This plan covers essential **Phases 0–5** in dependency order, then **Phase 6 
 
 **Users.** Location scouts, directors/DPs and producers doing remote screening and early shot planning; a reviewer reading an exported packet.
 
-**Geography.** 17 catalog records across six operational areas, envelope ≈ lat 30.200–30.255, lon −92.050 to −92.005 (a padded planning region, not a legal, property or capture boundary).
+**Geography.** Catalog 1.1.0 has 18 records across seven operational areas (D064, including future LaSEL / Antoun Hall), envelope ≈ lat 30.200–30.255, lon −92.050 to −92.005 (a padded planning region, not a legal, property or capture boundary).
 
 | Area | Current | Future | Experiences |
 |---|---:|---:|---|
@@ -606,3 +621,13 @@ Files created (all under `SLiVR/`):
 - [ ] `research/RESEARCH_CHANGELOG.md` and `DECISION_RECORD.md` updated with the build identifier and decisions D016–D018.
 
 No commit is made unless explicitly requested; if requested, the staged path list is inspected and every path must begin with `SLiVR/`, the commit subject is short and professional, and no AI attribution or `Co-authored-by` trailer is added.
+
+### Current catalog and map increment - 2026-09-20 (D064-D065)
+
+Catalog 1.1.0 supersedes the initial 17-record inventory: 18 locations, 11 current
+and 7 future, across 7 operational areas. The owner supplied 13 coordinate
+corrections (including Moncus Park) and approved LaSEL / Antoun Hall as LOC-018.
+The reviewed workbook and all generated JSON agree. Selection from list, pin,
+search or catalog navigation now centers the map; Recenter fits the inventory.
+Tests 201-203 and the 338-test automated run cover this increment; live checks
+remain pending. The original Phase 0 scope/checklists above are historical.

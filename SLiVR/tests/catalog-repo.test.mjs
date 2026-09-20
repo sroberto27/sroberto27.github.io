@@ -33,13 +33,13 @@ test("the published catalog loads as a whole with its indexes", async () => {
   assert.equal(result.ok, true, JSON.stringify(result.error ?? {}, null, 2));
 
   const { catalog } = result;
-  assert.equal(catalog.version, "1.0.0");
-  assert.equal(catalog.locations.length, 17);
-  assert.equal(catalog.captures.length, 17);
-  assert.equal(catalog.areas.length, 6);
-  assert.equal(catalog.locationsById.size, 17);
-  assert.equal(catalog.capturesByLocationId.size, 17);
-  assert.equal(catalog.scoutDetailsByLocationId.size, 17);
+  assert.equal(catalog.version, "1.1.0");
+  assert.equal(catalog.locations.length, 18);
+  assert.equal(catalog.captures.length, 18);
+  assert.equal(catalog.areas.length, 7);
+  assert.equal(catalog.locationsById.size, 18);
+  assert.equal(catalog.capturesByLocationId.size, 18);
+  assert.equal(catalog.scoutDetailsByLocationId.size, 18);
   assert.equal(catalog.region.regionId, "lafayette-la");
 });
 
@@ -90,7 +90,7 @@ test("the research vocabulary survives loading verbatim", async () => {
 test("future candidates carry no provider identity at all", async () => {
   const { catalog } = await loadCatalog({ fetchJson: diskFetch() });
   const future = catalog.captures.filter((capture) => capture.state === "future");
-  assert.equal(future.length, 6);
+  assert.equal(future.length, 7);
   for (const capture of future) {
     assert.equal(capture.experienceId ?? null, null, capture.id);
     assert.equal(capture.sweepId ?? null, null, capture.id);

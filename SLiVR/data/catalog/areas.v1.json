@@ -1,6 +1,6 @@
 {
   "schemaVersion": "1.0.0",
-  "catalogVersion": "1.0.0",
+  "catalogVersion": "1.1.0",
   "areas": [
     {
       "id": "AREA-01",
@@ -124,6 +124,25 @@
         "SRC-030",
         "SRC-031",
         "SRC-032"
+      ]
+    },
+    {
+      "id": "AREA-07",
+      "name": "UL Research Park",
+      "description": "University research facilities along Eraste Landry Road north of the Cajundome complex",
+      "productImplication": "Keep laboratory, solar-field and building access zones distinct from nearby sports facilities.",
+      "priority": "Future capture discovery",
+      "validationBeforeCommitment": "Confirm research schedules, authorized zones, facility access and equipment safety",
+      "workbookCurrentCount": 0,
+      "workbookFutureCount": 1,
+      "locationIds": [
+        "LOC-018"
+      ],
+      "sourceIds": [
+        "SRC-043",
+        "SRC-044",
+        "SRC-045",
+        "SRC-046"
       ]
     }
   ]

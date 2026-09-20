@@ -97,9 +97,9 @@ test("the catalog loads and the shell reports what it holds", async () => {
   const { store, dom } = await bootShell();
   const state = store.getState();
   assert.equal(state.catalogError, null);
-  assert.equal(state.catalog.locations.length, 17);
+  assert.equal(state.catalog.locations.length, 18);
   assert.match(dom.app.textContent, /Catalog version/);
-  assert.match(dom.app.textContent, /17 \(11 current, 6 future\)/);
+  assert.match(dom.app.textContent, /18 \(11 current, 7 future\)/);
 });
 
 test("a deep route opens directly and names the record", async () => {
@@ -176,21 +176,20 @@ function viewerFrame(dom) {
 }
 
 test("opening a captured location loads its supplied entry into the viewer frame", async () => {
-  // Partial automated evidence for tests 28 and 29: the route reaches the
-  // provider URL recorded for that record, not a generic experience URL.
+  // Startup uses the base experience; queued navigation preserves the exact entry.
   const { store, dom } = await bootShell({ hash: "#/immersive/LOC-001" });
   const state = store.getState();
 
   assert.equal(state.mode, "immersive");
   assert.equal(state.viewer.captureId, "CAP-001");
-  assert.equal(state.viewer.status, "loading");
+  assert.equal(state.viewer.status, "handshaking");
 
   const frame = viewerFrame(dom);
   assert.ok(frame, "the immersive surface renders a frame");
   assert.equal(frame.hidden, undefined, "the frame is not hidden in the mode that uses it");
 
   const capture = state.catalog.capturesByLocationId.get("LOC-001");
-  assert.equal(frame.getAttribute("src"), capture.url);
+  assert.equal(frame.getAttribute("src"), new URL(capture.url).origin + new URL(capture.url).pathname);
   assert.match(capture.url, /5eb11a1b/, "the shared downtown experience");
   assert.match(capture.url, new RegExp(capture.sweepId), "carrying this record's own sweep");
 });
@@ -198,21 +197,41 @@ test("opening a captured location loads its supplied entry into the viewer frame
 test("six downtown records share one experience and still open at six distinct sweeps", async () => {
   // The property test 29 exists for, at the routing layer: a shared experience
   // must not collapse six catalog records into one destination.
-  const opened = new Map();
+  const targets = new Set();
+  const baseUrls = new Set();
   for (const id of ["LOC-001", "LOC-002", "LOC-003", "LOC-004", "LOC-005", "LOC-006"]) {
-    const { store, dom } = await bootShell({ hash: `#/immersive/${id}` });
-    opened.set(id, viewerFrame(dom).getAttribute("src"));
+    const { store, dom, actions } = await bootShell({ hash: `#/immersive/${id}` });
+    const frame = viewerFrame(dom);
+    const commands = [];
+    frame.contentWindow = { postMessage: (message, origin) => commands.push({ message, origin }) };
+    const capture = store.getState().catalog.capturesByLocationId.get(id);
+    const origin = new URL(capture.url).origin;
+    baseUrls.add(frame.getAttribute("src"));
+    dom.window.dispatch("message", { source: frame.contentWindow, origin, data: { type: "TourReady" } });
+    dom.advance(599);
+    assert.equal(commands.filter(c => c.message.type === "Navigate").length, 0);
+    dom.advance(1);
+    const navigation = commands.find(c => c.message.type === "Navigate");
+    assert.ok(navigation, "each entry must issue its own navigation command after readiness");
+    assert.equal(navigation.origin, origin);
+    assert.equal(navigation.message.sweepId, capture.sweepId);
+    assert.deepEqual(navigation.message.rotation, { x: capture.startX, y: capture.startY });
+    assert.equal(navigation.message.transitionTime, 0);
+    targets.add(navigation.message.sweepId);
+    dom.window.dispatch("message", { source: frame.contentWindow, origin,
+      data: { type: "PoseChanged", sweep: capture.sweepId } });
+    assert.equal(store.getState().viewer.status, "ready");
     assert.equal(store.getState().viewer.locationId, id);
+    actions.unmountViewer();
   }
+  assert.equal(targets.size, 6, "six distinct requested and acknowledged entry sweeps");
+  assert.equal(baseUrls.size, 1, "one shared experience launches before navigation");
 
-  const urls = [...opened.values()];
-  assert.equal(new Set(urls).size, 6, "six distinct entry URLs");
-  assert.ok(urls.every((url) => url.includes("5eb11a1b")), "one shared experience");
 });
 
 test("leaving the mode releases the provider session rather than leaving it streaming", async () => {
   const { store, dom } = await bootShell({ hash: "#/immersive/LOC-001" });
-  assert.equal(store.getState().viewer.status, "loading");
+  assert.equal(store.getState().viewer.status, "handshaking");
 
   dom.window.location.hash = "#/explore";
   dom.window.dispatch("hashchange");
@@ -237,7 +256,7 @@ test("198: switching and retrying immersive sessions through the shell is re-ent
   dom.window.location.hash = "#/immersive/LOC-009";
   dom.window.dispatch("hashchange");
   assert.equal(store.getState().viewer.captureId, "CAP-009");
-  assert.equal(store.getState().viewer.status, "loading");
+  assert.equal(store.getState().viewer.status, "handshaking");
   assert.notEqual(viewerFrame(dom), old);
   dom.advance(60001);
   assert.equal(store.getState().viewer.status, "timedOut");
@@ -245,7 +264,7 @@ test("198: switching and retrying immersive sessions through the shell is re-ent
   const retry = dom.app.descendants().find(n => n.tagName === "BUTTON" && n.textContent === "Reload supplied entry");
   assert.ok(retry, "timeout must offer retry in the product");
   retry.click();
-  assert.equal(store.getState().viewer.status, "loading");
+  assert.equal(store.getState().viewer.status, "handshaking");
   assert.notEqual(viewerFrame(dom), stalled);
   assert.equal(actions.viewerReport().captureId, "CAP-009");
   actions.unmountViewer();
@@ -253,7 +272,7 @@ test("198: switching and retrying immersive sessions through the shell is re-ent
 
 test("199: Stop waiting returns to the location without immediately remounting Treedis", async () => {
   const { store, dom } = await bootShell({ hash: "#/immersive/LOC-001" });
-  dom.advance(25001);
+  dom.advance(30001);
   const cancel = dom.app.descendants().find(n => n.tagName === "BUTTON" && n.textContent === "Stop waiting");
   assert.equal(cancel.hidden, false);
   cancel.click();

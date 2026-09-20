@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { createMarkers } from "../src/map/markers.js";
+import { createMarkers, groupLocations } from "../src/map/markers.js";
 
 const locations = JSON.parse(
   readFileSync(new URL("../data/catalog/locations.v1.json", import.meta.url), "utf8"),
@@ -20,6 +20,7 @@ function stage() {
         dataset: {},
         attributes: new Map(),
         listeners: new Map(),
+        children: [],
         classList: {
           toggle: (name, on) => (on ? classes.add(name) : classes.delete(name)),
           contains: (name) => classes.has(name),
@@ -43,7 +44,8 @@ function stage() {
         addEventListener(type, fn) {
           this.listeners.set(type, fn);
         },
-        append() {},
+        append(...nodes) { this.children.push(...nodes); },
+        contains(node) { return this === node || this.children.some(child => child.contains(node)); },
         click(event = {}) {
           this.listeners.get("click")?.({ stopPropagation() {}, ...event });
         },
@@ -81,12 +83,49 @@ test("every catalog location gets a marker at its own position", () => {
     const markers = createMarkers({ map: {}, maplibre, onSelect: () => {} });
     markers.setLocations(locations);
 
-    assert.equal(markers.count, 17);
-    assert.equal(placed.length, 17);
+    assert.equal(markers.count, 18);
+    assert.equal(placed.length, 18);
     assert.deepEqual(placed[0].position, locations[0].position);
   } finally {
     restore();
   }
+});
+
+test("co-located records expand into individually selectable pins without changing coordinates", () => {
+  const { maplibre, placed, restore } = stage();
+  try {
+    const chosen = [];
+    const records = [locations[0], { ...locations[1], position: locations[0].position }];
+    const markers = createMarkers({ map: {}, maplibre, onSelect: id => chosen.push(id) });
+    markers.setLocations(records);
+    assert.equal(markers.count, 2, "catalog count is not the number of collapsed groups");
+    assert.equal(placed.length, 1);
+    assert.deepEqual(placed[0].position, locations[0].position);
+    const [summary, members] = placed[0].element.children;
+    assert.equal(summary.getAttribute("aria-expanded"), "false");
+    assert.equal(members.hidden, true);
+    summary.click();
+    assert.equal(summary.getAttribute("aria-expanded"), "true");
+    assert.equal(members.hidden, false);
+    members.children[1].click();
+    assert.deepEqual(chosen, [records[1].id]);
+    markers.setSelected(records[1].id);
+    assert.equal(members.children[1].getAttribute("aria-current"), "true");
+    assert.equal(members.hidden, false, "list selection reveals the selected member");
+    markers.setSelected(null);
+    assert.equal(members.hidden, true);
+    markers.dispose();
+    assert.equal(placed.length, 0);
+  } finally { restore(); }
+});
+
+test("coordinate grouping follows the reference six-decimal precision, not broad proximity clustering", () => {
+  const a = { ...locations[0], position: [-92.02, 30.22] };
+  const b = { ...locations[1], position: [-92.02000001, 30.22000001] };
+  const c = { ...locations[2], position: [-92.0201, 30.22] };
+  const groups = groupLocations([b, c, a]);
+  assert.equal(groups.length, 2);
+  assert.deepEqual(groups[0].locations.map(location => location.id), [a.id, b.id]);
 });
 
 test("capture status is carried by class and by accessible name", () => {
@@ -156,7 +195,7 @@ test("redrawing replaces the previous pins rather than stacking them", () => {
     const markers = createMarkers({ map: {}, maplibre, onSelect: () => {} });
     markers.setLocations(locations);
     markers.setLocations(locations);
-    assert.equal(placed.length, 17, "the first set must be removed");
+    assert.equal(placed.length, 18, "the first set must be removed");
 
     markers.dispose();
     assert.equal(placed.length, 0);

@@ -1,40 +1,29 @@
-/**
- * Location markers.
- *
- * Adapted from the reference project's pin builder. Markers are DOM elements
- * attached to the map rather than a symbol layer, which is what lets each one
- * carry its own label, state and click target without a sprite sheet.
- *
- * Two deliberate departures from the reference:
- *
- *  - Each pin is a `button`, not a `div` with a click listener. The reference
- *    pins cannot be reached from a keyboard at all; the architecture requires
- *    keyboard access and visible focus throughout.
- *  - Capture status is carried by the same evidence colours the rest of the
- *    interface uses, so a future candidate never looks like a captured one.
- *
- * Markers report a selection and nothing more. They never write application
- * state, which is what keeps the map and the list from correcting each other.
- *
- * Overlap is not handled here. The two closest records sit about 18 m apart,
- * which is roughly three pixels at the default view, so pins collide at low
- * zoom. The reference collapses pins that share an exact position; this
- * inventory has no exact duplicates but does have near ones, and proximity
- * clustering with touch-safe expansion is Phase 1 work under tests 32 and 36.
- */
+/** Numbered location pins and co-located arrays, adapted from the reference pin builder. */
+export function groupLocations(locations) {
+  const groups = new Map();
+  for (const location of locations) {
+    const key = location.position.map(value => value.toFixed(6)).join(",");
+    if (!groups.has(key)) groups.set(key, { position: location.position, locations: [] });
+    groups.get(key).locations.push(location);
+  }
+  for (const group of groups.values()) group.locations.sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }));
+  return [...groups.values()];
+}
 
-/**
- * @param {object} options
- * @param {object} options.map A MapLibre map.
- * @param {object} options.maplibre The library, for its Marker constructor.
- * @param {(locationId: string) => void} options.onSelect
- */
+function pinNumber(location) {
+  const number = location.id.match(/(\d+)$/)?.[1];
+  return number ? String(Number(number)) : location.id;
+}
+
 export function createMarkers({ map, maplibre, onSelect }) {
   let markers = [];
+  let pins = [];
+  let groups = [];
+  let selectedId = null;
 
   function clear() {
-    for (const { marker } of markers) marker.remove();
-    markers = [];
+    for (const marker of markers) marker.remove();
+    markers = []; pins = []; groups = [];
   }
 
   function buildNode(location) {
@@ -42,58 +31,103 @@ export function createMarkers({ map, maplibre, onSelect }) {
     node.type = "button";
     node.className = `map-pin map-pin-${location.captureStatus}`;
     node.dataset.locationId = location.id;
-    // The accessible name carries the state, because the colour alone does not.
-    node.setAttribute(
-      "aria-label",
-      `${location.name}. ${location.captureStatus === "current" ? "Captured" : "Future candidate"}.`,
-    );
-    node.title = location.name;
-
-    const dot = document.createElement("span");
-    dot.className = "map-pin-dot";
-    dot.setAttribute("aria-hidden", "true");
-    node.append(dot);
-
-    node.addEventListener("click", (event) => {
-      // Without this the map treats the click as a background click and
-      // clears the very selection the pin just made.
-      event.stopPropagation();
-      onSelect(location.id);
-    });
-
+    node.setAttribute("aria-label", `${location.id}: ${location.name}. ${location.captureStatus === "current" ? "Captured" : "Future candidate"}.`);
+    node.title = `${location.id}: ${location.name}`;
+    const body = document.createElement("span");
+    body.className = "map-pin-body";
+    body.setAttribute("aria-hidden", "true");
+    const number = document.createElement("span");
+    number.className = "map-pin-number";
+    number.textContent = pinNumber(location);
+    body.append(number); node.append(body);
+    node.addEventListener("click", event => { event.stopPropagation(); onSelect(location.id); });
+    pins.push({ id: location.id, node });
     return node;
   }
 
-  /** Draws a marker for every location, replacing whatever was there. */
   function setLocations(locations) {
     clear();
     if (!map || !maplibre?.Marker) return;
-
-    for (const location of locations) {
-      const node = buildNode(location);
-      const marker = new maplibre.Marker({ element: node, anchor: "center" })
-        .setLngLat(location.position)
-        .addTo(map);
-      markers.push({ id: location.id, marker, node });
+    for (const group of groupLocations(locations)) {
+      let root;
+      if (group.locations.length === 1) {
+        root = buildNode(group.locations[0]);
+      } else {
+        root = document.createElement("div");
+        root.className = "map-pin-cluster";
+        const summary = document.createElement("button");
+        summary.type = "button";
+        summary.className = "map-pin-cluster-summary";
+        const numbers = group.locations.map(pinNumber);
+        const consecutive = numbers.every((n, i) => i === 0 || Number(n) === Number(numbers[i - 1]) + 1);
+        summary.textContent = consecutive ? `${numbers[0]}–${numbers.at(-1)}` : numbers.join("·");
+        summary.setAttribute("aria-label", `${numbers.length} locations at this position: ${numbers.join(", ")}. Expand to choose a location.`);
+        const members = document.createElement("div");
+        members.className = "map-pin-cluster-members";
+        members.setAttribute("role", "group");
+        members.setAttribute("aria-label", "Locations at this position");
+        members.id = `slivr-pin-group-${group.locations[0].id}`;
+        summary.setAttribute("aria-controls", members.id);
+        for (const location of group.locations) members.append(buildNode(location));
+        root.append(summary, members);
+        const entry = { root, summary, members, locations: group.locations, position: group.position, open: false };
+        entry.setOpen = open => {
+          entry.open = open;
+          root.classList.toggle("is-open", open);
+          members.hidden = !open;
+          summary.setAttribute("aria-expanded", String(open));
+          if (open && map.project && map.getContainer) {
+            const x = map.project(group.position).x;
+            const width = map.getContainer().clientWidth;
+            const half = Math.min(160, width * .35);
+            const shift = Math.max(half + 8 - x, Math.min(0, width - half - 8 - x));
+            members.style.left = `calc(50% + ${shift}px)`;
+          }
+        };
+        entry.setOpen(false);
+        const hasSelected = () => group.locations.some(location => location.id === selectedId);
+        root.addEventListener("mouseenter", () => entry.setOpen(true));
+        root.addEventListener("mouseleave", () => {
+          if (!hasSelected() && !root.contains(document.activeElement)) entry.setOpen(false);
+        });
+        let openBeforePointer = null;
+        summary.addEventListener("pointerdown", () => { openBeforePointer = entry.open; });
+        root.addEventListener("focusin", () => entry.setOpen(true));
+        root.addEventListener("focusout", event => { if (!root.contains(event.relatedTarget) && !hasSelected()) entry.setOpen(false); });
+        root.addEventListener("keydown", event => {
+          if (event.key === "Escape") { event.stopPropagation(); summary.focus(); entry.setOpen(false); }
+          if (event.key === "ArrowDown" && event.target === summary) {
+            event.preventDefault(); entry.setOpen(true); members.querySelector("button")?.focus();
+          }
+        });
+        // Click supports both touch and the button's native Enter/Space activation.
+        summary.addEventListener("click", event => {
+          event.stopPropagation();
+          entry.setOpen(!(openBeforePointer ?? entry.open));
+          openBeforePointer = null;
+        });
+        groups.push(entry);
+      }
+      const marker = new maplibre.Marker({ element: root, anchor: "bottom" }).setLngLat(group.position).addTo(map);
+      markers.push(marker);
     }
+    setSelected(selectedId);
   }
 
-  /** Marks one location as selected, or none when the id is null. */
   function setSelected(locationId) {
-    for (const { id, node } of markers) {
+    selectedId = locationId;
+    for (const { id, node } of pins) {
       const selected = id === locationId;
       node.classList.toggle("is-selected", selected);
       if (selected) node.setAttribute("aria-current", "true");
       else node.removeAttribute("aria-current");
     }
+    for (const group of groups) {
+      const selected = group.locations.some(location => location.id === locationId);
+      group.root.classList.toggle("has-selected", selected);
+      group.setOpen(selected);
+    }
   }
 
-  return {
-    setLocations,
-    setSelected,
-    get count() {
-      return markers.length;
-    },
-    dispose: clear,
-  };
+  return { setLocations, setSelected, get count() { return pins.length; }, dispose: clear };
 }

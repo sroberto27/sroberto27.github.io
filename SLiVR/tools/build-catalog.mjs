@@ -20,7 +20,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const WORKBOOK = resolve(ROOT, "outputs/location_database/SLiVR_Location_Scouting_Database.xlsx");
 const OUT_DIR = resolve(ROOT, "data/catalog");
 
-export const CATALOG_VERSION = "1.0.0";
+export const CATALOG_VERSION = "1.1.0";
 export const SCHEMA_VERSION = "1.0.0";
 
 /** Capture wording used in the workbook, mapped to the catalog vocabulary. */

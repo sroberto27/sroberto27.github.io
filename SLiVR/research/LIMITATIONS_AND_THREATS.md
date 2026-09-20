@@ -50,3 +50,56 @@ renderer but has no live Google-rendering evidence yet. Shared-origin key reuse
 was requested by the owner; provider acceptance, quotas and coverage remain
 unverified. The owner will test after publication. Placements against streamed
 geometry remain approximate and are not surveyed measurement evidence.
+
+
+### Phase 0 closeout evidence limits, 2026-09-20
+
+Automated regression is 326/326 PASS, using IndexedDB/DOM/provider doubles where
+stated. Owner manual acceptance supplies actual deployed-use evidence, with a
+Three.js screenshot but no raw all-entry capability report or exact browser
+version. Full linked fixture/store inspection in a real browser, remaining
+failure/device variants and capture metadata/rights remain unverified. Precise
+retest conditions and proposed acceptance exceptions are in PHASE_0_CLOSEOUT.md;
+these exceptions are not approved merely because technical checks pass.
+
+
+### Approved Phase 0 evidence exceptions - 2026-09-20 (D061)
+
+The owner approved carrying the explicitly listed evidence gaps while closing
+Phase 0. Required retests: storage/schema/full fixture at the first Phase 1 browser
+integration before persistence expansion; device/provider/console variants on
+next deployment; per-entry Treedis reports and administrative metadata before
+Phase 2 dependent features/claims. Approval changes phase acceptance only and
+does not resolve these limitations or establish unobserved capabilities.
+
+
+### D062 map presentation limits
+
+The geographic spread of the inventory and the available viewport constrain the
+closest zoom that can show every pin. Exact-position grouping follows six-decimal
+coordinates; distinct nearby points can still overlap at a broad inventory scale.
+Do not claim proximity clustering or improved usability from the implementation.
+Live resize, marker legibility, touch/keyboard interaction and screen-edge expanded
+arrays require the next deployment's visual/device check.
+
+### D063 map UI limitations
+
+MapLibre/DOM doubles verify control actions, not rendering. Check the expanded
+controls, location strip, attribution, imagery plate and edge pins on desktop,
+portrait and landscape after deployment. Test geolocation allow/deny/unavailable,
+fullscreen enter/exit, 3D loading/fallback and OSM availability. The streets layer
+is a translucent OSM raster, not isolated labels or authoritative property data.
+Native fullscreen availability depends on browser support. Campus welcome/exit
+and recruitment-specific itinerary UI are not SLiVR features; catalog navigation
+uses existing records. No geolocation is collected in research logs.
+
+### D064-D065 evidence limits
+
+Fourteen map-pin coordinates (13 corrections plus new LaSEL) come from the project
+owner on 2026-09-20, not a geodetic survey or independent entrance verification.
+LaSEL official sources establish facility identity and address; current interior
+layout, filming authority, visiting hours, capture scope and production logistics
+remain open. Historical 17-record findings must not be relabeled as 18-record results.
+Workbook renders and OOXML checks passed; native Excel UI was not exercised. The
+camera behavior is verified using DOM/MapLibre doubles; desktop/tablet animation,
+3D focus and overlay avoidance still require the next live deployment check.

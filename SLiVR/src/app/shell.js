@@ -435,6 +435,12 @@ export function createShell({ root, store, actions, win = globalThis }) {
       ]);
     }
 
+    if (imagery.visible === false) {
+      return el("div", { class: "imagery-plate" }, [
+        el("div", { class: "imagery-headline", text: "Aerial imagery hidden" }),
+        el("p", { class: "imagery-accuracy", text: "Use the aerial imagery button to restore the photograph. Street-map context is controlled separately." }),
+      ]);
+    }
     const neutral = imagery.state === "neutral";
     return el(
       "div",
@@ -475,6 +481,10 @@ export function createShell({ root, store, actions, win = globalThis }) {
     const left = [
       railHead("Catalog records", catalog ? catalog.locations.length : null),
       el("div", { class: "rail-body" }, catalogRecordList(state)),
+      el("button", { type: "button", class: "map-rail-recenter",
+        text: `Recenter on all ${catalog?.locations.length ?? 0} locations`,
+        onClick: () => actions.recenterMap(),
+      }),
     ];
 
     const centre = state.catalogError
@@ -518,7 +528,7 @@ export function createShell({ root, store, actions, win = globalThis }) {
           el("div", { class: "rail-body" }, [
             section(null, [
               phaseNote(
-                "The map shows the Lafayette envelope on DOTD aerial imagery. Markers, search, filters and the full dossier arrive in Phase 1.",
+                "The map fits the catalog locations on DOTD aerial imagery. Numbered pins match the location list; grouped pins expand to show locations sharing a position. Search, filters and full dossiers arrive in Phase 1.",
               ),
               el("p", {
                 class: "empty-note",
@@ -1010,6 +1020,7 @@ export function createShell({ root, store, actions, win = globalThis }) {
     store.subscribe((state) => state.projects, renderWorkspace),
     store.subscribe((state) => state.workingBundle, renderWorkspace),
     store.subscribe((state) => state.imagery, renderWorkspace),
+    store.subscribe((state) => state.tiles, renderWorkspace),
     store.subscribe((state) => state.map, renderWorkspace),
     store.subscribe((state) => state.viewer, renderWorkspace),
     // The veil follows the adapter directly rather than the rendered tree, so
