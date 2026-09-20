@@ -11,7 +11,7 @@
  * certainty: photorealistic tiles, aerial imagery, an imported plan, a blank
  * grid. The blank grid always works, which is what makes the rest optional.
  *
- * No credential is read from anywhere but the gitignored runtime configuration,
+ * Credentials are read from the deployment's browser configuration,
  * and no credential is ever written to an export, a research log or a URL the
  * application constructs for display.
  */

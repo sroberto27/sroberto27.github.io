@@ -70,3 +70,23 @@ manual verification remains with the owner.
 Add an entry when a build changes a task flow, feature behavior, provider capability, visual presentation, data schema, event definition, measurement rule, study condition, dataset/capture, known limitation or claim that could affect comparison across versions.
 
 Each entry should link repeatable technical evidence or an approved study ID where applicable. Record failed experiments and rollbacks when they affect design rationale or interpretation.
+
+
+## 2026-09-20 ? Explore photorealistic tiles and deployed browser configuration
+
+The deployed 3D button only changed camera pitch; Explore had no tile renderer.
+The ignored runtime.js was absent from Pages. Added a lazy MapLibre custom layer
+adapted from the read-only reference, a genuine perspective camera for LOD,
+Draco/KTX2 loaders, visible provider/loading/fallback states, attribution and
+map-lifecycle disposal. Vendored 3d-tiles-renderer 0.5.1 and Three 0.183.0 addons.
+D057 records the reference mapping and required architecture deviations.
+
+The owner explicitly requested reuse of the reference application's browser key
+and a push, and prohibited further tests. The key is now loaded from the shipped
+config/deployment.js. No reference application file was changed. No live Google
+request was made. Before that instruction, the 37-test Google-tiles/imagery run
+passed using real module imports/math and injected rendering/provider doubles.
+Those results precede the final deployment-configuration edits. No test execution
+after the instruction; deployed geometry, provider access and browser lifecycle
+are left for the owner's manual verification. No participant evidence or new
+telemetry is introduced.

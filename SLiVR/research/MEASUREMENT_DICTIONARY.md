@@ -99,3 +99,13 @@ No measure definition changed in Phase 0.2. This records how the ones with an im
 | `json_roundtrip_loss` | `normalizeBundle` in `src/data/transfer.js` sorts every record by identifier and every object key, giving a deep comparison across all ten transferred stores. A round trip is counted as lossless only when the normalised bundle after export and re-import is deeply equal to the one before. An unsupported schema version returns a classified rejection with the version named, which is counted as a refusal, never as a loss of zero | The export and import were driven in code against an in-memory database. A browser download, a file picker and real storage are not covered |
 | `fov_error_deg` | `fieldOfView` in `src/spatial/optics.js`, compared against published gate and focal-length fixtures and against an independent geometric derivation | Lens distortion, focus breathing and real depth of field are outside the model |
 | `plan_scale_error_pct` | Defined only. Floor-plan calibration does not exist yet | Everything |
+
+
+### 2026-09-20 ? Explore 3D state interpretation (D057)
+
+`tiles.state`: off (aerial), loading (libraries/visible geometry pending), active
+(a renderer draw completed with visible tiles), fallback (missing configuration,
+provider/library failure, no geometry by deadline, or graphics context loss).
+Active is an implementation status, not independent proof of correct geometry,
+coverage, calibration or visual quality. These states are UI state only; no
+background participant logging was added.

@@ -495,6 +495,7 @@ export function createActions({
       region,
       maplibre: maplibre.default ?? maplibre,
       webgl: getState().capabilities.webgl,
+      runtimeConfig: viewerWindow.SLIVR_RUNTIME ?? null,
       onEvent: handleMapEvent,
     });
 
@@ -534,6 +535,10 @@ export function createActions({
   }
 
   function handleMapEvent(event) {
+    if (event.type === "tiles-changed") {
+      setState({ tiles: event.status });
+      return;
+    }
     if (event.type === "imagery-changed") {
       setState({ imagery: describeImagery(event.status) });
       return;

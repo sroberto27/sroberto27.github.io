@@ -95,3 +95,13 @@ Phase 2, and only the surface those features need was brought forward, recorded 
 | F04 | The pose the viewer reports is carried into application state as the viewer reports it, and the rail states the connection, the current sweep and how many sweeps were listed, with `Not reported` where the viewer said nothing | Technical validation only | Any pose observed from a running viewer. Bookmarks, saved viewpoints and the handoff into a scene remain Phase 2 |
 | F19 | The adapter's per-entry reconnaissance record is reachable from the running application rather than only from the standalone harness, which is what tests 28 and 29 need to cover all 11 entries through the product itself | Technical validation only | The eleven records themselves. One entry has been observed live, from the harness, not from the application |
 
+
+
+### 2026-09-20 correction ? Explore optional exterior 3D (D057)
+
+Implemented the previously missing Google tile renderer behind the Explore 3D
+control. Geometry rendering, loading and aerial fallback are distinct states.
+The owner-approved browser key now ships in deployment.js. Module/coordinate
+and injected lifecycle checks passed before the manual-testing instruction;
+real Google geometry, Lafayette coverage, attribution layout and repeat toggles
+remain NOT TESTED for this build. No usability or measurement benefit claimed.

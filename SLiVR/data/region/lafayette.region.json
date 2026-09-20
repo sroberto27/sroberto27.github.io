@@ -86,8 +86,8 @@
   "optional3d": {
     "provider": "google-photorealistic-3d-tiles",
     "rootTileset": "https://tile.googleapis.com/v1/3dtiles/root.json",
-    "credentialSource": "config/runtime.js",
-    "credentialNote": "No credential is committed. When absent, unauthorised or slow, the aerial, imported-plan and blank-grid workspaces remain fully usable and authored objects are unaffected.",
+    "credentialSource": "config/deployment.js",
+    "credentialNote": "Owner-approved public browser key is supplied by deployment configuration. When absent, unauthorised or slow, the aerial, imported-plan and blank-grid workspaces remain fully usable and authored objects are unaffected.",
     "attribution": "Google"
   },
   "storage": {

@@ -5,8 +5,7 @@
  * the same idea but register as library controls, so they sit in the same
  * stack as zoom and compass and inherit their placement and theming.
  *
- * A toggle states what it will do, not what it is showing: the label reads
- * "Tilt the view" while flat and "Flatten the view" while tilted, and
+ * A toggle states what it will do: enter photorealistic 3D or return to 2D, and
  * `aria-pressed` carries the state for anything reading the page aloud.
  */
 
@@ -28,7 +27,8 @@ export function createDimensionControl({ isTilted, onToggle }) {
     if (!button) return;
     const tilted = isTilted();
     button.setAttribute("aria-pressed", String(tilted));
-    const label = tilted ? "Flatten the view" : "Tilt the view";
+    const label = tilted ? "Return to 2D aerial imagery" : "Show photorealistic 3D";
+    button.textContent = tilted ? "2D" : "3D";
     button.setAttribute("aria-label", label);
     button.title = label;
     button.classList.toggle("is-active", tilted);

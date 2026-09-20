@@ -440,9 +440,7 @@ test("a map that is already loaded still gets its imagery", () => {
 });
 
 test("the tilt toggle changes pitch and reports it, and flattening resets bearing", () => {
-  // Aerial imagery seen at an angle is what makes a street read as a space
-  // with height. Flattening returns to north-up rather than leaving the camera
-  // wherever the tilted view ended, which is what the reference does too.
+  // A missing provider key leaves an explicitly labelled tilted aerial fallback.
   const eased = [];
   const fakeMap = {
     on() {},
@@ -457,6 +455,7 @@ test("the tilt toggle changes pitch and reports it, and flattening resets bearin
     addControl() {},
     resize() {},
     getBearing: () => 42,
+    getCanvas: () => ({ addEventListener() {}, removeEventListener() {} }),
     easeTo: (options) => eased.push(options),
   };
 
@@ -477,6 +476,7 @@ test("the tilt toggle changes pitch and reports it, and flattening resets bearin
 
   adapter.setTilted(true);
   assert.equal(adapter.tilted, true);
+  assert.equal(events.find(e => e.type === "tiles-changed").status.state, "fallback");
   assert.equal(eased.at(-1).pitch, 60);
   assert.equal(eased.at(-1).bearing, 42, "a tilted view keeps the bearing it had");
 
