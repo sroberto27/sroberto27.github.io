@@ -79,9 +79,11 @@
       "4c37c871"
     ],
     "allowlistNote": "Only these experiences may be loaded. The first is shared by six separate downtown location records, which remain distinct catalog entries.",
-    "navigationTimeoutMs": 20000,
+    "defaultTransitionTime": 0,
+    "navigationTimeoutMs": 6000,
+    "loadTimeoutMs": 60000,
     "readyPingIntervalMs": 2000,
-    "readyPingMaxAttempts": 10
+    "readyPingMaxAttempts": 30
   },
   "optional3d": {
     "provider": "google-photorealistic-3d-tiles",

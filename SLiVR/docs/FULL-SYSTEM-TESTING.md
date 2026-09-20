@@ -22,6 +22,36 @@ Update this table whenever the architecture, phase, schema, provider contract or
 
 ---
 
+## Owner manual acceptance - deployed build 59a980ac
+
+Recorded 2026-09-20: the owner initially confirmed checklist items 1-7.
+The subsequent supplied screenshot and explicit confirmation establish item 8
+(test 27) as PASS as well.
+Evidence source: owner-reported manual execution on the deployed GitHub Pages
+application. Browser version, device, screenshots and downloaded report were not
+provided with this confirmation. No tests were executed by the assistant for
+this update. This is acceptance evidence, not a new automated-suite result.
+
+| Manual checklist item | Result | Scope of the reported observation |
+|---|---|---|
+| 1. Shell and catalog | PASS | 17 records, 11 captured/6 future, six areas, four modes and visible unknowns |
+| 2. Direct links and history | PASS | Location link, refresh, invalid-location recovery and Back/Forward |
+| 3. Local saving | PASS | Basic project creation, saved status, reload and reopen with the same identifier |
+| 4. JSON transfer | PASS | Export/import into a separate profile, conflict cancel/copy/replace and invalid-JSON rejection |
+| 5. Aerial imagery | PASS | Visual coverage in the six named areas, 2025 attribution/accuracy notice, forced 2024 fallback |
+| 6. Google 3D | PASS | Visible building geometry, attribution, rotation, repeated toggles, mode changes and blocked-provider aerial fallback |
+| 7. Treedis entries | PASS | All 11 entries, distinct downtown viewpoints, independent-model transitions and two downtown navigation targets |
+| 8. Three.js feasibility (test 27) | PASS | Owner screenshot shows rendered grid, camera, actor and frustum; all 10 assertions PASS; FOV 39.598/26.991 degrees and camera height 1.50 m |
+| Additional save-failure procedure | PASS | Forced write failure, visible recovery, emergency JSON and diagnostics cleanup as described in the checklist |
+
+These results supersede earlier statements that the listed user-visible checks
+had no manual evidence. They do not assert inspection of IndexedDB stores and
+indexes, complete linked-record fixture equality, every malformed schema case,
+every optional-provider failure variant, Treedis capture metadata/rights, or
+repository/documentation audits. Those were outside the supplied click-through
+procedures. Historical automated evidence and failures remain recorded. Phase 0
+is not marked complete: the remaining evidence review is open. All eight supplied manual checklist items now pass.
+
 ## Before you start
 
 ### Test target
@@ -189,7 +219,7 @@ Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED
 Evidence: ____________________________________  
 Comments: ____________________________________
 
-**184. Implementation follows the reference, and divergence is corrected rather than excused. [D044]** For each module changed in the phase, identify its LSU3D counterpart and compare them. Cover plumbing specifically: library loading, stylesheet order, container setup, source and layer identifiers, lifecycle, teardown, request shapes and provider parameters. Classify every difference as one of: matches the reference; qualifies under one of the three permitted reasons and is recorded in the decision record naming the LSU3D file; or has no counterpart. A difference that fits none of those is corrected by changing SLiVR to match the reference, in this phase. This test does not pass while any unjustified divergence is outstanding, and recording a reason for a divergence that qualifies under none of the three does not satisfy it. The reference is not treated as authoritative where it was never executed.
+**184. Implementation follows the reference, and divergence is corrected rather than excused. [D044]** For each module changed in the phase, identify its counterparts in both LSU3D and Experimental/SCSU and compare the applicable implementations (D058). Cover plumbing specifically: library loading, stylesheet order, container setup, source and layer identifiers, lifecycle, teardown, request shapes and provider parameters. Classify every difference as one of: matches the reference; qualifies under one of the three permitted reasons and is recorded in the decision record naming the selected source project and file; or has no counterpart. A difference that fits none of those is corrected by changing SLiVR to match the reference, in this phase. This test does not pass while any unjustified divergence is outstanding, and recording a reason for a divergence that qualifies under none of the three does not satisfy it. The reference is not treated as authoritative where it was never executed.
 
 Result: - [x] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED  
 Evidence: First execution, 2026-09-20, over the Phase 0 modules, build `e1cbe66298b5`. Compared against `js/02-state.js`, `js/04-street-view.js`, `js/05-map-helpers.js`, `js/11-boot.js`, `js/12-start-screen.js`, `js/16-google-tiles.js`, `js/17-router.js`, `config.js`, `index.html` and `css/`. 286 automated assertions passing afterwards.  
@@ -204,12 +234,14 @@ Comments: Ten divergences were corrected by changing SLiVR to match the referenc
 **11. The catalog contains exactly 17 stable records. [F01/F02]** Confirm 11 records have current Treedis inventory entries and six are future candidates. IDs remain stable across reload and JSON/catalog regeneration.
 
 Result: - [x] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED  
+Current manual evidence (59a980ac, owner report recorded 2026-09-20): Manual checklist item 1: owner confirms the deployed catalog counts and display. Historical evidence/comments below are retained.
 Evidence: Automated. `node --test` from the project root, 82 tests passing, Node v24.18.0, build digest `89aae7a86236`. Suite `tests/catalog.test.mjs`, tests "the catalog holds exactly 17 locations, 11 current and 6 future", "location identifiers are the documented stable sequence" and "regenerating the catalog produces identical records".  
 Comments: Catalog 1.0.0 holds 17 locations (11 current, 6 future), 17 captures, 17 scout-detail records, 6 areas and 42 sources. Identifiers are LOC-001..LOC-017, CAP-001..CAP-017 and AREA-01..AREA-06. Rebuilding from the workbook produced byte-identical output for all six files apart from the manifest `generatedAt` stamp, and the suite re-reads the JSON from disk on every run. Browser reload is not covered here because no application shell exists yet; it is retested against test 14 once the shell is built.
 
 **12. All six operational areas reconcile with the workbook.** Counts, names and location membership match the approved database; the solar-energy destination is absent from the committed 17.
 
 Result: - [x] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED  
+Current manual evidence (59a980ac, owner report recorded 2026-09-20): Manual checklist items 1 and 5: owner confirms six areas and visual coverage; workbook reconciliation remains the historical automated evidence. Historical evidence/comments below are retained.
 Evidence: Automated. Same run as test 11. Suite `tests/catalog.test.mjs`, tests "area membership reconciles with the workbook counts" and "the solar-energy destination is absent from the committed inventory"; plus `node tools/validate-catalog.mjs`, 0 errors and 1 warning.  
 Comments: All six areas reconcile: AREA-01 Downtown Core 7/0, AREA-02 Sterling Grove / North Sterling 1/0, AREA-03 Johnston Street / Moncus / Blackham 2/1, AREA-04 Northside / Clara Street 1/0, AREA-05 Cajundome / South Campus 0/4, AREA-06 UL Main Campus 0/1, totalling 11 current and 6 future. Derived membership matches each area's declared `locationIds` and the counts recorded in the workbook. No record mentioning the solar-energy destination is present. The single warning is benign and expected: CAP-003 records the location as "Lafayette Old City Hall" while LOC-003 is named "Lafayette Old City Hall / Bank of Lafayette".
 
@@ -222,12 +254,14 @@ Comments: The loader half is now implemented and exercised, including the proper
 **14. Stable routes open directly.** Load `/explore`, one `/location/{id}`, one `/immersive/{id}`, one project/scene route and one shot route from a fresh tab. Supported routes restore context; invalid IDs produce a recoverable not-found state.
 
 Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [x] NOT TESTED  
+Current manual evidence (59a980ac, owner report recorded 2026-09-20): Manual checklist item 2 passed for the supplied location/invalid-location links and browser history. All project/scene/shot route shapes were not separately reported. Historical evidence/comments below are retained.
 Evidence: Automated only. `tests/router.test.mjs`, 17 tests, same run and build. Covers every approved route (`#/explore`, `#/location/{id}`, `#/projects`, `#/project/{id}`, `#/project/{id}/scene/{id}`, `#/immersive`, `#/immersive/{id}?bookmark=`, `#/shot`, `#/shot/{id}`), the empty-hash default, deterministic serialisation and round trip, stable query ordering, percent-encoded identifiers, a malformed escape sequence, direct opening of a deep route against a window stand-in, Back and Forward through `hashchange` and `popstate`, and the guarantee that a route carries record identifiers only. Identifier resolution is covered in `tests/catalog-repo.test.mjs`: an unknown location identifier resolves to `null` rather than an empty record, which `src/app/actions.js` turns into a recoverable `unknown-record` state naming the catalog version.  
 Comments: Route grammar, resolution and the not-found state are implemented and exercised, but this test is written as a fresh-tab browser check and no browser ran. The window stand-in models `location.hash`, `history.replaceState` and the two events; it does not show that a real browser produces the same sequence, that a pasted link restores the right context, or that the shell renders any of it. Retest live: serve the project and open each of the five route shapes in a fresh tab, plus `#/location/LOC-999` and `#/nowhere`, confirming the recoverable not-found panel and its two return actions.
 
 **15. The application shell exposes the four approved modes.** Explore, Projects, Immersive and Shot Designer occupy a consistent top-level control, show active state and preserve the active breadcrumb/save status.
 
-Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [x] NOT TESTED  
+Result: - [x] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED  
+Current manual evidence (59a980ac, owner report recorded 2026-09-20): Manual checklist item 1 passed: four-mode shell and mode switching. Historical evidence/comments below are retained.
 Evidence: Partial automated evidence, added 2026-09-20 with the boot smoke check. `tests/shell-smoke.test.mjs` boots the real entry point against a DOM stand-in and asserts that the four mode controls are rendered in the approved order (`explore`, `projects`, `immersive`, `shot`), that exactly one carries `aria-current`, and that clicking one changes the hash, applies the route and re-renders that mode. The breadcrumb and save-status chip are built in the same top bar region. Build `04b19216f222`.  
 Comments: The controls exist, are in the right order, carry an active state and respond to activation, which is more than was claimed before. What this test is actually about remains unobserved: whether the controls are legible, hold their position between modes, are reachable and operable by keyboard with visible focus, and whether the breadcrumb and save status stay visible. The stand-in has no layout, styling or real event dispatch. Retest live once a browser is available.
 
@@ -236,36 +270,42 @@ Comments: The controls exist, are in the right order, carry an active state and 
 **16. IndexedDB creates only the documented database, stores and indexes. [D005]** Confirm schema version, upgrade path and indexes match the approved domain records and do not create data outside the SLiVR namespace.
 
 Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [x] NOT TESTED  
+Current manual evidence (59a980ac, owner report recorded 2026-09-20): Manual checklist item 3 passed for persistence behavior. Inspection of all IndexedDB stores and indexes was not part of that procedure. Historical evidence/comments below are retained.
 Evidence: Automated against an in-memory test double. `tests/workspace-repo.test.mjs`, 21 tests, same run and build. Asserts that `src/data/migrations.js` declares exactly the eleven approved stores (`meta`, `projects`, `scenes`, `candidates`, `bookmarks`, `shotScenes`, `sceneObjects`, `paths`, `shots`, `variants`, `assets`) with the approved index list per store, including the compound `[projectId, sceneId]` and `[shotSceneId, type]` keys; that the schema version equals `WORKSPACE_SCHEMA_VERSION` and the `storage.databaseVersion` in `data/region/lafayette.region.json`; that opening creates that database and nothing else; and that reopening at the same version keeps existing records. `assertStorageConfig` refuses a database name outside the `slivr-` namespace, a key prefix outside `slivr:`, and a configured version disagreeing with the schema, and the repository constructor throws rather than opening.  
 Comments: The declaration, the upgrade path and the namespace guard are exercised, but against `tests/fixtures/indexeddb.mjs`, a deliberate test double that says so in its own header. It does not show what a browser IndexedDB implementation actually creates. Retest live: open the application, inspect Application then IndexedDB in developer tools, and confirm database `slivr-workspace` version 1 with exactly those stores and indexes, and that no database, local-storage key or cache belonging to a neighbouring application on this origin was created or removed.
 
 **17. A basic project round-trips through IndexedDB.** Create, save, reload and reopen a fixture containing project, scene, candidate, bookmark, shot scene, object and shot references. IDs and relationships are identical.
 
 Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [x] NOT TESTED  
+Current manual evidence (59a980ac, owner report recorded 2026-09-20): Manual checklist item 3 passed for basic project reload/reopen and identifier preservation. Full linked-record fixture equality was not separately reported. Historical evidence/comments below are retained.
 Evidence: Automated against the same in-memory double. `tests/workspace-repo.test.mjs` writes the fixture in `tests/fixtures/project.mjs` (one project, two scene briefs, three candidates, one bookmark, one shot scene, two scene objects, one path, one variant, one shot), reads it back through `loadProjectBundle`, and compares identifiers per store together with the `sceneId`, `locationId`, `variantId`, `cameraObjectId` and `ownerObjectId` relationships. A separate test asserts the zero values survive: camera `headingDeg` 0 and `x` 0, shot `order` 0, scene `northOffsetDeg` 0, `groundElevationM` 0, and the first path point at `atS` 0.  
 Comments: Records and relationships round-trip through the repository, and the reopen-at-same-version test covers the reload path at the storage layer. The part of this test that was not executed is the browser one: creating a project in the interface, reloading the page, and confirming it returns. Retest live: create a project on `#/projects`, reload the tab, and confirm the project and its identifier come back unchanged.
 
 **18. Versioned JSON round-trips without loss.** Export the fixture, inspect version/units/coordinate frames/references, import into a clean profile and compare normalized records.
 
 Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [x] NOT TESTED  
+Current manual evidence (59a980ac, owner report recorded 2026-09-20): Manual checklist item 4 passed for the exported UI project. Full linked-record fixture/units/frame comparison was not separately reported. Historical evidence/comments below are retained.
 Evidence: Automated. `tests/transfer.test.mjs`, 28 tests, same run and build. The envelope declares `schemaVersion` 1.0.0, `kind` `slivr-project`, `appVersion`, `exportedAt` and `catalogVersion`. The fixture is written to storage, exported, parsed, imported into a second empty database, and compared with `normalizeBundle`, which sorts records and keys and yields a deep equality across every record. Separate assertions cover units (`metric`), the coordinate frame (`northOffsetDeg`, `origin.elevationDatum`, `calibration.accuracyMode`), zero values, the catalog reference triple (`locationId`, `captureId`, `catalogVersion`), and that no provider imagery URL, data URI or credential pattern appears in the exported text. A file exported against catalog 0.9.0 imports and produces a version note without rewriting any catalog fact.  
 Comments: The transfer format and the repository round trip are exercised end to end, but through the in-memory double, and no file ever left or entered a browser. Not executed: the download, the file picker, and reading the file back in a genuinely clean browser profile. Retest live: export a project to disk, open a fresh profile, import that file, and compare the visible records.
 
 **19. Malformed and unsupported JSON never mutates saved data.** Test invalid JSON, missing required fields, duplicate references and future schema version. Validation occurs before writes and reports the failing path/reason.
 
 Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [x] NOT TESTED  
+Current manual evidence (59a980ac, owner report recorded 2026-09-20): Manual checklist item 4 passed for invalid JSON rejection without damaging saved projects. All structural and future-schema variants were not separately reported. Historical evidence/comments below are retained.
 Evidence: Automated. `tests/transfer.test.mjs` covers invalid JSON, a file that is not a SLiVR export, a missing schema version, schema versions `2.0.0` and `1.1.0` (both refused with the version named in the message), a missing required field reported at `payload.projects[0].name`, a duplicate identifier inside one file, a reference to a record not present in the file, a file carrying more than one project, and an inline asset with no matching record. One test stores the fixture, attempts an import whose payload is broken and which also renames the project, then compares the stored bundle before and after and finds it unchanged. Another asserts that validation reports every problem it finds rather than only the first.  
 Comments: Validation runs before any write and the outcomes are classified, so the data-safety property this test protects is demonstrated at the module level. What was not executed is the interface behaviour: that a person choosing a broken file sees the failing path and reason and keeps their workspace open. Retest live using the invalid, older-schema, conflicting-ID and future-schema fixtures through the import control.
 
 **20. ID conflicts have an explicit outcome.** Import a project whose ID already exists. Confirm cancel changes nothing, add-as-copy creates new stable IDs/references, and deliberate replace replaces only the selected project.
 
-Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [x] NOT TESTED  
+Result: - [x] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED  
+Current manual evidence (59a980ac, owner report recorded 2026-09-20): Manual checklist item 4 passed: conflict cancel, copy and replace. Historical evidence/comments below are retained.
 Evidence: Automated. `tests/transfer.test.mjs` covers all three outcomes against a workspace that already holds the project. An import offered no resolution is refused with `transfer-conflict-unresolved` rather than guessing. Cancel writes nothing and the stored bundle is identical afterwards. Add-as-copy produces a second project in which every workspace identifier is new and `projectId`, `sceneId`, `ownerObjectId`, `variantId` and `activeVariantId` all point inside the copy, while catalog identifiers (`LOC-001`, `CAP-001`, experience `5eb11a1b`) are deliberately kept because the copy describes the same real place. Replace removes only the named project, including records the replacement does not carry, and a second unrelated project in the same database keeps its records. An unknown resolution such as `merge` is refused.  
 Comments: Every outcome is exercised at the data layer. The conflict dialog in `src/app/shell.js` presents the three choices with the file summary and a catalog-version note, but it was not operated, because no browser ran. Retest live: import a project that already exists and exercise each of the three buttons in turn.
 
 **21. Storage failure preserves recoverable work.** Force a quota/write/transaction failure. The current workspace stays open, shows Save failed, supports retry and produces valid emergency JSON from memory.
 
-Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [x] NOT TESTED  
+Result: - [x] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED  
+Current manual evidence (59a980ac, owner report recorded 2026-09-20): Owner confirms the supplied forced-storage-failure and recovery/export procedure passed. Historical evidence/comments below are retained.
 Evidence: Automated, partial. `tests/workspace-repo.test.mjs` forces every write to fail through the double and confirms that a failed single-record write leaves the stored record at its previous name and revision, and that a failed bundle write aborts with no part of it applied. `tests/store.test.mjs` covers the save-status surface: saving then failed, the failure staying failed with `canRetry` true and the classified code preserved, a retry re-running the same operation and succeeding, and overlapping writes reporting saved only once the last one finishes. `tests/transfer.test.mjs` builds an emergency export from an in-memory bundle with no storage access, parses it, and imports it into an empty database with no loss.  
 Comments: The recovery mechanism exists and its parts are exercised, but this test as written is a live one: forcing a real quota or transaction failure in a browser and confirming the workspace stays open and usable. That did not run. `src/app/capabilities.js` reads a SLiVR-scoped diagnostics flag for exactly this purpose: set the `slivr:diagnostics` local-storage key to enable `forceStorageFailure` and reload, and every write fails. The flag defaults to off and the application never writes it. Retest live with that flag, and again with browser storage genuinely full, confirming the Save failed chip, a working retry, and a valid emergency JSON file.
 
@@ -273,49 +313,57 @@ Comments: The recovery mechanism exists and its parts are exercised, but this te
 
 **22. DOTD 2025 primary imagery returns real Lafayette pixels. [D006]** Test representative points in all six operational areas. Validate image content, not only HTTP 200, and record endpoint, date, response and visual evidence.
 
-Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [x] NOT TESTED  
+Result: - [x] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED  
+Current manual evidence (59a980ac, owner report recorded 2026-09-20): Manual checklist item 5 passed: actual photographic imagery across the six named areas. Historical evidence/comments below are retained.
 Evidence: Live provider evidence, automated. `node tools/probe-imagery.mjs --keep-images`, run 2026-09-20 from Windows 11 / Node v24.18.0, build `50dcb29e0e57`. One representative catalog location per operational area (AREA-01 to AREA-06) was requested from the configured 2025 service at its own ground sample distance of 0.150 m per pixel, 512 by 512, through the same `exportImage` template the map uses. All six returned photographic content: mean channel standard deviation 25.4 to 56.1 over 22,234 to 49,992 distinct colours in 262,144 pixels, with no near-black pixels. The production JPEG request was issued for each point alongside the pixel probe and returned `image/jpeg` at 32.7 to 45.3 kB. Endpoint, bbox in EPSG:3857, ground sample distance, byte counts, timings and full statistics are in `outputs/imagery-probe/imagery-probe.json`, with the decoded BMP and the production JPEG saved per point. Two calibration controls inside the published service extent but outside coverage, open water and rural land, both returned 100% no-data across a single colour, so the thresholds are shown to separate coverage from an empty response rather than assumed to.  
 Comments: The provider half of this test is done, and it found the thing the test exists for: the service publishes an extent covering much of the state while holding imagery only for selected areas, and its own metadata records the no-data value as 0, so an uncovered request returns a valid, entirely black image with a 200 response. A status-code check would have called that success. What remains is the in-browser half the plan also requires: tiles rendering through MapLibre in a real browser, with a screenshot. No browser was available in this run. Retest live: open `#/explore`, confirm imagery draws over the Lafayette envelope, and capture a screenshot.
 
 **23. DOTD 2024 Lafayette fallback activates on primary failure.** Block/disable the primary service and confirm equivalent representative areas remain visible with the fallback year/source identified.
 
-Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [x] NOT TESTED  
+Result: - [x] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED  
+Current manual evidence (59a980ac, owner report recorded 2026-09-20): Owner confirms forced primary failure displayed the 2024 fallback. Historical evidence/comments below are retained.
 Evidence: Two parts, both automated. Coverage: the same probe run requested all six operational areas from the configured 2024 Lafayette service and all six returned photographic content, standard deviation 26.5 to 40.4 over 20,617 to 30,785 distinct colours, so the fallback genuinely covers the equivalent areas rather than merely answering. Behaviour: `tests/imagery.test.mjs` exercises `createImageryFailover` end to end. An isolated tile failure does not abandon a working source, four consecutive failures with no success between them move to the fallback, the resulting status reports year 2024 with `isFallback` true and an attribution naming 2024, and the transition is appended to a history entry carrying the provider reason.  
 Comments: Fallback coverage and the switching logic are both evidenced. Not executed: blocking the primary host in a browser and confirming the map redraws from the fallback with the 2024 attribution visible on screen. For the manual pass, set the `slivr:diagnostics` local-storage key to enable `forceImageryFailure` and reload, which abandons the primary on mount; blocking `maps.dotd.la.gov/...2025_Various_6IN_RGBI` in the network panel exercises the same path through real tile errors.
 
 **24. Imagery attribution and accuracy limits are visible.** Confirm DOTD source/year attribution and the statement that imagery is contextual rather than authoritative measurement/navigation/property evidence.
 
-Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [x] NOT TESTED  
+Result: - [x] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED  
+Current manual evidence (59a980ac, owner report recorded 2026-09-20): Manual checklist item 5 passed: source/year and accuracy notice visible. Historical evidence/comments below are retained.
 Evidence: Partial, automated. The configuration refuses any source whose attribution does not name its year, so a screenshot cannot show imagery without identifying the flight, and `tests/imagery.test.mjs` asserts that rule and the year carried through a failover. When every source is exhausted the attribution reads that no aerial imagery is available and deliberately contains neither year, so nothing stale is attributed. `region-config.js` requires an `accuracyNote`, and the Explore panel renders it beneath the map together with the active source and year.  
 Comments: The wording exists, is required by validation, and is wired into the panel, but nobody has seen it rendered. Attribution visibility is a question about the screen, not about the data. Retest live: confirm the DOTD source and year are legible over the map at desktop and tablet widths, that the contextual-not-survey statement is present, and that after a failover the year shown changes to 2024.
 
 **25. Layer 187 is not the configured Lafayette primary.** Inspect configuration and rendered requests. If exposed for diagnostics, it must not silently replace the approved source after an all-black/no-data response.
 
 Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [x] NOT TESTED  
+Current manual evidence (59a980ac, owner report recorded 2026-09-20): Owner confirms the imagery checklist passed. Excluded layer-187 request inspection was not separately requested in that procedure. Historical evidence/comments below are retained.
 Evidence: Configuration and provider evidence, automated. The 2026 layer is recorded in `data/region/lafayette.region.json` as an excluded service with its reason; `validateRegionImagery` raises an error if it is ever set as the primary or the fallback, and `tests/imagery.test.mjs` asserts that. A second test scans every committed file under `src/`, `styles/` and `index.html` and fails if any of them references that service, so it cannot reach a rendered request from application code. The probe also queried it directly for all six operational areas through the correct map-service `export` operation with that layer shown: every response was HTTP 200 with a valid image of one flat colour, recorded as `uniform` in the probe report.  
 Comments: This is the confirmed negative the architecture records, and probing it produced a sharper finding than expected. The excluded service does not return black; it returns a uniform non-black fill with a 200 response, so a check that only looked for an all-black image would have passed it. The content classifier rejects any single-colour image whatever its colour, which is what makes this detectable. An earlier probe run reported HTTP 400 for this service; that was a defect in the probe, which was calling the image-service operation on a map-service layer, and it was corrected before this result. Not executed: inspecting the browser network panel to confirm no request is issued to this service during a session.
 
 **26. Optional Google 3D fails without blocking the workspace. [D008]** Test missing key, denied request, slow response and disabled configuration. Aerial/plan/simple Three.js views, editing, saving and export remain available.
 
 Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [x] NOT TESTED  
+Current manual evidence (59a980ac, owner report recorded 2026-09-20): Manual checklist item 6 passed: actual Google geometry, attribution, toggling and blocked-provider fallback. Missing-key, denied-key, disabled-config and slow-response variants were not all separately reported. Historical evidence/comments below are retained.
 Evidence: Automated, four of the five paths. `tests/workspace-3d.test.mjs`, 23 tests, build `6e0130e240ad`. No credential is an explicit `absent` state whose wording says the aerial, imported-plan and blank-grid workspaces are unaffected, and no request is made at all. A disabled configuration is a distinct state from a missing credential. A refused credential returns `denied` and names the likely cause, a referrer restriction. A service that does not answer within the timeout returns `slow` rather than hanging, and an unreachable one is distinguished from a refusal. Across every one of those states, plus no WebGL, `availableBackgrounds` leaves the blank grid available and every unavailable option carries a reason. `redactCredentials` is asserted to strip `key`, `api_key` and `token` values from any text that reaches a display or a log.  
 Comments: The failure paths are exercised, but against injected responses rather than the real service, and the one path that needs a working credential — the tiles actually loading and then being removed — has not been attempted, because no Google Maps 3D Tiles key has been supplied. Retest live: with no credential, open `tools/three-spike.html` and confirm the scene renders and the optional-3D panel reads `absent`; with a credential in `config/runtime.js`, repeat for the available, denied and slow cases. Editing, saving and export do not depend on this provider at any point.
 
 **27. Minimal Three.js scene proves transforms and optics.** Place a camera, actor and frustum; verify zero rotation, translation, height, unit conversion and at least one independently calculated FOV fixture.
 
-Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [x] NOT TESTED  
+Result: - [x] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED  
+Current manual evidence (2026-09-20): owner reports PASS and supplies a Chrome screenshot of https://sroberto27.github.io/SLiVR/tools/three-spike.html. Three.js revision 183 is visible; the grid, blue camera, gold actor and frustum render. All 10 assertions visibly read PASS. Readings include camera position 0.000, 0.000, 1.500; height 1.50 m / 4.92 ft; heading 0 degrees; horizontal FOV 39.598 degrees; vertical FOV 26.991 degrees. Target is the previously supplied deployed build 59a980ac; the screenshot itself does not expose its commit or exact browser version. The optional runtime.js 404 remains visible and is separate from the passing transform/optics demonstration; this does not establish a clean console or Google provider success on this page. Historical evidence/comments below are retained.
 Evidence: Automated. `tests/workspace-3d.test.mjs` plus the Phase 0.1 optics and frame fixtures. Zero rotation is the identity and zero heading points at scene north; heading follows a compass, with 90° east, 180° south, 270° west; the basis stays orthonormal at an arbitrary heading and pitch to within 1e-12; a positive pitch raises the view without rolling the horizon. Translation and height: a 1.5 m mount height places the camera at 1.5 m on the ground floor and at 4.7 m on a floor 3.2 m up. Unit conversion: 1.5 m is 4.92126 ft. Optics, independently calculated rather than quoted: a 36.0 by 24.0 mm gate at 50 mm gives 39.5978° horizontally and 26.9915° vertically, matching `2 * atan(36 / (2 * 50))` to 1e-9. The frustum has eight corners that widen with distance, rotates with its camera, and decides framing by containment rather than proximity, including the cases just inside and just outside its horizontal edge. `buildThreeScene` is exercised against a stand-in library and asserted to place only what was already computed.  
 Comments: Every number this test names is now computed and checked, and the geometry is deliberately separated from the library so a rendering fault cannot be mistaken for a maths fault. What remains is the rendered half: `tools/three-spike.html` draws the camera, actor and frustum from these same corners and repeats the fixtures on screen, but it has not been loaded. Retest live: open that page and confirm the scene draws and every assertion in its list reads PASS.
 
 **28. Treedis capability reconnaissance covers all supplied entries. [F03/F19]** Record availability, authorization, ready/navigation messages, sweep support, view/pose availability, capture metadata and failure behavior for the shared downtown entries and five independent experiences without assuming unsupported APIs.
 
 Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [x] NOT TESTED  
+Current manual evidence (59a980ac, owner report recorded 2026-09-20): Manual checklist item 7 passed for all 11 visual entries and transitions. Raw capability report, capture metadata and rights evidence were not supplied with the confirmation. Historical evidence/comments below are retained.
 Evidence: Two parts. Availability, automated and live against the provider: `node tools/probe-treedis.mjs`, run 2026-09-20, requested all 11 supplied entry URLs. All 11 answered 200, all 6 experiences are inside the region allowlist, and every entry document echoed both its experience identifier and its own sweep identifier, so the supplied URLs address the viewpoints the catalog claims. No entry returned a header refusing embedding: none carries `X-Frame-Options`, and none carries a `frame-ancestors` directive. Full per-entry endpoints, statuses, timings, header findings and SDK hints are in `outputs/treedis-probe/treedis-probe.json`. Contract, automated: `tests/immersive.test.mjs`, 21 tests, covering the message vocabulary, origin enforcement, handshake, navigation, timeout and capability rules. Runtime, not executed: `tools/treedis-recon.html` loads each entry through the shipping adapter and records what the viewer does. Since 2026-09-20 the same adapter also runs inside the application itself, so this test can be executed from Immersive rather than only from the standalone harness, and `actions.viewerReport()` returns the per-entry record from whichever capture is open.  
 Comments: Availability and authorization are established. Embedding is not: the absence of a refusing header is a necessary condition, not a sufficient one, because the page may still refuse in script and the viewer may fail inside a cross-origin frame. Ready and navigation messages, sweep support and pose availability have not been observed at all, and every one of them reads `unknown` in the capability record rather than being assumed either way. Capture metadata remains `Information has not been found` for all 11 entries; retrieving capture date, coverage and reuse rights needs the Treedis administrative access that has not been supplied. Retest live one entry at a time, either from the harness or from Immersive, and keep the report as the provider capability matrix. Eleven entries are required; one has been observed, from the harness.
 
 **29. The shared downtown model proves distinct entry navigation.** Navigate to at least two supplied downtown sweep/entry targets and show that catalog identity remains distinct even though the experience ID is shared.
 
-Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [x] NOT TESTED  
+Result: - [x] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED  
+Current manual evidence (59a980ac, owner report recorded 2026-09-20): Manual checklist item 7 passed: distinct shared-downtown viewpoints and navigation to two sibling targets. Historical evidence/comments below are retained.
 Evidence: Automated in part. The probe confirms six catalog records — LOC-001 to LOC-006, captures CAP-001 to CAP-006 — share experience `5eb11a1b` while carrying six distinct sweep identifiers, each echoed by the delivered document. `tests/immersive.test.mjs` asserts that the adapter report identifies the capture and location, not only the experience, so two findings inside the shared experience cannot be confused; and that a sweep change is only recorded as no-reload navigation when a pose actually reports arrival at the requested sweep. `tools/treedis-recon.html` offers, for whichever entry is loaded, a navigation button per sibling record in the same experience, labelled by location identifier. Added 2026-09-20, build `65ccbfbf7da7`: `tests/shell-smoke.test.mjs` opens all six downtown routes through the real entry point and asserts that the viewer frame receives six distinct entry URLs, all inside experience `5eb11a1b`, with application state naming the requested location each time. That covers the routing half through the product rather than through a fixture.  
 Comments: The catalog half is proven, and as of build `65ccbfbf7da7` so is the routing half: six routes reach six distinct entry URLs inside one shared experience. What no test can show is the screen. The navigation half has not been run, because it needs the viewer to accept a `Navigate` command, which is exactly the capability that is still unknown. Retest live: load CAP-001 in the harness, navigate to at least two of the other downtown targets, and confirm both that the view changes and that the harness continues to name the destination by its own location identifier. If the bridge does not answer, the fallback is a full reload of the sibling entry URL, which the harness also offers and which always works.
 
@@ -1648,3 +1696,41 @@ rotate through four bearings, check Google Maps/data attribution, return to 2D,
 repeat toggles, leave/re-enter Explore, and exercise absent/denied/slow-provider
 and graphics-context failure. Confirm a labelled aerial fallback, intact catalog
 selection, and no deletion of saved project data. No phase completion is claimed.
+
+## 2026-09-20 - Owner screenshot closes manual test 27
+
+The owner opened the published Three.js demonstration and confirmed PASS.
+The supplied screenshot shows the rendered scene and all 10 passing assertions,
+including full-frame 50 mm FOV 39.598/26.991 degrees and 1.50 m camera height.
+All eight supplied manual acceptance checklist items are now PASS. No assistant
+tests were run. The optional runtime.js request still returns 404 on this
+diagnostic page; console cleanliness is not claimed. Broader fixture/schema,
+provider metadata and final phase evidence review remain distinct from these
+manual checklist results.
+
+
+## Manual retest pending - translucent Treedis loading (D059)
+
+The working tree changes the immersive loading veil and timing after the owner's
+acceptance of 59a980ac. Tests 28, 29, 175 and 181 need affected-surface retesting
+on the next deployed build; historical passes remain valid for their prior build.
+No tests were executed for this change, as directed by the owner.
+
+Observe the provider loading behind the 55% dark veil. If readiness remains
+pending, slow copy appears at 15 seconds and Stop waiting at 30 seconds from
+initial display, without the iframe load event restarting those timers. After
+TourReady, queued navigation begins at 600 ms with transitionTime 0; four attempts
+are spaced 1500 ms apart and unresolved navigation recovers at 6 seconds. Check
+arrival hides the veil, a new experience resets the wait, and leaving cancels
+pending timers. The existing spinner period is 900 ms. Readiness pings are 2 s
+apart (first at 2 s); unlike SCSU's indefinite polling, SLiVR retains a 30-ping
+limit and the separate 60-second no-load bound. Record actual manual results.
+
+## 2026-09-20 - Owner accepts immersive loading update
+
+The owner reports the D059 loading/timing update is working and authorizes its
+publication. Record this as owner-reported manual acceptance of the current
+loading presentation and behavior; no additional automated tests were run and
+no detailed timing trace or new browser/device information was supplied. This
+supersedes the pending manual acceptance of that update, without asserting that
+every failure-path regression was separately re-executed.

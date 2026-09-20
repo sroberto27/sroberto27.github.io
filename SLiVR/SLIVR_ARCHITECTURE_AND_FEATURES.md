@@ -8,7 +8,7 @@ Status: Approved implementation-planning guide. It defines the first-prototype s
 
 Build a map-centered location scouting website for Lafayette, Louisiana, using the useful foundations of the LSU3D campus recruitment map. Connect discovery, immersive inspection, production requirements, shot blocking, and technical scouting in one workflow.
 
-The existing project at `E:\sroberto27.github.io\Wrapper\map\LSU3D` is a **read-only reference**. All future development belongs in `E:\sroberto27.github.io\SLiVR`. Do not rename, edit, clean, reformat, migrate, or deploy over the original project. Preserve existing reference files in `SLiVR/docs`.
+Both `E:\sroberto27.github.io\Wrapper\map\LSU3D` and `E:\sroberto27.github.io\Wrapper\map\Experimental` (SCSU) are **read-only code ground-truth and refactoring references for every phase**. All future development belongs in `E:\sroberto27.github.io\SLiVR`. Do not rename, edit, clean, reformat, migrate, or deploy over either reference project. Preserve existing reference files in `SLiVR/docs`.
 
 The primary outcome is a defensible scouting decision: why a place fits a scene, what has been observed, what remains unknown, how a proposed shot could work, and what must be checked on site. Attractive imagery alone is insufficient.
 
@@ -603,32 +603,34 @@ Do not treat the original project's passing tests as proof of new functionality.
 
 ### 10.5 Reference-first implementation
 
-The read-only `E:\sroberto27.github.io\Wrapper\map\Experimental` SCSU project is
-the source of truth for the Treedis wrapper and immersive street viewer, as
-directed on September 20, 2026. Adapt its `js/03-tour-bridge.js`,
-`js/04-street-view.js`, `map.html` and provider configuration. Preserve SLiVR's
-multiple-experience identity, validation, cancellation and disposal requirements.
-Its working implementation is the source; Lafayette provider behavior still
-requires live verification. LSU3D remains the reference for its other capabilities.
+Both read-only projects are approved code ground-truth and refactoring sources
+for all current and future phases (D058):
 
-LSU3D is the ground-truth reference for anything it already does. Every phase adapts its
-code in preference to deriving a new solution, and plumbing follows its working
-configuration exactly: library loading, stylesheet order, container setup, source and
-layer identifiers, lifecycle and teardown, request shapes and provider parameters.
+- `E:\sroberto27.github.io\Wrapper\map\LSU3D`
+- `E:\sroberto27.github.io\Wrapper\map\Experimental` (SCSU)
 
-Deviation is permitted only where this specification or the implementation plan requires
-a different approach, where the reference behaviour is a recorded defect, or where no
-counterpart exists. Each deviation is recorded in the decision record naming the LSU3D
-file it departs from. The reference is not authoritative where it was never executed:
-its Treedis bridge has no live evidence behind it, and observed provider behaviour
-supersedes its transcribed protocol.
+Before writing a module, inspect both projects for relevant counterparts.
+Adapt working code instead of deriving a new implementation where a counterpart
+exists. SCSU is not restricted to immersive features; either source may provide
+map behavior, UI, provider integration, lifecycle handling or reusable utilities.
+Choose between differing counterparts using demonstrated behavior and SLiVR's
+requirements. Record the selected project, source file/line and rationale.
 
-Before a phase closes, the phase's modules are compared against their LSU3D counterparts.
-A divergence that qualifies under one of the three reasons is written down; every other
-divergence is corrected in that phase by changing SLiVR to match the reference. Neither a
-divergence nor its correction is deferred to a later phase, because the next phase builds
-on whatever is left. Test 184 carries this check and does not pass while an unjustified
-divergence remains.
+For Treedis, the working SCSU `js/03-tour-bridge.js`, `js/04-street-view.js`,
+`map.html` and provider configuration remain the preferred starting point.
+Retain SLiVR's multiple-experience identity, origin/source/payload validation,
+cancellation, timeouts and disposal. A reference implementation is not proof of
+provider behavior on SLiVR; unexecuted assumptions and known defects are not
+copied as verified capabilities.
+
+Follow the selected reference's applicable plumbing: library loading,
+stylesheet order, containers, sources/layers, lifecycle, request shapes and
+provider parameters. Deviations require an architecture/plan requirement, a
+recorded reference defect, or the absence of a counterpart in both projects.
+Record deviations with source paths in the decision record. Before a phase
+closes, test 184 compares changed modules with both available counterparts;
+correct unjustified divergences in that phase. Neither reference is edited;
+all adaptation stays inside SLiVR and preserves its own data and product identity.
 
 ## 11. Approved prototype operating decisions
 
@@ -655,7 +657,7 @@ divergence remains.
 
 ## 12. Claude CLI planning handoff
 
-Use [CLAUDE_CLI_PLAN_MODE_PROMPT.md](CLAUDE_CLI_PLAN_MODE_PROMPT.md) from `E:\sroberto27.github.io\SLiVR` to begin the next step. The prompt makes this guide the controlling specification, identifies the read-only LSU3D reference and supporting evidence, requires a dependency-based plan for essential Phases 0–5 plus the separate post-prototype Phase 6 research pipeline, and forbids implementation while Claude CLI remains in plan mode.
+Use [CLAUDE_CLI_PLAN_MODE_PROMPT.md](CLAUDE_CLI_PLAN_MODE_PROMPT.md) from `E:\sroberto27.github.io\SLiVR` to begin the next step. The prompt makes this guide the controlling specification, identifies both read-only code references and supporting evidence, requires a dependency-based plan for essential Phases 0–5 plus the separate post-prototype Phase 6 research pipeline, and forbids implementation while Claude CLI remains in plan mode.
 
 The first Claude response should be a reviewable implementation plan rather than code. It must report contradictions, missing inputs and unverifiable provider assumptions explicitly; those items become validation tasks or blockers only when they prevent the relevant phase exit gate. Later-roadmap features must not enter the prototype plan unless the user revises this guide.
 

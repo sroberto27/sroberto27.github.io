@@ -56,11 +56,11 @@ test("a long wait explains itself and then offers a way out", () => {
   assert.match(first, /Loading/);
   assert.equal(cancel().hidden, true, "a way out is not offered while the wait is still ordinary");
 
-  dom.advance(8000);
+  dom.advance(15000);
   assert.notEqual(label().textContent, first, "the wording changes rather than repeating");
   assert.match(label().textContent, /slower connection/);
 
-  dom.advance(17000);
+  dom.advance(15000);
   assert.equal(cancel().hidden, false);
   cancel().click();
   assert.equal(cancelled, 1);

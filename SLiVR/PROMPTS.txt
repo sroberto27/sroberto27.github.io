@@ -35,8 +35,12 @@ Read these first, in order:
 Implement: <WORK PACKAGE — copy one line from the phase list in section 2>
 
 Rules:
-- Treat E:\sroberto27.github.io\Wrapper\map\LSU3D as a read-only reference. Adapt
-  behaviour; never copy LSU content, coordinates or credentials; never modify it.
+- Use both E:\sroberto27.github.io\Wrapper\map\LSU3D and
+  E:\sroberto27.github.io\Wrapper\map\Experimental (SCSU) as read-only code
+  ground-truth and refactoring sources in every phase. Inspect both before
+  writing new code; adapt proven behavior and record source files and deviations.
+  SCSU is not limited to Treedis. Never modify either reference or copy its
+  campus identity/content. Credential handling follows the approved D057 exception.
 - Static HTML, CSS and ES modules. No build step, no framework, no package install.
 - Implement only this work package. Later-phase features stay out.
 - Preserve "Need validation" and "Information has not been found" verbatim. An

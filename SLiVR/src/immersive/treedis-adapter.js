@@ -36,8 +36,8 @@ export const ADAPTER_STATES = Object.freeze([
 export function createTreedisAdapter({ region, win, onEvent = null, now = () => new Date().toISOString() }) {
   const origin = region.origin;
   const pingIntervalMs = region.readyPingIntervalMs ?? 2000;
-  const pingMaxAttempts = region.readyPingMaxAttempts ?? 10;
-  const navigationTimeoutMs = region.navigationTimeoutMs ?? 20000;
+  const pingMaxAttempts = region.readyPingMaxAttempts ?? 30;
+  const navigationTimeoutMs = region.navigationTimeoutMs ?? 6000;
   const loadTimeoutMs = region.loadTimeoutMs ?? 60000;
 
   let frame = null;
@@ -110,7 +110,7 @@ export function createTreedisAdapter({ region, win, onEvent = null, now = () => 
         clearLoadTimer();
         capabilities = observe(capabilities, "ready", true);
         capabilities = observe(capabilities, "embedding", true);
-        setState("ready");
+        if (!pendingSweepId) setState("ready");
         emit({ type: "ready" });
         // Ask once for the sweep list; whether it answers is a finding.
         post(requestSweeps());
@@ -182,7 +182,7 @@ export function createTreedisAdapter({ region, win, onEvent = null, now = () => 
       post(ping());
       pingTimer = win.setTimeout(tick, pingIntervalMs);
     };
-    tick();
+    pingTimer = win.setTimeout(tick, pingIntervalMs);
   }
 
   function stopPinging() {
@@ -210,7 +210,7 @@ export function createTreedisAdapter({ region, win, onEvent = null, now = () => 
     const x = angle("startX", "x");
     const y = angle("startY", "y");
     return {
-      transitionTime: region.defaultTransitionTime ?? 1500,
+      transitionTime: region.defaultTransitionTime ?? 0,
       ...(Number.isFinite(x) && Number.isFinite(y) ? { rotation: { x, y } } : {}),
     };
   }
@@ -315,6 +315,9 @@ export function createTreedisAdapter({ region, win, onEvent = null, now = () => 
       emit({ type: "load-timeout" });
     }, loadTimeoutMs);
     frame.setAttribute("src", launchUrl.href);
+    // Match the reference: readiness polling begins when the frame is attached,
+    // without depending on a delayed iframe load event.
+    startPinging();
     return { ok: true, reloaded: true };
   }
 
@@ -331,7 +334,7 @@ export function createTreedisAdapter({ region, win, onEvent = null, now = () => 
     navigate(sweepId, options);
     clearNavigationTimer();
     pendingSweepId = sweepId;
-    pendingOptions = { transitionTime: region.defaultTransitionTime ?? 1500, ...options };
+    pendingOptions = { transitionTime: region.defaultTransitionTime ?? 0, ...options };
     record("navigation-requested", { sweepId });
     flushPendingSweep();
     return { ok: true };
