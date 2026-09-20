@@ -1,0 +1,100 @@
+{
+  "schemaVersion": "1.0.0",
+  "regionId": "lafayette-la",
+  "name": "Lafayette, Louisiana",
+  "timeZone": "America/Chicago",
+  "bounds": {
+    "west": -92.05,
+    "south": 30.2,
+    "east": -92.005,
+    "north": 30.255
+  },
+  "boundsNote": "Padded planning envelope around the reviewed inventory. It is a configuration extent, not a legal boundary, a property boundary or a claim of immersive coverage.",
+  "inventoryBounds": {
+    "west": -92.0429691,
+    "south": 30.2055904,
+    "east": -92.0103782,
+    "north": 30.248618
+  },
+  "inventoryBoundsNote": "Derived from the 17 catalog coordinates in catalog version 1.0.0. Most coordinates are geocoded approximations that still need checking at the intended entrance.",
+  "defaultView": {
+    "center": [
+      -92.026674,
+      30.227104
+    ],
+    "zoom": 13.5,
+    "bearing": 0,
+    "pitch": 0
+  },
+  "imagery": {
+    "primary": {
+      "id": "dotd-2025-various-6in-rgbi",
+      "label": "Louisiana DOTD, 2025 6-inch aerial",
+      "year": 2025,
+      "service": "https://maps.dotd.la.gov/imagery/rest/services/Imagery/2025_Various_6IN_RGBI/ImageServer",
+      "tileTemplate": "https://maps.dotd.la.gov/imagery/rest/services/Imagery/2025_Various_6IN_RGBI/ImageServer/exportImage?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=512,512&format=jpg&f=image&bandIds=0,1,2",
+      "tileSize": 512,
+      "maxZoom": 20,
+      "attribution": "Imagery: Louisiana DOTD, 2025 6-inch aerial",
+      "formatNote": "JPEG is requested because the equivalent PNG32 response is roughly nine times larger for the same tile. JPEG is opaque at coverage edges; jpgpng is the escape hatch if edge transparency becomes necessary.",
+      "resolutionNote": "One 512-pixel request replaces four 256-pixel requests, so maxZoom 20 at 512 pixels is the same ground resolution as maxZoom 21 at 256. Measured on 2026-09-20 that is about 0.064 m per pixel at this latitude, finer than the 0.150 m the source holds, so the top zoom level upsamples. The value is kept because it is the shape proven to render; whether to lower it is a visual judgement that needs a browser.",
+      "sourcePixelSizeM": 0.1499900139804275,
+      "sourcePixelSizeNote": "Ground sample distance reported by the service metadata, about six inches. It sets the finest detail any request can actually return."
+    },
+    "fallback": {
+      "id": "dotd-2024-lafayette-6in-rgbi",
+      "label": "Louisiana DOTD, 2024 Lafayette 6-inch aerial",
+      "year": 2024,
+      "service": "https://maps.dotd.la.gov/imagery/rest/services/Imagery/2024_Lafayette_6IN_RGBI/ImageServer",
+      "tileTemplate": "https://maps.dotd.la.gov/imagery/rest/services/Imagery/2024_Lafayette_6IN_RGBI/ImageServer/exportImage?bbox={bbox-epsg-3857}&bboxSR=3857&imageSR=3857&size=512,512&format=jpg&f=image&bandIds=0,1,2",
+      "tileSize": 512,
+      "maxZoom": 20,
+      "attribution": "Imagery: Louisiana DOTD, 2024 Lafayette 6-inch aerial",
+      "sourcePixelSizeM": 0.14998546091759923
+    },
+    "neutralBackgroundColor": "#2b2f33",
+    "accuracyNote": "Aerial imagery is scouting context. It is supplied as-is and is not authoritative for navigation, engineering, legal, property-transfer or other high-precision site-specific work, and it is not evidence of present physical condition.",
+    "excluded": [
+      {
+        "id": "dotd-remote-sensing-mapserver-187",
+        "service": "https://maps.dotd.la.gov/imagery/rest/services/Imagery/Louisiana_Remote_Sensing_Map/MapServer/187",
+        "reason": "2026 six-inch natural-colour imagery whose published extent and direct sample requests did not cover the Lafayette inventory. Sample requests returned no-data images. It must never be configured as the Lafayette primary source, and a successful HTTP response is not evidence of pixel coverage."
+      }
+    ]
+  },
+  "immersive": {
+    "provider": "treedis",
+    "origin": "https://spaces.dtsxr.com",
+    "originAliases": [
+      "https://my.treedis.com"
+    ],
+    "originNote": "The catalog records this host because the working reference project embeds it and the primary provider host failed to load its own tour data inside a frame on 2026-09-20 (L033). Both hosts serve byte-identical tour documents. Whether the change resolves that failure is Need validation. Only these origins may be loaded, posted to, or accepted from.",
+    "tourPathPrefix": "/tour/",
+    "experienceAllowlist": [
+      "5eb11a1b",
+      "62704853",
+      "6af20e40",
+      "a872109b",
+      "a21e99a0",
+      "4c37c871"
+    ],
+    "allowlistNote": "Only these experiences may be loaded. The first is shared by six separate downtown location records, which remain distinct catalog entries.",
+    "navigationTimeoutMs": 20000,
+    "readyPingIntervalMs": 2000,
+    "readyPingMaxAttempts": 10
+  },
+  "optional3d": {
+    "provider": "google-photorealistic-3d-tiles",
+    "rootTileset": "https://tile.googleapis.com/v1/3dtiles/root.json",
+    "credentialSource": "config/runtime.js",
+    "credentialNote": "No credential is committed. When absent, unauthorised or slow, the aerial, imported-plan and blank-grid workspaces remain fully usable and authored objects are unaffected.",
+    "attribution": "Google"
+  },
+  "storage": {
+    "databaseName": "slivr-workspace",
+    "databaseVersion": 1,
+    "keyPrefix": "slivr:",
+    "cachePrefix": "slivr-",
+    "isolationNote": "This origin also serves neighbouring applications. Every key, database and cache name is SLiVR-scoped, and no code may enumerate or remove another application's service-worker registrations or caches."
+  }
+}

@@ -1,0 +1,17 @@
+# Private reference material. The repository root is published by GitHub Pages,
+# so anything committed under SLiVR/ becomes publicly fetchable. These paths
+# hold the scanned scouting book, the unpublished paper, the research-mode text
+# and the location workbook with venue contacts.
+#
+# docs/* excludes the contents rather than the directory itself, because git
+# cannot re-include a file whose parent directory is excluded.
+docs/*
+outputs/
+
+# The living verification record is deliberately published. It carries test
+# procedures and execution history that must survive in source control, and it
+# contains no private reference material.
+!docs/FULL-SYSTEM-TESTING.md
+
+# Optional runtime configuration: provider credentials never enter committed source.
+config/runtime.js

@@ -1,0 +1,485 @@
+SLiVR — REUSABLE CLI PROMPTS
+============================================================================
+Working directory for every prompt below:  E:\sroberto27.github.io\SLiVR
+
+Start a session with:
+    cd E:\sroberto27.github.io\SLiVR
+    claude
+
+Continue the most recent session in this directory:   claude -c
+Pick an older session from a list:                    claude -r
+Branch off a session without overwriting it:          claude -r --fork-session
+
+SLiVR/CLAUDE.md loads automatically, so the project boundary, comment style,
+git scope, research and testing rules are already in force. The prompts below
+do not repeat them.
+
+Copy a whole block between the ---- lines. Replace anything in <ANGLE BRACKETS>.
+
+
+============================================================================
+1. START A PHASE OR WORK PACKAGE           (the main one — works for any phase)
+============================================================================
+----------------------------------------------------------------------------
+Working directory: E:\sroberto27.github.io\SLiVR
+
+Read these first, in order:
+1. SLIVR_ARCHITECTURE_AND_FEATURES.md — controlling product and architecture spec
+2. IMPLEMENTATION_PLAN.md — approved implementation plan, phase breakdown,
+   source-reuse matrix and provider feasibility matrix
+3. docs/FULL-SYSTEM-TESTING.md — living verification record; the execution log at
+   the end states what has actually been built and verified so far
+4. research/DECISION_RECORD.md and research/RESEARCH_CHANGELOG.md — settled
+   decisions and build history
+
+Implement: <WORK PACKAGE — copy one line from the phase list in section 2>
+
+Rules:
+- Treat E:\sroberto27.github.io\Wrapper\map\LSU3D as a read-only reference. Adapt
+  behaviour; never copy LSU content, coordinates or credentials; never modify it.
+- Static HTML, CSS and ES modules. No build step, no framework, no package install.
+- Implement only this work package. Later-phase features stay out.
+- Preserve "Need validation" and "Information has not been found" verbatim. An
+  unknown never becomes a default, an empty value or a favourable claim.
+
+When finished:
+- Run `node --test`, `node tools/validate-catalog.mjs` and
+  `node tools/check-deploy-scope.mjs`, and report the actual output.
+- Update docs/FULL-SYSTEM-TESTING.md: annotate the applicable test IDs with the
+  evidence actually produced and add an execution-log entry. Mark PASS only for
+  tests you executed in full. Anything partly covered stays NOT TESTED with a note
+  saying what remains and when to retest.
+- Update research/DECISION_RECORD.md (append-only), RESEARCH_CHANGELOG.md,
+  FEATURE_EVIDENCE_REGISTER.md and LIMITATIONS_AND_THREATS.md.
+- Do not commit or push unless I ask.
+
+Start by telling me what the plan says this package contains and what it depends
+on, then implement it.
+----------------------------------------------------------------------------
+
+
+============================================================================
+2. THE PHASE LIST — paste one of these into "Implement:" above
+============================================================================
+
+PHASE 0 — FOUNDATION AND FEASIBILITY
+  [DONE] Phase 0.1: catalog, record schemas and spatial core (tests 11, 12; partial 13, 27)
+
+  Phase 0.2: application shell, hash routing, store, IndexedDB repository and
+             versioned JSON transfer (tests 14-21, completes 13)
+
+  Phase 0.3: MapLibre adapter, DOTD primary and fallback imagery, and the
+             pixel-content imagery probe (tests 22-25)
+
+  Phase 0.4: Three.js camera/actor/frustum spike, optional Google 3D behind my
+             runtime key, and Treedis reconnaissance across all 11 entries
+             (tests 26-29, completes 27)
+             NOTE: needs the Google Maps 3D Tiles key and Treedis admin access.
+
+  Phase 0 exit: research records, Part A repository sweep and the Phase 0 exit
+             gate (tests 1-10, 30)
+
+PHASE 1 — LOCATION ATLAS AND DOSSIERS                            (tests 31-49)
+  Synchronised map and list across all 17 records, search, filters, sorting,
+  clustering, full dossiers with visible evidence and validation states.
+  Features F01, F02, F19 metadata.
+
+PHASE 2 — IMMERSIVE SCOUT                                        (tests 50-67)
+  Treedis adapter with explicit lifecycle and message validation, the six
+  distinct downtown entries inside the shared experience, the five independent
+  experiences, bookmarks and context-preserving transitions.
+  Features F03, F04 basic.
+
+PHASE 3 — PROJECT WORKSPACE                                      (tests 68-84)
+  Local productions, scene requirements, candidates, comparison, preferred and
+  backup decisions, autosave and validated JSON import/export.
+  Features F05, F06.
+
+PHASE 4 — SHOT DESIGNER CORE                                    (tests 85-112)
+  Synchronised 2D plan and 3D view over one scene model, the approved object
+  set, camera and lens controls with FOV cone and frustum, paths, deterministic
+  preview, shot list, variants, floor-plan import and calibration, undo/redo,
+  PNG diagram and shot-list CSV.
+  Features F08-F12.
+
+PHASE 5 — INTEGRATED PROTOTYPE AND RELEASE VALIDATION          (tests 113-140)
+  End-to-end workflow, the four exports plus emergency recovery, routing and
+  context hardening, resource disposal, accessibility and tablet checks, service
+  worker with cache isolation, deployment scope, research close-out.
+  Feature F20 baseline. THIS COMPLETES THE FIRST PROTOTYPE.
+
+--- everything below is outside the first prototype ---
+
+PHASE 6 — TREEDIS RESEARCH MODE (post-prototype)               (tests 141-171)
+  6A passive record-only capture, then 6B experimental manipulation behind a
+  separate approval and runtime gate. Requires documented provider and
+  content-owner authorisation plus study, ethics and security approval before
+  any implementation. Feature F21.
+  Controlling document: research/TREEDIS_RESEARCH_MODE_PLAN.md
+
+PHASE 7 — FIELD PRODUCTION
+  Scout visit planner (F07), production logistics map (F14), permissions,
+  availability and costs (F15), technical scout and handoff (F16), dedicated
+  phone and tablet field tools (F20 expanded).
+
+PHASE 8 — ADVANCED PREVISUALIZATION AND ENVIRONMENT
+  Advanced camera and lens behaviour, depth of field, anamorphic simulation,
+  complex model workflows, keyframes and richer animation (F09/F10/F12 advanced),
+  sun, shadow and weather tools (F13).
+
+PHASE 9 — TEAM AND OPERATIONS
+  Collaboration and review (F18), capture library administration (F19
+  management), wrap and location stewardship (F17), operational hardening and
+  validated regional expansion such as the solar-energy location.
+
+STANDING
+  Part J regression sweep (tests 172-183) — run after every phase.
+
+
+============================================================================
+3. CHECK STATUS                                          (read-only, no changes)
+============================================================================
+----------------------------------------------------------------------------
+Working directory: E:\sroberto27.github.io\SLiVR
+
+Read-only status check. Do not change any file.
+
+Read docs/FULL-SYSTEM-TESTING.md (especially the execution log at the end),
+research/RESEARCH_CHANGELOG.md, research/FEATURE_EVIDENCE_REGISTER.md and
+IMPLEMENTATION_PLAN.md. Inspect the actual source tree and run:
+  node --test
+  node tools/validate-catalog.mjs
+  node tools/check-deploy-scope.mjs
+
+Then tell me:
+1. Which work package was last completed, and which is next.
+2. Test counts by real status: PASS, FAIL, BLOCKED, NOT TESTED. Do not infer a
+   PASS from code that looks correct — only from a recorded execution.
+3. Which tests are recorded as partially evidenced, and what still blocks them.
+4. Anything in the source tree that is NOT reflected in the test document or the
+   research records, and anything the records claim that the code does not do.
+5. Whether LSU3D is still untouched, and whether anything private has become
+   publishable.
+6. Any decision in research/DECISION_RECORD.md that the current code contradicts.
+
+Report what is actually true, including gaps. Do not fix anything in this session.
+----------------------------------------------------------------------------
+
+
+============================================================================
+4. UPDATE STATUS AND RECORDS               (after work, or to correct drift)
+============================================================================
+----------------------------------------------------------------------------
+Working directory: E:\sroberto27.github.io\SLiVR
+
+Bring the records into line with what the code actually does. Change records
+only — do not change application behaviour in this session.
+
+1. Establish ground truth: inspect the source tree and run `node --test`,
+   `node tools/validate-catalog.mjs` and `node tools/check-deploy-scope.mjs`.
+2. Update docs/FULL-SYSTEM-TESTING.md:
+   - Document control: current phase and last-updated date.
+   - The target table: build identifier, environment, catalog and schema
+     versions for this execution.
+   - Test IDs affected: evidence and comments describing what was actually run.
+     Mark PASS only for tests executed in full in this session. Preserve every
+     existing FAIL, BLOCKED and NOT TESTED result. Never renumber a test ID.
+   - Add an execution-log entry, newest first.
+3. Update research/RESEARCH_CHANGELOG.md with the build identifier, affected
+   feature IDs, what changed and the evidence level.
+4. Update research/FEATURE_EVIDENCE_REGISTER.md. A feature only becomes
+   "Implemented" or "Validated technically" when linked evidence exists.
+5. Append to research/DECISION_RECORD.md any material decision not yet recorded.
+   Append-only: supersede rather than rewrite.
+6. Add anything newly discovered to research/LIMITATIONS_AND_THREATS.md.
+
+Tell me every place the records and the code disagreed, and how you resolved it.
+Do not commit unless I ask.
+----------------------------------------------------------------------------
+
+
+============================================================================
+5. VERIFY SOMETHING SPECIFIC
+============================================================================
+----------------------------------------------------------------------------
+Working directory: E:\sroberto27.github.io\SLiVR
+
+Verify: <WHAT — e.g. "test 22, that DOTD 2025 imagery returns real Lafayette
+pixels in all six operational areas" / "that a future candidate can never
+produce a tour URL" / "that catalog IDs survive regeneration">
+
+Do this by actually executing it, not by reading the code and concluding it
+should work. State plainly which parts you executed and which you only
+inspected.
+
+Report:
+- The exact commands run and their real output.
+- The build identifier, environment and catalog/schema versions.
+- PASS, FAIL, BLOCKED or NOT TESTED, with the reason.
+- If it requires a browser, device or live provider and you cannot do that here,
+  say so and record it as BLOCKED with a specific retest condition — do not
+  substitute an automated approximation and call it verified.
+
+Then record the result in docs/FULL-SYSTEM-TESTING.md against the applicable
+test ID, with evidence. Do not mark anything you did not execute.
+----------------------------------------------------------------------------
+
+
+============================================================================
+6. ADD A FEATURE THAT IS ALREADY IN SCOPE
+============================================================================
+----------------------------------------------------------------------------
+Working directory: E:\sroberto27.github.io\SLiVR
+
+Add: <FEATURE — e.g. "the operational-area filter to Explore">
+
+Before writing code:
+1. Find the feature in SLIVR_ARCHITECTURE_AND_FEATURES.md and name its feature
+   ID (F01-F21) and its approved phase.
+2. Confirm it belongs to the phase we are in. If it belongs to a later phase,
+   stop and tell me — do not implement it.
+3. Name the FULL-SYSTEM-TESTING.md test IDs that cover it. If none do, propose
+   new test IDs appended at the end; never renumber existing ones.
+
+Then implement it, matching the existing module structure and dependency
+direction. Add meaningful automated tests. Run the full checks. Update the test
+document and the research records. Do not commit unless I ask.
+----------------------------------------------------------------------------
+
+
+============================================================================
+7. ADD SOMETHING THAT IS NOT IN SCOPE YET              (scope-change request)
+============================================================================
+----------------------------------------------------------------------------
+Working directory: E:\sroberto27.github.io\SLiVR
+
+I want: <WHAT>
+
+Do not implement anything yet. First tell me:
+1. Whether this already exists in SLIVR_ARCHITECTURE_AND_FEATURES.md, and under
+   which feature ID and phase.
+2. If it is later-phase or absent, what a scope revision would require: which
+   exit gate changes, which tests must be added, which decisions in
+   research/DECISION_RECORD.md it touches or contradicts, and what it would
+   pull forward from a later phase.
+3. The smallest version of it that would fit the current phase without breaking
+   the approved boundary, if one exists.
+4. Your recommendation: do it now, do it as a scope revision, or leave it in its
+   approved phase.
+
+Wait for my decision before changing any file.
+----------------------------------------------------------------------------
+
+
+============================================================================
+8. FIND AND FIX A BUG
+============================================================================
+----------------------------------------------------------------------------
+Working directory: E:\sroberto27.github.io\SLiVR
+
+Problem: <WHAT I SAW — what happened, what I expected, and how to reproduce it>
+
+1. Reproduce it first and show me the real failure output. If you cannot
+   reproduce it, say so rather than guessing at a cause.
+2. Write a test that FAILS because of this bug, and show me that it fails before
+   you change anything.
+3. Fix the root cause, not the symptom. If the real cause is a design problem
+   rather than a slip, tell me before rewriting anything large.
+4. Show the test passing, then run `node --test`,
+   `node tools/validate-catalog.mjs` and `node tools/check-deploy-scope.mjs` in
+   full to confirm nothing else regressed.
+5. Add the new test to docs/FULL-SYSTEM-TESTING.md with a new test ID appended
+   at the end. Record the failure in research/LIMITATIONS_AND_THREATS.md or
+   RESEARCH_CHANGELOG.md if it changes what the records claim.
+
+Do not commit unless I ask.
+----------------------------------------------------------------------------
+
+
+============================================================================
+9. REGRESSION SWEEP                                (after any significant change)
+============================================================================
+----------------------------------------------------------------------------
+Working directory: E:\sroberto27.github.io\SLiVR
+
+Run the standing regression sweep, Part J of docs/FULL-SYSTEM-TESTING.md
+(tests 172-183), plus the phase section for the phase we are currently in.
+
+Execute what can actually be executed in this environment. For anything needing
+a browser, device or live provider, record BLOCKED with a specific retest
+condition rather than assuming it still works.
+
+Report results by test ID with real evidence, then update the test document and
+add an execution-log entry. Preserve prior results.
+----------------------------------------------------------------------------
+
+
+============================================================================
+10. PHASE EXIT GATE                             (before declaring a phase done)
+============================================================================
+----------------------------------------------------------------------------
+Working directory: E:\sroberto27.github.io\SLiVR
+
+Check the Phase <N> exit gate.
+
+Read the exit-gate wording for this phase in SLIVR_ARCHITECTURE_AND_FEATURES.md
+section 9 and the phase section in IMPLEMENTATION_PLAN.md.
+
+For each condition in the gate, tell me:
+- The test IDs that prove it.
+- Their real recorded status and evidence.
+- Whether the evidence is automated or live browser/device/provider, kept
+  separate.
+
+Then state plainly whether the gate is met. It is NOT met while a required test
+is failed, silently untested, or blocked without a documented approved exception
+and a retest condition. Do not soften this. If it is not met, list exactly what
+remains, in dependency order.
+----------------------------------------------------------------------------
+
+
+============================================================================
+11. PROVIDER VALIDATION                 (Phase 0 tasks needing real credentials)
+============================================================================
+----------------------------------------------------------------------------
+Working directory: E:\sroberto27.github.io\SLiVR
+
+Validate provider: <DOTD imagery | Google 3D Tiles | Treedis>
+
+Follow the provider feasibility matrix in IMPLEMENTATION_PLAN.md section 5.
+
+- Credentials come from config/runtime.js, which is gitignored. Never write a
+  key into committed source, an export or a log.
+- Test the failure paths as well as the success path: missing credential,
+  denied request, slow response, disabled configuration.
+- For imagery, validate actual pixel content, not just an HTTP 200. An all-black
+  or uniform response is a coverage failure.
+- For Treedis, record findings per entry across all 11 supplied entries, not one
+  verdict for the set. Record negatives.
+- Record what the provider actually does, not what its documentation claims.
+
+Produce the provider capability matrix, record it against the applicable test IDs
+in docs/FULL-SYSTEM-TESTING.md with real evidence, and add the limitations you
+discover to research/LIMITATIONS_AND_THREATS.md.
+----------------------------------------------------------------------------
+
+
+============================================================================
+12. REBUILD THE CATALOG                      (after the workbook changes)
+============================================================================
+----------------------------------------------------------------------------
+Working directory: E:\sroberto27.github.io\SLiVR
+
+The location workbook at outputs/location_database/ has changed.
+
+Run `node tools/build-catalog.mjs` then `node tools/validate-catalog.mjs`, and
+show me both outputs in full.
+
+Then tell me:
+- What changed in the catalog, record by record.
+- Whether any stable ID changed. An ID change breaks saved candidates, bookmarks
+  and shared links, so flag it loudly rather than accepting it.
+- Whether the unknown vocabulary is still preserved verbatim.
+- Whether the catalog version in data/catalog/manifest.json should be bumped,
+  and why.
+
+Run `node --test` to confirm the catalog tests still hold. Update
+research/RESEARCH_CHANGELOG.md with the new catalog version and what changed.
+Do not commit unless I ask.
+----------------------------------------------------------------------------
+
+
+============================================================================
+13. REVIEW AND CLEAN UP                                  (quality, not features)
+============================================================================
+----------------------------------------------------------------------------
+Working directory: E:\sroberto27.github.io\SLiVR
+
+Review the code written for <WORK PACKAGE OR FILES> for quality only. Do not add
+features and do not change behaviour.
+
+Look for:
+- Duplication that should be shared, and abstractions that exist for no current
+  caller.
+- Dependency direction violations: ui -> app -> feature modules -> domain and
+  spatial. domain/ and spatial/ must import nothing from the application.
+- Comments that restate the code instead of explaining intent, a constraint,
+  units, a coordinate frame or provider behaviour. Remove or rewrite them.
+- Any stale comment that no longer matches behaviour.
+- Truthiness checks that would discard a legitimate zero.
+- Anything that would silently swallow an error or a validation failure.
+
+Show me what you propose before changing anything large. Run the full checks
+after. Do not commit unless I ask.
+----------------------------------------------------------------------------
+
+
+============================================================================
+14. COMMIT
+============================================================================
+----------------------------------------------------------------------------
+Commit the current work. Only paths under SLiVR/ may be included.
+
+- Stage with an explicit SLiVR path boundary. Do not stage, unstage or otherwise
+  change anything outside SLiVR/.
+- Before committing, show me `git diff --cached --name-only` and confirm every
+  path begins with SLiVR/.
+- Show me the exact commit subject and body and wait for my go-ahead before
+  running git commit.
+- No Co-Authored-By trailer. No Claude, Anthropic, AI or generated-by mention
+  anywhere in the message.
+- After committing, show the committed file list and confirm the boundary again.
+- Do not push.
+----------------------------------------------------------------------------
+
+
+============================================================================
+15. PUSH
+============================================================================
+----------------------------------------------------------------------------
+Push the SLiVR commits.
+
+Git pushes commits, not folders, so before pushing: list every local commit that
+is ahead of the upstream branch and show the changed paths for each one.
+
+If ANY outgoing commit contains a path outside SLiVR/, stop and tell me — do not
+push, and do not rewrite history to work around it.
+
+Only push once you have shown me that every outgoing commit is SLiVR-only and I
+have said go ahead.
+----------------------------------------------------------------------------
+
+
+============================================================================
+16. HANDOFF SUMMARY                                (before ending a session)
+============================================================================
+----------------------------------------------------------------------------
+Working directory: E:\sroberto27.github.io\SLiVR
+
+Write me a handoff for the next session. No new work.
+
+Cover:
+1. What was completed in this session, and what was left unfinished.
+2. Anything committed, and anything still uncommitted in the working tree.
+3. Real test status: what passes, what is blocked, what was never run.
+4. Decisions made during this session and where they are recorded.
+5. Anything I still owe you: credentials, access, an approval, a decision.
+6. The exact next work package, and any dependency that must land first.
+7. Anything surprising or fragile that is not obvious from the files.
+
+Keep it short enough to paste into the next session as context.
+----------------------------------------------------------------------------
+
+
+============================================================================
+NOTES
+============================================================================
+- Nothing commits or pushes unless you ask for it in the prompt.
+- docs/ and outputs/ are gitignored so private reference material cannot be
+  published. docs/FULL-SYSTEM-TESTING.md is the single deliberate exception.
+- Provider credentials belong only in config/runtime.js, which is gitignored.
+- Test IDs are stable. New coverage is appended with new IDs; existing IDs are
+  never renumbered once referenced.
+- A test is only PASS when someone actually ran it against a named build and
+  environment. Passing unit tests do not prove browser, device or provider
+  behaviour.

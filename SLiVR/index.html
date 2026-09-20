@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!--
+      `viewport-fit=cover` lets the frame reach the edges of a device with a
+      notch or rounded corners; the safe-area insets in the stylesheet keep the
+      top bar and rails clear of them. One without the other puts controls
+      under the hardware.
+    -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#171b1f" />
+    <title>SLiVR — Location scouting and shot design</title>
+    <meta
+      name="description"
+      content="Remote location scouting and shot design for the Lafayette pilot inventory."
+    />
+    <!--
+      The map library is vendored and loaded as a classic script, which is the
+      configuration the reference project proved against this imagery service.
+      Its worker is bundled into this file; the module build resolves a worker
+      from a separate URL, and that never finishes loading a style here.
+
+      The stylesheet is loaded first on purpose. MapLibre styles its container
+      with a single class of its own, so at equal specificity the later sheet
+      wins; ours has to come second to keep the frame.
+    -->
+    <link rel="stylesheet" href="vendor/maplibre-gl/maplibre-gl.css" />
+    <link rel="stylesheet" href="styles/00-tokens.css" />
+    <link rel="stylesheet" href="styles/10-shell.css" />
+    <link rel="stylesheet" href="styles/20-explore.css" />
+    <link rel="stylesheet" href="styles/30-immersive.css" />
+    <!--
+      Internal modules resolve through this prefix. Third-party libraries are
+      vendored under `vendor/` at an exact version, recorded in
+      `vendor/VERSIONS.md`, so a floating version can never change what a
+      recorded result was produced with and no third-party host is contacted at
+      runtime.
+    -->
+    <!--
+      Optional local configuration, absent by default and gitignored. A 404
+      here is the normal case and leaves every optional provider switched off;
+      the application reports that state rather than failing.
+    -->
+    <script src="config/runtime.js"></script>
+    <script src="vendor/maplibre-gl/maplibre-gl.js"></script>
+    <script type="importmap">
+      {
+        "imports": {
+          "slivr/": "./src/"
+        }
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#workspace">Skip to the workspace</a>
+    <div id="app"></div>
+    <noscript>
+      <p class="noscript">
+        SLiVR is a browser application and needs JavaScript. The location catalog is published as
+        JSON under <code>data/catalog/</code> and can be read without it.
+      </p>
+    </noscript>
+    <script type="module">
+      import "slivr/app/main.js";
+    </script>
+  </body>
+</html>

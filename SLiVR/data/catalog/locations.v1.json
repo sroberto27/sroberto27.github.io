@@ -1,0 +1,637 @@
+{
+  "schemaVersion": "1.0.0",
+  "catalogVersion": "1.0.0",
+  "locations": [
+    {
+      "id": "LOC-001",
+      "name": "Carpe Diem Cafe & Wine Bar",
+      "areaId": "AREA-01",
+      "captureStatus": "current",
+      "venueType": "Cafe / wine bar",
+      "coverageSummary": "Interior and exterior entry point",
+      "address": {
+        "street": "812 Jefferson St",
+        "city": "Lafayette",
+        "state": "LA",
+        "zip": "70501"
+      },
+      "position": [
+        -92.018864,
+        30.2215626
+      ],
+      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "operator": "Carpe Diem Cafe & Wine Bar",
+      "propertyAuthority": "Need validation",
+      "ownershipStatus": "Need validation",
+      "publicHours": {
+        "text": "Mon 8am-8pm; Tue-Fri 8am-9pm; Sat 9am-9pm; Sun 9am-8pm",
+        "evidence": "Official public hours; confirm for scout date"
+      },
+      "publicPhone": "337-281-4453",
+      "accessContact": "Contact venue directly",
+      "website": "https://www.carpediemcafeandwinebar.com/reservations",
+      "filmingAccess": "Private business; filming, closed-set access, fees and insurance Need validation",
+      "researchStatus": "Partially verified",
+      "sourceIds": [
+        "SRC-001",
+        "SRC-002",
+        "SRC-037"
+      ]
+    },
+    {
+      "id": "LOC-002",
+      "name": "Pop's Poboys",
+      "areaId": "AREA-01",
+      "captureStatus": "current",
+      "venueType": "Restaurant",
+      "coverageSummary": "Interior and exterior entry point",
+      "address": {
+        "street": "740 Jefferson St",
+        "city": "Lafayette",
+        "state": "LA",
+        "zip": "70501"
+      },
+      "position": [
+        -92.018878,
+        30.2223961
+      ],
+      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "operator": "Pop's Poboys",
+      "propertyAuthority": "Need validation",
+      "ownershipStatus": "Need validation",
+      "publicHours": {
+        "text": "Mon-Wed 10:30am-2pm; Thu-Sat 10:30am-9pm; Sun closed",
+        "evidence": "Official public hours; confirm for scout date"
+      },
+      "publicPhone": "337-534-0621",
+      "accessContact": "Contact restaurant directly",
+      "website": "https://www.popspoboys.com/restaurant",
+      "filmingAccess": "Private business; filming, closed-set access, fees and insurance Need validation",
+      "researchStatus": "Partially verified",
+      "sourceIds": [
+        "SRC-001",
+        "SRC-003",
+        "SRC-037"
+      ]
+    },
+    {
+      "id": "LOC-003",
+      "name": "Lafayette Old City Hall / Bank of Lafayette",
+      "areaId": "AREA-01",
+      "captureStatus": "current",
+      "venueType": "Historic civic / office building",
+      "coverageSummary": "Exterior and interior entry point",
+      "address": {
+        "street": "217 W Main St",
+        "city": "Lafayette",
+        "state": "LA",
+        "zip": "70501"
+      },
+      "position": [
+        -92.020438,
+        30.222433
+      ],
+      "positionEvidence": "Library of Congress HABS coordinate",
+      "operator": "Council for the Development of French in Louisiana (CODOFIL) occupies the building",
+      "propertyAuthority": "Current legal property owner requires title/agency confirmation",
+      "ownershipStatus": "Need validation",
+      "publicHours": {
+        "text": "Information has not been found",
+        "evidence": "Public office hours not published on cited official page"
+      },
+      "publicPhone": "337-262-5810",
+      "accessContact": "codofil@crt.la.gov",
+      "website": "https://codofil.org/accessibility/",
+      "filmingAccess": "Historic/public building; agency and property authority approvals Need validation",
+      "researchStatus": "Partially verified",
+      "sourceIds": [
+        "SRC-001",
+        "SRC-004",
+        "SRC-005",
+        "SRC-006"
+      ]
+    },
+    {
+      "id": "LOC-004",
+      "name": "Spoonbill Watering Hole & Restaurant",
+      "areaId": "AREA-01",
+      "captureStatus": "current",
+      "venueType": "Restaurant / bar",
+      "coverageSummary": "Interior and exterior entry point",
+      "address": {
+        "street": "900 Jefferson St",
+        "city": "Lafayette",
+        "state": "LA",
+        "zip": "70501"
+      },
+      "position": [
+        -92.018717,
+        30.221108
+      ],
+      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "operator": "Spoonbill Watering Hole & Restaurant",
+      "propertyAuthority": "Need validation",
+      "ownershipStatus": "Need validation",
+      "publicHours": {
+        "text": "Tue-Thu 11am-9pm; Fri-Sat 11am-10pm; Sun 10am-2pm; Mon closed",
+        "evidence": "Official public hours; confirm for scout date"
+      },
+      "publicPhone": "337-534-0585",
+      "accessContact": "Contact restaurant directly",
+      "website": "https://www.spoonbillrestaurant.com/contact/",
+      "filmingAccess": "Private business; filming, closed-set access, fees and insurance Need validation",
+      "researchStatus": "Partially verified",
+      "sourceIds": [
+        "SRC-001",
+        "SRC-007",
+        "SRC-037"
+      ]
+    },
+    {
+      "id": "LOC-005",
+      "name": "Rock'n'Bowl de Lafayette",
+      "areaId": "AREA-01",
+      "captureStatus": "current",
+      "venueType": "Bowling / live music / event venue",
+      "coverageSummary": "Interior and exterior entry point",
+      "address": {
+        "street": "905 Jefferson St",
+        "city": "Lafayette",
+        "state": "LA",
+        "zip": "70501"
+      },
+      "position": [
+        -92.018567,
+        30.2212115
+      ],
+      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "operator": "Rock'n'Bowl de Lafayette",
+      "propertyAuthority": "Need validation",
+      "ownershipStatus": "Need validation",
+      "publicHours": {
+        "text": "Thu, Fri and Sun 4pm-till; Sat 11am-till; events office Mon-Fri after 9am",
+        "evidence": "Official public hours; event schedule governs access"
+      },
+      "publicPhone": "337-534-8880",
+      "accessContact": "Venue events office",
+      "website": "https://www.rocknbowl.com/",
+      "filmingAccess": "Event venue; production use, music/event conflicts, fees and insurance Need validation",
+      "researchStatus": "Partially verified",
+      "sourceIds": [
+        "SRC-001",
+        "SRC-008",
+        "SRC-037"
+      ]
+    },
+    {
+      "id": "LOC-006",
+      "name": "Borden's Ice Cream Shoppe",
+      "areaId": "AREA-01",
+      "captureStatus": "current",
+      "venueType": "Historic ice cream shop",
+      "coverageSummary": "Interior and exterior entry point",
+      "address": {
+        "street": "1103 Jefferson St",
+        "city": "Lafayette",
+        "state": "LA",
+        "zip": "70501"
+      },
+      "position": [
+        -92.0169738,
+        30.2200357
+      ],
+      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "operator": "Borden's Ice Cream Shoppe",
+      "propertyAuthority": "Need validation",
+      "ownershipStatus": "Need validation",
+      "publicHours": {
+        "text": "Mon-Thu 11am-9pm; Fri 11am-10pm; Sat 10am-10pm; Sun 10am-9pm",
+        "evidence": "Official public hours; confirm for scout date"
+      },
+      "publicPhone": "337-235-9291",
+      "accessContact": "Contact shop directly",
+      "website": "https://bordensicecreamshoppe.com/contact-us",
+      "filmingAccess": "Private historic business; filming, preservation constraints, fees and insurance Need validation",
+      "researchStatus": "Partially verified",
+      "sourceIds": [
+        "SRC-001",
+        "SRC-009",
+        "SRC-010",
+        "SRC-037"
+      ]
+    },
+    {
+      "id": "LOC-007",
+      "name": "Play N Trade",
+      "areaId": "AREA-03",
+      "captureStatus": "current",
+      "venueType": "Retail / video game store",
+      "coverageSummary": "Interior entry point",
+      "address": {
+        "street": "2668 Johnston St, Ste A3",
+        "city": "Lafayette",
+        "state": "LA",
+        "zip": "70503"
+      },
+      "position": [
+        -92.037989,
+        30.2076103
+      ],
+      "positionEvidence": "Nominatim geocode; ZIP conflicts across public listings",
+      "operator": "Play N Trade Lafayette",
+      "propertyAuthority": "Need validation",
+      "ownershipStatus": "Need validation",
+      "publicHours": {
+        "text": "Mon-Sat 10am-9pm; Sun 11am-7pm",
+        "evidence": "Secondary listings agree on these hours; official confirmation needed"
+      },
+      "publicPhone": "337-456-5163",
+      "accessContact": "Contact store directly",
+      "website": "https://www.waze.com/live-map/directions/play-n-trade-johnston-st-2668-lafayette?to=place.w.175636782.1756105677.2183762",
+      "filmingAccess": "Private retail; filming, customer control, branding clearance and insurance Need validation",
+      "researchStatus": "Need validation",
+      "sourceIds": [
+        "SRC-001",
+        "SRC-011",
+        "SRC-012",
+        "SRC-037"
+      ]
+    },
+    {
+      "id": "LOC-008",
+      "name": "Givens House",
+      "areaId": "AREA-02",
+      "captureStatus": "current",
+      "venueType": "Historic lodging / event property",
+      "coverageSummary": "Interior and exterior entry point",
+      "address": {
+        "street": "338 N Sterling St",
+        "city": "Lafayette",
+        "state": "LA",
+        "zip": "70501"
+      },
+      "position": [
+        -92.0103782,
+        30.2315502
+      ],
+      "positionEvidence": "Nominatim geocode; historic page cites 324 Sterling, so site address needs confirmation",
+      "operator": "Belle Vie Hospitality",
+      "propertyAuthority": "Historic page names Thomas and Amy Powers; current legal owner needs confirmation",
+      "ownershipStatus": "Need validation",
+      "publicHours": {
+        "text": "Information has not been found",
+        "evidence": "Public operating hours not published"
+      },
+      "publicPhone": "337-557-1004",
+      "accessContact": "robyn@belleviehospitality.com",
+      "website": "https://belleviehospitality.com/properties/givens-house",
+      "filmingAccess": "Private hospitality property; reservation, filming terms, occupants and insurance Need validation",
+      "researchStatus": "Need validation",
+      "sourceIds": [
+        "SRC-001",
+        "SRC-013",
+        "SRC-014",
+        "SRC-037"
+      ]
+    },
+    {
+      "id": "LOC-009",
+      "name": "Magnolia Pantry",
+      "areaId": "AREA-01",
+      "captureStatus": "current",
+      "venueType": "Cafe / restaurant",
+      "coverageSummary": "Interior and exterior entry point",
+      "address": {
+        "street": "219 E Vermilion St",
+        "city": "Lafayette",
+        "state": "LA",
+        "zip": "70501"
+      },
+      "position": [
+        -92.0175165,
+        30.2241606
+      ],
+      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "operator": "Magnolia Pantry LLC",
+      "propertyAuthority": "Need validation",
+      "ownershipStatus": "Need validation",
+      "publicHours": {
+        "text": "Tue-Thu 8am-6pm; Fri 8am-9pm; Sat 9am-9pm; Sun 9am-2pm; Mon closed",
+        "evidence": "Consistent secondary listings; venue confirmation needed"
+      },
+      "publicPhone": "337-534-4738",
+      "accessContact": "Contact business directly",
+      "website": "https://www.magnoliapantry.com/",
+      "filmingAccess": "Private business in the historic Sans Souci building; property and filming approvals Need validation",
+      "researchStatus": "Partially verified",
+      "sourceIds": [
+        "SRC-001",
+        "SRC-015",
+        "SRC-016",
+        "SRC-017",
+        "SRC-037"
+      ]
+    },
+    {
+      "id": "LOC-010",
+      "name": "Former Truman Early Childhood Education Center",
+      "areaId": "AREA-04",
+      "captureStatus": "current",
+      "venueType": "Former school / proposed community facility",
+      "coverageSummary": "Interior and exterior entry point",
+      "address": {
+        "street": "200 Clara St",
+        "city": "Lafayette",
+        "state": "LA",
+        "zip": "70501"
+      },
+      "position": [
+        -92.031775,
+        30.248618
+      ],
+      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "operator": "Former LPSS campus; proposed SUN Community Housing Development Organization use",
+      "propertyAuthority": "Lafayette Parish School System / lease status requires current confirmation",
+      "ownershipStatus": "Need validation",
+      "publicHours": {
+        "text": "Information has not been found",
+        "evidence": "No public operating hours found for the former campus"
+      },
+      "publicPhone": "Information has not been found",
+      "accessContact": "Confirm current custodian with LPSS facilities/property office and SUN CHDO",
+      "website": "https://thecurrentla.com/2024/community-center-proposed-for-old-truman-school-campus/",
+      "filmingAccess": "Site status, occupancy, keys, hazards, insurance and filming authority Need validation",
+      "researchStatus": "Need validation",
+      "sourceIds": [
+        "SRC-001",
+        "SRC-018",
+        "SRC-019",
+        "SRC-037"
+      ]
+    },
+    {
+      "id": "LOC-011",
+      "name": "Moncus Park",
+      "areaId": "AREA-03",
+      "captureStatus": "current",
+      "venueType": "Public park / event venue",
+      "coverageSummary": "Outdoor landscape and amenity entry point",
+      "address": {
+        "street": "2913 Johnston St",
+        "city": "Lafayette",
+        "state": "LA",
+        "zip": "70503"
+      },
+      "position": [
+        -92.0409975,
+        30.2055904
+      ],
+      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "operator": "Moncus Park nonprofit",
+      "propertyAuthority": "City of Lafayette lease/title relationship requires current document confirmation",
+      "ownershipStatus": "Need validation",
+      "publicHours": {
+        "text": "Daily 5am-10pm; unlit back 50 acres sunrise-sunset",
+        "evidence": "Official public hours; event closures and scout date must be checked"
+      },
+      "publicPhone": "337-500-1177",
+      "accessContact": "events@moncuspark.org; 337-541-0434",
+      "website": "https://moncuspark.org/visit/",
+      "filmingAccess": "Casual photography allowed; props/setups/pro sessions require permit or rental; drones require prior approval",
+      "researchStatus": "Partially verified",
+      "sourceIds": [
+        "SRC-001",
+        "SRC-020",
+        "SRC-021",
+        "SRC-022",
+        "SRC-023",
+        "SRC-037"
+      ]
+    },
+    {
+      "id": "LOC-012",
+      "name": "CAJUNDOME",
+      "areaId": "AREA-05",
+      "captureStatus": "future",
+      "venueType": "Arena / convention center / event venue",
+      "coverageSummary": "Future 360 scan candidate",
+      "address": {
+        "street": "444 Cajundome Blvd",
+        "city": "Lafayette",
+        "state": "LA",
+        "zip": "70506"
+      },
+      "position": [
+        -92.0389935,
+        30.2177758
+      ],
+      "positionEvidence": "Nominatim geocode; postal code differs in geocoder output",
+      "operator": "CAJUNDOME Commission / venue management",
+      "propertyAuthority": "University of Louisiana at Lafayette",
+      "ownershipStatus": "Verified on official venue page",
+      "publicHours": {
+        "text": "Event-dependent; box office Fri 10am-4pm and event days",
+        "evidence": "General facility hours vary by event; scout appointment required"
+      },
+      "publicPhone": "337-265-2100",
+      "accessContact": "Venue sales/events office; 337-265-2320",
+      "website": "https://www.cajundome.com/about-us",
+      "filmingAccess": "Professional cameras require credentials; video/audio recording requires approval",
+      "researchStatus": "Partially verified",
+      "sourceIds": [
+        "SRC-001",
+        "SRC-024",
+        "SRC-025",
+        "SRC-026",
+        "SRC-037"
+      ]
+    },
+    {
+      "id": "LOC-013",
+      "name": "Cajun Field",
+      "areaId": "AREA-05",
+      "captureStatus": "future",
+      "venueType": "Football stadium / parking and green space",
+      "coverageSummary": "Future 360 scan candidate",
+      "address": {
+        "street": "2351 W Congress St",
+        "city": "Lafayette",
+        "state": "LA",
+        "zip": "70506"
+      },
+      "position": [
+        -92.0416225,
+        30.2184179
+      ],
+      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "operator": "Louisiana Ragin' Cajuns Athletics / UL Lafayette",
+      "propertyAuthority": "University of Louisiana at Lafayette",
+      "ownershipStatus": "Institutional ownership supported; exact booking authority needs confirmation",
+      "publicHours": {
+        "text": "Information has not been found",
+        "evidence": "Event and access hours not published as general public hours"
+      },
+      "publicPhone": "Information has not been found",
+      "accessContact": "UL Lafayette Auxiliary Services for parking/green-space lease; Athletics for stadium access",
+      "website": "https://ragincajuns.com/sports/2012/8/14/Cajun%20Field",
+      "filmingAccess": "Credentials, field/tunnel access, event conflicts, fees and insurance Need validation",
+      "researchStatus": "Partially verified",
+      "sourceIds": [
+        "SRC-001",
+        "SRC-027",
+        "SRC-028",
+        "SRC-037"
+      ]
+    },
+    {
+      "id": "LOC-014",
+      "name": "LITE Center",
+      "areaId": "AREA-05",
+      "captureStatus": "future",
+      "venueType": "Technology / research / office facility",
+      "coverageSummary": "Future 360 scan candidate",
+      "address": {
+        "street": "537 Cajundome Blvd, Suite 115",
+        "city": "Lafayette",
+        "state": "LA",
+        "zip": "70506"
+      },
+      "position": [
+        -92.0429691,
+        30.2202685
+      ],
+      "positionEvidence": "Nominatim identifies LITE Center; validate survey-grade position",
+      "operator": "University of Louisiana at Lafayette LITE Center",
+      "propertyAuthority": "University of Louisiana at Lafayette / exact title entity needs confirmation",
+      "ownershipStatus": "Need validation",
+      "publicHours": {
+        "text": "Mon-Thu 7:30am-5pm; Fri 7:30am-12:30pm",
+        "evidence": "Official business hours; scout appointment required"
+      },
+      "publicPhone": "337-735-5483",
+      "accessContact": "LITE Center office",
+      "website": "https://lite.louisiana.edu/contact",
+      "filmingAccess": "Facility access, tenant privacy, filming zones, network/security and insurance Need validation",
+      "researchStatus": "Partially verified",
+      "sourceIds": [
+        "SRC-001",
+        "SRC-029",
+        "SRC-037"
+      ]
+    },
+    {
+      "id": "LOC-015",
+      "name": "UL Lafayette Main Campus",
+      "areaId": "AREA-06",
+      "captureStatus": "future",
+      "venueType": "University campus / multiple buildings and exteriors",
+      "coverageSummary": "Future multi-zone 360 scan candidate",
+      "address": {
+        "street": "104 E University Cir",
+        "city": "Lafayette",
+        "state": "LA",
+        "zip": "70503"
+      },
+      "position": [
+        -92.0186439,
+        30.21586
+      ],
+      "positionEvidence": "Campus anchor geocode; each building requires its own coordinates",
+      "operator": "University of Louisiana at Lafayette",
+      "propertyAuthority": "University/public entities vary by parcel and facility",
+      "ownershipStatus": "Need validation",
+      "publicHours": {
+        "text": "Campus access varies; tours Mon-Thu 9am and 1pm, Fri 9am, select Sat 10am",
+        "evidence": "Tour times are not filming availability"
+      },
+      "publicPhone": "337-482-1000",
+      "accessContact": "Facilities Management 337-482-6440; host/event coordination via university",
+      "website": "https://louisiana.edu/admissions-aid/visit-campus/campus-tours",
+      "filmingAccess": "Campus filming, brand, student privacy, building, parking and police approvals Need validation",
+      "researchStatus": "Partially verified",
+      "sourceIds": [
+        "SRC-001",
+        "SRC-030",
+        "SRC-031",
+        "SRC-032",
+        "SRC-037"
+      ]
+    },
+    {
+      "id": "LOC-016",
+      "name": "Blackham Coliseum",
+      "areaId": "AREA-03",
+      "captureStatus": "future",
+      "venueType": "Historic coliseum / arena / barns / event facility",
+      "coverageSummary": "Future 360 scan candidate",
+      "address": {
+        "street": "2330 Johnston St",
+        "city": "Lafayette",
+        "state": "LA",
+        "zip": "70503"
+      },
+      "position": [
+        -92.0318328,
+        30.2097052
+      ],
+      "positionEvidence": "Nominatim geocode; validate survey-grade position",
+      "operator": "UL Lafayette Auxiliary Services",
+      "propertyAuthority": "University of Louisiana at Lafayette",
+      "ownershipStatus": "Verified on official university page",
+      "publicHours": {
+        "text": "Information has not been found",
+        "evidence": "Event and rental hours not published as general public hours"
+      },
+      "publicPhone": "Information has not been found",
+      "accessContact": "UL Lafayette Facility Management / Auxiliary Services",
+      "website": "https://louisiana.edu/auxiliaryservices/property-retail",
+      "filmingAccess": "University lease, historic-building constraints, rigging/power, safety, fees and insurance Need validation",
+      "researchStatus": "Partially verified",
+      "sourceIds": [
+        "SRC-001",
+        "SRC-028",
+        "SRC-033",
+        "SRC-034",
+        "SRC-037"
+      ]
+    },
+    {
+      "id": "LOC-017",
+      "name": "UL Lafayette Rec Sports / Bourgeois Hall",
+      "areaId": "AREA-05",
+      "captureStatus": "future",
+      "venueType": "Recreation center / sports facility",
+      "coverageSummary": "Future 360 scan candidate",
+      "address": {
+        "street": "225 Cajundome Blvd",
+        "city": "Lafayette",
+        "state": "LA",
+        "zip": "70506"
+      },
+      "position": [
+        -92.0372342,
+        30.2134132
+      ],
+      "positionEvidence": "Nominatim geocode; official pages show ZIP 70504 and 70506",
+      "operator": "UL Lafayette Recreational Sports",
+      "propertyAuthority": "University of Louisiana at Lafayette",
+      "ownershipStatus": "Verified institution; address ZIP needs confirmation",
+      "publicHours": {
+        "text": "Current published break hours: Mon-Fri 6am-8pm; Sat-Sun 10am-6pm",
+        "evidence": "Date-specific hours vary; current semester schedule must be checked"
+      },
+      "publicPhone": "337-482-6159",
+      "accessContact": "Facility coordinator 337-482-6158",
+      "website": "https://recsports.louisiana.edu/about-us/hours/break-hours-0",
+      "filmingAccess": "Reservation, participant privacy, active recreation, after-hours staffing, fees and insurance Need validation",
+      "researchStatus": "Partially verified",
+      "sourceIds": [
+        "SRC-001",
+        "SRC-035",
+        "SRC-036",
+        "SRC-037",
+        "SRC-038"
+      ]
+    }
+  ]
+}
