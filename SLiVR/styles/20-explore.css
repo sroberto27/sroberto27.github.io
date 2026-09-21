@@ -1,16 +1,4 @@
 /*
- * Explore surface.
- *
- * Phase 0.3 covers the map surface and the imagery provenance block. The
- * synchronised list, search, filters, clustering and the full dossier arrive in
- * Phase 1 and extend this file.
- *
- * The map fills the centre completely. Aerial imagery is the thing being read,
- * and a scouting judgement about whether a street has room for a unit is made
- * at the largest size the window allows.
- */
-
-/*
  * MapLibre sets `position: relative` on its container through a class of its
  * own. The parent selector here keeps this rule ahead of it regardless of
  * stylesheet order, because a container that loses its absolute positioning
@@ -298,13 +286,6 @@
 .map-search-results { max-height: 200px; overflow: auto; display: grid; gap: 4px; }
 .map-menu-panel summary { cursor: pointer; padding: 8px 0; }
 .map-menu-panel p { color: var(--text-muted); line-height: 1.6; }
-.map-location-navigation { position: absolute; bottom: 28px; left: 50%; transform: translateX(-50%); z-index: 3; display: flex; width: min(420px, calc(100% - 32px)); padding: 4px; align-items: center; }
-.map-location-navigation button { min-width: 44px; min-height: 44px; background: transparent; color: var(--text); border: 0; cursor: pointer; }
-.map-location-navigation button:first-child, .map-location-navigation button:last-child { font-size: 26px; }
-.map-location-navigation button:nth-child(2) { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-.map-location-navigation button:disabled { opacity: .4; cursor: default; }
-.map-rail-recenter { margin: 12px; min-height: 44px; color: var(--accent-strong); background: var(--accent-wash); border: 1px solid var(--accent); border-radius: 8px; cursor: pointer; }
-.imagery-plate { bottom: 90px; }
 .map-host .maplibregl-user-location-dot { background-color: var(--accent); }
 @media (max-height: 700px) {
   .map-host .maplibregl-ctrl-top-right { display: flex; align-items: flex-start; max-width: calc(100% - 16px); }
@@ -313,3 +294,57 @@
 
   .imagery-plate { max-width: calc(100% - 32px); }
 }
+
+/* Same-panel list/detail reference states, scoped to Explore. The map uses
+   the remaining grid cell so camera padding never includes a covered sheet. */
+#app:has(.workspace[data-explore="true"]) { height: 100dvh; min-height: 0; overflow: hidden; }
+.workspace[data-explore="true"] { position: relative; grid-template-columns: 356px minmax(0, 1fr); }
+.workspace[data-explore="true"] .rail-left { margin: 12px; width: 332px; border: 1px solid var(--line-strong); border-radius: 16px; overflow: hidden; box-shadow: var(--shadow-raised); }
+.workspace[data-explore="true"] .rail-right { display: none; }
+.workspace[data-explore="true"][data-panel="closed"] { grid-template-columns: minmax(0, 1fr); }
+.workspace[data-explore="true"] .rail-left[hidden], .explore-restore[hidden], .explore-menu-button[hidden] { display: none; }
+.explore-browse, .explore-dossier { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.explore-dossier { animation: dossier-enter 180ms ease-out; }
+@keyframes dossier-enter { from { opacity: .5; transform: translateX(12px); } to { opacity: 1; transform: none; } }
+.explore-results, .explore-dossier > .rail-body { overflow-y: auto; min-height: 0; flex: 1; overscroll-behavior: contain; }
+.explore-filters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 0 16px 12px; border-bottom: 1px solid var(--line); }
+.explore-filters input, .explore-filters select { width: 100%; min-width: 0; min-height: 44px; color: var(--text); background: var(--surface-2); border: 1px solid var(--line-strong); border-radius: 6px; padding: 8px; }
+.explore-filters input { grid-column: 1 / -1; }
+.explore-count { margin: 0; align-self: center; color: var(--text-muted); font-size: var(--text-sm); }
+.explore-panel-tools { display: flex; justify-content: space-between; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+.explore-expand { display: none; }
+.explore-back { margin: 8px 12px; text-align: left; }
+.explore-panel-tools button, .explore-back, .explore-filters button, .explore-restore, .explore-menu-button, .explore-menu button { min-height: 44px; padding: 8px 12px; background: var(--surface-2); color: var(--text); border: 1px solid var(--line-strong); border-radius: 8px; cursor: pointer; }
+.explore-restore, .explore-menu-button { position: absolute; top: 12px; z-index: 5; box-shadow: var(--shadow-raised); }
+.explore-restore { left: 68px; }
+.explore-menu-button { left: 368px; width: 44px; }
+.workspace[data-panel="closed"] .explore-menu-button { left: 12px; }
+.explore-menu-region { position: absolute; }
+.explore-menu-region:empty { display: none; }
+.explore-menu-backdrop { position: fixed; inset: 0; background: #0008; z-index: 30; }
+.explore-menu { position: fixed; inset: 12px 12px 12px auto; width: min(320px, calc(100vw - 24px)); border-radius: 16px; padding: 24px; overflow-y: auto; background: var(--surface-1); color: var(--text); z-index: 31; box-shadow: var(--shadow-raised); }
+.workspace[data-explore="true"] .imagery-plate { position: absolute; bottom: 30px; left: 12px; margin: 0; width: min(30rem, calc(100% - 84px)); padding: 8px 12px; }
+.workspace[data-explore="true"] .surface { min-height: 0; order: 0; }
+@media (min-width: 881px) and (max-width: 1100px) {
+  .workspace[data-explore="true"] { grid-template-columns: 324px minmax(0, 1fr); }
+  .workspace[data-explore="true"] .rail-left { width: 300px; }
+  .explore-menu-button { left: 336px; }
+}
+@media (max-width: 880px) {
+  .workspace[data-explore="true"] { grid-template-columns: minmax(0, 1fr); grid-template-rows: minmax(100px, 1fr) min(46dvh, 60%); }
+  .workspace[data-explore="true"] .surface { grid-row: 1; grid-column: 1; }
+  .workspace[data-explore="true"] .rail-left { grid-row: 2; grid-column: 1; width: auto; margin: 0; border-radius: 20px 20px 0 0; padding-bottom: env(safe-area-inset-bottom); }
+  .workspace[data-explore="true"][data-panel="expanded"] { grid-template-rows: minmax(150px, 24%) minmax(0, 1fr); }
+  .workspace[data-explore="true"][data-panel="closed"] { grid-template-rows: minmax(0, 1fr); }
+  .explore-menu-button { left: 12px; }
+  .explore-expand { display: block; }
+  .workspace[data-explore="true"] .imagery-plate { max-height: 35%; overflow: auto; }
+  .workspace[data-explore="true"] .rail-head { padding-top: 8px; padding-bottom: 8px; }
+  .explore-filters { gap: 4px; flex-shrink: 0; }
+  .explore-browse { overflow-y: auto; }
+  .explore-results { flex: 1 0 120px; }
+  .map-host .maplibregl-ctrl-top-right { display: flex; align-items: flex-start; }
+  .map-host .maplibregl-ctrl-top-right .maplibregl-ctrl { margin-left: 2px; margin-right: 2px; }
+  .slivr-map-tools { grid-template-columns: repeat(2, 44px); width: 94px; }
+}
+@media (prefers-reduced-motion: reduce) { .explore-dossier { animation: none; } }

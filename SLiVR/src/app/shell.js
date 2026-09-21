@@ -1,25 +1,4 @@
-/**
- * Application shell: the persistent frame every mode is rendered inside.
- *
- * The frame is fixed and the regions inside it scroll: a top bar holding the
- * four approved modes, the active context and the save status; a left rail of
- * records; a central work surface; and a right rail describing whatever is
- * selected. Switching modes re-fills the rails, so the controls never move
- * underneath the pointer.
- *
- * The centre belongs to the evidence. In Explore that is the map, which fills
- * the region completely, because judging whether a street has room for a unit
- * is done at the largest size the window allows.
- *
- * The mode contents here are the Phase 0 foundation. Each one shows what the
- * foundation can honestly show — that the route resolved, and what the catalog
- * holds for the named record — and says which phase delivers the real surface.
- * Presenting an empty panel as a finished feature would misreport the build.
- *
- * Each region subscribes to the slice of state it draws, so a save-status
- * change does not redraw the rails and a route change does not redraw the
- * status chip.
- */
+/** Persistent mode shell; Explore owns a single list/dossier panel. */
 
 import { MODES } from "./router.js";
 import { describeCapabilities } from "./capabilities.js";
@@ -158,6 +137,100 @@ export function createShell({ root, store, actions, win = globalThis }) {
     workspace,
     dialogRegion,
   );
+
+  // Retain the browse DOM, including scroll and input state, while reading a dossier.
+  let browseScroll = 0, sheetScroll = 0;
+  let browse = null, browseCatalog = null, dossier = null, dossierView = null;
+  let collapsed = false, expanded = false, lastLocation = null, menuTrap = null;
+  const panelToggle = el("button", { type: "button", class: "explore-restore",
+    text: "Show locations", "aria-controls": "explore-panel", onClick: () => setCollapsed(false) });
+  const menuButton = el("button", { type: "button", class: "explore-menu-button",
+    text: "\u2630", "aria-label": "Catalog and help", "aria-expanded": "false", onClick: openExploreMenu });
+  const menuRegion = el("div", { class: "explore-menu-region" });
+  workspace.append(panelToggle, menuButton, menuRegion);
+  function setCollapsed(value) {
+    collapsed = value;
+    syncPanel();
+    if (value) panelToggle.focus();
+    else (railLeft.querySelector("button") ?? railLeft).focus();
+  }
+  function syncPanel() {
+    const active = store.getState().mode === "explore";
+    workspace.setAttribute("data-explore", String(active));
+    workspace.setAttribute("data-panel", collapsed ? "closed" : expanded ? "expanded" : "open");
+    railLeft.hidden = active && collapsed;
+    panelToggle.hidden = !active || !collapsed;
+    panelToggle.setAttribute("aria-expanded", String(!collapsed));
+    menuButton.hidden = !active;
+    const expand = railLeft.querySelector(".explore-expand");
+    if (expand) expand.textContent = expanded ? "Half sheet" : "Expand sheet";
+  }
+  const menuBackground = () => [...root.children].filter(n => n !== workspace).concat([...workspace.children].filter(n => n !== menuRegion));
+  function closeExploreMenu() {
+    for (const node of menuBackground()) node.inert = false;
+    menuTrap?.release(); menuTrap = null;
+    menuRegion.replaceChildren();
+    menuButton.setAttribute("aria-expanded", "false");
+    menuButton.focus();
+  }
+  function openExploreMenu() {
+    if (menuTrap) { closeExploreMenu(); return; }
+    const dialog = el("section", { class: "explore-menu", role: "dialog",
+      "aria-modal": "true", "aria-label": "Catalog and help" }, [
+      el("button", { type: "button", text: "Close menu", onClick: closeExploreMenu }),
+      el("h2", { text: "Explore SLiVR" }),
+      section("Catalog", catalogFigures(store.getState())),
+      section("How to explore", el("p", { text: "Search or filter locations, then choose a list entry or numbered pin. Back to locations restores your results. Hide the panel for more map space. Recenter fits the visible locations. Drag to pan; scroll or pinch to zoom. In 3D, right-drag or Ctrl-drag to rotate. The compass resets north." })),
+      section("Scouting evidence", el("p", { text: "Captured imagery is remote evidence, not filming permission or a completed physical scout. Unknown and unvalidated facts remain explicit. Projects are stored separately in this browser profile." })),
+    ]);
+    const backdrop = el("div", { class: "explore-menu-backdrop", onClick: closeExploreMenu });
+    menuRegion.replaceChildren(backdrop, dialog);
+    menuButton.setAttribute("aria-expanded", "true");
+    for (const node of menuBackground()) node.inert = true;
+    menuTrap = createFocusTrap({ container: dialog, onEscape: closeExploreMenu });
+    dialog.querySelector("button")?.focus();
+  }
+  railLeft.addEventListener("keydown", event => {
+    if (store.getState().mode !== "explore" || event.key !== "Escape") return;
+    event.preventDefault();
+    if (store.getState().routeResolution?.view) actions.navigate({ name: "explore" });
+    else setCollapsed(true);
+  });
+  function browsePanel(state) {
+    if (browse && browseCatalog === state.catalog) return browse;
+    browseCatalog = state.catalog;
+    const search = el("input", { type: "search", placeholder: "Name, address or venue type",
+      "aria-label": "Search locations" });
+    const select = (label, values) => el("select", { "aria-label": label },
+      values.map(([value, text]) => el("option", { value, text })));
+    const capture = select("Capture availability", [["", "All captures"], ["current", "Captured"], ["future", "Future candidates"]]);
+    const area = select("Operational area", [["", "All areas"], ...(state.catalog?.areas ?? []).map(a => [a.id, a.name])]);
+    const sort = select("Sort locations", [["catalog", "Catalog order"], ["name", "Name A-Z"]]);
+    const results = el("div", { class: "explore-results rail-body" });
+    const count = el("p", { class: "explore-count", role: "status" });
+    function update() {
+      const query = (search.value ?? "").trim().toLocaleLowerCase();
+      const locations = (state.catalog?.locations ?? []).filter(l => {
+        const areaName = state.catalog.areas.find(a => a.id === l.areaId)?.name ?? "";
+        return `${l.id} ${l.name} ${formatAddress(l)} ${l.venueType} ${areaName}`.toLocaleLowerCase().includes(query)
+          && (!capture.value || l.captureStatus === capture.value) && (!area.value || l.areaId === area.value);
+      });
+      if (sort.value === "name") locations.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
+      results.replaceChildren(locations.length ? catalogRecordList({ ...state, catalog: { ...state.catalog, locations } })
+        : el("p", { class: "empty-note", text: "No matching locations. Clear filters to see all locations." }));
+      count.textContent = `${locations.length} locations`;
+      actions.setExploreLocations(locations.map(l => l.id));
+    }
+    for (const node of [search, capture, area, sort]) node.addEventListener(node === search ? "input" : "change", update);
+    browse = el("div", { class: "explore-browse" }, [
+      railHead("Locations"), el("div", { class: "explore-filters" }, [search, capture, area, sort,
+        el("button", { type: "button", text: "Clear filters", onClick: () => {
+          search.value = ""; capture.value = ""; area.value = ""; sort.value = "catalog"; update(); search.focus();
+        } }), count]), results,
+    ]);
+    update();
+    return browse;
+  }
 
   // ---- Persistent regions ------------------------------------------------
 
@@ -360,6 +433,7 @@ export function createShell({ root, store, actions, win = globalThis }) {
             {
               type: "button",
               class: `record-row${location.id === selected ? " is-selected" : ""}`,
+              "data-location-id": location.id,
               onClick: () => actions.navigate({ name: "location", params: { locationId: location.id } }),
             },
             [
@@ -478,14 +552,20 @@ export function createShell({ root, store, actions, win = globalThis }) {
   function exploreMode(state) {
     const { catalog } = state;
 
-    const left = [
-      railHead("Catalog records", catalog ? catalog.locations.length : null),
-      el("div", { class: "rail-body" }, catalogRecordList(state)),
-      el("button", { type: "button", class: "map-rail-recenter",
-        text: `Recenter on all ${catalog?.locations.length ?? 0} locations`,
-        onClick: () => actions.recenterMap(),
-      }),
-    ];
+    const view = state.routeResolution?.view;
+    const listing = browsePanel(state);
+    if (view !== dossierView) {
+      dossierView = view;
+      dossier = view ? el("div", { class: "explore-dossier" }, [
+        el("button", { type: "button", class: "explore-back", text: "Back to locations",
+          onClick: () => actions.navigate({ name: "explore" }) }), ...locationRail(state),
+      ]) : null;
+    }
+    const left = [el("div", { class: "explore-panel-tools" }, [
+      el("button", { type: "button", text: "Hide panel", onClick: () => setCollapsed(true) }),
+      el("button", { type: "button", class: "explore-expand", text: expanded ? "Half sheet" : "Expand sheet",
+        onClick: () => { expanded = !expanded; syncPanel(); } }),
+    ]), dossier ?? listing];
 
     const centre = state.catalogError
       ? {
@@ -521,25 +601,7 @@ export function createShell({ root, store, actions, win = globalThis }) {
         }
       : { map: true, overlay: imageryPlate(state) };
 
-    const right = state.routeResolution?.view
-      ? locationRail(state)
-      : [
-          railHead("Selection"),
-          el("div", { class: "rail-body" }, [
-            section(null, [
-              phaseNote(
-                "The map fits the catalog locations on DOTD aerial imagery. Numbered pins match the location list; grouped pins expand to show locations sharing a position. Search, filters and full dossiers arrive in Phase 1.",
-              ),
-              el("p", {
-                class: "empty-note",
-                text: "Choose a record to see what the catalog holds for it.",
-              }),
-            ]),
-            section("Catalog", catalogFigures(state)),
-          ]),
-        ];
-
-    return { left, centre, right };
+    return { left, centre, right: null };
   }
 
   /** What the catalog holds for the selected location. */
@@ -552,7 +614,7 @@ export function createShell({ root, store, actions, win = globalThis }) {
       el("div", { class: "rail-body" }, [
         section(null, [
           el("h1", { class: "record-title", text: location.name }),
-          phaseNote("The full dossier, evidence badges and project actions arrive in Phase 1."),
+
         ]),
         section("Identity", [
           fieldList([
@@ -571,11 +633,11 @@ export function createShell({ root, store, actions, win = globalThis }) {
             ["Coverage", capture?.coverageNotes],
           ]),
           el("div", { class: "actions" }, [
-            el("button", {
+            location.captureStatus === "current" ? el("button", {
               type: "button",
               text: "Open in Immersive",
               onClick: () => actions.navigate({ name: "immersive", params: { locationId: location.id } }),
-            }),
+            }) : el("p", { text: "No current immersive capture." }),
           ]),
         ]),
         section("Research", [
@@ -913,6 +975,7 @@ export function createShell({ root, store, actions, win = globalThis }) {
             {
               type: "button",
               class: `record-row${location.id === selected ? " is-selected" : ""}`,
+              "data-location-id": location.id,
               onClick: () => actions.navigate({ name: "immersive", params: { locationId: location.id } }),
             },
             [
@@ -974,7 +1037,37 @@ export function createShell({ root, store, actions, win = globalThis }) {
       parts = exploreMode(state);
     }
 
+    const previousLocation = lastLocation;
+    const locationId = state.mode === "explore" ? state.routeResolution?.locationId ?? null : null;
+    if (locationId && locationId !== previousLocation) collapsed = false;
+    if (browse?.parentNode) {
+      browseScroll = browse.querySelector(".explore-results")?.scrollTop ?? 0;
+      sheetScroll = browse.scrollTop ?? 0;
+    }
     replaceChildren(railLeft, parts.left ?? []);
+    if (!locationId && browse) {
+      browse.querySelector(".explore-results").scrollTop = browseScroll;
+      browse.scrollTop = sheetScroll;
+    }
+    railLeft.setAttribute("id", "explore-panel");
+    syncPanel();
+    if (locationId !== previousLocation) {
+      if (locationId) dossier?.querySelector("button")?.focus();
+      else if (state.mode === "explore" && previousLocation) {
+        const row = browse?.querySelectorAll("button");
+        (Array.from(row ?? []).find(n => n.getAttribute("data-location-id") === previousLocation)
+          ?? browse?.querySelector("input"))?.focus({ preventScroll: true });
+      }
+    }
+    for (const row of browse?.querySelectorAll("button") ?? []) {
+      if (!row.getAttribute("data-location-id")) continue;
+      const selected = row.getAttribute("data-location-id") === locationId;
+      row.classList.toggle("is-selected", selected);
+      if (selected) row.setAttribute("aria-current", "true");
+      else row.removeAttribute("aria-current");
+    }
+    lastLocation = locationId;
+    if (state.mode !== "explore" && menuTrap) closeExploreMenu();
     replaceChildren(railRight, parts.right ?? []);
 
     const wantsMap = parts.centre?.map === true;
@@ -1014,6 +1107,9 @@ export function createShell({ root, store, actions, win = globalThis }) {
   const unsubscribes = [
     store.subscribe((state) => state.mode, renderModes, { immediate: true }),
     store.subscribe((state) => state.route, renderWorkspace),
+    store.subscribe((state) => state.exploreSelectionRequest, () => {
+      collapsed = false; renderWorkspace(); dossier?.querySelector("button")?.focus();
+    }),
     store.subscribe((state) => state.routeResolution, renderWorkspace),
     store.subscribe((state) => state.catalog, renderWorkspace),
     store.subscribe((state) => state.catalogError, renderWorkspace),
@@ -1041,6 +1137,7 @@ export function createShell({ root, store, actions, win = globalThis }) {
   return {
     destroy() {
       for (const unsubscribe of unsubscribes) unsubscribe();
+      menuTrap?.release();
       viewerHost.dispose();
       root.replaceChildren();
     },

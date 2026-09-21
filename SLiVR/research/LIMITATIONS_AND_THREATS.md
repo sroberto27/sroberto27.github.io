@@ -103,3 +103,13 @@ remain open. Historical 17-record findings must not be relabeled as 18-record re
 Workbook renders and OOXML checks passed; native Excel UI was not exercised. The
 camera behavior is verified using DOM/MapLibre doubles; desktop/tablet animation,
 3D focus and overlay avoidance still require the next live deployment check.
+
+
+### D067 - Unverified UI presentation (2026-09-20)
+
+Browser discovery returned no surfaces; attempted in-app reference tab creation returned Browser is not available: iab. Thus LSU3D/SCSU behavior was inspected as source only. Before/after screenshots are unavailable. Desktop/mobile proportions, touch/scroll, real keyboard/focus/inert behavior, contrast, selected pin/cluster edges and live provider failure recovery remain BLOCKED for this build. Tests use DOM/MapLibre/IndexedDB doubles and cannot establish visual resemblance or usability. Short mobile sheets may require expansion/scroll to expose results. Advanced filters, comparison and shot editor remain pending; no phase exit or new exception approval is implied. Retest conditions and viewports are in docs/UI_INTERACTION_DESIGN.md. No human study evidence exists.
+
+
+### D067 manual-evidence update - 2026-09-20
+
+Owner-reported PASS for critical checklist items 1-12 now supplies manual evidence for the tested Explore flow; this supersedes the earlier absence of manual evidence for those portions only. Item 13, deliberate map-library failure, remains NOT TESTED. Browser/version, device/viewport, local/published URL, exact build and hard-refresh confirmation are unknown. No screenshots were supplied. Do not infer phone hardware testing from the phone-or-narrow-window instruction, or live 3D from its conditional instruction. Full provider-failure, contrast/reduced-motion, reference-comparison and broader phase acceptance remain distinct. Owner acceptance is technical evidence, not human-participant usability-study evidence.

@@ -175,3 +175,13 @@ step controls. Repeated selection recenters; unrelated redraws do not. Automated
 suite 338 PASS; workbook/catalog reconciliation and rendered workbook views checked.
 Live map/device animation evidence remains pending. Historical Phase 0 acceptance
 and 17-record observations apply to catalog 1.0.0, not this new snapshot.
+
+
+### D067 - Explore interaction increment (2026-09-20)
+
+F01/F02/F20: implemented single discovery/dossier panel, retained search/capture/area/sort/scroll state, collapse/repeat-selection restore, responsive sheet and on-demand catalog/help. Basic query/filter/sort is now available; advanced Phase 1 filters/full dossier/project actions remain pending. F03 lifecycle and F05/F08 entry points remain unchanged. Technical evidence: stable tests 204-205, shell/map/viewport/a11y suites. See [UI design](../docs/UI_INTERACTION_DESIGN.md) and [execution record](../docs/FULL-SYSTEM-TESTING.md). Live browser/device/provider verification and screenshots are BLOCKED, not PASS. No participant evidence.
+
+
+### D067 owner manual evidence - 2026-09-20
+
+F01/F02/F20 and existing F03/mode-entry portions: owner reports critical checklist items 1-12 PASS, covering layout, retained discovery state, empty-result recovery, map/list selection, panel/menu/sheet controls, keyboard, links/history and immersive/Projects/Shot Designer entry. Item 13, forced map-library failure, remains NOT TESTED. See the itemized execution record in docs/FULL-SYSTEM-TESTING.md. Exact browser/device/viewport/URL/build were not provided, and screenshots are absent. Earlier automated/blocked evidence remains intact; no full feature/phase completion or participant finding is claimed.

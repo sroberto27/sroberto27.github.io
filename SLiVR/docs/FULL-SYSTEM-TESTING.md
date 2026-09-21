@@ -383,7 +383,7 @@ Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED
 Evidence: ____________________________________  
 Comments: ____________________________________
 
-**32. Map and list contain all 17 records exactly once.** Clustering may change marker presentation, but result counts and accessible list entries remain correct.
+**32. Map and list contain all 18 records exactly once when unfiltered (catalog 1.1.0).** Clustering may change marker presentation, but result counts and accessible list entries remain correct.
 
 Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED  
 Evidence: ____________________________________  
@@ -395,7 +395,7 @@ Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED
 Evidence: ____________________________________  
 Comments: ____________________________________
 
-**34. Selection is synchronized.** Select from map, list and direct location route. The same location is highlighted, scrolled/focused appropriately and opened in the dossier without feedback loops.
+**34. Selection is synchronized.** Explore selection opens the same left-panel dossier from map, list or link; no permanent right dossier. Back restores discovery state (also test 204). Select from map, list and direct location route. The same location is highlighted, scrolled/focused appropriately and opened in the dossier without feedback loops.
 
 Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED  
 Evidence: ____________________________________  
@@ -1284,7 +1284,7 @@ Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED
 Evidence: ____________________________________  
 Comments: ____________________________________
 
-**173. All 17 locations and six areas reconcile.**  
+**173. All 18 locations and seven areas reconcile (catalog 1.1.0).**
 Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED  
 Evidence: ____________________________________  
 Comments: ____________________________________
@@ -1877,3 +1877,82 @@ JSON, bounds and unchanged record fields checked; affected workbook rows rendere
 and reviewed. Full suite rerun: 338 PASS; catalog/deployment checks zero errors
 (with the existing Old City Hall alias warning). Browser verification remains
 pending; catalog counts and schema are unchanged.
+
+
+## 2026-09-20 - Explore interaction redesign (D067)
+
+Design/source provenance: [UI_INTERACTION_DESIGN.md](UI_INTERACTION_DESIGN.md).
+This supersedes D063's menu search and catalog stepping requirements in the map-controls test 200. Retain that test's map toggle/Recenter/lifecycle checks; discovery/menu interactions now map to 204-205. Existing duplicate historical use of ID 200 is left intact; new IDs are unique.
+
+**204. Single discovery/dossier panel and state restoration. [F01/F02]**
+At desktop and narrow widths, search by name/ID/address/area/venue, combine capture/area, sort by catalog/name and scroll results. Select from list and map. Verify same left-panel dossier, no right rail or browsing strip, matching route/pin, evidence labels and correct immersive action. Back/Escape restores all discovery values and list position/focus. Repeat through history, current/future deep links, empty results/Clear filters and forced map-library failure. A linked selection outside filters remains visible on map; returning restores the filtered map. Future entries have no fabricated immersive action.
+
+**205. Panel/menu/sheet transitions and map space. [F20]**
+Hide/show list and dossier, then select same pin while hidden. Verify reopen, selected focus, accessible names and focus restoration. At <=880px test half/expanded sheet and touch scrolling, portrait/landscape and short viewport. Confirm actual map resize, camera padding, cluster/popup edges, selected pin visibility, compact controls and Recenter. Open catalog/help drawer; Tab/Shift+Tab stay within it, Escape/backdrop/Close restore trigger, background is inert. Verify keyboard/reduced-motion/contrast and mode entry/exit without applying the Explore layout to Shot Designer.
+
+### Executed environment and evidence
+
+Windows PowerShell; Node v24.18.0; local static ES-module tree, no build tool or deployed update. Base HEAD `e50834604c8decaa13dd2aacc3270a254523ca37` plus uncommitted D067 changes. Runtime SHA256 is recorded below after final verification. App version 0.2.0; catalog 1.1.0, catalog/transfer schema 1.0.0, workspace schema 1; 18 locations/11 current/7 future/7 areas/46 sources; research snapshot 2026-09-20. Existing vendored providers/configuration unchanged, Treedis contract treedis-recon-2. No live provider request or participant session executed.
+
+Automated: `node --test tests/*.test.mjs`; catalog: `node tools/validate-catalog.mjs`; public boundary: `node tools/check-deploy-scope.mjs`. Raw local logs in ignored outputs/ui-tests-final.txt, ui-catalog-final.txt, ui-deploy-final.txt. DOM, IndexedDB and MapLibre doubles are not browser observations. Initial 334/338 PASS, 4 FAIL; second 337/340 PASS, 3 FAIL; after corrections 340 PASS. Adding the public design-document exception produced a further 338 PASS/2 FAIL in outdated exact-allowlist tests; corrected fixtures continue to reject other docs. Historical failing logs retained in outputs/ui-tests-first.txt, ui-tests-second.txt and ui-tests-docs.txt.
+
+Browser discovery returned apps=[] and browsers=[]; creating the LSU3D reference tab returned `Browser is not available: iab`. Reference browser behavior, desktop/narrow before/after screenshots, real focus/touch/contrast/history/provider rendering are **BLOCKED**. No screenshot artifacts exist, and none are claimed. No phase completion or new approved exception is claimed.
+
+### Affected Part C execution
+
+| IDs | Current result and boundary |
+|---|---|
+| 31-34, 38 | Automated PASS for existing bounds, current/future labels, grouping and selected route/focus callbacks; live visual/cluster variants BLOCKED. Proximity clustering still not implemented. |
+| 35-37 | Automated PASS for implemented name/ID/address/area/venue query, area/capture filters and catalog/name sort. Wider approved tags/filters/sorts NOT TESTED and not delivered by this UI increment. |
+| 39-42 | Existing identity/capture/research unknown labels retained; full dossier section and human interpretation acceptance NOT TESTED. |
+| 43 | Automated PASS for current-only immersive entry action and explicit future/no-capture text; live BLOCKED. |
+| 44 | Existing stable location-to-immersive route PASS in doubles. Deferred candidate/compare/shot actions NOT TESTED, not implemented here. |
+| 45 | Catalog/schema/repository regression PASS; no data edits in this increment. |
+| 46-49 | Automated PASS for failed-map list/dossier, imagery recovery doubles, empty-result clearing and current/future hash resolution. Live provider/history/link round-trip BLOCKED. |
+| 204-205 | Automated PASS for state/DOM/callback contracts; CSS layout, live keyboard/touch, actual resize/popup/screenshot portions BLOCKED. |
+
+### Part J execution on this increment
+
+| ID | Result |
+|---|---|
+| 172 | Automated PASS: entry point and four modes. Browser usability BLOCKED. |
+| 173 | PASS: catalog validation, 18/11/7 and seven areas; retained Old City Hall alias warning. |
+| 174 | Automated PASS: basic search/filter/sort, list/dossier/back and map callbacks. Browser BLOCKED. |
+| 175 | Automated PASS: shared/independent iframe navigation/lifecycle contracts. Live Treedis BLOCKED; no fresh provider acceptance. |
+| 176 | Project persistence/transfer regression PASS; scene/candidate comparison acceptance NOT TESTED (pending feature). |
+| 177 | Shot entry route and existing optics/spatial tests PASS; full editor acceptance NOT TESTED (pending feature). |
+| 178 | Existing JSON/filename tests PASS; PNG/CSV/print acceptance NOT TESTED (pending features). |
+| 179 | Router/hash callbacks and cross-mode entry PASS in doubles. Actual browser Back/Forward BLOCKED. |
+| 180 | Focus trap/panel state tests PASS in doubles; desktop/tablet/touch/contrast/reduced-motion presentation BLOCKED. |
+| 181 | Existing imagery/Google/Treedis/IndexedDB failure/lifecycle doubles PASS; live loss/recovery BLOCKED. |
+| 182 | Deployment scope PASS; no reference edits or Git staging/commit/push performed. Public UI spec is explicitly allowlisted; other private docs remain rejected. |
+| 183 | Source retains no participant logging; Node suite has no failing tests. Browser console/network NOT TESTED. |
+
+Retest condition: browser-connected local/deployed build with the recorded runtime digest; exercise tests 204-205 and Part C/J at 1440x900, 1024x768, 390x844 and short landscape plus an actual tablet. Capture baseline and redesign list/dossier/collapsed/menu/mobile screenshots with build and viewport labels. Live Phase 0 exceptions stay open under their existing conditions.
+
+Final D067 verification: **340 tests PASS, 0 FAIL**. Runtime SHA256 `8a0e3bda19b69fcdd393adc5a019101e2089e74cb6fa2a9699c0f3a2b7a90921`. Digest algorithm: sort index.html plus all files recursively in src/styles/config/data/vendor (exclude runtime.js) by POSIX path; SHA256 of each UTF-8 path, NUL, raw bytes, NUL. Catalog: zero errors, one retained alias warning. Deployment scan: 153 publishable files, zero errors. No live-browser PASS.
+
+
+## D067 owner-reported manual results - 2026-09-20
+
+Owner response to the 13-item critical-change checklist: "all passed 13 was not tested". Record checklist items 1-12 as **PASS, owner-reported manual evidence**, and item 13 as **NOT TESTED**. These checklist numbers are local to this report, not replacements for stable system test IDs.
+
+| Checklist item | Check performed | Owner result | Related stable tests (covered portions only) |
+|---|---|---|---|
+| 1 | Desktop single-panel layout, retained branding/top navigation, no permanent right sidebar or browsing strip | PASS | 123, 172, 180, 204 |
+| 2 | List selection, same-panel dossier, selected marker and Back/list-scroll restoration | PASS | 34, 174, 202, 204 |
+| 3 | Search, capture/area filters and name sorting retained after dossier Back | PASS | 35-37, 174, 204 |
+| 4 | Empty results, marker removal and Clear filters restoring all 18 locations | PASS | 32, 48, 174, 204 |
+| 5 | Map selection opens matching dossier and keeps selected marker visible | PASS | 34, 202, 204 |
+| 6 | Panel collapse/restore, released map space and same-marker reopen | PASS | 205 |
+| 7 | Recenter, zoom/compass, map toggles and resizing; 3D was conditional on availability in the checklist | PASS | Map-controls test 200, 202, 205; no separate live 3D capability assertion |
+| 8 | Catalog/help drawer and Close/backdrop/Escape without losing context | PASS | 205 |
+| 9 | Visible keyboard focus, dossier/list Escape and menu Tab/Shift+Tab containment | PASS | 125, 180, 204-205 |
+| 10 | Narrow-screen bottom sheet, half/expanded/hide/restore, scrolling and navigation access | PASS | 124, 180, 205; phone versus resized desktop not specified |
+| 11 | Location URL in another tab and browser Back/Forward synchronize dossier/marker | PASS | 49, 179, 204 |
+| 12 | Carpe Diem immersive entry/return, future/no-capture state and existing Projects/Shot Designer entry points | PASS | 43, 50, 172, 175-177 (entry portions only) |
+| 13 | Forced map-library failure with usable search/list/dossier/menu | NOT TESTED | 46, 181, 204 |
+
+Environment metadata was not supplied: browser/version, device, viewport, tested URL, local versus published deployment, exact build/digest and hard-refresh confirmation remain unknown. The report concerns the requested Explore redesign but cannot be bound to the recorded automated runtime digest independently. No screenshots, provider/network trace or detailed observations were supplied. Preserve the earlier automated results and blocked inspection history; this owner report adds manual evidence rather than retroactively changing them.
+
+Owner-reported passes supersede the earlier lack of manual evidence only for the checklist portions above. They do not establish all-device coverage, measured contrast/reduced-motion behavior, every cluster/popup edge, independent-model transitions, provider failure recovery, reference-browser comparison, screenshots or full Phase 1 completion. The optional failure check remains NOT TESTED; its automated regression evidence remains separate. No new exception, commit or publication is authorized by this result report. Retest item 13 when request blocking is available and record environment/build context on the next verification run.

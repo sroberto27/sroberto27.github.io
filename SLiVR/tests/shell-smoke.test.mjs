@@ -98,6 +98,7 @@ test("the catalog loads and the shell reports what it holds", async () => {
   const state = store.getState();
   assert.equal(state.catalogError, null);
   assert.equal(state.catalog.locations.length, 18);
+  dom.app.descendants().find(n => n.getAttribute("aria-label") === "Catalog and help").click();
   assert.match(dom.app.textContent, /Catalog version/);
   assert.match(dom.app.textContent, /18 \(11 current, 7 future\)/);
 });
@@ -133,7 +134,7 @@ test("a map library that will not load leaves the shell working and says so", as
   assert.equal(store.getState().map.status, "unavailable");
   assert.match(store.getState().map.error.message, /did not load/);
   // The mode is still usable and still lists the catalog.
-  assert.match(dom.app.textContent, /Catalog records/);
+  assert.match(dom.app.textContent, /Locations/);
 });
 
 test("without local storage the shell warns instead of failing", async () => {
@@ -281,4 +282,81 @@ test("199: Stop waiting returns to the location without immediately remounting T
   assert.equal(store.getState().routeResolution.locationId, "LOC-001");
   assert.equal(store.getState().viewer.status, "idle");
   assert.equal(viewerFrame(dom).getAttribute("src"), "about:blank");
+});
+
+
+test("204: same-panel dossier preserves query, filters, sorting and scroll through routes and failures", async () => {
+  const { dom, actions, store } = await bootShell();
+  const label = value => dom.app.descendants().find(n => n.getAttribute("aria-label") === value);
+  const button = text => dom.app.querySelectorAll("button").find(n => n.textContent === text);
+  const search = label("Search locations");
+  search.value = "lafayette"; search.dispatch("input");
+  const capture = label("Capture availability");
+  capture.value = "future"; capture.dispatch("change");
+  const sort = label("Sort locations");
+  sort.value = "name"; sort.dispatch("change");
+  const list = dom.app.querySelector(".explore-results");
+  list.scrollTop = 123;
+  const rows = list.querySelectorAll("button");
+  assert.ok(rows.length > 0 && rows.length < 18);
+  const id = rows[0].getAttribute("data-location-id");
+  rows[0].click();
+  dom.window.dispatch("hashchange");
+  assert.equal(store.getState().routeResolution.locationId, id);
+  assert.ok(dom.app.querySelector(".rail-left").textContent.includes("Back to locations"));
+  assert.equal(dom.app.querySelector(".rail-right").textContent, "");
+  assert.equal(button("Open in Immersive"), undefined, "future capture has no invented entry action");
+  assert.ok(button("Back to locations").focused);
+  button("Back to locations").click();
+  dom.window.dispatch("hashchange");
+  assert.equal(label("Search locations"), search);
+  assert.equal(search.value, "lafayette");
+  assert.equal(capture.value, "future");
+  assert.equal(sort.value, "name");
+  assert.equal(list.scrollTop, 123);
+  assert.ok(rows[0].focused);
+  actions.navigate({ name: "location", params: { locationId: "LOC-001" } });
+  dom.window.dispatch("hashchange");
+  assert.ok(button("Open in Immersive"));
+  dom.app.querySelector(".rail-left").dispatch("keydown", { key: "Escape" });
+  dom.window.dispatch("hashchange");
+  assert.equal(store.getState().route.name, "explore");
+  search.value = "zzzz-no-match"; search.dispatch("input");
+  assert.match(list.textContent, /No matching locations/);
+  button("Clear filters").click();
+  assert.equal(list.querySelectorAll("button").length, 18);
+  assert.equal(store.getState().map.status, "unavailable", "list flow works despite map library failure");
+});
+
+test("205: collapse, sheet expansion, menu close and map selection restore the panel", async () => {
+  const { dom, actions } = await bootShell();
+  const button = text => dom.app.querySelectorAll("button").find(n => n.textContent === text);
+  const workspace = dom.app.querySelector(".workspace");
+  const rail = dom.app.querySelector(".rail-left");
+  button("Hide panel").click();
+  assert.equal(rail.hidden, true);
+  assert.equal(workspace.getAttribute("data-panel"), "closed");
+  assert.ok(button("Show locations").focused);
+  button("Show locations").click();
+  assert.equal(rail.hidden, false);
+  button("Expand sheet").click();
+  assert.equal(workspace.getAttribute("data-panel"), "expanded");
+  button("Hide panel").click();
+  actions.navigate({ name: "location", params: { locationId: "LOC-001" } });
+  dom.window.dispatch("hashchange");
+  assert.equal(rail.hidden, false);
+  button("Hide panel").click();
+  actions.navigate({ name: "location", params: { locationId: "LOC-001" } });
+  assert.equal(rail.hidden, false, "repeat selection restores the dossier without a new hash");
+  const menu = dom.app.descendants().find(n => n.getAttribute("aria-label") === "Catalog and help");
+  menu.click();
+  assert.equal(menu.getAttribute("aria-expanded"), "true");
+  assert.match(dom.app.querySelector(".explore-menu").textContent, /Catalog version/);
+  dom.document.dispatch("keydown", { key: "Escape" });
+  assert.equal(menu.getAttribute("aria-expanded"), "false");
+  assert.ok(menu.focused);
+  actions.navigate({ name: "shot" });
+  dom.window.dispatch("hashchange");
+  assert.equal(workspace.getAttribute("data-explore"), "false");
+  assert.equal(menu.hidden, true);
 });

@@ -16,3 +16,6 @@ outputs/
 
 # Optional runtime configuration: provider credentials never enter committed source.
 config/runtime.js
+
+# Public interaction specification; no private reference content.
+!docs/UI_INTERACTION_DESIGN.md

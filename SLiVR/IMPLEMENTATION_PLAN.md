@@ -15,6 +15,8 @@ provider-dependent claims/features. Unknown results remain unknown.
 planning decisions below are historical; D057 supersedes the original dedicated,
 uncommitted Google-key requirement, and D058 approves both read-only code sources.
 
+**Explore UI increment (D067):** single discovery/dossier panel, collapse/restore, narrow-screen sheet, shell-owned catalog/help drawer and retained browse state implemented. See [UI interaction design](docs/UI_INTERACTION_DESIGN.md). Tests 204-205 cover automated behavior. The owner reports critical manual checklist items 1-12 PASS; item 13 (forced map-library failure) is NOT TESTED. Browser/device/build metadata and screenshots were not supplied; see the D067 owner-results entry in docs/FULL-SYSTEM-TESTING.md. This is not Phase 1 completion. The D063 catalog navigation strip is superseded by this panel.
+
 ## Context
 
 `E:\sroberto27.github.io\SLiVR` currently holds only specifications and research records — no application code (`git ls-files SLiVR` returns 0 tracked files). The approved guide `SLIVR_ARCHITECTURE_AND_FEATURES.md` v0.19 calls for a static, no-build, map-centred film **location scouting and shot planning** web application for Lafayette, Louisiana, adapting proven behaviour from the read-only LSU3D campus map at `E:\sroberto27.github.io\Wrapper\map\LSU3D` while discarding its recruitment purpose, Baton Rouge content and LSU assumptions.
