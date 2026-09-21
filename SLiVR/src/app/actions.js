@@ -217,6 +217,7 @@ export function createActions({
         return;
       }
       setState({ routeResolution: { status: "ok", locationId, view } });
+      drawLocationMarkers();
       mapAdapter?.setSelectedLocation(locationId);
       return;
     }
@@ -238,6 +239,7 @@ export function createActions({
     }
 
     setState({ routeResolution: { status: "ok" } });
+    drawLocationMarkers();
   }
 
   /** Applies a route that the router has already parsed. */
@@ -251,6 +253,7 @@ export function createActions({
   }
 
   function navigate(route) {
+    if (route.name === "location") setState({ exploreSelectionRequest: { locationId: route.params?.locationId } });
     router.navigate(route);
     if (route.name === "location" && route.params?.locationId) {
       mapAdapter?.focusLocation(route.params.locationId);
@@ -528,10 +531,11 @@ export function createActions({
    * Called whenever either half becomes available, because the map and the
    * catalog load independently and either can finish first.
    */
+  let exploreLocationIds = null;
   function drawLocationMarkers() {
     const { catalog } = getState();
     if (!mapAdapter || !catalog) return;
-    mapAdapter.setLocations(catalog.locations, (locationId) =>
+    mapAdapter.setLocations(catalog.locations.filter(l => !exploreLocationIds || exploreLocationIds.includes(l.id) || l.id === getState().routeResolution?.locationId), (locationId) =>
       navigate({ name: "location", params: { locationId } }),
     );
     mapAdapter.setSelectedLocation(getState().routeResolution?.locationId ?? null);
@@ -772,6 +776,7 @@ export function createActions({
     mountMap,
     unmountMap,
     retryImagery,
+    setExploreLocations(ids) { exploreLocationIds = ids; drawLocationMarkers(); },
     recenterMap: () => mapAdapter?.recenter(),
     mountViewer,
     unmountViewer,

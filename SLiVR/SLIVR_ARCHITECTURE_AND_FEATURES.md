@@ -453,7 +453,7 @@ All storage keys, service-worker scopes, and cache names must belong to SLiVR. S
 
 Use a desktop-first application shell with a persistent top workspace switcher for `Explore`, `Projects`, `Immersive` and `Shot Designer`, plus the active context breadcrumb and local-save status. The active project, scene, candidate, location and shot scene persist when switching modes.
 
-- **Explore:** left search/filter/results panel, central MapLibre map, right location dossier.
+- **Explore:** one collapsible left search/filter/results panel that switches to the selected location dossier, plus the MapLibre map. No permanent right dossier. Narrow screens use a half/expanded bottom sheet. Catalog information/help live in an on-demand hamburger drawer. See [UI interaction design](docs/UI_INTERACTION_DESIGN.md) (D067) for state preservation, action placement, reference provenance and verification limits.
 - **Immersive:** left location/entry-point/coverage panel, central Treedis viewer, right bookmarks/notes/warnings panel, with a full-screen viewer option.
 - **Projects:** left project/scene/candidate navigator, central brief/comparison/decision workspace, right selected-candidate details/actions.
 - **Shot Designer:** left scene tree/object library/shot navigator, central synchronized 2D or 3D canvas, right object/camera inspector and a collapsible bottom panel for shots, variants and basic path preview.

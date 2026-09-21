@@ -238,3 +238,19 @@ Updated the derived map bounds. All 17 supplied coordinate pairs match exactly;
 unchanged facts, captures and workbook field-guide content reconcile with the
 original workbook. Reviewed the affected workbook rows. Automated suite: 338 PASS;
 catalog zero errors/one existing alias warning; deployment scope zero errors.
+
+
+### 2026-09-20 - Explore single-panel redesign (D067)
+
+Uncommitted increment on e50834604c8decaa13dd2aacc3270a254523ca37. F01/F02/F20: replace two Explore rails and redundant browsing strip with retained discovery/dossier panel, collapse/restore, basic query/capture/area/sort, mobile half/expanded sheet and shell catalog/help drawer. Preserve catalog 1.1.0/schema/provider contracts, mode navigation and local projects. Add tests 204-205; reconcile architecture and document reference adaptation in docs/UI_INTERACTION_DESIGN.md.
+
+Initial regression run: 338 tests, 334 PASS/4 FAIL (obsolete menu/strip/catalog-heading assertions and reference identity in CSS comment). Second run: 340 tests, 337 PASS/3 FAIL (new tests lacked document events and hashchange dispatch in the DOM fixture). Corrected fixture and expectations; final results/build digest are in FULL-SYSTEM-TESTING.md. Preserve these failures as test-development evidence, not browser findings. Browser discovery and creation both failed; no screenshots/live acceptance. No user-study result, telemetry or persistence schema change.
+
+D067 documentation check initially produced 338 PASS/2 FAIL after adding the public UI specification: deployment tests still asserted two allowlisted documents. Updated the exact allowlist fixture to three documents while retaining rejection of every other private docs path. No application behavior changed for those failures.
+
+Final D067 execution: 340 PASS/0 FAIL on Node v24.18.0. Catalog validation zero errors/one retained alias warning; public scope 153 files/zero errors. Runtime digest and Part C/J result boundaries are recorded in FULL-SYSTEM-TESTING.md. Browser and screenshot acceptance remain BLOCKED.
+
+
+### 2026-09-20 - D067 owner manual checklist results
+
+Owner response: "all passed 13 was not tested". Recorded 12 owner-reported manual PASS results and one NOT TESTED result (forced map-library failure), mapped to existing stable test IDs without declaring the broader tests complete. Updated verification, UI design, feature evidence, limitations and implementation status. Browser/device/URL/build metadata and screenshots were not supplied. No runtime, data, measurement definition or telemetry change; no new tests were executed for this documentation-only update. No commit or push.

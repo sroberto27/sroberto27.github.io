@@ -31,35 +31,17 @@ function documentFixture() {
     restore() { globalThis.document = original; } };
 }
 
-test('map menu search, catalog stepping, Escape and disposal work without changing catalog order', () => {
+test('204: map controls no longer duplicate the shell discovery panel or tour navigation', () => {
   const fixture = documentFixture();
   try {
-    const visits = [];
     const control = createExploreControls({ getState: () => ({}), recenter() {},
-      toggleLayers() {}, toggleImagery() {}, toggleDimension() {}, visit: id => visits.push(id) });
-    control.onAdd({ getContainer: () => document.createElement('div') });
-    control.setLocations([{ id: 'A', name: 'Cafe' }, { id: 'B', name: 'Park' }]);
-    fixture.find('Map menu and location search').click();
-    const search = fixture.find('Search map locations');
-    assert.equal(document.activeElement, search);
-    search.value = 'park'; search.events.input();
-    const results = fixture.nodes.find(n => n.className === 'map-search-results');
-    assert.equal(results.children.length, 1);
-    results.children[0].click();
-    assert.deepEqual(visits, ['B']);
-    assert.equal(fixture.find('Map menu').hidden, true);
-    control.setSelected('A');
-    assert.equal(fixture.find('Previous location').disabled, true);
-    fixture.find('Next location').click();
-    assert.deepEqual(visits, ['B', 'B']);
-    control.setSelected('B');
-    assert.equal(fixture.find('Next location').disabled, true);
-    fixture.find('Map menu and location search').click();
-    fixture.find('Map menu').events.keydown({ key: 'Escape', stopPropagation() {} });
-    assert.equal(fixture.find('Map menu').hidden, true);
+      toggleLayers() {}, toggleImagery() {}, toggleDimension() {} });
+    const root = control.onAdd();
+    assert.equal(root.children.length, 5);
+    assert.equal(fixture.find('Map menu and location search'), undefined);
+    assert.equal(fixture.find('Previous location'), undefined);
     control.onRemove();
-    assert.equal(fixture.find('Map menu').removed, true);
-    assert.equal(fixture.nodes.find(n => n.className === 'map-location-navigation').removed, true);
+    assert.equal(root.removed, true);
   } finally { fixture.restore(); }
 });
 
@@ -72,8 +54,8 @@ test('location navigation from the list action and actual pin callbacks both cen
       getBearing: () => 0, getPitch: () => 0, getMaxZoom: () => 20,
       fitBounds() {}, flyTo: value => flights.push(value) };
     const maplibre = { Map: function () { return map; }, Marker: class {
-      constructor({ element }) { pins.push(element); }
-      setLngLat() { return this; } addTo() { return this; } remove() {}
+      constructor({ element }) { this.element = element; pins.push(element); }
+      setLngLat() { return this; } addTo() { return this; } remove() { this.element.removed = true; }
     } };
     const store = createStore(initialState({ webgl: true }));
     const actions = createActions({ store, region, repo: null, saveStatus: {},
@@ -91,6 +73,12 @@ test('location navigation from the list action and actual pin callbacks both cen
     const count = flights.length;
     actions.navigate({ name: 'location', params: { locationId: 'LOC-018' } });
     assert.ok(flights.length > count, 'repeat selection still recenters');
+    actions.setExploreLocations(['LOC-001']);
+    actions.navigate({ name: 'explore' });
+    const currentPins = pins.filter(n => !n.removed);
+    assert.deepEqual(currentPins.map(n => n.dataset.locationId), ['LOC-001']);
+    actions.navigate({ name: 'location', params: { locationId: 'LOC-018' } });
+    assert.deepEqual(flights.at(-1).center, [-92.04441771641942, 30.228764095274858], 'deep link outside filters remains visible');
     actions.unmountMap();
   } finally { fixture.restore(); }
 });
@@ -116,7 +104,7 @@ test('map controls retain independent toggles and disable aerial switching while
     aerial.click(); assert.equal(state.imagery, false);
     state.tiles = 'fallback'; control.refresh();
     assert.equal(aerial.disabled, false);
-    fixture.find('Recenter on all locations').click(); assert.equal(fits, 1);
+    fixture.find('Recenter visible locations').click(); assert.equal(fits, 1);
   } finally { fixture.restore(); }
 });
 

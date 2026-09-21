@@ -123,7 +123,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
       map.flyTo?.({
         center: location.position,
         zoom: Math.min(map.getMaxZoom?.() ?? 20, 19),
-        duration: 550,
+        duration: globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 0 : 550,
         padding: inventoryFitOptions(container.clientWidth, container.clientHeight, plateHeight).padding,
         retainPadding: false,
       });

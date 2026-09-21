@@ -185,6 +185,9 @@ export function createFakeDom({ hash = "", indexedDB = null, diagnostics = null 
   const doc = {
     readyState: "complete",
     body,
+    addEventListener: (...args) => documentRoot.addEventListener(...args),
+    removeEventListener: (...args) => documentRoot.removeEventListener(...args),
+    dispatch: (...args) => documentRoot.dispatch(...args),
     createElement: (tag) => new FakeNode(tag),
     createTextNode: textNode,
     getElementById: (id) =>

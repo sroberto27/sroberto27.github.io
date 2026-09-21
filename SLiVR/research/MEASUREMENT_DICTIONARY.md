@@ -163,3 +163,8 @@ D064 coordinate-source update: after the additional Play N Trade, Givens House a
 Former Truman corrections, 17 of 18 positions are owner-supplied (16 existing
 corrections plus LaSEL). Only Carpe Diem retains its prior coordinate provenance.
 Precision remains distinct from positional accuracy; no new measurement claim.
+
+
+### D067 - UI state contract, revision 1 (2026-09-20)
+
+A discovery state is query + capture + area + sort + results-scroll/sheet-scroll positions, retained during this shell session, not persisted across reload. Selection is a stable location route; Back to locations returns to Explore without clearing discovery state. Collapse changes visibility, not selection. Recenter now fits represented locations (filtered set plus an explicitly linked selected record); Clear filters restores the inventory. A restoration check passes only when values/order/scroll and focus target are restored after dossier exit. Automated doubles measure state/callback assertions, not pixels, focus usability or task time. No timing instrument, participant event schema or background logging is added. Expected reduction in navigation effort is a design hypothesis only.
