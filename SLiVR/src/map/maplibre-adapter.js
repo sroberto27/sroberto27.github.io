@@ -71,6 +71,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
   let selectLocation = null;
   let selectedLocationId = null;
   let focusedLocationId = null;
+  let focusedGroup = null;
   let focusGeneration = 0;
   const referenceSource = "slivr-reference-source";
   const referenceLayer = "slivr-reference-layer";
@@ -113,6 +114,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
     const location = locations.find(item => item.id === locationId);
     if (!map || disposed || !location) return;
     focusedLocationId = locationId;
+    focusedGroup = null;
     const generation = ++focusGeneration;
     const settle = globalThis.requestAnimationFrame ?? (callback => callback());
     // Wait for the selected record's panels to settle before measuring the map.
@@ -124,7 +126,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
         center: location.position,
         zoom: Math.min(map.getMaxZoom?.() ?? 20, 19),
         duration: globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 0 : 550,
-        padding: inventoryFitOptions(container.clientWidth, container.clientHeight, plateHeight).padding,
+        padding: viewFitOptions(plateHeight).padding,
         retainPadding: false,
       });
     }));
@@ -132,8 +134,32 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
 
   function recenter() {
     focusedLocationId = null;
+    focusedGroup = null;
     focusGeneration++;
     fitInventory();
+  }
+
+  function viewFitOptions(plateHeight = 0) {
+    const options = inventoryFitOptions(container.clientWidth, container.clientHeight, plateHeight);
+    const panel = container.closest?.(".workspace")?.querySelector(".rail-left");
+    const panelRect = !panel?.hidden && panel?.getBoundingClientRect?.();
+    const mapRect = container.getBoundingClientRect?.();
+    if (panelRect && mapRect && panelRect.top < mapRect.bottom && panelRect.bottom > mapRect.top && panelRect.right > mapRect.left) {
+      options.padding.left = Math.min(container.clientWidth * .5, Math.max(options.padding.left, panelRect.right - mapRect.left + 24));
+    }
+    return options;
+  }
+
+  function focusGroup(members, animate = true) {
+    const bounds = locationBounds(members);
+    if (!map || disposed || !bounds) return;
+    focusedLocationId = null;
+    focusedGroup = members;
+    focusGeneration++;
+    const plateHeight = container.parentElement?.querySelector(".imagery-plate")?.getBoundingClientRect().height ?? 0;
+    map.fitBounds(bounds, { ...viewFitOptions(plateHeight), maxZoom: Math.min(map.getMaxZoom?.() ?? 20, 19),
+      duration: animate && !globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 550 : 0,
+      bearing: map.getBearing(), pitch: map.getPitch(), retainPadding: false });
   }
 
   function fitInventory() {
@@ -143,7 +169,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
     if (!(width > 0 && height > 0)) return;
     const plateHeight = container.parentElement?.querySelector(".imagery-plate")?.getBoundingClientRect().height ?? 0;
     map.fitBounds(inventoryBounds, {
-      ...inventoryFitOptions(width, height, plateHeight),
+      ...viewFitOptions(plateHeight),
       bearing: map.getBearing(),
       pitch: map.getPitch(),
     });
@@ -268,10 +294,11 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
       resizeObserver = new ResizeObserver(() => {
         try {
           map?.resize();
-          const size = `${container.clientWidth}x${container.clientHeight}`;
+          const size = `${container.clientWidth}x${container.clientHeight}:${viewFitOptions().padding.left}`;
           if (size !== lastSize) {
             lastSize = size;
             if (focusedLocationId) focusLocation(focusedLocationId);
+            else if (focusedGroup) focusGroup(focusedGroup, false);
             else fitInventory();
           }
         } catch {
@@ -279,6 +306,8 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
         }
       });
       resizeObserver.observe(container);
+      const panel = container.closest?.(".workspace")?.querySelector(".rail-left");
+      if (panel) resizeObserver.observe(panel);
     }
     map.on("data", (event) => {
       // A raster tile that actually rendered is the only evidence that the
@@ -429,12 +458,13 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
       locations = nextLocations;
       selectLocation = onSelect;
       dimensionControl?.setLocations(locations);
-      markers ??= createMarkers({ map, maplibre, onSelect: visit });
+      markers ??= createMarkers({ map, maplibre, onSelect: visit, onGroup: focusGroup });
       markers.setLocations(locations);
       const nextKey = JSON.stringify(locations.map(location => [location.id, location.position]));
       if (nextKey !== inventoryKey) {
         inventoryKey = nextKey;
         inventoryBounds = locationBounds(locations);
+        focusedGroup = null;
         fitInventory();
       }
       return markers.count;
@@ -450,6 +480,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
     },
     recenter,
     focusLocation,
+    focusGroup,
     setTilted,
     get tilted() {
       return tilted;

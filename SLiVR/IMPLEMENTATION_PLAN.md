@@ -17,6 +17,16 @@ uncommitted Google-key requirement, and D058 approves both read-only code source
 
 **Explore UI increment (D067):** single discovery/dossier panel, collapse/restore, narrow-screen sheet, shell-owned catalog/help drawer and retained browse state implemented. See [UI interaction design](docs/UI_INTERACTION_DESIGN.md). Tests 204-205 cover automated behavior. The owner reports critical manual checklist items 1-12 PASS; item 13 (forced map-library failure) is NOT TESTED. Browser/device/build metadata and screenshots were not supplied; see the D067 owner-results entry in docs/FULL-SYSTEM-TESTING.md. This is not Phase 1 completion. The D063 catalog navigation strip is superseded by this panel.
 
+## Phase 1 continuation status - 2026-09-21 (D069)
+
+Implemented on the existing shell: all ten discovery filter dimensions, debounced multi-field description search, area/capture/recent sorting, zoom-dependent nearby pin groups, full public dossier sections and practical fields, combined evidence/source disclosures, and public-link copy with fallback. D068 assessment summary/action placement and ownership contracts are defined in docs/UI_INTERACTION_DESIGN.md; the editor and working entry actions remain Phase 3. Catalog/schema/provider configuration and user changes are preserved.
+
+Phase 1 remains IN PROGRESS pending live exit evidence. No browser surface is available; new live checks and inherited Phase 0 catalog/storage browser obligations are BLOCKED. Full test 44 candidate/compare/shot integration remains NOT TESTED until Phase 3/4 dependencies exist; no nonfunctional buttons were added and no exception is presumed. See the D069 Part C/J execution record for exact results and retest conditions.
+
+## Approved scope addition — 2026-09-21 (D068)
+
+Scouting Assessments (F06-SA) are approved within Phase 3 Project Workspace, after candidate creation and before requirement evaluation/comparison. [SCOUTING_ASSESSMENTS_PLAN.md](SCOUTING_ASSESSMENTS_PLAN.md) defines records, shared editor, source reuse, migration/import and failure contracts. This is planning approval only; current implementation status and earlier evidence remain unchanged. Tests 206–215 extend essential exit gates. Advanced field capture and sensor/offline phone tools remain Phase 7; no new mode or product family is added.
+
 ## Context
 
 `E:\sroberto27.github.io\SLiVR` currently holds only specifications and research records — no application code (`git ls-files SLiVR` returns 0 tracked files). The approved guide `SLIVR_ARCHITECTURE_AND_FEATURES.md` v0.19 calls for a static, no-build, map-centred film **location scouting and shot planning** web application for Lafayette, Louisiana, adapting proven behaviour from the read-only LSU3D campus map at `E:\sroberto27.github.io\Wrapper\map\LSU3D` while discarding its recruitment purpose, Baton Rouge content and LSU assumptions.
@@ -233,6 +243,10 @@ Catalog IDs come from the workbook (`LOC-`, `CAP-`, `AREA-`, `SRC-`). Workspace 
 
 **Recalibration safety.** Changing a scene's calibration increments `frameVersion`; existing variants and review snapshots keep their original frame version, and migration is an explicit user action (test 111).
 
+### 4.2.1 Planned assessment schema extension (D068)
+
+Phase 3 adds `scoutAssessments`, immutable `scoutAssessmentRevisions`, and project-owned `scoutMedia`, with versioned templates and candidate requirement links to exact assessment revisions/questions. Extend schema validation, IDs, migrations, conflict remapping, deletion, transfer and emergency export together. Keep persistence behind the existing repository. The [assessment plan](SCOUTING_ASSESSMENTS_PLAN.md) defines ownership, legacy false/zero ambiguity, missing-media reporting and backward migration; no database version is bumped by this planning change.
+
 ### 4.3 JSON transfer
 
 Envelope: `{ schemaVersion: "1.0.0", appVersion, exportedAt, catalogVersion, kind: "slivr-project", payload: {...}, assetsInline?: [...] }`.
@@ -323,7 +337,9 @@ A provider uncertainty becomes a Phase 0 validation task with a fallback. Exactl
 
 ### Phase 1 — Location Atlas and Dossiers (F01, F02, F19 metadata)
 
-**Outcome.** A synchronised map/list with search, filters, sorting and clustering across all 17 records, and a full dossier with visible evidence and validation states.
+**Assessment preparation (D068).** Define active-project assessment summary/action placement and preserve the catalog/workspace boundary. The working editor and entry actions are delivered together in Phase 3; do not ship a nonfunctional placeholder action.
+
+**Outcome.** A synchronised map/list with search, filters, sorting and clustering across all 18 records, and a full dossier with visible evidence and validation states.
 
 **Depends on** Phase 0 catalog, store, router, map adapter.
 
@@ -333,17 +349,19 @@ A provider uncertainty becomes a Phase 0 validation task with a fallback. Exactl
 
 **Automated tests.** Filter composition truth table; search field coverage and case/spacing tolerance; sort stability; dossier section completeness per record; a guard asserting no dossier renderer can convert an unknown string into a favourable value; catalog immutability (a project write never mutates a catalog record).
 
-**Manual acceptance.** Find LOC-003 from map and from list; confirm the same selection; filter to future candidates and confirm the six show a future state with no tour action; open LOC-012's dossier and confirm no fabricated sweep; copy a location link and open it in a fresh tab.
+**Manual acceptance.** Find LOC-003 from map and from list; confirm the same selection; filter to future candidates and confirm the seven show a future state with no tour action; open LOC-012's dossier and confirm no fabricated sweep; copy a location link and open it in a fresh tab.
 
 **States.** WebGL/map init failure → list + dossier remain fully keyboard-operable. Both DOTD services blocked → neutral background, retry control, no stale imagery. Zero results → explanation + clear-filters without reload.
 
-**Exit evidence.** All 17 findable/selectable/linkable; map↔list synchronisation with no feedback loop; capture status and research completeness visibly distinct; approximate/missing/unvalidated facts visible; provider failures leave list and dossier usable.
+**Exit evidence.** All 18 findable/selectable/linkable; map↔list synchronisation with no feedback loop; capture status and research completeness visibly distinct; approximate/missing/unvalidated facts visible; provider failures leave list and dossier usable.
 
 **Test IDs.** **31–49**. Automated: 32, 35, 36, 37, 39, 45, 48. Live: 31, 33, 34, 38, 40, 41, 42, 43, 44, 46, 47, 49.
 
 ---
 
 ### Phase 2 — Immersive Scout (F03, F04 basic)
+
+**Assessment preparation (D068).** Make supported bookmark records usable as project/location/capture evidence references. Phase 3 adds the collapsible shared assessment editor; no additional provider capability is assumed. Test 208 covers the integrated handoff at delivery.
 
 **Outcome.** Entering the correct supplied sweep from a dossier, moving among the six downtown entries inside `5eb11a1b`, switching to independent experiences without stale state, saving and restoring bookmarks, and recovering from failures.
 
@@ -370,7 +388,9 @@ A provider uncertainty becomes a Phase 0 validation task with a fallback. Exactl
 
 ---
 
-### Phase 3 — Project Workspace (F05, F06)
+### Phase 3 — Project Workspace (F05, F06 including F06-SA)
+
+**Approved work-order amendment (D068).** Project CRUD → scene briefs → candidate creation → dated scouting assessments → requirement evaluation → comparison → preferred/backup decision. Add domain/template and repository support, then the shared Projects/dossier/Immersive editor, attachments and panorama viewing, bookmark/requirement evidence, revision-aware comparison, canonical transfer and previewed legacy import. Proposed modules: `src/domain/scout-assessment.js`, `src/scouting/assessment-template.js`, `assessment-editor.js`, `assessment-evidence.js`, `assessment-media.js`, and `src/data/checklist-import.js`; extend existing persistence/transfer modules rather than creating another database. Implement [the detailed contract](SCOUTING_ASSESSMENTS_PLAN.md) and satisfy **206–212, 214–215**, existing Phase 3 tests and Part J before closure. Private contacts, sensor capture and permission management remain excluded.
 
 **Outcome.** Local productions with multiple scene requirements, candidates with decision states, side-by-side comparison, preferred + backup choices with rationale, autosave and validated JSON transfer.
 
@@ -391,6 +411,8 @@ A provider uncertainty becomes a Phase 0 validation task with a fallback. Exactl
 ---
 
 ### Phase 4 — Shot Designer Core (F08–F12)
+
+**Assessment dependency (D068).** Display selected assessment findings and owned references beside shot planning; preserve evidence revision and calibration boundaries. Test **213**, affected Phase 4 tests and Part J are required.
 
 **Outcome.** A synchronised overhead 2D plan and perspective 3D view over one scene model, with the approved object set, camera/lens controls with FOV cone and frustum, editable paths, deterministic preview, shot list and variants, floor-plan import and calibration, undo/redo, autosave, PNG diagram and shot-list CSV.
 
@@ -438,6 +460,8 @@ names the file to start from.
   reason 1 rather than an oversight to copy.
 
 ### Phase 5 — Integrated prototype and release validation (F20 baseline)
+
+**Assessment integration (D068).** Finish selected assessment sections in print-ready packets and canonical JSON/media ZIP export/import. Verify clean-profile recovery, missing-media reports, accessibility, provider failure and storage failure under tests **208–215**, affected phase tests and Part J. The end-to-end trace now includes assessment creation after candidate creation and before comparison; earlier execution evidence does not cover this addition.
 
 **Outcome.** The complete workflow connected, the four exports plus emergency recovery finished, routing/context transitions hardened, resources disposed, accessibility and tablet behaviour verified, deployment and isolation documented.
 
@@ -633,3 +657,7 @@ The reviewed workbook and all generated JSON agree. Selection from list, pin,
 search or catalog navigation now centers the map; Recenter fits the inventory.
 Tests 201-203 and the 338-test automated run cover this increment; live checks
 remain pending. The original Phase 0 scope/checklists above are historical.
+
+### D070 UI follow-up - 2026-09-21
+
+Owner-approved correction implemented: floating desktop panel over imagery, fully wrapping location names with metadata below, circular count badges and click-to-fit member bounds. Panel-aware camera padding and reduced-motion/cancellation/coincident-group behavior have automated coverage. 352 tests PASS; catalog/deployment checks clean except retained alias warning. Owner's prior functional passes include reported visual defects and do not certify this new build. Live test 218 remains BLOCKED; 15/16 from the owner checklist remain NOT TESTED pending clarification. Phase 1 stays open. See FULL-SYSTEM-TESTING.md for the exact build and Part C/J boundaries.

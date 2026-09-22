@@ -185,3 +185,15 @@ F01/F02/F20: implemented single discovery/dossier panel, retained search/capture
 ### D067 owner manual evidence - 2026-09-20
 
 F01/F02/F20 and existing F03/mode-entry portions: owner reports critical checklist items 1-12 PASS, covering layout, retained discovery state, empty-result recovery, map/list selection, panel/menu/sheet controls, keyboard, links/history and immersive/Projects/Shot Designer entry. Item 13, forced map-library failure, remains NOT TESTED. See the itemized execution record in docs/FULL-SYSTEM-TESTING.md. Exact browser/device/viewport/URL/build were not provided, and screenshots are absent. Earlier automated/blocked evidence remains intact; no full feature/phase completion or participant finding is claimed.
+
+## F06-SA - Scouting Assessments (D068, 2026-09-21)
+
+Status: Approved prototype, planned for Phase 3; not implemented, technically validated or evaluated with participants. Extends F06 within Project Workspace. Eight-section dated assessments connect observations, owned media and supported bookmarks to candidate requirements, decisions and shot references. Provenance: owner-approved CheckList/v2 source review and both map reference inspections; see SCOUTING_ASSESSMENTS_PLAN.md. Hypothesis: explicit evidence states and revision references may reduce omissions and improve decision traceability; this is not an observed result. Candidate measures: unresolved questions, evidence-linked judgments, revision recovery and transfer integrity. Limitations: virtual coverage/age, legacy default ambiguity, media portability and local-only storage. Planned tests 206-215; no runtime or participant evidence added.
+
+## 2026-09-21 - Phase 1 discovery and dossier continuation (D069)
+
+F01/F02/F19 metadata: advanced discovery, session recent sorting, nearby pin grouping, complete published practical-field rendering, combined source details and safe public location links are implemented on the existing D067 shell. F06-SA Phase 1 preparation is documented at the Project context section; no editor, placeholder action, assessment record or schema change. Record-level source associations do not establish per-field provenance. Unknown wording remains visible; hours/operator/capture do not imply production availability/ownership/permission. Runtime evidence and test IDs are in FULL-SYSTEM-TESTING.md. Automated technical validation only for this increment; no live or participant evidence and no Phase 1 exit claim.
+
+### D070 - 2026-09-21
+
+F01/F02/F20: corrected owner-reported name truncation and rectangular panel/group presentation. Added circular count-to-bounds navigation and measured panel padding while retaining selection, filtering and mobile sheet. 352 automated PASS including test 218; actual presentation and camera behavior remain unverified on the new build. Owner screenshot establishes prior presentation defects, not their resolution. No participant evidence or phase completion.

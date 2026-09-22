@@ -322,6 +322,7 @@ test("204: same-panel dossier preserves query, filters, sorting and scroll throu
   dom.window.dispatch("hashchange");
   assert.equal(store.getState().route.name, "explore");
   search.value = "zzzz-no-match"; search.dispatch("input");
+  dom.advance(180);
   assert.match(list.textContent, /No matching locations/);
   button("Clear filters").click();
   assert.equal(list.querySelectorAll("button").length, 18);
@@ -359,4 +360,60 @@ test("205: collapse, sheet expansion, menu close and map selection restore the p
   dom.window.dispatch("hashchange");
   assert.equal(workspace.getAttribute("data-explore"), "false");
   assert.equal(menu.hidden, true);
+});
+
+test("39-44/216: all dossiers retain public fields, source boundaries, unknowns and working public actions", async () => {
+  const { dom, actions, store } = await bootShell();
+  const before = JSON.stringify(store.getState().catalog.locations);
+  for (const location of store.getState().catalog.locations) {
+    actions.navigate({ name:"location", params:{locationId:location.id} }); dom.window.dispatch("hashchange");
+    const dossier = dom.app.querySelector(".explore-dossier");
+    const text = dossier.textContent;
+    for (const section of ["Overview", "Production considerations", "Visual / spatial character", "Immersive coverage", "Access information", "Evidence / sources", "Project context", "Share location"]) assert.ok(text.includes(section), `${location.id}: ${section}`);
+    const detail = store.getState().catalog.scoutDetailsByLocationId.get(location.id);
+    for (const [key,value] of Object.entries(detail)) if (!['locationId','sourceIds','recordStatus'].includes(key)) assert.ok(text.includes(value), `${location.id}: ${key}`);
+    assert.ok(text.includes("Public hours do not imply production availability"));
+    assert.ok(text.includes("Coordinates (approximate; not surveyed)"));
+    assert.ok(text.includes("Information has not been found"));
+    assert.ok(text.includes("Project observations and candidate decisions are separate"));
+    const buttons = dossier.querySelectorAll("button");
+    assert.equal(buttons.some(n => n.textContent === "Open in Immersive"), location.captureStatus === "current");
+    assert.ok(!buttons.some(n => /checklist|assessment|compare|candidate/i.test(n.textContent)));
+    assert.ok(!dossier.querySelectorAll("a").some(n => /^(?:\.?\/?(?:docs|outputs)\/|javascript:)/.test(n.getAttribute("href"))));
+    buttons.find(n => n.textContent === "Copy public location link").click();
+    assert.ok(text.includes(location.name));
+    assert.match(dossier.textContent, /Copy unavailable/);
+  }
+  assert.equal(JSON.stringify(store.getState().catalog.locations), before);
+});
+
+test("35/37/204: search is debounced and recent order survives direct routes and mode changes", async () => {
+  const { dom, actions, store } = await bootShell();
+  const label = value => dom.app.descendants().find(n => n.getAttribute("aria-label") === value);
+  const search = label("Search locations");
+  search.value = "no-match"; search.dispatch("input"); dom.advance(90);
+  search.value = "carpe"; search.dispatch("input"); dom.advance(90);
+  assert.equal(dom.app.querySelector(".explore-results").querySelectorAll("button").length,18);
+  dom.advance(90);
+  assert.equal(dom.app.querySelector(".explore-results").querySelectorAll("button").length,1);
+  dom.app.querySelectorAll("button").find(n => n.textContent === "Clear filters").click();
+  for (const id of ["LOC-003","LOC-018","LOC-003"]) {
+    actions.navigate({name:"location",params:{locationId:id}}); dom.window.dispatch("hashchange");
+  }
+  actions.navigate({name:"explore"}); dom.window.dispatch("hashchange");
+  const sort = label("Sort locations"); sort.value="recent"; sort.dispatch("change");
+  assert.deepEqual(store.getState().recentLocations,["LOC-003","LOC-018"]);
+  assert.equal(dom.app.querySelector(".explore-results").querySelectorAll("button")[0].getAttribute("data-location-id"),"LOC-003");
+});
+
+test("44/216: clipboard success copies a context-free absolute public link and reports completion", async () => {
+  const { dom, actions } = await bootShell();
+  const copied=[];
+  dom.window.location.href="https://example.org/SLiVR/?private=secret#/project/prj_private";
+  dom.window.navigator={ clipboard:{writeText:async text => copied.push(text)} };
+  actions.navigate({name:"location",params:{locationId:"LOC-018"}}); dom.window.dispatch("hashchange");
+  dom.app.querySelectorAll("button").find(n => n.textContent==="Copy public location link").click();
+  await Promise.resolve();
+  assert.deepEqual(copied,["https://example.org/SLiVR/#/location/LOC-018"]);
+  assert.match(dom.app.querySelector(".explore-dossier").textContent,/Public location link copied/);
 });

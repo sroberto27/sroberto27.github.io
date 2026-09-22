@@ -1,8 +1,9 @@
 /** Persistent mode shell; Explore owns a single list/dossier panel. */
 
+import { discoverLocations, discoveryFacts, evidenceState, MISSING, PRACTICAL_FIELDS, publicLocationLink } from "../domain/discovery.js";
 import { MODES } from "./router.js";
 import { describeCapabilities } from "./capabilities.js";
-import { formatAddress, openValidationItems } from "../domain/location.js";
+import { formatAddress } from "../domain/location.js";
 import { createFocusTrap } from "../ui/a11y.js";
 import { createViewerHost } from "../immersive/viewer-host.js";
 
@@ -140,6 +141,7 @@ export function createShell({ root, store, actions, win = globalThis }) {
 
   // Retain the browse DOM, including scroll and input state, while reading a dossier.
   let browseScroll = 0, sheetScroll = 0;
+  let searchTimer = null, refreshBrowse = null;
   let browse = null, browseCatalog = null, dossier = null, dossierView = null;
   let collapsed = false, expanded = false, lastLocation = null, menuTrap = null;
   const panelToggle = el("button", { type: "button", class: "explore-restore",
@@ -199,34 +201,56 @@ export function createShell({ root, store, actions, win = globalThis }) {
   function browsePanel(state) {
     if (browse && browseCatalog === state.catalog) return browse;
     browseCatalog = state.catalog;
-    const search = el("input", { type: "search", placeholder: "Name, address or venue type",
+    const search = el("input", { type: "search", placeholder: "Name, address, visual or practical description",
       "aria-label": "Search locations" });
     const select = (label, values) => el("select", { "aria-label": label },
       values.map(([value, text]) => el("option", { value, text })));
-    const capture = select("Capture availability", [["", "All captures"], ["current", "Captured"], ["future", "Future candidates"]]);
-    const area = select("Operational area", [["", "All areas"], ...(state.catalog?.areas ?? []).map(a => [a.id, a.name])]);
-    const sort = select("Sort locations", [["catalog", "Catalog order"], ["name", "Name A-Z"]]);
+    const controls = {};
+    const filter = (key, label, values) => controls[key] = select(label, [["", `All: ${label}`], ...values]);
+    const capture = filter("capture", "Capture availability", [["current", "Current Treedis"], ["future", "Future candidates"]]);
+    const area = filter("area", "Operational area", (state.catalog?.areas ?? []).map(a => [a.id, a.name]));
+    const advanced = [
+      filter("spaces", "Interior / exterior", [["interior", "Interior described"], ["exterior", "Exterior described"], ["unknown", "Not described"]]),
+      filter("venue", "Venue type", [...new Set((state.catalog?.locations ?? []).map(l => l.venueType))].sort().map(v => [v, v])),
+      filter("character", "Visual character", [["historic", "Historic description"], ["contemporary", "Contemporary description"], ["unknown", "Not classified"]]),
+      filter("hours", "Public hours", [["reported", "Hours reported"], ["unknown", "Unknown / need validation"]]),
+      filter("coverage", "Immersive coverage", [["entry", "Entry supplied; extent unverified"], ["none", "No current capture"]]),
+      filter("access", "Access information", [["validation", "Need validation"], ["missing", "Information not found"], ["reported", "Reported; permission not established"]]),
+      filter("validation", "Research status", [...new Set((state.catalog?.locations ?? []).map(l => l.researchStatus))].sort().map(v => [v, v])),
+      filter("completeness", "Dossier completeness", [["gaps", "Has missing / unvalidated fields"], ["described", "Fields described; not verified"]]),
+    ];
+    const sort = select("Sort locations", [["catalog", "Catalog order"], ["name", "Name A-Z"], ["area", "Area A-Z"],
+      ["capture", "Current captures first"], ["recent", "Recently viewed (this session)"]]);
     const results = el("div", { class: "explore-results rail-body" });
     const count = el("p", { class: "explore-count", role: "status" });
     function update() {
-      const query = (search.value ?? "").trim().toLocaleLowerCase();
-      const locations = (state.catalog?.locations ?? []).filter(l => {
-        const areaName = state.catalog.areas.find(a => a.id === l.areaId)?.name ?? "";
-        return `${l.id} ${l.name} ${formatAddress(l)} ${l.venueType} ${areaName}`.toLocaleLowerCase().includes(query)
-          && (!capture.value || l.captureStatus === capture.value) && (!area.value || l.areaId === area.value);
-      });
-      if (sort.value === "name") locations.sort((a, b) => a.name.localeCompare(b.name) || a.id.localeCompare(b.id));
-      results.replaceChildren(locations.length ? catalogRecordList({ ...state, catalog: { ...state.catalog, locations } })
+      if (searchTimer !== null) win.clearTimeout(searchTimer);
+      searchTimer = null;
+      const locations = discoverLocations(state.catalog, { query: search.value,
+        filters: Object.fromEntries(Object.entries(controls).map(([key, node]) => [key, node.value])),
+        sort: sort.value, recent: store.getState().recentLocations ?? [] });
+      results.replaceChildren(locations.length ? catalogRecordList({ ...store.getState(), catalog: { ...state.catalog, locations } })
         : el("p", { class: "empty-note", text: "No matching locations. Clear filters to see all locations." }));
       count.textContent = `${locations.length} locations`;
       actions.setExploreLocations(locations.map(l => l.id));
     }
-    for (const node of [search, capture, area, sort]) node.addEventListener(node === search ? "input" : "change", update);
+    refreshBrowse = () => { if (sort.value === "recent") update(); };
+    search.addEventListener("input", () => {
+      if (searchTimer !== null) win.clearTimeout(searchTimer);
+      searchTimer = win.setTimeout(update, 180);
+    });
+    for (const node of [...Object.values(controls), sort]) node.addEventListener("change", update);
     browse = el("div", { class: "explore-browse" }, [
       railHead("Locations"), el("div", { class: "explore-filters" }, [search, capture, area, sort,
         el("button", { type: "button", text: "Clear filters", onClick: () => {
-          search.value = ""; capture.value = ""; area.value = ""; sort.value = "catalog"; update(); search.focus();
-        } }), count]), results,
+          search.value = ""; for (const node of Object.values(controls)) node.value = "";
+          sort.value = "catalog"; update(); search.focus();
+        } }), count,
+        el("details", { class: "explore-more-filters" }, [el("summary", { text: "More filters" }),
+          el("p", { text: "Filters reflect catalog descriptions, not verified suitability or permission." }),
+          ...advanced.map(node => el("label", {}, [el("span", { text: node.getAttribute("aria-label") }), node])),
+        ]),
+      ]), results,
     ]);
     update();
     return browse;
@@ -443,6 +467,7 @@ export function createShell({ root, store, actions, win = globalThis }) {
                 class: `chip chip-${location.captureStatus}`,
                 text: location.captureStatus === "current" ? "Captured" : "Future",
               }),
+              el("span", { class: "record-evidence", text: `Research: ${location.researchStatus}` }),
             ],
           ),
         ]),
@@ -606,58 +631,77 @@ export function createShell({ root, store, actions, win = globalThis }) {
 
   /** What the catalog holds for the selected location. */
   function locationRail(state) {
-    const { location, area, capture, sources } = state.routeResolution.view;
-    const unknowns = openValidationItems(location);
-
-    return [
-      railHead("Location", location.id),
-      el("div", { class: "rail-body" }, [
-        section(null, [
-          el("h1", { class: "record-title", text: location.name }),
-
-        ]),
-        section("Identity", [
-          fieldList([
-            ["Operational area", area ? `${area.id} · ${area.name}` : "—"],
-            ["Venue type", location.venueType],
-            ["Address", formatAddress(location)],
-            ["Coordinates", `${location.position[1]}, ${location.position[0]}`],
-            ["Coordinate provenance", location.positionEvidence],
-          ]),
-        ]),
-        section("Capture", [
-          fieldList([
-            ["Status", location.captureStatus === "current" ? "Captured" : "Future candidate"],
-            ["Record", capture ? capture.id : "—"],
-            ["Capture date", capture?.captureDate],
-            ["Coverage", capture?.coverageNotes],
-          ]),
-          el("div", { class: "actions" }, [
-            location.captureStatus === "current" ? el("button", {
-              type: "button",
-              text: "Open in Immersive",
-              onClick: () => actions.navigate({ name: "immersive", params: { locationId: location.id } }),
-            }) : el("p", { text: "No current immersive capture." }),
-          ]),
-        ]),
-        section("Research", [
-          fieldList([
-            ["Research status", location.researchStatus],
-            ["Sources", sources.length],
-          ]),
-          unknowns.length > 0
-            ? el("div", { class: "unknowns" }, [
-                el("h3", { text: "Still to validate" }),
-                el(
-                  "ul",
-                  {},
-                  unknowns.map((item) => el("li", { text: `${item.path}: ${item.value}` })),
-                ),
-              ])
-            : null,
-        ]),
+    const { location, area, capture, scoutDetail = {} } = state.routeResolution.view;
+    const facts = discoveryFacts(location, scoutDetail, capture);
+    const value = text => text === null || text === undefined || text === "" ? MISSING : text;
+    const fields = pairs => el("dl", { class: "fields dossier-fields" }, pairs.flatMap(([label, text]) => [
+      el("dt", { text: label }), el("dd", {}, [el("span", { text: value(text) }),
+        el("span", { class: `evidence-label evidence-${evidenceState(text)}`,
+          text: { missing: "Missing information", validation: "Needs validation", reported: "Catalog description / reported" }[evidenceState(text)] }),
       ]),
-    ];
+    ]));
+    let publicLink;
+    try { publicLink = publicLocationLink(win.location.href, location.id); }
+    catch { publicLink = `#/location/${location.id}`; }
+    const linkInput = el("input", { type: "text", readonly: "", "aria-label": "Public location link", value: publicLink });
+    linkInput.value = publicLink;
+    const copyStatus = el("p", { role: "status" });
+    const copy = el("button", { type: "button", text: "Copy public location link", onClick: async () => {
+      try {
+        if (!win.navigator?.clipboard?.writeText) throw new Error("Clipboard unavailable");
+        await win.navigator.clipboard.writeText(publicLink);
+        copyStatus.textContent = "Public location link copied.";
+      } catch {
+        copyStatus.textContent = "Copy unavailable. Select and copy the public link below.";
+        linkInput.focus(); linkInput.select?.();
+      }
+    } });
+    const sourceIds = [...new Set([...location.sourceIds, ...(scoutDetail?.sourceIds ?? [])])];
+    const allSources = sourceIds.map(id => state.catalog.sourcesById.get(id)).filter(Boolean);
+    const sourceList = el("div", { class: "dossier-sources" }, allSources.map(source =>
+      el("details", {}, [el("summary", { text: `${source.id} - ${source.title}` }), fields([
+        ["Publisher", source.publisher], ["Source type", source.type], ["Accessed (not observation date)", source.accessed],
+        ["Facts supported", source.factsSupported], ["Authority limitation", source.authorityLimitation],
+      ]), source.availability === "public" && /^https?:\/\//.test(source.url ?? "")
+        ? el("a", { href: source.url, target: "_blank", rel: "noopener noreferrer", text: "Open public source" })
+        : el("p", { text: "Source document is not published here." }),
+      ])));
+    return [railHead("Location", location.id), el("div", { class: "rail-body" }, [
+      section("Overview", [el("h1", { class: "record-title", text: location.name }),
+        location.captureStatus === "current" ? el("button", { type: "button", text: "Open in Immersive",
+          onClick: () => actions.navigate({ name: "immersive", params: { locationId: location.id } }) }) : null,
+        fields([["Operational area", area?.name], ["Venue type", location.venueType], ["Address", formatAddress(location)],
+          ["Research status", location.researchStatus]]),
+        el("p", { text: `${facts.unresolved} of ${facts.total} core fields missing or needing validation. Described fields are not independently verified.` }),
+      ]),
+      section("Production considerations", [fields(PRACTICAL_FIELDS.map(([key, label]) => [label, scoutDetail?.[key]]))]),
+      section("Visual / spatial character", [fields([
+        ["Visual description (not measured)", scoutDetail?.visualCharacter], ["Known spaces", scoutDetail?.knownSpaces],
+        ["Coordinates (approximate; not surveyed)", `${location.position[1]}, ${location.position[0]}`],
+        ["Coordinate provenance", location.positionEvidence], ["Entrances / floors / dimensions", MISSING],
+        ["Approved reference photos", MISSING],
+      ])]),
+      section("Immersive coverage", [fields([
+        ["Status", location.captureStatus === "current" ? "Current Treedis" : "Future candidate"],
+        ["Capture record", capture?.id], ["Capture date", capture?.captureDate], ["Coverage summary", location.coverageSummary],
+        ["Coverage limitations", capture?.coverageNotes], ["Experience grouping", capture?.grouping],
+        ["Capture validation", capture?.validationStatus], ["Immersive notes", scoutDetail?.immersiveCaptureNotes],
+      ]), el("p", { text: "Capture does not establish filming permission, current condition or a completed physical scout." }),
+        location.captureStatus === "future"
+          ? el("p", { text: "No current immersive capture. Validate access and capture coverage before planning a visit." }) : null,
+      ]),
+      section("Access information", [fields([
+        ["Operator (not necessarily owner)", location.operator], ["Property authority", location.propertyAuthority],
+        ["Ownership status", location.ownershipStatus], ["Public access contact", location.accessContact],
+        ["Public phone", location.publicPhone], ["Filming access inquiry", location.filmingAccess],
+        ["Public hours", location.publicHours?.text], ["Hours evidence", location.publicHours?.evidence],
+      ]), el("p", { text: "Public hours do not imply production availability. Operator, property owner and filming authority must be confirmed separately." }),
+        /^https?:\/\//.test(location.website ?? "") ? el("a", { href: location.website, target: "_blank", rel: "noopener noreferrer", text: "Public venue website" }) : null,
+      ]),
+      section("Evidence / sources", [el("p", { text: `Catalog ${state.catalog.version}; research snapshot ${state.catalog.researchSnapshot}. Public catalog descriptions are read-only. Sources below support the record; exact per-field observation dates, observers and methods have not been supplied. No on-site verification is implied. Virtual observations and project notes remain separate.` }), sourceList]),
+      section("Project context", [el("p", { text: "Project observations and candidate decisions are separate from these public catalog facts." })]),
+      section("Share location", [copy, linkInput, copyStatus]),
+    ])];
   }
 
   function projectsMode(state) {
@@ -1112,6 +1156,7 @@ export function createShell({ root, store, actions, win = globalThis }) {
     }),
     store.subscribe((state) => state.routeResolution, renderWorkspace),
     store.subscribe((state) => state.catalog, renderWorkspace),
+    store.subscribe((state) => state.recentLocations, () => refreshBrowse?.()),
     store.subscribe((state) => state.catalogError, renderWorkspace),
     store.subscribe((state) => state.projects, renderWorkspace),
     store.subscribe((state) => state.workingBundle, renderWorkspace),
@@ -1136,6 +1181,7 @@ export function createShell({ root, store, actions, win = globalThis }) {
 
   return {
     destroy() {
+      if (searchTimer !== null) win.clearTimeout(searchTimer);
       for (const unsubscribe of unsubscribes) unsubscribe();
       menuTrap?.release();
       viewerHost.dispose();

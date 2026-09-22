@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-import { createMarkers, groupLocations } from "../src/map/markers.js";
+import { createMarkers, groupLocations, groupNearbyLocations } from "../src/map/markers.js";
 
 const locations = JSON.parse(
   readFileSync(new URL("../data/catalog/locations.v1.json", import.meta.url), "utf8"),
@@ -203,4 +203,53 @@ test("redrawing replaces the previous pins rather than stacking them", () => {
   } finally {
     restore();
   }
+});
+
+test("38/217: nearby grouping changes with zoom without changing geographic records", () => {
+  const records = [locations[0], locations[1], locations[2]];
+  const before = JSON.stringify(records);
+  const project = scale => ([x,y]) => ({x:x*scale,y:y*scale});
+  assert.equal(groupNearbyLocations(records, project(100)).length,1);
+  assert.equal(groupNearbyLocations(records, project(1e7)).length,3);
+  assert.deepEqual(groupNearbyLocations(records, project(100))[0].locations.map(l => l.id), records.map(l => l.id));
+  assert.equal(JSON.stringify(records),before);
+});
+
+test("38/217: zoom regroup retains selected ID, current filters and removes listeners on dispose", () => {
+  const { maplibre, placed, restore } = stage();
+  const events = new Map(); let scale = 100;
+  const map = { project:([x,y]) => ({x:x*scale,y:y*scale}),
+    on:(event,fn) => events.set(event,fn), off:(event,fn) => { if (events.get(event)===fn) events.delete(event); } };
+  try {
+    const markers = createMarkers({ map, maplibre, onSelect:()=>{} });
+    markers.setLocations(locations.slice(0,3)); markers.setSelected("LOC-002");
+    assert.equal(placed.length,1);
+    assert.equal(placed[0].element.children[1].hidden,false);
+    scale=1e7; events.get("zoomend")();
+    assert.equal(placed.length,3);
+    assert.equal(placed.find(m => m.element.dataset.locationId==="LOC-002").element.getAttribute("aria-current"),"true");
+    markers.setLocations([locations[1]]); scale=100; events.get("zoomend")();
+    assert.equal(placed.length,1); assert.equal(markers.count,1);
+    markers.dispose(); assert.equal(events.size,0); assert.equal(placed.length,0);
+  } finally { restore(); }
+});
+
+test("218: circular group activation requests its members without selecting a location", () => {
+  const { maplibre, placed, restore } = stage();
+  try {
+    const members = [locations[0], {...locations[1],position:locations[0].position}];
+    const zooms=[], selected=[];
+    const markers=createMarkers({map:{},maplibre,onSelect:id=>selected.push(id),onGroup:group=>zooms.push(group)});
+    markers.setLocations(members);
+    const summary=placed[0].element.children[0];
+    assert.equal(summary.textContent,"2");
+    assert.match(summary.getAttribute("aria-label"),/Zoom to these locations/);
+    summary.click();
+    assert.deepEqual(zooms,[members]); assert.deepEqual(selected,[]);
+    markers.setLocations(members);
+    assert.equal(placed[0].element.children[1].hidden,false,"coincident members remain selectable after regrouping");
+    placed[0].element.children[1].children[1].click();
+    assert.deepEqual(selected,[members[1].id]);
+    markers.dispose();
+  } finally {restore();}
 });

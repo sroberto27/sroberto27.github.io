@@ -73,6 +73,7 @@ export function initialState(capabilities) {
     routeResolution: null,
     catalog: null,
     catalogError: null,
+    recentLocations: [],
     capabilities,
     storage: { available: capabilities.indexedDB, error: null },
     projects: [],
@@ -216,7 +217,8 @@ export function createActions({
         });
         return;
       }
-      setState({ routeResolution: { status: "ok", locationId, view } });
+      setState({ routeResolution: { status: "ok", locationId, view },
+        recentLocations: [locationId, ...(getState().recentLocations ?? []).filter(id => id !== locationId)].slice(0, 18) });
       drawLocationMarkers();
       mapAdapter?.setSelectedLocation(locationId);
       return;
