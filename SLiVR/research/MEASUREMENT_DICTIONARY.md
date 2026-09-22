@@ -180,3 +180,34 @@ Template version fixes the question set. Answered count is substantive observed 
 ### D070 navigation parameters - 2026-09-21
 
 Group zoom fits member coordinates only, with 550ms duration (0ms for reduced motion), maximum zoom min(provider map maximum, 19), current pitch/bearing and measured panel/imagery padding. The 44 CSS-pixel grouping threshold and session-only history are unchanged. These are interface parameters, not new research measures or logging events.
+
+
+## D071 ? provider evidence distinctions, 2026-09-22
+
+HTTP reachability means the supplied entry document returned a successful
+response in the named probe environment. Frame load means a browser frame
+navigated. Ready means a validated bridge message arrived. Requested-sweep
+arrival requires a matching observed sweep after navigation. Rendered capture
+requires separate visual observation. Pose receipt establishes only the fields
+actually received, not their axis/units or ability to restore them. Bookmark
+view restoration requires supported outbound parameters and an observed match
+to the intended view after restore; entry-only recovery is labelled separately.
+
+D071 changes diagnostic wording, not adapter capability keys/version or study
+instrumentation. Provider revision/date must not be inferred from catalogVersion
+or captureVersionRef. All automated evidence uses doubles unless explicitly
+labelled HTTP probe/live browser. No telemetry or participant measure is enabled.
+
+
+### D073 - mini-map presentation parameters
+
+The mini-map viewport is 180 CSS pixels high, selected-location focus zoom 16
+bounded by map maximum, zero travel animation. <=64rem sets the initial collapsed
+state only; user choice is session-local on every screen size. Pin coordinates
+remain catalog coordinates, not observed provider pose or personal geolocation.
+These are UI parameters, not accuracy measures, usability results or telemetry.
+
+
+### 2026-09-22 - D077
+
+D077 evidence class: owner-reported functional/presentation pass, not instrumented or independently observed performance/usability measurement. Test environment/digest not supplied. D076 controls are 32 CSS pixels with 18px SVGs, replacing D075 text toolbar; these are design parameters only.

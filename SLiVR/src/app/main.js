@@ -89,7 +89,7 @@ export async function boot({ root, win } = {}) {
     timeZone: region?.timeZone ?? "America/Chicago",
   });
 
-  createShell({ root, store, actions, win });
+  createShell({ root, store, actions, region, win });
   router.start();
 
   const catalog = await actions.initializeCatalog();

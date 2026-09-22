@@ -1,5 +1,9 @@
 # SLiVR — implementation plan (Phases 0–5 prototype, Phase 6 post-prototype)
 
+## Latest acceptance status - 2026-09-22 (D077)
+
+Owner explicitly reports all earlier instructed tests PASS, including D076 mini-map and provider-failure/storage/reload/export/import checks. Carry these owner-reported results forward; environment metadata remain unspecified. Phase 2 remains OPEN because basic bookmark save/restore is not implemented and capability-dependent evidence remains unresolved. Phase 1 formal acceptance awaits explicit E1 allocation resolution; no new exception approved. Latest automated verification is 363 PASS. See [exact remaining obligations](research/PHASE_2_ACCEPTANCE_REVIEW.md) and [next CLI prompt](docs/NEXT_CLI_PROMPT.md). Historical status entries below retain their original evidence scope.
+
 ## Current execution status - 2026-09-20
 
 **Phase 0 COMPLETE with owner-approved bounded acceptance exceptions.**
@@ -16,6 +20,25 @@ planning decisions below are historical; D057 supersedes the original dedicated,
 uncommitted Google-key requirement, and D058 approves both read-only code sources.
 
 **Explore UI increment (D067):** single discovery/dossier panel, collapse/restore, narrow-screen sheet, shell-owned catalog/help drawer and retained browse state implemented. See [UI interaction design](docs/UI_INTERACTION_DESIGN.md). Tests 204-205 cover automated behavior. The owner reports critical manual checklist items 1-12 PASS; item 13 (forced map-library failure) is NOT TESTED. Browser/device/build metadata and screenshots were not supplied; see the D067 owner-results entry in docs/FULL-SYSTEM-TESTING.md. This is not Phase 1 completion. The D063 catalog navigation strip is superseded by this panel.
+
+## Acceptance review status - 2026-09-22 (D071)
+
+Phase 1 remains OPEN. Final automated verification: 353 PASS, zero FAIL;
+catalog/deployment checks pass with the retained catalog alias warning. D070
+test 218 live retesting and inherited D061 real-browser catalog/storage checks
+are BLOCKED because no browser surface is connected. Owner checklist 15-16
+remain NOT TESTED. Historical presentation failures are preserved.
+
+[Acceptance review and E1 closeout proposal](research/PHASE_1_ACCEPTANCE_REVIEW.md)
+separates test 44's delivered Phase 1 actions from Phase 3 candidate/comparison
+and Phase 4 shot actions. E1 is not approved and does not waive other gates.
+[Phase 2 reconnaissance](research/PHASE_2_RECONNAISSANCE.md) records both reference
+inspections, remaining bookmark/context contracts and capability prerequisites.
+HTTP-only checks reached 11/11 entries; no new rendering/arrival/pose evidence.
+The diagnostic no longer infers bookmark restoration from pose receipt. Viewer
+loading/navigation/lifecycle and provider configuration remain unchanged.
+Dependent bookmark implementation has not begun; assessment editor/actions stay
+Phase 3 under D068. No phase completion, new exception, commit or push.
 
 ## Phase 1 continuation status - 2026-09-21 (D069)
 
@@ -661,3 +684,52 @@ remain pending. The original Phase 0 scope/checklists above are historical.
 ### D070 UI follow-up - 2026-09-21
 
 Owner-approved correction implemented: floating desktop panel over imagery, fully wrapping location names with metadata below, circular count badges and click-to-fit member bounds. Panel-aware camera padding and reduced-motion/cancellation/coincident-group behavior have automated coverage. 352 tests PASS; catalog/deployment checks clean except retained alias warning. Owner's prior functional passes include reported visual defects and do not certify this new build. Live test 218 remains BLOCKED; 15/16 from the owner checklist remain NOT TESTED pending clarification. Phase 1 stays open. See FULL-SYSTEM-TESTING.md for the exact build and Part C/J boundaries.
+
+
+### D072 owner-requested location handoff - 2026-09-22
+
+Fixed the top Explore button dropping Immersive location context: it now opens
+and centers the currently selected location's pin/dossier through existing
+selection actions, preserving discovery filters/scroll and viewer teardown.
+The explicit return-to-selected-pin behavior takes priority over the general
+Explore index. Exact prior-camera restoration and provider-walking location
+mapping remain outside this correction. 355 automated PASS, live 221 BLOCKED
+(no browser connected). D071 phase gates/E1 proposal remain unchanged; no
+bookmark implementation, schema change, phase close, commit or push.
+
+
+### D073 owner-requested Immersive mini-map - 2026-09-22
+
+Added a compact selected-location map above the captured-location list, with
+Show/Hide on all screen sizes and Open Explore. Desktop starts expanded; narrow
+screens start collapsed below the tour. Uses existing MapLibre/imagery/pins with
+failover/attribution and disposal on collapse/exit; no provider configuration or
+Treedis lifecycle change. Stable 222 has automated coverage; 360 tests PASS.
+Browser presentation is BLOCKED; Phase 1/E1 and dependent bookmark gates remain
+unchanged. No commit or push.
+
+
+### D074 bidirectional mode-context correction - 2026-09-22
+
+Top Immersive now opens the location selected in Explore search/list or on the
+map, complementing D072's reverse path. No-selection picker and future-location
+no-capture behavior remain supported. Test 223 and final 362 automated PASS;
+live BLOCKED. No provider/schema change, phase close, commit or push.
+
+Owner clarifies that Projects and Shot Designer must also preserve context in
+both directions with Explore/Immersive at Phase 3/4 delivery. Carry stable
+project/scene/candidate/shot-scene and location/capture IDs, retain return state,
+and ask for explicit target choice where ambiguous. Do not infer a private
+workspace target from location alone or create records when changing tabs.
+Extend tests 44, 77-79, 179, 208/213 at delivery; currently NOT TESTED. Keep D068
+assessment editor/actions in Phase 3 and current acceptance gates unchanged.
+
+
+### 2026-09-22 - D075
+
+D075 implements interactive mini-map capture pins, zoom, Center, streets, configured 3D and temporary Enlarge/Restore. Show/Hide remains on every screen. Outside interaction returns normal size. Automated stable 224 PASS; desktop/touch/provider behavior requires live testing. Phase 1 and 2 remain OPEN; no prerequisite waiver or bookmark implementation.
+
+
+### 2026-09-22 - D076
+
+D076 mini-map presentation correction delivered: internal single-row SVG controls and transparent pin backgrounds. Stable 222/224 automated behavior retained. Live desktop/phone presentation retest remains required; phases and acceptance gates unchanged.

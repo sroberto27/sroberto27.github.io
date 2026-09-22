@@ -6,6 +6,7 @@ import { describeCapabilities } from "./capabilities.js";
 import { formatAddress } from "../domain/location.js";
 import { createFocusTrap } from "../ui/a11y.js";
 import { createViewerHost } from "../immersive/viewer-host.js";
+import { createImmersiveMap } from "../ui/immersive-map.js";
 
 function el(tag, props = {}, children = []) {
   const node = document.createElement(tag);
@@ -79,7 +80,7 @@ function downloadText(filename, text) {
  * @param {object} options.actions
  * @param {object} [options.win] Window, for timers and for opening a provider URL.
  */
-export function createShell({ root, store, actions, win = globalThis }) {
+export function createShell({ root, store, actions, region, win = globalThis }) {
   const modeNav = el("nav", { class: "modes", "aria-label": "Workspace modes" });
   const breadcrumb = el("p", { class: "breadcrumb", id: "breadcrumb" });
   const saveChip = el("p", { class: "save-chip", role: "status", "aria-live": "polite" });
@@ -88,6 +89,9 @@ export function createShell({ root, store, actions, win = globalThis }) {
   const surface = el("section", { class: "surface", id: "workspace", tabindex: "-1" });
   const railRight = el("aside", { class: "rail rail-right", "aria-label": "Details" });
   const workspace = el("main", { class: "workspace" }, [railLeft, surface, railRight]);
+  const immersiveMap = createImmersiveMap({ doc: document, win, region,
+    onSelect: locationId => actions.navigate({ name: "immersive", params: { locationId } }),
+    onExplore: locationId => actions.navigate({ name: "location", params: { locationId } }) });
   const dialogRegion = el("div", { class: "dialog-region" });
   /*
    * The map host is created once and never leaves the surface. Detaching a
@@ -119,7 +123,18 @@ export function createShell({ root, store, actions, win = globalThis }) {
       class: "mode-button",
       "data-mode": mode.id,
       text: mode.label,
-      onClick: () => actions.navigate(mode.route),
+      onClick: () => {
+        const state = store.getState();
+        const locationId = state.routeResolution?.status === "ok"
+          ? state.routeResolution.locationId : null;
+        let route = mode.route;
+        if (locationId && state.mode === "immersive" && mode.id === "explore") {
+          route = { name: "location", params: { locationId } };
+        } else if (locationId && state.mode === "explore" && mode.id === "immersive") {
+          route = { name: "immersive", params: { locationId } };
+        }
+        actions.navigate(route);
+      },
     });
     modeButtons.set(mode.id, button);
     modeNav.append(button);
@@ -1088,7 +1103,19 @@ export function createShell({ root, store, actions, win = globalThis }) {
       browseScroll = browse.querySelector(".explore-results")?.scrollTop ?? 0;
       sheetScroll = browse.scrollTop ?? 0;
     }
-    replaceChildren(railLeft, parts.left ?? []);
+    const miniLocation = parts.centre?.viewer ? state.routeResolution?.view?.location : null;
+    if (miniLocation && immersiveMap.element.parentNode === railLeft) {
+      // Keep the live map canvas attached while viewer messages redraw the rails.
+      for (const child of Array.from(railLeft.children)) {
+        if (child !== immersiveMap.element) child.remove();
+      }
+      railLeft.append(...(parts.left ?? []));
+    } else {
+      immersiveMap.update(null, state.capabilities.webgl);
+      replaceChildren(railLeft, miniLocation ? [immersiveMap.element, ...(parts.left ?? [])] : parts.left ?? []);
+    }
+    immersiveMap.update(miniLocation, state.capabilities.webgl,
+      (state.catalog?.locations ?? []).filter(location => location.captureStatus === "current"));
     if (!locationId && browse) {
       browse.querySelector(".explore-results").scrollTop = browseScroll;
       browse.scrollTop = sheetScroll;
@@ -1185,6 +1212,7 @@ export function createShell({ root, store, actions, win = globalThis }) {
       for (const unsubscribe of unsubscribes) unsubscribe();
       menuTrap?.release();
       viewerHost.dispose();
+      immersiveMap.dispose();
       root.replaceChildren();
     },
   };

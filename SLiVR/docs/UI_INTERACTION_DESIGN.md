@@ -105,3 +105,67 @@ Supersedes the desktop grid-reserved-map description above. Explore keeps one ro
 Group badges are circular 44px targets displaying a count. Title/focus label supplies context. Click/Enter/Space fits the group's bounds with a 550ms transition (zero with reduced motion), max zoom 19 bounded by map capability, current pitch/bearing and panel-aware padding. Hover/focus/ArrowDown still exposes individual members. Groups that remain coincident keep their expanded member controls after regrouping. Group navigation cancels pending individual camera focus without changing the selected catalog ID or filter state. Recenter returns to the current filtered inventory.
 
 Source provenance: D070. Automated tests 218 and Part C/J; live painting, touch, popup edges, contrast and browser camera animation remain BLOCKED pending owner retest.
+
+
+## D072 - Immersive-to-map location link, 2026-09-22
+
+Pressing the top Explore button while a valid catalog location is selected in
+Immersive now opens that location's existing Explore dossier/selection route.
+The map focuses its pin using the established panel-aware camera behavior;
+a retained filter cannot hide that selected destination. Back to locations
+restores the retained discovery query/filters/sort/scroll. With no resolved
+Immersive location, Explore keeps its ordinary index behavior. This uses the
+selected catalog location, not an inferred position from an unmapped tour sweep.
+The viewer is still disposed on exit. Test 221: automated PASS; live BLOCKED.
+
+
+## D073 - collapsible Immersive location map, 2026-09-22
+
+Based on the owner's two screenshots, place the mini-map at the top of the
+captured-location rail on desktop. In the existing narrow stacked layout, that
+rail follows the viewer: its compact Show map/Open Explore row sits immediately
+below the tour, above the location list. No provider imagery or bottom control
+is covered. The map is collapsible on **every** screen; desktop initially open,
+<=64rem initially closed. The user's choice persists for this shell session.
+
+The expanded map is 180px high, uses the existing DOTD imagery/attribution and
+numbered selected pin at zoom 16, and follows selected catalog locations across
+shared or independent experiences. It is a static geographic preview: use the
+pin or Open Explore for the full selected-location map. Show/Hide and Open
+Explore are native keyboard buttons with >=44px targets. Collapse/exit releases
+the additional map resources without restarting Treedis. Map failure keeps the
+Explore action and retry usable. Unknown/unmapped provider sweeps do not imply
+geographic movement. No capture freshness, coverage or rights claim is added.
+
+Automated state/lifecycle/failover coverage: 222. Live desktop/narrow painting,
+attribution legibility, keyboard and touch need owner retest; supplied screenshots
+show the prior layout, not acceptance of this addition.
+
+
+## D074 - bidirectional mode context, 2026-09-22
+
+Explore and Immersive top tabs now carry the resolved selected location in both
+directions. Search/list and pin selection share the same route identity. No
+selection opens the normal Immersive picker; a future location opens its honest
+no-capture state. The reverse map focus, retained filters and mini-map handoff
+remain unchanged. Test 223 automated PASS; live retest BLOCKED.
+
+Future Projects/Shot Designer integration must use the same bidirectional
+context contract: retain location/capture and the active project, scene,
+candidate and shot-scene IDs where applicable; restore the relevant selection
+and editor/list position on return. Location alone must not choose an arbitrary
+project, scene or shot. If context is missing or ambiguous, request an explicit
+compatible destination; never create workspace records just by changing tabs.
+Keep private context out of public location links. This is a delivery requirement
+for Phases 3/4 and their integrated tests, not a new placeholder control or
+implemented workspace navigation behavior.
+
+
+### D075: interactive Immersive mini-map
+
+Supersedes D073's noninteractive preview. Pins represent current captures and open that location in Immersive; groups use Explore's existing selection behavior. Drag/zoom and keyboard map navigation are enabled. Toolbar: zoom in/out, Center (selected location), 3D toggle, Streets toggle, Enlarge/Restore. Street overlay and configured 3D use Explore's adapter. No future-capture pin pretends to open a tour. The map remains collapsible on all screens, initially collapsed on narrow layouts. Enlarging preserves the map instance in a temporary floating card. Restore, Escape, outside pointer/focus/scroll and tour iframe focus return normal size; outside interactions continue to their destination. Provider content and normal viewer controls remain unchanged. Live placement and touch/iframe-focus verification pending (224).
+
+
+### 2026-09-22 - D076
+
+D076 supersedes D075 two-row text toolbar: six 32px icon buttons in one top-centered row inside the mini-map, in zoom-in, zoom-out, recenter, cube/3D, layers/streets, enlarge/restore order. Hover tooltips, screen-reader labels, keyboard focus and pressed states remain. Pins use Explore transparent hit targets; group badges retain circular styling. Header Show/Hide and Open Explore remain outside the map.

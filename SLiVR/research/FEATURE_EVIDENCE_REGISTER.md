@@ -197,3 +197,68 @@ F01/F02/F19 metadata: advanced discovery, session recent sorting, nearby pin gro
 ### D070 - 2026-09-21
 
 F01/F02/F20: corrected owner-reported name truncation and rectangular panel/group presentation. Added circular count-to-bounds navigation and measured panel padding while retaining selection, filtering and mobile sheet. 352 automated PASS including test 218; actual presentation and camera behavior remain unverified on the new build. Owner screenshot establishes prior presentation defects, not their resolution. No participant evidence or phase completion.
+
+
+## D071 ? acceptance audit and reconnaissance, 2026-09-22
+
+F01/F02/F20 remain implemented with Phase 1 acceptance open. D070 presentation
+is not live-certified; owner items 15-16 remain NOT TESTED. Final 353 automated
+PASS includes new exact downtown/Magnolia/Moncus lifecycle coverage (220).
+F03/F04 diagnostic interpretation corrected (219): receiving pose fields does
+not establish view restoration. Existing project-owned bookmark record/transfer
+foundations are present; save/restore UI/actions and full Explore camera-return
+state remain outstanding. F06-SA editor/actions stay Phase 3 under D068.
+
+HTTP-only 11/11 entry reachability is new technical evidence, not a provider
+capability or participant result. References and requirements are in
+PHASE_2_RECONNAISSANCE.md; exact gates and unapproved test 44 allocation proposal
+are in PHASE_1_ACCEPTANCE_REVIEW.md. No phase close or new exception is implied.
+
+
+### D072 - linked Immersive/Explore selection, 2026-09-22
+
+F01/F03/F20: the Explore mode button carries the resolved Immersive location ID
+into the dossier/map selection and existing camera focus. Discovery filters and
+scroll remain; viewer teardown is retained. Test 221 verifies four locations,
+map-coordinate callbacks, out-of-filter selection and index/unknown fallback.
+355 automated PASS; live focus/painting/provider behavior BLOCKED. No participant
+benefit, pose-to-geography mapping or full Phase 2 context completion is claimed.
+
+
+### D073 - collapsible location mini-map, 2026-09-22
+
+F01/F03/F20: selected catalog location has a compact aerial preview in Immersive
+with Show/Hide and full Explore handoff. Test 222 verifies state, coordinates,
+failover, resource disposal and unchanged viewer on collapse; 360 automated PASS.
+Placement avoids the provider viewport by using the existing location rail,
+stacked below the viewer on narrow screens. Live painting/touch/attribution
+legibility remain BLOCKED. No participant benefit or geographic tracking claim.
+
+
+### D074 - bidirectional Explore/Immersive navigation
+
+F01/F03/F20: top-tab entry now uses the selected Explore location from list or
+pin; reverse map return remains. No-selection/future states retain honest
+fallbacks. Test 223 reproduced the defect and now passes; 362 automated tests
+PASS. Live retest BLOCKED. F05/F06/F08 future bidirectional context requirements
+are clarified for Phase 3/4, not implemented or technically validated here.
+
+
+### 2026-09-22 - D075
+
+D075: interactive mini-map current-capture selection, compact controls and temporary enlargement implemented. Automated 224 covers callback selection, controls, inside/outside events, Restore, Escape, iframe focus and disposal. 222 retains collapse/retry/stale-event coverage. Full 363 PASS; live layout/provider/iframe interaction BLOCKED. Exact build and procedure in FULL-SYSTEM-TESTING.md.
+
+
+### 2026-09-22 - D076
+
+D076: owner screenshot documents prior oversized controls and square pin backgrounds (presentation FAIL). Scoped styles and internal icon toolbar corrected; 363 automated PASS, live correction NOT TESTED. Screenshot supports only the pictured LOC-005 rendering/UI, not all tour navigation or capability claims.
+
+
+### 2026-09-22 - D077
+
+D077: latest D076 mini-map retest owner-reported PASS for 222/224, metadata unspecified. Preserve original screenshot presentation failure on prior build. Basic bookmark workflow remains unimplemented/NOT TESTED; phase-wide acceptance remains open. See PHASE_2_ACCEPTANCE_REVIEW.md.
+
+
+#### D077 owner scope clarification
+
+Owner explicitly confirms "yeah all the test even the ones before the map" in response to the question naming earlier provider-failure and real-browser storage/reload/export/import checks. All earlier instructed delivered-function checklists, including owner 15-16, are now owner-reported PASS. Preserve earlier NOT TESTED/BLOCKED/FAIL entries as historical; do not repeat those checks solely for missing tool access. Browser/version/device and exact tested digest remain unspecified. This does not make unimplemented bookmark save/restore tested, supply absent raw provider reports, or explicitly approve E1. Bookmark-specific and later-phase workflows remain NOT TESTED. No runtime changes or new automated execution.

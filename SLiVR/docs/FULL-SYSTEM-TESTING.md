@@ -10,15 +10,19 @@ No test is pre-marked. A passing unit test, code review, HTTP response or earlie
 
 | Field | Value |
 |---|---|
-| Test specification version | 0.3 |
+| Test specification version | 0.4 |
 | Architecture baseline | SLiVR architecture 0.19 or later |
 | Created | 2026-09-19 |
-| Last updated | 2026-09-21 |
-| Current implementation phase | Phase 0 COMPLETE with approved exceptions; Phase 1 discovery/dossier continuation implemented; live and integrated action acceptance pending (D069) |
+| Last updated | 2026-09-22 |
+| Current implementation phase | Phase 0 COMPLETE with D061 exceptions; Phase 1 OPEN with D070 live retest and inherited gates; independent Phase 2 reconnaissance only (D071) |
 | First-prototype gate | Parts A–H and J, using the phase applicability rules below |
 | Post-prototype gate | Part I plus affected regression tests |
 
 Update this table whenever the architecture, phase, schema, provider contract or test meaning changes. Preserve prior real results in source history or an archived execution copy; never silently rewrite a test after it has produced evidence.
+
+Latest execution: see **2026-09-22 - Acceptance audit and independent reconnaissance
+(D071)** below and [the concrete closeout proposal](../research/PHASE_1_ACCEPTANCE_REVIEW.md).
+Earlier target tables/results are historical and do not certify this working tree.
 
 ---
 
@@ -2044,3 +2048,259 @@ Part C: automated 31-49/204-205/216-217 regression contracts PASS within D069's 
 Part J: 172 boot, 173 catalog, 174 discovery/selection, 175 Treedis adapter, 179 route callbacks, 180 focus contracts and 181 failure/lifecycle doubles PASS automated; respective live interactions BLOCKED. 176 project persistence foundations, 177 spatial/optics foundations and 178 JSON foundations PASS; their full later-phase workflows remain NOT TESTED. 182 deployment scope PASS, neighboring live-app isolation NOT TESTED. 183 actual console/network and runtime telemetry observation BLOCKED; no logging was added.
 
 Live retry: browser discovery returned apps=[]/browsers=[]; iab creation at localhost:8000/#/explore failed with Browser is not available: iab. No fresh screenshots/live PASS. Retest 218 on the updated local build at desktop and tablet/narrow widths, including panel collapse, edge clusters and 3D/reduced-motion variants. Phase 1 remains open; no new acceptance exception, staging, commit or push.
+
+
+## 2026-09-22 - Acceptance audit and independent reconnaissance (D071)
+
+Phase 1 OPEN; Phase 2 dependent implementation BLOCKED. See
+[acceptance gates, exact retest conditions and pending E1 proposal](../research/PHASE_1_ACCEPTANCE_REVIEW.md)
+and [source/capability reconnaissance](../research/PHASE_2_RECONNAISSANCE.md).
+No new exception is approved. Test 44 is not silently waived or renumbered.
+
+Build: local HEAD 318316612d8c44031eae835e4b1760843d3ebe6c plus D071 changes;
+published baseline f2627108 has the same SLiVR subtree before these edits.
+Runtime SHA256 c1a979196d5a331308cce0853410bead57c8590c33997e8476dc30430145dde3
+(93 files, D069 algorithm). Windows/PowerShell, Node v24.18.0, app 0.2.0,
+MapLibre 4.7.1, catalog 1.1.0, record/transfer schema 1.0.0, workspace schema 1,
+adapter treedis-recon-2. No provider configuration, lifecycle or catalog changes.
+
+Execution on 2026-09-22, America/Chicago: full baseline 352 PASS/0 FAIL;
+new diagnostic expectation initially 24 PASS/1 FAIL in immersive.test.mjs
+(old fallback wording incorrectly implied entry-only restoration). Corrected
+full suite 352 PASS/0 FAIL; after adding the four-location sequence, final
+`node --test tests/*.test.mjs`: **353 PASS/0 FAIL**, no skipped/cancelled tests.
+Targeted immersive/reference suites: 39 PASS/0 FAIL. Catalog: zero errors, one
+retained alias warning. Deployment: 158 publishable files, zero errors.
+Whitespace: no errors. Logs: outputs/acceptance-2026-09-22/ (tests-complete.txt
+is the final suite). Doubles do not establish browser/provider behavior.
+
+Live attempt: cua.getState returned apps=[]/browsers=[]; iab creation at
+http://localhost:8000/#/explore returned Browser is not available: iab.
+No live page, device/viewport, screenshot, native storage, console or provider
+arrival observation resulted. D070 visual retest remains BLOCKED. Preserve
+prior screenshot presentation FAIL and owner functional report 1-14; owner
+items 15-16 remain NOT TESTED. HTTP probe at 2026-09-22T13:28:40.061Z reached
+11/11 entries, all 200, no X-Frame-Options/frame-ancestors refusal. Embedding
+remains unknown; see provider matrix. This is not a live-browser PASS.
+
+### Added stable procedures
+
+**219. Capability reporting cannot infer bookmark restoration. [F03/F04]**
+Supply unknown capabilities, then sweep-only, raw zero rotations and named
+angle/FOV pose fields with readiness/no-reload navigation. Report received
+capabilities accurately but keep full-view restoration unverified until a
+supported outbound contract and restoration evidence exist. Automated PASS
+in immersive.test.mjs; diagnostic-page browser wording BLOCKED. This does not
+pass test 61 or 62's absent bookmark UI. The existing test was strengthened,
+not counted as an additional test.
+
+**220. Exact downtown/independent transition sequence. [F03]**
+Run LOC-001 -> LOC-005 -> LOC-009 -> LOC-011. Retain the responsive downtown
+frame, replace independent frames, reject ready/pose events from abandoned
+windows, navigate to each requested sweep, and dispose timers/frame on exit.
+Automated PASS in reference-regressions.test.mjs with scripted acknowledgements.
+Repeat in the real app, recording rendered scene and matching observed arrival
+for each capture; that live portion is BLOCKED. HTTP responses do not satisfy it.
+
+### Affected Phase 1 and inherited foundation checks
+
+| IDs | Executed automated evidence | Live/remaining status |
+|---|---|---|
+| 13, 16-21 | PASS: catalog-repo, workspace-repo, transfer, store, shell suites; corruption, linked records, zeros, conflicts, revision ordering and failure recovery with doubles | BLOCKED: malformed-catalog display, real IndexedDB stores/indexes and full fixture reload/clean-profile transfer before persistence expansion; owner 16 NOT TESTED |
+| 31-38, 48, 202, 204-205, 217-218 | PASS: discovery, markers, viewport, shell and map regression contracts | BLOCKED: D070 painting, actual group zoom/padding, coincident focus, desktop/narrow/tablet/keyboard/reduced-motion behavior |
+| 39-43, 45, 216 | PASS: all dossiers, source/unknown labels, current/future actions and public/private data contracts | BLOCKED: fresh human interpretation/layout and browser entry |
+| 44 | PASS: delivered stable Immersive/public-link contracts in shell doubles | BLOCKED: live clipboard/new tab/entry; candidate/compare/shot actions NOT TESTED. Pending E1 proposal allocates delivery, not a PASS |
+| 46-47, 49 | PASS: failed-library usable shell, imagery fallback/neutral/retry and routing/link doubles | BLOCKED: real denied providers, history and clipboard; owner 15 NOT TESTED |
+
+### Affected Phase 2 checks ? reconnaissance only
+
+| IDs | Executed evidence | Remaining status |
+|---|---|---|
+| 50-53, 220 | PASS automated supplied-sweep commands, six distinct downtown entries and exact four-location session sequence | BLOCKED live rendering and requested-sweep arrival |
+| 54-58, 65, 185-199 | PASS automated origin/source/payload/zero/cancellation/bounded timeout/retry/disposal contracts | BLOCKED live rapid switches, retry and resource counts |
+| 59, 63 | PASS automated future/no-capture and metadata text portions | BLOCKED live denied-provider distinction and visible coverage labels; full authorization behavior not established |
+| 60-62, 208 dependency | PASS only existing bookmark schema/fixture storage/transfer and 219 diagnostic honesty | NOT TESTED save/restore UI, unsupported/retired restore and assessment handoff; no bookmark implementation or screenshot capability claimed |
+| 64 | Discovery DOM retention has automated coverage; source inspection finds no camera snapshot across map disposal/remount | BLOCKED live full return; camera restoration implementation outstanding, not an executed FAIL or PASS |
+| 66-67 | Existing focus/disposal/persistence foundations PASS separately | BLOCKED live iframe keyboard; integrated project/shot failure-reload scenario NOT TESTED |
+
+### Part J on this build
+
+| ID | Automated result | Live/full-workflow boundary |
+|---|---|---|
+| 172 | PASS boot/four-mode shell | BLOCKED browser usability |
+| 173 | PASS catalog 18/11/7, seven areas and preserved unknowns | No catalog changes |
+| 174 | PASS discovery/dossier/selection and group-camera contracts | BLOCKED fresh visual/map-list acceptance |
+| 175 | PASS trusted messages/shared reuse/independent replacement, including 220 | BLOCKED actual Treedis rendering/arrival |
+| 176 | PASS project persistence/transfer foundations | NOT TESTED full scenes/candidates/comparison/preferred-backup workflow (Phase 3) |
+| 177 | PASS route/spatial/optics/3D foundations | NOT TESTED full shot editor/undo/variant/reload workflow (Phase 4) |
+| 178 | PASS JSON/filename/linked-fixture transfer contracts | BLOCKED browser file delivery; NOT TESTED PNG/CSV/print workflows |
+| 179 | PASS router/hash/cross-mode callbacks | BLOCKED real Back/Forward; full map-camera return is outstanding under 64 |
+| 180 | PASS focus/panel/trap/reduced-motion camera contracts | BLOCKED real keyboard/tablet/contrast/presentation |
+| 181 | PASS map/DOTD/Google/WebGL/Treedis/storage failure doubles | BLOCKED real provider/storage loss/recovery; owner 15-16 NOT TESTED |
+| 182 | PASS deployment scan; source changes confined to SLiVR, no Git mutation or reference edits | NOT TESTED neighboring live-app isolation |
+| 183 | PASS automated suite; no participant logging added | BLOCKED fresh browser console/network and runtime telemetry observation |
+
+No full test/phase PASS follows from a partial automated row. Retest conditions
+and owner checklist are in the acceptance review. Preserve the original test 44
+procedure; only an explicit E1 decision can change its phase-exit allocation.
+
+
+## 2026-09-22 - Immersive location to Explore selection (D072)
+
+**221. Explore selects the current Immersive location. [F01/F03/F20]**
+Select LOC-001, LOC-005, LOC-009 or LOC-011 in Immersive, then press the top
+Explore button. Expect the same location ID in the dossier and selected pin,
+with the camera focused on its catalog coordinates. Repeat with retained
+filters excluding the location, a collapsed panel, and a failed/slow viewer.
+Back to locations retains discovery values/scroll. Immersive index and invalid
+location routes return to the ordinary Explore index without a fabricated ID.
+Check desktop/narrow keyboard focus and panel-aware pin visibility live.
+
+Automated: PASS, two new shell tests exercise all four locations, actual map
+adapter flyTo coordinates with a MapLibre double, dossier/panel state, filter/
+scroll retention, released frame and index/unknown fallback. Full suite:
+**355 PASS, zero FAIL**, including affected Phase 1/2 foundations and Part J
+contracts. Catalog: zero errors/one existing alias warning. Deployment scan:
+158 files/zero errors. Logs: outputs/immersive-map-return/targeted.txt (23 PASS)
+and full.txt (355 PASS). Existing Part J later-phase NOT TESTED and live BLOCKED
+boundaries from D071 remain; no full phase acceptance is inferred.
+
+Build: local HEAD 318316612d8c44031eae835e4b1760843d3ebe6c plus retained D071 and
+D072 working changes. Runtime SHA256
+764eb6758cb36c89c52153fc5855bdbb4601037defcd13c0deba296eacadf336
+(93 files, D069 path/byte algorithm). Windows/PowerShell, Node v24.18.0;
+app 0.2.0, catalog 1.1.0, record/transfer 1.0.0, workspace 1, MapLibre 4.7.1,
+Treedis treedis-recon-2. No provider/configuration/catalog change.
+Browser discovery again returned apps=[]/browsers=[]; live 221 is BLOCKED.
+No browser/device/viewport or rendered camera observation exists for this build.
+
+D072 refines test 64: the owner's requested Explore-button return focuses the
+current selected Immersive location instead of restoring an unrelated map view.
+Exact pre-Immersive camera restoration is not implemented. This follows the
+resolved catalog location, not an inferred geographic position inside a tour;
+unmapped provider sweeps do not create new pins or claimed location evidence.
+Retest 221, 34/43/49/64/179/180/204-205/218 and relevant Part J on a browser-connected
+build before live acceptance. Owner checklist 15-16 remains NOT TESTED; no new
+exception, phase close, staging, commit or push.
+
+
+## 2026-09-22 - Collapsible Immersive location mini-map (D073)
+
+**222. Mini-map placement, selection, collapse and lifecycle. [F01/F03/F20]**
+At desktop widths, expect a compact aerial location map above Captured locations.
+At <=64rem, expect a closed map row below the viewer, above the list. Show/Hide
+must work on every screen and remain keyboard accessible. Open the map; select
+LOC-004, LOC-009 and LOC-011 and verify matching label, pin and geographic center.
+Open Explore from the mini-map or its pin; confirm matching dossier/map focus.
+Return, collapse/reopen and change locations while collapsed: the restored map
+must use the current location and leave the tour intact. Confirm there is no
+map/panel over the provider viewport or bottom controls, and attribution remains
+legible. Block map library/WebGL or both imagery sources; retain visible failure,
+retry and usable Explore action. Repeat mode switches and collapse cycles without
+increasing map canvases, contexts or listeners. Test actual desktop/tablet and
+440x956/narrow, short landscape, keyboard, touch and provider loading/failure.
+
+Executed automated: four component/compact-adapter tests plus one shell
+integration under 222 PASS. Includes narrow default, desktop/narrow collapse,
+retained preference, location changes while hidden, stale-event rejection,
+failure/retry, exact coordinates, primary/fallback/neutral imagery and disposal.
+Shell test protects the attached mini-map during viewer updates and verifies
+collapse does not reload the iframe. Targeted suites: 28 PASS/0 FAIL. Final
+full suite: **360 PASS/0 FAIL**, including affected Phase 1/2 and Part J automated
+contracts. Catalog validation zero errors/one existing alias warning; deployment
+scope 160 files/zero errors; whitespace clean. Logs: outputs/immersive-minimap/
+first.txt (355 PASS before new tests), targeted.txt (4 PASS), targeted-final.txt
+(28 PASS), full.txt (360 PASS). No live PASS is inferred from these doubles.
+
+Build: local HEAD 318316612d8c44031eae835e4b1760843d3ebe6c plus retained working
+changes D071-D073. Runtime SHA256
+c1400777be98a791dc171c1db706e38a3369d8b6ba6b27fa4e525db7a097ca4d
+(94 files, D069 algorithm). Windows/PowerShell, Node v24.18.0, app 0.2.0,
+MapLibre 4.7.1, catalog 1.1.0, record/transfer 1.0.0, workspace 1 and adapter
+treedis-recon-2. Existing provider configuration unchanged. Browser discovery
+returned apps=[]/browsers=[]; visual/live 222 remains BLOCKED. Owner screenshots
+show desktop Spoonbill and a 440x956 emulated phone Carpe Diem baseline; they
+are not evidence of this mini-map's rendering or physical-phone behavior.
+
+Part J: 172 shell, 173 catalog, 174 selection, 175 viewer lifecycle, 179 routing,
+180 control contracts and 181 failure/recovery automated PASS; 176-178 existing
+persistence/spatial/JSON foundations PASS, full later-phase workflows NOT TESTED;
+182 deployment PASS, neighboring live-app isolation NOT TESTED; 183 suite PASS,
+fresh browser console/network BLOCKED. Prior live BLOCKED, historical FAIL and
+owner checklist 15-16 NOT TESTED remain. Phase 1 stays open; no bookmark/editor
+implementation or acceptance exception. Retest 222 with 64/65/66/175/179-181,
+221 and the existing D070 visual gates before browser acceptance.
+
+
+## 2026-09-22 - Bidirectional Explore/Immersive tabs (D074)
+
+**223. Top tabs preserve selected location in both directions. [F01/F03/F20]**
+Select a current location from Explore search/list, then press the top Immersive
+tab. Confirm the same location/capture is requested. Press Explore and confirm
+the same dossier/pin. Repeat by selecting a map pin, including one outside the
+retained search filter, and confirm that switching tabs preserves both location
+and discovery state. Repeat downtown, Magnolia Pantry and Moncus Park. With no
+selection or an invalid location, Immersive opens its ordinary picker. A selected
+future location keeps its identity and shows No capture exists without loading
+a fabricated tour. Confirm Projects/Shot tabs retain their present entry behavior.
+
+Automated test 223: PASS for a real list-button callback (Magnolia), marker
+callback (Moncus), current location/capture/model URL, reverse handoff, retained
+search, index/unknown/future routes. Existing six-downtown, map-focus, viewer
+lifecycle and mini-map tests remain passing. Initial shell run: 24 PASS/2 FAIL
+(reproduced immersive-index instead of the selected immersive route). After fix:
+26 targeted PASS, final **362 full-suite PASS/0 FAIL**. Logs in
+outputs/bidirectional-modes/{before,targeted,full}.txt. Catalog zero errors/one
+retained alias warning; deployment 160 files/zero errors; whitespace clean.
+
+Build: local 318316612d8c44031eae835e4b1760843d3ebe6c plus retained D071-D074
+working changes. Runtime SHA256
+2704950cc4c5e8ecfdad2df50120ed29357d9dce2d38b8f377afba4c4555473d
+(94 files, D069 algorithm). Windows/PowerShell, Node v24.18.0; app 0.2.0,
+MapLibre 4.7.1, catalog 1.1.0, record/transfer 1.0.0, workspace 1 and Treedis
+contract treedis-recon-2. Provider configuration/lifecycle unchanged. Browser
+discovery apps=[]/browsers=[]; live visual/provider 223 BLOCKED, no rendering
+or arrival claim from doubles. Owner's report confirms the prior reverse path
+works but does not establish browser/build metadata or certify this new patch.
+
+Part J: automated 172-175, 179-181 contracts and 176-178 existing foundations
+PASS; full later-phase project/shot/export workflows remain NOT TESTED. 182
+scope PASS; live neighboring-app isolation NOT TESTED; 183 fresh browser
+console/network BLOCKED. Historical FAIL, live BLOCKED and owner 15-16 NOT TESTED
+remain unchanged. No phase close or E1 approval.
+
+Future tests 44, 77-79, 179 and 208/213 must exercise **both directions** among
+Explore/Immersive and Projects/Shot Designer when those integrations ship.
+Preserve project/scene/candidate/shot identity as well as location; use explicit
+selection when no unique compatible destination exists. Those integrations are
+NOT TESTED and are not delivered by test 223.
+
+
+### Stable test 224 - interactive Immersive mini-map (D075, 2026-09-22)
+
+Supersedes test 222's static pin-to-Explore action; retain collapse/lifecycle checks. Run on desktop and narrow/phone:
+
+1. Show map, drag/zoom, use +/- and Center. Center returns to selected pin. Check keyboard pin/group selection.
+2. Select downtown pins, Magnolia Pantry and Moncus Park (zoom/pan as needed). Verify name, pin and actual rendered tour agree, not just iframe loading. Open Explore and return via Immersive; selection stays linked.
+3. Toggle Streets, 3D, then 2D. Verify actual street overlay and 3D or honest fallback, attribution, continued tour operation and recovery from provider failure.
+4. Enlarge and select pins. Controls must fit and map must redraw. Click/drag the tour, click elsewhere, focus outside or scroll outside: map normalizes and intended interaction proceeds. Repeat with Restore and Escape. Test actual touch interaction inside the tour on a phone.
+5. Hide/Show at both widths and repeatedly switch tours/modes. No stale selection, duplicate canvases or growing sessions. Reopen after offline failure and recover. Viewer remains working when map is hidden.
+
+Automated 224 and affected Phase 2/Part J foundation contracts: full 363 PASS, 0 failures; targeted 31 PASS. Windows, Node v24.18.0; local HEAD 318316612d8c44031eae835e4b1760843d3ebe6c plus D071-D075 worktree. Catalog 1.1.0; schema/provider configuration unchanged. Runtime SHA-256 763218c0928481efdf0b326cc5cf8bcc3c549555d9184072ba8f10ef24aa932a over 94 sorted index/src/styles/config/data/vendor files excluding config/runtime.js, path + NUL + bytes + NUL. Logs outputs/mini-map-targeted.txt and outputs/mini-map-full.txt. Catalog 0 errors/one existing alias warning; deployment 160 files/0 errors.
+
+Live 224 BLOCKED (no browser surface available); real desktop/touch/provider behavior NOT TESTED. Part J later-phase workflows and neighboring-app live isolation NOT TESTED; fresh browser console/network BLOCKED. Historical FAIL/BLOCKED/NOT TESTED and owner checklist 15-16 remain unchanged. Both phases remain OPEN; no acceptance exception inferred.
+
+
+### 2026-09-22 - D076
+
+D076 retest for stable 222/224: verify all six icon buttons fit a single row INSIDE the map at desktop and phone widths; hover labels, keyboard focus and toggled states; enlarge/restore glyph and tooltip; no dark square behind individual pins; circular group badges; repeated collapse/reopen preserves controls. Exercise all existing 224 interactions and tour switching. Prior screenshot presentation FAIL corrected in code; live corrected build NOT TESTED. Automated full 363 PASS, targeted 31 PASS; Windows Node v24.18.0, HEAD 318316612d8c44031eae835e4b1760843d3ebe6c plus D071-D076 worktree, catalog 1.1.0/configuration unchanged. Runtime digest a4fadd341db2d770e83c4cdb9a230d57966a1e05f9702381360793708dd0c86b (94 files, same path/NUL/bytes/NUL method as D075). Logs outputs/mini-map-icons.txt and outputs/mini-map-icons-full.txt; deployment 160 files/0 errors. Automated Part J foundations run in full suite; existing live BLOCKED/NOT TESTED and phase gates remain unchanged.
+
+
+### 2026-09-22 - D077
+
+D077: owner reports "the test all passed" following D076. Latest mini-map presentation/interaction retest (222/224) is owner-reported PASS; browser/device/exact digest unspecified. Earlier build presentation FAIL remains historical. Clarification pending on older storage/provider-failure checks; 15-16 remain NOT TESTED until scope confirmed. Bookmarks 60-62 user workflow remains NOT IMPLEMENTED/NOT TESTED. Latest executed automation 363 PASS unchanged; no new run for this documentation-only update. See research/PHASE_2_ACCEPTANCE_REVIEW.md for exact outstanding gates and docs/NEXT_CLI_PROMPT.md for handoff.
+
+
+#### D077 owner scope clarification
+
+Owner explicitly confirms "yeah all the test even the ones before the map" in response to the question naming earlier provider-failure and real-browser storage/reload/export/import checks. All earlier instructed delivered-function checklists, including owner 15-16, are now owner-reported PASS. Preserve earlier NOT TESTED/BLOCKED/FAIL entries as historical; do not repeat those checks solely for missing tool access. Browser/version/device and exact tested digest remain unspecified. This does not make unimplemented bookmark save/restore tested, supply absent raw provider reports, or explicitly approve E1. Bookmark-specific and later-phase workflows remain NOT TESTED. No runtime changes or new automated execution.

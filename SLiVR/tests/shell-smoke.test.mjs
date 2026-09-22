@@ -18,6 +18,7 @@ import { readFileSync } from "node:fs";
 
 import { createFakeDom } from "./fixtures/dom.mjs";
 import { createFakeIndexedDB } from "./fixtures/indexeddb.mjs";
+import { createMarkers } from "../src/map/markers.js";
 
 const ROOT = new URL("../", import.meta.url);
 
@@ -63,6 +64,136 @@ async function bootShell({ hash = "", withStorage = true, indexedDB = null, miss
 after(() => {
   globalThis.fetch = REAL_FETCH;
   globalThis.document = REAL_DOCUMENT;
+});
+
+test("223: Explore list and pin selections open the same location through the Immersive tab", async () => {
+  const { dom, store, actions } = await bootShell();
+  const tab = mode => dom.app.querySelectorAll("button").find(n => n.getAttribute("data-mode") === mode);
+  const search = dom.app.descendants().find(n => n.getAttribute("aria-label") === "Search locations");
+  search.value = "Magnolia"; search.dispatch("input"); dom.advance(180);
+  dom.app.querySelector(".explore-results").querySelectorAll("button")[0].click();
+  dom.window.dispatch("hashchange");
+  tab("immersive").click(); dom.window.dispatch("hashchange");
+  assert.equal(store.getState().route.name, "immersive");
+  assert.equal(store.getState().viewer.locationId, "LOC-009");
+  assert.equal(store.getState().viewer.captureId, "CAP-009");
+  assert.match(viewerFrame(dom).getAttribute("src"), /a872109b/);
+  tab("explore").click(); dom.window.dispatch("hashchange");
+  assert.equal(store.getState().routeResolution.locationId, "LOC-009");
+
+  const createElement = dom.document.createElement;
+  let pin;
+  dom.document.createElement = (...args) => {
+    const node = createElement(...args); node.dataset = {}; return node;
+  };
+  const markers = createMarkers({ map: {}, maplibre: { Marker: class {
+    constructor({ element }) { pin = element; }
+    setLngLat() { return this; }
+    addTo() { return this; }
+    remove() {}
+  } }, onSelect: locationId => actions.navigate({ name: "location", params: { locationId } }) });
+  try {
+    markers.setLocations([store.getState().catalog.locations.find(l => l.id === "LOC-011")]);
+    pin.dispatch("click", { stopPropagation() {} }); dom.window.dispatch("hashchange");
+    tab("immersive").click(); dom.window.dispatch("hashchange");
+    assert.equal(store.getState().viewer.locationId, "LOC-011");
+    assert.equal(store.getState().viewer.captureId, "CAP-011");
+    assert.match(viewerFrame(dom).getAttribute("src"), /4c37c871/);
+    tab("explore").click(); dom.window.dispatch("hashchange");
+    assert.equal(store.getState().routeResolution.locationId, "LOC-011");
+    assert.equal(search.value, "Magnolia", "selection handoff preserves retained discovery");
+  } finally {
+    markers.dispose(); dom.document.createElement = createElement;
+    actions.unmountViewer(); actions.unmountMap();
+  }
+});
+
+test("223: no selection opens the immersive index and a future selection preserves its no-capture state", async () => {
+  for (const [hash, expected] of [["#/explore", null], ["#/location/LOC-999", null], ["#/location/LOC-018", "LOC-018"]]) {
+    const { dom, store } = await bootShell({ hash });
+    dom.app.querySelectorAll("button").find(n => n.getAttribute("data-mode") === "immersive").click();
+    dom.window.dispatch("hashchange");
+    assert.equal(store.getState().route.name, expected ? "immersive" : "immersive-index");
+    assert.equal(store.getState().routeResolution.locationId ?? null, expected);
+    assert.equal(viewerFrame(dom).getAttribute("src"), "about:blank");
+    if (expected) assert.match(dom.app.textContent, /No capture exists/);
+  }
+});
+
+test("221: Explore returns to the current immersive location and focuses its map position", async () => {
+  const previousLibrary = globalThis.maplibregl;
+  const flights = [];
+  try {
+    const { dom, actions, store } = await bootShell();
+    const search = dom.app.descendants().find(n => n.getAttribute("aria-label") === "Search locations");
+    search.value = "Carpe Diem";
+    search.dispatch("input"); dom.advance(180);
+    const list = dom.app.querySelector(".explore-results");
+    list.scrollTop = 73;
+    globalThis.maplibregl = { Map: function () {
+      return { loaded: () => false, on() {}, off() {}, addControl() {}, remove() {}, resize() {},
+        fitBounds() {}, flyTo: options => flights.push(options), getMaxZoom: () => 20 };
+    } };
+    store.setState({ capabilities: { ...store.getState().capabilities, webgl: true } });
+    for (const locationId of ["LOC-001", "LOC-005", "LOC-009", "LOC-011"]) {
+      actions.navigate({ name: "immersive", params: { locationId } });
+      dom.window.dispatch("hashchange");
+      const frame = dom.app.querySelector("iframe");
+      dom.app.querySelectorAll("button").find(n => n.getAttribute("data-mode") === "explore").click();
+      dom.window.dispatch("hashchange");
+      await Promise.resolve();
+      await Promise.resolve();
+      assert.equal(store.getState().route.name, "location");
+      assert.equal(store.getState().routeResolution.locationId, locationId);
+      assert.deepEqual(flights.at(-1)?.center, store.getState().catalog.locations.find(l => l.id === locationId).position);
+      assert.equal(dom.app.querySelector(".rail-left").hidden, false);
+      assert.match(dom.app.querySelector(".explore-dossier").textContent, new RegExp(locationId));
+      assert.equal(frame.getAttribute("src"), "about:blank", "leaving Immersive releases the viewer");
+      dom.app.querySelectorAll("button").find(n => n.textContent === "Back to locations").click();
+      dom.window.dispatch("hashchange");
+      assert.equal(search.value, "Carpe Diem");
+      assert.equal(list.scrollTop, 73);
+      assert.equal(list.querySelectorAll("button").length, 1, "returning does not clear discovery filters");
+    }
+    actions.unmountMap();
+  } finally { globalThis.maplibregl = previousLibrary; }
+});
+
+test("221: Explore from an immersive index or unknown location uses the ordinary map route", async () => {
+  for (const hash of ["#/immersive", "#/immersive/LOC-999"]) {
+    const { dom, store } = await bootShell({ hash });
+    dom.app.querySelectorAll("button").find(n => n.getAttribute("data-mode") === "explore").click();
+    dom.window.dispatch("hashchange");
+    assert.equal(store.getState().route.name, "explore");
+    assert.equal(store.getState().routeResolution.locationId, undefined);
+  }
+});
+
+test("222: immersive mini-map stays attached during viewer updates and does not reload the tour on collapse", async () => {
+  const { dom, store, actions } = await bootShell({ hash: "#/immersive/LOC-001" });
+  const mini = dom.app.querySelector(".immersive-map");
+  const parent = mini.parentNode;
+  const replace = parent.replaceChildren;
+  parent.replaceChildren = () => { throw new Error("live mini-map was detached"); };
+  const frame = dom.app.querySelector("iframe");
+  const src = frame.getAttribute("src");
+  try {
+    store.setState({ viewer: { ...store.getState().viewer, status: "navigating" } });
+    assert.equal(dom.app.querySelector(".immersive-map"), mini);
+    assert.equal(mini.parentNode, parent);
+    mini.querySelector(".immersive-map-toggle").click();
+    assert.equal(frame.getAttribute("src"), src);
+    mini.querySelector(".immersive-map-toggle").click();
+    assert.equal(frame.getAttribute("src"), src);
+    actions.navigate({ name: "immersive", params: { locationId: "LOC-009" } });
+    dom.window.dispatch("hashchange");
+    assert.match(mini.querySelector(".immersive-map-caption").textContent, /Magnolia Pantry/);
+  } finally { parent.replaceChildren = replace; }
+  mini.querySelector(".immersive-map-open").click();
+  dom.window.dispatch("hashchange");
+  assert.equal(store.getState().routeResolution.locationId, "LOC-009");
+  assert.equal(store.getState().mode, "explore");
+  assert.equal(dom.app.querySelector(".immersive-map"), null);
 });
 
 test("booting builds a page rather than leaving an empty body", async () => {
