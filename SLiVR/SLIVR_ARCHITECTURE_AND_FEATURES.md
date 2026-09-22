@@ -678,3 +678,16 @@ of the ignored runtime.js. This narrowly supersedes section 6.2.2's prohibition
 on committed provider credentials for this browser key only. Provider access and
 rendering are left for the owner's manual testing after push; no live success
 is claimed.
+
+
+### Mode-context clarification - 2026-09-22 (D074)
+
+Owner requires bidirectional context across the four modes. Explore list/pin
+selection and Immersive top-tab entry/return must target the same catalog
+location. Projects and Shot Designer integrations, when delivered in Phases 3/4,
+must preserve the appropriate location/capture, project, scene, candidate and
+shot-scene IDs in both directions and restore the source interaction context.
+Missing/ambiguous private targets require explicit selection rather than an
+arbitrary project/shot or implicit record creation. Public location links remain
+free of private workspace context. This clarifies the existing integrated
+workflow; it does not move project/shot implementation forward or waive gates.

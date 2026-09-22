@@ -236,14 +236,24 @@ test("every capability starts unknown and never infers another", () => {
   assert.throws(() => observe(capabilities, "messaging", "yes"), RangeError);
 });
 
-test("the entry URL path is available whatever else is unknown", () => {
+test("219: an entry URL or reported pose does not establish bookmark restoration", () => {
   const described = describeCapabilities(unknownCapabilities());
   assert.equal(described.entryByUrl, "available");
   assert.equal(described.embedding, UNKNOWN);
-  assert.match(described.bookmarkRestore, /entry point only/);
+  assert.match(described.bookmarkRestore, /not verified/);
 
-  const withPose = observe(unknownCapabilities(), "poseReporting", true);
-  assert.equal(describeCapabilities(withPose).bookmarkRestore, "available");
+  for (const pose of [
+    { sweep: "entry-only" },
+    { sweep: "raw-rotation", rotationX: 0, rotationY: 0, rotationZ: 0 },
+    { sweep: "named-angles", yawDeg: 0, pitchDeg: 0, fovDeg: 60 },
+  ]) {
+    const parsed = readPose(pose);
+    let capabilities = observe(unknownCapabilities(), "poseReporting", parsed.fields.length > 0);
+    capabilities = observe(capabilities, "ready", true);
+    capabilities = observe(capabilities, "sweepSwitchWithoutReload", true);
+    assert.equal(describeCapabilities(capabilities).poseReporting, "available");
+    assert.match(describeCapabilities(capabilities).bookmarkRestore, /not verified/);
+  }
 });
 
 // ---- Adapter lifecycle ---------------------------------------------------

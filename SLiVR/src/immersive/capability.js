@@ -74,8 +74,9 @@ export function describeCapabilities(capabilities) {
     messaging: state("messaging"),
     sweepSwitchWithoutReload: state("sweepSwitchWithoutReload"),
     poseReporting: state("poseReporting"),
+    // Receiving pose fields does not verify an outbound restore contract.
     bookmarkRestore: isAvailable(capabilities, "poseReporting")
-      ? "available"
-      : "entry point only, because no pose was reported",
+      ? "not verified; reported pose does not establish view restoration"
+      : "not verified; only the supplied entry URL is available",
   };
 }

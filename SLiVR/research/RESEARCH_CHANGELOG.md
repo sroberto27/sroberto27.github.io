@@ -270,3 +270,97 @@ Live browser discovery returned no surfaces and iab tab creation failed. Live vi
 ### 2026-09-21 - D070 floating panel and group zoom
 
 Applied owner-approved floating panel, full-name wrapping and circular count badge. Group activation fits members; camera padding tracks visible desktop panel, cancels stale focus and preserves orientation/reduced motion; coincident member controls survive regrouping. Both references inspected read-only, provenance in D070. Initial 350 tests PASS; final 352 PASS after targeted group/camera regressions. Catalog zero errors/one retained warning, deployment scope 156 files/zero errors, whitespace clean. Runtime SHA256 ea5085cb623cdb7fe2be15210dbaff2c72b7e351efbe80a576b3db5ab9bb8899. Browser retry unavailable; test 218 live portions BLOCKED. Recorded prior owner functional report separately from screenshot-visible presentation failures; uncertain checklist 15/16 remain NOT TESTED. All changes within SLiVR; no data/schema/provider configuration, telemetry, reference edit, commit or push.
+
+
+## 2026-09-22 ? D071 acceptance review and independent Phase 2 reconnaissance
+
+Local 318316612d8c44031eae835e4b1760843d3ebe6c on content-migration-2026-09-07;
+SLiVR subtree matches published f2627108 before edits. Preserve unrelated history
+and user changes. Read both map reference implementations; record exact sources,
+existing lifecycle reuse, missing bookmark actions and Explore camera snapshot
+in PHASE_2_RECONNAISSANCE.md. Prepare PHASE_1_ACCEPTANCE_REVIEW.md with concrete
+remaining gates, E1 test 44 phase allocation proposal and owner checklist.
+No E1 approval or dependent Phase 2 feature implementation.
+
+Correct diagnostic wording that inferred restoration from any pose; stable 219
+covers sweep-only/raw-zero/named-angle observations without certifying restore.
+Add stable 220 exact LOC-001/005/009/011 lifecycle sequence using doubles.
+Baseline 352 PASS; diagnostic expectation initially 24 PASS/1 FAIL, preserved
+in diagnostic-before-fix.txt; corrected run 352 PASS; targeted suites 39 PASS;
+final full suite 353 PASS/0 FAIL. Catalog zero errors/one alias warning;
+deployment 158 files/zero errors; whitespace clean. Runtime SHA256
+c1a979196d5a331308cce0853410bead57c8590c33997e8476dc30430145dde3.
+
+HTTP probe 1.0.0 at 2026-09-22T13:28:40.061Z: 11/11 HTTP 200, no declared
+embedding-refusal header; embedding/runtime capabilities remain unknown.
+Browser discovery empty, tab creation unavailable; no new live PASS/screenshots.
+Historical presentation FAIL and owner 15/16 NOT TESTED retained. Updated
+implementation/test status, capability/evidence/measurement/limitation records.
+Provider/capture/catalog/schema versions unchanged; no telemetry, participant
+evidence, reference edits, staging, commit or push. Local raw evidence remains
+under outputs/acceptance-2026-09-22/.
+
+
+### 2026-09-22 - D072 Immersive-to-Explore location handoff
+
+Owner-reported defect: the top Explore button discarded the location selected
+in Immersive. Reuse the existing location route/action so the dossier, selected
+pin and camera target agree. Both reference selection/sweep-sync counterparts
+inspected read-only; source lines and architecture deviation are in D072.
+Two shell regressions added under stable 221; targeted 23 PASS, full 355 PASS,
+catalog zero errors/one alias warning, deployment 158 files/zero errors.
+Runtime digest 764eb6758cb36c89c52153fc5855bdbb4601037defcd13c0deba296eacadf336.
+Browser discovery empty; live retest remains BLOCKED. Retained prior changes,
+provider lifecycle/configuration, data and schemas. No telemetry, commit or push.
+
+
+### 2026-09-22 - D073 collapsible Immersive mini-map
+
+Adapted the read-only LSU3D mini-map counterpart after inspecting both reference
+projects. Add ui/immersive-map.js and compact mode to the existing map adapter;
+retain configured imagery/failover/pins/attribution. Render above captured list,
+stacked below the viewer on narrow screens, collapsible everywhere as requested.
+Keep its canvas attached during viewer updates; dispose on collapse/mode exit;
+Open Explore uses current stable location ID. No changes to Treedis or catalog.
+
+Initial suite 355 PASS; new targeted suites 28 PASS; final suite 360 PASS/0 FAIL.
+Catalog zero errors/one retained alias warning; deployment 160 files/zero errors;
+whitespace clean. Runtime SHA256 c1400777be98a791dc171c1db706e38a3369d8b6ba6b27fa4e525db7a097ca4d.
+Live browser unavailable; owner screenshots document the baseline only. Update
+stable 222, implementation/UI/evidence/limitations/parameters. No telemetry,
+participant evidence, phase close, reference edits, staging, commit or push.
+
+
+### 2026-09-22 - D074 bidirectional Explore/Immersive tabs
+
+Corrected the Immersive top-tab route dropping Explore's selected location.
+Inspected both reference selection-to-viewer implementations; reuse SLiVR's
+resolved route ID, current adapter and no-capture recovery. Added stable 223
+list/pin, reverse, no-selection/invalid/future regressions. Before fix 24 shell
+PASS/2 FAIL; after fix 26 targeted PASS, 362 full PASS/0 FAIL. Catalog zero
+errors/one alias warning; deployment 160 files/zero errors; whitespace clean.
+Runtime digest 2704950cc4c5e8ecfdad2df50120ed29357d9dce2d38b8f377afba4c4555473d.
+Live browser discovery empty; no new browser/participant evidence. Documented
+owner's future bidirectional project/shot context requirement without implementing
+those actions or waiving existing gates. No telemetry, reference edits, commit
+or push; retained prior working changes.
+
+
+### 2026-09-22 - D075
+
+D075 replaced static preview with captured-location navigation, compact zoom/center/3D/streets/enlarge controls and temporary dismissal. Both references inspected; source/deviations in decision record. Full 363 automated PASS; catalog 0 errors/one existing City Hall alias warning; deployment scope 160 files/0 errors. Live unavailable; gates unchanged. No telemetry, reference edits, commit or push.
+
+
+### 2026-09-22 - D076
+
+D076: internal compact icon toolbar and pin-style correction. Both references inspected, no reference edits. Full automated 363 PASS; deployment scope 160 files/0 errors. Live presentation retest pending. No telemetry, commit or push.
+
+
+### 2026-09-22 - D077
+
+D077: recorded owner-reported mini-map PASS, audited remaining phase obligations, prepared Phase 2 acceptance review and next-CLI prompt. Latest automated evidence unchanged at 363 PASS; documentation-only update. No phase closure, telemetry, commit or push.
+
+
+#### D077 owner scope clarification
+
+Owner explicitly confirms "yeah all the test even the ones before the map" in response to the question naming earlier provider-failure and real-browser storage/reload/export/import checks. All earlier instructed delivered-function checklists, including owner 15-16, are now owner-reported PASS. Preserve earlier NOT TESTED/BLOCKED/FAIL entries as historical; do not repeat those checks solely for missing tool access. Browser/version/device and exact tested digest remain unspecified. This does not make unimplemented bookmark save/restore tested, supply absent raw provider reports, or explicitly approve E1. Bookmark-specific and later-phase workflows remain NOT TESTED. No runtime changes or new automated execution.

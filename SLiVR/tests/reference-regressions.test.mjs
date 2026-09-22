@@ -269,3 +269,44 @@ test("197: cancelled verification cannot post a stale command after another requ
   assert.equal(h.posted.length, count);
   adapter.dispose();
 });
+
+test("220: downtown, Magnolia and Moncus transitions preserve session identity and reject abandoned frames", () => {
+  const h = viewerHarness();
+  const dom = createFakeDom();
+  const host = createViewerHost({ doc: dom.document, win: h.win });
+  const { actions, store } = actionsHarness(h);
+  let previousFrame = null;
+  let previousCapture = null;
+
+  for (const locationId of ["LOC-001", "LOC-005", "LOC-009", "LOC-011"]) {
+    const capture = captures.find(record => record.locationId === locationId);
+    actions.mountViewer(host.frame, capture, host.renewFrame);
+    host.frame.contentWindow ??= h.makeFrame().contentWindow;
+    if (previousFrame) {
+      if (previousCapture.experienceId === capture.experienceId) {
+        assert.equal(host.frame, previousFrame, "downtown retains its responsive session");
+      } else {
+        assert.notEqual(host.frame, previousFrame, "an independent model gets a fresh source window");
+        assert.equal(previousFrame.getAttribute("src"), "about:blank");
+        h.send({ type: "TourReady" }, previousFrame.contentWindow);
+        h.send({ type: "PoseChanged", sweep: previousCapture.sweepId }, previousFrame.contentWindow);
+        assert.equal(store.getState().viewer.status, "handshaking");
+      }
+    }
+    h.send({ type: "TourReady" }, host.frame.contentWindow);
+    h.advance(600);
+    assert.equal(h.posted.filter(p => p.message.type === "Navigate").at(-1).message.sweepId, capture.sweepId);
+    h.send({ type: "PoseChanged", sweep: capture.sweepId }, host.frame.contentWindow);
+    assert.equal(store.getState().viewer.status, "ready");
+    assert.equal(store.getState().viewer.locationId, locationId);
+    assert.equal(actions.viewerReport().captureId, capture.id);
+    assert.equal(host.element.children.filter(node => node.tagName === "IFRAME").length, 1);
+    previousFrame = host.frame;
+    previousCapture = capture;
+  }
+  actions.unmountViewer();
+  host.dispose();
+  assert.equal(previousFrame.getAttribute("src"), "about:blank");
+  assert.equal(h.timers.size, 0);
+  assert.equal(store.getState().viewer.status, "idle");
+});

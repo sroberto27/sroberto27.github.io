@@ -44,8 +44,9 @@ export const MAP_ERROR_CODES = Object.freeze({
  * @param {object} options.maplibre The `maplibre-gl` module.
  * @param {(event: object) => void} [options.onEvent] Receives adapter events.
  * @param {boolean|string} [options.webgl] Capability as reported by `app/capabilities.js`.
+ * @param {boolean} [options.compact] Compact interactive context with externally supplied controls.
  */
-export function createMapAdapter({ container, region, maplibre, onEvent = null, webgl = true, runtimeConfig = null }) {
+export function createMapAdapter({ container, region, maplibre, onEvent = null, webgl = true, runtimeConfig = null, compact = false }) {
   const failover = createImageryFailover({
     region,
     onChange: (status) => emit({ type: "imagery-changed", status }),
@@ -124,8 +125,8 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
       map.resize?.();
       map.flyTo?.({
         center: location.position,
-        zoom: Math.min(map.getMaxZoom?.() ?? 20, 19),
-        duration: globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 0 : 550,
+        zoom: Math.min(map.getMaxZoom?.() ?? 20, compact ? 16 : 19),
+        duration: compact || globalThis.matchMedia?.("(prefers-reduced-motion: reduce)").matches ? 0 : 550,
         padding: viewFitOptions(plateHeight).padding,
         retainPadding: false,
       });
@@ -140,6 +141,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
   }
 
   function viewFitOptions(plateHeight = 0) {
+    if (compact) return { padding: { top: 20, right: 20, bottom: 36, left: 20 }, maxZoom: 16, duration: 0 };
     const options = inventoryFitOptions(container.clientWidth, container.clientHeight, plateHeight);
     const panel = container.closest?.(".workspace")?.querySelector(".rail-left");
     const panelRect = !panel?.hidden && panel?.getBoundingClientRect?.();
@@ -222,6 +224,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
         pitch: region.defaultView.pitch ?? 0,
         maxZoom: source?.maxZoom ?? 20,
         attributionControl: { compact: false },
+        ...(compact ? { interactive: true, bearing: 0, pitch: 0 } : {}),
       });
     } catch (cause) {
       return failure(MAP_ERROR_CODES.initFailed, `The map could not be created: ${cause.message}`);
@@ -232,7 +235,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
      * library, themed by `20-explore.css`. A scouting map without a scale
      * gives no sense of whether a street has room for a unit.
      */
-    try {
+    if (!compact) try {
       if (typeof maplibre.NavigationControl === "function") {
         map.addControl(new maplibre.NavigationControl({ visualizePitch: true }), "top-right");
       }
@@ -479,6 +482,11 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
       }
     },
     recenter,
+    toggleReference,
+    get referenceVisible() { return referenceVisible; },
+    zoomIn() { if (!disposed) map?.zoomIn(); },
+    zoomOut() { if (!disposed) map?.zoomOut(); },
+    resize() { if (!disposed) map?.resize(); },
     focusLocation,
     focusGroup,
     setTilted,

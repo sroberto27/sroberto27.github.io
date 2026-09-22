@@ -127,3 +127,53 @@ Catalog-derived search facets are description matches, not a curated visual taxo
 ### D070 - 2026-09-21
 
 The desktop floating panel overlays imagery; camera padding accounts for its measured right edge plus 24px, capped at half the map width. This changes the D067 layout assumption and needs live edge/cluster, collapse/restore, tablet and 3D checks. Browser connection remains unavailable. Owner-reported functional passes for the prior build do not resolve its screenshot-visible truncation or establish this correction's appearance. Checklist 15/16 have no affirmative execution evidence and remain NOT TESTED. No new exception or participant result.
+
+
+## D071 ? acceptance and capability limits, 2026-09-22
+
+No browser surfaces were available; the live attempt failed before opening a
+page. D070 visual/keyboard/narrow/coincident tests, provider recovery and D061
+real IndexedDB/linked-fixture checks remain BLOCKED. Prior screenshot FAIL and
+owner checklist 15/16 NOT TESTED are retained. New HTTP 200 responses for all
+11 entries cannot show iframe rendering, requested arrival, pose/navigation/
+sweep-list/screenshot capabilities, capture freshness, extent or rights.
+
+Diagnostic restore capability previously inferred from poseReporting alone;
+corrected to unverified and covered by test 219. This correction is not a
+bookmark implementation. Source inspection finds no map camera snapshot across
+Explore disposal/remount, and no bookmark save/restore UI/actions. Existing
+transfer validates record references but is not proof of future cross-location
+assessment evidence checks. Exact remaining contracts and retest conditions are
+in PHASE_2_RECONNAISSANCE.md and PHASE_1_ACCEPTANCE_REVIEW.md. E1 remains a proposal;
+no dependent implementation, phase completion or new exception is authorized.
+
+
+### D073 - mini-map limits, 2026-09-22
+
+Mini-map follows the selected catalog location, not the user's uncalibrated
+position/heading inside Treedis. DOTD aerial context is approximate and separate
+from the captured view/date/extent. The additional WebGL context exists only
+while expanded; real concurrent-provider/GPU behavior needs live testing.
+Supplied screenshots are baseline desktop and browser-emulated phone evidence,
+not physical-device or mini-map acceptance. Attribution/selected-pin legibility,
+short-screen list space and real keyboard/touch remain BLOCKED without a browser.
+
+
+### 2026-09-22 - D075
+
+D075: DOM doubles cannot establish toolbar fit, fixed-card visibility, gestures, 3D rendering or cross-origin focus ordering. Desktop and phone tests must verify blur plus active-iframe focus dismissal. Mini-map exposes 11 current captures only; future locations cannot open tours. No new capability or phase-completion claim.
+
+
+### 2026-09-22 - D076
+
+D076: 32px icon buttons intentionally reduce toolbar footprint as requested. Actual phone targeting, icon recognition and map visibility still need owner testing; automated DOM tests do not establish CSS rendering. Owner screenshot demonstrates the prior presentation defect, not corrected-build acceptance.
+
+
+### 2026-09-22 - D077
+
+D077 owner-reported latest mini-map retest PASS reduces the pending owner UI acceptance gap. Unknown device/browser/build coverage remains explicit. It supplies no missing bookmark implementation or raw provider capability evidence; no phase-wide generalization.
+
+
+#### D077 owner scope clarification
+
+Owner explicitly confirms "yeah all the test even the ones before the map" in response to the question naming earlier provider-failure and real-browser storage/reload/export/import checks. All earlier instructed delivered-function checklists, including owner 15-16, are now owner-reported PASS. Preserve earlier NOT TESTED/BLOCKED/FAIL entries as historical; do not repeat those checks solely for missing tool access. Browser/version/device and exact tested digest remain unspecified. This does not make unimplemented bookmark save/restore tested, supply absent raw provider reports, or explicitly approve E1. Bookmark-specific and later-phase workflows remain NOT TESTED. No runtime changes or new automated execution.
