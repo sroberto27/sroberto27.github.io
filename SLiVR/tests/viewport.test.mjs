@@ -98,3 +98,32 @@ test("pending selection moves are superseded by a newer choice, Recenter or disp
     assert.equal(flights.length, 1);
   } finally { globalThis.requestAnimationFrame = previous; }
 });
+
+test("218: group fit uses only members, preserves 3D, avoids floating panel and cancels stale selection", () => {
+  const previousRAF=globalThis.requestAnimationFrame, previousMatch=globalThis.matchMedia;
+  const frames=[], fits=[], flights=[];
+  globalThis.requestAnimationFrame=fn=>frames.push(fn);
+  globalThis.matchMedia=()=>({matches:true});
+  const panel={hidden:false,getBoundingClientRect:()=>({top:12,bottom:788,right:344})};
+  const container={clientWidth:1200,clientHeight:800,closest:()=>({querySelector:()=>panel}),
+    getBoundingClientRect:()=>({left:0,top:0,bottom:800})};
+  const map={loaded:()=>false,addControl(){},on(){},resize(){},remove(){},getBearing:()=>30,getPitch:()=>45,getMaxZoom:()=>20,
+    fitBounds:(bounds,options)=>fits.push({bounds,options}),flyTo:options=>flights.push(options)};
+  try {
+    const adapter=createMapAdapter({container,region,maplibre:{Map:function(){return map;}}});
+    adapter.create();adapter.setLocations(locations,()=>{});
+    adapter.focusLocation("LOC-018");adapter.focusGroup(locations.slice(0,5));
+    while(frames.length)frames.shift()();
+    assert.equal(flights.length,0,"group request cancels pending individual focus");
+    assert.deepEqual(fits.at(-1).bounds,locationBounds(locations.slice(0,5)));
+    assert.equal(fits.at(-1).options.padding.left,368);
+    assert.equal(fits.at(-1).options.duration,0);
+    assert.equal(fits.at(-1).options.bearing,30);assert.equal(fits.at(-1).options.pitch,45);
+    assert.equal(fits.at(-1).options.maxZoom,19);
+    panel.hidden=true;globalThis.matchMedia=()=>({matches:false});
+    adapter.focusGroup(locations.slice(0,5));
+    assert.equal(fits.at(-1).options.duration,550);assert.ok(fits.at(-1).options.padding.left<100);
+    adapter.recenter();assert.deepEqual(fits.at(-1).bounds,locationBounds(locations));
+    adapter.dispose();const count=fits.length;adapter.focusGroup(locations);assert.equal(fits.length,count);
+  } finally {globalThis.requestAnimationFrame=previousRAF;globalThis.matchMedia=previousMatch;}
+});

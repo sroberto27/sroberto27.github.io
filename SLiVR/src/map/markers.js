@@ -10,16 +10,30 @@ export function groupLocations(locations) {
   return [...groups.values()];
 }
 
+/** Extend exact-position groups to overlapping screen pins without altering catalog coordinates. */
+export function groupNearbyLocations(locations, project, radius = 44) {
+  if (!project) return groupLocations(locations);
+  const groups = [];
+  for (const location of [...locations].sort((a, b) => a.id.localeCompare(b.id))) {
+    const point = project(location.position);
+    const group = groups.find(g => Math.hypot(point.x - g.point.x, point.y - g.point.y) < radius);
+    if (group) group.locations.push(location);
+    else groups.push({ position: location.position, point, locations: [location] });
+  }
+  return groups;
+}
+
 function pinNumber(location) {
   const number = location.id.match(/(\d+)$/)?.[1];
   return number ? String(Number(number)) : location.id;
 }
 
-export function createMarkers({ map, maplibre, onSelect }) {
+export function createMarkers({ map, maplibre, onSelect, onGroup = null }) {
   let markers = [];
   let pins = [];
   let groups = [];
   let selectedId = null;
+  let records = [];
 
   function clear() {
     for (const marker of markers) marker.remove();
@@ -46,9 +60,13 @@ export function createMarkers({ map, maplibre, onSelect }) {
   }
 
   function setLocations(locations) {
+    const openGroups = new Set(groups.filter(group => group.open).map(group => group.locations.map(l => l.id).join(",")));
+    const focusedPin = pins.find(pin => pin.node === document.activeElement)?.id;
+    const focusedGroup = groups.find(group => group.summary === document.activeElement)?.locations[0].id;
+    records = locations;
     clear();
     if (!map || !maplibre?.Marker) return;
-    for (const group of groupLocations(locations)) {
+    for (const group of groupNearbyLocations(locations, map.project?.bind(map))) {
       let root;
       if (group.locations.length === 1) {
         root = buildNode(group.locations[0]);
@@ -59,13 +77,13 @@ export function createMarkers({ map, maplibre, onSelect }) {
         summary.type = "button";
         summary.className = "map-pin-cluster-summary";
         const numbers = group.locations.map(pinNumber);
-        const consecutive = numbers.every((n, i) => i === 0 || Number(n) === Number(numbers[i - 1]) + 1);
-        summary.textContent = consecutive ? `${numbers[0]}–${numbers.at(-1)}` : numbers.join("·");
-        summary.setAttribute("aria-label", `${numbers.length} locations at this position: ${numbers.join(", ")}. Expand to choose a location.`);
+        summary.textContent = String(numbers.length);
+        summary.title = `${numbers.length} nearby locations. Click to zoom in.`;
+        summary.setAttribute("aria-label", `${numbers.length} nearby locations: ${numbers.join(", ")}. Zoom to these locations; arrow down to choose a member.`);
         const members = document.createElement("div");
         members.className = "map-pin-cluster-members";
         members.setAttribute("role", "group");
-        members.setAttribute("aria-label", "Locations at this position");
+        members.setAttribute("aria-label", "Nearby locations; choose a pin to focus its actual position");
         members.id = `slivr-pin-group-${group.locations[0].id}`;
         summary.setAttribute("aria-controls", members.id);
         for (const location of group.locations) members.append(buildNode(location));
@@ -103,8 +121,9 @@ export function createMarkers({ map, maplibre, onSelect }) {
         // Click supports both touch and the button's native Enter/Space activation.
         summary.addEventListener("click", event => {
           event.stopPropagation();
-          entry.setOpen(!(openBeforePointer ?? entry.open));
+          entry.setOpen(onGroup ? true : !(openBeforePointer ?? entry.open));
           openBeforePointer = null;
+          onGroup?.(group.locations);
         });
         groups.push(entry);
       }
@@ -112,6 +131,14 @@ export function createMarkers({ map, maplibre, onSelect }) {
       markers.push(marker);
     }
     setSelected(selectedId);
+    for (const group of groups) {
+      if (openGroups.has(group.locations.map(l => l.id).join(","))) group.setOpen(true);
+    }
+    if (focusedPin) pins.find(pin => pin.id === focusedPin)?.node.focus?.({ preventScroll: true });
+    if (focusedGroup) {
+      const group = groups.find(group => group.locations.some(location => location.id === focusedGroup));
+      (group?.summary ?? pins.find(pin => pin.id === focusedGroup)?.node)?.focus?.({ preventScroll: true });
+    }
   }
 
   function setSelected(locationId) {
@@ -129,5 +156,12 @@ export function createMarkers({ map, maplibre, onSelect }) {
     }
   }
 
-  return { setLocations, setSelected, get count() { return pins.length; }, dispose: clear };
+  const regroup = () => setLocations(records);
+  map?.on?.("zoomend", regroup);
+  map?.on?.("resize", regroup);
+  return { setLocations, setSelected, get count() { return pins.length; }, dispose() {
+    map?.off?.("zoomend", regroup);
+    map?.off?.("resize", regroup);
+    records = []; clear();
+  } };
 }

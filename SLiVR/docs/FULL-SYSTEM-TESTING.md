@@ -10,11 +10,11 @@ No test is pre-marked. A passing unit test, code review, HTTP response or earlie
 
 | Field | Value |
 |---|---|
-| Test specification version | 0.2 |
+| Test specification version | 0.3 |
 | Architecture baseline | SLiVR architecture 0.19 or later |
 | Created | 2026-09-19 |
-| Last updated | 2026-09-20 |
-| Current implementation phase | Phase 0 COMPLETE with approved exceptions; Phase 1 map framing/pin increment implemented, visual acceptance pending |
+| Last updated | 2026-09-21 |
+| Current implementation phase | Phase 0 COMPLETE with approved exceptions; Phase 1 discovery/dossier continuation implemented; live and integrated action acceptance pending (D069) |
 | First-prototype gate | Parts A–H and J, using the phase applicability rules below |
 | Post-prototype gate | Part I plus affected regression tests |
 
@@ -449,7 +449,7 @@ Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED
 Evidence: ____________________________________  
 Comments: ____________________________________
 
-**43. Future candidates never receive fabricated immersive actions.** Each of the six shows future/no-current-capture state and recovery/next-step text rather than an invented tour or sweep.
+**43. Future candidates never receive fabricated immersive actions.** Each of the seven shows future/no-current-capture state and recovery/next-step text rather than an invented tour or sweep.
 
 Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED  
 Evidence: ____________________________________  
@@ -1956,3 +1956,91 @@ Owner response to the 13-item critical-change checklist: "all passed 13 was not 
 Environment metadata was not supplied: browser/version, device, viewport, tested URL, local versus published deployment, exact build/digest and hard-refresh confirmation remain unknown. The report concerns the requested Explore redesign but cannot be bound to the recorded automated runtime digest independently. No screenshots, provider/network trace or detailed observations were supplied. Preserve the earlier automated results and blocked inspection history; this owner report adds manual evidence rather than retroactively changing them.
 
 Owner-reported passes supersede the earlier lack of manual evidence only for the checklist portions above. They do not establish all-device coverage, measured contrast/reduced-motion behavior, every cluster/popup edge, independent-model transitions, provider failure recovery, reference-browser comparison, screenshots or full Phase 1 completion. The optional failure check remains NOT TESTED; its automated regression evidence remains separate. No new exception, commit or publication is authorized by this result report. Retest item 13 when request blocking is available and record environment/build context on the next verification run.
+
+## Scouting Assessments - essential gate amendment (D068)
+
+Architecture 0.20; SCOUTING_ASSESSMENTS_PLAN.md 1.0. All new tests are **NOT TESTED**: planning does not change prior execution results. Extend Parts C-G as applicable; run affected phase tests plus Part J. Phase 3 requires 206-212 and 214-215; Phase 4 requires 213; Phase 5 requires 208-215 against the integrated build. Phase 1/2 provide entry placement and bookmark contracts; the shared editor ships in Phase 3. Phase 3 test 214 covers canonical export selection; print and ZIP delivery is Phase 5.
+
+| Stable test ID | Phase | Procedure and required result | Required evidence | Status |
+|---|---|---|---|---|
+| 206 | 3 | Create repeat room/date assessments and multiple scene links; rename location; edit evidence used in a decision. IDs remain stable, prior revision remains available, changed evidence is flagged and catalog is unchanged. | Automated records/history and live workflow | NOT TESTED |
+| 207 | 3 | Exercise eight sections, false, zero, unanswered, needs-validation and not-applicable. Progress follows template rules; no unknown becomes favorable; compliance offers prompts without private-contact/permit management fields. | Automated semantics/schema and live labels | NOT TESTED |
+| 208 | 2 dependency, 3/5 delivery | Open same assessment through Projects/dossier/Immersive; attach supported bookmark and block provider. Context persists, invalid cross-location evidence is rejected and editor remains usable without invented pose/screenshot capability. | Automated integration and live provider/fallback | NOT TESTED |
+| 209 | 3/5 | Edit then immediately switch location/mode, export or duplicate; delay writes/media loads; force quota/transaction failure. Correct record retains latest edits; failed save stays visible; emergency JSON preserves answers and reports unavailable media. | Automated races/failures and live persistence | NOT TESTED |
+| 210 | 3/5 | Attach photos/video/panorama, reject invalid/oversize inputs, exercise missing bytes and flat-image fallback. Switch modes repeatedly, then delete shared/history-linked media/project. No unrelated deletion, stale attachment or resource leak. | Automated ownership and live media/context loss | NOT TESTED |
+| 211 | 3/5 | Import old SLiVR project; round-trip assessments/revisions/media in canonical JSON and Phase 5 ZIP into clean profile. Exercise copy/replace/cancel, broken references, corrupt packages and unsupported versions. IDs remap coherently; invalid imports write nothing; selected bytes and history survive. | Automated migration/atomicity and live clean-profile round trip | NOT TESTED |
+| 212 | 3/5 | Preview legacy raw JSON and ZIP with touched/untouched defaults, excluded contacts, missing media and ambiguous location names. Require explicit target mapping; ambiguous defaults remain unresolved; omissions are reported; original checklist data is untouched. | Automated fixtures and live import preview | NOT TESTED |
+| 213 | 4/5 | Link findings to candidate requirements and shots; update assessment and reopen prior decision. Evidence revision is retained; source observations remain separate from suitability; calibration/geometry is unchanged. | Automated references and live comparison/shot workflow | NOT TESTED |
+| 214 | 3/5 | Export explicit selected assessments/assets; Phase 5 print packet and ZIP omit unselected content/provider imagery, show source/date/unknowns and missing-media reports, and remain legible. No silent media loss or hidden private-contact legacy payload. | Automated selection/escaping and live export/print inspection | NOT TESTED |
+| 215 | 3/5 | Run editor end to end with keyboard and desktop/tablet layouts; verify focus restoration, labels and non-color statuses. Verify no sensor permissions, ML download, telemetry, sibling storage/cache mutation or capture toolkit activation. | Automated boundary checks and live accessibility/network/isolation | NOT TESTED |
+
+Record exact build, template/schema/catalog/capture versions, browser/device and failure details separately for automated and live evidence. Required tests must pass or carry an explicitly approved exception and retest condition; no exceptions are granted by D068.
+
+## 2026-09-21 - Phase 1 discovery/dossier continuation (D069)
+
+Build: base HEAD `08ea25c1f70fad472834e2dcfb6bbf3918f9dc3d` plus this uncommitted working tree, including preserved owner D068 planning edits. Runtime SHA256 `ef4cb854a20726b2051dba87a785306c9d0fe7304863b88ca5f58bc9b4df19c3`. Algorithm: sort index.html plus all files recursively under src/styles/config/data/vendor, excluding runtime.js, by POSIX path; hash each UTF-8 path, NUL, raw bytes, NUL (93 files). Documentation/tests/tools are outside this runtime digest.
+
+Environment: Windows PowerShell, Node v24.18.0; static ES modules, no build/deployment. App 0.2.0; catalog 1.1.0 (18 locations, 11 current, seven future, seven areas, 18 captures/details, 46 sources); catalog/transfer schema 1.0.0, workspace schema 1; research snapshot 2026-09-20. Providers/vendor/configuration unchanged; Treedis capability contract treedis-recon-2. Capture dates remain unknown; no new provider or participant data collected.
+
+Commands executed: `node --test tests/*.test.mjs` (350 PASS, zero FAIL); `node tools/validate-catalog.mjs` (zero errors, retained Old City Hall naming warning; 257 preserved unknown-marked values); `node tools/check-deploy-scope.mjs` (156 publishable files, zero errors); `git diff --check -- .` (no whitespace errors; Git emits existing LF/CRLF conversion notices). Logs: ignored outputs/phase1-tests-final.txt, phase1-catalog-final.txt, phase1-deploy-final.txt. Earlier failing logs remain in outputs/phase1-tests-first.txt and phase1-tests-second.txt; first run caught retained-list focus loss after recent-history updates, second caught an overbroad test that treated an external public URL containing docs/ as a private local link. Both were corrected; third run passed 349 tests before adding clipboard success coverage and final review changes.
+
+Live attempt: `cua.getState()` returned apps=[] and browsers=[]; `cua.createBrowserTab("iab", "http://localhost:8000", {visible:true})` returned `Browser is not available: iab`. No tab, server request, provider rendering, screenshot or native storage check resulted. Browser/device/viewport/console/network measurements are unavailable. These live portions are BLOCKED, not PASS. Prior D067 owner results remain historical and do not certify this runtime digest.
+
+### Added stable procedures
+
+**216. Dossier evidence, public sharing and assessment boundary. [F02/F06-SA preparation]**
+Open every location. All practical/visual/capture fields preserve original text, missing values are explicit, operator/owner/access/hours remain distinct, source disclosures include detail sources and limitation/access-date labels. Public source links cannot expose local private documents. Copy success and rejected/unavailable clipboard paths give accurate status; fresh-tab link contains only location context. Public catalog is unchanged. D068 Project context insertion contract exists without a placeholder assessment/editor action. Automated PASS for rendered contracts and URL/clipboard doubles; browser, human interpretation and fresh-tab portions BLOCKED. Editor delivery tests 206-215 remain NOT TESTED.
+
+**217. Nearby pin grouping and lifecycle. [F01]**
+At multiple zooms and widths, expand nearby groups by touch/keyboard, choose each member, preserve selection and filters through zoom/history/resize, and verify focus/popup bounds. Coordinates remain unchanged; selected member is reachable; empty filters yield no stale groups; leaving Explore disposes listeners/markers. Automated PASS for projected grouping, zoom/filter/selection and disposal doubles. Live focus/touch/popup/3D-camera variants BLOCKED.
+
+### Affected Part C results
+
+| IDs | Automated result on this build | Live / acceptance boundary |
+|---|---|---|
+| 31-34 | PASS: catalog bounds/count, capture classes, separate research row text, route and selected callbacks | BLOCKED: rendered map/list/pin synchronization and actual viewport fit |
+| 35-37 | PASS: approved fields and ten AND-composed facets, case/spacing tokens, debounce, name/area/capture/recent sort logic, retained state | BLOCKED: real control ergonomics and announcements; facets describe text, not verified characteristics |
+| 38, 217 | PASS: zoom proximity grouping, selected ID, filtering and disposal | BLOCKED: touch/keyboard presentation, edge placement, actual zoom/history/3D |
+| 39-43, 216 | PASS: all 18 dossiers expose sections, published practical text and source distinctions; all seven future entries lack immersive buttons | BLOCKED: human evidence interpretation, layout and live immersive entry |
+| 44 | PASS for stable current immersive route and context-free public-link generation/copy success/failure doubles | BLOCKED for browser clipboard/fresh tab; candidate/add/compare/open and create/open shot integrations NOT TESTED, dependent on Phase 3/4 delivery. No new exception |
+| 45 | PASS: catalog unchanged through discovery/render operations and existing project/transfer regressions | BLOCKED: browser mutation/import workflow; no persistence expansion |
+| 46-49 | PASS: map-library failure retains complete list/dossier, imagery failover/retry doubles, empty-result clearing and stable hash resolution/link generation | BLOCKED: live WebGL/provider denial, real history/fresh-tab link |
+| 204-205 | PASS: panel state, query/filter/sort/scroll/focus callbacks and modal lifecycle doubles | BLOCKED: actual focus, touch, contrast, reduced motion, sheet/resize rendering |
+
+### Part J results
+
+| ID | Current result and limits |
+|---|---|
+| 172 | Automated PASS: boot/four-mode shell; live usability BLOCKED |
+| 173 | PASS: validated catalog 18/11/7, seven areas; existing alias warning retained |
+| 174 | Automated PASS: expanded discovery/dossier/selection contracts; live map/list workflow BLOCKED |
+| 175 | Automated PASS: shared/independent Treedis navigation, trusted-message and disposal regressions; live provider BLOCKED |
+| 176 | Existing project persistence/transfer regression PASS; full scene/candidate comparison/preferred/backup NOT TESTED (Phase 3) |
+| 177 | Existing route, optics/spatial and provider-independent foundation regressions PASS; full edit/undo/variant/reload workflow NOT TESTED (Phase 4) |
+| 178 | Existing JSON validation/transfer/filename regressions PASS; browser file delivery BLOCKED; PNG/CSV/print acceptance NOT TESTED (later delivery) |
+| 179 | Automated PASS: hash/router/cross-mode callbacks; real Back/Forward BLOCKED |
+| 180 | Automated PASS: existing focus/panel/trap contracts; desktop/tablet/keyboard/contrast/reduced-motion presentation BLOCKED |
+| 181 | Automated PASS: DOTD/Treedis/Google/WebGL/IndexedDB failure and lifecycle doubles, full dossier without map; actual provider/storage loss/recovery BLOCKED |
+| 182 | PASS: deployment scanner, no reference edits or index/commit/push operations; neighboring live-app isolation NOT TESTED |
+| 183 | Automated regression has zero failures and no logging added; actual browser console/network and runtime telemetry observation BLOCKED |
+
+### Exit and retest conditions
+
+Phase 1 remains IN PROGRESS. No new exception is approved. A browser-connected build matching the digest must run Part C, 204-205, 216-217 and Part J at 1440x900, 1024x768, 390x844, short landscape and an actual tablet. Exercise all filters, future LOC-012/LOC-018, LOC-003 from map/list, recent sorting/history, source disclosures, clipboard success/denial, fresh-tab public links, proximity group edges, provider/imagery denial and fallback. Record screenshots, browser/version/device/viewport, console/network failures and exact build. Repeat inherited Phase 0 malformed catalog and full IndexedDB/linked-fixture reload/transfer checks (13, 16-19) before any persistence expansion. Capture/date/extent/rights obligations remain before Phase 2 dependent claims. Full test 44 project/shot actions require integrated Phase 3/4 delivery or an explicit owner-approved phase-boundary exception; none is silently granted here.
+
+## 2026-09-21 - Owner manual report and D070 panel/group correction
+
+Owner reports the checklist passed with an exception phrased "i could test 15 and 16". Prior response interpreted 15-16 as NOT TESTED; no explicit correction or affirmative execution evidence has followed. Preserve 15 (forced failure variants) and 16 (workspace reload/export) as NOT TESTED pending clarification. Items 1-14 have owner-reported functional acceptance, qualified by the same report's visual defects: full location names were unreadable, the rectangular backing was unwanted, and the "5 places" badge was aesthetically rejected. These presentation portions of tests 180/204/205/217 are FAIL for the screenshot build, despite the broad functional report.
+
+Screenshot shows localhost:8000/#/explore, 18 results, current/future labels, DOTD 2025 imagery and a five-location group. Browser resembles Chromium, but exact browser/version, hardware, viewport, build digest and hard-refresh status were not supplied. This evidence must not be bound independently to the prior runtime digest or treated as all-device acceptance. Screenshot is owner evidence, not a new automated browser observation.
+
+**218. Floating panel, readable names and cluster zoom. [F01/F02/F20]**
+On desktop, imagery continues behind the rounded rail with no solid rectangular backing; all location names wrap fully above ID/capture/research metadata. Collapse/restore and current-location selection preserve focus and camera visibility. On narrow screens, verify sheet scrolling and full names. Count badges are round, keyboard reachable, and clicking/Enter/Space fits only their member positions without changing selection or filters. Check reduced motion, 3D bearing/pitch, zoom ceiling, stale focus cancellation, repeated groups, coincident member expansion, Recenter and disposal. Automated member/camera/padding/cancellation/reduced-motion contracts PASS; CSS painting and actual device/provider interactions BLOCKED.
+
+Build: base HEAD 08ea25c1f70fad472834e2dcfb6bbf3918f9dc3d plus preserved working changes and D070. Runtime SHA256 ea5085cb623cdb7fe2be15210dbaff2c72b7e351efbe80a576b3db5ab9bb8899, using D069's path/byte digest algorithm. Windows PowerShell, Node v24.18.0, app 0.2.0, catalog 1.1.0, catalog/transfer schema 1.0.0, workspace 1, Treedis contract treedis-recon-2; provider/vendor/data configuration unchanged. Full suite: 352 PASS, zero FAIL; catalog zero errors/one existing alias warning; deployment scope 156 files/zero errors; whitespace check clean. Logs: outputs/phase1-polish-first.txt (350 PASS), outputs/phase1-polish-final.txt (352 PASS).
+
+Part C: automated 31-49/204-205/216-217 regression contracts PASS within D069's existing boundaries; new 218 camera/marker contracts PASS. Full test 44 candidate/compare/shot actions remain NOT TESTED. Live affected portions remain BLOCKED for this build.
+
+Part J: 172 boot, 173 catalog, 174 discovery/selection, 175 Treedis adapter, 179 route callbacks, 180 focus contracts and 181 failure/lifecycle doubles PASS automated; respective live interactions BLOCKED. 176 project persistence foundations, 177 spatial/optics foundations and 178 JSON foundations PASS; their full later-phase workflows remain NOT TESTED. 182 deployment scope PASS, neighboring live-app isolation NOT TESTED. 183 actual console/network and runtime telemetry observation BLOCKED; no logging was added.
+
+Live retry: browser discovery returned apps=[]/browsers=[]; iab creation at localhost:8000/#/explore failed with Browser is not available: iab. No fresh screenshots/live PASS. Retest 218 on the updated local build at desktop and tablet/narrow widths, including panel collapse, edge clusters and 3D/reduced-motion variants. Phase 1 remains open; no new acceptance exception, staging, commit or push.

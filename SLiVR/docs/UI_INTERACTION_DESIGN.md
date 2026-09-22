@@ -75,3 +75,33 @@ See [full-system testing](FULL-SYSTEM-TESTING.md), D067 execution record and tes
 The owner reports all critical-change checklist items 1-12 PASS; item 13 (forced map-library failure) was NOT TESTED. This supplies owner-reported evidence for desktop/narrow layout, discovery/dossier restoration, selection, collapse, controls, menu/keyboard, history and current immersive/other-mode entry. See the itemized [verification record](FULL-SYSTEM-TESTING.md#d067-owner-reported-manual-results---2026-09-20).
 
 Earlier blocked automated-browser inspection remains historical evidence. Browser/device, viewport, URL/deployment/build and hard-refresh confirmation were not supplied; screenshots remain absent. Conditional 3D and phone-versus-resized-window variants cannot be inferred. Forced map failure and broader unlisted acceptance checks remain open. This is technical manual acceptance of the checklist, not a participant study or full Phase 1 closeout.
+
+## Phase 1 continuation - 2026-09-21 (D069)
+
+The existing D062-D067 map framing, pin design, controls, single panel and sheet lifecycle are retained. Discovery now provides 180 ms debounced token search across identity, address, area, venue, visual character, known spaces and practical descriptions. All ten approved filter dimensions compose with AND; words within a query also compose with AND. Area/name/capture/recent sorts break ties by stable ID. Recently viewed records are session-only, stored through app actions, with no persistent history or telemetry. Catalog order remains available.
+
+More filters is a native disclosure. Desktop filters scroll within a bounded portion of the rail; mobile retains sheet scrolling and expansion. Unknown character/space classifications are offered explicitly. Historic/contemporary and interior/exterior options reflect literal catalog descriptions, not visual inspection, architectural dating or verified coverage. Public hours means reported hours, never availability. Completeness counts unresolved core descriptions, never suitability or readiness. All current records have unresolved fields.
+
+Nearby pins within 44 screen pixels of a group's anchor use the existing ordered group expansion. Groups recompute after zoom/resize, retain eligible IDs and selection, and release listeners on disposal. A group anchor is a presentation point at its first member; selecting a member focuses its real catalog coordinate. Groups do not establish a shared property or capture. Exact-position fallback remains when projection is unavailable.
+
+Dossiers expose overview; production considerations; visual/spatial character; immersive coverage; access; evidence/sources; project context; and public sharing. Open in Immersive stays near the title for current captures. Source disclosures merge location and scout-detail IDs and show publisher, type, access date, supported facts and authority limitations. Private source documents have no links. Missing reference photos, dimensions and observation metadata remain explicit. Public URL copying strips queries and workspace context; unavailable/rejected clipboard access leaves selectable text and visible recovery.
+
+### D068 assessment placement contract (Phase 3 delivery)
+
+The dossier's Project context section, after public evidence and before Share location, is the insertion point for the active project's candidate and assessment summaries. The current informational boundary remains useful by itself; no placeholder checklist button or invented empty assessment count is rendered.
+
+When Phase 3 delivers the shared editor, show the active project name and existing candidate status separately from catalog capture/research badges. Resolve summaries by both projectId and locationId; show assessment title/room, source kind, observation date, revision, answered count, not-applicable count and unresolved count. Never use completion as suitability or permission. Each summary opens the same editor as Projects with stable assessment ID; a working Scouting checklist action creates an assessment only after a project/candidate context exists. No project: the working action selects/creates project and candidate first. Preserve selected location, filters, scroll and trigger focus when returning.
+
+Assessment edits write only workspace records and immutable revisions through the repository. Public source/geometry/coverage fields above remain read-only. A public location link never includes project, assessment, answer or media identifiers. Phase 2 supplies capability-aware bookmark evidence; the Phase 3 editor must remain usable without the provider. Candidate comparison and create/open shot actions remain Phase 3/4 integrations, not inert Phase 1 controls. Tests 206-215 remain delivery gates for those phases; test 216 verifies this preparation boundary now.
+
+### Verification
+
+See FULL-SYSTEM-TESTING.md, D069 execution. Automated evidence is separate from unavailable browser presentation checks. The previous owner-reported D067 results do not certify this changed build. No Phase 1 completion is claimed.
+
+## D070 - approved panel and cluster polish, 2026-09-21
+
+Supersedes the desktop grid-reserved-map description above. Explore keeps one rounded floating rail while the map now spans behind it, removing the full-height rectangular backing. Camera fits reserve the actual visible panel width; observing the rail catches collapse/restore even when the full map container width stays constant. Mobile retains its reserved half/expanded sheet. Names use a full-width wrapping first row; ID/capture appear below, then research status. Other modes are unchanged.
+
+Group badges are circular 44px targets displaying a count. Title/focus label supplies context. Click/Enter/Space fits the group's bounds with a 550ms transition (zero with reduced motion), max zoom 19 bounded by map capability, current pitch/bearing and panel-aware padding. Hover/focus/ArrowDown still exposes individual members. Groups that remain coincident keep their expanded member controls after regrouping. Group navigation cancels pending individual camera focus without changing the selected catalog ID or filter state. Recenter returns to the current filtered inventory.
+
+Source provenance: D070. Automated tests 218 and Part C/J; live painting, touch, popup edges, contrast and browser camera animation remain BLOCKED pending owner retest.
