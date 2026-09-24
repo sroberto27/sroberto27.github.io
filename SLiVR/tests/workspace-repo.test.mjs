@@ -33,6 +33,7 @@ test("the workspace schema declares exactly the approved stores", () => {
     "projects",
     "scenes",
     "candidates",
+    "scoutAssessments", "scoutAssessmentRevisions", "scoutMedia",
     "bookmarks",
     "shotScenes",
     "sceneObjects",
@@ -77,7 +78,7 @@ test("opening creates only the declared database, stores and indexes", async () 
 
   assert.deepEqual([...fake.databases.keys()], ["slivr-workspace"]);
   const db = fake.databases.get("slivr-workspace");
-  assert.equal(db.version, 1);
+  assert.equal(db.version, 2);
   assert.deepEqual([...db._stores.keys()], Object.keys(WORKSPACE_STORES));
   for (const [name, definition] of Object.entries(WORKSPACE_STORES)) {
     assert.deepEqual(
@@ -170,7 +171,7 @@ test("the session record names the schema, catalog and build", async () => {
     appVersion: "0.2.0",
     openedAt: "2026-09-20T00:00:00Z",
   });
-  assert.equal(await repo.getMeta("schemaVersion"), 1);
+  assert.equal(await repo.getMeta("schemaVersion"), 2);
   assert.equal(await repo.getMeta("catalogVersion"), "1.0.0");
   assert.equal(await repo.getMeta("appVersion"), "0.2.0");
   assert.equal(await repo.getMeta("lastOpened"), "2026-09-20T00:00:00Z");

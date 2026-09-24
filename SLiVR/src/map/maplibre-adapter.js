@@ -46,7 +46,7 @@ export const MAP_ERROR_CODES = Object.freeze({
  * @param {boolean|string} [options.webgl] Capability as reported by `app/capabilities.js`.
  * @param {boolean} [options.compact] Compact interactive context with externally supplied controls.
  */
-export function createMapAdapter({ container, region, maplibre, onEvent = null, webgl = true, runtimeConfig = null, compact = false }) {
+export function createMapAdapter({ container, region, maplibre, onEvent = null, webgl = true, runtimeConfig = null, compact = false, initialCamera = null }) {
   const failover = createImageryFailover({
     region,
     onChange: (status) => emit({ type: "imagery-changed", status }),
@@ -74,6 +74,8 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
   let focusedLocationId = null;
   let focusedGroup = null;
   let focusGeneration = 0;
+  const savedCamera = !compact && validCamera(initialCamera) ? initialCamera : null;
+  let retainCamera = Boolean(savedCamera);
   const referenceSource = "slivr-reference-source";
   const referenceLayer = "slivr-reference-layer";
 
@@ -114,6 +116,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
   function focusLocation(locationId) {
     const location = locations.find(item => item.id === locationId);
     if (!map || disposed || !location) return;
+    retainCamera = false;
     focusedLocationId = locationId;
     focusedGroup = null;
     const generation = ++focusGeneration;
@@ -134,6 +137,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
   }
 
   function recenter() {
+    retainCamera = false;
     focusedLocationId = null;
     focusedGroup = null;
     focusGeneration++;
@@ -155,6 +159,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
   function focusGroup(members, animate = true) {
     const bounds = locationBounds(members);
     if (!map || disposed || !bounds) return;
+    retainCamera = false;
     focusedLocationId = null;
     focusedGroup = members;
     focusGeneration++;
@@ -165,7 +170,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
   }
 
   function fitInventory() {
-    if (!map || disposed || !inventoryBounds) return;
+    if (!map || disposed || !inventoryBounds || retainCamera) return;
     const width = container.clientWidth;
     const height = container.clientHeight;
     if (!(width > 0 && height > 0)) return;
@@ -225,6 +230,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
         maxZoom: source?.maxZoom ?? 20,
         attributionControl: { compact: false },
         ...(compact ? { interactive: true, bearing: 0, pitch: 0 } : {}),
+        ...(savedCamera ? { bounds: undefined, ...savedCamera } : {}),
       });
     } catch (cause) {
       return failure(MAP_ERROR_CODES.initFailed, `The map could not be created: ${cause.message}`);
@@ -420,6 +426,16 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
     return { ok: false, error: { code, message } };
   }
 
+  function getCamera() {
+    if (!map || disposed) return null;
+    try {
+      const center = map.getCenter();
+      const camera = { center: [center.lng, center.lat], zoom: map.getZoom(),
+        bearing: map.getBearing(), pitch: map.getPitch() };
+      return validCamera(camera) ? camera : null;
+    } catch { return null; }
+  }
+
   /** Releases the WebGL context and every listener. */
   function dispose() {
     disposed = true;
@@ -442,6 +458,7 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
   return {
     create,
     dispose,
+    getCamera,
     get map() {
       return map;
     },
@@ -465,6 +482,8 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
       markers.setLocations(locations);
       const nextKey = JSON.stringify(locations.map(location => [location.id, location.position]));
       if (nextKey !== inventoryKey) {
+        // The first inventory belongs to the restored view; later filter changes refit.
+        if (inventoryKey !== null) retainCamera = false;
         inventoryKey = nextKey;
         inventoryBounds = locationBounds(locations);
         focusedGroup = null;
@@ -499,4 +518,11 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
       return status;
     },
   };
+}
+
+function validCamera(camera) {
+  return Array.isArray(camera?.center) && camera.center.length === 2
+    && [...camera.center, camera.zoom, camera.bearing, camera.pitch].every(Number.isFinite)
+    && Math.abs(camera.center[1]) <= 90 && camera.zoom >= 0
+    && camera.pitch >= 0 && camera.pitch <= 85;
 }

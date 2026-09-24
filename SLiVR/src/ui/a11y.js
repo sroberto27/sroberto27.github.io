@@ -57,6 +57,8 @@ export function createFocusTrap({ container, onEscape = null, doc = globalThis.d
   const previouslyFocused = doc?.activeElement ?? null;
 
   function onKeyDown(event) {
+    if (doc?.querySelector?.(".pano-viewer-overlay") && !container?.classList?.contains("pano-viewer-overlay")) return;
+    if (doc?.querySelector?.("dialog[open]") && !container?.matches?.("dialog[open]")) return;
     if (event.key === "Escape" && onEscape) {
       event.preventDefault();
       onEscape();

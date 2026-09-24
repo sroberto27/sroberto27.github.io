@@ -29,9 +29,12 @@ export const WORKSPACE_ID_PREFIXES = Object.freeze({
   shot: "shot",
   variant: "var",
   asset: "ast",
+  assessment: "sca",
+  assessmentRevision: "scr",
+  scoutMedia: "scm",
 });
 
-const WORKSPACE_ID_PATTERN = /^(prj|scn|cnd|bkm|sht|obj|pth|shot|var|ast)_[0-9a-f-]{36}$/;
+const WORKSPACE_ID_PATTERN = /^(prj|scn|cnd|bkm|sht|obj|pth|shot|var|ast|sca|scr|scm)_[0-9a-f-]{36}$/;
 
 export function isCatalogId(kind, value) {
   const pattern = CATALOG_ID_PATTERNS[kind];

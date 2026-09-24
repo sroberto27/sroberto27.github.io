@@ -145,6 +145,7 @@ class FakeObjectStore {
   delete(key) {
     const request = new FakeRequest();
     this._transaction._enqueue(request, () => {
+      if (this._transaction.db._failWrites) throw new Error("simulated write failure");
       if (this._transaction.mode === "readonly") {
         throw new Error("a delete was attempted in a readonly transaction");
       }

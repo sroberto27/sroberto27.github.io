@@ -6,13 +6,13 @@
  * version decides whether another build will accept an exported file.
  */
 
-export const APP_VERSION = "0.2.0";
+export const APP_VERSION = "0.3.7";
 
 /** Envelope version written by the exporter and checked by the importer. */
-export const TRANSFER_SCHEMA_VERSION = "1.0.0";
+export const TRANSFER_SCHEMA_VERSION = "1.3.0";
 
 /** IndexedDB version. Must agree with region config `storage.databaseVersion`. */
-export const WORKSPACE_SCHEMA_VERSION = 1;
+export const WORKSPACE_SCHEMA_VERSION = 2;
 
 /** Parses a dotted version, or null when it is not one. */
 export function parseVersion(value) {

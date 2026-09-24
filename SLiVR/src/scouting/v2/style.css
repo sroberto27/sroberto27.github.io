@@ -1,0 +1,913 @@
+/* ===================== THEME TOKENS ===================== */
+:root {
+  --brand: #AD1D28;
+  --brand-hover: #8A151F;
+  --brand-light: #fbe9ea;
+
+  --bg: #f2f4f7;
+  --surface: #ffffff;
+  --surface-alt: #f8f9fb;
+  --border: #e3e6ec;
+  --text: #1f2430;
+  --text-muted: #667085;
+  --text-faint: #98a2b3;
+
+  --success: #17a34a;
+  --warn: #d97706;
+  --danger: #dc2626;
+
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, .06);
+  --shadow-md: 0 4px 16px rgba(16, 24, 40, .08);
+  --shadow-lg: 0 12px 32px rgba(16, 24, 40, .14);
+
+  --radius: 12px;
+  --radius-sm: 8px;
+  --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+:root[data-theme="dark"] {
+  --bg: #14161c;
+  --surface: #1c1f28;
+  --surface-alt: #22252f;
+  --border: #313543;
+  --text: #eef0f4;
+  --text-muted: #a3a9b8;
+  --text-faint: #6b7280;
+  --brand-light: #3a1418;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .3);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, .35);
+  --shadow-lg: 0 12px 32px rgba(0, 0, 0, .5);
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+/* Guards every future `display:` rule against the classic [hidden] pitfall:
+   any class selector with the same specificity as the UA [hidden] rule can
+   silently defeat el.hidden = true. Keep this !important. */
+[hidden] { display: none !important; }
+
+html {
+  scroll-behavior: smooth;
+  --sticky-offset: 150px; /* JS measures the real topbar+toolbar height and overrides this */
+}
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden; /* safety net: nothing should ever force horizontal scroll on the page */
+}
+
+body.no-scroll { overflow: hidden; height: 100%; }
+
+section[data-section] { scroll-margin-top: calc(var(--sticky-offset) + 16px); }
+
+button, .tbtn, .icon-btn, .chip, .switch, a {
+  touch-action: manipulation; /* removes the ~300ms tap delay and stops double-tap zoom on repeated taps (e.g. counters) */
+}
+
+/* ===================== TOP BAR ===================== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: linear-gradient(135deg, var(--brand), var(--brand-hover));
+  color: #fff;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: var(--shadow-md);
+}
+
+.topbar-brand, .topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0; /* lets brand-title truncate instead of pushing the bar wider than the screen */
+}
+/* Which side gives way when the bar is short of room, stated explicitly
+   rather than left to the flex defaults.
+
+   Both sides default to `flex: 0 1 auto`, so both shrink in proportion to
+   their content. That is wrong here, because everything inside
+   .topbar-actions is flex-shrink: 0 — shrinking the container does not
+   shrink its contents, it just makes them spill out of it. The symptom
+   was the theme toggle having a few pixels clipped off its right edge at
+   some widths, which reads as a rendering glitch rather than as a layout
+   that ran out of room.
+
+   The brand side absorbs the squeeze instead: it holds the one thing in
+   the bar that is designed to give way, the ellipsised title. */
+.topbar-brand { flex: 1 1 auto; }
+.topbar-actions { flex: 0 0 auto; }
+
+.brand-title { min-width: 0; }
+.brand-title h1 { min-width: 0; }
+.brand-title-text, .brand-subtitle {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+}
+
+/* ===================== PARTNER BANNER =====================
+   One slot, three marks, cross-fading. Side by side they were about 300 px
+   of a 412 px phone screen and could not shrink, which is what pushed the
+   document wider than the display; this shows all three in ~104 px.
+
+   The white chip is what makes it work for all three rather than for two:
+   the LED mark is dark blue and black type, which is legible on white and
+   marginal on the brand red the bar is painted with.
+
+   object-fit: contain rather than a fixed height, because the three have
+   very different proportions -- 2.98, 1.90 and 5.19 to 1. Contain fits
+   each inside the same box on its own terms, so the widest one scales down
+   instead of setting the slot's width for everybody. */
+.brand-banner {
+  position: relative;
+  flex-shrink: 0;
+  width: 132px;
+  height: 38px;
+  background: #fff;
+  border-radius: 4px;
+  padding: 3px;
+  overflow: hidden;
+}
+.brand-slide {
+  position: absolute;
+  inset: 3px;
+  width: calc(100% - 6px);
+  height: calc(100% - 6px);
+  object-fit: contain;
+  opacity: 0;
+  transition: opacity .55s ease;
+}
+.brand-slide.is-active { opacity: 1; }
+/* The rotation still happens -- it is a credit, not decoration, and all
+   three partners should appear -- but it swaps instead of fading. */
+@media (prefers-reduced-motion: reduce) {
+  .brand-slide { transition: none; }
+}
+
+.brand-title h1 {
+  font-size: 19px;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+}
+
+.brand-subtitle {
+  font-size: 12px;
+  opacity: .85;
+  font-weight: 500;
+}
+
+.icon-btn {
+  background: rgba(255, 255, 255, .15);
+  border: none;
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  transition: background .2s;
+}
+
+.icon-btn:hover, .icon-btn:active { background: rgba(255, 255, 255, .3); }
+
+.only-mobile { display: none; }
+
+/* ===================== TOOLBAR ===================== */
+.toolbar {
+  position: sticky;
+  /* Measured from the real element rather than hard-coded. The header's
+     height moves with the breakpoint, the banner size and the title
+     wrapping, and a stale constant here shows up as the toolbar either
+     overlapping the header or floating below a gap. app.js keeps
+     --topbar-h in step with a ResizeObserver; the fallback is the desktop
+     height, for the moment before the first measurement lands. */
+  top: var(--topbar-h, 62px);
+  z-index: 35;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.toolbar-row { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.toolbar-row--main { justify-content: space-between; }
+.toolbar-row--status { margin-top: 8px; justify-content: space-between; }
+
+.location-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--brand);
+  font-weight: 600;
+}
+
+.location-picker select {
+  min-width: 220px;
+}
+
+.toolbar-btns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.tbtn-sep { width: 1px; height: 24px; background: var(--border); margin: 0 4px; }
+
+.tbtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+  font-family: var(--font);
+}
+
+.tbtn:hover, .tbtn:active { background: var(--border); }
+.tbtn:hover { transform: translateY(-1px); }
+.tbtn:disabled { opacity: .4; cursor: not-allowed; }
+.tbtn:disabled:hover { background: var(--surface-alt); transform: none; }
+.tbtn--sm { padding: 6px 10px; font-size: 12.5px; min-height: 40px; }
+.tbtn--block { width: 100%; justify-content: center; }
+.tbtn--primary { background: var(--brand); border-color: var(--brand); color: #fff; }
+.tbtn--primary:hover, .tbtn--primary:active { background: var(--brand-hover); }
+.tbtn--danger { color: var(--danger); }
+.tbtn--danger:hover, .tbtn--danger:active { background: #fdeaea; border-color: #f3b9b9; }
+:root[data-theme="dark"] .tbtn--danger:hover, :root[data-theme="dark"] .tbtn--danger:active { background: #3a1a1a; border-color: #5c2626; }
+
+.save-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--success);
+  font-weight: 600;
+}
+.save-status.unsaved { color: var(--warn); }
+.save-status.error { color: var(--danger); }
+
+.progress-wrap { display: flex; align-items: center; gap: 10px; min-width: 220px; }
+.progress-track {
+  width: 160px;
+  height: 8px;
+  border-radius: 8px;
+  background: var(--border);
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, var(--brand), #e0555f);
+  border-radius: 8px;
+  transition: width .35s ease;
+}
+.progress-label { font-size: 12.5px; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+
+/* ===================== SHELL LAYOUT ===================== */
+.app-shell {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  max-width: 1300px;
+  margin: 0 auto;
+  gap: 24px;
+  padding: 24px 20px 80px;
+  align-items: start;
+}
+
+.sidenav {
+  position: sticky;
+  top: calc(var(--sticky-offset) + 8px);
+  max-height: calc(100vh - var(--sticky-offset) - 28px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.overview-card {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+}
+
+.overview-title { font-weight: 700; font-size: 13px; margin-bottom: 10px; color: var(--text); }
+.mini-label { display: block; font-size: 11.5px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-faint); font-weight: 700; margin: 10px 0 6px; }
+
+.status-select { width: 100%; }
+
+.star-rating { display: flex; gap: 2px; }
+.star {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 20px;
+  color: var(--border);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.star.active { color: #f5a623; }
+
+.section-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+
+.section-list li a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: var(--text-muted);
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: background .15s, color .15s;
+}
+
+.section-list li a:hover { background: var(--surface-alt); color: var(--text); }
+.section-list li a.active { background: var(--brand-light); color: var(--brand); }
+
+.section-list .snum {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  flex-shrink: 0;
+}
+
+.section-list li a.active .snum { background: var(--brand); color: #fff; }
+.section-list li a.complete .snum { background: var(--success); color: #fff; }
+.section-list li a.complete .snum::before { content: "\f00c"; font-family: "Font Awesome 6 Free"; font-weight: 900; }
+
+.section-list .sname { flex: 1; }
+.section-list .sfrac { font-size: 11px; color: var(--text-faint); font-weight: 700; }
+
+.sidenav-footer { border-top: 1px solid var(--border); padding-top: 12px; }
+.sidenav-backdrop { display: none; }
+
+/* ===================== FORM CARDS ===================== */
+.content { min-width: 0; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 26px 28px;
+  margin-bottom: 22px;
+}
+
+.card h2 {
+  font-size: 18px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 20px;
+  color: var(--text);
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.card h2 i { color: var(--brand); }
+
+.sec-num {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: var(--brand-light);
+  color: var(--brand);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.grid { display: grid; gap: 18px; margin-bottom: 4px; }
+.grid-2 { grid-template-columns: 1fr 1fr; }
+
+.field { margin-bottom: 18px; }
+.field:last-child { margin-bottom: 0; }
+
+label { display: block; font-weight: 600; font-size: 13.5px; margin-bottom: 7px; color: var(--text); }
+.group-label { font-weight: 700; margin-bottom: 10px; }
+
+input[type="text"], input[type="date"], input[type="number"], select, textarea {
+  width: 100%;
+  padding: 11px 13px;
+  /* 16px minimum stops iOS Safari from auto-zooming the page on focus */
+  font-size: 16px;
+  font-family: var(--font);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  transition: border-color .15s, box-shadow .15s;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+textarea { resize: vertical; min-height: 44px; }
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px var(--brand-light);
+}
+
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath fill='%23667085' d='M0 0l6 8 6-8z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 34px;
+}
+
+/* Field + inline action button (geolocation / compass) */
+.input-with-btn { display: flex; gap: 8px; align-items: stretch; }
+.input-with-btn input, .input-with-btn select { flex: 1; min-width: 0; }
+.input-with-btn .tbtn--sm { flex-shrink: 0; padding: 0 14px; }
+
+.mobile-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 7px;
+  line-height: 1.4;
+}
+.mobile-hint a { color: var(--brand); font-weight: 700; text-decoration: none; }
+.mobile-hint a:hover { text-decoration: underline; }
+
+/* Toggle switches */
+.switch-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  gap: 12px;
+  margin-bottom: 0;
+}
+.switch-row--field {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+.switch-row span:first-child { font-weight: 600; font-size: 13.5px; }
+
+.switch { position: relative; display: inline-block; width: 44px; height: 25px; flex-shrink: 0; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+  position: absolute; inset: 0; cursor: pointer;
+  background: var(--border); border-radius: 34px; transition: .2s;
+}
+.slider::before {
+  content: ""; position: absolute; height: 19px; width: 19px; left: 3px; bottom: 3px;
+  background: #fff; border-radius: 50%; transition: .2s; box-shadow: var(--shadow-sm);
+}
+.switch input:checked + .slider { background: var(--brand); }
+.switch input:checked + .slider::before { transform: translateX(19px); }
+.switch input:focus-visible + .slider { box-shadow: 0 0 0 3px var(--brand-light); }
+
+/* Counters */
+.counter { display: inline-flex; align-items: center; gap: 0; border: 1.5px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.counter input[type="number"] {
+  width: 56px; padding: 11px 4px; text-align: center; border: none; border-left: 1.5px solid var(--border); border-right: 1.5px solid var(--border);
+  border-radius: 0; -moz-appearance: textfield;
+}
+.counter input[type="number"]::-webkit-outer-spin-button, .counter input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.counter-btn {
+  background: var(--surface-alt); border: none; color: var(--brand); width: 44px; height: 44px; cursor: pointer; font-size: 13px; transition: background .15s; flex-shrink: 0;
+}
+.counter-btn:hover, .counter-btn:active { background: var(--brand-light); }
+
+/* Chips (checkbox groups) */
+.chip-group { display: flex; flex-wrap: wrap; gap: 10px; }
+.chip {
+  display: flex; align-items: center; gap: 8px; padding: 9px 14px; border: 1.5px solid var(--border);
+  border-radius: 30px; cursor: pointer; font-size: 13.5px; font-weight: 600; background: var(--surface-alt); transition: all .15s;
+}
+.chip input { accent-color: var(--brand); width: 16px; height: 16px; cursor: pointer; }
+.chip:has(input:checked) { background: var(--brand-light); border-color: var(--brand); color: var(--brand); }
+
+/* Photo docs */
+.doc-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.doc-card { background: var(--surface-alt); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; }
+.photo-tools { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+.photo-strip { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.photo-thumb { position: relative; width: 64px; height: 64px; border-radius: 6px; overflow: hidden; border: 1px solid var(--border); margin: 6px 6px 0 0; }
+.photo-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-thumb-broken {
+  width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+  background: var(--surface); color: var(--text-faint); font-size: 18px;
+}
+.photo-thumb .rm {
+  position: absolute; top: -6px; right: -6px; background: var(--danger); color: #fff; border: 2px solid var(--surface); border-radius: 50%; width: 26px; height: 26px;
+  font-size: 11px; cursor: pointer; line-height: 1;
+}
+
+/* Video attachment card */
+.video-attachment { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.media-attach-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; }
+.media-attach-info { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--text); }
+.media-attach-info i { color: var(--brand); }
+.media-attach-meta { color: var(--text-faint); font-weight: 500; font-size: 11.5px; }
+.media-attach-actions { display: flex; gap: 8px; margin-top: 8px; }
+.media-attach-preview { width: 100%; margin-top: 10px; border-radius: 6px; max-height: 240px; }
+
+/* 360 panorama card */
+.pano-strip { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.pano-card { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+.pano-thumb { width: 100%; aspect-ratio: 2 / 1; object-fit: cover; display: block; background: var(--border); }
+.pano-card .photo-thumb-broken { width: 100%; aspect-ratio: 2 / 1; }
+.pano-card-actions { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px; }
+.link-btn { background: none; border: none; color: var(--brand); font-weight: 700; cursor: pointer; padding: 0; font-size: inherit; text-decoration: underline; }
+
+/* ===================== BOTTOM ACTIONS ===================== */
+.bottom-actions { display: flex; justify-content: center; gap: 12px; flex-wrap: wrap; padding: 10px 0 30px; }
+
+/* ===================== MODAL ===================== */
+.modal-backdrop {
+  position: fixed; inset: 0; background: rgba(15, 17, 22, .55); display: none;
+  align-items: center; justify-content: center; z-index: 100; padding: 20px;
+}
+.modal-backdrop.open { display: flex; }
+.modal {
+  background: var(--surface); border-radius: var(--radius); padding: 24px; max-width: 380px; width: 100%;
+  box-shadow: var(--shadow-lg); border: 1px solid var(--border);
+}
+.modal h3 { margin: 0 0 10px; font-size: 17px; }
+.modal p { margin: 0 0 14px; color: var(--text-muted); font-size: 14px; line-height: 1.5; }
+.modal-input-wrap { display: none; margin-bottom: 16px; }
+.modal-input-wrap.open { display: block; }
+.modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
+
+/* ===================== TOASTS ===================== */
+/* Above every full-screen overlay (capture360-overlay / pano-viewer-overlay,
+   both z-index 300) — was previously 200, which silently hid every toast
+   fired during 360 capture (camera-interrupted, capture-failed,
+   storage-full) behind the overlay itself. */
+.toast-stack { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; gap: 10px; z-index: 350; }
+.toast {
+  background: var(--surface); color: var(--text); border: 1px solid var(--border); border-left: 4px solid var(--brand);
+  padding: 12px 16px; border-radius: var(--radius-sm); box-shadow: var(--shadow-lg); font-size: 13.5px; font-weight: 600;
+  min-width: 220px; animation: toastIn .25s ease;
+}
+.toast.success { border-left-color: var(--success); }
+.toast.error { border-left-color: var(--danger); }
+@keyframes toastIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+/* ===================== EXPORT MODAL ===================== */
+.export-options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 6px; }
+.export-option-note { font-weight: 500; color: var(--text-faint); font-size: 11.5px; }
+.export-status { min-height: 18px; font-size: 12.5px; color: var(--text-muted); font-weight: 600; margin-top: 4px; }
+
+/* ===================== 360 PANORAMA VIEWER ===================== */
+.pano-viewer-overlay {
+  position: fixed; inset: 0; z-index: 300; background: #000;
+  display: flex; flex-direction: column;
+}
+.pano-viewer-topbar {
+  display: flex; align-items: center; justify-content: space-between; padding: 10px 14px;
+  background: rgba(0, 0, 0, .55); color: #fff; z-index: 2;
+}
+.pano-viewer-title { font-weight: 700; font-size: 14px; }
+.pano-viewer-stage { position: relative; flex: 1; overflow: hidden; }
+.pano-viewer-canvas { width: 100%; height: 100%; display: block; touch-action: none; cursor: grab; }
+.pano-viewer-canvas:active { cursor: grabbing; }
+.pano-viewer-hint {
+  position: absolute; bottom: 14px; left: 0; right: 0; text-align: center; color: rgba(255, 255, 255, .8);
+  font-size: 12.5px; font-weight: 600; pointer-events: none;
+}
+.pano-viewer-fallback-img { max-width: 100%; max-height: 100%; display: block; margin: 0 auto; }
+.pano-viewer-fallback-note { color: #fff; text-align: center; padding: 14px; font-size: 13px; }
+
+/* ===================== GUIDED 360 CAPTURE ===================== */
+.capture360-overlay { position: fixed; inset: 0; z-index: 300; background: #000; overflow: hidden; }
+.c360-video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.c360-scrim, .c360-error, .c360-stitching {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 12px; color: #fff; background: rgba(0, 0, 0, .55); text-align: center; padding: 24px;
+}
+.c360-scrim i, .c360-error i, .c360-stitching i { font-size: 28px; }
+.c360-error-msg { max-width: 320px; font-size: 14px; }
+.c360-hud { position: absolute; inset: 0; }
+.c360-topbar {
+  position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between;
+  gap: 8px; flex-wrap: wrap; padding: 14px; background: linear-gradient(rgba(0, 0, 0, .55), transparent);
+}
+.c360-counter { color: #fff; font-weight: 700; font-size: 14px; text-shadow: 0 1px 3px rgba(0, 0, 0, .6); }
+.c360-enhance {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: #fff; font-size: 13px; font-weight: 600;
+  padding: 5px 10px; border-radius: 999px;
+  background: rgba(0, 0, 0, .45); border: 1px solid rgba(255, 255, 255, .22);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, .6); cursor: pointer; user-select: none;
+}
+.c360-enhance-input, .c360-sequence-input { accent-color: #f5a623; width: 15px; height: 15px; margin: 0; }
+/* The top bar carries four controls on a phone-width screen, so it wraps
+   (see .c360-topbar) and the pills have to stay readable at the smaller
+   size rather than relying on there being room for all of them in a row. */
+.c360-sequence { white-space: nowrap; }
+/* Blend-mode picker, styled to read as a sibling of the Enhance pill rather
+   than as a form control — the top bar is already full and a default
+   <select> chrome would dominate it. */
+.c360-blend {
+  display: inline-flex; align-items: center;
+  border-radius: 999px; background: rgba(0, 0, 0, .45);
+  border: 1px solid rgba(255, 255, 255, .22);
+}
+.c360-blend-input {
+  appearance: none; -webkit-appearance: none;
+  background: transparent; border: 0; color: #fff;
+  font-size: 13px; font-weight: 600; font-family: inherit;
+  padding: 5px 10px; cursor: pointer;
+}
+.c360-blend-input option { color: #111; background: #fff; }
+/* Two stacked overlays over the live video, in this order:
+
+   .c360-gl      the live 3D capture sphere (capture-sphere.js) — the dim
+                 mask with its aiming peephole, a faint wireframe globe,
+                 and every photo taken so far pasted onto it at the pose
+                 it was shot at. Absent on devices without WebGL, where
+                 drawFrame() paints the mask and flat patches on the 2D
+                 canvas below instead.
+   .c360-canvas  the reticle ring, the active target marker and the
+                 off-screen arrow. Always on top, in both paths, so a
+                 patch can never hide the thing the user aims with.
+
+   Both are canvases rather than DOM elements because everything on them is
+   world-locked and repainted every frame as the device rotates. */
+.c360-gl { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.c360-canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.c360-instruction {
+  position: absolute; top: 63%; left: 0; right: 0; text-align: center; color: #fff;
+  font-weight: 700; font-size: 14px; text-shadow: 0 1px 3px rgba(0, 0, 0, .7); padding: 0 20px;
+}
+.c360-progress-track { position: absolute; bottom: 108px; left: 20px; right: 20px; height: 6px; border-radius: 6px; background: rgba(255, 255, 255, .25); overflow: hidden; }
+.c360-progress-fill { height: 100%; width: 0; background: var(--brand); border-radius: 6px; transition: width .2s; }
+/* Secondary row above the shutter: the .zip export, which is a developer/
+   research affordance rather than part of the capture flow, so it sits
+   apart from Retake / Capture / Generate. */
+.c360-utility { position: absolute; bottom: 72px; left: 0; right: 0; display: flex; justify-content: center; }
+.c360-savezip { background: rgba(0, 0, 0, .5); border: 1px solid rgba(255, 255, 255, .28); color: #fff; }
+.c360-controls { position: absolute; bottom: 20px; left: 0; right: 0; display: flex; justify-content: center; align-items: center; gap: 10px; padding: 0 12px; }
+/* Capture stays the widest and centred; Retake and Generate flank it at
+   equal width so the shutter does not shift sideways as they appear. */
+.c360-capture { min-width: 132px; justify-content: center; }
+.c360-retake, .c360-finish { min-width: 104px; justify-content: center; }
+.c360-retake { background: rgba(0, 0, 0, .5); border: 1px solid rgba(255, 255, 255, .28); color: #fff; }
+.c360-finish { background: #f5a623; border: 1px solid #f5a623; color: #241a05; font-weight: 700; }
+.c360-retake[disabled], .c360-savezip[disabled] { opacity: .5; }
+@media (max-width: 380px) {
+  .c360-capture { min-width: 104px; }
+  .c360-retake, .c360-finish { min-width: 84px; font-size: 12px; }
+}
+.c360-stitch-stage { font-size: 14px; font-weight: 700; }
+.c360-stitching .c360-progress-track { position: static; width: 240px; }
+
+/* ===================== RESPONSIVE ===================== */
+/* Tablets in portrait get the width back once the sidebar becomes a drawer,
+   so photo docs and location logos get a real 2-up layout instead of stacking full-width. */
+@media (min-width: 560px) and (max-width: 980px) {
+  .doc-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 980px) {
+  .app-shell { grid-template-columns: 1fr; }
+  .only-mobile { display: flex; }
+  .sidenav {
+    position: fixed; top: 0; left: 0; z-index: 90;
+    height: 100vh; max-height: 100vh; /* fallback for browsers without dvh support */
+    height: 100dvh; max-height: 100dvh; /* real visible height, ignores the address-bar show/hide jump on iOS/Android */
+    width: min(280px, 85vw);
+    transform: translateX(-100%); transition: transform .25s ease; border-radius: 0;
+  }
+  .sidenav.open { transform: translateX(0); }
+  .sidenav-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 80; }
+  .sidenav-backdrop.open { display: block; }
+}
+
+/* Narrow phones only — tablets keep the 2-up doc-grid from the rule above */
+@media (max-width: 559px) {
+  .doc-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  .topbar { padding: 10px 14px; gap: 8px; }
+  .topbar-brand, .topbar-actions { gap: 8px; }
+  .brand-subtitle { display: none; }
+  .brand-title h1 { font-size: 15px; }
+  .brand-banner { width: 112px; height: 30px; }
+  /* No `top` here. It is var(--topbar-h), measured from the real
+     element — a constant would be wrong the moment the header reflows,
+     and at this breakpoint the header is 64px, so the 58px that used
+     to be here hid 6px of it behind the toolbar on scroll. */
+  .toolbar { padding: 10px 14px; }
+  .toolbar-row--main { flex-direction: column; align-items: stretch; }
+  .location-picker select { flex: 1; min-width: 0; }
+  .toolbar-btns { gap: 6px; }
+  .toolbar-btns span { display: none; }
+  .toolbar-btns .tbtn { padding: 10px; min-width: 40px; min-height: 40px; justify-content: center; }
+  .toolbar-row--status { flex-direction: column; align-items: stretch; gap: 8px; }
+  .progress-wrap { width: 100%; }
+  .progress-track { flex: 1; }
+  .grid-2 { grid-template-columns: 1fr; }
+  .card { padding: 20px 16px; }
+  .app-shell { padding: 16px 14px 60px; }
+  .input-with-btn .tbtn--sm { min-width: 44px; padding: 0 12px; }
+  .bottom-actions .tbtn { flex: 1 1 45%; justify-content: center; }
+}
+
+
+/* ===================== TOP BAR OVERFLOW ON PHONES =====================
+   The top bar carries a hamburger, three institutional logos, the app
+   title and two or three buttons. Every one of those except the title is
+   flex-shrink: 0, deliberately, so a squeeze cannot distort a logo's
+   aspect ratio — which means that when the bar runs out of room it does
+   not compress, it pushes the DOCUMENT wider than the screen. The whole
+   page then renders at the wider width and the browser lets you pan, so
+   the app appears to sit in a column with dead space beside it and has to
+   be pinch-zoomed out to read.
+
+   Measured on a 412 px phone before this was addressed: the bar needed
+   477 px against a 397 px viewport, an 80 px overflow. The three partner
+   marks side by side were most of it, and the LED wordmark alone was
+   156 px — 40% of the screen — with no ability to shrink.
+
+   Most of that is now structural rather than a breakpoint: the marks
+   share one cross-fading slot (see .brand-banner) and the Install and
+   theme controls moved out of the bar entirely, into the toolbar row
+   below it. What is left here is sizing that slot down as the screen
+   narrows. */
+@media (max-width: 430px) {
+  .brand-banner { width: 96px; height: 26px; }
+  .topbar { padding: 10px; }
+}
+@media (max-width: 400px) {
+  /* Smallest phones still in use — an iPhone SE is 375 CSS px. */
+  .brand-banner { width: 84px; height: 24px; }
+  .topbar { padding: 10px 8px; }
+}
+/* Last-resort guard. Everything above stops the bar overflowing on the
+   sizes that exist today; this stops a future addition to the bar from
+   silently widening the whole document again, which is a failure that
+   shows up as "the app does not fit the screen" rather than as anything
+   obviously to do with the top bar. */
+.topbar { overflow: hidden; }
+
+
+/* On a phone the toolbar is not sticky. Measured at 412 px it is about
+   200 px tall — a location picker, two wrapped rows of icon buttons and a
+   status row — and pinning that under a 64 px header leaves a third of the
+   screen permanently spent on chrome, on the device where screen is
+   scarcest. The header stays pinned because it carries the section menu;
+   the toolbar's actions are ones you reach for deliberately, so scrolling
+   to the top for them is a fair trade for a third of the viewport.
+
+   app.js reads the computed position rather than assuming, so
+   --sticky-offset (which scroll-margin uses to land section anchors below
+   the chrome) stays right in both modes. */
+@media (max-width: 720px) {
+  .toolbar { position: static; }
+}
+
+/* ===================== MOBILE ERGONOMICS =====================
+   The phone is a primary device for this app, not a fallback: it is used
+   standing in a room being scouted, one-handed, often in bad light.
+
+   TAP TARGETS. The toolbar collapses to icon-only buttons on a phone, and
+   an icon-only button is exactly where a too-small target hurts, because
+   there is no text to widen it. 44 px is the size a fingertip actually
+   needs; the row already wraps, so giving them room costs a second line
+   at worst rather than an overflow.
+
+   SAFE AREAS on the horizontal axis only. A notched phone in landscape
+   puts the cutout and the rounded corner over the leading edge, which is
+   where the menu button and the location picker live. The vertical insets
+   are deliberately left alone: iOS reserves the status bar itself now
+   that the status-bar style is "default" rather than black-translucent,
+   and padding a sticky header whose height other sticky offsets are
+   measured from is a good way to introduce a subtler bug than the one it
+   fixes. */
+@media (max-width: 720px) {
+  .toolbar-btns .tbtn { min-width: 44px; min-height: 44px; }
+  .icon-btn { width: 44px; height: 44px; }
+  .toolbar-btns { gap: 8px; }
+  .tbtn-sep { margin: 0 2px; }
+}
+/* Width is a proxy for touch and not a very good one: a tablet or a touch
+   laptop is wide and still driven by a fingertip. This asks the real
+   question. Both rules are kept, because a coarse pointer is what matters
+   and a narrow screen is what can be tested in a headless browser. */
+@media (pointer: coarse) {
+  .toolbar-btns .tbtn { min-width: 44px; min-height: 44px; }
+  .icon-btn { width: 44px; height: 44px; }
+}
+
+.topbar, .toolbar {
+  padding-left: max(20px, env(safe-area-inset-left));
+  padding-right: max(20px, env(safe-area-inset-right));
+}
+@media (max-width: 720px) {
+  .topbar { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
+  .toolbar { padding-left: max(14px, env(safe-area-inset-left)); padding-right: max(14px, env(safe-area-inset-right)); }
+  .app-shell {
+    padding-left: max(14px, env(safe-area-inset-left));
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-bottom: max(60px, env(safe-area-inset-bottom));
+  }
+}
+@media (max-width: 430px) {
+  .topbar { padding-left: max(10px, env(safe-area-inset-left)); padding-right: max(10px, env(safe-area-inset-right)); }
+}
+@media (max-width: 400px) {
+  .topbar { padding-left: max(8px, env(safe-area-inset-left)); padding-right: max(8px, env(safe-area-inset-right)); }
+}
+
+/* The install button reads as an action rather than a utility while it is
+   still worth doing, then stops competing once the app is installed. */
+#installBtn { border-color: var(--brand); color: var(--brand); }
+#installBtn:hover, #installBtn:active { background: var(--brand-light); }
+
+/* ===================== PRINT ===================== */
+@media print {
+  .topbar, .toolbar, .sidenav, .sidenav-backdrop, .bottom-actions, .toast-stack, .modal-backdrop, .photo-tools,
+  .input-with-btn .tbtn, #btnNoiseMeter, .mobile-hint,
+  .photo-thumb .rm, .media-attach-actions, .pano-card-actions, .video-attachment .tbtn,
+  .capture360-overlay, .pano-viewer-overlay, .export-modal, .c360-controls { display: none !important; }
+  .app-shell { display: block; padding: 0; max-width: 100%; }
+  body { background: #fff; }
+  .card { box-shadow: none; border: 1px solid #ccc; break-inside: avoid; margin-bottom: 14px; }
+  input, select, textarea { border: 1px solid #ccc !important; color: #000 !important; }
+  .switch { display: none; }
+  .switch-row::after { content: attr(data-print-state); font-weight: 700; }
+
+  /* Photos: real inspection size, preserved aspect ratio, 2-up grid, no cropping */
+  .doc-grid { grid-template-columns: repeat(2, 1fr); }
+  .photo-strip { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .photo-thumb {
+    width: auto; height: auto; aspect-ratio: 4 / 3; border: 1px solid #ccc;
+    break-inside: avoid; page-break-inside: avoid;
+  }
+  .photo-thumb img { object-fit: contain; background: #f5f5f5; }
+
+  /* 360 panorama: full width, true 2:1 */
+  .pano-card { break-inside: avoid; page-break-inside: avoid; border: 1px solid #ccc; }
+  .pano-thumb { aspect-ratio: 2 / 1; object-fit: contain; background: #f5f5f5; width: 100%; }
+
+  .media-attach-card { break-inside: avoid; page-break-inside: avoid; border: 1px solid #ccc; }
+  .media-attach-preview { display: none !important; }
+}
+
+/* ===================== INSTALL / OFFLINE BUTTON =====================
+   Lives in the top bar next to the theme toggle. It is hidden by default
+   and install.js decides whether to show it, because "installable" is a
+   question only the browser can answer and the answer differs per
+   platform — Chrome fires beforeinstallprompt, Safari fires nothing. A
+   button that is always visible would be inert on every iPhone. */
+#installBtn { white-space: nowrap; }
+#installBtn .install-label { display: inline; }
+.tbtn--ghost { background: transparent; border-style: dashed; opacity: .85; }
+.tbtn--ghost:hover { background: var(--surface-alt); }
+/* On a narrow phone the top bar is already carrying two logos, a title
+   and the theme toggle, so the label goes and the icon carries it. */
+@media (max-width: 560px) {
+  #installBtn .install-label { display: none; }
+  #installBtn { padding-left: 8px; padding-right: 8px; }
+}

@@ -1,0 +1,464 @@
+<!doctype html>
+
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Location Scouting Checklist</title>
+  <meta name="theme-color" content="#AD1D28">
+  
+  
+  
+  
+  
+  
+  
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  
+
+  
+  <link rel="stylesheet" href="vendor/fonts/inter.css">
+  <link rel="stylesheet" href="vendor/fontawesome/fontawesome.min.css">
+  <link rel="stylesheet" href="vendor/fontawesome/solid.min.css">
+  <link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="integration.css"></head>
+
+<body>
+
+  
+  <header class="topbar">
+    <div class="topbar-brand">
+      <button id="navToggle" class="icon-btn only-mobile" aria-label="Toggle sections menu" title="Sections">
+        <i class="fa-solid fa-bars"></i>
+      </button>
+      
+      
+      <div class="brand-title">
+        <h1><i class="fa-solid fa-clapperboard"></i> <span class="brand-title-text">Location Scouting Checklist</span></h1>
+        <span class="brand-subtitle">Film &amp; Media Site Survey</span>
+      </div>
+    </div>
+  </header>
+
+  
+  <div class="toolbar">
+    <div class="toolbar-row toolbar-row--main">
+      
+      <div class="toolbar-btns">
+        
+        
+        
+        
+        
+        <button class="tbtn" id="btnExport" title="Export SLiVR project JSON"><i class="fa-solid fa-download"></i><span>Export</span></button>
+        
+        
+        
+        
+        
+        
+        
+        <button class="tbtn" id="themeToggle" aria-label="Toggle dark mode" title="Toggle theme">
+          <i class="fa-solid fa-moon"></i><span class="theme-label">Theme</span>
+        </button>
+      </div>
+    </div>
+    <div class="toolbar-row toolbar-row--status">
+      <div class="save-status" id="saveStatus"><i class="fa-solid fa-circle-check"></i> <span>All changes saved</span></div>
+      <div class="progress-wrap">
+        <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+        <span class="progress-label" id="progressLabel">0% complete</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-shell">
+    
+    <nav class="sidenav" id="sidenav" aria-label="Checklist sections">
+      
+      <ol class="section-list" id="sectionList"></ol>
+      
+    </nav>
+    <div class="sidenav-backdrop" id="sidenavBackdrop"></div>
+
+    
+    <main class="content">
+      <details class="card"><summary>Assessment context and history</summary><section id="slivrMeta"></section></details><form id="checklistForm" autocomplete="off">
+
+        
+        <section class="card" id="sec-1" data-section="1">
+          <h2><span class="sec-num">1</span><i class="fa-solid fa-circle-info"></i> General Information</h2>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="room-name">Room Name/ID</label>
+              <input type="text" id="room-name" placeholder="e.g. Room 204 — East Wing">
+            </div>
+            
+            <div class="field">
+              <label for="date-of-scouting">Date of Scouting</label>
+              <input type="date" id="date-of-scouting" data-meta="observationDate">
+            </div>
+            
+          </div>
+
+          <div class="field">
+            <label class="switch-row" for="room-layout-sketch">
+              <span>Room Layout Sketch Attached</span>
+              <span class="switch"><input type="checkbox" id="room-layout-sketch"><span class="slider"></span></span>
+            </label>
+          </div>
+
+          <div class="field">
+            <label class="group-label">Photographic Documentation</label>
+            <div class="doc-grid">
+              <div class="doc-card">
+                <label class="switch-row" for="wide-angle">
+                  <span>Wide-angle Photos</span>
+                  <span class="switch"><input type="checkbox" id="wide-angle"><span class="slider"></span></span>
+                </label>
+                
+                
+              </div>
+              <div class="doc-card">
+                <label class="switch-row" for="close-up">
+                  <span>Close-up Photos</span>
+                  <span class="switch"><input type="checkbox" id="close-up"><span class="slider"></span></span>
+                </label>
+                
+                
+              </div>
+              <div class="doc-card">
+                <label class="switch-row" for="video">
+                  <span>Video Walkthrough</span>
+                  <span class="switch"><input type="checkbox" id="video"><span class="slider"></span></span>
+                </label>
+                
+                
+                <div class="video-attachment" id="videoAttachment"></div>
+              </div>
+              
+            </div>
+          </div>
+        </section>
+
+        
+        <section class="card" id="sec-2" data-section="2">
+          <h2><span class="sec-num">2</span><i class="fa-solid fa-door-open"></i> Exterior Details</h2>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="door-count">Entry/Exit Door Count and Size</label>
+              <div class="counter">
+                <button type="button" class="counter-btn" data-action="dec" data-target="door-count" aria-label="Decrease"><i class="fa-solid fa-minus"></i></button>
+                <input type="number" id="door-count" value="0" min="0" inputmode="numeric">
+                <button type="button" class="counter-btn" data-action="inc" data-target="door-count" aria-label="Increase"><i class="fa-solid fa-plus"></i></button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="equipment-accessibility">Equipment Accessibility</label>
+              <select id="equipment-accessibility">
+                <option value="">Select…</option>
+                <option>Good</option>
+                <option>Fair</option>
+                <option>Poor</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="parking-capacity">Parking Capacity</label>
+              <input type="text" id="parking-capacity" placeholder="e.g. 12 spaces, street parking">
+            </div>
+            <div class="field">
+              <label for="distance-to-location">Distance to Filming Location</label>
+              <input type="text" id="distance-to-location" placeholder="e.g. 50 ft from load-in door">
+            </div>
+          </div>
+          <div class="field">
+            <label class="switch-row" for="staging-area">
+              <span>Staging Area Availability</span>
+              <span class="switch"><input type="checkbox" id="staging-area"><span class="slider"></span></span>
+            </label>
+          </div>
+        </section>
+
+        
+        <section class="card" id="sec-3" data-section="3">
+          <h2><span class="sec-num">3</span><i class="fa-solid fa-lightbulb"></i> Lighting Assessment</h2>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="window-count">Number of Windows</label>
+              <div class="counter">
+                <button type="button" class="counter-btn" data-action="dec" data-target="window-count" aria-label="Decrease"><i class="fa-solid fa-minus"></i></button>
+                <input type="number" id="window-count" value="0" min="0" inputmode="numeric">
+                <button type="button" class="counter-btn" data-action="inc" data-target="window-count" aria-label="Increase"><i class="fa-solid fa-plus"></i></button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="window-direction">Window Direction</label>
+              <div class="input-with-btn">
+                <select id="window-direction">
+                  <option value="">Select…</option>
+                  <option>North</option>
+                  <option>South</option>
+                  <option>East</option>
+                  <option>West</option>
+                </select>
+                
+              </div>
+              
+            </div>
+            <div class="field">
+              <label for="natural-light-type">Type of Natural Light</label>
+              <select id="natural-light-type">
+                <option value="">Select…</option>
+                <option>Direct</option>
+                <option>Indirect</option>
+                <option>Both</option>
+                <option>None</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="fixture-count">Number of Fixtures</label>
+              <div class="counter">
+                <button type="button" class="counter-btn" data-action="dec" data-target="fixture-count" aria-label="Decrease"><i class="fa-solid fa-minus"></i></button>
+                <input type="number" id="fixture-count" value="0" min="0" inputmode="numeric">
+                <button type="button" class="counter-btn" data-action="inc" data-target="fixture-count" aria-label="Increase"><i class="fa-solid fa-plus"></i></button>
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="group-label">Fixture Type</label>
+            <div class="chip-group">
+              <label class="chip"><input type="checkbox" id="overhead"><span>Overhead</span></label>
+              <label class="chip"><input type="checkbox" id="sconce"><span>Sconce</span></label>
+              <label class="chip"><input type="checkbox" id="lamp"><span>Lamp</span></label>
+              <label class="chip"><input type="checkbox" id="LED"><span>LED</span></label>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="group-label">Fixture Position</label>
+            <div class="chip-group">
+              <label class="chip"><input type="checkbox" id="ceiling"><span>Ceiling</span></label>
+              <label class="chip"><input type="checkbox" id="wall"><span>Wall</span></label>
+              <label class="chip"><input type="checkbox" id="table"><span>Table</span></label>
+            </div>
+          </div>
+
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="color-temperature">Color Temperature</label>
+              <select id="color-temperature">
+                <option value="">Select…</option>
+                <option>Warm</option>
+                <option>Neutral</option>
+                <option>Cool</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="control-options">Control Options</label>
+              <select id="control-options">
+                <option value="">Select…</option>
+                <option>Blinds</option>
+                <option>Curtains</option>
+                <option>Dimmer</option>
+                <option>Mixed</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        
+        <section class="card" id="sec-4" data-section="4">
+          <h2><span class="sec-num">4</span><i class="fa-solid fa-plug"></i> Power and Network Infrastructure</h2>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="power-outlets">Number of Power Outlets</label>
+              <div class="counter">
+                <button type="button" class="counter-btn" data-action="dec" data-target="power-outlets" aria-label="Decrease"><i class="fa-solid fa-minus"></i></button>
+                <input type="number" id="power-outlets" value="0" min="0" inputmode="numeric">
+                <button type="button" class="counter-btn" data-action="inc" data-target="power-outlets" aria-label="Increase"><i class="fa-solid fa-plus"></i></button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="outlet-locations">Outlet Locations</label>
+              <select id="outlet-locations">
+                <option value="">Select…</option>
+                <option>Wall</option>
+                <option>Floor</option>
+                <option>Ceiling</option>
+                <option>Tables</option>
+                <option>None</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="network-connectivity">Network Connectivity</label>
+              <select id="network-connectivity">
+                <option value="">Select…</option>
+                <option>Wi-Fi</option>
+                <option>Ethernet</option>
+                <option>Both</option>
+                <option>None</option>
+              </select>
+            </div>
+            <div class="field">
+              <label class="switch-row switch-row--field" for="circuit-capacity">
+                <span>Circuit Capacity Available</span>
+                <span class="switch"><input type="checkbox" id="circuit-capacity"><span class="slider"></span></span>
+              </label>
+            </div>
+          </div>
+          <div class="field">
+            <label for="connectivity-details">Connectivity Details</label>
+            <textarea id="connectivity-details" rows="3" placeholder="Router placement, signal strength, dead zones…"></textarea>
+          </div>
+        </section>
+
+        
+        <section class="card" id="sec-5" data-section="5">
+          <h2><span class="sec-num">5</span><i class="fa-solid fa-paint-roller"></i> Aesthetic and Design Features</h2>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="wall-colors">Wall Colors and Finishes</label>
+              <input type="text" id="wall-colors" placeholder="e.g. Matte white, exposed brick accent">
+            </div>
+            <div class="field">
+              <label for="flooring-type">Flooring Type</label>
+              <input type="text" id="flooring-type" placeholder="e.g. Hardwood, polished concrete">
+            </div>
+            <div class="field">
+              <label for="flooring-condition">Condition of Flooring</label>
+              <select id="flooring-condition">
+                <option value="">Select…</option>
+                <option>Excellent</option>
+                <option>Good</option>
+                <option>Fair</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="architectural-details">Architectural Details</label>
+              <textarea id="architectural-details" rows="2" placeholder="Molding, columns, ceiling height…"></textarea>
+            </div>
+          </div>
+          <div class="grid grid-2">
+            <label class="switch-row switch-row--field" for="furniture-present">
+              <span>Furniture Present</span>
+              <span class="switch"><input type="checkbox" id="furniture-present"><span class="slider"></span></span>
+            </label>
+            <label class="switch-row switch-row--field" for="ease-of-moving-furniture">
+              <span>Ease of Moving Furniture</span>
+              <span class="switch"><input type="checkbox" id="ease-of-moving-furniture"><span class="slider"></span></span>
+            </label>
+          </div>
+        </section>
+
+        
+        <section class="card" id="sec-6" data-section="6">
+          <h2><span class="sec-num">6</span><i class="fa-solid fa-file-signature"></i> Compliance and Permissions</h2>
+          <div class="grid grid-2">
+            <label class="switch-row switch-row--field" for="zoning-regulations">
+              <span>Zoning Regulations Confirmed</span>
+              <span class="switch"><input type="checkbox" id="zoning-regulations"><span class="slider"></span></span>
+            </label>
+            <label class="switch-row switch-row--field" for="ownership-confirmed">
+              <span>Ownership Confirmed</span>
+              <span class="switch"><input type="checkbox" id="ownership-confirmed"><span class="slider"></span></span>
+            </label>
+          </div>
+          <div class="grid grid-2">
+            
+            
+          </div>
+          <div class="field">
+            <label class="switch-row" for="permission-to-film">
+              <span>Permission to Film Secured</span>
+              <span class="switch"><input type="checkbox" id="permission-to-film"><span class="slider"></span></span>
+            </label>
+          </div>
+        </section>
+
+        
+        <section class="card" id="sec-7" data-section="7">
+          <h2><span class="sec-num">7</span><i class="fa-solid fa-volume-high"></i> Acoustic Evaluation</h2>
+          <div class="field">
+            <label class="switch-row" for="ambient-noise">
+              <span>Ambient Noise Present</span>
+              <span class="switch"><input type="checkbox" id="ambient-noise"><span class="slider"></span></span>
+            </label>
+          </div>
+          <div class="field">
+            
+            
+          </div>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="noise-source">Noise Source Details</label>
+              <input type="text" id="noise-source" placeholder="e.g. HVAC hum, street traffic">
+            </div>
+            <div class="field">
+              <label for="room-acoustics">Room Acoustics</label>
+              <select id="room-acoustics">
+                <option value="">Select…</option>
+                <option>None</option>
+                <option>Slight</option>
+                <option>Moderate</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        
+        <section class="card" id="sec-8" data-section="8">
+          <h2><span class="sec-num">8</span><i class="fa-solid fa-clipboard-check"></i> Final Documentation</h2>
+          <div class="grid grid-2">
+            <label class="switch-row switch-row--field" for="detailed-report">
+              <span>Detailed Report Compiled and Attached</span>
+              <span class="switch"><input type="checkbox" id="detailed-report"><span class="slider"></span></span>
+            </label>
+            <label class="switch-row switch-row--field" for="database-entry">
+              <span>Entered into Location Database</span>
+              <span class="switch"><input type="checkbox" id="database-entry"><span class="slider"></span></span>
+            </label>
+          </div>
+          <div class="field">
+            <label for="tags-categories">Tags/Categories Assigned</label>
+            <input type="text" id="tags-categories" placeholder="e.g. interior, office, modern, quiet">
+          </div>
+          <div class="field">
+            <label for="additional-notes">Additional Notes</label>
+            <textarea id="additional-notes" rows="4" placeholder="Anything else worth remembering about this location…"></textarea>
+          </div>
+        </section>
+
+        <div class="bottom-actions">
+          <button type="button" class="tbtn tbtn--primary" id="btnSaveBottom"><i class="fa-solid fa-floppy-disk"></i> Save Now</button>
+          <button type="button" class="tbtn" id="btnExportBottom"><i class="fa-solid fa-download"></i> Export</button>
+          
+          
+        </div>
+      </form>
+    </main>
+  </div>
+
+  
+  
+
+  
+  
+
+  
+  
+
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+</body>
+
+</html>

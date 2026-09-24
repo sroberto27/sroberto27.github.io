@@ -94,7 +94,7 @@
   },
   "storage": {
     "databaseName": "slivr-workspace",
-    "databaseVersion": 1,
+    "databaseVersion": 2,
     "keyPrefix": "slivr:",
     "cachePrefix": "slivr-",
     "isolationNote": "This origin also serves neighbouring applications. Every key, database and cache name is SLiVR-scoped, and no code may enumerate or remove another application's service-worker registrations or caches."

@@ -2304,3 +2304,345 @@ D077: owner reports "the test all passed" following D076. Latest mini-map presen
 #### D077 owner scope clarification
 
 Owner explicitly confirms "yeah all the test even the ones before the map" in response to the question naming earlier provider-failure and real-browser storage/reload/export/import checks. All earlier instructed delivered-function checklists, including owner 15-16, are now owner-reported PASS. Preserve earlier NOT TESTED/BLOCKED/FAIL entries as historical; do not repeat those checks solely for missing tool access. Browser/version/device and exact tested digest remain unspecified. This does not make unimplemented bookmark save/restore tested, supply absent raw provider reports, or explicitly approve E1. Bookmark-specific and later-phase workflows remain NOT TESTED. No runtime changes or new automated execution.
+## D078 execution - 2026-09-22
+
+**225. Explore camera survives map disposal. [F01/F03/F20; extends 64]**
+Pan/zoom/rotate Explore, leave and return without a selected location: center,
+zoom, bearing and pitch must match. Initial inventory, delayed style readiness
+and layout resize must not reset that restored camera. Recenter and changed
+filters must still work. Return from Immersive with a selected location: focus
+that pin under D072/D074, retaining orientation and discovery filters/scroll.
+Repeat with zero bearing/pitch, map failure/retry and repeated mode changes.
+The mini-map must remain independent; departing maps must release resources.
+
+Automated 225/64 action-to-adapter lifecycle and invalid/zero snapshot cases PASS.
+Targeted viewport/shell/mini-map run: 38 PASS. Full `node --test`: **365 PASS,
+0 FAIL**, including affected Phase 1/2 and Part J foundation contracts. Catalog:
+0 errors, one existing Old City Hall alias warning. Deployment: 161 files,
+0 errors. `git diff --check -- .`: clean apart from Git line-ending notices.
+
+Build: HEAD `fd4900a6f14348dd3a574911bfcc500e5e9786a5` plus D078 worktree;
+Windows/PowerShell, Node v24.18.0, app 0.2.0, MapLibre 4.7.1, catalog 1.1.0,
+record/transfer 1.0.0, workspace 1, adapter treedis-recon-2. Runtime SHA256
+`339e5372f33af973cc062ffb6ca3661286c20accd9e9f12cdd29a4177094de7e`
+over 94 files using D069 path/NUL/bytes/NUL algorithm. Logs and identity:
+`outputs/acceptance-d078/{tests,catalog,deploy}.txt`, `identity.json`.
+
+Live changed-camera test 225/64 NOT TESTED. Browser discovery: apps=[],
+browsers=[]; local harness creation failed (`Browser is not available: iab`).
+No new rendering/arrival/pose/sweep-list/restore observation exists. Earlier
+owner passes, including mini-map, provider failure and storage/reload/transfer,
+remain owner-reported PASS with unspecified browser/device/build metadata.
+
+Part J: 172-175, 179-181 automated contracts PASS; 176-178 existing foundation
+contracts PASS, integrated later-phase workflows NOT TESTED; 182 deployment
+scope PASS, fresh neighboring-app live isolation NOT TESTED; 183 automated
+contracts PASS, fresh browser console/network BLOCKED. No human-participant
+evidence. Phase 2 bookmark workflow 60-62 still NOT IMPLEMENTED/NOT TESTED.
+## D079 execution - approved entry-only bookmarks, 2026-09-22
+
+**226. Project-owned entry bookmarks. [F04/F20; 60-62; 208 foundation]**
+Choose/create a project; save named downtown, Magnolia and Moncus entry bookmarks
+with notes in Immersive. Enter text while viewer state changes: the draft/focus
+must survive. Reload, open the project and Restore entry. Walk away in the same
+tour and restore again: request the saved entry, not the current walked-to view.
+Verify actual provider arrival separately from frame loading. Export/import to
+a disposable profile and compare IDs, names, notes and version references.
+Reject mismatched ownership/current-catalog identity before any writes; preserve
+retired/legacy views with a limitation. Force a bookmark write failure, retain
+memory/emergency and normal export, retry the same ID without duplicates. Repeat
+project switching during a delayed read and replace-import while the project is
+open. No pose or screenshot capability may be inferred.
+
+Automated implementation/Part D/J contracts: **373 PASS, 0 FAIL**. New tests cover
+the action/repository reload and clean transfer, failed writes/retry/export,
+cross-owner/catalog rejection, zero/invalid supported fields, retired/legacy
+restoration, stale project loads, replacement refresh and actual shell form/
+same-entry renewal. D078 targeted 38 PASS; initial bookmark targeted 32 PASS.
+`bookmark-races.txt` preserves an intermediate 6 PASS/1 FAIL test-harness timing
+error (`release is not a function`); corrected deterministic test passes in the
+full run. Catalog zero errors/one existing alias warning; deployment 163 files,
+zero errors before this reconnaissance document was added. Final scan including
+the reconnaissance record: 164 files, zero errors; `deploy-final.txt`.
+
+HEAD fd4900a6f14348dd3a574911bfcc500e5e9786a5 plus D078-D079 worktree; Windows,
+Node v24.18.0, app 0.2.0, MapLibre 4.7.1, catalog 1.1.0, record/transfer 1.0.0,
+workspace 1, provider adapter treedis-recon-2. New bookmark contract
+treedis-recon-2/entry-only-1. Runtime SHA256 (95 files, D069 algorithm):
+`9a185ee2013f4196cdeb2e2c55932c26ceb84866f72fe2999e238e1edd287541`.
+Logs: outputs/acceptance-d078/bookmarks-{full,catalog,deploy}.txt and
+bookmarks-identity.json. New source is included in the runtime digest.
+
+Owner approved E1 allocation and E2 entry-only scope, not a live bookmark PASS.
+New 60-62/64/225/226 browser checklist is pending; no browser available here.
+Earlier owner passes remain valid and are not requested again. Part J accounting
+is as D078, with new bookmark persistence/recovery contracts covered; integrated
+Phase 3/4 workflows remain NOT TESTED. Phase 2 remains OPEN pending new acceptance.
+## D080 owner acceptance - 2026-09-22
+
+Owner explicitly reports "All new checks passed" for the D079 checklist.
+60-62/226: named/noted downtown, Magnolia and Moncus project bookmarks,
+reload/open/restore, same-entry restore after walking away and export/import
+retention are owner-reported PASS. 64/225: selected-pin return and unselected
+Explore camera retention are owner-reported PASS. Earlier reported checks stay
+PASS without repetition. D079 automation remains 373 PASS; this closeout adds
+manual evidence, not a new automated run.
+
+Checklist targeted the new local D079 build; exact tested digest, browser,
+device and viewport were not independently supplied. Retain that metadata limit.
+Phase 2 COMPLETE under approved entry-only E2, with E1 later-phase action
+allocation. Historical failed/blocked evidence remains. Exact-angle restoration,
+pose/screenshot capability and Phase 3 workflows do not inherit this PASS.
+## D081 execution - Phase 3 initial workspace increment, 2026-09-22
+
+**227. Project/scene editing and safe deletion. [F05/F20; 68-70, 80, 82-84]**
+Edit project name/type/description/status and reopen. Create two briefs; edit
+one without changing the other; distinguish blank counts from zero, reorder,
+reload and transfer. Remove an unlinked scene only through its explicit removal
+control; linked scenes must refuse removal. Review project deletion's owned
+record counts; cancel changes nothing. Confirm removes only that project;
+failed deletion retains the open bundle and retry completes cleanup. Modify a
+record after review: reject deletion until reviewed again. Cancel a failed
+deletion: retry must be revoked. Check keyboard focus, Escape, inert background,
+narrow layout and form drafts across shell redraws/mode changes.
+
+Automated: 35 targeted PASS; final **381 full-suite PASS, 0 FAIL**. New 68-70,
+82-84/227 contracts exercise metadata identity/validation, two scenes, zero/
+unknown counts, ordering/transfer, linked-record rejection, scoped deletion,
+failure/retry/cancellation and stale-write reporting. This is not complete test
+80 autosave or full Phase 3 acceptance. Part J 172-175/179-181 contracts and
+176-178 foundation contracts PASS; integrated candidate/assessment/shot workflows
+NOT TESTED. 182 deployment scope PASS; fresh neighboring-app runtime check NOT
+TESTED; 183 automated contracts PASS, fresh browser console/network NOT TESTED.
+
+First targeted run 6 PASS/1 FAIL: the existing fake IndexedDB's failWrites switch
+did not apply to delete. Extended its delete failure simulation; the rerun passes.
+This was a harness gap, not a live provider/storage result. Logs retained under
+outputs/phase3-d081/: first.txt, targeted.txt, targeted-final.txt, full.txt,
+full-final.txt, catalog.txt, deploy.txt and identity.json. Catalog 0 errors/one
+existing alias warning; deployment 166 files/0 errors; whitespace check clean.
+
+Build HEAD fd4900a6f14348dd3a574911bfcc500e5e9786a5 plus retained D078-D081
+worktree. Windows/PowerShell, Node v24.18.0, app 0.3.0, transfer 1.1.0, workspace
+database 1, catalog 1.1.0, MapLibre 4.7.1, provider treedis-recon-2. Runtime digest
+`5052b287f2ff596ce1f6b7b8a2f4bec4ac023ff025f0686a6cf3042a453696d9`
+(96 files; D069 path/NUL/bytes/NUL method). D080's owner PASS belongs to the prior
+D079 bookmark/camera checklist and is not expanded to this new editing UI.
+Live 68-70/84/227 NOT TESTED. Phase 2 remains accepted; Phase 3 IN PROGRESS.
+
+## D082 execution - candidate workflow, 2026-09-23
+
+**228. Candidate creation, recovery and context. [F05/F20; 44, 71, 77, 81-82]**
+Create two scenes; add a captured location from Projects and add it again from its
+dossier. The same scene must retain one candidate; another scene can add it
+independently. Add a future location without exposing an invented viewer action.
+Edit rationale/strengths/concerns/missing information and review status; reload and
+export/import. New requirements remain unknown. Imported legacy decisions/ratings
+stay unchanged until explicit edits; changing a review status records its origin.
+Select a candidate, open its dossier/Immersive and return to the expanded scene.
+Reload: selected project/scene/candidate should survive. Switching scenes must not
+leave an unrelated candidate selected. Failed writes retain submitted memory in
+emergency export; retry reuses the candidate ID. Reject ownership/identity changes
+and duplicate imported scene/location records. Test native keyboard controls,
+narrow layout and provider-unavailable access to project forms.
+
+Automation: 11 workspace tests and 29 shell tests PASS; full suite **386 PASS,
+0 FAIL**. Includes affected 44/71/77/81/82/228 repository and DOM-double contracts;
+Part J foundation contracts remain PASS in the full suite. Catalog zero errors,
+one retained alias warning; deployment 166 files, zero errors; whitespace check
+clean. Live new 228 and full Phase 3/Part J integrated checks remain NOT TESTED.
+Old owner Phase 2 PASS is neither repeated nor extended to this new UI.
+
+Logs outputs/phase3-d082/{first,targeted,shell,full,catalog,deploy}.txt and
+identity.json. first.txt is the unchanged 381-check regression baseline after the
+initial candidate changes; final full.txt includes five new tests. No automated
+runtime failure occurred in this increment. Windows/PowerShell Node v24.18.0,
+HEAD fd4900a6f14348dd3a574911bfcc500e5e9786a5 plus retained worktree, app 0.3.1,
+transfer 1.2.0, database 1, catalog 1.1.0, MapLibre 4.7.1, treedis-recon-2.
+Runtime digest 556fd040be0248b3b1b5a3e0e1dfa88b1171e6a830b27ec3dc50e7d99b93c178
+(96 sorted index/src/styles/config/data/vendor files excluding config/runtime.js;
+path + NUL + bytes + NUL). No new provider/browser evidence or phase closure.
+
+## D083 execution - Phase 3 implementation, 2026-09-23
+
+**229. Scouting assessment, comparison and decision continuity. [F05/F06/F06-SA/F20]**
+Execute research/PHASE_3_ACCEPTANCE_REVIEW.md's five-step new-owner checklist.
+Covers existing 68-84, 206-212, 214-215 and Part J; keep previous 227/228 procedures.
+No renumbering and no automatic promotion of earlier owner passes to new features.
+
+Automated full-suite: **399 PASS, 0 FAIL**. Evidence includes DB1 additive upgrade,
+eight-section/typed zero/false semantics, invalid observed answers, immutable
+history rejection, source/bookmark/media ownership, failed write/emergency/retry,
+ordered assessment saves and late media identity guards; comparison/detail edits
+for three candidates, explicit unknown fit, preferred/backups/reopening with fixed
+revision evidence; selected/data-only JSON and media copy remapping; legacy raw
+JSON/ZIP, omitted contacts, touched-default ambiguity, missing-media placeholders;
+linked shot metadata, scoped deletion and immediate-edit autosave/export flush.
+Part J 172-181 automated foundation/integrated workspace contracts PASS where
+implemented, 182 deployment PASS, 183 automated contracts PASS, 184 source audit
+recorded in D083. New real browser/console/network/provider/accessibility/media and
+full Part J live workflow remain BLOCKED/NOT TESTED. Phase 3 awaits acceptance;
+Phase 4 spatial design and Phase 5 native ZIP/print remain intentionally unbuilt.
+
+Final log outputs/phase3-d083/full-acceptance-final.txt, catalog.txt, deploy.txt,
+identity.json and whitespace.txt. All failed/intermediate logs retained:
+first.txt had 381 PASS/5 FAIL after version/store extension (stale fixtures);
+second.txt 385 PASS/1 FAIL (one future-version expectation); third.txt 386 PASS.
+scouting-first.txt failed six new tests because generic object definitions lacked
+field maps; corrected definitions and validation, subsequent nine targeted PASS.
+shell-first.txt had one new separator-encoding test mismatch; corrected ASCII UI
+text/test, shell-second passed. Later full runs (393/397 PASS) precede final 399.
+These are implementation/harness failures, not live device/provider observations.
+
+HEAD fd4900a6f14348dd3a574911bfcc500e5e9786a5 plus worktree; Windows/PowerShell,
+Node v24.18.0; app 0.3.2, transfer 1.3.0, DB2, catalog 1.1.0, template 1.0.0,
+MapLibre 4.7.1, treedis-recon-2. Runtime digest
+5408733c6a40d5ef6d0457be08034f291dee1b013c71807b2bc492a9622d5555 (106 files;
+D069 path/NUL/bytes/NUL method). Browser inventory empty; iab unavailable.
+No live PASS, participant claim, telemetry, commit/push or reference modification.
+
+## D084 execution - save-failure diagnosis, 2026-09-23
+
+**230. Save failure remains explained through navigation; diagnostics recover.**
+With failure testing enabled, Create must retain its project and show the actual
+error after navigation. Explicitly turn testing off and retry: same project ID
+saves without reload. Other diagnostic settings survive. Verify new assessment
+writes also fail under simulation and recover, then reload. Under a real injected
+write failure with diagnostics off, show its message without blaming simulation.
+
+34 targeted/401 full-suite PASS, zero failures (DOM/IndexedDB doubles); deployment
+178 files/zero errors. App 0.3.3, transfer1.3.0, DB2, template1.0.0, Node v24.18.0;
+logs/digest outputs/phase3-d084/{targeted,full,deploy}.txt and identity.json.
+Owner screenshot is a real new Create/save FAIL, cause not yet identified. Owner
+reports diagnostics key null. No claim that simulation caused that failure or
+that actual browser recovery passed. New raw-error report requested after emergency
+backup and refresh. Earlier Phase 2 passes remain accepted. Phase 3 stays open.
+
+## D085 execution - startup storage readiness, 2026-09-23
+
+**231. Create during startup waits for local storage, independently of catalog.**
+Delay database open and catalog responses. Submit a named project before storage
+opens: no workspace-not-open failure or selection warning. Release storage while
+catalog remains pending: project saves, editing renders without exceptions.
+Release catalog, reload its direct project URL: the saved bundle opens.
+
+App 0.3.4: 35 targeted and 402 full automated PASS, zero failures; deployment 178
+files/zero errors. Logs and hashed runtime manifest outputs/phase3-d085. Part J:
+affected regression suite and deployment scope PASS; fresh live browser and sibling
+app checks NOT TESTED. DOM/IndexedDB doubles do not establish real browser saving.
+Owner live error confirmed "the workspace database is not open". Startup ordering
+and readiness defect corrected; focused owner Create/save/reload retest pending.
+Do not clear site data or repeat earlier accepted Phase 2 checks. Phase 3 remains open.
+
+## D086 - unified workspace (2026-09-23)
+
+Owner reported **all nine supplied critical checks passed** on the prior local
+build, including saving recovery, scenes/candidates, checklist autosave/evidence,
+comparison decisions, navigation, transfer/legacy import and recovery/deletion.
+This is owner-reported evidence for that checklist, not an independently identified
+browser/device/runtime digest. Preserve previous negative logs; do not request
+repeat confirmation or infer additional device/provider-wide coverage.
+
+**232. Unified navigation and ownership.** Only Explore and Shot Designer are
+mode tabs. Project/Scene tools operate above a retained map/tour. Old URLs work.
+Location changes do not move an assessment's answers; identity/mismatch remains
+visible. No-tour locations retain map use. New project flushes prior drafts.
+
+**233. Nonmodal window lifecycle.** Minimize/maximize/restore/dock retain the same
+provider frame and editable content. Reopening focuses one window, not a duplicate.
+Close waits for saving and is refused on failure. Keyboard move/resize and saved
+geometry work. Only one tool docks; reset layout never changes records. No
+permanent right panel. Small-screen layout and pointer behavior need live checks.
+
+**234. V2 source presentation and persistence boundary.** Eight copied form sections
+retain every supported question ID, unchanged V2 CSS and local fonts/icons. No V2
+storage/install/capture scripts or private-contact controls. Verify real-browser
+zero/false/unknown, counters, selects, evidence, media, progress, section navigation,
+theme and autosave through the iframe. Compare visual layout at matching widths.
+
+407 automated PASS (including affected Phase 3/Part J contracts), deployment199/0,
+catalog0errors/one existing alias warning. Logs outputs/unified-d086; earlier
+intermediate failures remain outputs/unified-*.txt. App0.3.5, transfer1.3.0, DB2,
+Node v24.18.0; runtime manifest in identity.json. Live232-234 and fresh sibling-app/
+console/device checks NOT TESTED: CUA apps=[]/browsers=[]. No visual fidelity PASS.
+
+
+## D087 responsive workspace repair (2026-09-23)
+
+App0.3.6 addresses owner-reported D086 screenshot collisions. Desktop launchers
+and minimized tray occupy separate grid rows outside the map/rail. Phone <=880px
+has compact project/scene and app menus, reserved View/Locations/Checklist/Project
+navigation, and one retained active tool. Full and half-height modes replace
+floating-window controls. Browser Back dismisses a newly opened phone tool;
+desktop geometry survives phone use. Visual viewport sizes the keyboard layout.
+Map options reveals existing controls; imagery explanations and assessment/project
+context are expandable. Ownership mismatch stays visible. V2 source stylesheet
+remains byte-identical; phone touch sizing is in separate integration CSS.
+
+Read-only sources inspected: LSU3D/js/06-details-panel.js:5-43 and
+Experimental/js/06-details-panel.js:6-43. Adapt mutual exclusion, half/full states
+and resize notifications. Architecture exception1: SLiVR reserves grid space and
+retains editor/provider DOM instead of independent translated overlays, to meet
+its project ownership and lifecycle requirements. References remain unchanged.
+
+Validation:408 automated PASS (outputs/responsive-d087-tests.txt), deployment199/0,
+catalog0errors/one retained alias warning. Stable235 adds exclusive-tool/draft/
+geometry coverage; existing233/234 remain. Critical Chrome extension checks passed:
+phone full/half panels, switching tools, no horizontal overflow, Map options and
+Back dismissal; desktop toolbar and tray separate from map controls. Requested
+390x844/320x720/1440x900 viewports were zoom-adjusted by Chrome to observed CSS
+433x937/355x800/approximately1600x1000. Initial screenshot timeout and temporary
+extension disconnection occurred; verification resumed. Viewport override reset.
+No project answers edited in Chrome. This is responsive desktop Chrome evidence,
+not physical iOS/Android or participant evidence. Physical-phone keyboard/touch,
+orientation, provider navigation and complete device matrix remain NOT TESTED.
+Earlier owner functional passes and D086 screenshot failures remain unchanged.
+No telemetry, staging, commits, pushes, or schema/transfer changes.
+
+
+## D088 - Checklist follows selected location (2026-09-23)
+
+Owner reported all ten D087 critical checks passed. Preserve that exact scope;
+no browser/device metadata supplied. The owner then requested prominent checklist
+location identity and automatic following of location selections anywhere.
+
+App0.3.7: route resolution covers map/list/details/immersive/bookmark location
+navigation; an explicit candidate-selection request also covers repeated project
+candidate selection without a route change. Checklist shows its location name,
+project/scene context and assessment date above collapsed metadata. A selector
+switches dated assessments; the last used assessment per project/location is
+remembered during the current shell session. Otherwise choose the most recent
+nonarchived assessment. No assessment is silently created or moved: an empty
+location offers Start assessment, with explicit project/scene prerequisites.
+Pin checklist to this location opts out; Follow selected location opts back in.
+Flush drafts and scouting writes before switching; failed saves retain the old
+editor with a retry explanation. Rapid selections converge on the latest target.
+
+Reference inspection: both LSU3D and Experimental js/06-details-panel.js:5-43
+retain the shared-selection/panel lifecycle already adapted in SLiVR. Neither
+has project-owned assessment following, save guards or date selection (exception3:
+no counterpart). SLiVR uses its existing actions and persistence, not a second
+store. No schema/transfer changes, telemetry, commits, push or reference edits.
+
+Stable236: automated integration covers location routes, project candidates,
+pinning/unpinning, empty-location noncreation, failed-save retention, rapid
+selection and remembering one of multiple assessments. Existing232/233 ownership
+check now explicitly pins to exercise the retained comparison behavior.409 tests
+PASS; deployment199/0; catalog0errors/one existing warning. Logs:
+outputs/checklist-follow-full.txt and checklist-follow-targeted.txt. Initial
+failed follow tests are retained in checklist-follow-initial.txt; candidate
+repeat-selection failure was corrected with an explicit selection request.
+Focused live Chrome DOM check confirmed the selected location name and explicit
+Start assessment action. Complete new phone/provider follow workflow remains
+NOT TESTED, separate from prior owner passes. No project answers edited live.
+
+
+## D089 Phase 3 closeout
+
+Phase3 COMPLETE for delivered scope, based on preserved owner functional/layout
+passes plus final D088 Chrome selection/pin/return/mobile identity checks and
+409 automated PASS. Exact evidence, limitations and runtime digest are in
+research/PHASE_3_ACCEPTANCE_REVIEW.md. Physical-device generalization and provider
+pose claims are not inferred. Phase4 shot actions and Phase5 integrated retest
+remain in their approved allocation. Owner authorized SLiVR-only commit/push;
+private ignored assets/credentials remain local. No telemetry.

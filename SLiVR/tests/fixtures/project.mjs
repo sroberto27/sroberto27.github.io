@@ -283,5 +283,6 @@ export function projectFixture({ catalogVersion = "1.0.0" } = {}) {
     shots,
     variants,
     assets: [],
+    scoutAssessments: [], scoutAssessmentRevisions: [], scoutMedia: [],
   };
 }

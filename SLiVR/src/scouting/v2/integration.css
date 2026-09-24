@@ -1,0 +1,23 @@
+/* SLiVR evidence extensions; the V2 stylesheet remains unchanged. */
+.evidence-details { margin:8px 0 16px;padding:8px;border:1px solid var(--border);border-radius:8px; }
+.evidence-details summary { cursor:pointer;color:var(--text-muted);font-size:12px; }
+.evidence-details fieldset { border:0;margin:0;padding:8px 0;min-width:0; }
+.evidence-details label { display:block;font-size:12px;margin:8px 0; }
+.evidence-details legend { font-size:12px; }
+.evidence-details button { margin:4px;padding:6px; }
+#slivrMeta { margin-bottom:20px; } #slivrMeta > label { display:block;margin:10px 0; }
+#slivrMeta > h3 { margin-top:0; }
+#slivrMeta p { font-size:12px;color:var(--text-muted); }
+.slivr-answer-state { display:block;font-size:11px;margin:5px 0;color:var(--text-muted); }
+.slivr-answer-state select { font-size:12px;padding:5px; }
+#slivrEngine { display:none; }
+pre { white-space:pre-wrap;overflow-wrap:anywhere; }
+:focus-visible { outline:3px solid var(--brand);outline-offset:3px; }
+@media(max-width:600px) {
+ input:not([type="checkbox"]),textarea,select { font-size:16px!important; }
+ button,.btn,select { min-height:44px; }
+ .topbar { padding:8px 12px; }
+ .topbar h1 { font-size:16px; }
+ .toolbar { padding:6px 12px;gap:6px; }
+ .evidence-details summary { min-height:44px;display:flex;align-items:center; }
+}

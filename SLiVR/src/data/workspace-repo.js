@@ -11,7 +11,9 @@
  * what lets an import either apply completely or leave the workspace untouched.
  */
 
+import { assessmentErrors, scoutingReferenceErrors } from "../domain/scout-assessment.js";
 import { validate, formatErrors } from "../domain/schema.js";
+import { bookmarkOwnershipErrors } from "../domain/bookmark.js";
 import {
   WORKSPACE_SCHEMA,
   WORKSPACE_STORES,
@@ -48,6 +50,15 @@ export function bundleProject(bundle) {
   return bundle?.projects?.[0] ?? null;
 }
 
+export function projectDeletionSummary(bundle) {
+  const project = bundleProject(bundle);
+  if (!project) return null;
+  const counts = Object.fromEntries(TRANSFERRED_STORES.map(name => [name, bundle[name]?.length ?? 0]));
+  const token = JSON.stringify(TRANSFERRED_STORES.map(name => [name,
+    [...(bundle[name] ?? [])].map(record => [record.id, record.revision ?? null]).sort((a, b) => a[0].localeCompare(b[0]))]));
+  return { projectId: project.id, name: project.name, counts, token };
+}
+
 function requireStore(storeName) {
   const definition = WORKSPACE_STORES[storeName];
   if (!definition) {
@@ -63,7 +74,20 @@ function requireStore(storeName) {
 export function validateRecord(storeName, record) {
   const definition = requireStore(storeName);
   if (!definition.record) return { ok: true, errors: [] };
-  return validate(definition.record, record);
+  const clean = storeName === "scoutMedia" ? Object.fromEntries(Object.entries(record ?? {}).filter(([key]) => key !== "blob")) : record;
+  const result = validate(definition.record, clean);
+  if (storeName === "scoutAssessments") result.errors.push(...assessmentErrors(record));
+  if (storeName === "scoutAssessmentRevisions") result.errors.push(...assessmentErrors(record?.snapshot));
+  result.ok = result.errors.length === 0;
+  if (storeName === "bookmarks" && result.ok) {
+    const fields = record.supportedFields;
+    if (new Set(fields).size !== fields.length || fields.length !== Object.keys(record.view).length
+        || fields.some(field => !Object.hasOwn(record.view, field) || !Number.isFinite(record.view[field]))) {
+      result.errors.push({ path: "supportedFields", reason: "must name exactly the finite fields present in view" });
+      result.ok = false;
+    }
+  }
+  return result;
 }
 
 function assertValid(storeName, record) {
@@ -169,19 +193,69 @@ export function createWorkspaceRepo({ factory, storage }) {
 
   async function saveRecord(storeName, record) {
     requireStore(storeName);
+    if (["scoutAssessments", "scoutAssessmentRevisions", "scoutMedia"].includes(storeName)) throw new Error("Scouting records require an atomic history/evidence transaction.");
     assertValid(storeName, record);
+    if (storeName === "candidates") {
+      return write(["candidates", "scenes", "projects"], async stores => {
+        await assertCandidateOwner(stores, record);
+        const peers = await getAllByIndex(stores.candidates, "projectId", record.projectId);
+        if (peers.some(c => c.id !== record.id && c.sceneId === record.sceneId && c.locationId === record.locationId)) {
+          throw new StorageError(REPO_ERROR_CODES.invalidRecord, "This scene already has a candidate for that location.");
+        }
+        const previous = await get(stores.candidates, record.id);
+        if (previous && ["projectId", "sceneId", "locationId", "captureId"].some(key => previous[key] !== record[key])) {
+          throw new StorageError(REPO_ERROR_CODES.invalidRecord, "Candidate identity cannot change.");
+        }
+        return putIfNewer(stores.candidates, storeName, record);
+      });
+    }
+    if (storeName === "scenes") {
+      return write(["scenes", "projects"], async stores => {
+        if (!await get(stores.projects, record.projectId)) throw new StorageError(REPO_ERROR_CODES.invalidRecord, "Scene project is unavailable.");
+        const existing = await get(stores.scenes, record.id);
+        if (existing && existing.projectId !== record.projectId) throw new StorageError(REPO_ERROR_CODES.invalidRecord, "Scene ownership cannot change.");
+        return putIfNewer(stores.scenes, storeName, record);
+      });
+    }
+    if (storeName === "bookmarks") {
+      return write(["bookmarks", "projects", "candidates"], async stores => {
+        const errors = bookmarkOwnershipErrors(record, await get(stores.projects, record.projectId),
+          record.candidateId ? await get(stores.candidates, record.candidateId) : null);
+        if (errors.length) throw new StorageError(REPO_ERROR_CODES.invalidRecord, errors.join(" "));
+        return putIfNewer(stores.bookmarks, storeName, record);
+      });
+    }
     return write([storeName], (stores) => putIfNewer(stores[storeName], storeName, record));
   }
 
+  async function assertCandidateOwner(stores, record) {
+    const scene = await get(stores.scenes, record.sceneId);
+    if (!await get(stores.projects, record.projectId) || scene?.projectId !== record.projectId) {
+      throw new StorageError(REPO_ERROR_CODES.invalidRecord, "Candidate scene/project ownership does not match.");
+    }
+  }
+
+  async function addCandidate(record) {
+    assertValid("candidates", record);
+    return write(["candidates", "scenes", "projects"], async stores => {
+      await assertCandidateOwner(stores, record);
+      const existing = (await getAllByIndex(stores.candidates, "projectId", record.projectId))
+        .find(c => c.sceneId === record.sceneId && c.locationId === record.locationId);
+      if (existing) return { candidate: existing, created: false };
+      if (await get(stores.candidates, record.id)) throw new StorageError(REPO_ERROR_CODES.invalidRecord, "Candidate identifier is already in use.");
+      await put(stores.candidates, record);
+      return { candidate: record, created: true };
+    });
+  }
+
   /** Reads a project and everything it owns. Returns null when absent. */
-  async function loadProjectBundle(projectId) {
-    return read(TRANSFERRED_STORES, async (stores) => {
+  async function readBundle(stores, projectId) {
       const project = await get(stores.projects, projectId);
       if (!project) return null;
 
       const bundle = emptyBundle();
       bundle.projects = [project];
-      for (const storeName of ["scenes", "candidates", "bookmarks", "shotScenes"]) {
+      for (const storeName of ["scenes", "candidates", "bookmarks", "shotScenes", "scoutAssessments", "scoutAssessmentRevisions", "scoutMedia"]) {
         bundle[storeName] = await getAllByIndex(stores[storeName], "projectId", projectId);
       }
       for (const shotScene of bundle.shotScenes) {
@@ -191,12 +265,15 @@ export function createWorkspaceRepo({ factory, storage }) {
         }
       }
       return bundle;
-    });
+  }
+
+  async function loadProjectBundle(projectId) {
+    return read(TRANSFERRED_STORES, stores => readBundle(stores, projectId));
   }
 
   async function collectOwnedKeys(stores, projectId) {
     const keys = [];
-    for (const storeName of ["scenes", "candidates", "bookmarks"]) {
+    for (const storeName of ["scenes", "candidates", "bookmarks", "scoutAssessments", "scoutAssessmentRevisions", "scoutMedia"]) {
       const records = await getAllByIndex(stores[storeName], "projectId", projectId);
       for (const record of records) keys.push([storeName, record.id]);
     }
@@ -212,15 +289,45 @@ export function createWorkspaceRepo({ factory, storage }) {
   }
 
   /** Deletes one project and only the records that project owns. */
-  async function deleteProject(projectId) {
+  async function deleteProject(projectId, { expectedToken = null } = {}) {
     return write(TRANSFERRED_STORES, async (stores) => {
       const project = await get(stores.projects, projectId);
       if (!project) return { deleted: false };
+      if (expectedToken !== null && projectDeletionSummary(await readBundle(stores, projectId)).token !== expectedToken) {
+        throw new StorageError(REPO_ERROR_CODES.invalidRecord, "Project records changed after review. Cancel and review deletion again.");
+      }
       for (const [storeName, key] of await collectOwnedKeys(stores, projectId)) {
         await remove(stores[storeName], key);
       }
       await remove(stores.projects, projectId);
       return { deleted: true };
+    });
+  }
+
+  async function deleteScene(projectId, sceneId) {
+    return write(["scenes", "candidates", "shotScenes"], async stores => {
+      const scene = await get(stores.scenes, sceneId);
+      if (!scene || scene.projectId !== projectId) throw new StorageError(REPO_ERROR_CODES.invalidRecord, "Scene ownership does not match.");
+      const candidates = await getAllByIndex(stores.candidates, "projectId", projectId);
+      const shots = await getAllByIndex(stores.shotScenes, "projectId", projectId);
+      if ([...candidates, ...shots].some(record => record.sceneId === sceneId)) {
+        throw new StorageError(REPO_ERROR_CODES.invalidRecord, "This scene has linked candidates or shot designs. Keep it until those links are explicitly resolved.");
+      }
+      await remove(stores.scenes, sceneId);
+      return { deleted: true };
+    });
+  }
+
+  async function reorderScenes(projectId, orderedIds, updatedAt) {
+    return write(["scenes"], async stores => {
+      const scenes = await getAllByIndex(stores.scenes, "projectId", projectId);
+      if (new Set(orderedIds).size !== scenes.length || orderedIds.length !== scenes.length
+          || scenes.some(scene => !orderedIds.includes(scene.id))) {
+        throw new StorageError(REPO_ERROR_CODES.invalidRecord, "Scene list changed; reload before reordering.");
+      }
+      const ordered = orderedIds.map((id, order) => ({ ...scenes.find(scene => scene.id === id), order }));
+      for (const scene of ordered) { scene.revision++; scene.updatedAt = updatedAt; assertValid("scenes", scene); await put(stores.scenes, scene); }
+      return ordered;
     });
   }
 
@@ -232,11 +339,20 @@ export function createWorkspaceRepo({ factory, storage }) {
    * part-way leaves the original in place.
    */
   async function writeProjectBundle(bundle, { replaceProjectId = null } = {}) {
+    const referenceErrors = scoutingReferenceErrors(bundle);
+    if (referenceErrors.length) throw new Error(referenceErrors.map(e => e.reason).join("; "));
     for (const storeName of TRANSFERRED_STORES) {
       for (const record of bundle[storeName] ?? []) assertValid(storeName, record);
     }
 
     return write(TRANSFERRED_STORES, async (stores) => {
+      const projectId = bundle.projects[0]?.id;
+      for (const name of TRANSFERRED_STORES) for (const record of bundle[name] ?? []) {
+        const old = await get(stores[name], record.id);
+        if (!old || name === "projects") continue;
+        const ownerId = old.projectId ?? (old.shotSceneId ? (await get(stores.shotScenes, old.shotSceneId))?.projectId : null);
+        if (ownerId && ownerId !== projectId) throw new Error("An imported record ID belongs to another project. Import a copy with remapped IDs.");
+      }
       if (replaceProjectId) {
         const existing = await get(stores.projects, replaceProjectId);
         if (existing) {
@@ -257,6 +373,24 @@ export function createWorkspaceRepo({ factory, storage }) {
     });
   }
 
+  /** Atomic assessment/evidence changes retain immutable historical snapshots. */
+  async function saveScouting(bundle) {
+    for (const name of TRANSFERRED_STORES) for (const record of bundle[name] ?? []) assertValid(name, record);
+    const errors = scoutingReferenceErrors(bundle);
+    if (errors.length) throw new Error(errors.map(e => e.reason).join("; "));
+    return write(TRANSFERRED_STORES, async stores => {
+      for (const name of TRANSFERRED_STORES) for (const record of bundle[name] ?? []) {
+        const old = await get(stores[name], record.id);
+        if (old && old.projectId && old.projectId !== record.projectId) throw new Error("Record ownership changed.");
+        if (old && ((old.revision > record.revision) ||
+            (old.revision === record.revision && JSON.stringify(old) !== JSON.stringify(record)))) throw new Error("Stored revision changed. Export the working copy before reloading.");
+        if (old && name === "scoutAssessmentRevisions" && JSON.stringify(old) !== JSON.stringify(record)) throw new Error("Assessment history is immutable.");
+        await put(stores[name], record);
+      }
+      return { written: true };
+    });
+  }
+
   /** Project IDs already present, used to classify an import conflict. */
   async function existingProjectIds() {
     const projects = await read(["projects"], (stores) => getAll(stores.projects));
@@ -274,9 +408,13 @@ export function createWorkspaceRepo({ factory, storage }) {
     listProjects,
     getProject,
     saveRecord,
+    saveScouting,
+    addCandidate,
     loadProjectBundle,
     writeProjectBundle,
     deleteProject,
+    deleteScene,
+    reorderScenes,
     existingProjectIds,
   };
 }

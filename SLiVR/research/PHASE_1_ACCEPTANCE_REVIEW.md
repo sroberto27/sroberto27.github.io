@@ -109,3 +109,18 @@ and PASS/FAIL/BLOCKED/NOT TESTED per item. Preserve failed screenshots and error
 #### D077 owner scope clarification
 
 Owner explicitly confirms "yeah all the test even the ones before the map" in response to the question naming earlier provider-failure and real-browser storage/reload/export/import checks. All earlier instructed delivered-function checklists, including owner 15-16, are now owner-reported PASS. Preserve earlier NOT TESTED/BLOCKED/FAIL entries as historical; do not repeat those checks solely for missing tool access. Browser/version/device and exact tested digest remain unspecified. This does not make unimplemented bookmark save/restore tested, supply absent raw provider reports, or explicitly approve E1. Bookmark-specific and later-phase workflows remain NOT TESTED. No runtime changes or new automated execution.
+## E1 owner approval - 2026-09-22
+
+Owner explicitly answered: "Yes, test them when built" to allocating project
+actions to Phase 3, shot actions to Phase 4 and integrated verification to
+Phase 5, while preserving earlier passes. **E1 is APPROVED** with exactly the
+scope/retest conditions in the proposal below. Earlier "pending" statements
+are historical. No other exception is granted by this answer.
+
+All previously instructed delivered-function tests remain owner-reported PASS
+under D077; browser/device/exact-build metadata remain unspecified. E1 resolves
+the remaining test-44 allocation gate for the accepted Phase 1 baseline.
+Phase 1 baseline is accepted on that evidence plus E1. D078's new camera
+correction has 365 passing automated checks but still requires its own live
+225/64 check; this does not erase the owner's earlier passes. Phase 2 bookmarks
+and raw capability prerequisites are separate, unresolved obligations.

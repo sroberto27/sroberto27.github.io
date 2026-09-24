@@ -177,3 +177,114 @@ D077 owner-reported latest mini-map retest PASS reduces the pending owner UI acc
 #### D077 owner scope clarification
 
 Owner explicitly confirms "yeah all the test even the ones before the map" in response to the question naming earlier provider-failure and real-browser storage/reload/export/import checks. All earlier instructed delivered-function checklists, including owner 15-16, are now owner-reported PASS. Preserve earlier NOT TESTED/BLOCKED/FAIL entries as historical; do not repeat those checks solely for missing tool access. Browser/version/device and exact tested digest remain unspecified. This does not make unimplemented bookmark save/restore tested, supply absent raw provider reports, or explicitly approve E1. Bookmark-specific and later-phase workflows remain NOT TESTED. No runtime changes or new automated execution.
+## D078 - remaining acceptance limits, 2026-09-22
+
+The new session-camera correction passes automated lifecycle tests but has no
+live browser observation. Selected-location return intentionally recenters;
+it must not be described as exact prior-center/zoom restoration. Camera state
+does not survive a full page reload and does not retain a streaming map.
+No fresh provider reports could be obtained: browser discovery was empty and
+tab creation failed. Earlier owner-confirmed tests remain valid within their
+reported scope; missing browser/build metadata must not erase those passes.
+Unimplemented bookmarks cannot inherit them. E1 requires explicit approval;
+Phase 3 dependent implementation remains gated. No new pose, sweep-list,
+screenshot, coverage/date/rights or participant-benefit claim is supported.
+## D079 - approved scope and remaining live checks
+
+E1 phase allocation and E2 entry-only bookmarks are explicitly approved,
+superseding their pending status below. Entry bookmarks cannot establish the
+view/room a scout observed and must not be used as exact-view evidence in Phase 3.
+Retired references and unverified legacy pose records remain readable/exportable
+with restoration unavailable. Unknown capture dates/coverage/rights remain.
+373 automated checks include reload/transfer/failure and ownership contracts,
+but fresh browser bookmark arrival/reload/transfer and camera tests are pending.
+Phase 2 remains open; no dependent Phase 3 editor is delivered. The user's earlier
+passes are preserved. Source-level and fake-IDB evidence is not real-browser or
+human-participant evidence. Local-only storage still requires explicit backups.
+## D080 - accepted workflow, retained limits
+
+New bookmark/camera live checklist is now owner-reported PASS, superseding its
+pending status below. Browser/device and independently verified tested digest
+remain unspecified. Phase 2 closes under E2 entry-only scope; no exact-view,
+coverage/rights/freshness or participant benefit claim. Later Phase 3 workflows
+require their own evidence and cannot inherit this acceptance.
+## D081 - Phase 3 is in progress
+
+The new project/scene UI has automated contracts, not owner/browser acceptance.
+Explicit Save is required; form drafts survive mode/redraw changes but are not
+included in export until submitted and do not survive reload. Submitted failed
+writes remain in memory/emergency JSON. Full autosave, active scene/candidate
+cross-mode context, candidates, assessments/media/history, comparison and decisions
+are not yet delivered. Transfer 1.1.0 prevents older readers silently accepting
+scene-order data; legacy 1.0 remains readable. No phase-complete or usability
+claim follows from 381 passing automated checks. Phase 2 accepted scope remains
+entry-only and does not expand provider capability evidence.
+
+## D082 - candidate increment limits
+
+Repository/DOM-double tests do not establish browser layout, device accessibility
+or provider behavior. New candidate UI live tests remain NOT TESTED. Full autosave,
+assessment/media/history, richer fit migration, comparison and scene decisions
+remain outstanding; Phase 3 is not complete. Old candidate ratings are retained
+without invented evidence. Selection metadata failures report a notice and do
+not change the truth of project record saves. Previously accepted Phase 2 checks
+remain owner-reported evidence for their original build and scope.
+
+## D083 - remaining acceptance limits
+
+Phase 3 runtime code has automated evidence, not new live browser acceptance.
+Current automation cannot establish native IndexedDB upgrade/durability, real
+media decoding/playback/WebGL loss, keyboard focus/layout on desktop/tablet or
+network/cache isolation. Discovery returned no browsers and iab was unavailable.
+The exact required new checks remain open in PHASE_3_ACCEPTANCE_REVIEW; no implicit
+exception or Phase 3 COMPLETE claim. Earlier owner acceptance remains scoped to
+its original Phase 2 checks. Base64 plus Blob increases local quota use; bounds
+and explicit failure/recovery mitigate loss but do not guarantee storage capacity.
+Historical media remain until project deletion; archive/detach do not reclaim
+bytes used by snapshots. Legacy ambiguous defaults stay unresolved; missing files
+are explicit placeholders. Imported binary content is supplied evidence, not
+proof of permission, measurement or capture freshness. No participant benefit,
+provider pose or current acoustic/electrical/compliance capability is inferred.
+
+### D086 visual validation limitation
+
+Unchanged V2 CSS and copied form markup establish source provenance, not pixel
+fidelity or usability inside a resizable iframe. Actual rendering, focus across
+frame boundaries, sticky elements, mobile sheets, media playback and pointer resize
+need browser evidence. Automated doubles do not render frames. Embedding reuses
+SLiVR media limits/evidence semantics; it does not introduce all standalone V2
+features. Exact tour camera restoration remains unverified/entry-only.
+
+
+### D087 responsive workspace update
+
+App0.3.6 implements reserved desktop toolbar/tray and exclusive phone full/half
+tools with compact navigation, collapsible map controls/context and Back dismissal.
+408 automated tests PASS plus critical Chrome responsive checks. Stable235 and
+source rationale are recorded in research/DECISION_RECORD.md and
+ docs/FULL-SYSTEM-TESTING.md. Physical-phone keyboard/touch/orientation/provider
+acceptance remains NOT TESTED. Preserve prior owner functional passes and D086
+screenshot failures. No telemetry or reference changes. Use Chrome only for
+critical checks, as requested. No staging/commit/push.
+
+
+### D088 checklist location following
+
+Owner reports all D087 critical checks passed; preserve prior acceptance. App0.3.7
+adds prominent location identity, default following of route/candidate selection,
+pin/follow controls, save guards, explicit start for empty locations and session
+memory of dated assessment selection. Stable236 and evidence: DECISION_RECORD D088
+and docs/FULL-SYSTEM-TESTING.md.409 automated PASS; focused Chrome identity check;
+new end-to-end mobile/provider following acceptance remains NOT TESTED. Prior
+passes do not need repeating. No data schema changes or telemetry.
+
+
+## D089 Phase 3 closeout
+
+Phase3 COMPLETE for delivered scope, based on preserved owner functional/layout
+passes plus final D088 Chrome selection/pin/return/mobile identity checks and
+409 automated PASS. Exact evidence, limitations and runtime digest are in
+research/PHASE_3_ACCEPTANCE_REVIEW.md. Physical-device generalization and provider
+pose claims are not inferred. Phase4 shot actions and Phase5 integrated retest
+remain in their approved allocation. Owner authorized SLiVR-only commit/push;
+private ignored assets/credentials remain local. No telemetry.

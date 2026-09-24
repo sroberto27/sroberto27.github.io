@@ -16,6 +16,7 @@
  */
 
 import { WORKSPACE_SCHEMA_VERSION } from "../domain/versions.js";
+import { assessmentRecord, assessmentRevisionRecord, scoutMediaRecord } from "../domain/scout-assessment.js";
 import { projectRecord } from "../domain/project.js";
 import { sceneRecord } from "../domain/scene-brief.js";
 import { candidateRecord } from "../domain/candidate.js";
@@ -69,6 +70,9 @@ export const WORKSPACE_STORES = Object.freeze({
     owner: { store: "projects", field: "projectId" },
     transferred: true,
   },
+  ...Object.fromEntries([["scoutAssessments", assessmentRecord], ["scoutAssessmentRevisions", assessmentRevisionRecord], ["scoutMedia", scoutMediaRecord]].map(([name, record]) => [name, {
+    keyPath: "id", indexes: [{ name: "projectId", keyPath: "projectId" }, { name: "locationId", keyPath: "locationId" }], record, owner: { store: "projects", field: "projectId" }, transferred: true
+  }])),
   bookmarks: {
     keyPath: "id",
     indexes: [

@@ -13,6 +13,9 @@
 import { defineRecord } from "./schema.js";
 
 export const CANDIDATE_STATUS = Object.freeze([
+  "discovered",
+  "under-review",
+  "withdrawn",
   "considering",
   "shortlisted",
   "preferred",
@@ -53,7 +56,37 @@ export const candidateRecord = defineRecord("Candidate", {
   decisionNotes: { type: "string", required: false, maxLength: 4000 },
   updatedAt: { type: "isoDate", required: true },
   revision: { type: "number", required: true, integer: true, min: 1 },
+  workflowVersion: { type: "number", required: false, integer: true, min: 1, max: 2 },
+  evaluations: { type: "array", of: { type: "object", allowExtra: false, fields: {
+    requirement: { type: "string", required: true, minLength: 1 }, kind: { type: "enum", values: ["mustHave", "preferred", "rejection"], required: true },
+    rating: { type: "enum", values: ["strong-fit", "acceptable", "concern", "fails-requirement", "unknown"], required: true }, note: { type: "string", maxLength: 4000 },
+    assessmentRevisionId: { type: "workspaceId", kind: "assessmentRevision" }, questionId: { type: "string" }
+  } } },
+  legacyStatus: { type: "string", required: false, maxLength: 80 },
 });
+
+export const REVIEW_STATUSES = ["discovered", "under-review", "shortlisted", "rejected", "withdrawn"];
+
+/** Explicit user edits upgrade workflow vocabulary without rewriting old ratings. */
+export function reviseCandidate(candidate, fields, now) {
+  const status = fields.status ?? candidate.status;
+  if (!REVIEW_STATUSES.includes(status) && status !== candidate.status) throw new Error("Preferred/backup choices require a scene decision.");
+  return { ...candidate, ...fields, status,
+    ...(REVIEW_STATUSES.includes(status) ? { workflowVersion: 2,
+      ...(!candidate.workflowVersion || candidate.workflowVersion === 1 ? { legacyStatus: candidate.legacyStatus ?? candidate.status } : {}) } : {}),
+    updatedAt: now, revision: candidate.revision + 1 };
+}
+
+export function createCandidate({ id, projectId, scene, location, capture, catalogVersion, now }) {
+  return { id, projectId, sceneId: scene.id, locationId: location.id,
+    ...(capture ? { captureId: capture.id } : {}), catalogVersion, workflowVersion: 2,
+    status: "discovered", addedAt: now, updatedAt: now, revision: 1,
+    rationale: "", strengths: [], concerns: [], missingInfo: [...scene.openQuestions],
+    requirementAssessments: [
+      ...scene.mustHave.map(requirement => ({ requirement, kind: "mustHave", result: "unknown" })),
+      ...scene.preferred.map(requirement => ({ requirement, kind: "preferred", result: "unknown" })),
+    ] };
+}
 
 /** Unmet and unknown requirements, so neither can be averaged away. */
 export function unresolvedRequirements(candidate) {

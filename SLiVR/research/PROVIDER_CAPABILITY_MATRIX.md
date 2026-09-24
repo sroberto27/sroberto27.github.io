@@ -92,3 +92,27 @@ D077 owner mini-map pass does not establish new Treedis pose/sweep-list/full-vie
 #### D077 owner scope clarification
 
 Owner explicitly confirms "yeah all the test even the ones before the map" in response to the question naming earlier provider-failure and real-browser storage/reload/export/import checks. All earlier instructed delivered-function checklists, including owner 15-16, are now owner-reported PASS. Preserve earlier NOT TESTED/BLOCKED/FAIL entries as historical; do not repeat those checks solely for missing tool access. Browser/version/device and exact tested digest remain unspecified. This does not make unimplemented bookmark save/restore tested, supply absent raw provider reports, or explicitly approve E1. Bookmark-specific and later-phase workflows remain NOT TESTED. No runtime changes or new automated execution.
+## D078 observation attempt - 2026-09-22
+
+No new provider capability report. Browser inventory returned no apps/browsers;
+opening `http://localhost:8000/tools/treedis-recon.html` failed because the in-app
+browser is unavailable. The map-camera change does not modify Treedis. Preserve
+all prior owner-reported rendering/navigation and failure-test passes; do not
+infer raw pose, orientation restoration, sweep-list or screenshot support.
+Capture dates, extent and rights remain unknown. Full automation: 365 PASS;
+these are separate from provider evidence.
+## D079 - bounded entry-only scope approved
+
+Owner approved basic bookmarks through already owner-tested catalog entries.
+No new raw provider observation is claimed. Contract treedis-recon-2/entry-only-1
+reopens a supplied entry through the unchanged existing adapter; it saves no
+camera pose. Same-entry restores renew the session. New bookmark browser arrival
+checks remain pending. Full-view restoration, raw rotation interpretation,
+sweep-list reliance and screenshots remain unavailable until individually
+verified/authorized. Capture date, extent and rights remain unknown.
+## D080/D081 update
+
+Owner reports all new D079 entry-bookmark/camera checks PASS, including actual
+entry restoration after walking away and reload/transfer. No raw per-entry pose
+report or exact-angle/screenshot evidence is supplied. Phase 2 is accepted under
+E2; subsequent project/scene editing does not change provider capabilities.

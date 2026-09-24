@@ -1,3 +1,8 @@
+# Current status: Phase 3 COMPLETE (D089)
+
+See research/PHASE_3_ACCEPTANCE_REVIEW.md for final evidence and limitations.
+Phase 4 may start under D068. Historical status entries follow.
+
 # SLiVR — implementation plan (Phases 0–5 prototype, Phase 6 post-prototype)
 
 ## Latest acceptance status - 2026-09-22 (D077)
@@ -733,3 +738,85 @@ D075 implements interactive mini-map capture pins, zoom, Center, streets, config
 ### 2026-09-22 - D076
 
 D076 mini-map presentation correction delivered: internal single-row SVG controls and transparent pin backgrounds. Stable 222/224 automated behavior retained. Live desktop/phone presentation retest remains required; phases and acceptance gates unchanged.
+## Current status - D079, 2026-09-22
+
+Phase 1 baseline accepted with preserved owner passes and explicitly approved E1
+(test 44 candidate/comparison in Phase 3, shots in Phase 4, integrated Phase 5).
+Phase 2 entry-only bookmarks are implemented under explicit E2 approval: project
+ownership, names/notes, reload/transfer, recovery and honest unsupported/retired
+restore behavior. Exact angles remain unavailable. Explore session camera is
+retained, with selected-location focus taking precedence. 373 automated checks
+PASS; new bookmark and camera browser acceptance pending. Phase 2 stays OPEN;
+Phase 3 dependent implementation waits, with source/schema preparation recorded
+in research/PHASE_3_RECONNAISSANCE_D079.md. Older status sections below are history.
+## Current status - D080/D081, 2026-09-22
+
+Phase 2 COMPLETE under E2 entry-only scope: owner explicitly reports all new
+bookmark/camera checklist checks passed. Earlier passes and E1 allocation are
+preserved; no repeated confirmation required. Browser/device/exact tested digest
+remain unspecified. Phase 3 IN PROGRESS: project metadata edit/reviewed deletion
+and scene briefs/order/linked-scene protection implemented (D081). 381 automated
+PASS; new editing UI live checks NOT TESTED. App 0.3.0, transfer 1.1.0, database 1.
+Next D068 step is candidates, then dated assessments/history/media, requirement
+evaluation, comparison and decisions; full autosave/context integration remains
+required before Phase 3 acceptance. No assessment editor or phase closure claimed.
+
+## Current status - D082, 2026-09-23
+
+Phase 3 candidate creation, notes and review lifecycle now join project/scene
+editing. Projects, dossier and Immersive expose working candidate actions; active
+project/scene/candidate IDs survive reload. App 0.3.1, transfer 1.2.0, database 1.
+The next D068 implementation step is the CheckList/v2-derived shared Scouting
+Assessment editor with eight sections, dated evidence/history/media and coherent
+storage/transfer, followed by requirement evaluation, comparison and decisions.
+Full autosave and remaining Phase 3 acceptance gates are still outstanding.
+Phase 2 acceptance remains preserved; no phase closure or new live PASS claimed.
+
+## Current status - D083, 2026-09-23
+
+Phase 3 implementation is delivered, pending new live acceptance (not COMPLETE).
+D068 editor/history/media/evidence, five-state fit, three-plus comparison, saved
+preferred/backup decisions and reopening, autosave, canonical selected-media
+transfer and previewed legacy JSON/ZIP import now exist. Linked schematic shot
+workspace records preserve Phase 3 relationships; spatial editing remains Phase 4.
+Native project ZIP and print packets remain Phase 5. App 0.3.2, transfer 1.3.0,
+database 2, template 1.0.0. Final 399 automated PASS; exact open gates and owner
+checklist are in research/PHASE_3_ACCEPTANCE_REVIEW.md. Earlier statuses are history.
+Preserve Phase 2 owner acceptance without repeated confirmation.
+
+## D086 unified workspace delivery (2026-09-23)
+
+Owner reports all nine supplied Phase 3 critical checks passed, including D085
+Create/save/reload recovery. Record that exact owner-reported scope without
+inventing browser/device/build-digest metadata or repeating accepted checks.
+Owner then approved the unified Explore/V2 presentation revision. App0.3.5
+implements two top-level destinations, project/scene tools, legacy route support,
+Map/Immersive view choices and a floating-first embedded V2 assessment interface.
+Optional side-by-side/maximized modes, minimized tool strip, keyboard movement/
+resize and local layout preferences are included. Source and deviations: D086.
+This changes presentation, not DB2 or transfer1.3.0. Spatial shots remain Phase 4.
+New stable232-234 and affected Part J checks apply; visual/browser acceptance of
+this revised interface is still pending. Do not reuse old live PASS as new UI PASS.
+
+
+### D087 responsive workspace update
+
+App0.3.6 implements reserved desktop toolbar/tray and exclusive phone full/half
+tools with compact navigation, collapsible map controls/context and Back dismissal.
+408 automated tests PASS plus critical Chrome responsive checks. Stable235 and
+source rationale are recorded in research/DECISION_RECORD.md and
+ docs/FULL-SYSTEM-TESTING.md. Physical-phone keyboard/touch/orientation/provider
+acceptance remains NOT TESTED. Preserve prior owner functional passes and D086
+screenshot failures. No telemetry or reference changes. Use Chrome only for
+critical checks, as requested. No staging/commit/push.
+
+
+### D088 checklist location following
+
+Owner reports all D087 critical checks passed; preserve prior acceptance. App0.3.7
+adds prominent location identity, default following of route/candidate selection,
+pin/follow controls, save guards, explicit start for empty locations and session
+memory of dated assessment selection. Stable236 and evidence: DECISION_RECORD D088
+and docs/FULL-SYSTEM-TESTING.md.409 automated PASS; focused Chrome identity check;
+new end-to-end mobile/provider following acceptance remains NOT TESTED. Prior
+passes do not need repeating. No data schema changes or telemetry.

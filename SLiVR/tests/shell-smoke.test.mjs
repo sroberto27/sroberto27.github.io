@@ -49,10 +49,11 @@ function serveFromDisk(missing = () => false) {
  * the store reports a failing subscriber rather than propagating it, so the
  * failure would be silent.
  */
-async function bootShell({ hash = "", withStorage = true, indexedDB = null, missing } = {}) {
+async function bootShell({ hash = "", withStorage = true, indexedDB = null, missing, diagnostics = null } = {}) {
   serveFromDisk(missing);
   const dom = createFakeDom({
     hash,
+    diagnostics,
     indexedDB: indexedDB ?? (withStorage ? createFakeIndexedDB().factory : null),
   });
   globalThis.document = dom.document;
@@ -66,9 +67,54 @@ after(() => {
   globalThis.document = REAL_DOCUMENT;
 });
 
+test("227: project editing and deletion review use working controls and safe cancellation", async () => {
+  const { dom, store, actions } = await bootShell();
+  const project = await actions.createProject("Editable production"); dom.window.dispatch("hashchange");
+  const form = dom.app.querySelectorAll("form").find(node => node.querySelectorAll("button").some(b => b.textContent === "Save project changes"));
+  form.querySelectorAll("input").find(n => n.getAttribute("name") === "name").value = "Revised production";
+  form.dispatch("submit", { preventDefault() {} });
+  await new Promise(resolve => setTimeout(resolve, 50));
+  assert.equal(store.getState().workingBundle.projects[0].name, "Revised production");
+  assert.equal(store.getState().save.state, "saved");
+  assert.ok(dom.app.querySelectorAll("button").some(b => b.textContent === "Create scene brief"));
+  await actions.requestProjectDeletion(project.id);
+  assert.ok(dom.app.textContent.includes("Delete Revised production?"));
+  assert.ok(dom.app.textContent.includes("Confirm project deletion"));
+  assert.equal(dom.app.querySelector(".workspace").inert, true);
+  dom.app.querySelectorAll("button").find(b => b.textContent === "Cancel, keep project").click();
+  assert.equal(store.getState().pendingDeletion, null);
+  assert.equal(dom.app.querySelector(".workspace").inert, false);
+  assert.equal(store.getState().workingBundle.projects[0].id, project.id);
+  actions.unmountMap(); actions.unmountViewer();
+});
+
+test("226/60-62: bookmark form survives viewer redraw; same-entry restore renews the viewer", async () => {
+  const { dom, store, actions } = await bootShell();
+  await actions.createProject("Entry bookmarks"); dom.window.dispatch("hashchange");
+  actions.navigate({ name: "immersive", params: { locationId: "LOC-009" } }); dom.window.dispatch("hashchange");
+  dom.app.querySelectorAll("button").find(b => b.textContent === "Location details").click();
+  const input = dom.document.getElementById("bookmark-name");
+  input.value = "Front door"; input.dispatch("input", { target: input });
+  const note = dom.document.getElementById("bookmark-note");
+  note.value = "Confirm access later"; note.dispatch("input", { target: note });
+  store.setState({ viewer: { ...store.getState().viewer } });
+  assert.equal(dom.document.getElementById("bookmark-name").getAttribute("value"), "Front door");
+  assert.equal(dom.document.getElementById("bookmark-note").value, "Confirm access later");
+  dom.app.querySelector(".bookmark-form").dispatch("submit", { preventDefault() {} });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(store.getState().workingBundle.bookmarks.length, 1);
+  assert.equal(store.getState().save.state, "saved");
+  const oldFrame = viewerFrame(dom);
+  dom.app.querySelectorAll("button").find(b => b.textContent === "Restore entry").click();
+  assert.notEqual(viewerFrame(dom), oldFrame, "restoring the current entry must not keep the walked-away view");
+  assert.match(store.getState().bookmarkStatus, /Entry restore requested/);
+  assert.equal(store.getState().viewer.captureId, "CAP-009");
+  actions.unmountViewer(); actions.unmountMap();
+});
+
 test("223: Explore list and pin selections open the same location through the Immersive tab", async () => {
   const { dom, store, actions } = await bootShell();
-  const tab = mode => dom.app.querySelectorAll("button").find(n => n.getAttribute("data-mode") === mode);
+  const tab = mode => dom.app.querySelectorAll("button").find(n => n.getAttribute(mode === "immersive" ? "data-view" : "data-mode") === mode);
   const search = dom.app.descendants().find(n => n.getAttribute("aria-label") === "Search locations");
   search.value = "Magnolia"; search.dispatch("input"); dom.advance(180);
   dom.app.querySelector(".explore-results").querySelectorAll("button")[0].click();
@@ -111,7 +157,7 @@ test("223: Explore list and pin selections open the same location through the Im
 test("223: no selection opens the immersive index and a future selection preserves its no-capture state", async () => {
   for (const [hash, expected] of [["#/explore", null], ["#/location/LOC-999", null], ["#/location/LOC-018", "LOC-018"]]) {
     const { dom, store } = await bootShell({ hash });
-    dom.app.querySelectorAll("button").find(n => n.getAttribute("data-mode") === "immersive").click();
+    dom.app.querySelectorAll("button").find(n => n.getAttribute("data-view") === "immersive").click();
     dom.window.dispatch("hashchange");
     assert.equal(store.getState().route.name, expected ? "immersive" : "immersive-index");
     assert.equal(store.getState().routeResolution.locationId ?? null, expected);
@@ -203,12 +249,12 @@ test("booting builds a page rather than leaving an empty body", async () => {
   const text = dom.app.textContent;
   assert.match(text, /SLiVR/);
   assert.match(text, /Explore/);
-  assert.match(text, /Projects/);
+  assert.match(text, /Project tools/);
   assert.match(text, /Immersive/);
   assert.match(text, /Shot Designer/);
 });
 
-test("the four approved modes are buttons, with the active one marked", async () => {
+test("232: Explore and Shot Designer are the only top-level destinations", async () => {
   // Partial automated evidence for test 15. It shows the controls exist and
   // carry an active state; whether they are legible and keyboard-operable is
   // a live check.
@@ -216,7 +262,7 @@ test("the four approved modes are buttons, with the active one marked", async ()
   const buttons = dom.app.descendants().filter((node) => node.getAttribute("data-mode"));
   assert.deepEqual(
     buttons.map((button) => button.getAttribute("data-mode")),
-    ["explore", "projects", "immersive", "shot"],
+    ["explore", "shot"],
   );
 
   const active = buttons.filter((button) => button.getAttribute("aria-current") === "page");
@@ -250,11 +296,12 @@ test("an unknown identifier reaches the recoverable not-found panel", async () =
 
 test("switching mode by clicking a button re-renders that mode", async () => {
   const { dom, store } = await bootShell();
-  const projects = dom.app.descendants().find((node) => node.getAttribute("data-mode") === "projects");
+  const projects = dom.app.querySelectorAll("button").find(node => node.textContent === "Project tools");
   projects.click();
   dom.window.dispatch("hashchange");
 
-  assert.equal(store.getState().mode, "projects");
+  assert.equal(store.getState().mode, "explore");
+  assert.ok(dom.app.querySelector(".tool-window"));
   assert.match(dom.app.textContent, /New local project/);
 });
 
@@ -378,7 +425,7 @@ test("a future candidate has nothing to open and no frame is pointed anywhere", 
   assert.equal(store.getState().routeResolution.status, "ok");
   assert.equal(store.getState().viewer.status, "idle");
   assert.equal(viewerFrame(dom).getAttribute("src"), "about:blank");
-  assert.match(dom.app.textContent, /nothing to open/);
+  assert.match(dom.app.textContent, /Continue scouting on the map/);
 });
 
 test("198: switching and retrying immersive sessions through the shell is re-entrancy safe", async () => {
@@ -500,13 +547,13 @@ test("39-44/216: all dossiers retain public fields, source boundaries, unknowns 
     actions.navigate({ name:"location", params:{locationId:location.id} }); dom.window.dispatch("hashchange");
     const dossier = dom.app.querySelector(".explore-dossier");
     const text = dossier.textContent;
-    for (const section of ["Overview", "Production considerations", "Visual / spatial character", "Immersive coverage", "Access information", "Evidence / sources", "Project context", "Share location"]) assert.ok(text.includes(section), `${location.id}: ${section}`);
+    for (const section of ["Overview", "Production considerations", "Visual / spatial character", "Immersive coverage", "Access information", "Evidence / sources", "Share location"]) assert.ok(text.includes(section), `${location.id}: ${section}`);
     const detail = store.getState().catalog.scoutDetailsByLocationId.get(location.id);
     for (const [key,value] of Object.entries(detail)) if (!['locationId','sourceIds','recordStatus'].includes(key)) assert.ok(text.includes(value), `${location.id}: ${key}`);
     assert.ok(text.includes("Public hours do not imply production availability"));
     assert.ok(text.includes("Coordinates (approximate; not surveyed)"));
     assert.ok(text.includes("Information has not been found"));
-    assert.ok(text.includes("Project observations and candidate decisions are separate"));
+    assert.ok(!text.includes("Project context"));
     const buttons = dossier.querySelectorAll("button");
     assert.equal(buttons.some(n => n.textContent === "Open in Immersive"), location.captureStatus === "current");
     assert.ok(!buttons.some(n => /checklist|assessment|compare|candidate/i.test(n.textContent)));
@@ -547,4 +594,236 @@ test("44/216: clipboard success copies a context-free absolute public link and r
   await Promise.resolve();
   assert.deepEqual(copied,["https://example.org/SLiVR/#/location/LOC-018"]);
   assert.match(dom.app.querySelector(".explore-dossier").textContent,/Public location link copied/);
+});
+
+test("44/71/81/228: dossier adds candidates and returns from Immersive to the selected scene", async () => {
+  const { dom, actions, store } = await bootShell();
+  const project = await actions.createProject("Candidate production"); dom.window.dispatch("hashchange");
+  const scene = (await actions.saveScene({ number: "1", title: "Arrival", intExt: "EXT", dayNight: "DAY" })).scene;
+  actions.selectScene(scene.id);
+  actions.navigate({ name: "location", params: { locationId: "LOC-001" } }); dom.window.dispatch("hashchange");
+  const button = text => dom.app.querySelectorAll("button").find(n => n.textContent === text);
+  button("Scouting checklist").click();
+  assert.ok(button("Add location to scene")); button("Add location to scene").click();
+  await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(store.getState().workingBundle.candidates.length, 1);
+  assert.ok(button("Open candidate")); button("Open candidate").click(); dom.window.dispatch("hashchange");
+  assert.equal(store.getState().route.params.sceneId, scene.id);
+  assert.ok(dom.app.querySelector(".candidate-card"));
+  assert.equal(dom.app.querySelector(".scene-brief").getAttribute("open"), "open");
+  button("Inspect in Immersive").click(); dom.window.dispatch("hashchange");
+  assert.equal(store.getState().mode, "immersive");
+  assert.ok(button("Open candidate")); button("Open candidate").click(); dom.window.dispatch("hashchange");
+  assert.equal(store.getState().route.params.projectId, project.id);
+  assert.equal(store.getState().activeSceneId, scene.id);
+  const form = dom.app.querySelectorAll("form").find(f => f.querySelectorAll("button").some(b => b.textContent === "Save candidate"));
+  assert.ok(form);
+  const rationale = form.querySelectorAll("textarea").find(n => n.getAttribute("name") === "rationale");
+  rationale.value = "Access still needs checking";
+  form.dispatch("submit", { preventDefault() {} }); await new Promise(resolve => setTimeout(resolve, 100));
+  assert.equal(store.getState().workingBundle.candidates[0].rationale, "Access still needs checking");
+});
+
+test("207/208/209/215: shared checklist autosaves zero/false and flushes on close without provider access", async () => {
+ const { dom, actions, store } = await bootShell();
+ const project = await actions.createProject("Checklist production"); dom.window.dispatch("hashchange");
+ const scene = (await actions.saveScene({ number: "1", title: "Room", intExt: "INT", dayNight: "DAY", mustHave: ["Access"] })).scene;
+ const { candidate } = await actions.addLocationCandidate(scene.id, "LOC-001");
+ const { assessment } = await actions.createAssessment(candidate.id);
+ const dialog = dom.app.querySelectorAll(".tool-window").find(n=>n.getAttribute("aria-label")==="Scouting checklist"); assert.ok(dialog);
+ const field = label => dialog.descendants().find(n => n.getAttribute("aria-label") === label);
+ const doors = field("door count: value"); assert.ok(doors); doors.value = "0"; doors.dispatch("input");
+ const noise = field("ambient noise: value"); noise.value = "false"; noise.dispatch("change");
+ dialog.querySelectorAll("button").find(b => b.textContent === "Close").click();
+ await new Promise(r => setTimeout(r, 100));
+ assert.equal(store.getState().activeAssessmentId, null);
+ const saved = actions.getWorkspace().scoutAssessments[0];
+ assert.equal(saved.answers.find(a => a.questionId === "door-count").numberValue, 0);
+ assert.equal(saved.answers.find(a => a.questionId === "ambient-noise").booleanValue, false);
+ assert.equal(store.getState().save.state, "saved");
+ actions.navigate({ name: "location", params: { locationId: "LOC-001" } }); dom.window.dispatch("hashchange");
+ dom.app.querySelectorAll("button").find(b=>b.textContent === "Scouting checklist").click();
+ const reopen = dom.app.querySelectorAll("button").find(b => b.textContent.startsWith("Scouting assessment ")); assert.ok(reopen); reopen.click(); await new Promise(r=>setTimeout(r,20));
+ assert.equal(store.getState().activeAssessmentId, assessment.id);
+ assert.equal(dom.app.querySelectorAll(".tool-window").find(n=>n.getAttribute("aria-label")==="Scouting checklist").querySelectorAll("input").find(n => n.getAttribute("aria-label") === "door count: value").value, "0");
+ dom.app.querySelectorAll(".tool-window").find(n=>n.getAttribute("aria-label")==="Scouting checklist").querySelectorAll("button").find(b => b.textContent === "Close").click(); await new Promise(r => setTimeout(r, 20));
+ assert.equal(actions.getWorkspace().projects[0].id, project.id);
+});
+
+test("80/81: existing workspace forms autosave and export flushes an immediate edit", async () => {
+ const { dom, actions, store } = await bootShell(); const project = await actions.createProject("Before autosave"); dom.window.dispatch("hashchange");
+ const form = dom.app.querySelectorAll("form").find(n => n.querySelectorAll("button").some(b => b.textContent === "Save project changes"));
+ const name = form.querySelectorAll("input").find(n => n.getAttribute("name") === "name");
+ name.value = "Latest before export"; name.dispatch("input"); form.dispatch("input");
+ const file = await actions.exportProject(project.id);
+ assert.equal(JSON.parse(file.text).payload.projects[0].name, "Latest before export");
+ assert.equal(store.getState().save.state, "saved");
+});
+
+test("72-74/77: three-candidate comparison and detail edit the same judgment with unknowns intact", async () => {
+ const { dom, actions } = await bootShell(); await actions.createProject("Comparison production"); dom.window.dispatch("hashchange");
+ const scene = (await actions.saveScene({ number: "1", title: "Arrival", intExt: "EXT", dayNight: "DAY", mustHave: ["Access"] })).scene;
+ for (const id of ["LOC-001", "LOC-002", "LOC-003"]) await actions.addLocationCandidate(scene.id, id);
+ const comparisons = dom.app.querySelectorAll(".comparison"); assert.equal(comparisons.length, 4);
+ const table = comparisons.at(-1); assert.equal(table.querySelectorAll("th").length, 5);
+ let rating = table.descendants().find(n => n.getAttribute("aria-label") === "LOC-001: Access fit");
+ assert.equal(rating.value, "unknown"); rating.value = "concern"; rating.dispatch("change");
+ await actions.flushScouting();
+ const candidate = actions.getWorkspace().candidates.find(c => c.locationId === "LOC-001"); assert.equal(candidate.evaluations[0].rating, "concern");
+ const detail = dom.app.querySelectorAll(".comparison")[0]; rating = detail.descendants().find(n => n.getAttribute("aria-label") === "LOC-001: Access fit");
+ assert.equal(rating.value, "concern"); rating.value = "unknown"; rating.dispatch("change"); await actions.flushScouting();
+ assert.equal(actions.getWorkspace().candidates.find(c => c.id === candidate.id).evaluations[0].rating, "unknown");
+});
+
+test("230: leftover save-failure mode explains failed Create and recovers the same project without reload", async () => {
+ const fake = createFakeIndexedDB();
+ const { dom, actions, store } = await bootShell({ indexedDB: fake.factory, diagnostics: { forceStorageFailure: true, forceImageryFailure: true } });
+ const project = await actions.createProject("Recover project"); dom.window.dispatch("hashchange");
+ assert.equal(store.getState().save.state, "failed");
+ assert.match(dom.app.textContent, /Save-failure test mode is ON/);
+ assert.match(dom.app.textContent, /Save-failure test mode is enabled in this browser/);
+ assert.equal(JSON.parse(actions.exportEmergency().text).payload.projects[0].id, project.id);
+ dom.app.querySelectorAll("button").find(b => b.textContent === "Turn off save-failure test and retry").click();
+ await new Promise(resolve => setTimeout(resolve, 120));
+ assert.equal(store.getState().save.state, "saved");
+ assert.equal(store.getState().openProjectId, project.id);
+ assert.equal(JSON.parse(dom.window.localStorage.getItem("slivr:diagnostics")).forceImageryFailure, true);
+ assert.equal(JSON.parse(dom.window.localStorage.getItem("slivr:diagnostics")).forceStorageFailure, false);
+ const scene = (await actions.saveScene({ number: "1", title: "Room", intExt: "INT", dayNight: "DAY" })).scene;
+ const { candidate } = await actions.addLocationCandidate(scene.id, "LOC-001");
+ dom.window.localStorage.setItem("slivr:diagnostics", JSON.stringify({ forceStorageFailure: true }));
+ const assessment = await actions.createAssessment(candidate.id); assert.equal(assessment.ok, false);
+ assert.equal(store.getState().save.error.code, "storage-simulation-enabled");
+ assert.equal((await actions.stopStorageFailureTest()).ok, true);
+ const reloaded = await bootShell({ indexedDB: fake.factory });
+ await reloaded.actions.openProject(project.id);
+ assert.equal(reloaded.actions.getWorkspace().scoutAssessments[0].id, assessment.assessment.id);
+});
+
+test("230: real write errors remain visible after project navigation without claiming simulation", async () => {
+ const fake = createFakeIndexedDB(); const { dom, actions, store } = await bootShell({ indexedDB: fake.factory });
+ fake.failWrites(true); await actions.createProject("Unstored"); dom.window.dispatch("hashchange");
+ assert.equal(store.getState().save.state, "failed");
+ assert.ok(dom.app.textContent.includes(store.getState().save.error.message));
+ assert.ok(!dom.app.textContent.includes("Save-failure test mode is ON"));
+ fake.failWrites(false); assert.equal((await actions.retrySave()).ok, true);
+});
+
+test("231: Create waits for database opening and saves while catalog loading is still pending", async () => {
+  serveFromDisk();
+  const diskFetch = globalThis.fetch;
+  let releaseCatalog, releaseDatabase;
+  const catalogGate = new Promise(resolve => { releaseCatalog = resolve; });
+  const databaseGate = new Promise(resolve => { releaseDatabase = resolve; });
+  globalThis.fetch = async path => {
+    if (!String(path).includes("lafayette.region.json")) await catalogGate;
+    return diskFetch(path);
+  };
+  const fake = createFakeIndexedDB();
+  let opens = 0;
+  const indexedDB = { open(...args) {
+    opens++;
+    const request = fake.factory.open(...args);
+    return new Proxy(request, { set(target, key, value) {
+      target[key] = key === "onsuccess" ? event => { void databaseGate.then(() => value(event)); } : value;
+      return true;
+    } });
+  } };
+  const dom = createFakeDom({ hash: "#/projects", indexedDB });
+  globalThis.document = dom.document;
+  const { boot } = await import("../src/app/main.js");
+  const booting = boot({ root: dom.app, win: dom.window });
+  const until = async predicate => {
+    for (let i = 0; i < 100 && !predicate(); i++) await new Promise(resolve => setTimeout(resolve, 10));
+    assert.ok(predicate(), "expected startup condition within one second");
+  };
+  try {
+    await until(() => !!dom.document.getElementById("new-project-name"));
+    assert.match(dom.app.textContent, /Opening local storage/);
+    dom.document.getElementById("new-project-name").value = "Early project";
+    const form = dom.app.querySelectorAll("form").find(node => node.querySelectorAll("button").some(b => b.textContent === "Create"));
+    form.dispatch("submit", { preventDefault() {} });
+    await new Promise(resolve => setTimeout(resolve, 20));
+    assert.doesNotMatch(dom.app.textContent, /Not saved:|Save failed/);
+    releaseDatabase();
+    await until(() => dom.app.textContent.includes("Saved locally"));
+    assert.equal(opens, 1);
+    assert.ok(dom.app.textContent.includes("Save project changes"));
+    assert.ok(dom.app.textContent.includes("Checklist import needs the location catalog"));
+    releaseCatalog();
+    const app = await booting;
+    assert.equal(app.store.getState().save.state, "saved");
+    assert.equal(app.store.getState().workingBundle.projects[0].name, "Early project");
+    app.actions.unmountMap(); app.actions.unmountViewer();
+    const projectId = app.store.getState().openProjectId;
+    const reloaded = await bootShell({ indexedDB: fake.factory, hash: `#/project/${projectId}` });
+    assert.ok(reloaded.store.getState().projects.some(p => p.name === "Early project"));
+    assert.equal(reloaded.store.getState().workingBundle.projects[0].id, projectId);
+    reloaded.actions.unmountMap(); reloaded.actions.unmountViewer();
+  } finally {
+    releaseDatabase(); releaseCatalog();
+    await booting;
+  }
+});
+
+test("232/233: project tools and checklist resizing keep the active tour frame attached", async () => {
+ const {dom,actions,store}=await bootShell();await actions.createProject("Unified scouting");dom.window.dispatch("hashchange");
+ const scene=(await actions.saveScene({number:"1",title:"Entry",intExt:"INT",dayNight:"DAY"})).scene;
+ const {candidate}=await actions.addLocationCandidate(scene.id,"LOC-001");
+ actions.navigate({name:"immersive",params:{locationId:"LOC-001"}});dom.window.dispatch("hashchange");
+ const frame=viewerFrame(dom), src=frame.getAttribute("src");
+ dom.app.querySelectorAll("button").find(b=>b.textContent==="Project tools").click();
+ assert.equal(viewerFrame(dom),frame);assert.equal(frame.getAttribute("src"),src);
+ const {assessment}=await actions.createAssessment(candidate.id);
+ const tool=dom.app.querySelectorAll('.tool-window').find(n=>n.getAttribute('aria-label')==='Scouting checklist');
+ for(const label of ['Side by side','Maximize','Restore','Minimize']){tool.querySelectorAll('button').find(b=>b.textContent===label).click();assert.equal(viewerFrame(dom),frame);assert.equal(frame.getAttribute('src'),src);}
+ assert.equal(store.getState().activeAssessmentId,assessment.id);
+ assert.notEqual(dom.app.querySelector('.workspace').inert,true);
+ tool.querySelectorAll('button').find(b=>b.textContent==='Pin checklist to this location').click();
+ actions.navigate({name:'immersive',params:{locationId:'LOC-009'}});dom.window.dispatch('hashchange');
+ assert.match(tool.textContent,/Viewing another location/);assert.equal(store.getState().workingBundle.scoutAssessments[0].locationId,'LOC-001');
+ actions.unmountMap();actions.unmountViewer();
+});
+
+test('236: checklist follows map/list routes and project candidates, remembers assessments and does not create on selection', async () => {
+ const {dom,actions,store}=await bootShell();await actions.createProject('Follow scouting');dom.window.dispatch('hashchange');
+ const scene=(await actions.saveScene({number:'1',title:'Entry',intExt:'INT',dayNight:'DAY'})).scene;
+ const c1=(await actions.addLocationCandidate(scene.id,'LOC-001')).candidate;
+ const a1=(await actions.createAssessment(c1.id)).assessment;
+ const c2=(await actions.addLocationCandidate(scene.id,'LOC-003')).candidate;
+ const a2=(await actions.createAssessment(c2.id)).assessment;
+ const settle=async()=>{for(let i=0;i<12;i++)await new Promise(r=>setTimeout(r,5));};
+ actions.navigate({name:'location',params:{locationId:'LOC-001'}});dom.window.dispatch('hashchange');await settle();
+ assert.equal(store.getState().activeAssessmentId,a1.id);
+ const tool=dom.app.querySelectorAll('.tool-window').find(n=>n.getAttribute('aria-label')==='Scouting checklist');
+ assert.match(tool.querySelector('.checklist-identity').textContent,/Carpe Diem/);
+ actions.selectCandidate(c2.id,'project');dom.window.dispatch('hashchange');await settle();
+ assert.equal(store.getState().activeAssessmentId,a2.id);
+ tool.querySelectorAll('button').find(b=>b.textContent==='Pin checklist to this location').click();
+ actions.navigate({name:'location',params:{locationId:'LOC-001'}});dom.window.dispatch('hashchange');await settle();
+ assert.equal(store.getState().activeAssessmentId,a2.id);
+ tool.querySelectorAll('button').find(b=>b.textContent==='Follow selected location').click();await settle();
+ assert.equal(store.getState().activeAssessmentId,a1.id);
+ actions.navigate({name:'immersive',params:{locationId:'LOC-009'}});dom.window.dispatch('hashchange');await settle();
+ assert.equal(store.getState().activeAssessmentId,null);
+ assert.equal(store.getState().workingBundle.scoutAssessments.length,2);
+ assert.ok(tool.querySelectorAll('button').some(b=>b.textContent.startsWith('Start assessment for ')));
+ actions.navigate({name:'location',params:{locationId:'LOC-003'}});dom.window.dispatch('hashchange');await settle();
+ assert.equal(store.getState().activeAssessmentId,a2.id);
+ store.setState({save:{state:'failed',label:'Save failed'}});
+ actions.navigate({name:'location',params:{locationId:'LOC-001'}});dom.window.dispatch('hashchange');await settle();
+ assert.equal(store.getState().activeAssessmentId,a2.id);
+ assert.match(store.getState().notice,/could not be saved/);
+ store.setState({save:{state:'saved',label:'Saved locally'}});
+ tool.querySelectorAll('button').find(b=>b.textContent==='Follow selected location').click();await settle();
+ assert.equal(store.getState().activeAssessmentId,a1.id);
+ actions.navigate({name:'location',params:{locationId:'LOC-009'}});dom.window.dispatch('hashchange');
+ actions.navigate({name:'location',params:{locationId:'LOC-003'}});dom.window.dispatch('hashchange');await settle();
+ assert.equal(store.getState().activeAssessmentId,a2.id);
+ await actions.createAssessment(c2.id);await actions.openAssessment(a2.id);
+ actions.navigate({name:'location',params:{locationId:'LOC-001'}});dom.window.dispatch('hashchange');await settle();
+ actions.navigate({name:'location',params:{locationId:'LOC-003'}});dom.window.dispatch('hashchange');await settle();
+ assert.equal(store.getState().activeAssessmentId,a2.id,'remember the selected assessment, not just the newest');
+ assert.equal(tool.querySelectorAll('select').find(n=>n.getAttribute('aria-label')==='Checklist assessment date').children.length,2);
+ actions.unmountMap();actions.unmountViewer();
 });

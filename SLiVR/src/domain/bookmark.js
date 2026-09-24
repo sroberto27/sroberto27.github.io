@@ -13,6 +13,18 @@
 
 import { defineRecord } from "./schema.js";
 
+/** Check ownership without requiring a retired catalog to remain available. */
+export function bookmarkOwnershipErrors(bookmark, project, candidate) {
+  const errors = [];
+  if (!project || bookmark?.projectId !== project.id) errors.push("Project ownership does not match.");
+  if (bookmark?.candidateId && (!candidate || candidate.id !== bookmark.candidateId
+      || candidate.projectId !== bookmark.projectId || candidate.locationId !== bookmark.locationId
+      || (candidate.captureId && candidate.captureId !== bookmark.captureId))) {
+    errors.push("Candidate project, location or capture does not match.");
+  }
+  return errors;
+}
+
 export const bookmarkRecord = defineRecord("Bookmark", {
   id: { type: "workspaceId", kind: "bookmark", required: true },
   projectId: { type: "workspaceId", kind: "project", required: true },

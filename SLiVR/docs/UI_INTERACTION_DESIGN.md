@@ -169,3 +169,100 @@ Supersedes D073's noninteractive preview. Pins represent current captures and op
 ### 2026-09-22 - D076
 
 D076 supersedes D075 two-row text toolbar: six 32px icon buttons in one top-centered row inside the mini-map, in zoom-in, zoom-out, recenter, cube/3D, layers/streets, enlarge/restore order. Hover tooltips, screen-reader labels, keyboard focus and pressed states remain. Pins use Explore transparent hit targets; group badges retain circular styling. Header Show/Hide and Open Explore remain outside the map.
+## D078-D079 - camera retention and entry bookmarks
+
+Unselected Explore return restores session center/zoom/bearing/pitch after map
+disposal; returning with an Immersive selection still focuses that pin. Recenter
+and changed filters retain their explicit fit behavior. No map remains streaming.
+
+Immersive's capture rail offers a Project selector, bookmark name/note and Save
+entry bookmark for a current capture. Projects creates/selects the owning local
+project. Saved entry lists appear in Projects and Immersive; Restore entry uses
+the existing viewer lifecycle and requests the entry again even when it is
+already open. UI labels always explain that the current camera angle/position
+is not saved. Missing/retired/incompatible entries retain their notes and show
+why restoration is unavailable. Draft text/focus survives provider redraws.
+Failures retain the working bundle, Retry save and emergency JSON; switching
+projects/new import cannot silently discard failed edits. Public links remain
+free of private notes/project identifiers. No assessment placeholder is added.
+
+Tests 225/226 extend 60-64; 373 automated PASS. New live browser checks pending;
+earlier owner-reported results remain preserved. Entry-only scope and E1 phase
+allocation are explicitly approved, not approval of an unexecuted test.
+## D081 - initial Project Workspace editing
+
+Projects now provides native metadata and scene-brief forms with explicit Save
+controls. Scene disclosures preserve draft text during redraws and mode changes;
+Save is required before reload/export. Blank numeric counts remain unknown; zero
+is explicit. Lists use one requirement/question per line. Move earlier/later
+changes display order without changing scene identity or linked records.
+Linked scenes cannot be removed; unlinked scenes expose an explicit confirmation
+inside a removal disclosure. Project deletion opens a count review with Cancel
+first, keyboard trap, inert background and Escape cancellation. Confirm is scoped
+to the reviewed project; failure retains records and offers retry or cancellation.
+
+Candidate/assessment/comparison actions remain the next D068 steps, with no
+placeholder buttons. D080 owner passes cover the earlier bookmark/camera UI;
+new 227 editing/deletion browser checks remain NOT TESTED. 381 automated PASS.
+
+## D082 - candidate context
+
+Projects scene sections offer catalog selection and Add candidate. Dossier and
+Immersive expose explicit project/scene selectors; add returns an existing candidate
+when already present. Open candidate returns to its expanded scene, with actions
+back to the public dossier and available capture. Candidate notes and review
+status use explicit Save. Public links never carry private project context.
+New preferred/backup decisions follow D068 assessments and comparison; imported
+legacy decisions remain visible. Scouting checklist actions are not yet exposed.
+
+## D083 - shared checklist and comparison workflow
+
+Candidates expose Scouting assessments in Projects, the active-project dossier
+and Immersive. One retained editor supplies metadata, section navigation, typed
+answers, evidence state, notes/URLs, compatible entry bookmarks and supplied media.
+Close flushes pending edits; autosave status is explicit. Archive preserves history.
+Progress separates observed, excluded, needs-validation and unanswered counts.
+Comparison and candidate detail edit the same five-state judgment; selected
+revision/question evidence remains fixed and changed evidence is flagged. Scene
+decisions preserve preferred/backups/rationale/questions and candidate snapshots;
+reopen keeps history. Horizontal overflow exposes three-plus candidates.
+Legacy import is a review-first project/location-mapped workflow. Selected export
+can omit media bytes only with an explicit missing-media report. Native ZIP/print
+and spatial shot editing remain later-phase workflows. New live usability and
+media verification are still required; the browser was unavailable in this session.
+
+## D086 approved unified workspace
+
+Explore is the main workspace; Shot Designer remains separate. Project and Scene
+controls replace a Projects destination; Map/Immersive selectors replace a top-level
+Immersive destination. Existing URLs still resolve. The checklist is minimized until
+requested, then floating-first with optional side-by-side/maximized presentation.
+No permanently reserved right panel. Opening checklist collapses the location rail.
+Tools retain drafts/content while minimized; close flushes and refuses failed saves.
+Project context belongs with the checklist. Public catalog facts stay in the dossier.
+The V2 frame keeps its own red theme, fonts, icons and responsive cards/navigation;
+SLiVR context/evidence additions remain explicit. Small screens use sheets, with
+keyboard movement/resize and Reset layout. Full simultaneous map/tour split deferred.
+
+
+### D087 responsive workspace update
+
+App0.3.6 implements reserved desktop toolbar/tray and exclusive phone full/half
+tools with compact navigation, collapsible map controls/context and Back dismissal.
+408 automated tests PASS plus critical Chrome responsive checks. Stable235 and
+source rationale are recorded in research/DECISION_RECORD.md and
+ docs/FULL-SYSTEM-TESTING.md. Physical-phone keyboard/touch/orientation/provider
+acceptance remains NOT TESTED. Preserve prior owner functional passes and D086
+screenshot failures. No telemetry or reference changes. Use Chrome only for
+critical checks, as requested. No staging/commit/push.
+
+
+### D088 checklist location following
+
+Owner reports all D087 critical checks passed; preserve prior acceptance. App0.3.7
+adds prominent location identity, default following of route/candidate selection,
+pin/follow controls, save guards, explicit start for empty locations and session
+memory of dated assessment selection. Stable236 and evidence: DECISION_RECORD D088
+and docs/FULL-SYSTEM-TESTING.md.409 automated PASS; focused Chrome identity check;
+new end-to-end mobile/provider following acceptance remains NOT TESTED. Prior
+passes do not need repeating. No data schema changes or telemetry.

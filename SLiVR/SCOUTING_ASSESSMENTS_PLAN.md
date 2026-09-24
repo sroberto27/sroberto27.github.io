@@ -1,3 +1,8 @@
+# Current status: Phase 3 COMPLETE (D089)
+
+See research/PHASE_3_ACCEPTANCE_REVIEW.md for final evidence and limitations.
+Phase 4 may start under D068. Historical status entries follow.
+
 # Scouting Assessments implementation plan
 
 Version 1.0, 2026-09-21. Owner-approved scope; planned, not implemented or runtime-validated. Decision D068. Feature F06-SA extends F06 within Project Workspace; it is not a sixth product family or a new mode. The controlling architecture and essential phase gates incorporate this plan.
@@ -69,3 +74,49 @@ Both map references were inspected; neither has a project scouting-assessment/pe
 Manual scenario: create two scenes and three candidates; record a virtual assessment with a bookmark, explicit zero, unknown capacity and photo; add a separate later assessment; compare using a named revision; edit it and verify prior decision evidence; view linked findings in Shot Designer; export/import in a clean profile and reopen media. Repeat with provider blocked and storage failure; verify emergency data and honest missing-media reporting.
 
 Rollback disables assessment entry points while retaining data and migration compatibility. Do not downgrade/delete the database to roll back UI. Offer versioned export before any future destructive migration. No implementation or acceptance PASS is implied by this plan.
+
+## Implementation status - D083, 2026-09-23
+
+The essential Phase 3 editor, dated revisions, attachments/panorama, entry bookmark
+evidence, requirement evaluation, comparison/decision history, canonical transfer
+and legacy JSON/ZIP preview are implemented. Additive database 2; transfer 1.3.0;
+template 1.0.0. 399 automated PASS; new live gates remain open. See
+research/PHASE_3_ACCEPTANCE_REVIEW.md. The planning-only statement at the beginning
+is historical, not a current runtime status. Phase 5 native ZIP/print and Phase 7
+field capture/sensors remain unchanged; no phase completion claimed.
+
+## D086 presentation revision (owner approved, 2026-09-23)
+
+The blocking basic editor is replaced by an isolated local V2 presentation,
+using actual form sections and unchanged source CSS/fonts/icons. The existing
+editor/controller supplies autosave and evidence controls, bound to the V2 fields.
+Evidence extensions are collapsible; unanswered/observed/needs-validation/NA remain
+explicit. No second database, provider imagery capture, sensors or private contacts.
+The checklist is launched over Explore's map/tour and defaults to a floating tool,
+with minimize/maximize/restore, resizing and optional side-by-side. Context selectors
+and candidate actions live with the checklist. Viewing another location displays
+an ownership warning without moving answers. Local style reuse is not proof of
+pixel or responsive fidelity: live visual acceptance remains required.
+
+
+### D087 responsive workspace update
+
+App0.3.6 implements reserved desktop toolbar/tray and exclusive phone full/half
+tools with compact navigation, collapsible map controls/context and Back dismissal.
+408 automated tests PASS plus critical Chrome responsive checks. Stable235 and
+source rationale are recorded in research/DECISION_RECORD.md and
+ docs/FULL-SYSTEM-TESTING.md. Physical-phone keyboard/touch/orientation/provider
+acceptance remains NOT TESTED. Preserve prior owner functional passes and D086
+screenshot failures. No telemetry or reference changes. Use Chrome only for
+critical checks, as requested. No staging/commit/push.
+
+
+### D088 checklist location following
+
+Owner reports all D087 critical checks passed; preserve prior acceptance. App0.3.7
+adds prominent location identity, default following of route/candidate selection,
+pin/follow controls, save guards, explicit start for empty locations and session
+memory of dated assessment selection. Stable236 and evidence: DECISION_RECORD D088
+and docs/FULL-SYSTEM-TESTING.md.409 automated PASS; focused Chrome identity check;
+new end-to-end mobile/provider following acceptance remains NOT TESTED. Prior
+passes do not need repeating. No data schema changes or telemetry.

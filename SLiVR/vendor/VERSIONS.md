@@ -40,3 +40,11 @@ entry points. Added the `three@0.183.0` GLTF/Draco/KTX2 loader dependency closur
 Draco/Basis decoder assets and MIT LICENSE. Files are vendored verbatim from npm.
 The application's import map resolves these modules locally; Google tile content
 is requested only after the operator selects 3D with a configured browser key.
+
+## D086 embedded checklist presentation
+
+CheckList/v2/style.css copied unchanged under src/scouting/v2; SHA256
+3b4ec224bc942b998cb8055c4df82e901bcf07d9a977dfd3ebd1b8d394750dcc.
+Local Inter font subsets (SIL OFL1.1) and Font Awesome Free6 CSS/solid font copied
+from CheckList/v2/vendor into src/scouting/v2/vendor with original notices. No
+remote asset loading, V2 app/storage scripts or service worker copied.

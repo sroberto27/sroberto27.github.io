@@ -691,3 +691,47 @@ Missing/ambiguous private targets require explicit selection rather than an
 arbitrary project/shot or implicit record creation. Public location links remain
 free of private workspace context. This clarifies the existing integrated
 workflow; it does not move project/shot implementation forward or waive gates.
+
+## D086 approved navigation revision - 2026-09-23
+
+The owner approved a unified Explore workspace after reviewing the plan and its
+space tradeoffs. This supersedes the separate Projects/Immersive top-level mode
+presentation above. Explore and Shot Designer are the two top-level destinations;
+Project/Scene controls open nonmodal tools over the persistent viewing surface.
+Legacy route grammar remains compatible. Map/Immersive are Explore view choices.
+There is no permanently reserved checklist panel: the overlay launcher opens a
+floating, resizable window; minimize, maximize, restore and optional side-by-side
+are supported. Location rails collapse when the checklist opens or a tool docks.
+Small screens use a sheet. Full map/tour split view remains deferred.
+
+The assessment interface embeds a local adaptation of CheckList/v2 markup with
+its stylesheet and font/icon assets copied unchanged. It writes only through
+SLiVR assessment actions, never V2 databases or service workers. Existing evidence
+states, ownership, immutable revisions, uncertainty and transfer contracts remain.
+Project context moves into the scouting tool. Private contacts, sensors/capture,
+independent stars/approval, install/offline and future packet exports remain outside
+this revision. Shot Designer functionality is unchanged. User-facing layout changes
+require new live acceptance; prior reported passes remain historical evidence.
+
+
+### D087 responsive workspace update
+
+App0.3.6 implements reserved desktop toolbar/tray and exclusive phone full/half
+tools with compact navigation, collapsible map controls/context and Back dismissal.
+408 automated tests PASS plus critical Chrome responsive checks. Stable235 and
+source rationale are recorded in research/DECISION_RECORD.md and
+ docs/FULL-SYSTEM-TESTING.md. Physical-phone keyboard/touch/orientation/provider
+acceptance remains NOT TESTED. Preserve prior owner functional passes and D086
+screenshot failures. No telemetry or reference changes. Use Chrome only for
+critical checks, as requested. No staging/commit/push.
+
+
+### D088 checklist location following
+
+Owner reports all D087 critical checks passed; preserve prior acceptance. App0.3.7
+adds prominent location identity, default following of route/candidate selection,
+pin/follow controls, save guards, explicit start for empty locations and session
+memory of dated assessment selection. Stable236 and evidence: DECISION_RECORD D088
+and docs/FULL-SYSTEM-TESTING.md.409 automated PASS; focused Chrome identity check;
+new end-to-end mobile/provider following acceptance remains NOT TESTED. Prior
+passes do not need repeating. No data schema changes or telemetry.

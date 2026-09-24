@@ -211,3 +211,109 @@ These are UI parameters, not accuracy measures, usability results or telemetry.
 ### 2026-09-22 - D077
 
 D077 evidence class: owner-reported functional/presentation pass, not instrumented or independently observed performance/usability measurement. Test environment/digest not supplied. D076 controls are 32 CSS pixels with 18px SVGs, replacing D075 text toolbar; these are design parameters only.
+## D078 - session map camera
+
+Explore camera snapshot: center [longitude, latitude] in degrees; zoom in
+MapLibre zoom units; bearing and pitch in degrees. Finite zero is valid.
+Session memory only, captured before map disposal; no storage, export or
+telemetry. Geographic map orientation is not Treedis pose, capture freshness
+or calibrated shot geometry. Test 225 compares exact numeric restoration for
+an unselected return; a selected return intentionally focuses the chosen pin
+and is measured separately under 221/223. Automated doubles are technical
+contract evidence, not browser/device or human-participant observations.
+## D079 - entry bookmark semantics
+
+Bookmark contract `treedis-recon-2/entry-only-1`: a named catalog entry with a
+note, project/location/capture/experience/sweep identities and optional compatible
+candidate. `view={}` and `supportedFields=[]` mean no observed camera view was
+saved. `captureVersionRef=catalog-{catalogVersion}/{captureId}` identifies the
+catalog record snapshot, not capture date/provider revision. Creation timestamp
+is bookmark creation, never site observation time. "Restore requested" measures
+dispatch only; actual rendered arrival is a distinct live check. Legacy finite
+zeros remain transferable but do not enable unsupported restoration. No logging
+or participant data collection is added.
+## D080 - acceptance classification
+
+The D079 bookmark/camera checklist has owner-reported functional PASS, distinct
+from 373 automated contract checks. Browser/device/exact tested digest are
+unspecified. Restoration acceptance concerns the supplied entry only; it does
+not measure exact-angle accuracy, capture freshness or scouting effectiveness.
+## D081 - project/scene semantics
+
+Scene counts are nonnegative integers: absent means unknown, zero means an
+explicit count. List entries remain authored requirements/questions, never
+inferred fit results. Optional scene order is a zero-based display order, not
+story scene number or suitability rank. Revision increases on saved edits and
+reorders; createdAt remains stable and updatedAt records the write intent time.
+Deletion review counts owned records by store, with IDs/revisions checked again
+transactionally; it measures affected records, not a backup. Forms use explicit
+Save; unsaved form text is session draft content and not an autosave result.
+
+## D082 - candidate semantics
+
+Candidate status describes a project's review of one location for one scene,
+not public capture availability, permission or suitability. New requirements are
+unknown until explicitly evaluated. Duplicate means the same project/scene/location,
+not the same location across scenes. workflowVersion 2 marks the new review
+vocabulary; legacyStatus preserves the previous imported status on explicit
+transition. Old requirement ratings are not converted into new fit evidence.
+workspaceContext contains only local project/scene/candidate IDs for reload,
+not telemetry. Saved candidate notes require explicit submission in this increment.
+
+## D083 - assessment and decision measurement semantics
+
+Template 1.0.0 has eight sections and stable question IDs. Completion denominator
+is the complete template: substantive observed plus explicit not-applicable
+answers count as complete; exclusions are reported separately. Unanswered and
+needs-validation are unresolved. False and zero are explicit typed answers,
+never inferred from absence. Observed means recorded from the stated source/date,
+not independently verified. Compliance prompts and completion do not authorize
+filming. Unknown fit has no favorable numeric contribution; no overall score is
+computed. Legacy met/notMet/unknown ratings remain a separate retained field.
+Requirement evidence identifies an immutable assessment revision and question.
+Later edits flag changed evidence, not a rewritten old decision. Schematic shot
+origin uses the catalog planning point and an explicitly unmeasured zero elevation.
+Autosave resolves on transaction completion; failed storage is separate from
+memory. Media limits are byte budgets, not measures of visual or evidence quality.
+
+### D086 measurement boundary
+
+Window mode (floating/docked/maximized/minimized), local geometry and last checklist
+section are operational UI preferences, not telemetry. No event collection is added.
+Stable232-234 separate automated lifecycle/source contracts from unexecuted browser
+visual/interaction acceptance. Owner "all passed" applies to the supplied prior
+nine-item checklist; it is not a measured usability benefit of the new design.
+
+
+### D087 responsive workspace update
+
+App0.3.6 implements reserved desktop toolbar/tray and exclusive phone full/half
+tools with compact navigation, collapsible map controls/context and Back dismissal.
+408 automated tests PASS plus critical Chrome responsive checks. Stable235 and
+source rationale are recorded in research/DECISION_RECORD.md and
+ docs/FULL-SYSTEM-TESTING.md. Physical-phone keyboard/touch/orientation/provider
+acceptance remains NOT TESTED. Preserve prior owner functional passes and D086
+screenshot failures. No telemetry or reference changes. Use Chrome only for
+critical checks, as requested. No staging/commit/push.
+
+
+### D088 checklist location following
+
+Owner reports all D087 critical checks passed; preserve prior acceptance. App0.3.7
+adds prominent location identity, default following of route/candidate selection,
+pin/follow controls, save guards, explicit start for empty locations and session
+memory of dated assessment selection. Stable236 and evidence: DECISION_RECORD D088
+and docs/FULL-SYSTEM-TESTING.md.409 automated PASS; focused Chrome identity check;
+new end-to-end mobile/provider following acceptance remains NOT TESTED. Prior
+passes do not need repeating. No data schema changes or telemetry.
+
+
+## D089 Phase 3 closeout
+
+Phase3 COMPLETE for delivered scope, based on preserved owner functional/layout
+passes plus final D088 Chrome selection/pin/return/mobile identity checks and
+409 automated PASS. Exact evidence, limitations and runtime digest are in
+research/PHASE_3_ACCEPTANCE_REVIEW.md. Physical-device generalization and provider
+pose claims are not inferred. Phase4 shot actions and Phase5 integrated retest
+remain in their approved allocation. Owner authorized SLiVR-only commit/push;
+private ignored assets/credentials remain local. No telemetry.

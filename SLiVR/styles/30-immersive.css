@@ -260,3 +260,6 @@
   box-shadow: 0 8px 32px rgb(0 0 0 / 45%);
 }
 .immersive-map.is-enlarged .immersive-map-viewport { height: min(45dvh, 400px); }
+.bookmark-form { display: grid; gap: .5rem; margin-block: .75rem; }
+.bookmark-form input, .bookmark-form textarea, #bookmark-project { width: 100%; min-width: 0; box-sizing: border-box; }
+.bookmark-form textarea { min-height: 6rem; resize: vertical; }

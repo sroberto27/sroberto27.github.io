@@ -11,6 +11,7 @@
  * saving; a catalog failure leaves the catalog empty rather than partial.
  */
 
+import { APP_VERSION } from "../domain/versions.js";
 import { createStore } from "./store.js";
 import { createRouter } from "./router.js";
 import { createActions, initialState } from "./actions.js";
@@ -19,33 +20,26 @@ import { createSaveStatus } from "./save-status.js";
 import { detectCapabilities, readDiagnostics } from "./capabilities.js";
 import { createHttpFetchJson } from "../data/catalog-repo.js";
 import { createWorkspaceRepo, StorageError } from "../data/workspace-repo.js";
-import { IDB_ERROR_CODES } from "../data/idb.js";
 
 const REGION_PATH = "data/region/lafayette.region.json";
 
-/**
- * Wraps a repository so every write fails.
- *
- * A quota or transaction failure cannot be produced on demand in a normal
- * profile, and the recovery path it exercises is the one that matters most. The
- * flag is read from a SLiVR-scoped storage key, defaults to off, and is never
- * written by the application.
- */
-function withForcedStorageFailure(repo) {
-  const fail = () =>
-    Promise.reject(
-      new StorageError(
-        IDB_ERROR_CODES.writeFailed,
-        "Storage failure simulation is enabled for this profile.",
-      ),
-    );
-  return {
-    ...repo,
-    saveRecord: fail,
-    writeProjectBundle: fail,
-    deleteProject: fail,
-    setMeta: fail,
-  };
+/** Keep failure injection local and reversible without discarding unsaved memory. */
+export function withForcedStorageFailure(repo, win) {
+  const wrapped = { ...repo };
+  for (const name of ["saveRecord", "saveScouting", "addCandidate", "writeProjectBundle", "deleteProject", "deleteScene", "reorderScenes", "setMeta"]) {
+    wrapped[name] = (...args) => readDiagnostics(win).forceStorageFailure
+      ? Promise.reject(new StorageError("storage-simulation-enabled", "Save-failure test mode is enabled in this browser. Turn it off and retry to save your work."))
+      : repo[name](...args);
+  }
+  return wrapped;
+}
+
+export function disableStorageFailureTest(win) {
+  const key = "slivr:diagnostics";
+  const raw = win.localStorage.getItem(key);
+  const current = raw ? JSON.parse(raw) : {};
+  win.localStorage.setItem(key, JSON.stringify({ ...current, forceStorageFailure: false }));
+  if (readDiagnostics(win).forceStorageFailure) throw new Error("The save-failure test setting could not be disabled.");
 }
 
 export async function boot({ root, win } = {}) {
@@ -60,6 +54,7 @@ export async function boot({ root, win } = {}) {
     console.error("A view failed to update", error);
   });
 
+  store.setState({ storageSimulation: diagnostics.forceStorageFailure });
   const fetchJson = createHttpFetchJson();
   const saveStatus = createSaveStatus();
 
@@ -69,7 +64,7 @@ export async function boot({ root, win } = {}) {
     region = await fetchJson(REGION_PATH);
     if (capabilities.indexedDB) {
       repo = createWorkspaceRepo({ factory: win.indexedDB, storage: region.storage });
-      if (diagnostics.forceStorageFailure) repo = withForcedStorageFailure(repo);
+      repo = withForcedStorageFailure(repo, win);
     }
   } catch (error) {
     // Reported through the catalog load below, which reads the same file.
@@ -85,6 +80,7 @@ export async function boot({ root, win } = {}) {
     fetchJson,
     region,
     diagnostics,
+    disableStorageFailure: () => disableStorageFailureTest(win),
     viewerWindow: win,
     timeZone: region?.timeZone ?? "America/Chicago",
   });
@@ -92,8 +88,17 @@ export async function boot({ root, win } = {}) {
   createShell({ root, store, actions, region, win });
   router.start();
 
+  // Local projects must remain usable while network catalog loading is pending.
+  const storageReady = actions.initializeStorage();
   const catalog = await actions.initializeCatalog();
-  await actions.initializeStorage(catalog.ok ? catalog.catalog.version : "unknown");
+  const storageResult = await storageReady;
+  if (storageResult.ok && catalog.ok) {
+    try {
+      await repo.recordSession({ catalogVersion: catalog.catalog.version, appVersion: APP_VERSION, openedAt: new Date().toISOString() });
+    } catch (error) {
+      console.warn("Session metadata could not be updated", error);
+    }
+  }
   store.setState({ boot: catalog.ok ? "ready" : "degraded" });
 
   return { store, actions, router };

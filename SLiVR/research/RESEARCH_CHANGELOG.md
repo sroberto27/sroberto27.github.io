@@ -364,3 +364,131 @@ D077: recorded owner-reported mini-map PASS, audited remaining phase obligations
 #### D077 owner scope clarification
 
 Owner explicitly confirms "yeah all the test even the ones before the map" in response to the question naming earlier provider-failure and real-browser storage/reload/export/import checks. All earlier instructed delivered-function checklists, including owner 15-16, are now owner-reported PASS. Preserve earlier NOT TESTED/BLOCKED/FAIL entries as historical; do not repeat those checks solely for missing tool access. Browser/version/device and exact tested digest remain unspecified. This does not make unimplemented bookmark save/restore tested, supply absent raw provider reports, or explicitly approve E1. Bookmark-specific and later-phase workflows remain NOT TESTED. No runtime changes or new automated execution.
+## 2026-09-22 - D078 Explore camera correction
+
+Inspected both read-only reference bridges/map helpers and preserved the
+existing viewer/mini-map implementation. Added numeric session camera capture
+before map disposal and restoration protected from initial fits; explicit
+selected-location focus remains authoritative. Added stable 225/64 lifecycle
+and malformed/zero snapshot regressions. 38 targeted and 365 full-suite checks
+PASS; catalog/deployment clean except the retained alias warning. Browser
+surface unavailable, so changed-feature live checks remain NOT TESTED.
+Prior confirmed owner storage/provider/mini-map passes retained. Current HEAD
+fd4900a6 supersedes the old handoff baseline; no history/index change or commit.
+No telemetry, participant collection, bookmark/assessment delivery or phase
+closure is claimed. Evidence identity is in FULL-SYSTEM-TESTING D078.
+## 2026-09-22 - D079 approved entry-only bookmarks
+
+Recorded explicit E1 phase-allocation and E2 entry-only approvals. Implemented
+project-owned named/noted bookmarks in Immersive and restore lists in Projects;
+retained existing database/schema/transfer structure. Added ownership/catalog
+checks, supported-field consistency, failed-save retention/export/retry and
+project-load generation guards. Preserved incompatible/retired records without
+claiming full-view restore. Added 60-62/208-foundation/226 checks: final 373 PASS,
+zero failures. Intermediate harness failure retained; live new checks pending.
+Prepared Phase 3 source/schema gap analysis only. Phase 2 not closed; no provider
+pose/rights inference, telemetry, commit, push or reference changes.
+## 2026-09-22 - D080 Phase 2 closeout
+
+Recorded owner's explicit all-new-checks PASS without requesting repetition.
+Closed Phase 2 under E2's entry-only boundary and carried E1 action allocation
+forward. Preserved historical failures/blocked observations and unspecified
+browser/device/build metadata. Phase 3 may proceed; no new capability, telemetry
+or participant evidence. No runtime change in this acceptance annotation.
+## 2026-09-22 - D081 initial Phase 3 workspace
+
+Added project editing and scene brief forms over the existing repository, with
+explicit saves, zero/unknown separation, atomic ordering and linked-scene removal
+protection. Added owned-record deletion review with transactional snapshot check;
+failed deletion no longer clears the open project and cancellation revokes retry.
+App 0.3.0/transfer 1.1.0; database stays 1. Final 381 automated PASS; initial delete
+failure-simulation gap preserved in logs and corrected. New live UI NOT TESTED.
+Candidates/assessments and the remainder of D068 still pending. No telemetry,
+provider change, commit/push or reference-project edits.
+
+## 2026-09-23 - D082 candidate increment
+
+Added scene/location candidate creation with atomic duplicate handling, explicit
+review lifecycle and notes, ownership/identity validation, recovery and transfer.
+Integrated Projects/dossier/Immersive entry and return actions with persisted local
+project/scene/candidate selection. Preserved legacy status/rating records; explicit
+review transitions record legacyStatus. App 0.3.1, transfer 1.2.0, database 1.
+All 386 automated tests PASS; catalog zero errors/one existing alias warning,
+deployment 166 files/zero errors. New UI live acceptance NOT TESTED. Eight-section
+CheckList-derived assessments/history/media are the next D068 increment, followed
+by evaluation/comparison/decisions; full autosave remains outstanding. Preserved
+Phase 2 owner acceptance. No telemetry, commit/push or reference-project changes.
+
+## 2026-09-23 - D083 Phase 3 implementation and acceptance handoff
+
+Implemented D068 assessment/history/media and shared editor, richer explicit fit
+judgments, comparison/decisions/history, autosave and selection continuity,
+canonical selected media transfer, previewed legacy JSON/ZIP and schematic shot
+linkage. App 0.3.2; transfer 1.3.0; database 2 additive migration; template 1.0.0.
+Final 399 automated PASS. Initial regression had five stale version/store fixtures;
+updated to the approved additive schema. First new assessment tests exposed missing
+object-schema field maps; fixed without relaxing validation. One UI test then
+exposed an encoding mismatch in newly inserted separator text; corrected to ASCII.
+All earlier failing logs remain under outputs/phase3-d083. Browser unavailable;
+Phase 3 implemented, awaiting new live acceptance. D080/E1/E2 preserved. No
+telemetry, commit/push or reference/sibling edits.
+
+## 2026-09-23 - D084 Create-failure investigation
+
+Owner-reported failed Create recorded as new live FAIL, diagnostics key null.
+Fixed hidden save error after routing; retain native transaction cause. Completed
+explicit diagnostic write coverage/off-retry recovery. 401 automated PASS, app
+0.3.3, no schema changes. Actual owner failure awaits raw-error evidence; not fixed
+by inference. Emergency backup requested before reload; no data reset or telemetry.
+
+### 2026-09-23 - D085 startup storage fix
+
+Recorded owner's workspace-not-open error. Open database independently of catalog,
+queue Create until initialization finishes, restore direct project routes, and
+keep project editor usable before catalog arrival. App0.3.4; stable231; 35 targeted/
+402 full automated PASS; deployment178/0errors. Evidence outputs/phase3-d085.
+Live recovery still pending; previous failures and Phase 2 passes preserved.
+No participant data, telemetry, reference modification, commit or push.
+
+### 2026-09-23 - D086 unified scouting workspace
+
+Accepted owner report that all nine prior critical checks passed. Implemented the
+subsequently approved Explore unification and floating-first V2 presentation.
+Retained storage/transfer contracts, history, media and legacy route grammar.
+407 automated PASS; deployment199/0; catalog0errors/one retained alias warning.
+New UI visual/real-browser acceptance remains pending. No participant claims,
+telemetry, reference edits, staging, commit or push. Logs outputs/unified-d086.
+
+
+### D087 responsive workspace update
+
+App0.3.6 implements reserved desktop toolbar/tray and exclusive phone full/half
+tools with compact navigation, collapsible map controls/context and Back dismissal.
+408 automated tests PASS plus critical Chrome responsive checks. Stable235 and
+source rationale are recorded in research/DECISION_RECORD.md and
+ docs/FULL-SYSTEM-TESTING.md. Physical-phone keyboard/touch/orientation/provider
+acceptance remains NOT TESTED. Preserve prior owner functional passes and D086
+screenshot failures. No telemetry or reference changes. Use Chrome only for
+critical checks, as requested. No staging/commit/push.
+
+
+### D088 checklist location following
+
+Owner reports all D087 critical checks passed; preserve prior acceptance. App0.3.7
+adds prominent location identity, default following of route/candidate selection,
+pin/follow controls, save guards, explicit start for empty locations and session
+memory of dated assessment selection. Stable236 and evidence: DECISION_RECORD D088
+and docs/FULL-SYSTEM-TESTING.md.409 automated PASS; focused Chrome identity check;
+new end-to-end mobile/provider following acceptance remains NOT TESTED. Prior
+passes do not need repeating. No data schema changes or telemetry.
+
+
+## D089 Phase 3 closeout
+
+Phase3 COMPLETE for delivered scope, based on preserved owner functional/layout
+passes plus final D088 Chrome selection/pin/return/mobile identity checks and
+409 automated PASS. Exact evidence, limitations and runtime digest are in
+research/PHASE_3_ACCEPTANCE_REVIEW.md. Physical-device generalization and provider
+pose claims are not inferred. Phase4 shot actions and Phase5 integrated retest
+remain in their approved allocation. Owner authorized SLiVR-only commit/push;
+private ignored assets/credentials remain local. No telemetry.

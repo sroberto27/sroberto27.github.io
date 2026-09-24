@@ -42,4 +42,19 @@ export const sceneRecord = defineRecord("SceneBrief", {
   createdAt: { type: "isoDate", required: true },
   updatedAt: { type: "isoDate", required: true },
   revision: { type: "number", required: true, integer: true, min: 1 },
+  decisions: { type: "array", of: { type: "object", fields: {
+    preferredCandidateId: { type: "workspaceId", kind: "candidate", required: true },
+    backupCandidateIds: { type: "array", required: true, of: { type: "workspaceId", kind: "candidate" } },
+    rationale: { type: "string", required: true, minLength: 1, maxLength: 4000 }, openQuestions: { type: "string", maxLength: 4000 },
+    decidedAt: { type: "isoDate", required: true }, reopenedAt: { type: "isoDate" },
+    candidateSnapshots: { type: "array", required: true, of: { type: "object", fields: {} } }
+  } } },
+  order: { type: "number", required: false, integer: true, min: 0 },
 });
+
+export const SCENE_LIST_FIELDS = ["requiredSpaces", "vehicles", "equipment", "mustHave", "preferred", "rejectionConditions", "openQuestions"];
+
+export function createSceneBrief({ id, projectId, now, order, fields }) {
+  return { ...Object.fromEntries(SCENE_LIST_FIELDS.map(key => [key, []])), dayNight: "UNSPECIFIED",
+    ...fields, id, projectId, createdAt: now, updatedAt: now, revision: 1, order };
+}
