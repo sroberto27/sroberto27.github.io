@@ -150,13 +150,15 @@ test("a file that is not a SLiVR export is rejected by class", () => {
 
 test("a future schema version is refused and the version is named", () => {
   const envelope = JSON.parse(exportText(projectFixture()));
-  for (const version of ["2.0.0", "1.1.0"]) {
+  for (const version of ["2.0.0", "1.4.0"]) {
     const parsed = parseEnvelope(JSON.stringify({ ...envelope, schemaVersion: version }));
     assert.equal(parsed.ok, false, version);
     assert.equal(parsed.error.code, TRANSFER_ERROR_CODES.unsupportedVersion, version);
     assert.ok(parsed.error.message.includes(version), parsed.error.message);
   }
   assert.equal(canReadTransferVersion("1.0.0"), true);
+  assert.equal(canReadTransferVersion("1.1.0", "1.0.0"), false, "older builds refuse ordered-scene exports explicitly");
+  assert.equal(parseEnvelope(JSON.stringify({ ...envelope, schemaVersion: "1.0.0" })).ok, true, "legacy scenes without order remain readable");
   assert.equal(canReadTransferVersion("1.0.9"), true);
   assert.equal(canReadTransferVersion("0.9.0"), false);
   assert.equal(canReadTransferVersion("not-a-version"), false);

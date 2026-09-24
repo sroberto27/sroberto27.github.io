@@ -120,7 +120,7 @@ export function runTransaction(db, storeNames, mode, body) {
     tx = db.transaction(storeNames, mode);
   } catch (cause) {
     return Promise.reject(
-      new StorageError(IDB_ERROR_CODES.transactionFailed, "could not start a transaction", {
+      new StorageError(IDB_ERROR_CODES.transactionFailed, `could not start a transaction: ${cause?.name ?? "Error"}: ${cause?.message ?? cause}`, {
         cause,
       }),
     );

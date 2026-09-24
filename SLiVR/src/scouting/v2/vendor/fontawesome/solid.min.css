@@ -1,0 +1,13 @@
+/* Self-hosted for offline use. Two changes from the upstream file:
+   the webfonts path is relative to THIS directory rather than a
+   sibling of it, and the .ttf fallback is dropped -- every browser
+   that can register a service worker supports woff2, and keeping a
+   reference to a file the offline cache does not hold would be a
+   silent miss. Only the SOLID face is vendored: the app uses
+   fa-solid exclusively (72 usages, 0 of any other style). */
+/*!
+ * Font Awesome Free 6.5.1 by @fontawesome - https://fontawesome.com
+ * License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)
+ * Copyright 2023 Fonticons, Inc.
+ */
+:host,:root{--fa-style-family-classic:"Font Awesome 6 Free";--fa-font-solid:normal 900 1em/1 "Font Awesome 6 Free"}@font-face{font-family:"Font Awesome 6 Free";font-style:normal;font-weight:900;font-display:block;src:url(webfonts/fa-solid-900.woff2) format("woff2")}.fa-solid,.fas{font-weight:900}

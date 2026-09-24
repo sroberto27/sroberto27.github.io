@@ -16,6 +16,7 @@
  * older view of a place as current.
  */
 
+import { scoutingReferenceErrors, MEDIA_LIMIT, MEDIA_TOTAL_LIMIT } from "../domain/scout-assessment.js";
 import { formatErrors } from "../domain/schema.js";
 import {
   APP_VERSION,
@@ -26,6 +27,7 @@ import {
 import { TRANSFERRED_STORES } from "./migrations.js";
 import { validateRecord, emptyBundle, bundleProject } from "./workspace-repo.js";
 import { detectConflicts, applyResolution, RESOLUTIONS } from "./conflicts.js";
+import { bookmarkOwnershipErrors } from "../domain/bookmark.js";
 
 export const ENVELOPE_KIND = "slivr-project";
 
@@ -59,14 +61,17 @@ export function buildEnvelope({
 }) {
   const payload = {};
   for (const storeName of TRANSFERRED_STORES) payload[storeName] = bundle[storeName] ?? [];
+  const mediaInline = (payload.scoutMedia ?? []).filter(m => m.data).map(m => ({ assetId: m.id, encoding: "base64", data: m.data }));
+  payload.scoutMedia = (payload.scoutMedia ?? []).map(({ data, blob, ...m }) => ({ ...m, missing: !data }));
   return {
+    mediaReport: { complete: payload.scoutMedia.every(m => !m.missing), missing: payload.scoutMedia.filter(m => m.missing).map(m => m.id) },
     schemaVersion: TRANSFER_SCHEMA_VERSION,
     appVersion,
     exportedAt,
     catalogVersion,
     kind: ENVELOPE_KIND,
     payload,
-    assetsInline,
+    assetsInline: [...assetsInline, ...mediaInline],
   };
 }
 
@@ -147,7 +152,21 @@ export function validatePayload(payload) {
     reference(storeName, "projectId", projectIds);
   }
   reference("candidates", "sceneId", sceneIds);
+  const candidateKeys = new Set();
+  payload.candidates.forEach((candidate, index) => {
+    const key = JSON.stringify([candidate?.projectId, candidate?.sceneId, candidate?.locationId]);
+    if (candidateKeys.has(key)) error(`payload.candidates[${index}]`, "duplicates the same project/scene/location relationship");
+    candidateKeys.add(key);
+    const scene = payload.scenes.find(scene => scene?.id === candidate?.sceneId);
+    if (scene && scene.projectId !== candidate.projectId) error(`payload.candidates[${index}]`, "scene belongs to a different project");
+  });
   reference("bookmarks", "candidateId", candidateIds, { required: false });
+  payload.bookmarks.forEach((bookmark, index) => {
+    for (const reason of bookmarkOwnershipErrors(bookmark, project,
+      payload.candidates.find(candidate => candidate?.id === bookmark?.candidateId))) {
+      error(`payload.bookmarks[${index}]`, reason);
+    }
+  });
   reference("shotScenes", "sceneId", sceneIds, { required: false });
   reference("shotScenes", "candidateId", candidateIds, { required: false });
   reference("shotScenes", "activeVariantId", variantIds, { required: false });
@@ -158,6 +177,7 @@ export function validatePayload(payload) {
   reference("shots", "variantId", variantIds, { required: false });
   reference("shots", "cameraObjectId", objectIds, { required: false });
 
+  if (!errors.length) errors.push(...scoutingReferenceErrors(payload));
   return { ok: errors.length === 0, errors };
 }
 
@@ -204,6 +224,9 @@ export function parseEnvelope(text) {
     );
   }
 
+  if (parseVersion(parsed.schemaVersion).minor < 3 && parsed.payload) {
+    for (const name of ["scoutAssessments", "scoutAssessmentRevisions", "scoutMedia"]) parsed.payload[name] ??= [];
+  }
   const { ok, errors } = validatePayload(parsed.payload);
   if (!ok) {
     return failure(
@@ -219,7 +242,7 @@ export function parseEnvelope(text) {
       { path: "assetsInline", reason: "must be an array" },
     ]);
   }
-  const assetIds = new Set(parsed.payload.assets.map((asset) => asset.id));
+  const assetIds = new Set([...parsed.payload.assets, ...parsed.payload.scoutMedia].map((asset) => asset.id));
   const orphan = inline.find((entry) => !assetIds.has(entry?.assetId));
   if (orphan) {
     return failure(
@@ -229,6 +252,17 @@ export function parseEnvelope(text) {
     );
   }
 
+  const seen = new Set(); let total = 0;
+  for (const m of parsed.payload.scoutMedia) {
+    const matches = inline.filter(e => e.assetId === m.id);
+    if (matches.length > 1) return failure(TRANSFER_ERROR_CODES.invalidPayload, "Duplicate media bytes.");
+    const data = matches[0]?.data;
+    if (!data) { if (!m.missing) return failure(TRANSFER_ERROR_CODES.invalidPayload, "Media bytes are missing without an explicit missing-media report."); continue; }
+    if (matches[0].encoding !== "base64" || data.length > Math.ceil(MEDIA_LIMIT / 3) * 4 || !/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(data)) return failure(TRANSFER_ERROR_CODES.invalidPayload, "Invalid or oversized media encoding.");
+    const bytes = Uint8Array.from(atob(data), c => c.charCodeAt(0)); total += bytes.length;
+    if (bytes.length !== m.size || total > MEDIA_TOTAL_LIMIT) return failure(TRANSFER_ERROR_CODES.invalidPayload, "Media byte size does not match or exceeds project limit.");
+    m.data = data; m.blob = new Blob([bytes], { type: m.mime }); m.missing = false; seen.add(m.id);
+  }
   return { ok: true, envelope: parsed };
 }
 
@@ -336,4 +370,16 @@ export function normalizeBundle(bundle) {
       .sort((a, b) => String(a.id).localeCompare(String(b.id)));
   }
   return normalized;
+}
+
+/** Selection never silently removes evidence needed by a decision. */
+export function selectAssessmentExport(bundle, assessmentIds, includeMedia = true, mediaIds = null) {
+ const selected = new Set(assessmentIds), next = { ...bundle };
+ next.scoutAssessments = bundle.scoutAssessments.filter(a => selected.has(a.id));
+ next.scoutAssessmentRevisions = bundle.scoutAssessmentRevisions.filter(r => selected.has(r.assessmentId));
+ const required = new Set(next.scoutAssessmentRevisions.flatMap(r => r.snapshot.answers.flatMap(a => a.mediaIds)));
+ next.scoutMedia = bundle.scoutMedia.filter(m => required.has(m.id)).map(m => includeMedia && (!mediaIds || mediaIds.includes(m.id)) ? m : { ...m, data: undefined, blob: undefined, missing: true });
+ const checked = validatePayload(next);
+ if (!checked.ok) throw new Error("Selection excludes linked decision/requirement evidence. Include that assessment or explicitly unlink it first.");
+ return next;
 }

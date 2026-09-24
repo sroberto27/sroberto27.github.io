@@ -133,14 +133,14 @@ limitations and catalog 1.1.0 scope apply.
 
 | ID | Date | Decision | Alternative | Rationale / provenance | Consequences / evidence |
 |---|---|---|---|---|---|
-| D074 | 2026-09-22 | Preserve selected location across both Explore/Immersive top-tab directions; require future bidirectional project/shot context | Preserve only Immersive-to-Explore and drop Explore selection on Immersive entry | Owner reports the reverse-direction defect and explicitly requests future connections with Projects/Shot Designer. Inspected Experimental js/06-details-panel.js:331-398 and LSU3D js/06-details-panel.js:461-478: shared feature selection drives list/pin/tour navigation. Reason 1: retain SLiVR stable route IDs and existing adapter ownership rather than reference feature/name globals. | Shell tab routes resolved Explore selection to immersive/{locationId}; existing reverse route stays intact. No selection/invalid ID uses immersive index; future records show existing no-capture state. Test 223 reproduced two failures, then 26 targeted and 362 full automated PASS. Future project/scene/candidate/shot context requirements documented, not implemented; no arbitrary project/shot selection or placeholder actions. Live BLOCKED, phase gates unchanged; no telemetry, reference edit, commit or push. |
+| D074 | 2026-09-22 | Preserve selected location across both Explore/Immersive top-tab directions; require future bidirectional project/shot context | Preserve only Immersive-to-Explore and drop Explore selection on Immersive entry | Owner reports the reverse-direction defect and explicitly requests future connections with Projects/Shot Designer. Inspected Experimental js/06-details-panel.js:331-399 and LSU3D js/06-details-panel.js:461-478: shared feature selection drives list/pin/tour navigation. Reason 1: retain SLiVR stable route IDs and existing adapter ownership rather than reference feature/name globals. | Shell tab routes resolved Explore selection to immersive/{locationId}; existing reverse route stays intact. No selection/invalid ID uses immersive index; future records show existing no-capture state. Test 223 reproduced two failures, then 26 targeted and 362 full automated PASS. Future project/scene/candidate/shot context requirements documented, not implemented; no arbitrary project/shot selection or placeholder actions. Live BLOCKED, phase gates unchanged; no telemetry, reference edit, commit or push. |
 
 
 ### D075 - Interactive temporary Immersive map (2026-09-22)
 
 Owner requests pin navigation, zoom, recenter, 3D, streets and temporary enlargement before manual testing. Supersedes D073's static mini-map contract. Reuse SLiVR's Explore adapter for all 11 current-capture pins, grouping, keyboard selection, imagery recovery and optional configured 3D. Pin selection navigates immersive/{locationId}; Open Explore remains a separate action. Recenter focuses the current location. A compact two-row toolbar preserves 44px targets; enlarged desktop uses one row. Show/Hide works at every width.
 
-Read-only sources: LSU3D js/14-redesign.js:430-518 (second MapLibre mini-map), :307-348 (street overlay/recenter); Experimental js/10-event-wiring.js:244-278 (resize/fullscreen refresh), js/06-details-panel.js:331-398 (selection/tour dispatch). Reason 1: architecture and owner-required interactive map use SLiVR stable IDs, existing adapter/runtime configuration, attribution, bounded recovery and disposal; no reference globals, duplicate provider configuration or document fullscreen. Reason 3: neither inspected reference supplies temporary enlargement with outside-interaction dismissal. Fixed enlargement preserves the same canvas; ResizeObserver and explicit resize refresh it. Outside pointer/focus/wheel, Escape, Restore, collapse/exit restore size. Cross-origin tour interaction observes window blur and iframe focus without intercepting input or reading iframe contents. Remove listeners/timer on disposal. No viewer bridge changes or new capability claims.
+Read-only sources: LSU3D js/14-redesign.js:430-518 (second MapLibre mini-map), :307-348 (street overlay/recenter); Experimental js/10-event-wiring.js:244-278 (resize/fullscreen refresh), js/06-details-panel.js:331-399 (selection/tour dispatch). Reason 1: architecture and owner-required interactive map use SLiVR stable IDs, existing adapter/runtime configuration, attribution, bounded recovery and disposal; no reference globals, duplicate provider configuration or document fullscreen. Reason 3: neither inspected reference supplies temporary enlargement with outside-interaction dismissal. Fixed enlargement preserves the same canvas; ResizeObserver and explicit resize refresh it. Outside pointer/focus/wheel, Escape, Restore, collapse/exit restore size. Cross-origin tour interaction observes window blur and iframe focus without intercepting input or reading iframe contents. Remove listeners/timer on disposal. No viewer bridge changes or new capability claims.
 
 Stable 224 automated contracts PASS; live layout, actual iframe focus on desktop/touch and 3D rendering remain BLOCKED by unavailable browser automation. Phase acceptance remains OPEN; no exception approved.
 
@@ -158,3 +158,448 @@ D077 records owner report "the test all passed" after D076 as owner-reported min
 #### D077 owner scope clarification
 
 Owner explicitly confirms "yeah all the test even the ones before the map" in response to the question naming earlier provider-failure and real-browser storage/reload/export/import checks. All earlier instructed delivered-function checklists, including owner 15-16, are now owner-reported PASS. Preserve earlier NOT TESTED/BLOCKED/FAIL entries as historical; do not repeat those checks solely for missing tool access. Browser/version/device and exact tested digest remain unspecified. This does not make unimplemented bookmark save/restore tested, supply absent raw provider reports, or explicitly approve E1. Bookmark-specific and later-phase workflows remain NOT TESTED. No runtime changes or new automated execution.
+## D078 - Explore camera retention, 2026-09-22
+
+Retain the Explore center, zoom, bearing and pitch in the actions session before
+disposing its map. Restore them on remount without an initial inventory fit or
+ResizeObserver overwriting them. Explicit location selection still focuses that
+pin (D072/D074); Recenter and changed filters still fit their represented records.
+This reconciles test 64 with the owner's selected-location return requirement:
+an unselected return restores the exact camera; a selected return deliberately
+replaces center/zoom while retaining orientation. No provider session is retained.
+
+Read-only sources inspected: LSU3D `js/05-map-helpers.js:145-172` provides
+center/zoom/bearing/pitch capture and camera application; Experimental
+`js/05-map-helpers.js:9-83` supplies layout refresh/default-view behavior.
+Reason 1: SLiVR disposes maps on mode exit, so retain numeric session state through
+its existing action owner rather than globals or a surviving map. Avoid reference
+rounding, preserve legitimate zeros, reject nonfinite snapshots, and keep the
+interactive Immersive mini-map independent. Neither reference supplies persistent
+project bookmarks or scouting-assessment records (searched both js trees).
+
+Stable 225 extends 64; 365 full-suite checks PASS, zero failures. Live camera
+acceptance remains NOT TESTED: browser discovery returned no surfaces and opening
+the local reconnaissance harness failed with `Browser is not available: iab`.
+Prior owner-reported passes remain accepted; no phase closure, E1 approval or
+provider capability observation is inferred. Current checkout HEAD is
+`fd4900a6f14348dd3a574911bfcc500e5e9786a5`, newer than the handoff baseline.
+No branch/index operation, reference edit, telemetry, commit or push.
+## D079 - approved entry-only bookmarks and E1, 2026-09-22
+
+Owner approved E1 with "Yes, test them when built": keep earlier Phase 1
+delivered-action passes; test 44 candidate/comparison actions in Phase 3, shot
+actions in Phase 4 and the integrated trace in Phase 5. Phase 1 baseline is
+accepted with that bounded allocation; new D078 camera checks remain separate.
+
+Owner then approved: "Yes, finish entry-only bookmarks." Bounded E2 permits
+implementation using previously owner-tested location entry links without new
+raw pose reports. Exact-angle/position restoration stays unavailable until its
+outbound contract and real view restoration are verified. This is not a waiver
+of the new bookmark reload/restore/transfer checks before Phase 2 closure, nor
+permission for screenshots, pose inference or media export. Dates/coverage/
+rights remain unknown. Full-pose reports are deferred only for that unsupported
+feature, not represented as passed or unnecessary evidence for future work.
+
+Source comparison: both js trees have no persistent bookmark/project ownership
+counterpart (reason 3). Reuse SLiVR's existing bookmark schema, repository,
+transaction completion, retry/emergency export, conflict handling and transfer.
+For entry restoration retain the SCSU-derived adapter: Experimental
+`js/03-tour-bridge.js:20-119`, `js/04-street-view.js:67-155`; compared LSU3D
+`js/03-tour-bridge.js:27-128`, `js/04-street-view.js:86-155`. Reason 1 requires
+stable IDs, ownership, exact origins/source/payload validation, generation
+cancellation, disposal and honest entry-only wording. Restore renews the frame
+even for the current capture, so a walked-away view is not mistaken for arrival.
+No new provider protocol or unsupported angle conversion is introduced.
+
+`treedis-recon-2/entry-only-1` records the supported bookmark contract.
+`captureVersionRef = catalog-{catalogVersion}/{captureId}` identifies the public
+record snapshot, never a provider revision/date. New views have empty view and
+supportedFields; legacy finite zero values survive transfer but do not enable
+restoration. Project/candidate/location/capture ownership and same-version
+catalog identity are checked; retired/incompatible records retain notes and
+explain why restore is unavailable. No schema/database version bump is needed.
+
+Protect the working bundle during failed saves and stale project reads. Normal
+export also retains failed in-memory bookmarks; retry writes the same ID. Import
+replacement refreshes the open bundle. UI drafts retain names/notes through
+provider redraws. No assessment editor, second database or telemetry.
+
+Stable 226 plus 60-62/208 foundation and Part J: 373 automated checks PASS.
+The intermediate race-test harness timing failure is retained in the log;
+the corrected deterministic race test passes after generation guarding cached
+project reselection. New real-browser bookmark and camera acceptance is pending.
+Phase 2 remains OPEN; dependent Phase 3 implementation waits for that acceptance
+or an exact separately approved exception. Earlier owner passes are preserved.
+## D080 - owner acceptance closes Phase 2, 2026-09-22
+
+Owner answered "All new checks passed" to the exact D079 bookmark/camera
+checklist. Carry owner-reported PASS for save/name/note, downtown/Magnolia/Moncus
+reload and restore including walked-away same-entry return, export/import and
+Explore selected/unselected camera behavior. Phase 2 COMPLETE under E2 entry-only
+scope; E1 remains approved. Browser/device/exact tested digest unspecified.
+The accepted implementation has 373 automated PASS and D079 runtime digest
+9a185ee2013f4196cdeb2e2c55932c26ceb84866f72fe2999e238e1edd287541.
+Prior FAIL/BLOCKED history remains; no full-view/provider-media/participant claim.
+Proceed to Phase 3 in D068 order. No runtime change is made by this closeout.
+## D081 - Phase 3 project and scene editing begins, 2026-09-22
+
+After D080 acceptance, implement the first two D068 work-order steps: project
+metadata editing and scene briefs. Keep explicit Save controls for this initial
+slice; full workspace autosave (80), candidates, assessments and decisions remain
+outstanding. Do not portray the partial Phase 3 workspace as phase-complete.
+
+Inspected both reference js trees for project/scene/assessment/deletion workflows;
+neither has persistent counterparts (reason 3). Compared LSU3D
+`js/06-details-panel.js:5-40` and Experimental `js/06-details-panel.js:6-43`
+for panel visibility/state; inspected LSU3D `js/12-start-screen.js` and reused
+SLiVR's existing focus-trap/import-dialog pattern for the deletion review.
+Reason 1: retain SLiVR record IDs, project-owned storage, native keyboard forms,
+inert dialog background, responsive shell and cancellation/disposal semantics.
+No reference edits or new provider/library plumbing.
+
+Projects edit name, production type, description and active/archived status;
+identity, creation time and America/Chicago time zone remain stable. Scene briefs
+edit required fields and all existing creative/practical lists/counts; blank
+counts stay absent, explicit zero stays zero. Reordering writes scene order/
+revisions atomically; linked candidates/shot designs prevent scene deletion.
+Public catalog is never edited. Forms retain drafts during shell redraw/mode
+changes but explicit Save is required before reload/export; unsaved form text
+is not presented as persisted. Failed submitted writes retain emergency data.
+
+Project deletion now reviews counts and a record/revision snapshot, requires
+confirmation, rechecks that snapshot inside the deletion transaction and updates
+memory/navigation only after commit. Failed deletion retains the workspace;
+retry completes cleanup, cancel revokes retry. A stale review requires a fresh
+review. Stale record writes are reported as failures, not Saved locally.
+
+App 0.3.0, transfer 1.1.0 adds optional scene order; old 1.0 exports read without
+rewriting records and use deterministic ordering until reordered. Old readers
+explicitly reject the newer export version. IndexedDB remains version 1 because
+no store/index changed. Assessment stores/version migrations remain the next
+D068 persistence increment. 381 automated PASS; new UI live checks NOT TESTED.
+
+## D082 - candidate workflow and persistent selection, 2026-09-23
+
+Continue Phase 3 after D080 owner acceptance in D068 order. Candidates can be
+added from a scene, public dossier or Immersive with an explicitly selected
+project/scene. Catalog locations without captures remain valid candidates.
+Return actions preserve project/scene/candidate identity; local workspaceContext
+metadata restores selection on reload. Public share links remain context-free.
+
+Re-inspected both read-only js trees: no persistent candidate/assessment workflow
+counterpart (reason 3). LSU3D js/06-details-panel.js:5-40 and Experimental
+js/06-details-panel.js:6-43 supply panel-state context; adapt to SLiVR's existing
+shell, accessible native forms and project-owned repository (reason 1). No new
+provider plumbing. Read CheckList/v2/app.js:5-165, db.js:13-106 and
+export.js:267-340 for the NEXT assessment increment; this inspection does not
+claim that its checklist/media editor has been implemented.
+
+One candidate per project/scene/location is enforced in a repository transaction
+and transfer validation. Adding the same location returns its existing candidate;
+other scenes may consider it independently. Identity and ownership cannot be
+changed through editing. New candidates start discovered, with scene requirements
+unknown and open questions copied to missing information. Review statuses include
+under-review, shortlisted, rejected and withdrawn. Notes/strengths/concerns/missing
+information use explicit Save. New preferred/backup decisions remain unavailable
+until the assessment/evaluation/comparison steps; imported legacy decisions remain.
+
+Explicit migration: legacy candidates are read unchanged. Selecting a new review
+status records workflowVersion 2 and the prior legacyStatus; old met/notMet/unknown
+ratings are preserved verbatim, never relabeled as richer fit results. The later
+fit/evidence migration remains outstanding. App 0.3.1, transfer 1.2.0; older 1.0/1.1
+files remain readable, older readers reject 1.2. Database version stays 1 because
+no store/index changed. Submitted failed edits retain memory and emergency JSON;
+retry reuses identity. Scene/project deletion clears stale remembered selection.
+
+Tests 44/71/77/81/82/228 cover this increment. It is not full Phase 3 acceptance,
+full autosave, an assessment implementation or human-participant evidence.
+
+## D083 - Phase 3 scouting assessments and decisions, 2026-09-23
+
+Implemented the remaining D068 workspace increment. Phase 3 is IMPLEMENTED,
+AWAITING LIVE ACCEPTANCE, not COMPLETE. New browser gates cannot inherit D080's
+accepted bookmark/camera evidence. E1/E2 and every earlier owner PASS are preserved.
+
+Reference-first: re-inspected LSU3D/js/06-details-panel.js:5-40 and
+Experimental/js/06-details-panel.js:6-43 and searched both js trees for persistent
+candidate/assessment/comparison/storage counterparts. None exist (reason 3).
+Retained SLiVR's existing shell, record IDs, repository and provider adapter.
+Adapted CheckList/v2/app.js:5-43 eight-section typed metadata and :66-159 explicit
+answer/touched semantics; db.js:13-106 media ownership/Blob references;
+panorama-viewer.js:70-247 supplied equirectangular viewer; export.js:267-340 shared
+media manifest and data/location.json; index.html's local JSZip loading. JSZip
+3.10.1 is copied verbatim to vendor/jszip-3.10.1.min.js with its license header.
+Both map references and CheckList remain read-only.
+
+Required deviations (reason 1, D068 architecture): one SLiVR database; explicit
+unanswered/observed/needs-validation/not-applicable; private contact/address/person
+fields excluded; catalog facts remain read-only; dated room/source assessments;
+immutable snapshots; project/location/capture checks; transaction completion;
+ordered local autosave/flush; stable UUID media IDs and bounded supplied files.
+Do not copy CheckList's parseInt(value)||0 default or implicit untouched negatives.
+Panorama module is lazy, has explicit disposal, stale-image guarding, keyboard
+look/zoom, WebGL context-loss flat fallback and object-URL revocation. No second
+Treedis bridge, provider screenshot/pose claim, capture pipeline or sensor request.
+
+App 0.3.2, transfer 1.3.0, workspace database 2, template 1.0.0. Additive upgrade
+creates scoutAssessments/scoutAssessmentRevisions/scoutMedia without rewriting
+legacy records. Old 1.0-1.2 project files explicitly gain empty collections.
+New requirement evaluations use five fit states; old met/notMet/unknown ratings
+remain intact, never silently converted. New judgments and decisions are explicit.
+Comparison/detail use the same candidate data. Scene decision history snapshots
+candidate judgments and exact evidence revisions; later observations flag changed
+evidence. Reopening retains prior decisions. Phase 3 creates linked schematic shot
+workspace metadata only; spatial editing remains Phase 4.
+
+Media stores both Blob and a bounded base64 recovery representation, trading some
+local storage for synchronous emergency recoverability. Limits: 16 MiB/file,
+48 MiB/project; browser image decoding also caps 64 million pixels. Canonical JSON
+moves bytes in assetsInline, never provider imagery. Selected assessment/media
+exports explicitly report excluded/missing bytes and reject exclusion of required
+decision evidence. Copy imports remap assessment/history/media and nested evidence.
+Archiving/detaching preserves historical references; owned project deletion removes
+all its records. No separate media-delete action can bypass history ownership.
+
+Legacy JSON/ZIP preview requires a chosen catalog location in the selected project;
+shows supported answers, excluded field names, ambiguous defaults, legacy status/
+stars and missing attachments. Excluded private values are not retained in the
+preview plan or imported records. Missing bytes become explicit owned placeholders.
+Import is atomic; cancellation/failure leaves stored records unchanged. Native
+SLiVR ZIP/print packets stay Phase 5 as planned; legacy ZIP input is implemented.
+
+Final 399 automated PASS, 0 FAIL. Catalog 0 errors/one retained alias warning;
+deployment scope clean. Logs, failed interim runs, exact digest and per-gate limits
+are in FULL-SYSTEM-TESTING and PHASE_3_ACCEPTANCE_REVIEW. Browser discovery returned
+no apps/browsers and iab creation failed. Live gates remain BLOCKED/NOT TESTED;
+there is no approved exception for those new gates. No telemetry, staging, commit,
+push or changes outside SLiVR.
+
+D083 final review also rejects imported record IDs already owned by another
+project before any write/removal; an atomic regression test verifies both projects
+remain unchanged on rejection. Final deployment: 178 publishable files, 0 errors.
+
+## D084 - visible save errors and reversible failure testing, 2026-09-23
+
+Owner reports Create gives Save failed and selection-metadata warning (screenshot,
+localhost:8000, browser/device version unspecified). This is a new Phase 3 live
+FAIL; earlier Phase 2 PASS remains untouched. Owner read slivr:diagnostics and
+reported null. An enabled persisted test flag is therefore not established as the
+cause. Actual native failure remains UNRESOLVED pending the newly visible error.
+
+Confirmed UI defect: Create navigates after the failed write and applyRoute clears
+state.error. Save status retained the error but did not render its message. Always
+show the failed-save message independently of transient route errors, and include
+native transaction-start cause details. Do not reset data or label an unsaved
+project saved. Requested emergency export before refreshing the old page.
+
+Also repaired the previously identified diagnostic gap: wrap project, candidate,
+scene, assessment, import/delete/order and selection writes. Read the opt-in flag
+per write; expose test mode and a user-triggered off/retry action preserving all
+other diagnostics. Disabling test mode retries the same memory record without a
+reload. No flags are changed automatically; session bookkeeping remains available
+so storage can initialize for failure-path testing.
+
+Reference audit: re-read LSU3D/js/06-details-panel.js:5-40 and Experimental/
+js/06-details-panel.js:6-43 and searched both for storage-failure diagnostics.
+No persistent-workspace/IndexedDB counterpart exists (reason 3); adapt SLiVR's
+existing error/status and local diagnostics under its architecture (reason 1).
+Neither reference changed. No telemetry, commit/push or clearing browser data.
+
+App 0.3.3; database/transfer/template unchanged. Automated 401 PASS; two new stable
+230 tests reproduce failed Create under simulation and recover the same project,
+cover assessment writes/reload, preserve other flags, and show real failures
+without claiming simulation. This does not prove the owner's unknown failure is
+fixed. Logs/digest outputs/phase3-d084; deployment 178 files, zero errors.
+
+## D085 - open local storage independently of catalog loading (2026-09-23)
+
+Owner reports the exact live error: "the workspace database is not open", with
+selection metadata also failing and diagnostics null. Startup exposed an
+interactive shell with storage.available inferred from API presence, then waited
+for the network catalog before opening the repository. This allowed early Create
+to write to an unopened database. The report identifies the missing connection;
+the precise network timing in the owner's browser was not independently observed.
+
+Inspected read-only LSU3D js/11-boot.js:286-310 and Experimental
+js/11-boot.js:214-237: both start independent provider loading alongside map data.
+Neither has an IndexedDB workspace counterpart (per CLAUDE.md). Exception 3
+permits SLiVR's storage readiness implementation; architecture requires local
+project use independent of remote catalog availability. No reference edits.
+
+App 0.3.4 starts database initialization independently, distinguishes initializing
+from available, and makes Create await a single initialization promise before
+creating its draft. Genuine storage unavailability retains the existing emergency
+export workflow. Direct project routes reopen their bundle after storage loads.
+The checklist import panel explains a missing catalog without throwing or blocking
+local editing. Session catalog metadata is updated after catalog completion.
+
+Stable 231 deliberately delays database opening and catalog loading, submits Create
+before either is ready, verifies saving before catalog completion, and reloads a
+direct project URL. 35 targeted and 402 full automated PASS; deployment 178 files,
+zero errors. DOM/IndexedDB doubles are not live browser durability evidence.
+Logs and explicit runtime manifest: outputs/phase3-d085. Owner live FAIL remains
+historical; focused Create/save/reload retest pending. Earlier Phase 2 passes and
+approved E1/E2 are unchanged. No telemetry, commit, push or data clearing.
+
+## D086 - unified Explore and embedded V2 presentation (2026-09-23)
+
+Authorization: owner accepted all nine supplied Phase 3 critical checks, requested
+V2 visual fidelity and simultaneous scouting, approved unifying Projects/Immersive
+under Explore, then explicitly approved the final floating-first plan with "yes".
+No permanent right checklist panel. Shot Designer remains unchanged.
+
+Sources inspected read-only: LSU3D js/06-details-panel.js:5-40 and Experimental
+js/06-details-panel.js:6-43 (panel visibility, mobile sheets, map resize);
+Experimental js/04-street-view.js:9-23 and LSU3D counterpart:12-28 (retain tour
+iframe rather than reset it on UI redraw). CheckList/v2/index.html:34-545 supplies
+the header, toolbar and eight form sections; style.css is copied byte-for-byte
+(SHA256 3b4ec224bc942b998cb8055c4df82e901bcf07d9a977dfd3ebd1b8d394750dcc),
+with vendor/fonts and vendor/fontawesome. app.js:243-289 supplies navigation/
+progress structure. No reference files modified.
+
+Exceptions 1 and 3: approved architecture now requires nonmodal workspace tools
+and SLiVR persistence; neither map reference has these project/assessment windows.
+V2's standalone storage, install/service worker, independent status/stars, private
+contact fields, capture/sensor controls and future exports are excluded. Its markup
+is adapted for the existing typed assessment questions and evidence states; generic
+SLiVR evidence/history/media controls remain in expandable details. Partner-logo
+rotation is not copied into SLiVR. V2's CSS, Inter and Font Awesome are local and
+unchanged; integration CSS is a separate file. A same-origin static iframe isolates
+CSS and gives V2 its own responsive viewport, with parent-owned actions and no
+independent app script/database. Media uses existing SLiVR ownership and limits.
+
+Implementation: src/ui/tool-windows.js; src/scouting/embedded-checklist.js and v2/;
+shell integration and styles/40-workspace.css. Legacy project URLs open tools over
+the remembered viewing surface. Menus expose project creation, scene selection/
+creation and existing project/candidate/comparison/import/export/deletion controls.
+The checklist is pinned to its assessment location; navigation mismatch is visible.
+Save failure prevents tool close or assessment/project replacement. Keyboard title
+arrows move, Shift+arrows resize. Minimized tabs retain mounted content. Reset layout
+changes geometry only. View route, tool preferences and section navigation use
+SLiVR-only local keys; active assessment ID joins existing workspace metadata.
+
+Evidence: app0.3.5, DB2, transfer1.3.0, template1.0.0, catalog1.1.0. 407 automated
+PASS, zero failures; deployment199/0errors; catalog0errors/one retained alias warning.
+New232-234 cover navigation, retained provider frames, ownership and window lifecycle,
+failure-close guard, preferences and V2 source/template boundaries. Tests use DOM/
+IndexedDB doubles; no browser visual claims. CUA inventory apps=[]/browsers=[].
+Actual iframe rendering, pointer resizing, keyboard traversal inside the iframe,
+media decoding and visual comparison remain NOT TESTED live. Earlier owner passes
+are preserved; new visual acceptance is pending. No telemetry, commit or push.
+
+
+## D087 ? Responsive workspace collision repair (2026-09-23)
+
+Owner approved implementation after desktop/phone screenshots demonstrated collisions
+in D086. Those failures remain historical evidence. App 0.3.6 reserves toolbar,
+viewing workspace and minimized desktop tray as separate grid rows. Phone (<=880px)
+uses compact project/scene and app menus, View/Locations/Checklist/Project navigation,
+and mutually exclusive retained tools. Full editing and half-height view+tool modes
+replace desktop drag/resize controls. Browser Back dismisses a newly opened mobile
+tool without destroying its draft. Desktop geometry is not overwritten by phone
+resizing. The visual viewport sizes the shell during keyboard changes.
+
+Read-only sources inspected before edits: LSU3D/js/06-details-panel.js:5-43 and
+Experimental/js/06-details-panel.js:6-43. Adapt their mutually exclusive mobile
+panels, half/full states and map-resize notification. Architecture exception 1:
+SLiVR retains project/checklist DOM and provider hosts and reserves grid space
+instead of translating independent overlays; source layouts cannot provide its
+project-owned editor lifecycle. Neither reference was modified. V2 style.css stays
+byte-identical; mobile touch sizing belongs in its separate integration.css.
+
+Map controls are available through Map options on phones. Imagery explanation
+is expandable; source/year, provider attribution and scale stay visible. Project
+context is collapsed above the V2 editor; ownership mismatch remains visible.
+No data schema or transfer changes, telemetry, commits or pushes.
+
+Validation: 408 automated PASS; deployment199/0; catalog0 errors/one existing
+alias warning. Chrome extension critical checks: phone full/half panels, exclusive
+project/checklist tools, narrow view without horizontal overflow, Map options and
+Back dismissal; desktop toolbar and minimized tray no longer overlap the map.
+Viewport requests390x844,320x720,1440x900; Chrome zoom produced observed CSS
+433x937,355x800 and approximately1600x1000 respectively. This is desktop Chrome
+responsive evidence, not physical iOS/Android or participant evidence. Initial
+screenshot timed out; extension reconnected during checks. Temporary override reset.
+Physical keyboard/touch/orientation and live provider interaction with the new
+layout remain acceptance gates. Prior owner storage/assessment/Phase2 passes stand.
+
+
+## D087 responsive workspace repair (2026-09-23)
+
+App0.3.6 addresses owner-reported D086 screenshot collisions. Desktop launchers
+and minimized tray occupy separate grid rows outside the map/rail. Phone <=880px
+has compact project/scene and app menus, reserved View/Locations/Checklist/Project
+navigation, and one retained active tool. Full and half-height modes replace
+floating-window controls. Browser Back dismisses a newly opened phone tool;
+desktop geometry survives phone use. Visual viewport sizes the keyboard layout.
+Map options reveals existing controls; imagery explanations and assessment/project
+context are expandable. Ownership mismatch stays visible. V2 source stylesheet
+remains byte-identical; phone touch sizing is in separate integration CSS.
+
+Read-only sources inspected: LSU3D/js/06-details-panel.js:5-43 and
+Experimental/js/06-details-panel.js:6-43. Adapt mutual exclusion, half/full states
+and resize notifications. Architecture exception1: SLiVR reserves grid space and
+retains editor/provider DOM instead of independent translated overlays, to meet
+its project ownership and lifecycle requirements. References remain unchanged.
+
+Validation:408 automated PASS (outputs/responsive-d087-tests.txt), deployment199/0,
+catalog0errors/one retained alias warning. Stable235 adds exclusive-tool/draft/
+geometry coverage; existing233/234 remain. Critical Chrome extension checks passed:
+phone full/half panels, switching tools, no horizontal overflow, Map options and
+Back dismissal; desktop toolbar and tray separate from map controls. Requested
+390x844/320x720/1440x900 viewports were zoom-adjusted by Chrome to observed CSS
+433x937/355x800/approximately1600x1000. Initial screenshot timeout and temporary
+extension disconnection occurred; verification resumed. Viewport override reset.
+No project answers edited in Chrome. This is responsive desktop Chrome evidence,
+not physical iOS/Android or participant evidence. Physical-phone keyboard/touch,
+orientation, provider navigation and complete device matrix remain NOT TESTED.
+Earlier owner functional passes and D086 screenshot failures remain unchanged.
+No telemetry, staging, commits, pushes, or schema/transfer changes.
+
+
+## D088 - Checklist follows selected location (2026-09-23)
+
+Owner reported all ten D087 critical checks passed. Preserve that exact scope;
+no browser/device metadata supplied. The owner then requested prominent checklist
+location identity and automatic following of location selections anywhere.
+
+App0.3.7: route resolution covers map/list/details/immersive/bookmark location
+navigation; an explicit candidate-selection request also covers repeated project
+candidate selection without a route change. Checklist shows its location name,
+project/scene context and assessment date above collapsed metadata. A selector
+switches dated assessments; the last used assessment per project/location is
+remembered during the current shell session. Otherwise choose the most recent
+nonarchived assessment. No assessment is silently created or moved: an empty
+location offers Start assessment, with explicit project/scene prerequisites.
+Pin checklist to this location opts out; Follow selected location opts back in.
+Flush drafts and scouting writes before switching; failed saves retain the old
+editor with a retry explanation. Rapid selections converge on the latest target.
+
+Reference inspection: both LSU3D and Experimental js/06-details-panel.js:5-43
+retain the shared-selection/panel lifecycle already adapted in SLiVR. Neither
+has project-owned assessment following, save guards or date selection (exception3:
+no counterpart). SLiVR uses its existing actions and persistence, not a second
+store. No schema/transfer changes, telemetry, commits, push or reference edits.
+
+Stable236: automated integration covers location routes, project candidates,
+pinning/unpinning, empty-location noncreation, failed-save retention, rapid
+selection and remembering one of multiple assessments. Existing232/233 ownership
+check now explicitly pins to exercise the retained comparison behavior.409 tests
+PASS; deployment199/0; catalog0errors/one existing warning. Logs:
+outputs/checklist-follow-full.txt and checklist-follow-targeted.txt. Initial
+failed follow tests are retained in checklist-follow-initial.txt; candidate
+repeat-selection failure was corrected with an explicit selection request.
+Focused live Chrome DOM check confirmed the selected location name and explicit
+Start assessment action. Complete new phone/provider follow workflow remains
+NOT TESTED, separate from prior owner passes. No project answers edited live.
+
+
+## D089 Phase 3 closeout
+
+Phase3 COMPLETE for delivered scope, based on preserved owner functional/layout
+passes plus final D088 Chrome selection/pin/return/mobile identity checks and
+409 automated PASS. Exact evidence, limitations and runtime digest are in
+research/PHASE_3_ACCEPTANCE_REVIEW.md. Physical-device generalization and provider
+pose claims are not inferred. Phase4 shot actions and Phase5 integrated retest
+remain in their approved allocation. Owner authorized SLiVR-only commit/push;
+private ignored assets/credentials remain local. No telemetry.

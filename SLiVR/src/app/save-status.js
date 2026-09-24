@@ -98,6 +98,7 @@ export function createSaveStatus({ onChange = null, now = () => new Date().toISO
     state = "idle";
     error = null;
     inFlight = 0;
+    lastAttempt = null;
     emit();
     return snapshot();
   }

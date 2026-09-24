@@ -58,6 +58,7 @@ export function copyWithNewIds(bundle) {
   }
 
   const rewrite = (value) => {
+    if (typeof Blob !== "undefined" && value instanceof Blob) return value;
     if (typeof value === "string") return remapper.remap(value);
     if (Array.isArray(value)) return value.map(rewrite);
     if (value && typeof value === "object") {

@@ -3,9 +3,68 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { locationBounds, inventoryFitOptions } from "../src/map/viewport.js";
 import { createMapAdapter } from "../src/map/maplibre-adapter.js";
+import { createActions, initialState } from "../src/app/actions.js";
+import { createStore } from "../src/app/store.js";
 
 const region = JSON.parse(readFileSync(new URL("../data/region/lafayette.region.json", import.meta.url)));
 const locations = JSON.parse(readFileSync(new URL("../data/catalog/locations.v1.json", import.meta.url))).locations;
+
+test("225/64: Explore camera survives disposal and late layout; explicit location handoff wins", async () => {
+  const previous = globalThis.ResizeObserver;
+  const observers = [], instances = [];
+  globalThis.ResizeObserver = class {
+    constructor(callback) { observers.push(callback); }
+    observe() {} disconnect() {}
+  };
+  const camera = { center: [-92.02, 30.23], zoom: 0, bearing: 0, pitch: 0 };
+  const store = createStore({ ...initialState({ webgl: true }), catalog: { locations } });
+  const maplibre = { Map: function(options) {
+    const map = { options, fits: [], flights: [], removed: false,
+      loaded: () => false, addControl() {}, on() {}, resize() {},
+      remove() { this.removed = true; },
+      getCenter: () => ({ lng: camera.center[0], lat: camera.center[1] }),
+      getZoom: () => camera.zoom, getBearing: () => camera.bearing, getPitch: () => camera.pitch,
+      getMaxZoom: () => 20,
+      fitBounds(...args) { this.fits.push(args); }, flyTo(options) { this.flights.push(options); },
+    };
+    instances.push(map); return map;
+  } };
+  const actions = createActions({ store, region, loadMapLibrary: async () => maplibre });
+  try {
+    const container = { clientWidth: 900, clientHeight: 700 };
+    await actions.mountMap(container);
+    actions.unmountMap();
+    assert.equal(instances[0].removed, true);
+    await actions.mountMap(container);
+    const restored = instances.at(-1);
+    for (const key of Object.keys(camera)) assert.deepEqual(restored.options[key], camera[key]);
+    observers.at(-1)();
+    assert.equal(restored.fits.length, 0, "initial inventory and ResizeObserver cannot overwrite restoration");
+    actions.recenterMap();
+    assert.equal(restored.fits.length, 1, "explicit Recenter remains available");
+    actions.unmountMap();
+    store.setState({ routeResolution: { locationId: "LOC-009" } });
+    await actions.mountMap(container);
+    assert.deepEqual(instances.at(-1).flights.at(-1).center, locations.find(l => l.id === "LOC-009").position);
+    assert.equal(instances.at(-1).options.bearing, 0);
+    actions.unmountMap();
+  } finally { globalThis.ResizeObserver = previous; }
+});
+
+test("225: invalid camera falls back to inventory and disposed camera is unavailable", () => {
+  let options;
+  const fits = [];
+  const map = { loaded: () => false, on() {}, addControl() {}, remove() {},
+    getCenter: () => ({ lng: 0, lat: 0 }), getZoom: () => NaN,
+    getBearing: () => 0, getPitch: () => 0, fitBounds: (...args) => fits.push(args) };
+  const adapter = createMapAdapter({ container: { clientWidth: 900, clientHeight: 700 }, region,
+    initialCamera: { center: [0, 0], zoom: NaN, pitch: 0, bearing: 0 },
+    maplibre: { Map: function(value) { options = value; return map; } } });
+  adapter.create(); adapter.setLocations(locations, () => {});
+  assert.ok(options.bounds); assert.equal(fits.length, 1);
+  assert.equal(adapter.getCamera(), null);
+  adapter.dispose(); assert.equal(adapter.getCamera(), null);
+});
 
 test("inventory bounds include every pin without adding the region's geographic padding", () => {
   const bounds = locationBounds(locations);

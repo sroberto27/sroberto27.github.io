@@ -1,3 +1,7 @@
+import { createToolWindows } from "../ui/tool-windows.js";
+import { createEmbeddedChecklist } from "../scouting/embedded-checklist.js";
+import { locationView } from "../data/catalog-repo.js";
+import { flushDrafts } from "../scouting/autosave.js";
 /** Persistent mode shell; Explore owns a single list/dossier panel. */
 
 import { discoverLocations, discoveryFacts, evidenceState, MISSING, PRACTICAL_FIELDS, publicLocationLink } from "../domain/discovery.js";
@@ -7,6 +11,12 @@ import { formatAddress } from "../domain/location.js";
 import { createFocusTrap } from "../ui/a11y.js";
 import { createViewerHost } from "../immersive/viewer-host.js";
 import { createImmersiveMap } from "../ui/immersive-map.js";
+import { bookmarkRestoration, ENTRY_LIMITATION } from "../immersive/bookmarks.js";
+import { workspaceForm, PROJECT_FIELDS, SCENE_FIELDS } from "../scouting/workspace-forms.js";
+import { createAssessmentEditor } from "../scouting/assessment-editor.js";
+import { comparisonView } from "../scouting/comparison.js";
+import { completion } from "../scouting/assessment-template.js";
+import { REVIEW_STATUSES } from "../domain/candidate.js";
 
 function el(tag, props = {}, children = []) {
   const node = document.createElement(tag);
@@ -117,7 +127,7 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
   surface.append(mapHost, viewerHost.element, surfaceContent);
 
   const modeButtons = new Map();
-  for (const mode of MODES) {
+  for (const mode of MODES.filter(mode => ["explore", "shot"].includes(mode.id))) {
     const button = el("button", {
       type: "button",
       class: "mode-button",
@@ -132,7 +142,12 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
           route = { name: "location", params: { locationId } };
         } else if (locationId && state.mode === "explore" && mode.id === "immersive") {
           route = { name: "immersive", params: { locationId } };
+        } else if (mode.id === "projects" && state.openProjectId) {
+          route = state.activeSceneId
+            ? { name: "project-scene", params: { projectId: state.openProjectId, sceneId: state.activeSceneId } }
+            : { name: "project", params: { projectId: state.openProjectId } };
         }
+        modeNav.classList.remove("is-open");
         actions.navigate(route);
       },
     });
@@ -140,13 +155,16 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
     modeNav.append(button);
   }
 
+  const projectMenus = el("div", { class: "project-menus", "aria-label": "Project and scene tools" });
   root.append(
     el("header", { class: "topbar" }, [
       el("div", { class: "brand" }, [
         el("span", { class: "brand-name", text: "SLiVR" }),
         el("span", { class: "brand-sub", text: "Location scouting and shot design" }),
       ]),
-      modeNav,
+      modeNav, projectMenus,
+      el("button", {class:"mobile-context-button", text:"Project / scene", onClick:()=>{modeNav.classList.remove("is-open");projectMenus.classList.toggle("is-open");}}),
+      el("button", {class:"mobile-menu-button", text:"Menu", onClick:()=>{projectMenus.classList.remove("is-open");modeNav.classList.toggle("is-open");}}),
       el("div", { class: "topbar-context" }, [breadcrumb, saveChip]),
     ]),
     statusStrip,
@@ -159,6 +177,135 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
   let searchTimer = null, refreshBrowse = null;
   let browse = null, browseCatalog = null, dossier = null, dossierView = null;
   let collapsed = false, expanded = false, lastLocation = null, menuTrap = null;
+  let restoredWindows = false;
+  let rememberedView = null;
+  try { const value=JSON.parse(win.localStorage.getItem("slivr:explore-view") || "null"); if(["explore","location","immersive","immersive-index"].includes(value?.name)) rememberedView=value; } catch {}
+  let viewingState = null, lastProjectRoute = null, projectNameDraft = "", menuSignature = "", projectSignature = null;
+  const tools = createToolWindows({ doc: document, host: workspace, win,
+    onLayout: () => { if(workspace.getAttribute("data-tool-docked")==="true" || workspace.getAttribute("data-mobile-tool") !== "none"){collapsed=true;syncPanel();} win.dispatchEvent?.(new Event("resize")); },
+    beforeClose: async id => { await flushDrafts(); if (store.getState().save.state === "failed") { actions.notice("Save failed. Retry or export your draft before closing this tool."); return false; } if (id === "checklist") await actions.openAssessment(null); return true; } });
+  const launchers = el("div", { class: "workspace-launchers" }); root.append(launchers);
+  const mobileNav=el("nav",{class:"mobile-workspace-nav","aria-label":"Scouting workspace"},[
+    el("button",{text:"View",onClick:()=>{tools.hideAll();setCollapsed(true);}}),
+    el("button",{text:"Locations",onClick:()=>{tools.hideAll();setCollapsed(false);}}),
+    el("button",{text:"Checklist",onClick:openChecklistTool}),
+    el("button",{text:"Project",onClick:()=>{renderProjectTool();tools.open("project","Project tools");}}),
+  ]);root.append(mobileNav);
+  function shownState() {
+    const state = store.getState();
+    if (["explore", "immersive"].includes(state.mode)) return state;
+    const route=viewingState?.route ?? rememberedView ?? {name:"explore",params:{}};
+    const id=route.params?.locationId, view=id && state.catalog ? locationView(state.catalog,id) : null;
+    return { ...state, mode: route.name.startsWith("immersive") ? "immersive" : "explore", route, routeResolution: view ? {status:"ok",locationId:id,view} : {status:"ok"} };
+  }
+  function returnToView(locationId = null) {
+    const location = locationId ?? shownState().routeResolution?.locationId;
+    actions.navigate(location ? { name: "location", params: { locationId: location } } : { name: "explore" });
+  }
+  function renderProjectMenus(state) {
+    const signature=JSON.stringify([state.projects.map(p=>[p.id,p.name]),state.openProjectId,state.activeSceneId,state.workingBundle?.scenes.map(s=>[s.id,s.number,s.title])]);
+    const contextButton=root.querySelector(".mobile-context-button");
+    if(contextButton){const project=state.projects.find(p=>p.id===state.openProjectId),scene=state.workingBundle?.scenes.find(s=>s.id===state.activeSceneId);contextButton.textContent=project?`${project.name}${scene ? ` / ${scene.number}` : ""}`:"Project / scene";}
+    if(signature===menuSignature)return; menuSignature=signature;
+    const selectProject = el("select", { "aria-label": "Current project", onChange: async event => { await actions.openProject(event.target.value); renderWorkspace(); } },
+      [el("option", { value: "", text: "Project: choose" }), ...state.projects.map(p => el("option", { value: p.id, text: p.name }))]);
+    selectProject.value = state.openProjectId ?? "";
+    const selectScene = el("select", { "aria-label": "Current scene", onChange: async event => { await flushDrafts(); if(store.getState().save.state !== "failed") actions.selectScene(event.target.value); } },
+      [el("option", { value: "", text: "Scene: choose" }), ...(state.workingBundle?.scenes ?? []).map(scene => el("option", { value: scene.id, text: `${scene.number} - ${scene.title}` }))]);
+    selectScene.value = state.activeSceneId ?? "";
+    const openProjectTools = () => { projectMenus.classList.remove("is-open"); renderProjectTool(); tools.open("project", "Project tools"); };
+    replaceChildren(projectMenus, [selectProject, selectScene,
+      el("button", { type: "button", text: "New project", onClick: () => { openProjectTools(); document.getElementById("new-project-name")?.focus(); } }),
+      el("button", { type: "button", text: "Project tools", onClick: openProjectTools }),
+      el("button", { type: "button", text: "Add scene", onClick: () => { openProjectTools(); const details = tools.get("project").body.querySelectorAll("details"); for (const d of details) if (d.textContent.includes("Add scene brief")) d.open = true; } }),
+      el("button", { type: "button", text: "Reset layout", onClick: () => { tools.reset(); collapsed=false; syncPanel(); } })]);
+  }
+  function renderProjectTool() {
+    const t = tools.ensure("project", "Project tools"), state=store.getState();
+    const signature=[state.projects,state.workingBundle,state.activeSceneId,state.activeCandidateId,state.catalog?.version];
+    if(projectSignature && signature.every((value,index)=>value===projectSignature[index]))return; projectSignature=signature;
+    const parts = projectsMode({ ...state, route: { ...state.route, params: { projectId: state.openProjectId } } });
+    const scroll=t.body.scrollTop;
+    replaceChildren(t.body, el("div", { class: "project-tool-grid" }, [el("div", {}, parts.left),el("div", {}, parts.centre.children),el("div", {}, parts.right)]));
+    t.body.scrollTop=scroll;
+  }
+  let checklistPinned=false, selectedChecklistLocation=null, followingChecklist=false, followRunning=false, followRevision=0, shellDisposed=false, emptyChecklistLocation=null;
+  const lastAssessments=new Map();
+  const locationName=id=>store.getState().catalog?.locations.find(l=>l.id===id)?.name ?? id ?? "Choose a location";
+  function checklistIdentity(id, assessment=null) {
+    const state=store.getState();
+    const pin=el("button",{type:"button",text:checklistPinned?"Follow selected location":"Pin checklist to this location","aria-pressed":String(checklistPinned),onClick:()=>{
+      checklistPinned=!checklistPinned;tools.get("checklist")?.updateContext?.();if(!checklistPinned)requestChecklistFollow(selectedChecklistLocation ?? shownState().routeResolution?.locationId);
+    }});
+    const selector=el("select",{"aria-label":"Checklist assessment date",onChange:async event=>{await actions.openAssessment(event.target.value);}},
+      (state.workingBundle?.scoutAssessments ?? []).filter(a=>a.locationId===id).map(a=>el("option",{value:a.id,text:`${a.observationDate} - ${a.title}${a.archived?" (archived)":""}`})));
+    if(assessment)selector.value=assessment.id;
+    selector.hidden=!assessment;
+    return el("div",{class:"checklist-identity"},[
+      el("strong",{text:locationName(id)}),
+      el("span",{class:"checklist-owner",text:`${state.workingBundle?.projects[0]?.name ?? "Choose a project"} / ${state.workingBundle?.scenes.find(s=>s.id===state.activeSceneId)?.title ?? "Choose a scene"}${assessment?` / ${assessment.observationDate}`:""}`}),selector,pin,
+    ]);
+  }
+  function renderEmptyChecklist() {
+    const t=tools.get("checklist");if(!t)return;
+    const state=store.getState(),id=checklistPinned && emptyChecklistLocation ? emptyChecklistLocation : selectedChecklistLocation ?? shownState().routeResolution?.locationId;
+    emptyChecklistLocation=id;
+    t.updateContext=()=>renderEmptyChecklist();
+    const start=el("button",{type:"button",text:`Start assessment for ${locationName(id)}`,onClick:async()=>{
+      const current=store.getState();if(!id || !current.openProjectId || !current.activeSceneId){actions.notice("Choose a project and scene before starting an assessment.");return;}
+      const result=await actions.addLocationCandidate(current.activeSceneId,id);if(result?.ok)await actions.createAssessment(result.candidate.id);
+    }});
+    replaceChildren(t.body,el("div",{class:"checklist-empty"},[checklistIdentity(id),el("p",{text:"No assessment is open for this location. Existing answers stay with their original location."}),start,...candidateContext(state,id)]));
+  }
+  function requestChecklistFollow(id) {
+    if(!id)return;
+    selectedChecklistLocation=id;followRevision++;
+    tools.get("checklist")?.updateContext?.();
+    if(checklistPinned || followRunning || !tools.get("checklist") || tools.get("checklist").mode==="closed")return;
+    void followChecklist();
+  }
+  async function followChecklist() {
+    followRunning=true;
+    try {
+      let handled;
+      do {
+        handled=followRevision;
+        await flushDrafts();await actions.flushScouting?.();
+        if(checklistPinned || shellDisposed)return;
+        if(["failed","saving"].includes(store.getState().save.state)){actions.notice("Checklist stayed at its previous location because its answers could not be saved. Retry saving, then choose Follow selected location.");return;}
+        const state=store.getState(),id=selectedChecklistLocation,records=state.workingBundle?.scoutAssessments ?? [];
+        const old=records.find(a=>a.id===state.activeAssessmentId);
+        if(old)lastAssessments.set(`${old.projectId}:${old.locationId}`,old.id);
+        const matches=records.filter(a=>a.locationId===id);
+        const remembered=lastAssessments.get(`${state.openProjectId}:${id}`);
+        const next=matches.find(a=>a.id===remembered) ?? matches.filter(a=>!a.archived).sort((a,b)=>b.observationDate.localeCompare(a.observationDate)||b.updatedAt.localeCompare(a.updatedAt))[0];
+        if(old?.id!==next?.id || (!old && !next)) {
+          followingChecklist=true;
+          try {await actions.openAssessment(next?.id ?? null);if(!next && !store.getState().activeAssessmentId)renderEmptyChecklist();}
+          finally {followingChecklist=false;}
+        }
+      } while(handled!==followRevision);
+    } finally {followRunning=false;}
+  }
+  function openChecklistTool() {
+    const state=store.getState();
+    if(state.activeAssessmentId)renderAssessment();
+    tools.open("checklist","Scouting checklist");
+    if(!state.activeAssessmentId)renderEmptyChecklist();
+    requestChecklistFollow(selectedChecklistLocation ?? shownState().routeResolution?.locationId);
+    collapsed=true;syncPanel();
+  }
+  function renderLaunchers(state) {
+    const shown=shownState(), id=shown.routeResolution?.locationId;
+    launchers.hidden=state.mode === "shot";
+    mobileNav.hidden=state.mode === "shot";
+    replaceChildren(launchers,[
+      el("button", { type:"button", text:"Map", "aria-pressed":String(shown.mode === "explore"), onClick:()=>returnToView(id) }),
+      el("button", { type:"button", text:"Immersive", "data-view":"immersive", "aria-pressed":String(shown.mode === "immersive"), onClick:()=>actions.navigate(id ? {name:"immersive",params:{locationId:id}} : {name:"immersive-index"}) }),
+      el("button", { type:"button", text:"Scouting checklist", onClick:openChecklistTool }),
+      el("button", { type:"button", class:"mobile-map-options", text:"Map options", "aria-expanded":String(workspace.getAttribute("data-map-options")==="open"), onClick:event=>{const open=workspace.getAttribute("data-map-options")!=="open";workspace.setAttribute("data-map-options",open?"open":"closed");event.target.setAttribute("aria-expanded",String(open));} }),
+      el("button", { type:"button", text:"Location details", onClick:()=>{ const t=tools.open("location","Location details"); const v=shown.routeResolution?.view; replaceChildren(t.body,v?immersiveDetail(shown,v):el("p",{text:"Choose a location on the map."})); } })]);
+  }
   const panelToggle = el("button", { type: "button", class: "explore-restore",
     text: "Show locations", "aria-controls": "explore-panel", onClick: () => setCollapsed(false) });
   const menuButton = el("button", { type: "button", class: "explore-menu-button",
@@ -167,13 +314,15 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
   workspace.append(panelToggle, menuButton, menuRegion);
   function setCollapsed(value) {
     collapsed = value;
+    if(!value && (win.innerWidth ?? 1200)<=880) tools.hideAll();
     syncPanel();
     if (value) panelToggle.focus();
     else (railLeft.querySelector("button") ?? railLeft).focus();
   }
   function syncPanel() {
-    const active = store.getState().mode === "explore";
-    workspace.setAttribute("data-explore", String(active));
+    if((win.innerWidth ?? 1200)<=880 && workspace.getAttribute("data-mobile-tool") && workspace.getAttribute("data-mobile-tool")!=="none") collapsed=true;
+    const active = store.getState().mode !== "shot";
+    workspace.setAttribute("data-explore", String(active && shownState().mode === "explore"));
     workspace.setAttribute("data-panel", collapsed ? "closed" : expanded ? "expanded" : "open");
     railLeft.hidden = active && collapsed;
     panelToggle.hidden = !active || !collapsed;
@@ -274,6 +423,7 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
   // ---- Persistent regions ------------------------------------------------
 
   function renderModes(mode) {
+    mode = mode === "shot" ? "shot" : "explore";
     for (const [id, button] of modeButtons) {
       const active = id === mode;
       button.classList.toggle("is-active", active);
@@ -326,7 +476,21 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
     const state = store.getState();
     const lines = [];
 
-    if (state.storage.available === false) {
+    if (state.storageSimulation || state.save.error?.code === "storage-simulation-enabled") {
+      lines.push(el("div", { class: "status-line is-warning" }, [
+        el("strong", { text: "Save-failure test mode is ON." }),
+        el("span", { text: "Project changes are deliberately not being saved. Turn the test off to resume normal saving." }),
+        el("button", { type: "button", text: "Turn off save-failure test and retry", onClick: () => actions.stopStorageFailureTest() }),
+      ]));
+    }
+    if (state.save.state === "failed" && state.save.error?.message) {
+      lines.push(el("div", { class: "status-line is-danger", role: "alert" }, [
+        el("strong", { text: "Not saved:" }), el("span", { text: state.save.error.message }),
+      ]));
+    }
+    if (state.storage.initializing) {
+      lines.push(el("div", { class: "status-line", role: "status", text: "Opening local storage. Create will wait until it is ready." }));
+    } else if (state.storage.available === false) {
       lines.push(
         el("div", { class: "status-line is-warning" }, [
           el("strong", { text: "Running without local saving." }),
@@ -360,6 +524,7 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
         el("div", { class: "status-line is-danger" }, [
           el("strong", { text: state.error.title }),
           el("span", { text: state.error.advice }),
+          el("span", { text: state.error.detail }),
           el("button", {
             type: "button",
             class: "link-button spacer",
@@ -376,6 +541,24 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
   let dialogTrap = null;
 
   function renderDialog(pendingImport) {
+    const pendingDeletion = store.getState().pendingDeletion;
+    for (const node of root.children) if (node !== dialogRegion) node.inert = Boolean(pendingImport || pendingDeletion);
+    if (pendingDeletion) {
+      const saving = store.getState().save.state === "saving";
+      const failed = store.getState().save.state === "failed";
+      const dialog = el("div", { class: "dialog", role: "dialog", "aria-modal": "true", "aria-labelledby": "delete-title" }, [
+        el("h2", { id: "delete-title", text: `Delete ${pendingDeletion.name}?` }),
+        el("p", { text: "This permanently removes this project's local records listed below. Export a backup before deleting. Public catalog locations and other projects are kept." }),
+        fieldList(Object.entries(pendingDeletion.counts)),
+        failed ? el("p", { role: "alert", text: store.getState().save.error?.message }) : null,
+        el("button", { type: "button", text: "Cancel, keep project", ...(saving ? { disabled: "disabled" } : {}), onClick: () => actions.cancelProjectDeletion() }),
+        el("button", { type: "button", class: "destructive", text: failed ? "Retry deletion" : "Confirm project deletion",
+          ...(saving ? { disabled: "disabled" } : {}), onClick: () => failed ? actions.retrySave() : actions.deleteProject(pendingDeletion.projectId) }),
+      ]);
+      dialogTrap?.release(); replaceChildren(dialogRegion, dialog);
+      dialogTrap = createFocusTrap({ container: dialog, onEscape: () => actions.cancelProjectDeletion() });
+      return;
+    }
     if (!pendingImport) {
       dialogTrap?.release();
       dialogTrap = null;
@@ -581,7 +764,7 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
             : null,
         ]),
         imagery.accuracyNote
-          ? el("p", { class: "imagery-accuracy", text: imagery.accuracyNote })
+          ? el("details", {class:"imagery-explanation"}, [el("summary", {text:"Imagery information"}), el("p", { class: "imagery-accuracy", text: imagery.accuracyNote })])
           : null,
       ],
     );
@@ -714,9 +897,224 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
         /^https?:\/\//.test(location.website ?? "") ? el("a", { href: location.website, target: "_blank", rel: "noopener noreferrer", text: "Public venue website" }) : null,
       ]),
       section("Evidence / sources", [el("p", { text: `Catalog ${state.catalog.version}; research snapshot ${state.catalog.researchSnapshot}. Public catalog descriptions are read-only. Sources below support the record; exact per-field observation dates, observers and methods have not been supplied. No on-site verification is implied. Virtual observations and project notes remain separate.` }), sourceList]),
-      section("Project context", [el("p", { text: "Project observations and candidate decisions are separate from these public catalog facts." })]),
+
       section("Share location", [copy, linkInput, copyStatus]),
     ])];
+  }
+
+  const bookmarkDrafts = new Map();
+  const workspaceForms = new Map();
+  const assessmentEditors = new Map();
+  let assessmentDialog = null, assessmentId = null;
+  function renderAssessment() {
+    const state=store.getState(), a=state.workingBundle?.scoutAssessments.find(a=>a.id===state.activeAssessmentId);
+    if(!a){ if(assessmentId){ if(!followingChecklist)tools.close("checklist"); for(const editor of assessmentEditors.values()) editor.dispose(); assessmentEditors.clear(); assessmentDialog=null; assessmentId=null; } return; }
+    const t=tools.ensure("checklist", "Scouting checklist");
+    if(assessmentId === a.id && assessmentDialog) return;
+    for(const editor of assessmentEditors.values()) editor.dispose(); assessmentEditors.clear();
+    assessmentId=a.id; assessmentDialog=t.element;
+    lastAssessments.set(`${a.projectId}:${a.locationId}`,a.id);
+    const context=el("div",{class:"checklist-context"});
+    const identity=el("p",{text:`${state.workingBundle.projects[0].name} / ${state.workingBundle.scenes.find(s=>s.id===state.activeSceneId)?.title ?? "No scene selected"} / ${state.catalog?.locationsById?.get(a.locationId)?.name ?? a.locationId} / ${a.title} - ${a.observationDate}`});
+    const mismatch=el("p",{role:"status"});
+    const contextDetails=el("details",{class:"checklist-context-details"},[el("summary",{text:"Assessment / project context"}),identity,...candidateContext(state,a.locationId)]);
+    const prominent=el("div");
+    context.append(contextDetails);
+    const host=el("div",{class:"embedded-checklist-host"});
+    t.body.replaceChildren(prominent,mismatch,context,host);
+    const editor=createEmbeddedChecklist({doc:document,host,assessment:a,getBundle:actions.getWorkspace,actions,win,getSaveState:()=>store.getState().save});
+    assessmentEditors.set(a.id,editor);
+    t.updateContext=()=>{ replaceChildren(prominent,checklistIdentity(a.locationId,a)); const current=store.getState(); const record=current.workingBundle?.scoutAssessments.find(item=>item.id===a.id) ?? a; identity.textContent=`${current.workingBundle?.projects[0]?.name ?? ""} / ${current.workingBundle?.scenes.find(s=>s.id===current.activeSceneId)?.title ?? "No scene selected"} / ${current.catalog?.locations.find(l=>l.id===a.locationId)?.name ?? a.locationId} / ${record.title} - ${record.observationDate}`; const viewing=selectedChecklistLocation ?? shownState().routeResolution?.locationId; mismatch.textContent=viewing && viewing!==a.locationId?`Viewing another location: ${locationName(viewing)}. Answers still belong to ${locationName(a.locationId)}.`:""; if(viewing && viewing!==a.locationId)replaceChildren(mismatch,[el("span",{text:mismatch.textContent}),el("button",{type:"button",text:"Follow selected location",onClick:()=>{checklistPinned=false;requestChecklistFollow(viewing);}})]); };
+    contextDetails.append(el("button",{type:"button",text:"Return to assessment location",onClick:()=>actions.navigate({name:"immersive",params:{locationId:a.locationId}})}));
+    t.updateContext(); if(followingChecklist)return; if(state.boot === "starting" && tools.savedState("checklist")) tools.resume("checklist","Scouting checklist"); else tools.open("checklist","Scouting checklist"); collapsed=true; syncPanel();
+    if(state.mode === "projects") {
+      tools.minimize("project");
+      const view=state.catalog ? locationView(state.catalog,a.locationId) : null;
+      actions.navigate({name:view?.capture?.url?"immersive":"location",params:{locationId:a.locationId}});
+    }
+  }
+  function assessmentLinks(state, candidate) {
+    const list = state.workingBundle.scoutAssessments.filter(a => a.locationId === candidate.locationId);
+    return el("details", {}, [el("summary", { text: "Scouting assessments" }),
+      el("button", { type: "button", text: "New scouting checklist", onClick: () => actions.createAssessment(candidate.id) }),
+      ...list.map(a => el("button", { type: "button", text: `${a.title} - ${a.observationDate} - ${completion(a).percent}% complete${a.archived ? " - archived" : ""}`, onClick: () => actions.openAssessment(a.id) }))]);
+  }
+  const expandedScenes = new Set();
+  function candidateContext(state, locationId) {
+    const bundle = state.workingBundle;
+    const project = bundle?.projects[0]?.id === state.openProjectId ? bundle.projects[0] : null;
+    const projectSelect = el("select", { "aria-label": "Candidate project", onChange: event => {
+      if (event.target.value) void actions.openProject(event.target.value);
+    } }, [el("option", { value: "", text: "Choose a project" }), ...state.projects.map(p => el("option", { value: p.id, text: p.name }))]);
+    projectSelect.value = project?.id ?? "";
+    const sceneSelect = el("select", { "aria-label": "Candidate scene", onChange: event => actions.selectScene(event.target.value) }, [
+      el("option", { value: "", text: "Choose a scene" }), ...(project ? bundle.scenes : []).map(s => el("option", { value: s.id, text: `${s.number} · ${s.title}` })),
+    ]);
+    sceneSelect.value = state.activeSceneId ?? "";
+    const candidate = project ? bundle.candidates.find(c => c.sceneId === state.activeSceneId && c.locationId === locationId) : null;
+    return [projectSelect, sceneSelect,
+      candidate ? el("div", {}, [el("p", { text: `Candidate status: ${candidate.status}. This is separate from capture availability or permission.` }),
+        el("button", { type: "button", text: "Open candidate", onClick: () => actions.selectCandidate(candidate.id, "project") }), assessmentLinks(state, candidate)])
+        : project && state.activeSceneId ? el("button", { type: "button", text: "Add location to scene", onClick: () => actions.addLocationCandidate(state.activeSceneId, locationId) })
+          : el("p", { text: "Choose a project and scene, or create them in Projects, before adding this location." }),
+      el("button", { type: "button", text: "Open project workspace", onClick: () => actions.navigate(project ? { name: "project", params: { projectId: project.id } } : { name: "projects" }) }),
+    ];
+  }
+
+  function sceneCandidates(state, scene) {
+    const locationSelect = el("select", { "aria-label": `Add candidate to scene ${scene.number}` }, [
+      el("option", { value: "", text: "Choose a catalog location" }),
+      ...(state.catalog?.locations ?? []).map(location => el("option", { value: location.id, text: `${location.name} · ${location.captureStatus}` })),
+    ]);
+    return section("Candidate locations", [
+      el("button", { type: "button", text: state.activeSceneId === scene.id ? "Scene selected" : "Select this scene", onClick: () => actions.selectScene(scene.id) }),
+      locationSelect,
+      el("button", { type: "button", text: "Add candidate", onClick: () => actions.addLocationCandidate(scene.id, locationSelect.value) }),
+      ...state.workingBundle.candidates.filter(c => c.sceneId === scene.id).map(candidate => {
+        const location = state.catalog?.locations.find(l => l.id === candidate.locationId);
+        const fields = [["status", "Review status", REVIEW_STATUSES.includes(candidate.status) ? REVIEW_STATUSES : [candidate.status, ...REVIEW_STATUSES]],
+          ["rationale", "Rationale", "textarea", 4000], ["strengths", "Strengths", "list"], ["concerns", "Concerns", "list"], ["missingInfo", "Missing information", "list"]];
+        return el("article", { class: "candidate-card", "data-candidate-id": candidate.id }, [
+          el("h4", { text: location?.name ?? candidate.locationId }),
+          el("p", { text: `${candidate.status} · ${candidate.requirementAssessments.filter(r => r.result === "unknown").length} unknown requirements · catalog ${candidate.catalogVersion}` }),
+          !candidate.workflowVersion ? el("p", { text: "Legacy workflow and ratings retained. Selecting a review status explicitly updates the workflow; it does not reassess requirements." }) : null,
+          el("div", { class: "actions" }, [
+            el("button", { type: "button", text: state.activeCandidateId === candidate.id ? "Candidate selected" : "Select candidate", onClick: () => actions.selectCandidate(candidate.id) }),
+            el("button", { type: "button", text: "Open location dossier", onClick: () => actions.selectCandidate(candidate.id, "location") }),
+            location?.captureStatus === "current" ? el("button", { type: "button", text: "Inspect in Immersive", onClick: () => actions.selectCandidate(candidate.id, "immersive") }) : el("p", { text: "No current capture; this location can still be considered." }),
+          ]),
+          el("button", { type: "button", text: "Create / open linked shot workspace", onClick: async () => { const result = await actions.linkShot(candidate.id); if (result.ok) actions.navigate({ name: "shot", params: { shotSceneId: result.shotScene.id } }); } }),
+          assessmentLinks(state, candidate),
+          el("details", {}, [el("summary", { text: "Candidate requirement judgments" }), comparisonView({ doc: document, scene, bundle: state.workingBundle, catalog: state.catalog, actions, candidateIds: [candidate.id], decisionControls: false })]),
+          el("details", {}, [el("summary", { text: "Edit candidate notes and review status" }),
+            retainedForm(`${candidate.id}-${candidate.revision}`, candidate, fields, "Save candidate", values => actions.updateCandidate(candidate.id, values))]),
+        ]);
+      }),
+    ]);
+  }
+  function retainedForm(key, record, fields, label, onSave) {
+    if (!workspaceForms.has(key)) workspaceForms.set(key, workspaceForm({ doc: document, key, record, fields, label, onSave }));
+    return workspaceForms.get(key);
+  }
+
+  function assessmentExportPanel(state) {
+    const boxes = state.workingBundle.scoutAssessments.map(a => { const input = el("input", { type: "checkbox", value: a.id }); input.checked = true; return { input, label: el("label", {}, [input, a.title]) }; });
+    const media = el("input", { type: "checkbox" }); media.checked = true;
+    const assets = state.workingBundle.scoutMedia.map(m => { const input = el("input", { type: "checkbox", value: m.id }); input.checked = true; return { input, label: el("label", {}, [input, m.filename]) }; });
+    return el("details", {}, [el("summary", { text: "Export selected assessment evidence" }), ...boxes.map(b => b.label), ...assets.map(m => m.label), el("label", {}, [media, "Include owned media bytes (uncheck for an explicit data-only backup)"]),
+      el("button", { type: "button", text: "Export selected JSON", onClick: async () => { const file = await actions.exportProject(state.openProjectId, { assessmentIds: boxes.filter(b => b.input.checked).map(b => b.input.value), includeMedia: media.checked, mediaIds: assets.filter(m => m.input.checked).map(m => m.input.value) }); if (file) downloadText(file.filename, file.text); } })]);
+  }
+  function legacyImportPanel(state) {
+    if (!state.catalog) return el("p", { text: "Checklist import needs the location catalog. Local project editing remains available." });
+    const select = el("select", { "aria-label": "Import checklist target location" }, [el("option", { value: "", text: "Choose catalog location explicitly" }), ...state.catalog.locations.map(l => el("option", { value: l.id, text: l.name }))]);
+    const file = el("input", { type: "file", accept: ".json,.zip", "aria-label": "Legacy checklist JSON or ZIP" });
+    const report = el("pre"), status = el("p", { role: "status" }); let preview = null, previewGeneration = 0;
+    const confirm = el("button", { type: "button", text: "Import reviewed checklist", disabled: "disabled", onClick: async () => { if (!preview) return; confirm.disabled = true; const result = await actions.importChecklistPreview(preview); status.textContent = result.ok ? "Checklist imported." : "Import failed; workspace storage unchanged. Review recovery status."; } });
+    const cancel = el("button", { type: "button", text: "Cancel preview", onClick: () => { previewGeneration++; preview = null; report.textContent = ""; confirm.disabled = true; file.value = ""; } });
+    const prepare = async () => {
+      const generation = ++previewGeneration;
+      preview = null; confirm.disabled = true; if (!select.value || !file.files?.[0]) return;
+      try { const { readLegacyFile, previewChecklist } = await import("../data/checklist-import.js"); const source = await readLegacyFile(file.files[0]);
+        if (generation !== previewGeneration) return;
+        preview = previewChecklist(source, { projectId: state.openProjectId, locationId: select.value, catalogVersion: state.catalog.version, now: new Date().toISOString() });
+        report.textContent = JSON.stringify({ targetProject: state.workingBundle.projects[0].name, targetLocation: select.value, title: preview.assessment.title, supportedAnswers: preview.assessment.answers.filter(a => a.state !== "unanswered"), ...preview.report, mediaCount: preview.media.length }, null, 2);
+        confirm.disabled = false; status.textContent = "Review exclusions, unresolved defaults and missing media. Status/stars are not imported as decisions.";
+      } catch (error) { status.textContent = error.message; }
+    };
+    select.addEventListener("change", prepare); file.addEventListener("change", prepare);
+    return el("details", {}, [el("summary", { text: "Import existing checklist (review before writing)" }), select, file, status, report, confirm, cancel]);
+  }
+  function projectEditor(state, project) {
+    const bundle = state.workingBundle;
+    if (bundle?.projects[0]?.id !== project.id) return el("p", { text: "Loading project records…" });
+    const current = bundle.projects[0];
+    const projectKey = `${project.id}-${current.revision}`;
+    const scenes = [...bundle.scenes].sort((a, b) => (a.order ?? 0) - (b.order ?? 0) || a.createdAt.localeCompare(b.createdAt) || a.id.localeCompare(b.id));
+    return el("div", {}, [
+      section("Project details", [retainedForm(projectKey, current, PROJECT_FIELDS, "Save project changes", values => actions.updateProject(project.id, values))]),
+      legacyImportPanel(state),
+      assessmentExportPanel(state),
+      section("Scene briefs", [
+        el("p", { text: "Define creative and practical requirements before evaluating locations. Blank counts remain unknown." }),
+        ...scenes.map((scene, index) => {
+          const linked = [...bundle.candidates, ...bundle.shotScenes].filter(record => record.sceneId === scene.id).length;
+          return el("details", { class: "scene-brief", ...(expandedScenes.has(scene.id) || state.activeSceneId === scene.id ? { open: "open" } : {}),
+            onToggle: event => { if (event.target.open) expandedScenes.add(scene.id); else expandedScenes.delete(scene.id); } }, [
+            el("summary", { text: `${scene.number} · ${scene.title}` }),
+            el("div", { class: "actions" }, [
+              index > 0 ? el("button", { type: "button", text: "Move scene earlier", onClick: () => actions.moveScene(scene.id, -1) }) : null,
+              index < scenes.length - 1 ? el("button", { type: "button", text: "Move scene later", onClick: () => actions.moveScene(scene.id, 1) }) : null,
+            ]),
+            retainedForm(`${scene.id}-${scene.revision}`, scene, SCENE_FIELDS, "Save scene brief", values => actions.saveScene(values, scene.id)),
+            sceneCandidates(state, scene),
+            comparisonView({ doc: document, scene, bundle, catalog: state.catalog, actions }),
+            linked ? el("p", { text: `${linked} linked candidate/shot record(s). Resolve these links before removing this scene.` })
+              : el("details", {}, [el("summary", { text: "Remove scene…" }),
+                el("p", { text: "This scene has no linked candidates or shot designs. Removing it cannot be undone; export a backup first." }),
+                el("button", { type: "button", class: "destructive", text: "Confirm remove scene", onClick: () => actions.removeScene(scene.id) })]),
+          ]);
+        }),
+        el("details", {}, [el("summary", { text: "Add scene brief" }),
+          retainedForm(`${project.id}-new-scene-${bundle.scenes.length}`, { dayNight: "UNSPECIFIED" }, SCENE_FIELDS,
+            "Create scene brief", async values => {
+              const result = await actions.saveScene(values);
+              if (result.ok) workspaceForms.delete(`${project.id}-new-scene-${bundle.scenes.length}`);
+              return result;
+            })]),
+      ]),
+    ]);
+  }
+  function bookmarkList(state) {
+    const bundle = state.workingBundle;
+    if (!bundle || bundle.projects[0]?.id !== state.openProjectId) return null;
+    return section("Saved entry bookmarks", [
+      el("p", { class: "empty-note", text: ENTRY_LIMITATION }),
+      ...(bundle.bookmarks.length ? bundle.bookmarks.map(bookmark => {
+        const restore = bookmarkRestoration(bookmark, bundle, state.catalog);
+        return el("article", { class: "rail-section" }, [
+          el("h4", { text: bookmark.name }),
+          el("p", { text: bookmark.note ?? "" }),
+          el("p", { class: "record-meta", text: `${bookmark.locationId} · ${bookmark.captureId} · catalog ${bookmark.catalogVersion}` }),
+          restore.ok ? el("button", { type: "button", text: "Restore entry",
+            onClick: () => actions.restoreBookmark(bookmark.id) }) : el("p", { text: restore.message }),
+        ]);
+      }) : [el("p", { text: "No saved entries in this project yet." })]),
+      state.bookmarkStatus ? el("p", { role: "status", text: state.bookmarkStatus }) : null,
+    ]);
+  }
+
+  function bookmarkPanel(state, view) {
+    const project = state.workingBundle?.projects[0];
+    const selected = project?.id === state.openProjectId ? project : null;
+    const select = el("select", { id: "bookmark-project", "aria-label": "Bookmark project",
+      onChange: event => { if (event.target.value) void actions.openProject(event.target.value); } }, [
+      el("option", { value: "", text: "Choose a project" }),
+      ...state.projects.map(p => el("option", { value: p.id, text: p.name,
+        ...(p.id === selected?.id ? { selected: "selected" } : {}) })),
+    ]);
+    const key = `${selected?.id ?? ""}/${view.location.id}`;
+    const draft = bookmarkDrafts.get(key) ?? { name: view.location.name, note: "" };
+    bookmarkDrafts.set(key, draft);
+    const name = el("input", { id: "bookmark-name", type: "text", required: "required", maxlength: "160",
+      value: draft.name, onInput: event => { draft.name = event.target.value; } });
+    const note = el("textarea", { id: "bookmark-note", maxlength: "4000",
+      onInput: event => { draft.note = event.target.value; } });
+    note.value = draft.note;
+    return section("Save location entry", [
+      el("p", { class: "empty-note", text: ENTRY_LIMITATION }),
+      el("label", { for: "bookmark-project", text: "Project" }), select,
+      selected && view.capture?.state === "current" ? el("form", {
+        class: "bookmark-form", onSubmit: async event => {
+          event.preventDefault();
+          await actions.saveEntryBookmark({ name: draft.name, note: draft.note, locationId: view.location.id, candidateId: state.workingBundle?.candidates.find(c => c.id === state.activeCandidateId && c.locationId === view.location.id)?.id });
+        },
+      }, [el("label", { for: "bookmark-name", text: "Bookmark name" }), name,
+        el("label", { for: "bookmark-note", text: "Note" }), note,
+        el("button", { type: "submit", text: "Save entry bookmark" })])
+        : el("p", { text: "Choose an existing project, or create one in Projects, then return to this location." }),
+      el("button", { type: "button", text: "Open Projects", onClick: () => actions.navigate({ name: "projects" }) }),
+      bookmarkList(state),
+    ]);
   }
 
   function projectsMode(state) {
@@ -726,8 +1124,10 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
       name: "new-project-name",
       placeholder: "Production name",
       maxlength: "160",
+      onInput: event => { projectNameDraft=event.target.value; },
     });
 
+    nameInput.value=projectNameDraft;
     const importInput = el("input", {
       type: "file",
       id: "import-project",
@@ -754,7 +1154,7 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
               onSubmit: async (event) => {
                 event.preventDefault();
                 await actions.createProject(nameInput.value);
-                nameInput.value = "";
+                nameInput.value = ""; projectNameDraft="";
               },
             },
             [
@@ -795,13 +1195,13 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
       children: [
         el("h1", { text: open ? open.name : "Projects" }),
         phaseNote(
-          "Scene requirements, candidates, comparison and decisions arrive in Phase 3. This mode exercises local persistence and versioned transfer.",
+          "Projects stay in this browser profile. Export project JSON to keep a backup or move to another device.",
         ),
         state.routeResolution?.status === "unknown-record"
           ? el("p", { text: state.routeResolution.reason })
           : null,
         open
-          ? fieldList([
+          ? el("div", {}, [projectEditor(state, open), fieldList([
               ["Identifier", open.id],
               ["Production type", open.productionType],
               ["Status", open.status],
@@ -809,7 +1209,7 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
               ["Created", open.createdAt],
               ["Updated", open.updatedAt],
               ["Revision", open.revision],
-            ])
+            ])])
           : el("p", {
               text:
                 state.projects.length === 0
@@ -831,10 +1231,11 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
                 type: "button",
                 class: "destructive",
                 text: "Delete project",
-                onClick: () => actions.deleteProject(open.id),
+                onClick: () => actions.requestProjectDeletion(open.id),
               }),
             ])
           : null,
+        open && open.id === state.workingBundle?.projects[0]?.id ? bookmarkList(state) : null,
       ],
     };
 
@@ -888,7 +1289,7 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
           children: [
             el("h1", { text: "Immersive" }),
             el("p", { text: "Choose a captured location to open the capture the provider holds for it." }),
-            phaseNote("Bookmarks, saved viewpoints and the scene handoff arrive in Phase 2."),
+            el("p", { text: "Choose a location to save a named entry bookmark in a project." }),
           ],
         },
         right: null,
@@ -903,11 +1304,8 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
       return {
         left,
         centre: {
-          className: "surface-empty",
-          children: [
-            el("h1", { text: "No capture exists" }),
-            el("p", { text: "This location is a future candidate, so there is nothing to open." }),
-          ],
+          map: true,
+          overlay: el("p", { class: "phase-note", text: "No capture exists for this location. Continue scouting on the map." }),
         },
         right: immersiveDetail(state, view),
       };
@@ -980,6 +1378,8 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
             ["Validation", capture?.validationStatus],
           ]),
         ]),
+        bookmarkPanel(state, view),
+        section("Project candidate", candidateContext(state, location.id)),
         section(null, [
           el("div", { class: "actions" }, [
             el("button", {
@@ -1048,6 +1448,11 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
   }
 
   function shotMode(state) {
+    const linked = state.workingBundle?.shotScenes.find(s => s.id === state.route?.params?.shotSceneId);
+    if (linked) return { left: null, centre: { className: "surface-empty", children: [el("h1", { text: linked.name }),
+      el("p", { text: `Project ${linked.projectId} / scene ${linked.sceneId} / candidate ${linked.candidateId}. Schematic planning origin; not measured.` }),
+      el("p", { text: "Linked workspace saved. Spatial editing arrives in Phase 4." }),
+      el("button", { type: "button", text: "Return to candidate", onClick: () => actions.selectCandidate(linked.candidateId, "project") })] } };
     return {
       left: null,
       centre: {
@@ -1079,7 +1484,23 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
   // ---- Composition -------------------------------------------------------
 
   function renderWorkspace() {
-    const state = store.getState();
+    const actual = store.getState();
+    if (["explore","immersive"].includes(actual.mode)) { viewingState=actual; if(actual.route)try{win.localStorage.setItem("slivr:explore-view",JSON.stringify(actual.route));}catch{} }
+    if(actual.boot !== "starting" && !restoredWindows){restoredWindows=true;if(["floating","docked","maximized","minimized"].includes(tools.savedState("project"))){renderProjectTool();tools.resume("project","Project tools");}}
+    const state = actual.mode === "projects" ? shownState() : actual;
+    workspace.setAttribute("data-surface-mode",state.mode);
+    renderProjectMenus(actual); renderLaunchers(actual);
+    if(tools.get("project")) renderProjectTool();
+    if(actual.mode === "projects" && lastProjectRoute !== actual.route) { renderProjectTool(); tools.open("project","Project tools"); }
+    lastProjectRoute=actual.route;
+    tools.get("checklist")?.updateContext?.();
+    const checklistTool=tools.get("checklist");
+    if(checklistTool && !actual.activeAssessmentId && !["closed","minimized"].includes(checklistTool.mode))renderEmptyChecklist();
+    const detailTool=tools.get("location");
+    if(detailTool && state.routeResolution?.view) replaceChildren(detailTool.body,immersiveDetail(state,state.routeResolution.view));
+    const bookmarkFocus = /^(bookmark-|workspace-)/.test(document.activeElement?.id ?? "")
+      ? { id: document.activeElement.id, start: document.activeElement.selectionStart,
+        end: document.activeElement.selectionEnd } : null;
     let parts;
 
     if (state.route?.name === "not-found") {
@@ -1098,7 +1519,7 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
 
     const previousLocation = lastLocation;
     const locationId = state.mode === "explore" ? state.routeResolution?.locationId ?? null : null;
-    if (locationId && locationId !== previousLocation) collapsed = false;
+    if (locationId && locationId !== previousLocation && !["floating","docked","maximized"].includes(tools.get("checklist")?.mode)) collapsed = false;
     if (browse?.parentNode) {
       browseScroll = browse.querySelector(".explore-results")?.scrollTop ?? 0;
       sheetScroll = browse.scrollTop ?? 0;
@@ -1139,7 +1560,12 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
     }
     lastLocation = locationId;
     if (state.mode !== "explore" && menuTrap) closeExploreMenu();
-    replaceChildren(railRight, parts.right ?? []);
+    replaceChildren(railRight, state.mode === "immersive" ? [] : parts.right ?? []);
+    if (bookmarkFocus) {
+      const field = document.getElementById(bookmarkFocus.id);
+      field?.focus({ preventScroll: true });
+      if (typeof bookmarkFocus.start === "number") field?.setSelectionRange?.(bookmarkFocus.start, bookmarkFocus.end);
+    }
 
     const wantsMap = parts.centre?.map === true;
     const wantsViewer = parts.centre?.viewer === true;
@@ -1153,8 +1579,9 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
       surfaceContent,
       floats ? [parts.centre.overlay] : (parts.centre?.children ?? []),
     );
+    if (bookmarkFocus?.id.startsWith("workspace-")) document.getElementById(bookmarkFocus.id)?.focus({ preventScroll: true });
 
-    workspace.setAttribute("data-rails", parts.right ? "both" : parts.left ? "left" : "none");
+    workspace.setAttribute("data-rails", state.mode === "immersive" ? (parts.left ? "left" : "none") : parts.right ? "both" : parts.left ? "left" : "none");
     renderBreadcrumb(state);
 
     // Each provider surface is created only once its host is showing, and
@@ -1167,7 +1594,8 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
     else actions.unmountViewer();
   }
 
-  function emergencyExport() {
+  async function emergencyExport() {
+    await flushDrafts();
     const file = actions.exportEmergency("Requested from the save-status surface.");
     if (file) downloadText(file.filename, file.text);
     else actions.notice("No project is open, so there is nothing to export.");
@@ -1177,16 +1605,22 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
 
   const unsubscribes = [
     store.subscribe((state) => state.mode, renderModes, { immediate: true }),
+    store.subscribe((state) => state.boot, renderWorkspace),
     store.subscribe((state) => state.route, renderWorkspace),
     store.subscribe((state) => state.exploreSelectionRequest, () => {
       collapsed = false; renderWorkspace(); dossier?.querySelector("button")?.focus();
     }),
-    store.subscribe((state) => state.routeResolution, renderWorkspace),
+    store.subscribe((state) => state.routeResolution, () => {renderWorkspace();requestChecklistFollow(store.getState().routeResolution?.locationId);}),
     store.subscribe((state) => state.catalog, renderWorkspace),
     store.subscribe((state) => state.recentLocations, () => refreshBrowse?.()),
     store.subscribe((state) => state.catalogError, renderWorkspace),
     store.subscribe((state) => state.projects, renderWorkspace),
-    store.subscribe((state) => state.workingBundle, renderWorkspace),
+    store.subscribe((state) => state.workingBundle, () => { renderWorkspace(); if (store.getState().activeAssessmentId && !assessmentDialog) renderAssessment(); }),
+    store.subscribe((state) => state.activeSceneId, renderWorkspace),
+    store.subscribe((state) => state.activeCandidateId, renderWorkspace),
+    store.subscribe((state) => state.checklistLocationRequest, request => requestChecklistFollow(request?.locationId)),
+    store.subscribe((state) => state.activeAssessmentId, renderAssessment),
+    store.subscribe((state) => state.bookmarkStatus, renderWorkspace),
     store.subscribe((state) => state.imagery, renderWorkspace),
     store.subscribe((state) => state.tiles, renderWorkspace),
     store.subscribe((state) => state.map, renderWorkspace),
@@ -1197,20 +1631,33 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
       immediate: true,
     }),
     store.subscribe((state) => state.save, renderSave, { immediate: true }),
+    store.subscribe((state) => state.save, renderStatusStrip),
+    store.subscribe((state) => state.save, save => { const t=tools.get("checklist"); if(t)t.tab.textContent=`Scouting checklist - ${save.label}`; for(const editor of assessmentEditors.values())editor.refreshStatus?.(); }),
+    store.subscribe((state) => state.storageSimulation, renderStatusStrip),
     store.subscribe((state) => state.storage, renderStatusStrip),
     store.subscribe((state) => state.notice, renderStatusStrip),
     store.subscribe((state) => state.error, renderStatusStrip),
     store.subscribe((state) => state.pendingImport, renderDialog),
+    store.subscribe((state) => state.pendingDeletion, () => renderDialog(store.getState().pendingImport)),
+    store.subscribe((state) => state.save, () => { if (store.getState().pendingDeletion) renderDialog(store.getState().pendingImport); }),
   ];
 
   renderWorkspace();
   renderStatusStrip();
+  const fitViewport=()=>{const phone=(win.innerWidth ?? 1200)<=880;root.setAttribute("data-keyboard",String(phone && win.visualViewport && win.visualViewport.height < win.innerHeight * 0.8));if(phone && win.visualViewport)root.style?.setProperty("--visual-height",`${win.visualViewport.height}px`);else root.style?.removeProperty("--visual-height");};
+  win.visualViewport?.addEventListener("resize",fitViewport);
+  fitViewport();
 
   return {
     destroy() {
+      shellDisposed=true;
+      win.visualViewport?.removeEventListener("resize",fitViewport);
       if (searchTimer !== null) win.clearTimeout(searchTimer);
       for (const unsubscribe of unsubscribes) unsubscribe();
       menuTrap?.release();
+      dialogTrap?.release();
+      tools.destroy();
+      for (const editor of assessmentEditors.values()) editor.dispose();
       viewerHost.dispose();
       immersiveMap.dispose();
       root.replaceChildren();
