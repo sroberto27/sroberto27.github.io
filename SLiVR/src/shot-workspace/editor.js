@@ -16,24 +16,29 @@ export function createDiagramEditor({record:initial,actions,store,win=globalThis
   let record=clone(initial),selected=[],image=null,imageId=null,imageGeneration=0,disposed=false;
   let unregister=null,timer=null,dirty=false,saving=Promise.resolve(),panelName="",tool="select",drag=null,preview=null,playing=false,raf=null,start=0;
   let view={x:0,y:0,scale:1},fitPending=true,pendingBackground=null,calibrationPoints=[];
+  let editingField=false,opener=null;
+  const disclosureState=new Map(),menuButtons=[],toolButtons=[];
   const root=node("section",{class:"shot-editor","aria-label":"Shot diagram editor"});
   const status=node("p",{class:"shot-message",role:"status","aria-live":"polite"});
-  const canvas=node("canvas",{tabindex:"0","aria-label":"Shot diagram. Select objects with the Objects menu; arrow keys move selection. Use Pan to move the view."});
+  const canvas=node("canvas",{tabindex:"0","aria-label":"Shot diagram. Select objects with the Layers menu; arrow keys move selection. Use Pan to move the view."});
   const viewport=node("div",{class:"shot-viewport"},[canvas]);
   const ctx=canvas.getContext?.("2d");
-  const pane=node("aside",{class:"shot-pane",hidden:"","aria-label":"Diagram tools"});
+  const pane=node("aside",{class:"shot-pane",id:"shot-tools-panel",tabindex:"-1",hidden:"","aria-label":"Diagram tools"});
   const title=node("input",{"aria-label":"Design name",value:record.name,maxlength:"160"});
   const toolbar=node("div",{class:"shot-toolbar","aria-label":"Diagram tools"});
+  const dock=node("nav",{class:"shot-dock","aria-label":"Shot tools"});
+  const saveStatus=node("span",{class:"shot-save-status",text:"Local workspace"});
   const bottom=node("div",{class:"shot-playback"});
   const seek=node("input",{type:"range",min:"0",max:"30",step:"0.01",value:"0","aria-label":"Preview time"});
   const timeLabel=node("span",{text:"0.00 s"});
-  const notify=message=>{status.textContent=message;};
+  const notify=message=>{status.textContent=message;saveStatus.textContent=message.startsWith("Saving")?"Saving...":message.startsWith("Save failed")?"Save failed":dirty?"Unsaved":"Saved locally";};
+  let updatePanelDerived=()=>{};
   const history=createHistory(record.diagram??newDiagram(),d=>{
-    record=actions.updateDiagram(record,d,title.value.trim()||record.name);markDirty();loadBackground();paint();refreshPanel();
+    record=actions.updateDiagram(record,d,title.value.trim()||record.name);markDirty();loadBackground();paint();syncControls();updatePanelDerived();if(!editingField)refreshPanel();
   });
   const value=()=>history.value;
   const safe=fn=>async()=>{try{await fn();}catch(error){notify(error.message);}};
-  const button=(text,fn)=>node("button",{type:"button",text,onClick:safe(fn)});
+  const button=(text,fn)=>node("button",{type:"button",text,...(/^(Delete|Remove|Clear)/.test(text)?{class:"shot-danger"}:{}),onClick:safe(fn)});
   function change(fn){const d=clone(value());fn(d);history.commit(d);}
   function markDirty(){
     dirty=true;unregister??=registerDraft(flush);clearTimeout(timer);
@@ -75,75 +80,136 @@ export function createDiagramEditor({record:initial,actions,store,win=globalThis
     if(tool==="path"){const o=value().objects.find(o=>selected.includes(o.id));if(o)for(const p of o.path){ctx.fillStyle="#0069a8";ctx.fillRect(p.x-6,p.y-6,12,12);}}
     if(tool==="calibrate"){ctx.fillStyle="#f06";calibrationPoints.forEach((p,i)=>{ctx.beginPath();ctx.arc(p.x,p.y,6/view.scale,0,Math.PI*2);ctx.fill();ctx.font=14/view.scale+"px sans-serif";ctx.fillText(String(i+1),p.x+8/view.scale,p.y);});}
   }
-  function setTool(next){tool=next;notify(next==="path"?"Click to add path points; drag a point to edit.":"Tool: "+next);paint();}
-  function showPanel(name){panelName=panelName===name?"":name;pane.hidden=!panelName;refreshPanel();}
+  function setTool(next){tool=next;syncControls();updatePanelDerived();notify(next==="path"?"Click to add path points; drag a point to edit.":"Tool: "+next);paint();}
+  function syncControls(){
+    for(const [b,name] of menuButtons)b.setAttribute("aria-expanded",String(panelName===name));
+    for(const [b,name] of toolButtons)b.setAttribute("aria-pressed",String(tool===name));
+    undo.disabled=!history.canUndo;redo.disabled=!history.canRedo;
+  }
+  function closePanel(){panelName="";pane.hidden=true;root.append(bottom,status,dock);root.dataset.panel="";syncControls();opener?.focus();}
+  function showPanel(name){
+    if(panelName===name){closePanel();return;}
+    if(!pane.contains(document.activeElement))opener=document.activeElement;
+    panelName=name;refreshPanel();pane.focus();
+  }
+  function section(label,open=true){
+    const details=node("details",{class:"shot-section"},[node("summary",{text:label})]);
+    details.open=disclosureState.get(label)??open;
+    details.addEventListener("toggle",()=>disclosureState.set(label,details.open));return details;
+  }
   function refreshPanel(){
-    const scroll=pane.scrollTop;
+    updatePanelDerived=()=>{};
+    const scroll=pane.scrollTop,active=document.activeElement;
+    const focusables=()=>[...pane.querySelectorAll("button,input,select,summary")];
+    const focusIndex=pane.contains(active)?focusables().indexOf(active):-1;
+    root.append(bottom,status,dock);root.dataset.panel=panelName;
+    syncControls();
     if(!panelName){pane.hidden=true;return;}
-    pane.hidden=false;pane.replaceChildren(node("header",{},[node("strong",{text:panelName}),button("Close",()=>showPanel(panelName))]));
-    const add=(...nodes)=>pane.append(...nodes);
+    pane.hidden=false;pane.setAttribute("aria-label",panelName);
+    pane.dataset.kind=["Add","More","Design"].includes(panelName)?"menu":"inspector";
+    const expand=button(pane.classList.contains("is-full")?"Collapse":"Expand",()=>{pane.classList.toggle("is-full");expand.textContent=pane.classList.contains("is-full")?"Collapse":"Expand";expand.setAttribute("aria-expanded",String(pane.classList.contains("is-full")));});
+    expand.className="shot-expand";expand.setAttribute("aria-expanded",String(pane.classList.contains("is-full")));
+    pane.replaceChildren(node("header",{},[node("strong",{text:panelName==="Properties"?"Edit selection":panelName}),expand,button("Close",closePanel)]));
+    let target=pane;
+    const add=(...nodes)=>target.append(...nodes);
     const field=(label,value,onChange,{type="text",min,max,step}={})=>{
       const input=node("input",{type,value:String(value??""),...(min!==undefined?{min}:{}),...(max!==undefined?{max}:{}),...(step?{step}:{}),
-        onChange:()=>{try{onChange(type==="number"?Number(input.value):input.value);}catch(e){notify(e.message);input.value=String(value??"");}}});
+        onChange:()=>{try{editingField=true;onChange(type==="number"?Number(input.value):input.value);}catch(e){notify(e.message);input.value=String(value??"");}finally{editingField=false;
+          const current=value().objects.find(item=>selected.includes(item.id));
+          const fovLabel=pane.querySelector(".shot-fov");
+          if(current?.lens&&fovLabel){const fov=fieldOfView(current.lens);fovLabel.textContent=`Ideal FOV: ${fov.horizontalDeg.toFixed(2)} degrees H / ${fov.verticalDeg.toFixed(2)} degrees V. Coverage over this image is schematic.`;}
+        }}});
       return node("label",{text:label},[input]);
     };
     const check=(label,checked,onChange)=>{const input=node("input",{type:"checkbox"});input.checked=checked;input.addEventListener("change",()=>{try{onChange(input.checked);}catch(e){notify(e.message);}});return node("label",{class:"shot-check"},[input,node("span",{text:label})]);};
     const d=value(),o=d.objects.find(o=>selected.includes(o.id));
-    if(panelName==="Add"){
-      for(const type of TYPES)add(button("Add "+type,()=>{change(d=>{const o=newObject(type,d.background.width/2,d.background.height/2,d.objects.filter(o=>o.type===type).length+1);d.objects.push(o);selected=[o.id];});panelName="Properties";refreshPanel();}));
-    } else if(panelName==="Objects / Layers"){
-      add(node("p",{text:"Select in the list or Shift-click objects to select several."}));
+    if(panelName==="More"){
+      for(const name of ["Design","Background","Variants","Evidence","View","Preview"])add(button(name,()=>showPanel(name)));
+    } else if(panelName==="View"){
+      for(const name of ["select","pan","rotate"])add(button(name[0].toUpperCase()+name.slice(1),()=>setTool(name)));
+      add(button("Fit image",()=>{fitPending=true;paint();}),check("Grid",d.grid,v=>change(d=>d.grid=v)),check("Snap to grid",d.snap,v=>change(d=>d.snap=v)),field("Grid interval (image pixels)",d.gridSize,v=>change(d=>d.gridSize=v),{type:"number",min:5,max:500}));
+    } else if(panelName==="Preview"){
+      add(node("p",{text:"Preview movement over the reference image. Use the slider for individual positions."}),bottom);
+    } else if(panelName==="Add"){
+      for(const type of TYPES)add(button(({actor:"◉",camera:"▣",vehicle:"▰",prop:"◇",set:"▱",annotation:"T"}[type]??"+")+"  "+type[0].toUpperCase()+type.slice(1),()=>{change(d=>{const o=newObject(type,d.background.width/2,d.background.height/2,d.objects.filter(o=>o.type===type).length+1);d.objects.push(o);selected=[o.id];});panelName="Properties";refreshPanel();}));
+    } else if(panelName==="Layers"){
+      add(node("p",{text:"Check objects to select several, then Edit selection. Visibility and locking are independent."}),button("Edit selection ("+selected.length+")",()=>showPanel("Properties")));
+      const toggle=(label,pressed,fn,objectLabel)=>{const b=button(label,fn);b.setAttribute("aria-pressed",String(pressed));b.setAttribute("aria-label",label+" - "+objectLabel);return b;};
       for(const type of TYPES){
         const objects=d.objects.filter(o=>o.type===type);if(!objects.length)continue;
-        add(node("strong",{text:type}),button("Show / hide "+type,()=>change(d=>{const hidden=!objects.every(o=>o.hidden);d.objects.filter(o=>o.type===type).forEach(o=>o.hidden=hidden);})),
-          button("Lock / unlock "+type,()=>change(d=>{const locked=!objects.every(o=>o.locked);d.objects.filter(o=>o.type===type).forEach(o=>o.locked=locked);})));
-        for(const item of objects)add(button((selected.includes(item.id)?"✓ ":"")+item.label+(item.locked?" 🔒":""),()=>{selected=[item.id];panelName="Properties";refreshPanel();paint();}));
+        const group=section(type[0].toUpperCase()+type.slice(1)+" ("+objects.length+")");add(group);
+        const state=key=>objects.every(o=>o[key])?"All "+key:objects.some(o=>o[key])?"Some "+key:"None "+key;
+        group.append(node("small",{text:state("hidden")+" / "+state("locked")}),
+          button(objects.every(o=>o.hidden)?"Show all":"Hide all",()=>change(d=>d.objects.filter(o=>o.type===type).forEach(o=>o.hidden=!objects.every(o=>o.hidden)))),
+          button(objects.every(o=>o.locked)?"Unlock all":"Lock all",()=>change(d=>d.objects.filter(o=>o.type===type).forEach(o=>o.locked=!objects.every(o=>o.locked)))));
+        for(const item of objects)group.append(node("div",{class:"shot-layer-row"},[
+          check(item.label,selected.includes(item.id),v=>{selected=v?[...selected,item.id]:selected.filter(id=>id!==item.id);paint();refreshPanel();}),
+          toggle(item.hidden?"Hidden":"Visible",!item.hidden,()=>edit(item.id,{hidden:!item.hidden}),item.label),
+          toggle(item.locked?"Locked":"Unlocked",item.locked,()=>edit(item.id,{locked:!item.locked}),item.label)]));
       }
-      add(check("Grid",d.grid,v=>change(d=>d.grid=v)),check("Snap",d.snap,v=>change(d=>d.snap=v)),field("Grid interval (image pixels)",d.gridSize,v=>change(d=>d.gridSize=v),{type:"number",min:5,max:500}));
     } else if(panelName==="Properties"){
-      if(!o){add(node("p",{text:"Select an object on the canvas or in Objects / Layers."}));return;}
-      add(node("small",{text:o.id}),field("Label",o.label,v=>edit(o.id,{label:v})),field("Color",o.color,v=>edit(o.id,{color:v}),{type:"color"}),
-        field("X (image pixels)",o.x,v=>change(d=>moveObjects(d,selected,v-o.x,0)),{type:"number",step:"1"}),
-        field("Y (image pixels)",o.y,v=>change(d=>moveObjects(d,selected,0,v-o.y)),{type:"number",step:"1"}),
-        field("Rotation (degrees clockwise)",o.angle,v=>change(d=>rotateObjects(d,selected,v-o.angle)),{type:"number",step:"1"}),
+      const localTools=["select","pan","rotate"].map(name=>{const b=button(name[0].toUpperCase()+name.slice(1),()=>setTool(name));b.dataset.tool=name;return b;});
+      const localUndo=button("Undo",()=>history.undo()),localRedo=button("Redo",()=>history.redo());
+      const update=()=>{localUndo.disabled=!history.canUndo;localRedo.disabled=!history.canRedo;localTools.forEach(b=>b.setAttribute("aria-pressed",String(tool===b.dataset.tool)));};
+      updatePanelDerived=update;update();add(...localTools,localUndo,localRedo);
+      if(!o){add(node("p",{text:"Select an object on the canvas or in Layers."}));return;}
+      const live=()=>value().objects.find(item=>item.id===o.id);
+      const appearance=section("Appearance");add(appearance);target=appearance;
+      add(field("Label",o.label,v=>edit(o.id,{label:v})),field("Color",o.color,v=>edit(o.id,{color:v}),{type:"color"}),
+        field("X (image pixels)",o.x,v=>change(d=>moveObjects(d,selected,v-live().x,0)),{type:"number",step:"1"}),
+        field("Y (image pixels)",o.y,v=>change(d=>moveObjects(d,selected,0,v-live().y)),{type:"number",step:"1"}),
+        field("Rotation (degrees clockwise)",o.angle,v=>change(d=>rotateObjects(d,selected,v-live().angle)),{type:"number",step:"1"}),
         field("Symbol size (pixels)",o.size,v=>edit(o.id,{size:v}),{type:"number",min:5,max:500}),
         check("Locked",o.locked,v=>edit(o.id,{locked:v})),check("Hidden",o.hidden,v=>edit(o.id,{hidden:v})));
+      const advanced=section("Position and rotation",false);
+      const fields=[...appearance.children].filter(n=>n.tagName==="LABEL");
+      appearance.insertBefore(advanced,fields[2]);
+      for(const item of fields.slice(2,5))advanced.append(item);
+      const cameraStart=target;
       if(o.type==="camera"){
+        target=pane;const camera=section("Camera settings",false);add(camera);target=camera;
         add(field("Setup mark",o.setup,v=>edit(o.id,{setup:v})),button("Add another setup of this camera",()=>change(d=>{selected=duplicateObjects(d,[o.id],true);})));
         for(const [key,label] of [["focalLengthMm","Focal length (mm)"],["gateWidthMm","Sensor width (mm)"],["gateHeightMm","Sensor height (mm)"],["targetAspect","Aspect ratio"],["cropFactor","Crop factor"]])
-          add(field(label,o.lens[key],v=>edit(o.id,{lens:{...o.lens,[key]:v}}),{type:"number",min:.01,step:".01"}));
+          add(field(label,o.lens[key],v=>edit(o.id,{lens:{...live().lens,[key]:v}}),{type:"number",min:.01,step:".01"}));
         for(const [key,label] of [["heightM","Camera height (m, recorded)"],["tiltDeg","Tilt (degrees, recorded)"],["rollDeg","Roll (degrees, recorded)"]])add(field(label,o[key],v=>edit(o.id,{[key]:v}),{type:"number",step:".1"}));
-        const fov=fieldOfView(o.lens);add(node("p",{text:`Ideal FOV: ${fov.horizontalDeg.toFixed(2)}° H / ${fov.verticalDeg.toFixed(2)}° V. Coverage over this image is schematic.`}),check("Show schematic coverage",o.wedge,v=>edit(o.id,{wedge:v})),button("Add shot for this setup",()=>addShot(o)));
+        const fov=fieldOfView(o.lens);add(node("p",{class:"shot-fov",text:`Ideal FOV: ${fov.horizontalDeg.toFixed(2)}° H / ${fov.verticalDeg.toFixed(2)}° V. Coverage over this image is schematic.`}),check("Show schematic coverage",o.wedge,v=>edit(o.id,{wedge:v})),button("Add shot for this setup",()=>addShot(o)));
       }
+      target=pane;const movement=section("Movement");pane.insertBefore(movement,cameraStart.nextSibling);target=movement;
       add(button("Duplicate",()=>change(d=>{selected=duplicateObjects(d,selected);})),
         button("Group selection",()=>change(d=>{const id=newId("sceneObject");d.objects.filter(o=>selected.includes(o.id)).forEach(o=>o.groupId=id);})),
         button("Ungroup",()=>change(d=>d.objects.filter(o=>selected.includes(o.id)).forEach(o=>o.groupId=null))),
         button("Delete selected",remove),button("Edit path on canvas",()=>setTool("path")),
         field("Move duration (seconds)",o.duration,v=>edit(o.id,{duration:v}),{type:"number",min:.1,max:3600,step:".1"}),
-        button("Reverse path",()=>edit(o.id,{path:[...o.path].reverse()})),
+        button("Reverse path",()=>edit(o.id,{path:[...live().path].reverse()})),
         button("Clear path",()=>edit(o.id,{path:[]})));
+      const selectionActions=section("Selection actions",false);
+      pane.append(selectionActions);
+      for(const b of [...movement.children].filter(n=>n.tagName==="BUTTON").slice(0,4))selectionActions.append(b);
       const style=node("select",{"aria-label":"Path line style"});
       for(const [value,label] of [["straight","Straight"],["smooth","Smooth curve"],["spaced","Spaced curve (automatic)"]])style.append(node("option",{value,text:label}));
       style.value=o.pathStyle??(o.curved?"smooth":"straight");
-      style.addEventListener("change",()=>{try{edit(o.id,{pathStyle:style.value,curved:style.value==="smooth"});}catch(e){notify(e.message);}});
+      style.addEventListener("change",()=>{try{editingField=true;edit(o.id,{pathStyle:style.value,curved:style.value==="smooth"});}catch(e){notify(e.message);}finally{editingField=false;}});
       add(node("label",{text:"Path line style"},[style]),node("small",{text:"Spaced curves bow between your steps; icons stay in place. Crossings may still need manual adjustment."}));
-      add(button("Add path step",()=>{const last=o.path.at(-1)??o;edit(o.id,{path:[...(o.path.length?o.path:[{x:o.x,y:o.y}]),{x:last.x+100,y:last.y}]});}));
+      add(button("Add path step",()=>{const o=live();const last=o.path.at(-1)??o;edit(o.id,{path:[...(o.path.length?o.path:[{x:o.x,y:o.y}]),{x:last.x+100,y:last.y}]});}));
       o.path.forEach((p,i)=>add(node("div",{class:"shot-point"},[
         field("Point "+(i+1)+" X",p.x,v=>pointEdit(o,i,"x",v),{type:"number"}),
         field("Point "+(i+1)+" Y",p.y,v=>pointEdit(o,i,"y",v),{type:"number"}),
-        button("Remove point "+(i+1),()=>edit(o.id,{path:o.path.filter((_,n)=>n!==i)}))])));
+        button("Remove point "+(i+1),()=>edit(o.id,{path:live().path.filter((_,n)=>n!==i)}))])));
     } else if(panelName==="Shots"){
       const cameras=d.objects.filter(o=>o.type==="camera");for(const c of cameras)add(button("New shot · "+c.label+" / "+c.setup,()=>addShot(c)));
       d.shots.forEach((s,i)=>{
-        const card=node("section",{class:"shot-card"}),c=d.objects.find(o=>o.id===s.cameraId);
+        const card=section("Shot "+s.number+" - "+(s.description||s.shotType||"Planned"),false),c=d.objects.find(o=>o.id===s.cameraId);
+        card.addEventListener("toggle",()=>{if(card.open){selected=[c.id];paint();}});
         card.append(node("strong",{text:c.label+" · setup "+c.setup}));
         for(const [key,label] of [["number","Shot number"],["shotType","Shot type"],["description","Description"],["movement","Movement"],["status","Status"],["notes","Notes"]])
           card.append(field(label,s[key],v=>change(d=>d.shots.find(x=>x.id===s.id)[key]=v)));
+        const previousUpdate=updatePanelDerived;
+        updatePanelDerived=()=>{previousUpdate();const shot=value().shots.find(item=>item.id===s.id);if(shot)card.querySelector("summary").textContent="Shot "+shot.number+" - "+(shot.description||shot.shotType||"Planned");};
         card.append(field("Duration (s)",s.duration,v=>change(d=>d.shots.find(x=>x.id===s.id).duration=v),{type:"number",min:0,max:3600}),
           button("Select camera / lens",()=>{selected=[c.id];panelName="Properties";refreshPanel();paint();}),
           button("Move earlier",()=>change(d=>{if(i>0)[d.shots[i-1],d.shots[i]]=[d.shots[i],d.shots[i-1]];})),
           button("Move later",()=>change(d=>{if(i<d.shots.length-1)[d.shots[i+1],d.shots[i]]=[d.shots[i],d.shots[i+1]];})),
-          button("Duplicate shot",()=>change(d=>d.shots.push({...clone(s),id:newId("shot"),number:s.number+" copy"}))),
+          button("Duplicate shot",()=>change(d=>d.shots.push({...clone(value().shots.find(item=>item.id===s.id)),id:newId("shot"),number:value().shots.find(item=>item.id===s.id).number+" copy"}))),
           button("Remove shot",()=>change(d=>d.shots=d.shots.filter(x=>x.id!==s.id))));
         add(card);
       });
@@ -193,7 +259,8 @@ export function createDiagramEditor({record:initial,actions,store,win=globalThis
         for(const id of answer?.mediaIds??[]){const m=bundle.scoutMedia.find(m=>m.id===id);if(m?.data&&m.mime.startsWith("image/"))card.append(node("img",{class:"shot-bg-preview",src:"data:"+m.mime+";base64,"+m.data,alt:m.filename}));else card.append(node("p",{text:m?.filename??"Missing media"}));}
         add(card);
       }
-    } else if(panelName==="Save / Export"){
+    } else if(panelName==="Design"){
+      add(field("Design name",record.name,v=>{if(v.trim()){title.value=v.trim();record=actions.updateDiagram(record,value(),v.trim());markDirty();}}));
       add(node("p",{text:record.projectId?"Project-owned diagram":"Standalone diagram · stored in this browser"}),
         button("Save locally / Retry",async()=>{if(!record.diagram)record=actions.updateDiagram(record,value());markDirty();await flush();}),
         button("Attach to active project / scene",()=>{record=actions.attachDiagram(record);markDirty();refreshPanel();}),
@@ -217,9 +284,10 @@ export function createDiagramEditor({record:initial,actions,store,win=globalThis
       add(node("label",{text:"Import diagram (project evidence stays with project JSON)"},[input]));
     }
     pane.scrollTop=scroll;
+    if(focusIndex>=0)(focusables()[focusIndex]??pane).focus({preventScroll:true});
   }
   function edit(id,fields){change(d=>{const o=d.objects.find(o=>o.id===id);if(o.locked&&!Object.keys(fields).every(k=>["locked","hidden"].includes(k)))throw new Error("Unlock this object before editing.");Object.assign(o,fields);});}
-  function pointEdit(o,i,key,v){const path=clone(o.path);path[i][key]=v;edit(o.id,{path});}
+  function pointEdit(o,i,key,v){const path=clone(value().objects.find(item=>item.id===o.id).path);path[i][key]=v;edit(o.id,{path});}
   function addShot(o){change(d=>d.shots.push({id:newId("shot"),cameraId:o.id,number:String(d.shots.length+1),shotType:"",description:"",movement:"",duration:o.duration,status:"planned",notes:""}));panelName="Shots";refreshPanel();}
   function remove(){const d=value(),linked=d.shots.filter(s=>selected.includes(s.cameraId)).length;if(win.confirm("Delete "+selected.length+" object(s), their paths and "+linked+" linked shot(s)?")){change(d=>deleteObjects(d,selected));selected=[];paint();}}
   function point(event){const r=canvas.getBoundingClientRect();return imagePoint({x:event.clientX-r.left,y:event.clientY-r.top},view);}
@@ -264,15 +332,22 @@ export function createDiagramEditor({record:initial,actions,store,win=globalThis
     try{
       if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"){e.preventDefault();e.shiftKey?history.redo():history.undo();}
       else if(e.key==="Delete"){e.preventDefault();remove();}
-      else if(e.key==="Escape"){selected=[];tool="select";panelName="";pane.hidden=true;paint();}
+      else if(e.key==="Escape"){selected=[];tool="select";panelName="";pane.hidden=true;root.dataset.panel="";syncControls();paint();}
       else if(["ArrowLeft","ArrowRight","ArrowUp","ArrowDown"].includes(e.key)){e.preventDefault();const n=e.shiftKey?10:1;change(d=>moveObjects(d,selected,e.key==="ArrowLeft"?-n:e.key==="ArrowRight"?n:0,e.key==="ArrowUp"?-n:e.key==="ArrowDown"?n:0));}
     }catch(error){notify(error.message);}
   });
   title.addEventListener("change",()=>{if(title.value.trim()){record=actions.updateDiagram(record,value(),title.value.trim());markDirty();}});
-  toolbar.append(button("← Explore",async()=>{const result=await flush();if(result?.ok===false)return;actions.returnFromDiagram();}),title,
-    ...["Add","Objects / Layers","Shots","Variants","Background","Evidence","Save / Export"].map(name=>button(name,()=>showPanel(name))),
-    button("Undo",()=>history.undo()),button("Redo",()=>history.redo()),button("Select",()=>setTool("select")),button("Pan",()=>setTool("pan")),
-    button("Rotate",()=>setTool("rotate")),button("Fit",()=>{fitPending=true;paint();}));
+  const menu=(label,name)=>{const b=button(label,()=>showPanel(name));b.setAttribute("aria-controls","shot-tools-panel");b.setAttribute("aria-expanded","false");menuButtons.push([b,name]);return b;};
+  const undo=button("Undo",()=>history.undo()),redo=button("Redo",()=>history.redo());
+  const desktop=node("nav",{class:"shot-desktop-tools","aria-label":"Design commands"},[
+    ...["Design","Add","Layers","Shots","More"].map(name=>menu(name,name)),undo,redo]);
+  for(const name of ["select","pan","rotate"]){const b=button(name[0].toUpperCase()+name.slice(1),()=>setTool(name));toolButtons.push([b,name]);desktop.append(b);}
+  desktop.append(button("Fit",()=>{fitPending=true;paint();}));
+  toolbar.append(button("Back",async()=>{const result=await flush();if(result?.ok===false)return;actions.returnFromDiagram();}),title,saveStatus,desktop);
+  for(const [icon,label,name] of [["+","Add","Add"],["▤","Layers","Layers"],["◇","Edit","Properties"],["▣","Shots","Shots"],["⋯","More","More"]]){
+    const b=menu(label,name);b.replaceChildren(node("span",{"aria-hidden":"true",text:icon}),node("span",{text:label}));dock.append(b);
+  }
+  root.addEventListener("keydown",e=>{if(e.key==="Escape"&&panelName){e.preventDefault();e.stopPropagation();closePanel();}});
   function frame(now){
     if(!playing||disposed)return;
     preview=(now-start)/1000;const duration=Math.max(1,...value().objects.map(o=>o.duration));
@@ -280,10 +355,12 @@ export function createDiagramEditor({record:initial,actions,store,win=globalThis
     if(playing)raf=win.requestAnimationFrame(frame);
   }
   seek.addEventListener("input",()=>{playing=false;preview=Number(seek.value);timeLabel.textContent=preview.toFixed(2)+" s";paint();});
+  const timeline=button("Timeline",()=>{const expanded=bottom.dataset.scrub!=="true";bottom.dataset.scrub=String(expanded);timeline.setAttribute("aria-expanded",String(expanded));});
+  timeline.className="shot-timeline-toggle";timeline.setAttribute("aria-expanded","false");bottom.dataset.scrub="false";
   bottom.append(button("Play",()=>{if(win.matchMedia?.("(prefers-reduced-motion: reduce)").matches){notify("Reduced motion: use the time slider to preview positions.");return;}if(playing)return;if(raf)win.cancelAnimationFrame?.(raf);playing=true;start=win.performance.now()-(preview??0)*1000;raf=win.requestAnimationFrame(frame);}),
-    button("Pause",()=>{playing=false;}),button("Reset",()=>{playing=false;preview=null;seek.value=0;timeLabel.textContent="0.00 s";paint();}),seek,timeLabel,node("span",{text:"Schematic overlay · image pixels"}));
-  root.append(toolbar,viewport,pane,bottom,status);
-  const observer=typeof ResizeObserver==="function"?new ResizeObserver(()=>{pane.style.top=(toolbar.offsetHeight+8)+"px";paint();}):null;observer?.observe(viewport);observer?.observe(toolbar);
+    button("Pause",()=>{playing=false;}),button("Reset",()=>{playing=false;preview=null;seek.value=0;timeLabel.textContent="0.00 s";paint();}),timeline,seek,timeLabel,node("span",{text:"Schematic overlay · image pixels"}));
+  root.append(toolbar,viewport,pane,bottom,status,dock);syncControls();
+  const observer=typeof ResizeObserver==="function"?new ResizeObserver(()=>{root.style.setProperty("--shot-toolbar-height",toolbar.offsetHeight+"px");paint();}):null;observer?.observe(viewport);observer?.observe(toolbar);
   const beforeUnload=e=>{if(dirty){e.preventDefault();e.returnValue="";}};
   win.addEventListener?.("beforeunload",beforeUnload);
   loadBackground();paint();notify(record.diagram?"Local diagram ready.":"Blank image diagram ready. Any earlier spatial content is preserved separately; it has not been converted to this image.");

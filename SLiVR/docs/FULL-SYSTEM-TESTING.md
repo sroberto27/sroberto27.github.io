@@ -2719,3 +2719,15 @@ research/PHASE_3_ACCEPTANCE_REVIEW.md. Physical-device generalization and provid
 pose claims are not inferred. Phase4 shot actions and Phase5 integrated retest
 remain in their approved allocation. Owner authorized SLiVR-only commit/push;
 private ignored assets/credentials remain local. No telemetry.
+
+## D092 menu revision - 2026-09-27
+
+| ID | Procedure | Evidence |
+|---|---|---|
+| 250 | Desktop top menus; mobile Add/Layers/Edit/Shots/More dock and Expand/Close. Edit successive fields, Tab, Escape, undo/redo; multi-select and independently hide/lock layers; open shot and preview; verify saved arrangement unchanged after reload. | Partial Chrome fixture checks: desktop property edit/Tab and Escape focus; 390x844 dock, Layers expansion and multi-select, More/Preview. Full real project, physical device and assistive-technology checks pending. |
+
+Focused automated run: 51 PASS / 0 FAIL (shot-designer + shell-smoke),
+outputs/phase4-ui-tests.txt. Later presentation refinements received syntax and
+Chrome checks, not another broad suite. Deployment scope: 211 files / 0 errors.
+No upgrade of D091's historical full-suite result to a new full-suite claim.
+No owner acceptance or Phase 4 completion claim. D089 owner passes preserved.

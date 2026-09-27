@@ -665,3 +665,32 @@ no global collision-avoidance claim. Shared geometry drives preview and PNG.
 Evidence is in docs/FULL-SYSTEM-TESTING.md and docs/PHASE_4_OWNER_CHECK.md.
 Phase 4 is not closed: focused owner acceptance remains pending. Preserve D089
 and all earlier owner passes. No staging, commit, push or deployment performed.
+
+## D092 - Responsive Shot Designer menus, 2026-09-27
+
+Owner approved the full menu proposal. Desktop retains top navigation and uses
+Design / Add / Layers / Shots / More, with undo, redo and view tools. Mobile uses
+a labeled five-button dock and one nonmodal half/full sheet with explicit sizing
+and close controls. Nonmodal behavior deliberately permits canvas work while the
+sheet is open; Escape returns to the opener. Properties separates Appearance,
+Movement, Camera settings and selection actions; numeric placement is collapsed.
+Layers supports checkbox multi-selection and independent visibility/lock states.
+Shots collapse to summaries and highlight the associated camera when expanded.
+Mobile preview is in More; desktop Timeline reveals its scrubber.
+
+References inspected: LSU3D/js/06-details-panel.js:5-42 and
+Experimental/js/06-details-panel.js:6-44. Adapt their mutually exclusive panel and
+half/full state pattern. Deviation reason 1: the approved image-overlay editor
+requires scoped controls, explicit accessible buttons and independent canvas
+interaction rather than map recentering, global element state or drag-only sizing.
+Neither reference provides shot property forms, layers or shot list controls
+(reason 3); existing SLiVR model/history/commands are reused. No schema change.
+Field commits retain their DOM nodes; callbacks read current object values to
+avoid overwriting other property changes. Data rendering and storage unchanged.
+
+Evidence: 51 focused Node tests passed; syntax and deployment scope checks passed.
+Chrome isolated fixture verified desktop Add/properties, edit/Tab focus,
+Escape/opener restoration; 390x844 dock, expand/collapse, multi-selection focus
+and More/Preview access. Final mobile preview check used the final source.
+This is technical evidence, not measured usability or owner acceptance. Full
+app on a physical phone and assistive technology remain owner checks (250).

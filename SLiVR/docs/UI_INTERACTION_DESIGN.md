@@ -287,3 +287,13 @@ memory of dated assessment selection. Stable236 and evidence: DECISION_RECORD D0
 and docs/FULL-SYSTEM-TESTING.md.409 automated PASS; focused Chrome identity check;
 new end-to-end mobile/provider following acceptance remains NOT TESTED. Prior
 passes do not need repeating. No data schema changes or telemetry.
+
+## D092 approved Shot Designer menus
+
+Desktop: top Design/Add/Layers/Shots/More, undo/redo and view tools; contextual
+right inspector. Mobile: compact design bar and labeled Add/Layers/Edit/Shots/More
+dock; one nonmodal, scrollable half/full sheet. Explicit Expand/Collapse and Close
+remain reachable. Project/scene controls remain in the shell's mobile disclosure.
+Appearance, Movement and Camera settings group properties; advanced positioning
+is collapsed. Layers exposes selection independently of visibility/locking.
+Preview is under More on mobile; desktop Timeline expands the scrubber.
