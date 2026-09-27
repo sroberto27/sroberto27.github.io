@@ -50,9 +50,11 @@ Owner authorized committing and pushing the current SLiVR changes on 2026-09-26.
 Publish only a SLiVR-scoped commit based on origin/main, excluding unrelated
 working-branch history. This authorization does not imply Phase 4 acceptance.
 
-Next discussion: owner is reviewing a menu redesign, NOT yet authorized for
-implementation. Keep desktop navigation/tools at the top; propose compact
-Design/Add/Layers/Shots/More menus, SLiVR charcoal/blue styling and contextual
-properties. Mobile proposal: labeled Add/Layers/Edit/Shots/More bottom dock,
-expandable sheets, explicit layer visibility/lock states, keyboard/focus handling
-and comfortable touch targets. Await owner's choices before changing this UI.
+Owner subsequently approved the full UI proposal. D092 implements desktop top
+menus, mobile labeled dock/sheets, grouped Properties, explicit Layers selection
+and states, shot summaries and focus preservation. No schema migration. Latest
+changes are local and uncommitted; previous publication is 2fbcdcd7 on origin/main.
+Local working-branch publication counterpart is 15bcdc89. Do not push unrelated
+history. Menu checks: 51 focused Node PASS, limited Chrome fixture checks, owner
+test 250 pending. Next: owner menu review and remaining six Phase 4 critical
+checks in docs/PHASE_4_OWNER_CHECK.md. Preserve all earlier owner passes.

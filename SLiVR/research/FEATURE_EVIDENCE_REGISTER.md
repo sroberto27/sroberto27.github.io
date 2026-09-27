@@ -400,3 +400,10 @@ research/PHASE_3_ACCEPTANCE_REVIEW.md. Physical-device generalization and provid
 pose claims are not inferred. Phase4 shot actions and Phase5 integrated retest
 remain in their approved allocation. Owner authorized SLiVR-only commit/push;
 private ignored assets/credentials remain local. No telemetry.
+
+### D092 interface increment, 2026-09-27
+
+Shot-workspace interaction: top desktop menus, mobile labeled dock and expandable
+sheets, grouped properties and explicit layer states implemented. Focused Node
+51/51 and narrow Chrome fixture checks support technical operation only. Owner
+test 250 and physical-device/assistive-technology validation pending.

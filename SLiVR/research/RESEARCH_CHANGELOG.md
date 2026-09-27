@@ -515,3 +515,11 @@ research/PHASE_3_ACCEPTANCE_REVIEW.md. Physical-device generalization and provid
 pose claims are not inferred. Phase4 shot actions and Phase5 integrated retest
 remain in their approved allocation. Owner authorized SLiVR-only commit/push;
 private ignored assets/credentials remain local. No telemetry.
+
+## 2026-09-27 - D092 menus
+
+Implemented approved desktop/mobile shot menu reorganization, grouped properties,
+layer multi-selection, shot summaries and retained field focus. Existing image
+coordinates, paths, storage and Explore behavior remain intact. Technical checks
+and pending owner test 250 are recorded in FULL-SYSTEM-TESTING. No telemetry or
+participant evidence, no new schema, no commit/push for this revision.

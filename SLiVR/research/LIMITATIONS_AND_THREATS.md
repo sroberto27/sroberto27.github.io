@@ -318,3 +318,10 @@ research/PHASE_3_ACCEPTANCE_REVIEW.md. Physical-device generalization and provid
 pose claims are not inferred. Phase4 shot actions and Phase5 integrated retest
 remain in their approved allocation. Owner authorized SLiVR-only commit/push;
 private ignored assets/credentials remain local. No telemetry.
+
+### D092 menu evidence boundary
+
+A 390x844 Chrome viewport check is not evidence of physical-phone keyboard,
+screen-reader or touch usability. No participant benefit has been measured.
+Nonmodal sheets leave canvas controls available; complete task testing remains
+owner test 250. Prior Phase 4 provider/storage/acceptance limitations still apply.

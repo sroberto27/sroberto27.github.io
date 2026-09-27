@@ -1,6 +1,6 @@
 # Phase 4 critical owner checks
 
-Local app0.4.0, transfer1.4.0, DB2; D091. Not published or accepted yet.
+App0.4.0, transfer1.4.0, DB2; D091 core and D092 menus. Owner acceptance pending.
 Earlier Phase 3 owner passes remain accepted. Check only these new/changed flows.
 Wait for Saved locally and export Diagram JSON as a backup before refreshing an
 existing working diagram. Use a fresh tab to load the latest modules if needed.
@@ -44,3 +44,9 @@ existing working diagram. Use a fresh tab to load the latest modules if needed.
 Report the number and any failure, ideally with the action that triggered it.
 Do not repeat earlier accepted tests unless one of these flows exposes a regression.
 Physical-device results are separate from desktop browser results.
+
+7. **Menu review (250).** On desktop and phone width, try Add, Layers, Edit,
+   Shots and More. Select two layer checkboxes, hide/lock one object, edit several
+   properties consecutively, and use undo/redo. Check Tab focus, Escape/Close,
+   sheet Expand/Collapse and More > Preview. Reload after saving and confirm the
+   same arrangement. Report usability issues; no broad repeat of earlier passes.

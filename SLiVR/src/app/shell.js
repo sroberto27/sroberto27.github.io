@@ -1535,6 +1535,7 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
     if(actual.boot !== "starting" && !restoredWindows){restoredWindows=true;if(["floating","docked","maximized","minimized"].includes(tools.savedState("project"))){renderProjectTool();tools.resume("project","Project tools");}}
     const state = actual.mode === "projects" ? shownState() : actual;
     workspace.setAttribute("data-surface-mode",state.mode);
+    root.setAttribute("data-workspace-mode",state.mode);
     renderProjectMenus(actual); renderLaunchers(actual);
     if(tools.get("project")) renderProjectTool();
     if(actual.mode === "projects" && lastProjectRoute !== actual.route) { renderProjectTool(); tools.open("project","Project tools"); }

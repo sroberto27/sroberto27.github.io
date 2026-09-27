@@ -345,3 +345,9 @@ research/PHASE_3_ACCEPTANCE_REVIEW.md. Physical-device generalization and provid
 pose claims are not inferred. Phase4 shot actions and Phase5 integrated retest
 remain in their approved allocation. Owner authorized SLiVR-only commit/push;
 private ignored assets/credentials remain local. No telemetry.
+
+### D092 interface revision
+
+Test 250 identifies technical menu/focus/manual acceptance checks. No new logging,
+participant measures, telemetry or inferred usability improvement is introduced.
+Record desktop responsive simulation separately from physical-device evidence.
