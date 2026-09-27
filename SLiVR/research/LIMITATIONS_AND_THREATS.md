@@ -1,5 +1,35 @@
 # Limitations and threats to validity register
 
+## D091 local build limitations
+
+Phase 4 awaits focused owner acceptance. Google capture with attribution follows
+explicit owner direction; technical capture and provider-use authorization are
+separate questions and no new legal permission finding is claimed. Full Google,
+mobile, failed-storage and evidence-return live acceptance remain pending.
+Spaced paths bow between steps and may still intersect; they do not optimize an
+entire scene. Backgrounds are bounded at 8 MiB / 24 million pixels and diagrams
+at 48 MiB with at most 30 variants. Browser storage is not a backup. Preview is
+schematic with equal time per leg. History is bounded; complex image variants
+can consume substantial memory. Physical framing/scale is not inferred from
+oblique imagery. Prior acceptance results remain scoped to their tested builds.
+
+
+## D090 — image-overlay proposal, 2026-09-26
+
+The revised Phase 4 plan awaits implementation approval. A 3D-map screenshot
+contains perspective, not editable depth. It cannot establish uniform metric
+scale, hidden geometry, clearance or physical lens projection. Background
+replacement may invalidate overlays; preserve prior variants and require review.
+Pixel dimensions bound image detail even when overlays export at high resolution.
+Recreated map views may show different imagery; permitted saved bytes are needed
+for faithful reopening.
+
+Permission for durable Google Map Tiles screenshot backgrounds and exports is
+unresolved. Browser readback or consumer screenshot guidance does not establish
+API reuse permission. DOTD/owned/blank support is an independent proposed track,
+not acceptance of a missing requested Google feature. Live capture completeness,
+performance and device behavior remain NOT TESTED. D089 passes are unchanged.
+
 | ID | Category | Current threat or limitation | Affected claim/feature | Mitigation or evidence needed | Status |
 |---|---|---|---|---|---|
 | L001 | Construct | Time and click counts do not alone represent scouting quality | RQ1; F01–F06 | Combine task metrics with completeness, evidence and qualitative rationale | Open |

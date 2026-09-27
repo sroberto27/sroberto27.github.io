@@ -1,5 +1,22 @@
 # Current status: Phase 3 COMPLETE (D089)
 
+> Current status (D091, 2026-09-26): the owner approved the image-overlay plan
+> and implementation, then requested resumption. A local app0.4.0 build exists;
+> Phase 4 owner acceptance is pending. Earlier D090 approval holds below are
+> historical and superseded. Google capture with attribution follows explicit
+> owner direction; this does not establish a new provider-policy finding.
+> No commit/push or telemetry is authorized. Prior D089 owner passes stand.
+
+
+## D090 Phase 4 proposal — 2026-09-26
+
+[Image-overlay planning](PHASE_4_IMAGE_OVERLAY_PLAN.md) retains D068 assessment
+ID/revision/question links, compatible owned references and test 213. Findings
+appear beside a flat diagram and never change image coordinates or calibration.
+The V2 editor, automatic location following/pinning and prior acceptance remain
+unchanged. Plan update only; explicit implementation approval remains required.
+
+
 See research/PHASE_3_ACCEPTANCE_REVIEW.md for final evidence and limitations.
 Phase 4 may start under D068. Historical status entries follow.
 

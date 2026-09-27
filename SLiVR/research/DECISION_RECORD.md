@@ -603,3 +603,65 @@ research/PHASE_3_ACCEPTANCE_REVIEW.md. Physical-device generalization and provid
 pose claims are not inferred. Phase4 shot actions and Phase5 integrated retest
 remain in their approved allocation. Owner authorized SLiVR-only commit/push;
 private ignored assets/credentials remain local. No telemetry.
+
+## D090 — Image-overlay Phase 4 revision, 2026-09-26
+
+Status: owner requested the simpler direction and authorized a plan update;
+the detailed revised plan awaits explicit approval before implementation.
+See [Phase 4 image-overlay plan](../PHASE_4_IMAGE_OVERLAY_PLAN.md).
+
+Replace the proposed coordinated 2D/3D editor with editable 2D symbols and paths
+over a captured current map image. Keep projects, evidence, reversible commands,
+autosave, shots/variants and exports. Use image coordinates; numeric lens/FOV
+metadata does not establish physical framing on an oblique background.
+Compact toolbar/menus and a collapsible shot list replace permanent editor rails.
+
+Reference inspection: LSU3D js/16-google-tiles.js:46-52,147-209,453-475;
+LSU3D js/06-details-panel.js:5-40; Experimental js/06-details-panel.js:6-43,
+js/03-tour-bridge.js:55-67 and js/04-street-view.js:9-23. Reuse existing SLiVR
+adaptations. No capture/export or persistent overlay-editor counterpart was
+found in either reference's js directory. Reason1: owner-requested architecture;
+reason3: missing counterpart. No reference edits.
+
+MapLibre4.7.1 source documents canvas export with preserveDrawingBuffer; SLiVR
+does not currently enable it. Google shares the map canvas, but complete frame
+capture has not been executed. DOTD source metadata permits reuse; reviewed
+Google Map Tiles policy restricts storage/offline uses and does not establish
+permission for this durable screenshot workflow. Google permission and live
+capture remain separate unresolved gates. Sources and fallback in plan section6.
+
+New stable237-248 are proposed, NOT TESTED. Historical85-112 are retained and
+mapped, not renumbered or relabeled. D089 and all owner passes remain intact.
+Runtime/schema versions unchanged. No telemetry, runtime edits, staging, commit,
+push or participant evidence. This is design rationale and read-only source
+inspection, not technical validation or an approved phase completion.
+
+
+## D091 - Phase 4 image-overlay implementation and path refinement
+
+2026-09-26. Owner approved D090 implementation, directed Google screenshots with
+attribution, paused work, then explicitly resumed. This supersedes the D090
+implementation hold. The original source-policy findings remain limitations;
+owner direction is not independent provider/legal verification.
+
+Local app0.4.0 / DB2 / transfer1.4.0 / template1.0.0 / catalog1.1.0. Additive
+ShotScene.diagram uses original-image pixels; legacy ENU records are untouched.
+Background bytes, objects, camera setups, paths, shots, variants and evidence
+revision references save in the existing repository. No second renderer/provider
+session, new dependency, telemetry or reference-project changes.
+
+Reuse/deviation: retain D090's reference inspection and existing LSU3D Google
+shared-canvas integration. Rechecked both reference map helper files on resume;
+neither has persistent shot paths. New overlay/capture modules qualify under
+reason3 (no counterpart), image-space architecture under reason1. Existing
+optics, ID generation, IndexedDB, transfer remapping and draft flush are reused.
+
+Owner comparison identified missing repeated symbols, direction and separation.
+Every step now repeats its object symbol with the number inside (no white badge).
+Camera lines are dark with a separate offset directional line. Each path selects
+Straight, Smooth curve or automatically bowed Spaced curve. Steps remain fixed;
+no global collision-avoidance claim. Shared geometry drives preview and PNG.
+
+Evidence is in docs/FULL-SYSTEM-TESTING.md and docs/PHASE_4_OWNER_CHECK.md.
+Phase 4 is not closed: focused owner acceptance remains pending. Preserve D089
+and all earlier owner passes. No staging, commit, push or deployment performed.

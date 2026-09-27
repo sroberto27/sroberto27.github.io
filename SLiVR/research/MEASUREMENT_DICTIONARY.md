@@ -1,5 +1,33 @@
 # Measurement and event dictionary
 
+## D091 implemented image-space conventions
+
+Coordinates: original background pixels, origin top-left, +x right, +y down;
+angles clockwise with zero pointing right. Display pan/zoom does not rewrite
+coordinates. Path style is straight, smooth or spaced; absent style preserves
+legacy curved boolean. Spaced curves use a bounded automatic bow between fixed
+steps, not collision avoidance. Playback divides duration equally among legs;
+it is schematic and is not constant real-world speed. Numeric ideal FOV remains
+separate from the screenshot. No measurements or participant telemetry collected.
+
+
+## D090 image-overlay proposal — 2026-09-26
+
+No logging or study collection is enabled. Proposed technical fixtures:
+- overlay_alignment_error_px: difference in original-image coordinates after
+  display pan/zoom/resize, save/reload and transfer; record image dimensions,
+  display transform and independently calculated expected positions.
+- capture_view_match: requested source/view/dimensions match captured output;
+  distinguish blank/unready, cancelled, stale and source-restricted outcomes.
+- image_roundtrip_loss: missing/changed required permitted image bytes,
+  attribution or authored references after export/import; omissions are explicit.
+Existing fov_error_deg applies only to numeric ideal-lens calculations, never
+screenshot-projected coverage. plan_scale_error_pct applies only to suitable
+calibrated flat-plan fixtures; oblique screenshots are not applicable, not zero
+error. shot_plan_completeness concerns diagram content and evidence, not verified
+3D feasibility. Fix tolerances/fixtures before implementation acceptance.
+
+
 Version: Draft 0.1. These are candidate operational definitions for planning. No logging is enabled and no participant data has been collected.
 
 ## Common context fields

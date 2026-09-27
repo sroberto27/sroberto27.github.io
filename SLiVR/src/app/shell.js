@@ -1,4 +1,5 @@
 import { createToolWindows } from "../ui/tool-windows.js";
+import { createDiagramEditor } from "../shot-workspace/editor.js";
 import { createEmbeddedChecklist } from "../scouting/embedded-checklist.js";
 import { locationView } from "../data/catalog-repo.js";
 import { flushDrafts } from "../scouting/autosave.js";
@@ -127,6 +128,38 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
   surface.append(mapHost, viewerHost.element, surfaceContent);
 
   const modeButtons = new Map();
+  let shotEditor = null;
+  let shotLoading = null;
+  let shotChooser = null;
+  async function chooseShot() {
+    if (store.getState().mode === "shot") return;
+    await flushDrafts();
+    if (store.getState().save.state === "failed") return;
+    const designs = await actions.listDiagrams?.() ?? [];
+    if (!designs.length && ["explore","projects"].includes(store.getState().mode)) {
+      const result = await actions.startDiagram?.();
+      if (result?.ok) return;
+    }
+    shotChooser?.remove();
+    shotChooser = el("dialog", { class: "shot-chooser", "aria-label": "Open Shot Designer" });
+    const close = () => { actions.cancelDiagramCapture?.(); shotChooser?.close?.(); shotChooser?.remove(); shotChooser = null; };
+    const captureMessage=el("p",{role:"status",text:store.getState().notice??""});
+    const start = async blank => {
+      const buttons = shotChooser?.querySelectorAll("button") ?? [];
+      for (const b of buttons) b.disabled = true;
+      const result = await actions.startDiagram({ blank });
+      if (result.ok) close();
+      else { for (const b of buttons) b.disabled = false; captureMessage.textContent=store.getState().notice??"Capture failed. Retry or start blank."; }
+    };
+    shotChooser.append(el("h2", {text:"Shot Designer"}),
+      el("p",{text:"Start from this map view or reopen a saved diagram. Existing backgrounds stay unchanged."}),
+      el("button",{type:"button",text:"New diagram from current map",onClick:()=>start(false)}),
+      el("button",{type:"button",text:"Blank / imported-image diagram",onClick:()=>start(true)}));
+    for (const design of designs) shotChooser.append(el("button",{type:"button",text:design.name,onClick:async()=>{close();await actions.openDiagram(design.id);}}));
+    shotChooser.append(captureMessage,el("button",{type:"button",text:"Cancel",onClick:close}));
+    shotChooser.addEventListener("cancel",close);
+    root.append(shotChooser); shotChooser.showModal?.();
+  }
   for (const mode of MODES.filter(mode => ["explore", "shot"].includes(mode.id))) {
     const button = el("button", {
       type: "button",
@@ -135,6 +168,8 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
       text: mode.label,
       onClick: () => {
         const state = store.getState();
+        if (mode.id === "shot") { void chooseShot(); return; }
+        if (mode.id === "explore" && state.mode === "shot") { actions.returnFromDiagram?.(); return; }
         const locationId = state.routeResolution?.status === "ok"
           ? state.routeResolution.locationId : null;
         let route = mode.route;
@@ -1448,6 +1483,18 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
   }
 
   function shotMode(state) {
+    const id = state.route?.params?.shotSceneId;
+    const current = state.shotRecord?.id === id ? state.shotRecord : state.workingBundle?.shotScenes.find(s=>s.id===id);
+    if (current) {
+      if (shotEditor?.id !== current.id) {
+        shotEditor?.dispose();
+        shotEditor = createDiagramEditor({record:current,actions,store,win});
+      }
+      return {left:null,right:null,centre:{className:"shot-surface",children:[shotEditor.element]}};
+    }
+    if (id && shotLoading !== id && actions.openDiagram) {
+      shotLoading=id; void actions.openDiagram(id).then(()=>renderWorkspace());
+    }
     const linked = state.workingBundle?.shotScenes.find(s => s.id === state.route?.params?.shotSceneId);
     if (linked) return { left: null, centre: { className: "surface-empty", children: [el("h1", { text: linked.name }),
       el("p", { text: `Project ${linked.projectId} / scene ${linked.sceneId} / candidate ${linked.candidateId}. Schematic planning origin; not measured.` }),
@@ -1464,15 +1511,13 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
               ? `No design with identifier ${state.route.params.shotSceneId} exists in this browser profile.`
               : "No design has been created yet.",
           }),
-          phaseNote(
-            "The plan and perspective workspace, cameras, lenses, blocking, paths and the shot list arrive in Phase 4.",
-          ),
+          el("p", {text:"Create an image-overlay diagram from Explore, or begin with a blank canvas and import your own image."}),
           el("div", { class: "actions" }, [
             el("button", {
               type: "button",
               class: "primary",
-              text: "Go to Projects",
-              onClick: () => actions.navigate({ name: "projects" }),
+              text: "New blank diagram",
+              onClick: () => actions.startDiagram({ blank:true }),
             }),
           ]),
         ],
@@ -1485,6 +1530,7 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
 
   function renderWorkspace() {
     const actual = store.getState();
+    if (actual.mode !== "shot" && shotEditor) { shotEditor.dispose(); shotEditor=null; }
     if (["explore","immersive"].includes(actual.mode)) { viewingState=actual; if(actual.route)try{win.localStorage.setItem("slivr:explore-view",JSON.stringify(actual.route));}catch{} }
     if(actual.boot !== "starting" && !restoredWindows){restoredWindows=true;if(["floating","docked","maximized","minimized"].includes(tools.savedState("project"))){renderProjectTool();tools.resume("project","Project tools");}}
     const state = actual.mode === "projects" ? shownState() : actual;
@@ -1575,10 +1621,13 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
     surfaceContent.className = floats
       ? "surface-content surface-overlay"
       : `surface-content ${parts.centre?.className ?? ""}`.trim();
-    replaceChildren(
-      surfaceContent,
-      floats ? [parts.centre.overlay] : (parts.centre?.children ?? []),
-    );
+    const content = floats ? [parts.centre.overlay] : (parts.centre?.children ?? []);
+    if (!(state.mode === "shot" && surfaceContent.firstChild === shotEditor?.element)) replaceChildren(surfaceContent,content);
+    if (state.mode === "shot") {
+      workspace.setAttribute("data-panel","closed");
+      workspace.setAttribute("data-mobile-tool","none");
+      shotEditor?.refresh();
+    }
     if (bookmarkFocus?.id.startsWith("workspace-")) document.getElementById(bookmarkFocus.id)?.focus({ preventScroll: true });
 
     workspace.setAttribute("data-rails", state.mode === "immersive" ? (parts.left ? "left" : "none") : parts.right ? "both" : parts.left ? "left" : "none");
@@ -1607,6 +1656,7 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
     store.subscribe((state) => state.mode, renderModes, { immediate: true }),
     store.subscribe((state) => state.boot, renderWorkspace),
     store.subscribe((state) => state.route, renderWorkspace),
+    store.subscribe((state) => state.shotRecord, renderWorkspace),
     store.subscribe((state) => state.exploreSelectionRequest, () => {
       collapsed = false; renderWorkspace(); dossier?.querySelector("button")?.focus();
     }),
@@ -1650,6 +1700,8 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
 
   return {
     destroy() {
+      shotEditor?.dispose();
+      shotChooser?.remove();
       shellDisposed=true;
       win.visualViewport?.removeEventListener("resize",fitViewport);
       if (searchTimer !== null) win.clearTimeout(searchTimer);

@@ -19,3 +19,6 @@ config/runtime.js
 
 # Public interaction specification; no private reference content.
 !docs/UI_INTERACTION_DESIGN.md
+
+# Public Phase 4 owner verification checklist.
+!docs/PHASE_4_OWNER_CHECK.md

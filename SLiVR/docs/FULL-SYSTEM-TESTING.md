@@ -1,5 +1,78 @@
 # SLiVR — Full System Testing
 
+## D091 local Phase 4 build - 2026-09-26
+
+Owner approved D090 implementation and subsequent path refinements. The D090
+approval hold below is historical. Local app0.4.0 / transfer1.4.0 / DB2 /
+template1.0.0 / catalog1.1.0. Phase 4 owner acceptance remains PENDING.
+Google capture follows explicit owner direction with attribution; earlier policy
+findings have not been relabeled as legal permission evidence.
+
+- Automated: **423 PASS, 0 FAIL**, Node v24.18.0 on Windows. Exact log:
+  outputs/phase4-final-tests.txt. 409 existing tests plus 14 new shot-designer
+  tests cover rendering geometry/number placement, immutable preview, old paths,
+  setups/locks/undo, variants, calibration, validation, transfer/remapping,
+  CSV safety, capture credits/view-change rejection/timeout cleanup.
+- Initial implementation run remains recorded: 408 PASS / 1 FAIL (future-version
+  fixture). Updated fixture and later runs passed; initial log is retained.
+- Deployment scope: 210 publishable files / 0 errors. Catalog: 0 errors / one
+  existing workbook-location-name warning. Whitespace check passed.
+- Chrome, isolated 127.0.0.1:8000: saved camera retained across reload. Previous
+  session captured real DOTD imagery with attribution. These are narrow checks,
+  not complete 237-248 passes. An old module was served from browser cache during
+  later UI checks; latest rendering was checked on isolated port8002.
+- Chrome port8002, outputs/phase4-path-preview.html: visually checked two camera
+  and two actor paths with repeated numbered icons (numbers inside, no badge),
+  dark double camera lines, colored actor lines and spaced curves. PNG generation
+  produced an image preview. This fixture verifies shared rendering, not the
+  full owner's saved scene or a downloaded PNG/CSV viewer workflow.
+- Remaining live/owner checks: docs/PHASE_4_OWNER_CHECK.md. Full Google capture,
+  mobile/physical device, real failure recovery, evidence-return workflow and
+  owner downtown recreation are NOT YET ACCEPTED. No additional broad browser
+  sweep is required before owner review; owner requested focused manual checks.
+
+| ID | Added procedure | Current evidence |
+|---|---|---|
+| 249 | Repeat symbols at every step, numbers inside without badges; neutral double camera paths, colored actor paths, directional arrows; select Straight/Smooth/Spaced per path without moving steps. Verify reverse, playback, reload and PNG. | Automated geometry/render assertions PASS; Chrome fixture appearance checked; owner scene and full UI workflow pending |
+
+D089 and all earlier owner passes remain intact. No phase-completion claim,
+telemetry, participant data, commit, push or production deployment.
+
+
+## D090 proposed Phase 4 gate amendment — 2026-09-26
+
+### Proposed stable image-overlay procedures
+
+All new procedures below are NOT TESTED. Their adoption awaits approval of the
+revised plan. Original procedures and results remain unchanged.
+
+| ID | Procedure and required result | Required evidence |
+|---|---|---|
+| 237 | Capture current permitted aerial/3D map view before leaving Explore. Match extent, bearing, pitch, dimensions and source; exclude UI/pins; retain attribution. Google path requires permission resolution or a scoped approved exception before phase closure. | Source-use record, identity checks and live comparison |
+| 238 | Capture during loading, source switch, resize, repeated requests and cancellation; simulate blank/readback/context failure. No stale image, silent substitute or orphan record; bounded recovery. Continuous repaint cannot wait forever for idle. | Automated races and live failures |
+| 239 | Start draft, reopen design, cancel, attach to project, resolve ambiguous target and return through history. Tab entry never replaces saved background; save failure retains drafts and ownership. | Automated ownership and live navigation |
+| 240 | Create all core objects; cycle selection; drag/numeric transform, group, duplicate, lock/hide and snap. Pan/zoom/resize/device rotation preserve image-relative positions. Copies have new IDs; deletes leave no orphan shots/paths. | Independent coordinate fixtures and live keyboard/touch |
+| 241 | Multiple setups for Camera A remain independent. Preserve lens/gate/crop/aspect/height/tilt/roll metadata and numeric FOV fixtures. Wedges remain schematic. Image-angle zero/full-turn boundaries are stable. | Automated optics/identity and live labels |
+| 242 | Edit independent straight/curved paths and numbered marks; repeat play/pause/scrub deterministically. Undo/redo around autosave; reload latest saved revision. Variants restore their own background, objects, setups, paths and shots. | Automated timing/commands/save ordering and live restore |
+| 243 | Import permitted image with bounded bytes/type/dimensions/provenance. Calibrate suitable flat plan using known and independent check distances. Oblique backgrounds remain schematic. Replacement preview/cancel/confirm preserves previous variant/calibration. | Automated import/calibration and live replacement |
+| 244 | Link assessment revision/question/media to shot; later edits flag changed evidence without changing geometry or earlier decisions. Preserve project/location ownership and V2 follow/pin/date/save guards on return. Extends 213 and 232-236. | Automated references and live workflow |
+| 245 | Save/reload and clean-profile JSON import retain allowed image bytes. Copy remaps all owned IDs. Preserve legacy ENU records without interpreting metres as pixels. Provider outage, missing image and quota failure retain overlays; emergency export reports omissions. | Automated migration/transfer and live recovery |
+| 246 | PNG labels, title/context, attribution, date/revision and accuracy are readable. Include orientation only where meaningful. Restricted backgrounds receive explicit omission report. CSV opens safely; filenames are safe. Extends 118/119/121. | Automated export checks and actual image/spreadsheet inspection |
+| 247 | Compact desktop/tablet/mobile tools work with keyboard, focus, contrast, touch, reduced motion, virtual keyboard and orientation changes. No panel collisions, lost drafts or Explore regressions. | Automated lifecycle and separate live/device checks |
+| 248 | Recreate downtown example over permitted context: magenta A/blue B, independent numbered setups, actors/arrows, paths and two descriptions. Save/reload, undo, variant restore, preview, PNG/CSV and evidence return work. | Live end-to-end evidence on exact build |
+
+Run Part J and retained tests using revised plan section 9. Preserve prior owner
+passes; new behavior needs its own evidence. Physical devices, responsive Chrome
+checks and automated doubles are separate. Phase 5 print/ZIP gates remain later.
+
+The [image-overlay plan](../PHASE_4_IMAGE_OVERLAY_PLAN.md) is awaiting explicit
+owner approval. It defines replacement mappings for incompatible dual-view
+Phase 4 procedures and adds stable tests 237-248 below. Original tests and
+results remain historical and are not relabeled PASS or renumbered. No runtime
+tests were run in this planning update. D089/earlier owner acceptance stands.
+Implementation must not begin from the older Phase 4 instructions meanwhile.
+
+
 One living verification document for the complete SLiVR system. It begins before implementation and must be updated as Phases 0–6 are planned, built and validated. It combines phase exit checks, manual browser/device tests, provider checks, failure recovery, research traceability and a standing regression sweep.
 
 The first-prototype release gate covers **Phases 0–5**. **Part I / Phase 6 Treedis Research Mode is post-prototype** and must not block the essential prototype unless the approved architecture is revised.

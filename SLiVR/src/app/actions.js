@@ -1,4 +1,5 @@
 import { hasDrafts, flushDrafts } from "../scouting/autosave.js";
+import { createShotActions } from "../shot-workspace/actions.js";
 /**
  * Every state mutation in the application.
  *
@@ -277,7 +278,7 @@ export function createActions({
 
   /** Applies a route that the router has already parsed. */
   function applyRoute(route) {
-    if (hasDrafts()) { void flushDrafts().then(() => applyRoute(route)); return; }
+    if (hasDrafts()) { void flushDrafts().then(() => { if (getState().save.state !== "failed" && !hasDrafts()) applyRoute(route); }); return; }
     setState({ route, mode: routeMode(route), error: null, notice: null });
     resolveRoute(route);
     const projectId = route.params?.projectId ?? null;
@@ -290,7 +291,7 @@ export function createActions({
   }
 
   function navigate(route) {
-    if (hasDrafts()) { void flushDrafts().then(() => navigate(route)); return; }
+    if (hasDrafts()) { void flushDrafts().then(() => { if (getState().save.state !== "failed" && !hasDrafts()) navigate(route); }); return; }
     if (route.name === "location") setState({ exploreSelectionRequest: { locationId: route.params?.locationId } });
     router.navigate(route);
     if (route.name === "location" && route.params?.locationId) {
@@ -1071,6 +1072,8 @@ export function createActions({
 
   return {
     ...createScoutingActions({ store, repo, persist, now, notice, rememberWorkspace }),
+    ...createShotActions({ store, repo, persist, initializeStorage, navigate, openProject, now,
+      capture: () => mapAdapter?.captureView() ?? Promise.reject(new Error("Open Explore's map, or choose Blank diagram.")) }),
     getWorkspace: () => getState().workingBundle,
     getComparisonScroll: sceneId => getState().comparisonScroll[sceneId] ?? 0,
     setComparisonScroll: (sceneId, value) => { setState({ comparisonScroll: { ...getState().comparisonScroll, [sceneId]: value } }); rememberWorkspace(); },
