@@ -150,7 +150,7 @@ test("a file that is not a SLiVR export is rejected by class", () => {
 
 test("a future schema version is refused and the version is named", () => {
   const envelope = JSON.parse(exportText(projectFixture()));
-  for (const version of ["2.0.0", "1.4.0"]) {
+  for (const version of ["2.0.0", "1.5.0"]) {
     const parsed = parseEnvelope(JSON.stringify({ ...envelope, schemaVersion: version }));
     assert.equal(parsed.ok, false, version);
     assert.equal(parsed.error.code, TRANSFER_ERROR_CODES.unsupportedVersion, version);

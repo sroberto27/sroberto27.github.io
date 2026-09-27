@@ -17,6 +17,7 @@
  */
 
 import { scoutingReferenceErrors, MEDIA_LIMIT, MEDIA_TOTAL_LIMIT } from "../domain/scout-assessment.js";
+import { diagramEvidenceErrors } from "../shot-workspace/model.js";
 import { formatErrors } from "../domain/schema.js";
 import {
   APP_VERSION,
@@ -178,6 +179,7 @@ export function validatePayload(payload) {
   reference("shots", "cameraObjectId", objectIds, { required: false });
 
   if (!errors.length) errors.push(...scoutingReferenceErrors(payload));
+  if (!errors.length) for (const scene of payload.shotScenes) errors.push(...diagramEvidenceErrors(scene, payload));
   return { ok: errors.length === 0, errors };
 }
 

@@ -1,5 +1,27 @@
 # Feature and evidence register
 
+## D091 local implementation - 2026-09-26
+
+F08-F12 now have a local image-overlay implementation (app0.4.0, transfer1.4.0).
+Capture, image-space symbols, camera setups/optics, independent paths, preview,
+variants, evidence links and PNG/CSV/JSON are implemented. Owner refinements add
+inside-icon step numbers and per-path straight/smooth/spaced curves. 423 automated
+passes and limited Chrome checks are recorded in docs/FULL-SYSTEM-TESTING.md;
+full owner acceptance remains pending. No usability/participant outcome inferred.
+
+
+## D090 — proposed F08-F12 revision, 2026-09-26
+
+See [image-overlay plan](../PHASE_4_IMAGE_OVERLAY_PLAN.md), awaiting approval.
+F08: single image canvas and editable objects; F09: camera/setup metadata,
+numeric FOV and schematic wedges; F10: image paths and deterministic symbol
+preview; F11: linked shot list and complete variants; F12: permitted background
+assets, explicit replacement and suitable flat-plan calibration.
+Prior dual-view/frustum descriptions are superseded in the proposal only.
+No feature is newly implemented or validated. Stable237-248 NOT TESTED.
+Source-use and capture gates remain open; D089 evidence and runtime unchanged.
+
+
 Status values: `Approved prototype`, `Later`, `Implemented`, `Validated technically`, `Evaluated with participants`, `Revised`, or `Retired`. A feature may receive the last three statuses only when linked evidence exists.
 
 | ID | Feature | Phase/status | Workflow problem and interaction | Research rationale or hypothesis | Candidate observations/measures | Initial provenance | Known limitation or confound |

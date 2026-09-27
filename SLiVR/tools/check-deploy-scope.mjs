@@ -34,6 +34,7 @@ export const PRIVATE_PATHS = ["docs/", "outputs/", "config/runtime.js"];
 export const PUBLISHED_EXCEPTIONS = [
   "docs/FULL-SYSTEM-TESTING.md",
   "docs/UI_INTERACTION_DESIGN.md",
+  "docs/PHASE_4_OWNER_CHECK.md",
   "docs/CATALOG_COORDINATE_UPDATES_2026-09-20.md",
 ];
 

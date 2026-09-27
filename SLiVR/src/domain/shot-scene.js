@@ -49,6 +49,7 @@ const transform = {
 };
 
 export const shotSceneRecord = defineRecord("ShotScene", {
+  diagram: { type: "object", required: false, allowExtra: true, fields: {} },
   id: { type: "workspaceId", kind: "shotScene", required: true },
   projectId: { type: "workspaceId", kind: "project", required: false },
   sceneId: { type: "workspaceId", kind: "scene", required: false },

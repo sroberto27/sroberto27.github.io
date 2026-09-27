@@ -1,5 +1,27 @@
 # SLiVR — Lafayette location scouting and shot planning
 
+> Current status (D091, 2026-09-26): the owner approved the image-overlay plan
+> and implementation, then requested resumption. A local app0.4.0 build exists;
+> Phase 4 owner acceptance is pending. Earlier D090 approval holds below are
+> historical and superseded. Google capture with attribution follows explicit
+> owner direction; this does not establish a new provider-policy finding.
+> No commit/push or telemetry is authorized. Prior D089 owner passes stand.
+
+
+## D090 revision under owner review — 2026-09-26
+
+The owner requested an image-overlay Shot Designer and authorized updating the
+plan, not implementation. [Revised Phase 4 plan](PHASE_4_IMAGE_OVERLAY_PLAN.md)
+is the current review proposal. After explicit approval it supersedes the
+Phase 4 portions of F08-F12, sections 6.2/6.3/6.6/6.7, record model, downtown
+scenario and Phase 4 exit gate: one still-image canvas, image-space editing,
+compact tools and provider-permitted background portability replace coordinated
+2D/3D authoring. All unaffected requirements remain. Do not implement the older
+dual-view design or this proposal before that approval. Google screenshot
+storage/export remains conditional on source-use resolution; DOTD/owned-image
+support is the proposed independent track. D089 and earlier owner passes stand.
+
+
 Version: 0.20 — approved implementation-planning guide with Scouting Assessments (D068), September 21, 2026.
 
 Status: Approved implementation-planning guide. It defines the first-prototype scope, architecture, operating boundaries, phases and exit gates. It is not itself an instruction to modify either project; implementation begins only after the user approves the plan produced in Claude CLI plan mode.

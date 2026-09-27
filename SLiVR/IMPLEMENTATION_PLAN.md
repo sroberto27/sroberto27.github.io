@@ -1,5 +1,25 @@
 # Current status: Phase 3 COMPLETE (D089)
 
+> Current status (D091, 2026-09-26): the owner approved the image-overlay plan
+> and implementation, then requested resumption. A local app0.4.0 build exists;
+> Phase 4 owner acceptance is pending. Earlier D090 approval holds below are
+> historical and superseded. Google capture with attribution follows explicit
+> owner direction; this does not establish a new provider-policy finding.
+> No commit/push or telemetry is authorized. Prior D089 owner passes stand.
+
+
+## D090 — revised Phase 4 proposal, awaiting approval
+
+Read [PHASE_4_IMAGE_OVERLAY_PLAN.md](PHASE_4_IMAGE_OVERLAY_PLAN.md) before the
+historical Phase 4 section below. It replaces the proposed work order with
+capture → image-space records → canvas/commands → overlay tools → camera setups
+→ paths/preview → shots/variants → backgrounds/calibration → evidence → exports.
+Implementation is paused pending explicit owner approval of the revised plan.
+After approval, old dual-view gates use the replacement mapping in section 9;
+no historical test result changes. Google snapshot permission is unresolved.
+Binding reference obligations continue for Explore; no new 3D editor is planned.
+
+
 See research/PHASE_3_ACCEPTANCE_REVIEW.md for final evidence and limitations.
 Phase 4 may start under D068. Historical status entries follow.
 

@@ -6,10 +6,10 @@
  * version decides whether another build will accept an exported file.
  */
 
-export const APP_VERSION = "0.3.7";
+export const APP_VERSION = "0.4.0";
 
 /** Envelope version written by the exporter and checked by the importer. */
-export const TRANSFER_SCHEMA_VERSION = "1.3.0";
+export const TRANSFER_SCHEMA_VERSION = "1.4.0";
 
 /** IndexedDB version. Must agree with region config `storage.databaseVersion`. */
 export const WORKSPACE_SCHEMA_VERSION = 2;

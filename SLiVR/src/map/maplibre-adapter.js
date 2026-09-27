@@ -29,6 +29,7 @@ import { createMarkers } from "./markers.js";
 import { TILTED_PITCH_DEG } from "./controls.js";
 import { createExploreControls } from "./explore-controls.js";
 import { createGoogleTiles } from "./google-tiles.js";
+import { captureMapView } from "../shot-workspace/capture.js";
 import { locationBounds, inventoryFitOptions } from "./viewport.js";
 
 export const MAP_ERROR_CODES = Object.freeze({
@@ -459,6 +460,18 @@ export function createMapAdapter({ container, region, maplibre, onEvent = null, 
     create,
     dispose,
     getCamera,
+    captureView() {
+      if (!map || disposed) return Promise.reject(new Error("Open the map before starting a diagram."));
+      const tilesState = googleTiles?.status;
+      const isGoogle = tilesState?.state === "active" || tilesState?.state === "loading";
+      const source = isGoogle ? "Google Maps · Photorealistic 3D" : failover.status.attribution;
+      const attribution = () => [isGoogle ? "Google Maps" : failover.status.attribution,
+        isGoogle ? googleTiles?.status.attribution : "", isGoogle ? "Terms of use: https://www.google.com/help/terms_maps/" : "", referenceVisible ? "© OpenStreetMap contributors" : ""].filter(Boolean).join(" | ");
+      const referencesAtCapture=referenceVisible;
+      return captureMapView({ map, source, attribution,
+        isCurrent: () => !disposed && referenceVisible===referencesAtCapture && (isGoogle || failover.status.attribution===source) && (isGoogle ? ["active","loading"].includes(googleTiles?.status.state) : !["active","loading"].includes(googleTiles?.status.state)),
+        isReady: () => isGoogle ? googleTiles?.status.state === "active" : imageryVisible && failover.status.state !== "unavailable" });
+    },
     get map() {
       return map;
     },

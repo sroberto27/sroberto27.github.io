@@ -12,6 +12,7 @@
  */
 
 import { assessmentErrors, scoutingReferenceErrors } from "../domain/scout-assessment.js";
+import { diagramErrors, diagramEvidenceErrors } from "../shot-workspace/model.js";
 import { validate, formatErrors } from "../domain/schema.js";
 import { bookmarkOwnershipErrors } from "../domain/bookmark.js";
 import {
@@ -76,6 +77,7 @@ export function validateRecord(storeName, record) {
   if (!definition.record) return { ok: true, errors: [] };
   const clean = storeName === "scoutMedia" ? Object.fromEntries(Object.entries(record ?? {}).filter(([key]) => key !== "blob")) : record;
   const result = validate(definition.record, clean);
+  if (storeName === "shotScenes" && record?.diagram) result.errors.push(...diagramErrors(record.diagram));
   if (storeName === "scoutAssessments") result.errors.push(...assessmentErrors(record));
   if (storeName === "scoutAssessmentRevisions") result.errors.push(...assessmentErrors(record?.snapshot));
   result.ok = result.errors.length === 0;
@@ -195,6 +197,20 @@ export function createWorkspaceRepo({ factory, storage }) {
     requireStore(storeName);
     if (["scoutAssessments", "scoutAssessmentRevisions", "scoutMedia"].includes(storeName)) throw new Error("Scouting records require an atomic history/evidence transaction.");
     assertValid(storeName, record);
+    if (storeName === "shotScenes" && record.diagram) {
+      return write(TRANSFERRED_STORES, async stores => {
+        const old = await get(stores.shotScenes, record.id);
+        if (old?.projectId && old.projectId !== record.projectId) throw new Error("Design project cannot change.");
+        if (record.projectId) {
+          const bundle = await readBundle(stores, record.projectId);
+          if (!bundle?.projects.length) throw new Error("Design project is unavailable.");
+          if (record.sceneId && !bundle.scenes.some(s => s.id === record.sceneId)) throw new Error("Design scene is unavailable.");
+          if (record.candidateId && !bundle.candidates.some(c => c.id === record.candidateId && c.sceneId === record.sceneId && c.locationId === record.locationId)) throw new Error("Design candidate does not match.");
+          if (diagramEvidenceErrors(record, bundle).length) throw new Error("Invalid design evidence ownership.");
+        } else if (record.diagram.evidence.length || record.diagram.variants.some(v=>v.snapshot.evidence.length)) throw new Error("Attach this design to a project before linking evidence.");
+        return putIfNewer(stores.shotScenes, storeName, record);
+      });
+    }
     if (storeName === "candidates") {
       return write(["candidates", "scenes", "projects"], async stores => {
         await assertCandidateOwner(stores, record);
@@ -345,6 +361,10 @@ export function createWorkspaceRepo({ factory, storage }) {
       for (const record of bundle[storeName] ?? []) assertValid(storeName, record);
     }
 
+    for (const scene of bundle.shotScenes ?? []) {
+      if (diagramEvidenceErrors(scene,bundle).length) throw new Error("Invalid design evidence ownership.");
+    }
+
     return write(TRANSFERRED_STORES, async (stores) => {
       const projectId = bundle.projects[0]?.id;
       for (const name of TRANSFERRED_STORES) for (const record of bundle[name] ?? []) {
@@ -407,6 +427,8 @@ export function createWorkspaceRepo({ factory, storage }) {
     recordSession,
     listProjects,
     getProject,
+    getShotScene: id => read(["shotScenes"], stores => get(stores.shotScenes, id)),
+    listShotScenes: () => read(["shotScenes"], stores => getAll(stores.shotScenes)),
     saveRecord,
     saveScouting,
     addCandidate,

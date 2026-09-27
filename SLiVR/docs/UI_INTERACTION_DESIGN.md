@@ -1,5 +1,26 @@
 # SLiVR UI interaction design
 
+> Current status (D091, 2026-09-26): the owner approved the image-overlay plan
+> and implementation, then requested resumption. A local app0.4.0 build exists;
+> Phase 4 owner acceptance is pending. Earlier D090 approval holds below are
+> historical and superseded. Google capture with attribution follows explicit
+> owner direction; this does not establish a new provider-policy finding.
+> No commit/push or telemetry is authorized. Prior D089 owner passes stand.
+
+
+## D090 proposed Shot Designer layout — 2026-09-26
+
+See [the revised plan](../PHASE_4_IMAGE_OVERLAY_PLAN.md), awaiting owner approval.
+Explore remains unchanged. Shot Designer becomes one large image canvas with
+compact Add/Layers/undo/redo/background/export tools, selection properties,
+collapsible shot list, variants and basic playback. No permanent tree/inspector
+columns or second 3D viewport. New diagrams capture the current permitted map
+view; existing diagrams reopen unchanged. Background replacement is explicit.
+Mobile uses one active sheet/menu; image coordinates survive zoom and resize.
+Retain project/scene/candidate context, V2 presentation, follow/pin and save
+failure guards. Google capture/storage/export permission remains unresolved.
+
+
 Revision 1, 2026-09-20. Decision D067; F01, F02, F20. Explore presentation and discovery navigation preserve SLiVR identity, palette, four-mode top navigation, catalog 1.1.0, schemas, public/private separation and provider lifecycles. This increment does not complete Phase 1 or implement comparison, shot editing or an itinerary.
 
 ## Evidence and reference provenance

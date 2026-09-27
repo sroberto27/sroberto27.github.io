@@ -1,5 +1,28 @@
 # Research-relevant change log
 
+## 2026-09-26 - D091 implementation and owner path refinements
+
+Owner approved and resumed image-overlay Phase 4. Local app0.4.0 / transfer1.4.0
+adds screenshot capture with attribution, image-coordinate editor and repository
+integration. Existing legacy records and Phase 3 acceptance remain preserved.
+Owner feedback produced repeated path icons with internal numbering and optional
+automatically spaced curves. Final automated result: 423 PASS / 0 FAIL; limited
+Chrome persistence/rendering checks recorded separately. Owner requested reduced
+testing; six focused manual checks are in docs/PHASE_4_OWNER_CHECK.md. Phase 4 is
+not accepted or published. No telemetry, participant evidence, commit or push.
+
+
+## 2026-09-26 — D090 planning revision
+
+Documentation only: [revised Phase4 plan](../PHASE_4_IMAGE_OVERLAY_PLAN.md)
+changes proposed F08-F12 to image overlays with compact tools and preserves
+D068/D086-D089. Architecture/implementation/UI/assessment plans, CLI handoff
+and test mapping updated for review. Google screenshot persistence remains
+conditional; DOTD reuse evidence and pinned MapLibre capture option inspected.
+No capture executed, runtime/schema change, new test PASS or participant data.
+The expected simplification is design rationale, not measured usability evidence.
+
+
 This log records changes that could affect research interpretation. It complements source-control history; it does not duplicate every code edit.
 
 | Artifact version | Date | Phase/build | Affected features/decisions | Change and research relevance | Evidence level and link | Measurement/data impact | Known limitation |
