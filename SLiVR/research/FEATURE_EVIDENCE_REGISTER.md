@@ -407,3 +407,10 @@ Shot-workspace interaction: top desktop menus, mobile labeled dock and expandabl
 sheets, grouped properties and explicit layer states implemented. Focused Node
 51/51 and narrow Chrome fixture checks support technical operation only. Owner
 test 250 and physical-device/assistive-technology validation pending.
+
+### D093 immersive handoff
+
+Owner passed preceding D091/D092 critical checks. Browser-assisted immersive
+capture implemented with same-tab region cropping; mock tests cover source
+selection, cancellation, cleanup and invalid inputs. Live provider capture and
+physical-browser availability remain pending (251), distinct from earlier passes.

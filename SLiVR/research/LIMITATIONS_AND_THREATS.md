@@ -325,3 +325,12 @@ A 390x844 Chrome viewport check is not evidence of physical-phone keyboard,
 screen-reader or touch usability. No participant benefit has been measured.
 Nonmodal sheets leave canvas controls available; complete task testing remains
 owner test 250. Prior Phase 4 provider/storage/acceptance limitations still apply.
+
+### D093 immersive capture limitations
+
+Region Capture and getDisplayMedia are browser-dependent and require a fresh
+sharing prompt. Unsupported browsers, including devices lacking those APIs,
+retain image import. No live provider permission/capture result is claimed from
+mock tests. Provider UI/credits inside the iframe remain in the screenshot.
+Capture stores visible pixels and entry context, not restorable camera pose.
+Earlier owner passes cover the preceding build, not this new capture addition.

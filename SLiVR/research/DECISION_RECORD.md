@@ -694,3 +694,39 @@ Escape/opener restoration; 390x844 dock, expand/collapse, multi-selection focus
 and More/Preview access. Final mobile preview check used the final source.
 This is technical evidence, not measured usability or owner acceptance. Full
 app on a physical phone and assistive technology remain owner checks (250).
+
+## D093 - Immersive image handoff and owner acceptance, 2026-09-27
+
+Owner reports all seven critical Phase 4 checks passed for the preceding published
+D091/D092 build (main 996417ad). Preserve those owner passes and earlier D089
+passes. Exact device/browser details were not supplied; do not infer them.
+Owner then requested immersive capture as an addition, separately awaiting live
+acceptance under test 251.
+
+Inspected both read-only bridges: Experimental/js/03-tour-bridge.js:1-110 and
+LSU3D/js/03-tour-bridge.js:1-90. Their Ping/Navigate/RequestSweeps protocol has no
+image command, matching https://docs.treedis.com/sdk/web/integration-guide
+(reviewed 2026-09-27). No speculative provider commands or cross-origin canvas
+access added. Deviation reason 3: neither reference has screenshot capture.
+Existing viewer-host lifecycle, shot actions and image-overlay model are reused.
+
+Use browser getDisplayMedia (audio false) plus CropTarget/cropTo on the viewer
+host. The browser prompts every time; it is assisted capture, not silent SDK
+capture. Require a browser-tab track and successful same-tab region crop before
+reading pixels. Preserve provider-rendered credits and append a source footer.
+https://developer.mozilla.org/en-US/docs/Web/API/BrowserCaptureMediaStreamTrack/cropTo
+https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia
+
+New image uses existing owned/oblique representation, with immersive capture,
+location and experience IDs in view metadata; no schema migration. Return route
+is immersive. Entry-only context is retained; exact pose restoration is not
+claimed. User chooses the current SLiVR tab. Unsupported browsers, denied sharing,
+wrong surfaces, blank pixels or timeouts offer retry/import. Streams are stopped
+on success, failure, abort and late permission resolution; no audio, recording,
+network upload or telemetry. SLiVR overlays are hidden without resizing the frame.
+
+Technical evidence: 56 focused tests passed initially (5 new + 51 existing), then
+6 capture/action tests passed after adding synchronous-gesture/source-routing
+coverage. Syntax/whitespace checks passed. Deploy-scope check: 0 errors; reported
+485 files includes the owner's existing untracked handoff folder, left untouched.
+Live browser sharing/provider capture remains NOT TESTED; owner test 251 pending.

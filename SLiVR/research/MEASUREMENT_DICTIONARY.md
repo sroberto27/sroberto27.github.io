@@ -351,3 +351,9 @@ private ignored assets/credentials remain local. No telemetry.
 Test 250 identifies technical menu/focus/manual acceptance checks. No new logging,
 participant measures, telemetry or inferred usability improvement is introduced.
 Record desktop responsive simulation separately from physical-device evidence.
+
+### D093 acceptance boundary
+
+Owner-reported preceding Phase 4 critical checks: PASS, device/browser unspecified.
+Test 251 records the immersive addition separately. No participant measurements,
+screen recordings, audio, telemetry or automatic research collection are added.

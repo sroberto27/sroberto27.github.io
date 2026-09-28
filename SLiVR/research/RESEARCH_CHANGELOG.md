@@ -523,3 +523,10 @@ layer multi-selection, shot summaries and retained field focus. Existing image
 coordinates, paths, storage and Explore behavior remain intact. Technical checks
 and pending owner test 250 are recorded in FULL-SYSTEM-TESTING. No telemetry or
 participant evidence, no new schema, no commit/push for this revision.
+
+## 2026-09-27 - D093 immersive screenshot addition
+
+Recorded owner PASS for all seven preceding Phase 4 critical checks. Added
+current immersive viewer handoff through browser-authorized same-tab cropping,
+source context/footer, stream cleanup and fallback. Six focused capture/action
+tests pass; live test 251 remains pending. No commit/push or telemetry.

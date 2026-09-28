@@ -1,3 +1,4 @@
+import { captureImmersiveView } from "../shot-workspace/capture.js";
 import { createToolWindows } from "../ui/tool-windows.js";
 import { createDiagramEditor } from "../shot-workspace/editor.js";
 import { createEmbeddedChecklist } from "../scouting/embedded-checklist.js";
@@ -144,16 +145,31 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
     shotChooser = el("dialog", { class: "shot-chooser", "aria-label": "Open Shot Designer" });
     const close = () => { actions.cancelDiagramCapture?.(); shotChooser?.close?.(); shotChooser?.remove(); shotChooser = null; };
     const captureMessage=el("p",{role:"status",text:store.getState().notice??""});
+    const immersive=store.getState().mode==="immersive";
     const start = async blank => {
       const buttons = shotChooser?.querySelectorAll("button") ?? [];
       for (const b of buttons) b.disabled = true;
-      const result = await actions.startDiagram({ blank });
+      const originRoute=store.getState().route;
+      const frame=viewerHost.frame;
+      const capture=store.getState().catalog?.captures.find(c=>c.id===store.getState().viewer?.captureId);
+      const captureView=immersive&&!blank ? signal=>{
+        if(!capture||viewerHost.element.classList.contains("is-waiting"))throw new Error("Wait for the immersive location to load before capturing.");
+        return captureImmersiveView({element:viewerHost.element,win,doc:document,signal,
+          source:"Immersive viewer - "+capture.id,
+          attribution:"Treedis / Matterport immersive view. Provider and content-owner credits retained in the image. Captured "+new Date().toISOString().slice(0,10),
+          context:{captureId:capture.id,locationId:capture.locationId,experienceId:capture.experienceId},
+          isCurrent:()=>store.getState().route===originRoute&&viewerHost.frame===frame&&store.getState().viewer?.captureId===capture.id});
+      }:null;
+      if(captureView){shotChooser.style.visibility="hidden";root.classList.add("capturing-immersive");}
+      let result;
+      try{result=await actions.startDiagram({blank,captureView});}
+      finally{root.classList.remove("capturing-immersive");if(shotChooser)shotChooser.style.visibility="";}
       if (result.ok) close();
       else { for (const b of buttons) b.disabled = false; captureMessage.textContent=store.getState().notice??"Capture failed. Retry or start blank."; }
     };
     shotChooser.append(el("h2", {text:"Shot Designer"}),
-      el("p",{text:"Start from this map view or reopen a saved diagram. Existing backgrounds stay unchanged."}),
-      el("button",{type:"button",text:"New diagram from current map",onClick:()=>start(false)}),
+      el("p",{text:immersive?"Capture this immersive view: choose this SLiVR tab in the sharing prompt. One image is saved locally, then sharing stops. You can also import a screenshot.":"Start from this map view or reopen a saved diagram. Existing backgrounds stay unchanged."}),
+      el("button",{type:"button",text:immersive?"New diagram from immersive view":"New diagram from current map",onClick:()=>start(false)}),
       el("button",{type:"button",text:"Blank / imported-image diagram",onClick:()=>start(true)}));
     for (const design of designs) shotChooser.append(el("button",{type:"button",text:design.name,onClick:async()=>{close();await actions.openDiagram(design.id);}}));
     shotChooser.append(captureMessage,el("button",{type:"button",text:"Cancel",onClick:close}));

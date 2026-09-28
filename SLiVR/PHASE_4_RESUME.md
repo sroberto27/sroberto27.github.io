@@ -1,8 +1,15 @@
 # Phase 4 current handoff
 
-Updated 2026-09-26 after explicit resume. D091 local implementation is ready for
-focused owner review; Phase 4 is not accepted or deployed. Read AGENTS.md and
-CLAUDE.md. No commit/push, telemetry or unrelated changes authorized.
+Updated 2026-09-27: owner reports all seven critical checks PASS for published
+D091/D092 (main 996417ad). Earlier owner passes remain preserved. D093 adds
+browser-assisted immersive screenshots locally; new owner check 251 is pending.
+No commit/push requested for this addition. Read AGENTS.md and CLAUDE.md.
+The untracked claude-design-handoff-2026-09-27 folder predates this task; untouched.
+
+Immersive: Shot Designer > New diagram from immersive view > share current SLiVR
+tab. Requires browser Region Capture support; otherwise import a screenshot.
+Six focused capture/action tests pass; live sharing/provider workflow untested.
+The older status sections below are historical and superseded by this entry.
 
 ## Current result
 

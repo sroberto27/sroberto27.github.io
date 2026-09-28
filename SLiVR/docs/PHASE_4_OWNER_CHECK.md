@@ -50,3 +50,19 @@ Physical-device results are separate from desktop browser results.
    properties consecutively, and use undo/redo. Check Tab focus, Escape/Close,
    sheet Expand/Collapse and More > Preview. Reload after saving and confirm the
    same arrangement. Report usability issues; no broad repeat of earlier passes.
+
+## Owner result and new addition (2026-09-27)
+
+Owner reports checks 1-7 PASSED on the published D091/D092 build. Preserve these
+results; repeat only a flow affected by a reported regression.
+
+8. **Immersive screenshot (251, new and pending).** Open an immersive location
+   and frame a view. Click Shot Designer > New diagram from immersive view.
+   In the browser sharing prompt, choose the current SLiVR tab. The diagram
+   should contain the viewer image and its visible provider credits plus source
+   footer, without SLiVR panels; sharing should stop immediately. Add an actor
+   and camera path, wait for Saved locally, then export JSON/PNG and reload.
+   Back should return to the immersive location; exact camera pose restoration
+   is not promised. Also cancel the sharing prompt once and confirm retry works.
+   Choosing a different tab/window must fail without creating an incorrect
+   diagram. Unsupported browsers use Blank / imported-image diagram instead.

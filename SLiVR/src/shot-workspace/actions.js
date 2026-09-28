@@ -3,6 +3,7 @@ import { newDiagram, diagramErrors, diagramEvidenceErrors, clone } from "./model
 import { flushDrafts } from "../scouting/autosave.js";
 
 export function createShotActions({ store, repo, persist, initializeStorage, capture, navigate, openProject, now }) {
+  let captureController=null;
   let captureGeneration=0,openGeneration=0,queue=Promise.resolve();
   const state=()=>store.getState();
   function draft(record) {
@@ -10,14 +11,19 @@ export function createShotActions({ store, repo, persist, initializeStorage, cap
     store.setState({ shotRecord:record, ...(record.projectId && bundle?.projects[0]?.id===record.projectId ?
       { workingBundle:{...bundle,shotScenes:[...bundle.shotScenes.filter(s=>s.id!==record.id),record]} }:{}) });
   }
-  async function startDiagram({ blank=false }={}) {
-    const generation=++captureGeneration;
-    await flushDrafts();
-    if(state().save.state==="failed")return {ok:false};
+  async function startDiagram({ blank=false, captureView=null }={}) {
+    captureController?.abort();captureController=new AbortController();
+    const controller=captureController,generation=++captureGeneration;
     const before=state(),locationId=before.routeResolution?.locationId,route=before.route;
-    store.setState({notice:blank?"Opening blank diagram…":"Capturing this map view…"});
+    if(before.save.state==="failed")return {ok:false};
     try{
-      const background=blank?undefined:await capture();
+      // Immersive sharing must start inside the button gesture, before storage awaits.
+      const pending=!blank&&captureView?Promise.resolve(captureView(controller.signal)):null;
+      pending?.catch(()=>{});
+      await flushDrafts();
+      if(state().save.state==="failed"){controller.abort();return {ok:false};}
+      store.setState({notice:blank?"Opening blank diagram...":"Capturing the current view..."});
+      const background=blank?undefined:pending?await pending:await capture();
       if(generation!==captureGeneration||state().route!==route)throw new Error("Navigation changed. Capture cancelled.");
       const location=before.catalog?.locations.find(l=>l.id===locationId);
       const record={id:newId("shotScene"),name:location?"Shot plan: "+location.name:"Untitled shot plan",
@@ -28,7 +34,8 @@ export function createShotActions({ store, repo, persist, initializeStorage, cap
       store.setState({shotReturnRoute:route,shotRecord:record,notice:null});
       navigate({name:"shot",params:{shotSceneId:record.id}});
       return {ok:true,record};
-    }catch(error){store.setState({notice:error.message});return {ok:false};}
+    }catch(error){if(generation===captureGeneration)store.setState({notice:error.message});return {ok:false};}
+    finally{controller.abort();if(captureController===controller)captureController=null;}
   }
   async function openDiagram(id) {
     const generation=++openGeneration,route=state().route;
@@ -68,7 +75,7 @@ export function createShotActions({ store, repo, persist, initializeStorage, cap
     draft(next);return next;
   }
   return {startDiagram,openDiagram,updateDiagram,saveDiagram,attachDiagram,
-    cancelDiagramCapture(){captureGeneration++;},
+    cancelDiagramCapture(){captureGeneration++;captureController?.abort();captureController=null;},
     async listDiagrams(){await initializeStorage();return await repo?.listShotScenes?.()??[];},
     returnFromDiagram(){navigate(state().shotReturnRoute??(state().shotRecord?.locationId?{name:"location",params:{locationId:state().shotRecord.locationId}}:{name:"explore"}));}
   };

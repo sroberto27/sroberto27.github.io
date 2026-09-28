@@ -89,3 +89,6 @@
 
 @media(min-width:881px){.shot-playback[data-scrub="false"] > input { display:none; }}
 @media(max-width:880px){.shot-timeline-toggle { display:none; }}
+/* Hide SLiVR overlays without resizing the provider viewport during one-shot capture. */
+.capturing-immersive :is(.rail,.tool-window,.workspace-launchers,.immersive-map,.surface-content,.shot-chooser) { visibility:hidden!important; }
+.capturing-immersive .shot-chooser::backdrop { background:transparent; }

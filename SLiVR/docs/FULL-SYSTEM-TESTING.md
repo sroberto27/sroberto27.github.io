@@ -2731,3 +2731,18 @@ outputs/phase4-ui-tests.txt. Later presentation refinements received syntax and
 Chrome checks, not another broad suite. Deployment scope: 211 files / 0 errors.
 No upgrade of D091's historical full-suite result to a new full-suite claim.
 No owner acceptance or Phase 4 completion claim. D089 owner passes preserved.
+
+## D093 owner result and immersive addition - 2026-09-27
+
+Owner explicitly reported ALL seven critical checks passed on the preceding
+D091/D092 build, published as 996417ad. Record owner PASS for their listed checks
+237-250; preserve prior automated evidence and D089 passes. No device/browser
+specifics or failure-injection coverage is inferred from this report.
+
+| ID | New procedure | Evidence |
+|---|---|---|
+| 251 | Frame an immersive interior, open Shot Designer, choose New diagram from immersive view, share this SLiVR tab. Check image, source/footer, no SLiVR overlays, immediate end of sharing, editable paths, JSON/PNG and reload. Cancel sharing and retry; wrong tab/window must not create a diagram; unsupported browser must offer import. Back returns to immersive location (exact pose not promised). | Six focused capture/action tests PASS; live permission/provider workflow NOT TESTED; owner acceptance pending. |
+
+Initial affected run: 56 PASS / 0 FAIL, outputs/immersive-capture-tests.txt.
+Final capture/action run: 6 PASS / 0 FAIL, outputs/immersive-capture-final-tests.txt.
+These are mock browser API tests, not proof of a live Treedis screenshot.
