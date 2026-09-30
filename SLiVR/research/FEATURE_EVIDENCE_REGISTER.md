@@ -1,5 +1,59 @@
 # Feature and evidence register
 
+## D095 - Phase 4 CLOSED / ACCEPTED, 2026-09-29
+
+The owner explicitly confirmed that shot-workspace failure recovery and
+calibrated-plan persistence after reload are OK and instructed Phase 4 closure.
+Record both as **owner-reported PASS, confirmed 2026-09-29**. All eight previously
+accepted critical checks remain PASS, including immersive capture test 251.
+The two D094 evidence gaps are resolved by this owner report; do not request
+reconfirmation or reopen them solely because detailed execution traces are absent.
+
+Accepted implementation: D093 published as
+`af8aa819076d69abacdef0828d466567192a3821`, building on D091/D092 (`996417ad`).
+App0.4.0 / transfer1.4.0 / DB2 / template1.0.0 / catalog1.1.0. Browser/device
+and an independently measured tested digest were not supplied. Do not invent
+individual failure-injection traces, a full live Part J run, or device coverage.
+
+Existing automated evidence is unchanged: D091 423 full-suite PASS; D092 51
+focused PASS; D093 56 initial focused PASS, then 6 final capture/action PASS.
+These are separate runs. No new runtime tests were executed for this closeout.
+Historical failures and earlier pending results retain their build/scope.
+
+**Next: Phase 5 - Integrated prototype and release validation (F20 baseline).**
+Phase 4 is no longer a prerequisite blocker. Phase 5's integrated regression,
+release/device, exports and deployment gates still require their own evidence.
+Phase 6 Treedis Research Mode follows Phase 5. No Phase 5 implementation,
+telemetry, participant collection, staging, commit or push in this closeout.
+
+
+F08-F12 delivered image-overlay core is ACCEPTED. F20 Phase 4 recovery and
+persistence acceptance now includes the two D095 owner confirmations. F20 Phase 5
+integrated release validation remains the next workstream, not a completed feature.
+No usability improvement or research-participant outcome is inferred.
+
+See [Phase 4 closeout](PHASE_4_ACCEPTANCE_REVIEW.md) and [Phase 5 prompt](../PHASE_5_CLI_PROMPT.md).
+
+## Historical D094 audit (superseded by D095; evidence retained)
+
+## D094 - Current F08-F12/F20 evidence, 2026-09-29
+
+F08-F12 delivered image-overlay core and D092 menus: critical owner checks 1-7
+PASS retained. D093 immersive image handoff (251): owner-reported PASS, confirmed
+2026-09-29, published `af8aa819076d69abacdef0828d466567192a3821`.
+Browser/device unspecified. Screenshot/credits, overlay exclusion, stream cleanup,
+editing, exports, reload, return, cancellation/retry, wrong-surface rejection and
+unsupported-browser import fallback all accepted within that report.
+
+Formal Phase 4 exit remains OPEN for documented live failure/recovery and flat-plan
+calibration-retention evidence, not an implementation defect finding. Existing
+423 full / 51 focused / 56 initial focused / 6 final capture-action passes remain
+separate technical runs. See [gate mapping](PHASE_4_ACCEPTANCE_REVIEW.md).
+No participant or measured usability result; next phase is Phase 5 F20 integrated
+prototype/release validation, not yet implemented by this task.
+
+## Historical records (superseded status; evidence retained)
+
 ## D091 local implementation - 2026-09-26
 
 F08-F12 now have a local image-overlay implementation (app0.4.0, transfer1.4.0).
@@ -414,3 +468,23 @@ Owner passed preceding D091/D092 critical checks. Browser-assisted immersive
 capture implemented with same-tab region cropping; mock tests cover source
 selection, cancellation, cleanup and invalid inputs. Live provider capture and
 physical-browser availability remain pending (251), distinct from earlier passes.
+
+
+## D096 ? App0.5.0 integrated prototype status (2026-09-29)
+
+F20 baseline is implemented locally; release validation remains OPEN. F01/F02
+catalog/dossier, F03/F04 entry-only immersive, F05/F06/F06-SA project/evidence and
+F08-F12 image-overlay workflows retain accepted D095 results. F21 remains
+unimplemented and disabled; no later-roadmap capability is introduced.
+
+New F20 interactions: save-before-transition and history recovery; native
+JSON/media ZIP transfer with selected/missing media; selected-section print
+packets including assessments, immutable evidence, diagrams and shots; stable
+export IDs/provenance; hidden-preview suspension and default-off scoped shell
+worker. F06-SA selection never silently removes evidence required by a decision.
+PNG/CSV/packet accuracy remains schematic outside an owned calibrated flat plan.
+
+Technical automated evidence, source reuse, failed runs and live acceptance gaps
+are in [Phase 5 review](PHASE_5_ACCEPTANCE_REVIEW.md). Expected portability,
+continuity and reviewability are design rationale, not measured participant
+benefits. No browser/device generalization from DOM/IndexedDB/provider doubles.

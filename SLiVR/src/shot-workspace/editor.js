@@ -363,9 +363,11 @@ export function createDiagramEditor({record:initial,actions,store,win=globalThis
   const observer=typeof ResizeObserver==="function"?new ResizeObserver(()=>{root.style.setProperty("--shot-toolbar-height",toolbar.offsetHeight+"px");paint();}):null;observer?.observe(viewport);observer?.observe(toolbar);
   const beforeUnload=e=>{if(dirty){e.preventDefault();e.returnValue="";}};
   win.addEventListener?.("beforeunload",beforeUnload);
+  const suspend=()=>{if(win.document?.hidden){playing=false;if(raf)win.cancelAnimationFrame?.(raf);raf=null;}};
+  win.document?.addEventListener("visibilitychange",suspend);
   loadBackground();paint();notify(record.diagram?"Local diagram ready.":"Blank image diagram ready. Any earlier spatial content is preserved separately; it has not been converted to this image.");
   return {element:root,id:record.id,flush,
-    dispose(){disposed=true;playing=false;clearTimeout(timer);if(raf)win.cancelAnimationFrame?.(raf);observer?.disconnect();unregister?.();win.removeEventListener?.("beforeunload",beforeUnload);imageGeneration++;},
+    dispose(){disposed=true;playing=false;clearTimeout(timer);if(raf)win.cancelAnimationFrame?.(raf);observer?.disconnect();unregister?.();win.removeEventListener?.("beforeunload",beforeUnload);win.document?.removeEventListener("visibilitychange",suspend);imageGeneration++;},
     refresh(){paint();}
   };
 }

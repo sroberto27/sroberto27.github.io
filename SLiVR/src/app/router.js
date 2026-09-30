@@ -175,13 +175,16 @@ function parseQuery(text) {
 export function createRouter({ window: win, onRoute }) {
   let lastHash = null;
   let current = null;
+  let pendingHash = null;
 
   function handle() {
     const hash = win.location.hash || routeToHash(DEFAULT_ROUTE);
     if (hash === lastHash) return;
+    const historyTraversal = current !== null && hash !== pendingHash;
+    pendingHash = null;
     lastHash = hash;
     current = parseRoute(hash);
-    onRoute(current);
+    onRoute(current, { historyTraversal });
   }
 
   /**
@@ -192,6 +195,7 @@ export function createRouter({ window: win, onRoute }) {
    */
   function navigate(route, { replace = false } = {}) {
     const hash = routeToHash(route);
+    pendingHash = hash;
     if (win.location.hash === hash) {
       handle();
       return;
@@ -217,5 +221,11 @@ export function createRouter({ window: win, onRoute }) {
     win.removeEventListener("popstate", handle);
   }
 
-  return { start, stop, navigate, get current() { return current; } };
+  function restore(route) {
+    const hash = routeToHash(route);
+    win.history.replaceState(win.history.state, "", `${win.location.pathname}${win.location.search}${hash}`);
+    lastHash = hash;
+    current = parseRoute(hash);
+  }
+  return { start, stop, navigate, restore, get current() { return current; } };
 }

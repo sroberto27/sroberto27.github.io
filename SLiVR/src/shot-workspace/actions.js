@@ -62,7 +62,7 @@ export function createShotActions({ store, repo, persist, initializeStorage, cap
       const result=await repo.saveRecord("shotScenes",saved);
       if(result?.written===false)throw new Error("A newer diagram revision exists. Export this draft before reopening the saved version.");
       return result;
-    }));
+    }, `diagram:${saved.id}`));
     return queue;
   }
   function attachDiagram(record) {

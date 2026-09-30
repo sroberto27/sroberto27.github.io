@@ -101,7 +101,7 @@ test("226/60-62: bookmark form survives viewer redraw; same-entry restore renews
   assert.equal(dom.document.getElementById("bookmark-name").getAttribute("value"), "Front door");
   assert.equal(dom.document.getElementById("bookmark-note").value, "Confirm access later");
   dom.app.querySelector(".bookmark-form").dispatch("submit", { preventDefault() {} });
-  await new Promise(resolve => setImmediate(resolve));
+  for (let attempt=0;attempt<100 && store.getState().save.state!=="saved";attempt++) await new Promise(resolve=>setTimeout(resolve,5));
   assert.equal(store.getState().workingBundle.bookmarks.length, 1);
   assert.equal(store.getState().save.state, "saved");
   const oldFrame = viewerFrame(dom);
@@ -814,8 +814,9 @@ test('236: checklist follows map/list routes and project candidates, remembers a
  actions.navigate({name:'location',params:{locationId:'LOC-001'}});dom.window.dispatch('hashchange');await settle();
  assert.equal(store.getState().activeAssessmentId,a2.id);
  assert.match(store.getState().notice,/could not be saved/);
+ assert.equal(store.getState().route.params.locationId,'LOC-003','failed save keeps the whole source workspace open');
  store.setState({save:{state:'saved',label:'Saved locally'}});
- tool.querySelectorAll('button').find(b=>b.textContent==='Follow selected location').click();await settle();
+ actions.navigate({name:'location',params:{locationId:'LOC-001'}});dom.window.dispatch('hashchange');await settle();
  assert.equal(store.getState().activeAssessmentId,a1.id);
  actions.navigate({name:'location',params:{locationId:'LOC-009'}});dom.window.dispatch('hashchange');
  actions.navigate({name:'location',params:{locationId:'LOC-003'}});dom.window.dispatch('hashchange');await settle();

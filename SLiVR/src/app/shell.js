@@ -1,4 +1,7 @@
 import { captureImmersiveView } from "../shot-workspace/capture.js";
+import { PACKET_SECTIONS } from "../exports/packet-html.js";
+import { SECTIONS as ASSESSMENT_SECTIONS } from "../scouting/assessment-template.js";
+import { download } from "../shot-workspace/exports.js";
 import { createToolWindows } from "../ui/tool-windows.js";
 import { createDiagramEditor } from "../shot-workspace/editor.js";
 import { createEmbeddedChecklist } from "../scouting/embedded-checklist.js";
@@ -1052,8 +1055,16 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
     const boxes = state.workingBundle.scoutAssessments.map(a => { const input = el("input", { type: "checkbox", value: a.id }); input.checked = true; return { input, label: el("label", {}, [input, a.title]) }; });
     const media = el("input", { type: "checkbox" }); media.checked = true;
     const assets = state.workingBundle.scoutMedia.map(m => { const input = el("input", { type: "checkbox", value: m.id }); input.checked = true; return { input, label: el("label", {}, [input, m.filename]) }; });
-    return el("details", {}, [el("summary", { text: "Export selected assessment evidence" }), ...boxes.map(b => b.label), ...assets.map(m => m.label), el("label", {}, [media, "Include owned media bytes (uncheck for an explicit data-only backup)"]),
-      el("button", { type: "button", text: "Export selected JSON", onClick: async () => { const file = await actions.exportProject(state.openProjectId, { assessmentIds: boxes.filter(b => b.input.checked).map(b => b.input.value), includeMedia: media.checked, mediaIds: assets.filter(m => m.input.checked).map(m => m.input.value) }); if (file) downloadText(file.filename, file.text); } })]);
+    const choice = () => ({ assessmentIds: boxes.filter(b => b.input.checked).map(b => b.input.value), includeMedia: media.checked, mediaIds: assets.filter(m => m.input.checked).map(m => m.input.value) });
+    const checks = entries => entries.map(([id,title]) => { const input=el("input",{type:"checkbox",value:id});input.checked=true;return {input,label:el("label",{},[input,title])}; });
+    const sections=checks(PACKET_SECTIONS.map(id=>[id,id[0].toUpperCase()+id.slice(1)]));
+    const assessmentSections=checks(ASSESSMENT_SECTIONS.map(s=>[s.id,s.title]));
+    return el("details", {class:"export-options"}, [el("summary", { text: "Export selected evidence and print packet" }), ...boxes.map(b => b.label), ...assets.map(m => m.label), el("label", {}, [media, "Include owned media bytes (uncheck for an explicit data-only backup)"]),
+      el("button", { type: "button", text: "Export selected JSON", onClick: async () => { const file = await actions.exportProject(state.openProjectId, choice()); if (file) downloadText(file.filename, file.text); } }),
+      el("button", {type:"button",text:"Export selected media ZIP",onClick:async()=>{const file=await actions.exportProjectZip(state.openProjectId,choice());if(file)download(file.filename,file.bytes,"application/zip");}}),
+      el("fieldset",{},[el("legend",{text:"Print packet sections"}),...sections.map(c=>c.label)]),
+      el("fieldset",{},[el("legend",{text:"Assessment sections in print packet"}),...assessmentSections.map(c=>c.label)]),
+      el("button",{type:"button",text:"Download print-ready packet",onClick:async()=>{const file=await actions.exportPacket(state.openProjectId,{...choice(),mediaIds:media.checked?choice().mediaIds:[],sections:sections.filter(c=>c.input.checked).map(c=>c.input.value),assessmentSections:assessmentSections.filter(c=>c.input.checked).map(c=>c.input.value)});if(file)download(file.filename,file.text,"text/html;charset=utf-8");}})]);
   }
   function legacyImportPanel(state) {
     if (!state.catalog) return el("p", { text: "Checklist import needs the location catalog. Local project editing remains available." });
@@ -1182,11 +1193,11 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
     const importInput = el("input", {
       type: "file",
       id: "import-project",
-      accept: "application/json,.json",
+      accept: "application/json,application/zip,.json,.zip",
       onChange: async (event) => {
         const file = event.target.files?.[0];
         if (!file) return;
-        await actions.importFile(await file.text());
+        await actions.importProjectFile(file);
         event.target.value = "";
       },
     });
@@ -1278,6 +1289,7 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
                   if (file) downloadText(file.filename, file.text);
                 },
               }),
+              el("button",{type:"button",text:"Export project media ZIP",onClick:async()=>{const file=await actions.exportProjectZip(open.id);if(file)download(file.filename,file.bytes,"application/zip");}}),
               el("button", {
                 type: "button",
                 class: "destructive",
@@ -1294,7 +1306,7 @@ export function createShell({ root, store, actions, region, win = globalThis }) 
       railHead("Workspace"),
       el("div", { class: "rail-body" }, [
         section("Transfer", [
-          el("label", { for: "import-project", text: "Import project JSON" }),
+          el("label", { for: "import-project", text: "Import project JSON or media ZIP" }),
           importInput,
           el("p", {
             class: "empty-note",

@@ -377,7 +377,8 @@ test("emergency export produces a valid importable envelope without storage", as
     reason: "Local storage refused a write.",
   });
 
-  assert.match(file.filename, /^SLiVR_Pilot-short-downtown-nights_emergency_2026-09-20_r1\.json$/);
+  assert.ok(file.filename.includes(bundle.projects[0].id));
+  assert.match(file.filename, /-emergency_2026-09-20_r1\.json$/);
   assert.equal(file.envelope.emergency.reason, "Local storage refused a write.");
 
   const parsed = parseEnvelope(file.text);

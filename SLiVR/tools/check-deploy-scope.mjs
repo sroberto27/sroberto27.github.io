@@ -23,7 +23,7 @@ const REPO = resolve(ROOT, "..");
 const PROJECT = `${relative(REPO, ROOT).split("\\").join("/")}/`;
 
 /** Paths that must never be committed, because they would be published. */
-export const PRIVATE_PATHS = ["docs/", "outputs/", "config/runtime.js"];
+export const PRIVATE_PATHS = ["docs/", "outputs/", "config/runtime.js", "claude-design-handoff-2026-09-27/"];
 
 /**
  * Public verification and coordinate provenance records inside the otherwise

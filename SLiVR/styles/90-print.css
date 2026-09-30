@@ -1,0 +1,13 @@
+@page { size: auto; margin: 16mm; }
+body { font: 11pt/1.45 system-ui, sans-serif; color: #172126; background: white; max-width: 1100px; margin: 2rem auto; padding: 0 1rem; }
+h1,h2,h3 { line-height: 1.2; break-after: avoid; }
+section { margin: 2rem 0; }
+table { border-collapse: collapse; width: 100%; font-size: 9pt; }
+th,td { padding: .45rem; border: 1px solid #737d82; text-align: left; vertical-align: top; overflow-wrap: anywhere; }
+thead { display: table-header-group; }
+tr,figure { break-inside: avoid; }
+figure { margin: 1rem 0; }
+img { max-width: 100%; max-height: 230mm; object-fit: contain; }
+pre { white-space: pre-wrap; overflow-wrap: anywhere; font: inherit; }
+.note { border-left: 3px solid #59666d; padding-left: .75rem; }
+@media print { body { max-width: none; margin: 0; padding: 0; } .screen-only { display: none; } section { break-before: page; } a { color: inherit; } }

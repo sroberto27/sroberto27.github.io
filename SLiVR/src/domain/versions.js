@@ -6,7 +6,7 @@
  * version decides whether another build will accept an exported file.
  */
 
-export const APP_VERSION = "0.4.0";
+export const APP_VERSION = "0.5.0";
 
 /** Envelope version written by the exporter and checked by the importer. */
 export const TRANSFER_SCHEMA_VERSION = "1.4.0";

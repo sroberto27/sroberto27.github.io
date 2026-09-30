@@ -265,6 +265,7 @@ export function parseEnvelope(text) {
     if (bytes.length !== m.size || total > MEDIA_TOTAL_LIMIT) return failure(TRANSFER_ERROR_CODES.invalidPayload, "Media byte size does not match or exceeds project limit.");
     m.data = data; m.blob = new Blob([bytes], { type: m.mime }); m.missing = false; seen.add(m.id);
   }
+  parsed.mediaReport = { complete: parsed.payload.scoutMedia.every(m => !m.missing), missing: parsed.payload.scoutMedia.filter(m => m.missing).map(m => m.id) };
   return { ok: true, envelope: parsed };
 }
 

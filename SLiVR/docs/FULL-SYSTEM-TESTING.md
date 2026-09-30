@@ -1,5 +1,68 @@
 # SLiVR — Full System Testing
 
+## D095 - Phase 4 CLOSED / ACCEPTED, 2026-09-29
+
+The owner explicitly confirmed that shot-workspace failure recovery and
+calibrated-plan persistence after reload are OK and instructed Phase 4 closure.
+Record both as **owner-reported PASS, confirmed 2026-09-29**. All eight previously
+accepted critical checks remain PASS, including immersive capture test 251.
+The two D094 evidence gaps are resolved by this owner report; do not request
+reconfirmation or reopen them solely because detailed execution traces are absent.
+
+Accepted implementation: D093 published as
+`af8aa819076d69abacdef0828d466567192a3821`, building on D091/D092 (`996417ad`).
+App0.4.0 / transfer1.4.0 / DB2 / template1.0.0 / catalog1.1.0. Browser/device
+and an independently measured tested digest were not supplied. Do not invent
+individual failure-injection traces, a full live Part J run, or device coverage.
+
+Existing automated evidence is unchanged: D091 423 full-suite PASS; D092 51
+focused PASS; D093 56 initial focused PASS, then 6 final capture/action PASS.
+These are separate runs. No new runtime tests were executed for this closeout.
+Historical failures and earlier pending results retain their build/scope.
+
+**Next: Phase 5 - Integrated prototype and release validation (F20 baseline).**
+Phase 4 is no longer a prerequisite blocker. Phase 5's integrated regression,
+release/device, exports and deployment gates still require their own evidence.
+Phase 6 Treedis Research Mode follows Phase 5. No Phase 5 implementation,
+telemetry, participant collection, staging, commit or push in this closeout.
+
+
+Acceptance mapping: shot-workspace failure recovery resolves the D094 gap grouped
+under 238/239/245 and affected Part J 179/181; calibrated-plan save/reload resolves
+243 and retained 107-111. This is owner acceptance of the named workflows, not
+new independent execution of every sub-assertion. See the
+[closeout](../research/PHASE_4_ACCEPTANCE_REVIEW.md) and
+[Phase 5 CLI prompt](../PHASE_5_CLI_PROMPT.md).
+
+## Historical D094 audit (superseded by D095; evidence retained)
+
+## Current Phase 4 evidence - D094, 2026-09-29
+
+Checks 1-7 remain **owner-reported PASS** on published D091/D092 (`996417ad`).
+Check 8 / stable **251 is owner-reported PASS, confirmed 2026-09-29**, for D093
+published as `af8aa819076d69abacdef0828d466567192a3821`: screenshot,
+credits/footer, no SLiVR overlays, sharing stops, editing, JSON/PNG export,
+persistence after reload, return navigation, cancellation/retry, wrong-tab/window
+rejection and unsupported-browser import fallback. Browser/device not supplied.
+Do not reconfirm any of these accepted results.
+
+All eight critical checks are accepted. Formal Phase 4 exit remains OPEN because
+the supplied checklist does not establish the full live failure-injection and
+flat-plan calibration/reload gates. The conditional plan-import instruction is
+not proof of a calibrated-plan reload. See the [gate audit and remaining focused
+conditions](../research/PHASE_4_ACCEPTANCE_REVIEW.md). This is not a reported
+failure of any accepted check. Historical pending language below is superseded.
+
+
+Automated evidence remains separate: D091 423 full-suite PASS / 0 FAIL;
+D092 51 focused PASS; D093 56 initial focused PASS / 0 FAIL, then 6 final
+capture/action PASS / 0 FAIL. Existing logs were inspected; no new execution or
+fresh full-suite/Part J PASS is claimed. The gate audit maps every revised Phase 4
+exit criterion and Part J 172-183 to existing evidence and remaining obligations.
+Earlier FAIL/BLOCKED/NOT TESTED entries retain their historical build/scope.
+
+## Historical records (superseded status; evidence retained)
+
 ## D091 local Phase 4 build - 2026-09-26
 
 Owner approved D090 implementation and subsequent path refinements. The D090
@@ -86,8 +149,8 @@ No test is pre-marked. A passing unit test, code review, HTTP response or earlie
 | Test specification version | 0.4 |
 | Architecture baseline | SLiVR architecture 0.19 or later |
 | Created | 2026-09-19 |
-| Last updated | 2026-09-22 |
-| Current implementation phase | Phase 0 COMPLETE with D061 exceptions; Phase 1 OPEN with D070 live retest and inherited gates; independent Phase 2 reconnaissance only (D071) |
+| Last updated | 2026-09-29 (D095 owner-confirmed closeout) |
+| Current implementation phase | Phase 4 CLOSED / ACCEPTED (D095). Next: Phase 5 integrated prototype and release validation; implementation not started in this closeout. |
 | First-prototype gate | Parts A–H and J, using the phase applicability rules below |
 | Post-prototype gate | Part I plus affected regression tests |
 
@@ -998,7 +1061,7 @@ Comments: ____________________________________
 
 ## Approved export set
 
-**117. Full project JSON is complete and portable.** It includes required project/scene/candidate/decision/bookmark/shot/variant/background references and versions but embeds no provider imagery or sensitive reference documents.
+**117. Full project JSON is complete and portable.** Include project/scene/candidate/decision/bookmark/assessment/revision/shot/variant/background references and versions, plus explicit selected/missing media. D093 user-captured screenshot backgrounds retain credits; never fetch/cache provider assets for export or include sensitive references. Exercise native ZIP and clean-profile import as well as JSON.
 
 Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED  
 Evidence: ____________________________________  
@@ -2746,3 +2809,40 @@ specifics or failure-injection coverage is inferred from this report.
 Initial affected run: 56 PASS / 0 FAIL, outputs/immersive-capture-tests.txt.
 Final capture/action run: 6 PASS / 0 FAIL, outputs/immersive-capture-final-tests.txt.
 These are mock browser API tests, not proof of a live Treedis screenshot.
+
+
+## D096 ? Phase 5 execution and release gates (2026-09-29)
+
+App0.5.0 implemented locally; Phase 5 acceptance **OPEN**. D095 Phase 4 remains
+CLOSED / ACCEPTED; retain every earlier owner pass and original metadata scope.
+Detailed commands, digests, negative results and gate mapping:
+[Phase 5 acceptance review](../research/PHASE_5_ACCEPTANCE_REVIEW.md).
+
+Stable113-132, 133-140, 208-215 and Part J172-183 are mapped in that review.
+Existing automated suites plus tests/phase5-release.test.mjs cover affected
+contracts; exact final run recorded there. No existing stable ID is renumbered.
+
+Procedure amendments: 114/115 retain Explore/Shot Designer top-level UI with
+Projects tools and Immersive viewing context (legacy four-mode routes compatible).
+116 failed save must retain the source workspace and URL, including checklist
+pin/follow. 118 north arrow requires known non-oblique map bearing; otherwise
+label unknown. 119 includes stable project/scene/design/shot/camera IDs. 120
+selects packet and assessment sections plus media; inspect actual browser PDF.
+121 uses stable IDs to distinguish same-name exports. 129 adds hidden-tab preview
+suspension and boot disposal. 131 defaults OFF, exact scope /SLiVR/, provider
+pass-through, network-first kill switches, own caches only, and no forced reload.
+
+All new live 113-132, relevant 208-215/237-251 and Part J requirements are
+**BLOCKED in this execution environment**: browser inventory empty; Chrome not
+available. Physical tablet/assistive-technology, deployed forbidden-path 404s,
+real worker lifecycle and console/network remain **NOT TESTED**. No acceptance
+exception is approved. Local automated PASS is not full stable-test/live PASS.
+Part H133-140 records synchronized; technical/design/participant evidence remains
+separate and all failed intermediate runs retained. No telemetry or Phase 6.
+
+
+D096 final verification: **445 automated PASS / 0 FAIL**, deployment **226 files /
+0 errors**, catalog **0 errors / 1 retained alias warning**. Exact final digests
+and environment are in research/PHASE_5_ACCEPTANCE_REVIEW.md (relative from
+project root). Owner will perform the full manual test; no extension setup is
+needed. Phase 5 live acceptance remains OPEN; D095 remains accepted.

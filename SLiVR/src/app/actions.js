@@ -1,4 +1,8 @@
 import { hasDrafts, flushDrafts } from "../scouting/autosave.js";
+import { projectZip, readProjectFile } from "../exports/project-json.js";
+import { packetHtml } from "../exports/packet-html.js";
+import { diagramPng } from "../shot-workspace/exports.js";
+import { loadImage } from "../shot-workspace/capture.js";
 import { createShotActions } from "../shot-workspace/actions.js";
 /**
  * Every state mutation in the application.
@@ -32,7 +36,7 @@ import { detectConflicts } from "../data/conflicts.js";
 import { buildEmergencyExport, projectExportFilename } from "../exports/emergency.js";
 import { presentError } from "./errors.js";
 import { createScoutingActions } from "../scouting/actions.js";
-import { routeMode } from "./router.js";
+import { routeMode, routeToHash } from "./router.js";
 import { createMapAdapter } from "../map/maplibre-adapter.js";
 import { accuracyNote } from "../map/region-config.js";
 import { createTreedisAdapter } from "../immersive/treedis-adapter.js";
@@ -276,27 +280,72 @@ export function createActions({
     drawLocationMarkers();
   }
 
+  let transitionGeneration = 0;
+  const routeContexts = new Map();
+  function guardedTransition(operation, restore = false) {
+    const generation = ++transitionGeneration;
+    const finish = () => {
+      if (generation !== transitionGeneration) return;
+      if (getState().save.state === "failed" || hasDrafts()) {
+        if (restore && getState().route) router.restore?.(getState().route);
+        notice("Changes could not be saved. Retry or export your draft before leaving this workspace.");
+        return;
+      }
+      operation();
+    };
+    if (hasDrafts() || getState().save.state === "saving") {
+      return flushDrafts().then(() => saveStatus.settled?.()).then(finish).catch(error => {
+        if (generation !== transitionGeneration) return;
+        if (restore && getState().route) router.restore?.(getState().route);
+        setError(error);
+      });
+    }
+    return finish();
+  }
+
   /** Applies a route that the router has already parsed. */
-  function applyRoute(route) {
-    if (hasDrafts()) { void flushDrafts().then(() => { if (getState().save.state !== "failed" && !hasDrafts()) applyRoute(route); }); return; }
+  function applyRoute(route, options = {}) {
+    return guardedTransition(() => applySavedRoute(route, options), true);
+  }
+  function applySavedRoute(route, { historyTraversal = false } = {}) {
+    const before = getState();
+    if (before.route) routeContexts.set(routeToHash(before.route), {
+      openProjectId:before.openProjectId, activeSceneId:before.activeSceneId,
+      activeCandidateId:before.activeCandidateId, activeAssessmentId:before.activeAssessmentId,
+      comparisonScroll:before.comparisonScroll,
+    });
+    const context = historyTraversal ? routeContexts.get(routeToHash(route)) : null;
+    const generation = ++projectLoadGeneration;
     setState({ route, mode: routeMode(route), error: null, notice: null });
     resolveRoute(route);
-    const projectId = route.params?.projectId ?? null;
+    const projectId = route.params?.projectId ?? context?.openProjectId ?? null;
+    const restoreContext = () => {
+      const bundle = getState().workingBundle;
+      if (!bundle || getState().route !== route) return;
+      const shot = bundle.shotScenes.find(s => s.id === route.params?.shotSceneId);
+      const sceneId = route.params?.sceneId ?? shot?.sceneId ?? context?.activeSceneId;
+      const candidateId = shot?.candidateId ?? context?.activeCandidateId;
+      setState({ ...(sceneId !== undefined ? { activeSceneId:bundle.scenes.some(s=>s.id===sceneId)?sceneId:null } : {}),
+        ...(candidateId !== undefined ? { activeCandidateId:bundle.candidates.some(c=>c.id===candidateId&&(!sceneId||c.sceneId===sceneId))?candidateId:null } : {}),
+        ...(context ? { comparisonScroll:context.comparisonScroll } : {}) });
+    };
     if (projectId && projectId !== getState().openProjectId) {
-      void openProject(projectId);
+      void openProject(projectId).then(restoreContext);
     } else if (projectId && route.params?.sceneId !== undefined
         && route.params.sceneId !== getState().activeSceneId) {
       selectScene(route.params.sceneId);
     }
+    if (generation === projectLoadGeneration) restoreContext();
   }
 
   function navigate(route) {
-    if (hasDrafts()) { void flushDrafts().then(() => { if (getState().save.state !== "failed" && !hasDrafts()) navigate(route); }); return; }
+    return guardedTransition(() => {
     if (route.name === "location") setState({ exploreSelectionRequest: { locationId: route.params?.locationId } });
     router.navigate(route);
     if (route.name === "location" && route.params?.locationId) {
       mapAdapter?.focusLocation(route.params.locationId);
     }
+    });
   }
 
   async function createProject(name) {
@@ -545,7 +594,7 @@ export function createActions({
    * A failure is reported and kept retryable; it never discards the in-memory
    * records, which are still the user's work.
    */
-  async function persist(operation) {
+  async function persist(operation, key) {
     if (!getState().storage.available) {
       const status = saveStatus.fail({
         code: "idb-unavailable",
@@ -554,7 +603,9 @@ export function createActions({
       setState({ save: status });
       return { ok: false };
     }
-    const result = await saveStatus.track(operation);
+    const pending = saveStatus.track(operation, key);
+    setState({ save: saveStatus.status });
+    const result = await pending;
     setState({ save: saveStatus.status });
     if (!result.ok) setError(result.error);
     else await refreshProjects();
@@ -585,6 +636,7 @@ export function createActions({
   /** Builds the export file for a project, reading storage when it is available. */
   async function exportProject(projectId, selection = null) {
     await flushDrafts();
+    await saveStatus.settled?.();
     const state = getState();
     let bundle = state.workingBundle;
     if (state.storage.available && !(bundle?.projects[0]?.id === projectId && ["saving", "failed"].includes(state.save.state))) {
@@ -594,7 +646,7 @@ export function createActions({
         setError(caught);
       }
     }
-    if (!bundle) return null;
+    if (!bundle || bundleProject(bundle)?.id !== projectId) return null;
 
     if (selection) { try { bundle = selectAssessmentExport(bundle, selection.assessmentIds, selection.includeMedia, selection.mediaIds); } catch (error) { notice(error.message); return null; } }
     const exportedAt = now();
@@ -606,7 +658,43 @@ export function createActions({
     return {
       filename: projectExportFilename(bundleProject(bundle), exportedAt),
       text: serializeEnvelope(envelope),
+      envelope,
     };
+  }
+
+  async function exportProjectZip(projectId, selection = null) {
+    try {
+      const file = await exportProject(projectId, selection);
+      if (!file) return null;
+      const bytes = await projectZip(file.text);
+      notice(file.envelope.mediaReport.complete ? "Project package includes all selected assessment media." : `Missing or excluded media: ${file.envelope.mediaReport.missing.join(", ")}`);
+      return { filename: file.filename.replace(/\.json$/, ".zip"), bytes };
+    } catch (error) { setError(error); return null; }
+  }
+
+  async function exportPacket(projectId, options = {}) {
+    try {
+      const file = await exportProject(projectId);
+      if (!file) return null;
+      const diagrams = {};
+      if (options.sections?.includes("diagrams")) for (const record of file.envelope.payload.shotScenes) {
+        if (!record.diagram) continue;
+        const image = record.diagram.background.dataUrl ? await loadImage(record.diagram.background.dataUrl) : null;
+        const blob = await diagramPng(record, image);
+        const bytes = new Uint8Array(await blob.arrayBuffer());
+        let binary = "";
+        for (let i=0;i<bytes.length;i+=32768) binary += String.fromCharCode(...bytes.subarray(i,i+32768));
+        diagrams[record.id] = `data:image/png;base64,${btoa(binary)}`;
+      }
+      const response = await fetch(new URL("../../styles/90-print.css", import.meta.url));
+      if (!response.ok) throw new Error("Print styles could not load. Retry the packet export.");
+      return { filename: file.filename.replace(/\.json$/, "_packet.html"), text: packetHtml({ ...options, envelope:file.envelope, catalog:getState().catalog, diagrams, css:await response.text() }) };
+    } catch (error) { setError(error); return null; }
+  }
+
+  async function importProjectFile(file) {
+    try { return await importFile(await readProjectFile(file)); }
+    catch (error) { setError(error); return { ok:false }; }
   }
 
   /** Serialises the open project from memory without touching storage. */
@@ -673,12 +761,13 @@ export function createActions({
   }
 
   async function completeImport(envelope, resolution) {
-    const result = await importEnvelope({
+    let result;
+    try { result = await importEnvelope({
       repo,
       envelope,
       resolution,
       currentCatalogVersion: getState().catalog?.version,
-    });
+    }); } catch (error) { setError(error); return { ok:false, error }; }
     setState({ pendingImport: null });
 
     if (!result.ok) {
@@ -696,7 +785,8 @@ export function createActions({
       await openProject(result.projectId);
     }
     notice(
-      [`Imported ${result.written} record(s).`, result.catalogNote].filter(Boolean).join(" "),
+      [`Imported ${result.written} record(s).`, result.catalogNote,
+        envelope.payload.scoutMedia.some(m => m.missing) ? `Missing media: ${envelope.payload.scoutMedia.filter(m => m.missing).map(m => m.filename).join(", ")}. Recover those files from the original source.` : null].filter(Boolean).join(" "),
     );
     if (result.projectId) navigate({ name: "project", params: { projectId: result.projectId } });
     return result;
@@ -1105,6 +1195,9 @@ export function createActions({
     retrySave,
     stopStorageFailureTest,
     exportProject,
+    exportProjectZip,
+    exportPacket,
+    importProjectFile,
     exportEmergency,
     importFile,
     resolveImport,

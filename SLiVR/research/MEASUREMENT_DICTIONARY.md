@@ -1,5 +1,58 @@
 # Measurement and event dictionary
 
+## D095 - Phase 4 CLOSED / ACCEPTED, 2026-09-29
+
+The owner explicitly confirmed that shot-workspace failure recovery and
+calibrated-plan persistence after reload are OK and instructed Phase 4 closure.
+Record both as **owner-reported PASS, confirmed 2026-09-29**. All eight previously
+accepted critical checks remain PASS, including immersive capture test 251.
+The two D094 evidence gaps are resolved by this owner report; do not request
+reconfirmation or reopen them solely because detailed execution traces are absent.
+
+Accepted implementation: D093 published as
+`af8aa819076d69abacdef0828d466567192a3821`, building on D091/D092 (`996417ad`).
+App0.4.0 / transfer1.4.0 / DB2 / template1.0.0 / catalog1.1.0. Browser/device
+and an independently measured tested digest were not supplied. Do not invent
+individual failure-injection traces, a full live Part J run, or device coverage.
+
+Existing automated evidence is unchanged: D091 423 full-suite PASS; D092 51
+focused PASS; D093 56 initial focused PASS, then 6 final capture/action PASS.
+These are separate runs. No new runtime tests were executed for this closeout.
+Historical failures and earlier pending results retain their build/scope.
+
+**Next: Phase 5 - Integrated prototype and release validation (F20 baseline).**
+Phase 4 is no longer a prerequisite blocker. Phase 5's integrated regression,
+release/device, exports and deployment gates still require their own evidence.
+Phase 6 Treedis Research Mode follows Phase 5. No Phase 5 implementation,
+telemetry, participant collection, staging, commit or push in this closeout.
+
+
+Evidence type: owner-reported workflow acceptance; confirmation date 2026-09-29.
+The added observations are shot-workspace failure recovery and calibrated-plan
+persistence after reload. Browser/device, exact per-injection trace and independent
+runtime digest are unspecified. No measured timings, accuracy statistics or new
+event collection. Existing image-space/calibration definitions remain unchanged.
+
+See [Phase 4 closeout](PHASE_4_ACCEPTANCE_REVIEW.md) and [Phase 5 prompt](../PHASE_5_CLI_PROMPT.md).
+
+## Historical D094 audit (superseded by D095; evidence retained)
+
+## D094 - Acceptance provenance, 2026-09-29
+
+Test 251 status: owner-reported PASS, confirmation date 2026-09-29, published
+implementation `af8aa819076d69abacdef0828d466567192a3821`; browser/device and
+independent tested digest not supplied. Checks 1-7 retain their preceding-build
+owner PASS. These are workflow acceptance observations, not participant measures,
+new automation, measured latency or population/browser-support estimates.
+
+The [gate audit](PHASE_4_ACCEPTANCE_REVIEW.md) distinguishes passed observations
+from unestablished live failure/recovery and flat-plan calibration-retention
+results. Formal Phase 4 exit remains OPEN. Image pixels, capture time versus
+acquisition date, schematic wedges, independent calibration checks and entry-only
+provider pose retain their existing meanings. No new logging or data collection.
+
+## Historical records (superseded status; evidence retained)
+
 ## D091 implemented image-space conventions
 
 Coordinates: original background pixels, origin top-left, +x right, +y down;
@@ -357,3 +410,34 @@ Record desktop responsive simulation separately from physical-device evidence.
 Owner-reported preceding Phase 4 critical checks: PASS, device/browser unspecified.
 Test 251 records the immersive addition separately. No participant measurements,
 screen recordings, audio, telemetry or automatic research collection are added.
+
+
+## D096 ? Phase 5 operational verification measures (2026-09-29)
+
+App0.5.0; transfer1.4.0; package wrapper1; DB2; assessment template1.0.0;
+catalog1.1.0. No event collection, telemetry or participant measurement added.
+
+- **Transfer preservation (117/211/212):** compare record IDs, ownership,
+  immutable snapshots, references and recovered media bytes after canonical
+  JSON/native ZIP import into an empty repository/profile. Count missing assets
+  separately; explicit omission is not successful byte recovery. Reject corrupt,
+  undeclared/unsafe and oversized packages before writing. Archive cap 128 MiB;
+  existing media limits remain 16 MiB/file, 48 MiB/project. Distinguish fake IDB
+  from a browser profile and signature bytes from a decoded/rendered image.
+- **Transition retention (114-116/179):** pending write starts before navigation;
+  success permits only latest requested route; failure retains source workspace
+  and repairs history URL. A preserved checklist alone is insufficient. Record
+  route/context mismatch and stale-event mutation as failures, not latency.
+- **Packet selection/readability (120/178):** assert only selected sections and
+  assessment sub-sections, escaped authored content, linked revision identity,
+  explicit uncertainty/scale, and missing-media labels. Browser print page
+  clipping/legibility is a separate visual result; string/canvas assertions do
+  not measure it. No numeric physical accuracy inferred from screenshot pixels.
+- **Worker isolation (131/182):** exact registration scope, own-prefix eviction,
+  allowlisted first-party shell only, provider request pass-through, and live
+  neighboring-app state before/after opt-in/update/off. VM evidence and live
+  registration/cache evidence remain separate. OFF by default is configuration,
+  not proof of the complete live upgrade path.
+
+D095 owner evidence retains its original unspecified browser/device context.
+See Phase 5 review for exact build/test identities and retained failed results.

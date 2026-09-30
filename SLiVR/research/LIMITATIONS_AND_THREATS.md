@@ -1,5 +1,61 @@
 # Limitations and threats to validity register
 
+## D095 - Phase 4 CLOSED / ACCEPTED, 2026-09-29
+
+The owner explicitly confirmed that shot-workspace failure recovery and
+calibrated-plan persistence after reload are OK and instructed Phase 4 closure.
+Record both as **owner-reported PASS, confirmed 2026-09-29**. All eight previously
+accepted critical checks remain PASS, including immersive capture test 251.
+The two D094 evidence gaps are resolved by this owner report; do not request
+reconfirmation or reopen them solely because detailed execution traces are absent.
+
+Accepted implementation: D093 published as
+`af8aa819076d69abacdef0828d466567192a3821`, building on D091/D092 (`996417ad`).
+App0.4.0 / transfer1.4.0 / DB2 / template1.0.0 / catalog1.1.0. Browser/device
+and an independently measured tested digest were not supplied. Do not invent
+individual failure-injection traces, a full live Part J run, or device coverage.
+
+Existing automated evidence is unchanged: D091 423 full-suite PASS; D092 51
+focused PASS; D093 56 initial focused PASS, then 6 final capture/action PASS.
+These are separate runs. No new runtime tests were executed for this closeout.
+Historical failures and earlier pending results retain their build/scope.
+
+**Next: Phase 5 - Integrated prototype and release validation (F20 baseline).**
+Phase 4 is no longer a prerequisite blocker. Phase 5's integrated regression,
+release/device, exports and deployment gates still require their own evidence.
+Phase 6 Treedis Research Mode follows Phase 5. No Phase 5 implementation,
+telemetry, participant collection, staging, commit or push in this closeout.
+
+
+D094's named recovery/calibration acceptance gaps are closed by owner confirmation.
+Unspecified device/browser context limits generalization, not acceptance of the
+reported workflows. Region Capture availability, entry-only pose, schematic oblique
+imagery, Google source-use findings and absent participant evidence retain their
+existing limitations. Phase 5 independently validates integrated release behavior.
+
+See [Phase 4 closeout](PHASE_4_ACCEPTANCE_REVIEW.md) and [Phase 5 prompt](../PHASE_5_CLI_PROMPT.md).
+
+## Historical D094 audit (superseded by D095; evidence retained)
+
+## D094 - Current acceptance limitations, 2026-09-29
+
+Owner checks 1-7 and immersive test 251 are accepted PASS; 251 explicitly confirmed
+2026-09-29 on published D093 `af8aa819076d69abacdef0828d466567192a3821`.
+Earlier assertions that live 251 is pending are historical. Browser/device not
+supplied: no physical-device matrix, universal Region Capture support or exact
+provider camera-pose restoration is inferred. Missing metadata alone is not a
+phase blocker. Google owner direction remains distinct from provider-rights evidence.
+
+Formal Phase 4 exit remains OPEN because the recorded checks do not establish
+changed shot-workspace live capture/provider/storage-failure recovery or explicit
+flat-plan calibration retention across reload. No failure-injection result or
+exception is inferred from generic owner PASS; no accepted flow needs
+reconfirmation. See [exact gaps and completion conditions](PHASE_4_ACCEPTANCE_REVIEW.md).
+Automation, live owner evidence and participant evidence remain distinct. Phase 5
+release/device/isolation work remains planned; no participant benefit is claimed.
+
+## Historical records (superseded status; evidence retained)
+
 ## D091 local build limitations
 
 Phase 4 awaits focused owner acceptance. Google capture with attribution follows
@@ -334,3 +390,31 @@ retain image import. No live provider permission/capture result is claimed from
 mock tests. Provider UI/credits inside the iframe remain in the screenshot.
 Capture stores visible pixels and entry context, not restorable camera pose.
 Earlier owner passes cover the preceding build, not this new capture addition.
+
+
+## D096 ? Phase 5 limitations (2026-09-29)
+
+Phase 4 remains accepted under D095; new Phase 5 release gates are OPEN. No
+browser surface was available (inventory empty; Chrome unavailable), so no new
+live-provider, real download/file picker/print, device, physical-tablet,
+screen-reader or real worker upgrade/isolation result is claimed. Automated
+DOM/IDB/provider/canvas/worker doubles do not establish these outcomes.
+
+Native ZIP is a bounded, local, user-selected transfer format, not cloud sync or
+unlimited archiving. ZIP entries are stored without compression; project JSON
+keeps accepted D093 screenshot backgrounds/variants inline. Scout media use
+external package entries. Missing or excluded attachments are reported, never
+silently claimed complete. The packet excludes video playback but lists video
+metadata/availability; browser PDF pagination and large image legibility require
+live acceptance. Legacy ENU records remain in JSON, without invented conversion.
+
+The worker is OFF. A cached shell is not offline maps/tours or a complete phone
+field workflow. No provider response is intercepted/cached. Opt-in initial shell
+precache includes vendored modules; partial network failure can leave unavailable
+resources explicitly unavailable. Update does not force takeover or reload over
+unsaved work. Real deployment privacy/neighbor isolation and console/network
+remain gates, not inferred from local path checks. Existing public browser-key
+exception D057 remains narrowly unchanged; no new credentials are introduced.
+
+History/save regressions and test-setup failures found during implementation are
+retained in the Phase 5 review. No participant data or measured usability claim.
