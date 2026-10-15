@@ -215,8 +215,7 @@ window.CAMPUS_CONFIG.descriptionMap = {
     "the university's 1890 Research & Extension programs in " +
     "sustainable agriculture and applied research. " +
     "This location is not part of the main campus map — the point " +
-    "on the map points in its general direction. Click \"Explore\" " +
-    "to open the virtual tour of the farm.",
+    "on the map points in its general direction.",
 
   /* -- Academic buildings -- */
   "hodge hall":

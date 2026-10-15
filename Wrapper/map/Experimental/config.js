@@ -98,22 +98,22 @@ window.CAMPUS_CONFIG = Object.assign(window.CAMPUS_CONFIG || {}, {
        campus landing point. */
     profiles: {
       desktop: {
-        modelId: "8e4ca3fc",
-        tourUrl: "https://spaces.dtsxr.com/tour/8e4ca3fc",
+        modelId: "6243b323",
+        tourUrl: "https://spaces.dtsxr.com/tour/6243b323",
 
         homeSweepId: null
       },
       vr: {
-        modelId: "scsu-campus-ade0f346",
-        tourUrl: "https://spaces.dtsxr.com/tour/scsu-campus-ade0f346",
+        modelId: "scsu-campus-b49e93eb",
+        tourUrl: "https://spaces.dtsxr.com/tour/scsu-campus-b49e93eb",
         homeSweepId: null
       }
     },
 
     /* Active-profile aliases. Default to the desktop profile; the boot
        code overwrites them with the VR values when XR is detected. */
-    modelId: "8e4ca3fc",
-    tourUrl: "https://spaces.dtsxr.com/tour/8e4ca3fc",
+    modelId: "6243b323",
+    tourUrl: "https://spaces.dtsxr.com/tour/6243b323",
     homeSweepId: null,
 
     /* Origin used for postMessage validation. Both models share it. */
