@@ -488,3 +488,35 @@ Technical automated evidence, source reuse, failed runs and live acceptance gaps
 are in [Phase 5 review](PHASE_5_ACCEPTANCE_REVIEW.md). Expected portability,
 continuity and reviewability are design rationale, not measured participant
 benefits. No browser/device generalization from DOM/IndexedDB/provider doubles.
+
+## D097 — Visual system evidence (2026-10-08)
+
+F01-F06/F06-SA, F08-F12 and F20 retain their current behaviors and contracts under
+a shared neutral visual system. Omitted prototype tools remain available through
+existing controls. Local fonts, responsive sheets and stronger token contrast
+are implemented. No new capability or F21 collection is introduced.
+
+447 automated PASS plus critical Chrome desktop/phone/tablet-width observations
+support the scoped technical claims in [the review](VISUAL_REDESIGN_REVIEW.md).
+Stable252 adds shared-token contrast checks; stable234 retains checklist structure
+while accepting local-font/override links. A discovered editor handler exception
+was corrected and keyboard editing retested. Expected consistency/readability is
+design rationale, not a measured usability result. Full Phase 5 release, physical
+devices, assistive technology, exports/print and provider recovery remain open;
+preserve D095 owner acceptance and historical failures without relabeling them.
+
+
+### D098 checklist presentation correction
+
+F06-SA keeps the original CheckList/v2 layout/design instead of D097's neutral
+iframe override. No evidence/persistence behavior changes. Source stylesheet
+and font CSS match the original; stable234 now guards against shared redesign
+links and verifies the original header menu. Browser rendering not retested.
+
+
+### D099 F01 marker presentation
+
+Colored raised pins implemented with unchanged grouping/selection/data. Existing
+marker tests11 PASS; full447 PASS. Chrome confirms rendered palette/depth and
+cluster keyboard-to-dossier selection. Google 3D itself not verified on localhost;
+fallback is explicitly labelled. See D099 in the living test specification.

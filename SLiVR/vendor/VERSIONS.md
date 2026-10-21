@@ -48,3 +48,14 @@ CheckList/v2/style.css copied unchanged under src/scouting/v2; SHA256
 Local Inter font subsets (SIL OFL1.1) and Font Awesome Free6 CSS/solid font copied
 from CheckList/v2/vendor into src/scouting/v2/vendor with original notices. No
 remote asset loading, V2 app/storage scripts or service worker copied.
+# Visual interface fonts — 2026-10-08
+
+Geist (Google Fonts CSS v5) and Geist Mono (CSS v6), Latin variable WOFF2,
+retrieved from the Google Fonts CSS endpoint for the approved typefaces.
+Local files under `fonts/geist/`; SIL Open Font License texts retained alongside.
+No runtime third-party font requests. System fallback covers additional glyphs.
+
+| Asset | Source | SHA-256 |
+|---|---|---|
+| geist-latin.woff2 | https://fonts.gstatic.com/s/geist/v5/gyByhwUxId8gMEwcGFU.woff2 | 19f9c92546aa300c312235e3125af1b81394d8db9a4bc4a425cd5b641d2d54e1 |
+| geist-mono-latin.woff2 | https://fonts.gstatic.com/s/geistmono/v6/or3nQ6H-1_WfwkMZI_qYFrcdmg.woff2 | 684ad5b531f81d43c1e8c7038262d5db7cdc1f68006e04d6c7769efa8d33c8cc |

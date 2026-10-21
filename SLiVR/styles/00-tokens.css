@@ -18,24 +18,27 @@
   color-scheme: dark;
 
   /* Surfaces, from the map backdrop up to a raised control. */
-  --surface-0: #101316;
-  --surface-1: #171b1f;
-  --surface-2: #1e2328;
-  --surface-3: #262c32;
-  --surface-raised: #2f363d;
+  --surface-0: #0f0f10;
+  --surface-1: #121214;
+  --surface-2: #18181b;
+  --surface-3: #222226;
+  --surface-raised: #2a2a2e;
 
-  --line: #2b3238;
-  --line-strong: #414a52;
+  --line: #26262b;
+  --line-strong: #686870;
 
-  --text: #eef1f4;
-  --text-muted: #adb7c0;
+  --text: #ededeb;
+  --text-muted: #a3a3a8;
   /* Clears 4.5:1 on every surface it is used on, including a raised control. */
-  --text-faint: #8e97a0;
+  --text-faint: #9999a1;
 
-  --accent: #7fb3d5;
-  --accent-strong: #a8cfe8;
-  --accent-ink: #0b1114;
-  --accent-wash: #7fb3d51a;
+  --accent: #4d8dff;
+  --accent-strong: #8db6ff;
+  --accent-ink: #0f0f10;
+  --accent-wash: #4d8dff1a;
+  --action: #2f6fe0;
+  --action-hover: #245fc9;
+  --action-ink: #ffffff;
 
   /* Evidence vocabulary. */
   --evidence-known: #7fc8a9;
@@ -58,13 +61,13 @@
   --space-6: 2rem;
   --space-7: 3rem;
 
-  --radius: 5px;
-  --radius-lg: 9px;
+  --radius: 6px;
+  --radius-lg: 10px;
 
-  --font-ui: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Mono", "Consolas", "SFMono-Regular", monospace;
+  --font-ui: "Geist", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "Cascadia Mono", "Consolas", "SFMono-Regular", monospace;
 
-  --text-xs: 0.6875rem;
+  --text-xs: 0.75rem;
   --text-sm: 0.8125rem;
   --text-base: 0.875rem;
   --text-md: 1rem;
@@ -76,7 +79,7 @@
   /* Frame geometry. The rails are sized to the content they hold: a record
      line in the left, a labelled field pair in the right. */
   --topbar-height: 3.25rem;
-  --rail-left: 19rem;
+  --rail-left: 21rem;
   --rail-right: 23rem;
 
   --shadow-raised: 0 1px 2px rgb(0 0 0 / 40%), 0 8px 24px -12px rgb(0 0 0 / 65%);

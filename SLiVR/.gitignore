@@ -8,6 +8,7 @@
 docs/*
 outputs/
 claude-design-handoff-2026-09-27/
+claude-design-result/
 
 # The living verification record is deliberately published. It carries test
 # procedures and execution history that must survive in source control, and it

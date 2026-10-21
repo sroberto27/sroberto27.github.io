@@ -112,9 +112,9 @@ export function createDiagramEditor({record:initial,actions,store,win=globalThis
     pane.replaceChildren(node("header",{},[node("strong",{text:panelName==="Properties"?"Edit selection":panelName}),expand,button("Close",closePanel)]));
     let target=pane;
     const add=(...nodes)=>target.append(...nodes);
-    const field=(label,value,onChange,{type="text",min,max,step}={})=>{
-      const input=node("input",{type,value:String(value??""),...(min!==undefined?{min}:{}),...(max!==undefined?{max}:{}),...(step?{step}:{}),
-        onChange:()=>{try{editingField=true;onChange(type==="number"?Number(input.value):input.value);}catch(e){notify(e.message);input.value=String(value??"");}finally{editingField=false;
+    const field=(label,initialValue,onChange,{type="text",min,max,step}={})=>{
+      const input=node("input",{type,value:String(initialValue??""),...(min!==undefined?{min}:{}),...(max!==undefined?{max}:{}),...(step?{step}:{}),
+        onChange:()=>{try{editingField=true;onChange(type==="number"?Number(input.value):input.value);}catch(e){notify(e.message);input.value=String(initialValue??"");}finally{editingField=false;
           const current=value().objects.find(item=>selected.includes(item.id));
           const fovLabel=pane.querySelector(".shot-fov");
           if(current?.lens&&fovLabel){const fov=fieldOfView(current.lens);fovLabel.textContent=`Ideal FOV: ${fov.horizontalDeg.toFixed(2)} degrees H / ${fov.verticalDeg.toFixed(2)} degrees V. Coverage over this image is schematic.`;}

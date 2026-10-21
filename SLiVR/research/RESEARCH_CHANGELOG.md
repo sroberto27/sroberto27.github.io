@@ -609,3 +609,45 @@ D096 final verification: **445 automated PASS / 0 FAIL**, deployment **226 files
 and environment are in research/PHASE_5_ACCEPTANCE_REVIEW.md (relative from
 project root). Owner will perform the full manual test; no extension setup is
 needed. Phase 5 live acceptance remains OPEN; D095 remains accepted.
+
+## 2026-10-08 — D097 visual redesign
+
+Adapted approved v2 appearance to current App0.5.0: shared neutral tokens, local
+Geist fonts, flat Explore rail, controls across immersive/scouting/project/shot
+tools and responsive overrides. Preserved all current features, data versions,
+provider lifecycle, units and evidence semantics. No executable dependency,
+telemetry, reference/design-original edit, staging, commit, push or deployment.
+
+Corrected the existing Shot Designer field parameter collision found by keyboard
+testing. Final full suite 447 PASS/0 FAIL; deployment236/0, catalog0 errors/1 retained
+alias warning. Chrome critical checks, exact runtime/test digests, screenshots,
+negative runs and remaining gates are in [the review](VISUAL_REDESIGN_REVIEW.md).
+No whole-phase acceptance or participant benefit claim; D095 remains accepted.
+
+
+## 2026-10-08 ? D098 original checklist restoration
+
+Per owner clarification, removed checklist redesign CSS/shared tokens, restored
+Inter and original header/menu/theme defaults. Retained all SLiVR integration,
+regenerated the shell cache and updated stable234. Original reference files
+untouched; no commit, push, deployment or participant collection.
+
+
+## 2026-10-09 - Current UI manual regression instructions
+
+Added a current-UI manual sequence at the start of FULL-SYSTEM-TESTING.md,
+with desktop/phone control locations, retained functionality checks, original
+CheckList/v2 appearance, failure/recovery, transfer/export and accessibility
+coverage. M1-M15 map to existing stable IDs and start NOT TESTED. Linked the
+historical Phase 4 owner guide to this sequence; preserved prior acceptance.
+Documentation only: no application changes, new runtime/manual test result,
+phase closure, commit or deployment.
+
+
+## 2026-10-21 - D099 map pin appearance
+
+Restored capture-specific colors and adapted reference gradient/edge/shadow
+styling to existing SLiVR markers. CSS only; interactions, providers and checklist
+unchanged. Marker11/11 and full447/447 tests pass. Scoped Chrome aerial/fallback
+and keyboard-selection observations recorded in FULL-SYSTEM-TESTING.md.
+No Google localhost credential change, reference edits or publication.

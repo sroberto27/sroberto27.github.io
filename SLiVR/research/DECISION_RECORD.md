@@ -823,3 +823,67 @@ from screenshots, a second 3D editor, force-reloading dirty pages, origin-wide
 worker removal, or deleting private user files to make checks pass. These would
 break the approved architecture or existing acceptance. Validation and all
 negative runs are recorded in the Phase 5 review; no participant benefit claim.
+
+## D097 — Approved visual system adapted to current functionality (2026-10-08)
+
+Apply the approved v2 neutral palette, local Geist fonts, flat Explore rail and
+shared controls to the current App0.5.0 worktree. Retain every current tool and
+data contract, including functions omitted or mocked in the prototype. Preserve
+the existing same-panel dossier, 880px breakpoint, half/full sheets and real
+loading/save/error/evidence states. No command palette, new shortcuts, invented
+readiness, framework migration or executable dependency.
+
+Both read-only references inspected: Experimental/css/01-base.css:6-85 supplies
+the flat token-based rail pattern; LSU3D/css/01-base.css:18-128 supplies semantic
+aliases/sizing. LSU3D/js/06-details-panel.js:5-42 and
+Experimental/js/06-details-panel.js:6-44 support the already adapted exclusive
+panels, mobile sheets and map resizing. Reason 1: the approved SLiVR appearance
+requires different colors/type/branding and a reserved flat rail; preserve
+library/provider/container lifecycle. Reason 3: neither has SLiVR's assessment,
+project-transfer or image-space editor counterpart; restyle current components.
+No reference edits. Fonts, licenses, source URLs and hashes are in vendor/VERSIONS.md.
+
+Keep checklist field structure and original style.css; map a final override layer
+to shared tokens, retain light theme and move the existing Sections button into
+the retained toolbar. The outer tool header supplies location/assessment identity.
+Use explicit words alongside evidence glyphs and stronger contrast than faint
+prototype text. Preserve image-space canvas rendering and units.
+
+Critical browser checks exposed an existing property-handler parameter shadowing
+the diagram accessor; rename that parameter only, preserving the existing editor
+and persistence. Keyboard edit/reload/layer checks and 447 automated tests pass.
+Keep design originals private and unchanged; regenerate the existing cache list.
+Full comparison, negative results, build identity and limits:
+[visual redesign review](VISUAL_REDESIGN_REVIEW.md). D095 acceptance remains;
+D096 Phase 5 gates stay OPEN. No participant evidence or publication claim.
+
+
+## D098 ? Original scouting checklist appearance retained (2026-10-08)
+
+Owner clarification supersedes D097's embedded-checklist visual treatment.
+`E:/sroberto27.github.io/CheckList/v2` controls the checklist's original layout
+and design; the rest of SLiVR retains the approved redesign. Inspected original
+index.html:29-44 and style.css; the existing embedded stylesheet and Inter CSS
+match their originals byte-for-byte. Restore Inter, original red theme color,
+visible original header, header Sections button and default light theme with
+existing dark toggle. Remove the checklist redesign override and shared-token
+links. Keep existing SLiVR evidence, assessment, export and save integrations;
+do not import the standalone application's database or unsupported controls.
+Original CheckList/v2 and both approved reference projects remain untouched.
+This corrects presentation only; no schema, provider or persistence change.
+
+
+## D099 - Colored raised map pins (2026-10-21)
+
+Owner approved restoring captured mint, future lavender and cluster blue with
+dark shaded bodies, lit edges and shadows. CSS-only in styles/60-visual-system.css;
+retain existing DOM markers, 44px targets, positions, teardrop geometry, labels,
+clustering, keyboard and click behavior. No provider/config/data changes.
+Both references inspected: LSU3D/css/05-leaflet-responsive.css:65-123 supplies
+radial gradient and inset/cast-shadow treatment; Experimental's same file:51-74
+uses flat circular pins and active inversion. Adapt LSU3D depth to existing SLiVR
+pins. Reason1: owner-approved capture palette and architecture require SLiVR
+colors rather than campus branding; preserve stable anchors without hover scale.
+Selected pins invert fill/text, hover adds an edge halo, focus retains its ring.
+Capture availability colors do not claim research verification or permission.
+References and original checklist untouched. No commit/push/deploy.

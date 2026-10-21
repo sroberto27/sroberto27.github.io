@@ -47,6 +47,8 @@ test('234: embedded V2 keeps the exact source stylesheet and every supported que
  assert.equal((html.match(/data-section="/g)||[]).length,8);
  for(const excluded of ['owner-contact-name','contact-information','btnGeoLocate','btnCompass','btnNoiseMeter','capture360.js','install.js','db.js','app.js','<script','manifest.json'])assert.ok(!html.includes(excluded),excluded);
  assert.ok(html.includes('vendor/fonts/inter.css'));assert.ok(html.includes('vendor/fontawesome/solid.min.css'));
+ for(const override of ['../../../styles/05-fonts.css','../../../styles/00-tokens.css','visual-system.css','data-theme="dark"'])assert.ok(!html.includes(override),override);
+ assert.match(html,/<header class="topbar">[\s\S]*?<button id="navToggle" class="icon-btn only-mobile"[\s\S]*?<\/header>/);
  assert.ok(html.includes('class="counter"'));assert.ok(html.includes('class="switch"'));assert.ok(html.includes('class="doc-grid"'));
 });
 

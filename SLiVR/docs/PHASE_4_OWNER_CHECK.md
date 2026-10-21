@@ -1,5 +1,11 @@
 # Phase 4 critical owner checks
 
+For the redesigned application's current manual regression, start with
+[Current manual test in FULL-SYSTEM-TESTING.md](FULL-SYSTEM-TESTING.md#current-manual-test-redesigned-ui-with-original-checklist-2026-10-09).
+It covers the retained functions and original checklist design using current
+desktop/mobile controls. This Phase 4 document preserves earlier accepted
+results; its historical navigation wording is not the current-UI test guide.
+
 ## D095 - Phase 4 CLOSED / ACCEPTED, 2026-09-29
 
 The owner explicitly confirmed that shot-workspace failure recovery and

@@ -441,3 +441,33 @@ catalog1.1.0. No event collection, telemetry or participant measurement added.
 
 D095 owner evidence retains its original unspecified browser/device context.
 See Phase 5 review for exact build/test identities and retained failed results.
+
+## D097 — Presentation verification measures
+
+- **Token contrast (252/180):** WCAG relative-luminance ratio for specified opaque
+  sRGB foreground/background token pairs. Small text/action text threshold4.5:1;
+  form boundaries and focus threshold3:1. Two automated tests do not certify the
+  entire interface, light theme, composited content or assistive-technology use.
+- **Responsive overflow (252/180):** compare document scroll width with viewport
+  width in the named view. A zero difference establishes no outer horizontal
+  overflow for that view, not reachability of every offscreen control. Phone and
+  tablet sizes are Chrome overrides, not hardware/touch/virtual-keyboard evidence.
+- **Edit persistence (177/234/250):** distinguish visible field value, save feedback,
+  independent layer identity and value after reload. Locator fill without a
+  committed change is not a persistence result. Preserve the failed interaction
+  and handler exception separately from corrected keyboard-edit observations.
+
+All observations are technical fixture checks. No completion-time, error-rate,
+preference, learnability or research-validity improvement was measured.
+
+
+D098: checklist appearance preservation is supported by original stylesheet/font
+CSS byte equality and markup checks, not the shared D097 contrast measurements.
+D097 checklist screenshots are historical; no new browser appearance measurement.
+
+
+D099: number-to-brightest-gradient-stop contrast ratios: mint5.46, lavender4.94,
+cluster-hover4.66; selected dark text on mint9.27/lavender7.48. Static sRGB pair
+calculation in outputs/redesign/color-pins-contrast.json excludes edge highlights
+and shadows, not a whole-screen accessibility certification. Actual DOM viewport
+sizes recorded separately from requested browser overrides.

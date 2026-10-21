@@ -418,3 +418,32 @@ exception D057 remains narrowly unchanged; no new credentials are introduced.
 
 History/save regressions and test-setup failures found during implementation are
 retained in the Phase 5 review. No participant data or measured usability claim.
+
+## D097 — Visual redesign limits (2026-10-08)
+
+Critical Chrome observations cover named local-fixture views at desktop, phone,
+tablet-width and short-landscape dimensions; they are not full Phase 5 acceptance.
+Physical-device touch/keyboard, assistive technology, forced colors/reduced-motion,
+light-theme and print rendering were not tested. CSS source review and shared dark
+token contrast checks do not establish those outcomes. Provider imagery rendering
+does not prove readiness, exact pose, capture authorization or error recovery.
+
+The full new-build download/import/print, provider-loss, neighboring-app and worker
+lifecycle checks remain open under D096. Default worker OFF and telemetry absent.
+An existing editor change-handler exception was corrected after live observation;
+the old console error and unrelated browser-extension error remain in the trace.
+No comprehensive clean-console/network claim. See [the review](VISUAL_REDESIGN_REVIEW.md)
+for retained stale-cache, early-screenshot and locator-interaction failures.
+No new participant or causal usability claims; D095 acceptance is preserved.
+
+
+D098: restoring original checklist styling removes D097's iframe visual override.
+Original styling is owner-required; shared dark-token contrast tests no longer
+describe that iframe. Source parity is not full responsive/accessibility testing.
+No fresh browser/device/print result or new phase acceptance is claimed.
+
+
+D099: added marker depth is visual styling, not geographic elevation or metric
+3D accuracy. Color denotes capture availability only. Chrome checks used local
+aerial imagery and explicit tilted fallback; actual Google mesh, physical touch,
+forced colors and hover rendering were not tested. No usability benefit measured.
