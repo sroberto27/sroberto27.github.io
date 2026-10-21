@@ -2,7 +2,7 @@ import { QUESTIONS } from "../scouting/assessment-template.js";
 import { newAssessment, MEDIA_LIMIT, MEDIA_TOTAL_LIMIT } from "../domain/scout-assessment.js";
 import { newId } from "../domain/ids.js";
 let zipLoading;
-async function zipLibrary() {
+export async function zipLibrary() {
  if (globalThis.JSZip) return globalThis.JSZip;
  zipLoading ??= new Promise((resolve, reject) => { const s = document.createElement("script"); s.src = new URL("../../vendor/jszip-3.10.1.min.js", import.meta.url).href; s.onload = () => resolve(globalThis.JSZip); s.onerror = () => { zipLoading = null; reject(new Error("ZIP reader could not load.")); }; document.head.append(s); });
  return zipLoading;

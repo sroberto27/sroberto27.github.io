@@ -1,5 +1,57 @@
 # Research and design decision record
 
+## D095 - Phase 4 CLOSED / ACCEPTED, 2026-09-29
+
+The owner explicitly confirmed that shot-workspace failure recovery and
+calibrated-plan persistence after reload are OK and instructed Phase 4 closure.
+Record both as **owner-reported PASS, confirmed 2026-09-29**. All eight previously
+accepted critical checks remain PASS, including immersive capture test 251.
+The two D094 evidence gaps are resolved by this owner report; do not request
+reconfirmation or reopen them solely because detailed execution traces are absent.
+
+Accepted implementation: D093 published as
+`af8aa819076d69abacdef0828d466567192a3821`, building on D091/D092 (`996417ad`).
+App0.4.0 / transfer1.4.0 / DB2 / template1.0.0 / catalog1.1.0. Browser/device
+and an independently measured tested digest were not supplied. Do not invent
+individual failure-injection traces, a full live Part J run, or device coverage.
+
+Existing automated evidence is unchanged: D091 423 full-suite PASS; D092 51
+focused PASS; D093 56 initial focused PASS, then 6 final capture/action PASS.
+These are separate runs. No new runtime tests were executed for this closeout.
+Historical failures and earlier pending results retain their build/scope.
+
+**Next: Phase 5 - Integrated prototype and release validation (F20 baseline).**
+Phase 4 is no longer a prerequisite blocker. Phase 5's integrated regression,
+release/device, exports and deployment gates still require their own evidence.
+Phase 6 Treedis Research Mode follows Phase 5. No Phase 5 implementation,
+telemetry, participant collection, staging, commit or push in this closeout.
+
+
+Decision: accept the owner's explicit closure instruction and additional workflow
+PASS reports; supersede D094's OPEN disposition without rewriting its historical
+audit. No new architecture deviation or provider-policy conclusion. The next
+implementation decision must follow Phase 5 and both read-only reference sources.
+
+See [Phase 4 closeout](PHASE_4_ACCEPTANCE_REVIEW.md) and [Phase 5 prompt](../PHASE_5_CLI_PROMPT.md).
+
+## Historical D094 audit (superseded by D095; evidence retained)
+
+## D094 - Phase 4 acceptance evidence audit, 2026-09-29
+
+Accept the owner's explicit test 251 PASS on published D093
+`af8aa819076d69abacdef0828d466567192a3821`, alongside preserved D091/D092 checks
+1-7. Browser/device not supplied; no reconfirmation. Full scope, automated logs,
+exit mapping and Phase 5 handoff: [Phase 4 audit](PHASE_4_ACCEPTANCE_REVIEW.md).
+
+Formal Phase 4 exit remains OPEN: the approved live failure/recovery and
+calibrated-flat-plan reload requirements have not been fully evidenced by the
+critical checklist. No new exception or scope transfer to Phase 5 is approved.
+D093 pending 251 language is superseded; earlier failed/unexecuted evidence remains
+historical. This audit introduces no implementation, reference reuse deviation,
+provider-policy finding, participant collection, commit or push.
+
+## Historical records (superseded status; evidence retained)
+
 | ID | Date | Decision | Alternatives considered | Rationale | Consequence and validation |
 |---|---|---|---|---|---|
 | D001 | 2026-09-19 | Treat LSU3D as read-only and build SLiVR separately | Modify LSU3D in place; full rewrite without inspection | Preserve the working reference and allow selective evidence-based reuse | Reuse matrix required; verify no LSU3D file changes |
@@ -694,3 +746,144 @@ Escape/opener restoration; 390x844 dock, expand/collapse, multi-selection focus
 and More/Preview access. Final mobile preview check used the final source.
 This is technical evidence, not measured usability or owner acceptance. Full
 app on a physical phone and assistive technology remain owner checks (250).
+
+## D093 - Immersive image handoff and owner acceptance, 2026-09-27
+
+Owner reports all seven critical Phase 4 checks passed for the preceding published
+D091/D092 build (main 996417ad). Preserve those owner passes and earlier D089
+passes. Exact device/browser details were not supplied; do not infer them.
+Owner then requested immersive capture as an addition, separately awaiting live
+acceptance under test 251.
+
+Inspected both read-only bridges: Experimental/js/03-tour-bridge.js:1-110 and
+LSU3D/js/03-tour-bridge.js:1-90. Their Ping/Navigate/RequestSweeps protocol has no
+image command, matching https://docs.treedis.com/sdk/web/integration-guide
+(reviewed 2026-09-27). No speculative provider commands or cross-origin canvas
+access added. Deviation reason 3: neither reference has screenshot capture.
+Existing viewer-host lifecycle, shot actions and image-overlay model are reused.
+
+Use browser getDisplayMedia (audio false) plus CropTarget/cropTo on the viewer
+host. The browser prompts every time; it is assisted capture, not silent SDK
+capture. Require a browser-tab track and successful same-tab region crop before
+reading pixels. Preserve provider-rendered credits and append a source footer.
+https://developer.mozilla.org/en-US/docs/Web/API/BrowserCaptureMediaStreamTrack/cropTo
+https://developer.mozilla.org/en-US/docs/Web/API/MediaDevices/getDisplayMedia
+
+New image uses existing owned/oblique representation, with immersive capture,
+location and experience IDs in view metadata; no schema migration. Return route
+is immersive. Entry-only context is retained; exact pose restoration is not
+claimed. User chooses the current SLiVR tab. Unsupported browsers, denied sharing,
+wrong surfaces, blank pixels or timeouts offer retry/import. Streams are stopped
+on success, failure, abort and late permission resolution; no audio, recording,
+network upload or telemetry. SLiVR overlays are hidden without resizing the frame.
+
+Technical evidence: 56 focused tests passed initially (5 new + 51 existing), then
+6 capture/action tests passed after adding synchronous-gesture/source-routing
+coverage. Syntax/whitespace checks passed. Deploy-scope check: 0 errors; reported
+485 files includes the owner's existing untracked handoff folder, left untouched.
+Live browser sharing/provider capture remains NOT TESTED; owner test 251 pending.
+
+
+## D096 ? Integrated prototype implementation and release validation (2026-09-29)
+
+**Decision:** implement authorized Phase 5 locally as App0.5.0, retaining D095
+Phase 4 closure and the D068/D090/D093 contracts. Release acceptance stays OPEN.
+Both approved reference projects were searched/read before implementation;
+[source files, line ranges, choices and deviations](PHASE_5_ACCEPTANCE_REVIEW.md)
+map changes to stable113-140, 172-184, 208-215 and affected237-251.
+
+Use existing canonical transfer and atomic persistence for native media ZIP;
+use the existing vendored JSZip3.10.1 loader and CheckList/v2 export.js:267-340
+manifest pattern. Filenames use stable IDs to avoid sanitized-name collisions.
+The packet is self-contained escaped HTML with a restrictive CSP, raster-only
+embedded images and selected sections; browser Print supplies PDF. No separate
+PDF engine, remote media fetch, new editor or schema migration. PNG north is
+conditional on non-oblique map bearing; otherwise orientation is unknown.
+
+Save transitions wait for writes, preserve failure state and keep the source
+workspace/URL on failure. History restoration must not override explicit
+selection or checklist pin/follow. Hidden preview stops, disposal removes owned
+listeners, and unload warns while edits are pending. No forced worker reload.
+
+Adapt LSU3D sw.js:44-122,146-216 and js/22-service-worker.js:36-118; SCSU has no
+worker counterpart. Default OFF; /SLiVR/ exact registration; slivr-shell-v1.
+Required deviations: fix the documented unfiltered unregister defect; replace
+campus paths/namespace with the SLiVR public-module allowlist; never cache any
+cross-origin provider; network-first modules/switches for compatibility; no
+forced activation/reload over unsaved state. No analytics hooks copied. Network
+failure is not complete offline/provider support. The hand-maintained allowlist
+is generated by tools/build-shell-cache.mjs and parity-tested against imports.
+
+The pre-existing private handoff directory is ignored and prohibited by the
+checker, with all user files retained. Existing public Phase 4 owner-check
+exception is preserved. No reference edits, Git index mutation or publication.
+
+Alternatives rejected: another persistence format, deriving measured geometry
+from screenshots, a second 3D editor, force-reloading dirty pages, origin-wide
+worker removal, or deleting private user files to make checks pass. These would
+break the approved architecture or existing acceptance. Validation and all
+negative runs are recorded in the Phase 5 review; no participant benefit claim.
+
+## D097 — Approved visual system adapted to current functionality (2026-10-08)
+
+Apply the approved v2 neutral palette, local Geist fonts, flat Explore rail and
+shared controls to the current App0.5.0 worktree. Retain every current tool and
+data contract, including functions omitted or mocked in the prototype. Preserve
+the existing same-panel dossier, 880px breakpoint, half/full sheets and real
+loading/save/error/evidence states. No command palette, new shortcuts, invented
+readiness, framework migration or executable dependency.
+
+Both read-only references inspected: Experimental/css/01-base.css:6-85 supplies
+the flat token-based rail pattern; LSU3D/css/01-base.css:18-128 supplies semantic
+aliases/sizing. LSU3D/js/06-details-panel.js:5-42 and
+Experimental/js/06-details-panel.js:6-44 support the already adapted exclusive
+panels, mobile sheets and map resizing. Reason 1: the approved SLiVR appearance
+requires different colors/type/branding and a reserved flat rail; preserve
+library/provider/container lifecycle. Reason 3: neither has SLiVR's assessment,
+project-transfer or image-space editor counterpart; restyle current components.
+No reference edits. Fonts, licenses, source URLs and hashes are in vendor/VERSIONS.md.
+
+Keep checklist field structure and original style.css; map a final override layer
+to shared tokens, retain light theme and move the existing Sections button into
+the retained toolbar. The outer tool header supplies location/assessment identity.
+Use explicit words alongside evidence glyphs and stronger contrast than faint
+prototype text. Preserve image-space canvas rendering and units.
+
+Critical browser checks exposed an existing property-handler parameter shadowing
+the diagram accessor; rename that parameter only, preserving the existing editor
+and persistence. Keyboard edit/reload/layer checks and 447 automated tests pass.
+Keep design originals private and unchanged; regenerate the existing cache list.
+Full comparison, negative results, build identity and limits:
+[visual redesign review](VISUAL_REDESIGN_REVIEW.md). D095 acceptance remains;
+D096 Phase 5 gates stay OPEN. No participant evidence or publication claim.
+
+
+## D098 ? Original scouting checklist appearance retained (2026-10-08)
+
+Owner clarification supersedes D097's embedded-checklist visual treatment.
+`E:/sroberto27.github.io/CheckList/v2` controls the checklist's original layout
+and design; the rest of SLiVR retains the approved redesign. Inspected original
+index.html:29-44 and style.css; the existing embedded stylesheet and Inter CSS
+match their originals byte-for-byte. Restore Inter, original red theme color,
+visible original header, header Sections button and default light theme with
+existing dark toggle. Remove the checklist redesign override and shared-token
+links. Keep existing SLiVR evidence, assessment, export and save integrations;
+do not import the standalone application's database or unsupported controls.
+Original CheckList/v2 and both approved reference projects remain untouched.
+This corrects presentation only; no schema, provider or persistence change.
+
+
+## D099 - Colored raised map pins (2026-10-21)
+
+Owner approved restoring captured mint, future lavender and cluster blue with
+dark shaded bodies, lit edges and shadows. CSS-only in styles/60-visual-system.css;
+retain existing DOM markers, 44px targets, positions, teardrop geometry, labels,
+clustering, keyboard and click behavior. No provider/config/data changes.
+Both references inspected: LSU3D/css/05-leaflet-responsive.css:65-123 supplies
+radial gradient and inset/cast-shadow treatment; Experimental's same file:51-74
+uses flat circular pins and active inversion. Adapt LSU3D depth to existing SLiVR
+pins. Reason1: owner-approved capture palette and architecture require SLiVR
+colors rather than campus branding; preserve stable anchors without hover scale.
+Selected pins invert fill/text, hover adds an edge halo, focus retains its ring.
+Capture availability colors do not claim research verification or permission.
+References and original checklist untouched. No commit/push/deploy.

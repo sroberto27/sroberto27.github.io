@@ -11,7 +11,7 @@ export function createScoutingActions({ store, repo, persist, now, notice, remem
   const errors = [...scoutingReferenceErrors(next), ...Object.entries(next).flatMap(([name, records]) => records.flatMap(record => validateRecord(name, record).errors))];
   if (errors.length) { notice(errors.map(e => e.reason).join("; ")); return Promise.resolve({ ok: false }); }
   set({ workingBundle: next });
-  queue = queue.then(() => persist(() => repo.saveScouting(next)));
+  queue = queue.then(() => persist(() => repo.saveScouting(next), `scouting:${next.projects[0].id}`));
   return queue;
  }
  function snapshot(next, assessment) {

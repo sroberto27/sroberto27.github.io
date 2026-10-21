@@ -12,6 +12,8 @@
  */
 
 import { APP_VERSION } from "../domain/versions.js";
+import { configureServiceWorker } from "./service-worker.js";
+import { hasDrafts } from "../scouting/autosave.js";
 import { createStore } from "./store.js";
 import { createRouter } from "./router.js";
 import { createActions, initialState } from "./actions.js";
@@ -46,6 +48,10 @@ export async function boot({ root, win } = {}) {
   win ??= globalThis.window ?? globalThis;
   root ??= win.document?.getElementById("app") ?? globalThis.document?.getElementById("app");
   if (!root) throw new Error("SLiVR could not find its mount point: no element with id \"app\"");
+  const worker = configureServiceWorker(win).catch(error => {
+    console.warn("SLiVR shell caching is unavailable", error);
+    return { dispose() {} };
+  });
 
   const capabilities = detectCapabilities({ win, runtimeConfig: win.SLIVR_RUNTIME ?? null });
   const diagnostics = readDiagnostics(win);
@@ -71,7 +77,7 @@ export async function boot({ root, win } = {}) {
     console.error("The region configuration could not be read", error);
   }
 
-  const router = createRouter({ window: win, onRoute: (route) => actions.applyRoute(route) });
+  const router = createRouter({ window: win, onRoute: (route, options) => actions.applyRoute(route, options) });
   const actions = createActions({
     store,
     repo,
@@ -85,7 +91,13 @@ export async function boot({ root, win } = {}) {
     timeZone: region?.timeZone ?? "America/Chicago",
   });
 
-  createShell({ root, store, actions, region, win });
+  const shell = createShell({ root, store, actions, region, win });
+  const beforeUnload = event => {
+    if (hasDrafts() || ["saving", "failed"].includes(store.getState().save.state)) {
+      event.preventDefault(); event.returnValue = "";
+    }
+  };
+  win.addEventListener("beforeunload", beforeUnload);
   router.start();
 
   // Local projects must remain usable while network catalog loading is pending.
@@ -101,7 +113,7 @@ export async function boot({ root, win } = {}) {
   }
   store.setState({ boot: catalog.ok ? "ready" : "degraded" });
 
-  return { store, actions, router };
+  return { store, actions, router, dispose() { win.removeEventListener("beforeunload", beforeUnload); router.stop(); shell.destroy(); actions.unmountMap(); actions.unmountViewer(); void worker.then(control => control.dispose()); } };
 }
 
 // Starts itself only in a real browser. Importing the module elsewhere, as the

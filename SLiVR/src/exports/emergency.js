@@ -34,7 +34,7 @@ export function buildEmergencyExport({ bundle, catalogVersion, exportedAt, reaso
   const project = bundleProject(bundle);
   const filename = buildFilename({
     project: project?.name ?? "project",
-    suffix: "emergency",
+    suffix: `${project?.id ?? "project"}-emergency`,
     revision: Number.isInteger(project?.revision) ? project.revision : undefined,
     extension: "json",
     date: exportedAt.slice(0, 10),
@@ -47,6 +47,7 @@ export function buildEmergencyExport({ bundle, catalogVersion, exportedAt, reaso
 export function projectExportFilename(project, exportedAt) {
   return buildFilename({
     project: project?.name ?? "project",
+    suffix: project?.id,
     revision: Number.isInteger(project?.revision) ? project.revision : undefined,
     extension: "json",
     date: exportedAt.slice(0, 10),

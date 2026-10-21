@@ -1,4 +1,66 @@
-# Current status: Phase 3 COMPLETE (D089)
+# D096 ? Phase 5 implementation, 2026-09-29
+
+App0.5.0 is implemented locally; Phase 5 release acceptance remains OPEN pending
+live gates. D095 Phase 4 acceptance is preserved. See
+[Phase 5 review](research/PHASE_5_ACCEPTANCE_REVIEW.md) and
+[resumable handoff](PHASE_5_RESUME.md). No Phase 6, staging, commit or push.
+Earlier status entries retain their historical date and scope.
+
+# SLiVR implementation plan and current acceptance status
+
+## D095 - Phase 4 CLOSED / ACCEPTED, 2026-09-29
+
+The owner explicitly confirmed that shot-workspace failure recovery and
+calibrated-plan persistence after reload are OK and instructed Phase 4 closure.
+Record both as **owner-reported PASS, confirmed 2026-09-29**. All eight previously
+accepted critical checks remain PASS, including immersive capture test 251.
+The two D094 evidence gaps are resolved by this owner report; do not request
+reconfirmation or reopen them solely because detailed execution traces are absent.
+
+Accepted implementation: D093 published as
+`af8aa819076d69abacdef0828d466567192a3821`, building on D091/D092 (`996417ad`).
+App0.4.0 / transfer1.4.0 / DB2 / template1.0.0 / catalog1.1.0. Browser/device
+and an independently measured tested digest were not supplied. Do not invent
+individual failure-injection traces, a full live Part J run, or device coverage.
+
+Existing automated evidence is unchanged: D091 423 full-suite PASS; D092 51
+focused PASS; D093 56 initial focused PASS, then 6 final capture/action PASS.
+These are separate runs. No new runtime tests were executed for this closeout.
+Historical failures and earlier pending results retain their build/scope.
+
+**Next: Phase 5 - Integrated prototype and release validation (F20 baseline).**
+Phase 4 is no longer a prerequisite blocker. Phase 5's integrated regression,
+release/device, exports and deployment gates still require their own evidence.
+Phase 6 Treedis Research Mode follows Phase 5. No Phase 5 implementation,
+telemetry, participant collection, staging, commit or push in this closeout.
+
+
+See [Phase 4 closeout](research/PHASE_4_ACCEPTANCE_REVIEW.md) and the ready-to-use
+[new CLI prompt](PHASE_5_CLI_PROMPT.md). D094's OPEN status below is historical.
+
+## Historical D094 audit (superseded by D095; evidence retained)
+
+## Current acceptance audit - D094, 2026-09-29
+
+D090's image-overlay revision was approved and implemented under D091; D092 menus
+and D093 browser-assisted immersive screenshots are published. All seven earlier
+critical owner checks and test 251 are owner-reported PASS; 251 was explicitly
+confirmed 2026-09-29 for published D093
+`af8aa819076d69abacdef0828d466567192a3821`. Browser/device unspecified.
+D093 supersedes the earlier exclusion of immersive screenshots; numeric optics
+and schematic image-space accuracy boundaries remain unchanged.
+
+Formal Phase 4 closure remains OPEN on the specific live failure/recovery and
+flat-plan calibration-retention evidence gaps in the
+[acceptance audit](research/PHASE_4_ACCEPTANCE_REVIEW.md). No accepted result is
+revoked or requested again; no exception is invented. Phase 5 is **Integrated
+prototype and release validation (F20 baseline)**, with prerequisites, scope and
+first tasks in that audit. No Phase 5 implementation in this documentation task.
+Earlier pending approval/acceptance statements below are historical.
+
+## Historical records (superseded status; evidence retained)
+
+### Prior status: Phase 3 COMPLETE (D089)
 
 > Current status (D091, 2026-09-26): the owner approved the image-overlay plan
 > and implementation, then requested resumption. A local app0.4.0 build exists;
@@ -586,22 +648,23 @@ Trust boundaries crossed: participant device → research origin (authorisation 
 
 The single path proved end to end in Phase 5 (test 113) and swept in Part J:
 
-1. `#/explore` opens the Lafayette envelope on 2025 DOTD imagery with attribution; all 17 markers present; capture and future states visually distinct.
+1. `#/explore` opens the Lafayette envelope on 2025 DOTD imagery with attribution; all 18 catalog locations across seven areas present; capture and future states visually distinct.
 2. Filter to Downtown Core + current capture; select **LOC-001 Carpe Diem** from the list; the map highlights the same record; the dossier opens with `#/location/LOC-001`.
 3. The dossier shows the shared-experience relationship without merging LOC-001 into `5eb11a1b`; ownership reads `Need validation`; hours are labelled public hours, not availability.
 4. *Add as candidate* → new project "Downtown Pilot", scene SC-12 INT/EXT NIGHT; record the unknown access issue as an open question.
+4a. Create a dated scouting assessment with an entry bookmark and owned photo; record an explicit zero, false, and unknown capacity. Link a named immutable assessment revision to a requirement. Edit the current assessment and confirm the earlier decision evidence stays unchanged.
 5. *Enter Immersive* → `#/immersive/LOC-001` loads sweep `sebf1e31m9u7dk7twchgfz1mc` at x 4.479 / y 76.060; breadcrumb shows the catalog location, not the experience.
 6. Move to **LOC-005 Rock'n'Bowl** inside the same experience — location identity, address and notes change; where the provider supports it, without a full reload.
-7. Save a bookmark with a note; switch to **LOC-009 Magnolia Pantry** (`a872109b`) — pending navigation is cancelled, the prior session disposed, and no late event from `5eb11a1b` can alter the new state.
+7. Save an entry-only bookmark with a note (no walked-to pose restoration claim); switch to **LOC-009 Magnolia Pantry** (`a872109b`) — pending navigation is cancelled, the prior session disposed, and no late event from `5eb11a1b` can alter the new state.
 8. Return to LOC-001 with no stale sweep; back to Explore with centre, zoom, filters and selection intact.
 9. Add **LOC-004 Spoonbill** and **LOC-006 Borden's** as candidates; compare all three side by side; unknowns stay unknown and score nothing.
 10. Mark LOC-001 **preferred** and LOC-006 **backup** with rationale and remaining questions.
-11. *Create shot design* from the preferred candidate → `#/shot/{id}` with a DOTD aerial background for the scene bbox.
-12. Place magenta **Cam A** and blue **Cam B**, actor stand-ins, numbered marks, direction arrows and the two shot descriptions; set gate 36.0 × 24.0 mm and 50 mm → H 39.598° / V 26.991° shown in the cone and frustum.
+11. *Create shot design* from the preferred candidate → `#/shot/{id}` with an attributed screenshot of the current Explore map view, or an owned/blank image; attach it to the selected project/scene/candidate. Retain legacy ENU records without conversion.
+12. Place magenta **Cam A** and blue **Cam B**, actor stand-ins, numbered marks, direction arrows and the two shot descriptions; set gate 36.0 × 24.0 mm and 50 mm → H 39.598° / V 26.991° as uncropped numeric optics at aspect 3:2; image-space wedges are schematic, not physical projection or surveyed geometry.
 13. Draw distinct camera and actor paths; run the deterministic preview; switch 2D↔3D and Explore↔Immersive↔Shot Designer without losing the design.
-14. Save, reload, undo an edit, create variant **B**, restore variant **A**.
-15. Export **project JSON**, **PNG diagram** (title block: project, scene, location, shot, camera/lens, aspect, date, revision, units, calibration status, north arrow, DOTD attribution), **shot-list CSV**, and the **print-ready packet** with candidate decision, validation gaps, dossier summary, bookmark links, diagram, shot list and the outstanding access/logistics questions from the catalog.
-16. Import the JSON into a clean browser profile and confirm identical IDs and relationships.
+14. Save, reload, make and undo a new edit, create variant **B**, restore variant **A**.
+15. Export **project JSON**, **PNG diagram** (title block: project, scene, location, shot, camera/lens, aspect, date, revision, units, calibration status, north arrow only when captured bearing supports it (otherwise unknown), retained provider attribution), **shot-list CSV**, and the **print-ready packet** with candidate decision, validation gaps, dossier summary, bookmark links, diagram, shot list and the outstanding access/logistics questions from the catalog. Choose assessment sections/media explicitly; export native media ZIP and verify missing-media reporting.
+16. Import JSON and native ZIP into separate clean browser profiles and confirm identical IDs, relationships, immutable evidence revisions, owned media, backgrounds and variants; no provider assets are fetched or cached for transfer. D093 accepted user-captured screenshots retain their attribution.
 
 ---
 

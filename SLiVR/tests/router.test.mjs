@@ -214,3 +214,12 @@ test("no route carries anything but record identifiers", () => {
   });
   assert.equal(hash, "#/project/prj_00000000-0000-4000-8000-000000000001");
 });
+
+test("115: history traversal is distinguished from deliberate navigation and blocked URL repair emits no loop",()=>{
+  const win=linkedWindow("#/explore"),seen=[];
+  const router=createRouter({window:win,onRoute:(route,options)=>seen.push([route.name,options.historyTraversal])});
+  router.start();router.navigate({name:"projects"});win.dispatch("hashchange");
+  win.location.hash="#/explore";win.dispatch("popstate");win.dispatch("hashchange");
+  assert.deepEqual(seen,[["explore",false],["projects",false],["explore",true]]);
+  router.restore({name:"projects"});win.dispatch("hashchange");assert.equal(seen.length,3);assert.equal(win.location.hash,"#/projects");
+});

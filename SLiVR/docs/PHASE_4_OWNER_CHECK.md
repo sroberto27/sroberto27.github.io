@@ -1,5 +1,66 @@
 # Phase 4 critical owner checks
 
+For the redesigned application's current manual regression, start with
+[Current manual test in FULL-SYSTEM-TESTING.md](FULL-SYSTEM-TESTING.md#current-manual-test-redesigned-ui-with-original-checklist-2026-10-09).
+It covers the retained functions and original checklist design using current
+desktop/mobile controls. This Phase 4 document preserves earlier accepted
+results; its historical navigation wording is not the current-UI test guide.
+
+## D095 - Phase 4 CLOSED / ACCEPTED, 2026-09-29
+
+The owner explicitly confirmed that shot-workspace failure recovery and
+calibrated-plan persistence after reload are OK and instructed Phase 4 closure.
+Record both as **owner-reported PASS, confirmed 2026-09-29**. All eight previously
+accepted critical checks remain PASS, including immersive capture test 251.
+The two D094 evidence gaps are resolved by this owner report; do not request
+reconfirmation or reopen them solely because detailed execution traces are absent.
+
+Accepted implementation: D093 published as
+`af8aa819076d69abacdef0828d466567192a3821`, building on D091/D092 (`996417ad`).
+App0.4.0 / transfer1.4.0 / DB2 / template1.0.0 / catalog1.1.0. Browser/device
+and an independently measured tested digest were not supplied. Do not invent
+individual failure-injection traces, a full live Part J run, or device coverage.
+
+Existing automated evidence is unchanged: D091 423 full-suite PASS; D092 51
+focused PASS; D093 56 initial focused PASS, then 6 final capture/action PASS.
+These are separate runs. No new runtime tests were executed for this closeout.
+Historical failures and earlier pending results retain their build/scope.
+
+**Next: Phase 5 - Integrated prototype and release validation (F20 baseline).**
+Phase 4 is no longer a prerequisite blocker. Phase 5's integrated regression,
+release/device, exports and deployment gates still require their own evidence.
+Phase 6 Treedis Research Mode follows Phase 5. No Phase 5 implementation,
+telemetry, participant collection, staging, commit or push in this closeout.
+
+
+Acceptance mapping: shot-workspace failure recovery resolves the D094 gap grouped
+under 238/239/245 and affected Part J 179/181; calibrated-plan save/reload resolves
+243 and retained 107-111. This is owner acceptance of the named workflows, not
+new independent execution of every sub-assertion. See the
+[closeout](../research/PHASE_4_ACCEPTANCE_REVIEW.md) and
+[Phase 5 CLI prompt](../PHASE_5_CLI_PROMPT.md).
+
+## Historical D094 audit (superseded by D095; evidence retained)
+
+## Current acceptance - D094, confirmed 2026-09-29
+
+Checks 1-7 remain **owner-reported PASS** on published D091/D092 (`996417ad`).
+Check 8 / stable **251 is owner-reported PASS, confirmed 2026-09-29**, for D093
+published as `af8aa819076d69abacdef0828d466567192a3821`: screenshot,
+credits/footer, no SLiVR overlays, sharing stops, editing, JSON/PNG export,
+persistence after reload, return navigation, cancellation/retry, wrong-tab/window
+rejection and unsupported-browser import fallback. Browser/device not supplied.
+Do not reconfirm any of these accepted results.
+
+All eight critical checks are accepted. Formal Phase 4 exit remains OPEN because
+the supplied checklist does not establish the full live failure-injection and
+flat-plan calibration/reload gates. The conditional plan-import instruction is
+not proof of a calibrated-plan reload. See the [gate audit and remaining focused
+conditions](../research/PHASE_4_ACCEPTANCE_REVIEW.md). This is not a reported
+failure of any accepted check. Historical pending language below is superseded.
+
+## Historical records (superseded status; evidence retained)
+
 App0.4.0, transfer1.4.0, DB2; D091 core and D092 menus. Owner acceptance pending.
 Earlier Phase 3 owner passes remain accepted. Check only these new/changed flows.
 Wait for Saved locally and export Diagram JSON as a backup before refreshing an
@@ -50,3 +111,19 @@ Physical-device results are separate from desktop browser results.
    properties consecutively, and use undo/redo. Check Tab focus, Escape/Close,
    sheet Expand/Collapse and More > Preview. Reload after saving and confirm the
    same arrangement. Report usability issues; no broad repeat of earlier passes.
+
+## Owner result and new addition (2026-09-27)
+
+Owner reports checks 1-7 PASSED on the published D091/D092 build. Preserve these
+results; repeat only a flow affected by a reported regression.
+
+8. **Immersive screenshot (251, new and pending).** Open an immersive location
+   and frame a view. Click Shot Designer > New diagram from immersive view.
+   In the browser sharing prompt, choose the current SLiVR tab. The diagram
+   should contain the viewer image and its visible provider credits plus source
+   footer, without SLiVR panels; sharing should stop immediately. Add an actor
+   and camera path, wait for Saved locally, then export JSON/PNG and reload.
+   Back should return to the immersive location; exact camera pose restoration
+   is not promised. Also cancel the sharing prompt once and confirm retry works.
+   Choosing a different tab/window must fail without creating an incorrect
+   diagram. Unsupported browsers use Blank / imported-image diagram instead.

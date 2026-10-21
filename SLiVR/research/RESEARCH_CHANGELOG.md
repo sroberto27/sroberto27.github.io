@@ -1,5 +1,62 @@
 # Research-relevant change log
 
+## D095 - Phase 4 CLOSED / ACCEPTED, 2026-09-29
+
+The owner explicitly confirmed that shot-workspace failure recovery and
+calibrated-plan persistence after reload are OK and instructed Phase 4 closure.
+Record both as **owner-reported PASS, confirmed 2026-09-29**. All eight previously
+accepted critical checks remain PASS, including immersive capture test 251.
+The two D094 evidence gaps are resolved by this owner report; do not request
+reconfirmation or reopen them solely because detailed execution traces are absent.
+
+Accepted implementation: D093 published as
+`af8aa819076d69abacdef0828d466567192a3821`, building on D091/D092 (`996417ad`).
+App0.4.0 / transfer1.4.0 / DB2 / template1.0.0 / catalog1.1.0. Browser/device
+and an independently measured tested digest were not supplied. Do not invent
+individual failure-injection traces, a full live Part J run, or device coverage.
+
+Existing automated evidence is unchanged: D091 423 full-suite PASS; D092 51
+focused PASS; D093 56 initial focused PASS, then 6 final capture/action PASS.
+These are separate runs. No new runtime tests were executed for this closeout.
+Historical failures and earlier pending results retain their build/scope.
+
+**Next: Phase 5 - Integrated prototype and release validation (F20 baseline).**
+Phase 4 is no longer a prerequisite blocker. Phase 5's integrated regression,
+release/device, exports and deployment gates still require their own evidence.
+Phase 6 Treedis Research Mode follows Phase 5. No Phase 5 implementation,
+telemetry, participant collection, staging, commit or push in this closeout.
+
+
+Updated the resume, controlling-plan status, owner checks, living testing record,
+acceptance review and all five phase-boundary research registers. Added a new CLI
+prompt for Phase 5. Preserved D094 as history and preserved all pre-existing runtime,
+test, handoff and unrelated repository changes. Documentation-only closeout.
+
+See [Phase 4 closeout](PHASE_4_ACCEPTANCE_REVIEW.md) and [Phase 5 prompt](../PHASE_5_CLI_PROMPT.md).
+
+## Historical D094 audit (superseded by D095; evidence retained)
+
+## 2026-09-29 - D094 Phase 4 documentation acceptance audit
+
+Recorded owner-reported PASS for D093 test 251, confirmed 2026-09-29, published
+`af8aa819076d69abacdef0828d466567192a3821`; preserved all seven D091/D092 owner
+passes and historical automated/negative evidence. Browser/device not supplied.
+Inspected existing 423/56/6 logs; did not rerun tests or turn these separate runs
+into a final-build full-suite claim. D092's 51 focused passes remain recorded.
+
+Added [Phase 4 gate audit and Phase 5 handoff](PHASE_4_ACCEPTANCE_REVIEW.md);
+synchronized resume, owner/testing records and controlling-plan status. All eight
+critical owner checks accepted; formal phase exit OPEN for required live
+failure/recovery and flat-plan calibration-retention evidence, with no new scope
+exception. Next: Phase 5 Integrated prototype and release validation (F20).
+
+The previous session made no closeout edits because its shell could not start.
+This session changed documentation only. Existing runtime/test/handoff changes and
+unrelated repository work were preserved. No staging, commit, push, reference
+project changes, Phase 5 implementation or participant collection.
+
+## Historical records (superseded status; evidence retained)
+
 ## 2026-09-26 - D091 implementation and owner path refinements
 
 Owner approved and resumed image-overlay Phase 4. Local app0.4.0 / transfer1.4.0
@@ -523,3 +580,74 @@ layer multi-selection, shot summaries and retained field focus. Existing image
 coordinates, paths, storage and Explore behavior remain intact. Technical checks
 and pending owner test 250 are recorded in FULL-SYSTEM-TESTING. No telemetry or
 participant evidence, no new schema, no commit/push for this revision.
+
+## 2026-09-27 - D093 immersive screenshot addition
+
+Recorded owner PASS for all seven preceding Phase 4 critical checks. Added
+current immersive viewer handoff through browser-authorized same-tab cropping,
+source context/footer, stream cleanup and fallback. Six focused capture/action
+tests pass; live test 251 remains pending. No commit/push or telemetry.
+
+
+## 2026-09-29 ? D096 Phase 5 local implementation
+
+App0.5.0 / transfer1.4.0 / DB2 / template1.0.0 / catalog1.1.0; ZIP wrapper1.
+F20 baseline plus integrated F06-SA/F08-F12 transfer/evidence. Added write-aware
+transitions/history recovery, disposal/suspension, selected native JSON/media ZIP
+and print packets, stable export IDs/provenance, focus/forced-colors export UI,
+default-off scoped worker, and private-handoff deployment exclusion. No migration,
+participant logging, reference edits, Phase 6, Git staging, commit or push.
+
+[Phase 5 review](PHASE_5_ACCEPTANCE_REVIEW.md) records exact runtime/test digests,
+commands, environments, failure history, stable-ID coverage and remaining live
+acceptance. D095's earlier owner-reported results remain accepted as reported;
+new automation is neither a fresh owner pass nor a released-build claim.
+
+
+D096 final verification: **445 automated PASS / 0 FAIL**, deployment **226 files /
+0 errors**, catalog **0 errors / 1 retained alias warning**. Exact final digests
+and environment are in research/PHASE_5_ACCEPTANCE_REVIEW.md (relative from
+project root). Owner will perform the full manual test; no extension setup is
+needed. Phase 5 live acceptance remains OPEN; D095 remains accepted.
+
+## 2026-10-08 — D097 visual redesign
+
+Adapted approved v2 appearance to current App0.5.0: shared neutral tokens, local
+Geist fonts, flat Explore rail, controls across immersive/scouting/project/shot
+tools and responsive overrides. Preserved all current features, data versions,
+provider lifecycle, units and evidence semantics. No executable dependency,
+telemetry, reference/design-original edit, staging, commit, push or deployment.
+
+Corrected the existing Shot Designer field parameter collision found by keyboard
+testing. Final full suite 447 PASS/0 FAIL; deployment236/0, catalog0 errors/1 retained
+alias warning. Chrome critical checks, exact runtime/test digests, screenshots,
+negative runs and remaining gates are in [the review](VISUAL_REDESIGN_REVIEW.md).
+No whole-phase acceptance or participant benefit claim; D095 remains accepted.
+
+
+## 2026-10-08 ? D098 original checklist restoration
+
+Per owner clarification, removed checklist redesign CSS/shared tokens, restored
+Inter and original header/menu/theme defaults. Retained all SLiVR integration,
+regenerated the shell cache and updated stable234. Original reference files
+untouched; no commit, push, deployment or participant collection.
+
+
+## 2026-10-09 - Current UI manual regression instructions
+
+Added a current-UI manual sequence at the start of FULL-SYSTEM-TESTING.md,
+with desktop/phone control locations, retained functionality checks, original
+CheckList/v2 appearance, failure/recovery, transfer/export and accessibility
+coverage. M1-M15 map to existing stable IDs and start NOT TESTED. Linked the
+historical Phase 4 owner guide to this sequence; preserved prior acceptance.
+Documentation only: no application changes, new runtime/manual test result,
+phase closure, commit or deployment.
+
+
+## 2026-10-21 - D099 map pin appearance
+
+Restored capture-specific colors and adapted reference gradient/edge/shadow
+styling to existing SLiVR markers. CSS only; interactions, providers and checklist
+unchanged. Marker11/11 and full447/447 tests pass. Scoped Chrome aerial/fallback
+and keyboard-selection observations recorded in FULL-SYSTEM-TESTING.md.
+No Google localhost credential change, reference edits or publication.

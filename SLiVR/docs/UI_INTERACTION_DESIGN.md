@@ -297,3 +297,35 @@ remain reachable. Project/scene controls remain in the shell's mobile disclosure
 Appearance, Movement and Camera settings group properties; advanced positioning
 is collapsed. Layers exposes selection independently of visibility/locking.
 Preview is under More on mobile; desktop Timeline expands the scrubber.
+
+## D097 approved visual system
+
+The current application controls functionality; approved v2 prototypes control
+compatible appearance. Shared local Geist typography, neutral graphite surfaces,
+blue active controls and flat separators apply across Explore, immersive chrome,
+scouting, project tools and Shot Designer. Desktop Explore reserves a 336px rail
+(300px at narrow desktop widths); the same rail displays list or dossier.
+
+Keep existing two workspace destinations, all project/map/provider tools, actual
+save/loading/error states and evidence labels. Retain the 880px responsive
+breakpoint, mobile navigation and explicit half/full sheets. Checklist identity
+is in the outer header; its existing Sections toggle sits in the iframe toolbar.
+No new command palette, shortcuts, automatic peek workflow or mocked controls.
+Full comparison and scoped validation: research/VISUAL_REDESIGN_REVIEW.md.
+
+
+## D098 checklist exception ? owner requirement
+
+The scouting checklist must keep the original layout and design from
+`E:/sroberto27.github.io/CheckList/v2`: Inter, original header, colors, cards,
+spacing and section navigation. Do not apply the shared SLiVR visual redesign
+inside its iframe. SLiVR assessment/evidence/save integration and outer tool
+window remain. This supersedes D097's checklist styling and toolbar relocation.
+
+
+### D099 map pin appearance
+
+Captured pins use mint, future pins lavender, cluster circles blue. Dark radial
+shading plus inset highlights/cast shadows provide depth. Hover halo, solid
+selected fill/dark number and keyboard focus remain distinct. Keep the existing
+geometry, number, hit target and map anchor; color denotes capture availability.

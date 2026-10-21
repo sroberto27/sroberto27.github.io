@@ -39,6 +39,7 @@ export function focusableElements(container) {
     return [];
   }
   return candidates.filter((node) => {
+    if (node.closest?.('[hidden], [inert], [aria-hidden="true"]')) return false;
     if (typeof node.getClientRects !== "function") return true;
     return node.offsetParent !== null || node.getClientRects().length > 0;
   });
@@ -91,7 +92,9 @@ export function createFocusTrap({ container, onEscape = null, doc = globalThis.d
   }
 
   doc?.addEventListener("keydown", onKeyDown, true);
-  focusableElements(container)[0]?.focus();
+  const first = focusableElements(container)[0];
+  if (first) first.focus();
+  else { container.setAttribute?.("tabindex", "-1"); container.focus?.(); }
 
   return {
     release() {

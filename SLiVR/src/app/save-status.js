@@ -33,6 +33,8 @@ export function createSaveStatus({ onChange = null, now = () => new Date().toISO
   let error = null;
   let inFlight = 0;
   let lastAttempt = null;
+  const pending = new Set();
+  const failed = new Map();
 
   function snapshot() {
     return Object.freeze({
@@ -56,18 +58,23 @@ export function createSaveStatus({ onChange = null, now = () => new Date().toISO
    *
    * @param {() => Promise<unknown>} operation
    */
-  async function track(operation) {
+  async function track(operation, key = operation) {
     lastAttempt = operation;
     inFlight += 1;
     state = "saving";
     error = null;
     emit();
+    let settle;
+    const completion = new Promise(resolve => { settle = resolve; });
+    pending.add(completion);
     try {
       const result = await operation();
+      failed.delete(key);
       inFlight -= 1;
       if (inFlight === 0) {
-        state = "saved";
-        lastSavedAt = now();
+        state = failed.size ? "failed" : "saved";
+        error = failed.values().next().value?.error ?? null;
+        if (!failed.size) lastSavedAt = now();
         emit();
       }
       return { ok: true, result };
@@ -75,13 +82,22 @@ export function createSaveStatus({ onChange = null, now = () => new Date().toISO
       inFlight -= 1;
       state = "failed";
       error = { code: caught?.code ?? "save-failed", message: caught?.message ?? String(caught) };
+      failed.set(key, { operation, error });
       emit();
       return { ok: false, error };
+    } finally {
+      pending.delete(completion);
+      settle();
     }
   }
 
   /** Re-runs the write that failed. */
   async function retry() {
+    if (failed.size) {
+      const results = [];
+      for (const [key, { operation }] of [...failed.entries()]) results.push(await track(operation, key));
+      return results.find(result => !result.ok) ?? results.at(-1);
+    }
     if (typeof lastAttempt !== "function") return { ok: false, error };
     return track(lastAttempt);
   }
@@ -99,9 +115,14 @@ export function createSaveStatus({ onChange = null, now = () => new Date().toISO
     error = null;
     inFlight = 0;
     lastAttempt = null;
+    failed.clear();
     emit();
     return snapshot();
   }
 
-  return { track, retry, fail, reset, get status() { return snapshot(); } };
+  async function settled() {
+    while (pending.size) await Promise.all([...pending]);
+    return snapshot();
+  }
+  return { track, retry, fail, reset, settled, get status() { return snapshot(); } };
 }

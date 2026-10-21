@@ -112,9 +112,9 @@ export function createDiagramEditor({record:initial,actions,store,win=globalThis
     pane.replaceChildren(node("header",{},[node("strong",{text:panelName==="Properties"?"Edit selection":panelName}),expand,button("Close",closePanel)]));
     let target=pane;
     const add=(...nodes)=>target.append(...nodes);
-    const field=(label,value,onChange,{type="text",min,max,step}={})=>{
-      const input=node("input",{type,value:String(value??""),...(min!==undefined?{min}:{}),...(max!==undefined?{max}:{}),...(step?{step}:{}),
-        onChange:()=>{try{editingField=true;onChange(type==="number"?Number(input.value):input.value);}catch(e){notify(e.message);input.value=String(value??"");}finally{editingField=false;
+    const field=(label,initialValue,onChange,{type="text",min,max,step}={})=>{
+      const input=node("input",{type,value:String(initialValue??""),...(min!==undefined?{min}:{}),...(max!==undefined?{max}:{}),...(step?{step}:{}),
+        onChange:()=>{try{editingField=true;onChange(type==="number"?Number(input.value):input.value);}catch(e){notify(e.message);input.value=String(initialValue??"");}finally{editingField=false;
           const current=value().objects.find(item=>selected.includes(item.id));
           const fovLabel=pane.querySelector(".shot-fov");
           if(current?.lens&&fovLabel){const fov=fieldOfView(current.lens);fovLabel.textContent=`Ideal FOV: ${fov.horizontalDeg.toFixed(2)} degrees H / ${fov.verticalDeg.toFixed(2)} degrees V. Coverage over this image is schematic.`;}
@@ -363,9 +363,11 @@ export function createDiagramEditor({record:initial,actions,store,win=globalThis
   const observer=typeof ResizeObserver==="function"?new ResizeObserver(()=>{root.style.setProperty("--shot-toolbar-height",toolbar.offsetHeight+"px");paint();}):null;observer?.observe(viewport);observer?.observe(toolbar);
   const beforeUnload=e=>{if(dirty){e.preventDefault();e.returnValue="";}};
   win.addEventListener?.("beforeunload",beforeUnload);
+  const suspend=()=>{if(win.document?.hidden){playing=false;if(raf)win.cancelAnimationFrame?.(raf);raf=null;}};
+  win.document?.addEventListener("visibilitychange",suspend);
   loadBackground();paint();notify(record.diagram?"Local diagram ready.":"Blank image diagram ready. Any earlier spatial content is preserved separately; it has not been converted to this image.");
   return {element:root,id:record.id,flush,
-    dispose(){disposed=true;playing=false;clearTimeout(timer);if(raf)win.cancelAnimationFrame?.(raf);observer?.disconnect();unregister?.();win.removeEventListener?.("beforeunload",beforeUnload);imageGeneration++;},
+    dispose(){disposed=true;playing=false;clearTimeout(timer);if(raf)win.cancelAnimationFrame?.(raf);observer?.disconnect();unregister?.();win.removeEventListener?.("beforeunload",beforeUnload);win.document?.removeEventListener("visibilitychange",suspend);imageGeneration++;},
     refresh(){paint();}
   };
 }

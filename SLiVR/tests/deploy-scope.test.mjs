@@ -84,7 +84,7 @@ test("provenance documents may name the reference project", () => {
 test("only the verification, UI design and public coordinate records are published from docs", () => {
   const files = publishableFiles();
   const published = files.filter((path) => path.startsWith("docs/"));
-  const expected = ["docs/CATALOG_COORDINATE_UPDATES_2026-09-20.md", "docs/FULL-SYSTEM-TESTING.md", "docs/UI_INTERACTION_DESIGN.md"];
+  const expected = ["docs/CATALOG_COORDINATE_UPDATES_2026-09-20.md", "docs/FULL-SYSTEM-TESTING.md", "docs/PHASE_4_OWNER_CHECK.md", "docs/UI_INTERACTION_DESIGN.md"];
   assert.deepEqual(published.sort(), expected);
   assert.deepEqual([...PUBLISHED_EXCEPTIONS].sort(), expected);
 });
@@ -94,6 +94,7 @@ test("an exception does not open the rest of its directory", () => {
     "docs/FULL-SYSTEM-TESTING.md",
     "docs/CATALOG_COORDINATE_UPDATES_2026-09-20.md",
     "docs/UI_INTERACTION_DESIGN.md",
+    "docs/PHASE_4_OWNER_CHECK.md",
     "docs/locationScoutingBookOCR_compressed.pdf",
     "docs/Elsevier_2026_VR_based_Location_Scouting.docx",
   ]);

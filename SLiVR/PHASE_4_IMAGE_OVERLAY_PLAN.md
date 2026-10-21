@@ -1,5 +1,57 @@
 # Phase 4 revised plan: image-overlay Shot Designer
 
+## D095 - Phase 4 CLOSED / ACCEPTED, 2026-09-29
+
+The owner explicitly confirmed that shot-workspace failure recovery and
+calibrated-plan persistence after reload are OK and instructed Phase 4 closure.
+Record both as **owner-reported PASS, confirmed 2026-09-29**. All eight previously
+accepted critical checks remain PASS, including immersive capture test 251.
+The two D094 evidence gaps are resolved by this owner report; do not request
+reconfirmation or reopen them solely because detailed execution traces are absent.
+
+Accepted implementation: D093 published as
+`af8aa819076d69abacdef0828d466567192a3821`, building on D091/D092 (`996417ad`).
+App0.4.0 / transfer1.4.0 / DB2 / template1.0.0 / catalog1.1.0. Browser/device
+and an independently measured tested digest were not supplied. Do not invent
+individual failure-injection traces, a full live Part J run, or device coverage.
+
+Existing automated evidence is unchanged: D091 423 full-suite PASS; D092 51
+focused PASS; D093 56 initial focused PASS, then 6 final capture/action PASS.
+These are separate runs. No new runtime tests were executed for this closeout.
+Historical failures and earlier pending results retain their build/scope.
+
+**Next: Phase 5 - Integrated prototype and release validation (F20 baseline).**
+Phase 4 is no longer a prerequisite blocker. Phase 5's integrated regression,
+release/device, exports and deployment gates still require their own evidence.
+Phase 6 Treedis Research Mode follows Phase 5. No Phase 5 implementation,
+telemetry, participant collection, staging, commit or push in this closeout.
+
+
+See [Phase 4 closeout](research/PHASE_4_ACCEPTANCE_REVIEW.md) and the ready-to-use
+[new CLI prompt](PHASE_5_CLI_PROMPT.md). D094's OPEN status below is historical.
+
+## Historical D094 audit (superseded by D095; evidence retained)
+
+## Current acceptance audit - D094, 2026-09-29
+
+D090's image-overlay revision was approved and implemented under D091; D092 menus
+and D093 browser-assisted immersive screenshots are published. All seven earlier
+critical owner checks and test 251 are owner-reported PASS; 251 was explicitly
+confirmed 2026-09-29 for published D093
+`af8aa819076d69abacdef0828d466567192a3821`. Browser/device unspecified.
+D093 supersedes the earlier exclusion of immersive screenshots; numeric optics
+and schematic image-space accuracy boundaries remain unchanged.
+
+Formal Phase 4 closure remains OPEN on the specific live failure/recovery and
+flat-plan calibration-retention evidence gaps in the
+[acceptance audit](research/PHASE_4_ACCEPTANCE_REVIEW.md). No accepted result is
+revoked or requested again; no exception is invented. Phase 5 is **Integrated
+prototype and release validation (F20 baseline)**, with prerequisites, scope and
+first tasks in that audit. No Phase 5 implementation in this documentation task.
+Earlier pending approval/acceptance statements below are historical.
+
+## Historical records (superseded status; evidence retained)
+
 Date: 2026-09-26. Decision: D090.
 Status: owner approved implementation on 2026-09-26; resumed after a requested
 pause. D091 records the implemented local build and pending owner acceptance.

@@ -125,3 +125,9 @@ body { overflow:hidden; }
 .tool-window-body > [role="status"] { margin:0;padding:0 12px;flex-shrink:0; }
 .tool-window-body > [role="status"]:empty { display:none; }
 .checklist-empty { padding:12px;overflow:auto; }
+.export-options label { display: flex; align-items: center; gap: .5rem; min-height: 44px; overflow-wrap: anywhere; }
+.export-options fieldset { min-width: 0; margin-block: .75rem; }
+@media (forced-colors: active) {
+  :is(button,input,select,textarea,summary):focus-visible { outline: 3px solid Highlight; }
+  [aria-pressed="true"], [aria-selected="true"], [aria-current="true"] { outline: 2px solid Highlight; }
+}

@@ -1,5 +1,159 @@
 # SLiVR — Full System Testing
 
+## Current manual test: redesigned UI with original checklist (2026-10-09)
+
+**Start here for the current application.** This sequence supersedes historical
+navigation wording below, not the original functional requirements or recorded
+results. There are two top-level destinations: **Explore** and **Shot Designer**.
+**Map / Immersive** are Explore viewing contexts; **Project tools** and
+**Scouting checklist** are tools, not additional top-level modes.
+
+The checklist must keep the original layout/design from
+`E:/sroberto27.github.io/CheckList/v2`. The surrounding SLiVR shell uses the new
+design. Missing existing functionality is a regression even if the new screen
+looks correct. A visible button alone does not establish a working feature.
+
+### Setup and result recording
+
+Use disposable fixtures in a separate browser profile/origin. Preserve any real
+projects and export them before testing; never clear the owner's browser storage.
+Serve the repository over HTTP and open `/SLiVR/` for deployment-path checks.
+Record the exact tested worktree/build digest, URL, date, browser version,
+OS/device/input, viewport, provider availability and versions. D098's last tested
+runtime digest is `643b65d1ae00c12104b4b048e248ea3b7daccb47535787bd75c4fa597a6fb10f`;
+if code differs, record a new digest. Expected data versions: App0.5.0,
+catalog1.1.0, transfer1.4.0, DB2, assessment template1.0.0.
+
+Create a project named `UI regression fixture`, two scene briefs, two candidate
+locations, a dated assessment and a shot diagram. Use only owned test media.
+Keep a small known-good older SLiVR project export for compatibility testing.
+Do not treat deliberately unsupported standalone-checklist capture/GPS/compass/
+microphone, private contacts, cloud sync or later-roadmap tools as missing features.
+
+For each row below, record **PASS / FAIL / BLOCKED / NOT TESTED**, actual result,
+evidence filename and environment. All rows start **NOT TESTED on this manual
+run**. If a provider/permission or failure-injection setup is unavailable, record
+BLOCKED and the retest condition; do not substitute a success screenshot.
+Prior 447-test automated PASS and D095 owner acceptance remain historical evidence,
+not fresh manual passes. M1-M15 are sequence labels mapped to existing stable IDs.
+
+### Where to find the retained tools
+
+| Task | Desktop | Phone / narrow layout |
+|---|---|---|
+| Explore and Shot Designer | Top mode buttons | Menu exposes the mode buttons |
+| Project / scene selection and creation | Current project / Current scene, New project, Add scene, Project tools | Project/context controls through Menu and the context button; Project in the bottom navigation |
+| Locations and dossier | Location rail; Back to locations; Show locations when hidden | Locations in bottom navigation; Expand sheet / Half sheet / Hide panel |
+| Map / Immersive | Explore view buttons; location entry action | View in bottom navigation, then Map / Immersive; Map options exposes map controls |
+| Checklist | Scouting checklist; candidate assessment actions | Checklist in bottom navigation; select the assessment's project/location context |
+| Tool positioning | Minimize, Side by side, Maximize, Restore, Close; title keyboard controls | View / View + tool and existing sheet controls |
+| Shot editing | Design / Add / Layers / Shots / More and contextual properties | Add / Layers / Edit / Shots / More bottom dock; Expand / Collapse / Close |
+| Shot exports and recovery | Design menu | More, then Design |
+| Project transfer and print packet | Project tools; scene assessment export options | Project; scroll to the same transfer/export sections |
+
+### Functional preservation test sequence
+
+| Step / stable IDs | Actions in the current UI | Required result |
+|---|---|---|
+| M1 — 172, 232, 252 | Open the app; switch Explore / Shot Designer; open project/scene controls and both tools. Resize with a tool open; minimize/restore, dock/maximize/restore on desktop; use phone View / View + tool. | Every destination/control remains reachable. No lost drafts, duplicate tool instances or clipped close/restore controls. Actual loading, local-only storage and save feedback remain visible. |
+| M2 — 173-174, 252 | Explore: check 18 locations, 11 captured, 7 future and 7 areas. Search by real name/ID; enter a no-match query; clear it. Exercise capture/area and More filters plus each sort. Select from list and map/cluster; return with Back to locations. | Correct records and selected location, usable empty state, retained list context/scroll. Future and missing/needs-validation labels remain distinct from available or verified. |
+| M3 — 174, 181 | Use map zoom, bearing reset, recenter, imagery/label controls, geolocation (allow and deny), fullscreen and optional Google 3D when configured. On phone open Map options first. Open imagery information. | Controls operate on the real map, remain reachable, and preserve selection. Correct imagery attribution/year, source/fallback and capability/error states. No false Google/geolocation success when unavailable. |
+| M4 — 174-175 | Open a captured dossier, inspect source links, field evidence, gaps and candidate/bookmark actions. Open a future dossier. Enter Immersive; switch one shared downtown location and one independent experience; retry/return and use mini-map controls. Save/reopen an entry bookmark. | Real provider loading and errors remain visible; old frames do not overwrite the new selection. Future capture is not a playable mock. Bookmark reopens the location entry, never promises exact pose. Capture availability, verification and permission stay separate. |
+| M5 — 176, 208-215 | Project tools: create/edit project and two scene briefs; test required INT/EXT and invalid values. Add two candidates, edit notes/status and must-have/preferred/rejection requirements. Compare, record preferred/backup with rationale/open questions; reopen the decision; reload. | Validated fields, stable ownership and selected scene persist. Unknown never becomes a favorable score. Decisions retain supporting evidence/revisions; no invented aggregate readiness. Cancel deletion and confirm fixture-only deletion separately; linked-record guards remain. |
+| M6 — 234, 236, 252 | Open the dated Scouting checklist from the candidate and from Explore/Immersive. Compare its interior against original CheckList/v2 at matching viewport/theme. Use all eight sections, original header Sections menu on phone, counters/switches/cards and theme toggle. | Original Inter, red header, cards, spacing and section layout remain. No neutral shared redesign inside the iframe. Outer SLiVR assessment/location identity remains accurate. Existing integrated controls work; standalone database/unsupported capture tools are not reintroduced. |
+| M7 — 208-215, 234, 236 | In the checklist record a text value, zero, explicit No, unanswered, observed, needs-validation and not-applicable; add notes/provenance and owned photo/video or existing panorama; link a supported bookmark. Wait for save, reload and inspect each value/media. Add a second dated assessment; inspect history; switch locations with Follow, then Pin, then unpin. | False/zero/unknown remain distinct; correct project/location/date and pinned/following behavior. Completion is not suitability. Attachments open, revisions persist and prior evidence links keep their original revision. Pending/failed save is never labeled saved. |
+| M8 — 177, 237-250 | Open Shot Designer from a map, create a map-image diagram; reopen it. Also create a blank/imported-image diagram. Add camera/actor/vehicle/prop/mark/arrow/annotation/set; edit label, size, numeric position/rotation, camera/lens fields and units. Tab through successive fields. | Real editable objects; correct image source/footer and coordinate/scale qualifications. Changes commit without the old property-handler exception. Camera FOV is schematic where applicable; no image-pixel-to-metre invention. Save/reload preserves objects and properties. |
+| M9 — 177, 237-250 | Layers: select multiple objects; hide and lock independently, edit/unlock, undo/redo. Add/reverse/edit paths, change path style/duration, duplicate camera setups, create/reorder shots, save/restore variants and run preview/timeline. Exercise numeric alternatives, Escape and Back. | Selection, visibility and locking stay independent. Paths, optics, variants and shot-camera relationships survive reload. Preview and history work; Escape returns focus; Back retains the project/scene/location context. All mobile dock tools remain accessible. |
+| M10 — 177, 243, 251 | Import an owned flat plan; calibrate using a known distance plus an independent check; save/reload. Try an oblique image. From Immersive try current-view diagram capture, then cancellation, wrong-source selection and unsupported-permission fallback. | Calibration/check/error/units persist; no measured claim for an oblique image. Valid capture has source/footer and no SLiVR overlay; sharing stops. Cancellation/wrong source creates no false successful diagram; import fallback remains available. |
+| M11 — 178, 208-213 | Project tools: export project JSON and media ZIP, including selected assessments/media; try excluding evidence required by a decision. Import into a clean profile, inspect attachments and linked IDs. Import a known-good older export. Exercise duplicate-ID conflict choices and malformed/oversized imports. | Same values, evidence states/revisions, ownership and supported legacy records; no silent migration/loss. Missing/excluded media reported honestly. Required evidence cannot be silently dropped. Invalid input writes nothing; conflict choices are explicit. |
+| M12 — 178, 237-250 | Shot Design menu: Diagram JSON / emergency backup, Project JSON, Export PNG, Export shot-list CSV and standalone diagram import. Project tools assessment export options: select packet and assessment sections; Download print-ready packet; open it and Print to PDF. | Open the actual downloaded files: matching names/IDs, Unicode/zero values, provenance and schema; legible image/CSV/PDF, correct selected sections, historical evidence and unknown labels. Orientation/scale is qualified. Standalone import does not transplant project-owned evidence. No clipped print content. |
+| M13 — 179, 181 | Edit while changing modes, using browser Back/Forward, pin/follow and reload; test rapid repeated transitions. On an isolated fixture, inject storage-write failure and network/provider/WebGL loss using the applicable detailed procedures below; retry and use emergency export. | Successful writes precede transition; failed writes retain draft/source context and truthful failure status. Retry/recovery preserves data. No stale async selection, false saved state, blank unusable shell or silent provider success. Record the exact injection method; never test destructive failure on production data. |
+| M14 — 180, 252 | Repeat critical M1/M2/M6-M9 at 1440x900, 1024x768, 768x1024, 390x844 and short landscape, then a physical phone/tablet when available. Use keyboard only, visible focus, screen reader, zoom, reduced motion and forced colors; open the phone keyboard. | No outer horizontal overflow, hidden essential actions or trapped focus; scrollable panes and reachable menu/close/save controls. Labels, selection and evidence understandable without color alone. Original checklist light/dark themes and responsive layout remain usable. Emulated dimensions do not count as physical-device PASS. |
+| M15 — 182-183 | Review console/network during the sequence; verify normal use has no participant logging. Run deployment private-path checks; if testing the optional worker, use the isolated /SLiVR/ scope and existing opt-in/update/offline/off procedures with a neighboring test app. | No unexplained application errors or new telemetry. Private design/research inputs and credentials not published. Worker OFF by default; no forced reload over drafts or provider caching; neighbor unaffected. Local scanner success is not a published-path or live-worker PASS. |
+
+### Manual result sheet and release decision
+
+Copy one row per step/environment; split any partly completed step into its
+individual assertions. A blocked prerequisite does not excuse marking later
+dependent actions PASS. Keep screenshots of desktop and phone plus downloaded
+JSON/ZIP/PNG/CSV/HTML/PDF evidence where tested.
+
+| Step / stable IDs | Build / device / viewport | Result | Actual versus expected / evidence | Retest condition |
+|---|---|---|---|---|
+| M__ / __ | __ | NOT TESTED | __ | __ |
+
+Report missing or unreachable original functions, data loss, changed units or
+evidence semantics first. A visual mismatch in the original checklist is also a
+failure. Record prior and corrected results separately. Do not close Phase 5 until
+its required applicable tests and Part J pass or have an explicitly approved
+exception and retest condition. This is new-build regression coverage; it does
+not revoke D095 acceptance or assert that a manual run has already occurred.
+
+---
+
+## D095 - Phase 4 CLOSED / ACCEPTED, 2026-09-29
+
+The owner explicitly confirmed that shot-workspace failure recovery and
+calibrated-plan persistence after reload are OK and instructed Phase 4 closure.
+Record both as **owner-reported PASS, confirmed 2026-09-29**. All eight previously
+accepted critical checks remain PASS, including immersive capture test 251.
+The two D094 evidence gaps are resolved by this owner report; do not request
+reconfirmation or reopen them solely because detailed execution traces are absent.
+
+Accepted implementation: D093 published as
+`af8aa819076d69abacdef0828d466567192a3821`, building on D091/D092 (`996417ad`).
+App0.4.0 / transfer1.4.0 / DB2 / template1.0.0 / catalog1.1.0. Browser/device
+and an independently measured tested digest were not supplied. Do not invent
+individual failure-injection traces, a full live Part J run, or device coverage.
+
+Existing automated evidence is unchanged: D091 423 full-suite PASS; D092 51
+focused PASS; D093 56 initial focused PASS, then 6 final capture/action PASS.
+These are separate runs. No new runtime tests were executed for this closeout.
+Historical failures and earlier pending results retain their build/scope.
+
+**Next: Phase 5 - Integrated prototype and release validation (F20 baseline).**
+Phase 4 is no longer a prerequisite blocker. Phase 5's integrated regression,
+release/device, exports and deployment gates still require their own evidence.
+Phase 6 Treedis Research Mode follows Phase 5. No Phase 5 implementation,
+telemetry, participant collection, staging, commit or push in this closeout.
+
+
+Acceptance mapping: shot-workspace failure recovery resolves the D094 gap grouped
+under 238/239/245 and affected Part J 179/181; calibrated-plan save/reload resolves
+243 and retained 107-111. This is owner acceptance of the named workflows, not
+new independent execution of every sub-assertion. See the
+[closeout](../research/PHASE_4_ACCEPTANCE_REVIEW.md) and
+[Phase 5 CLI prompt](../PHASE_5_CLI_PROMPT.md).
+
+## Historical D094 audit (superseded by D095; evidence retained)
+
+## Current Phase 4 evidence - D094, 2026-09-29
+
+Checks 1-7 remain **owner-reported PASS** on published D091/D092 (`996417ad`).
+Check 8 / stable **251 is owner-reported PASS, confirmed 2026-09-29**, for D093
+published as `af8aa819076d69abacdef0828d466567192a3821`: screenshot,
+credits/footer, no SLiVR overlays, sharing stops, editing, JSON/PNG export,
+persistence after reload, return navigation, cancellation/retry, wrong-tab/window
+rejection and unsupported-browser import fallback. Browser/device not supplied.
+Do not reconfirm any of these accepted results.
+
+All eight critical checks are accepted. Formal Phase 4 exit remains OPEN because
+the supplied checklist does not establish the full live failure-injection and
+flat-plan calibration/reload gates. The conditional plan-import instruction is
+not proof of a calibrated-plan reload. See the [gate audit and remaining focused
+conditions](../research/PHASE_4_ACCEPTANCE_REVIEW.md). This is not a reported
+failure of any accepted check. Historical pending language below is superseded.
+
+
+Automated evidence remains separate: D091 423 full-suite PASS / 0 FAIL;
+D092 51 focused PASS; D093 56 initial focused PASS / 0 FAIL, then 6 final
+capture/action PASS / 0 FAIL. Existing logs were inspected; no new execution or
+fresh full-suite/Part J PASS is claimed. The gate audit maps every revised Phase 4
+exit criterion and Part J 172-183 to existing evidence and remaining obligations.
+Earlier FAIL/BLOCKED/NOT TESTED entries retain their historical build/scope.
+
+## Historical records (superseded status; evidence retained)
+
 ## D091 local Phase 4 build - 2026-09-26
 
 Owner approved D090 implementation and subsequent path refinements. The D090
@@ -86,15 +240,16 @@ No test is pre-marked. A passing unit test, code review, HTTP response or earlie
 | Test specification version | 0.4 |
 | Architecture baseline | SLiVR architecture 0.19 or later |
 | Created | 2026-09-19 |
-| Last updated | 2026-09-22 |
-| Current implementation phase | Phase 0 COMPLETE with D061 exceptions; Phase 1 OPEN with D070 live retest and inherited gates; independent Phase 2 reconnaissance only (D071) |
+| Last updated | 2026-10-09 (current-UI manual regression procedure; no new execution) |
+| Current implementation phase | Phase 4 CLOSED / ACCEPTED (D095). Phase 5 implemented locally (D096), release gates OPEN. D097 compatible visual implementation delivered with scoped verification. |
 | First-prototype gate | Parts A–H and J, using the phase applicability rules below |
 | Post-prototype gate | Part I plus affected regression tests |
 
 Update this table whenever the architecture, phase, schema, provider contract or test meaning changes. Preserve prior real results in source history or an archived execution copy; never silently rewrite a test after it has produced evidence.
 
-Latest execution: see **2026-09-22 - Acceptance audit and independent reconnaissance
-(D071)** below and [the concrete closeout proposal](../research/PHASE_1_ACCEPTANCE_REVIEW.md).
+Latest executed automated build: see **D098 checklist restoration verification**
+below and [the exact scoped results](../research/VISUAL_REDESIGN_REVIEW.md).
+The current manual sequence at the top is a procedure, not an execution result.
 Earlier target tables/results are historical and do not certify this working tree.
 
 ---
@@ -136,6 +291,19 @@ is not marked complete: the remaining evidence review is open. All eight supplie
 Record the exact target. Never report “latest” without an immutable build or commit identifier.
 
 Most recent recorded execution. Earlier executions are kept in the execution log at the end of this document.
+
+| Item | D097 recorded value (2026-10-08) |
+|---|---|
+| Build | App0.5.0 uncommitted worktree; runtime SHA256 `dfcaf3076fcb238741db031ffeacafaaaac69e9d6de842db44706bedc09b9d13`; manifest and digest method in research/VISUAL_REDESIGN_REVIEW.md |
+| Tests | SHA256 `a20f1cd9a66e682e83a9458ec6c707cabb7cd02d4ccc3f2bc817f9196bee17e0`; 447 PASS, 0 FAIL, 0 skipped |
+| Versions | Catalog1.1.0 / transfer1.4.0 / DB2 / assessment template1.0.0; provider configuration unchanged |
+| Environment | Node v24.18.0, Windows x64 10.0.26200; Chrome extension, version not independently measured |
+| Origin / fixture | http://127.0.0.1:8767/ no-store server; isolated local visual-verification project; not deployed /SLiVR/ worker validation |
+| Viewports | 1440x900, 1024x768, 768x1024, 390x844, 844x390; overrides, not physical devices |
+| Coverage | Automated affected suites and Part J contracts; critical visual/interaction observations only. Full live Phase 5 gates OPEN; D095 acceptance preserved |
+| Study | No participant collection, telemetry or Phase 6 execution |
+
+#### Historical 2026-09-20 target (retained evidence)
 
 **Manual follow-up:** the owner subsequently reported the embedded failure and
 confirmed both base-tour links open directly in Chrome. The working tree now
@@ -998,7 +1166,7 @@ Comments: ____________________________________
 
 ## Approved export set
 
-**117. Full project JSON is complete and portable.** It includes required project/scene/candidate/decision/bookmark/shot/variant/background references and versions but embeds no provider imagery or sensitive reference documents.
+**117. Full project JSON is complete and portable.** Include project/scene/candidate/decision/bookmark/assessment/revision/shot/variant/background references and versions, plus explicit selected/missing media. D093 user-captured screenshot backgrounds retain credits; never fetch/cache provider assets for export or include sensitive references. Exercise native ZIP and clean-profile import as well as JSON.
 
 Result: - [ ] PASS - [ ] FAIL - [ ] BLOCKED - [ ] NOT TESTED  
 Evidence: ____________________________________  
@@ -2731,3 +2899,134 @@ outputs/phase4-ui-tests.txt. Later presentation refinements received syntax and
 Chrome checks, not another broad suite. Deployment scope: 211 files / 0 errors.
 No upgrade of D091's historical full-suite result to a new full-suite claim.
 No owner acceptance or Phase 4 completion claim. D089 owner passes preserved.
+
+## D093 owner result and immersive addition - 2026-09-27
+
+Owner explicitly reported ALL seven critical checks passed on the preceding
+D091/D092 build, published as 996417ad. Record owner PASS for their listed checks
+237-250; preserve prior automated evidence and D089 passes. No device/browser
+specifics or failure-injection coverage is inferred from this report.
+
+| ID | New procedure | Evidence |
+|---|---|---|
+| 251 | Frame an immersive interior, open Shot Designer, choose New diagram from immersive view, share this SLiVR tab. Check image, source/footer, no SLiVR overlays, immediate end of sharing, editable paths, JSON/PNG and reload. Cancel sharing and retry; wrong tab/window must not create a diagram; unsupported browser must offer import. Back returns to immersive location (exact pose not promised). | Six focused capture/action tests PASS; live permission/provider workflow NOT TESTED; owner acceptance pending. |
+
+Initial affected run: 56 PASS / 0 FAIL, outputs/immersive-capture-tests.txt.
+Final capture/action run: 6 PASS / 0 FAIL, outputs/immersive-capture-final-tests.txt.
+These are mock browser API tests, not proof of a live Treedis screenshot.
+
+
+## D096 ? Phase 5 execution and release gates (2026-09-29)
+
+App0.5.0 implemented locally; Phase 5 acceptance **OPEN**. D095 Phase 4 remains
+CLOSED / ACCEPTED; retain every earlier owner pass and original metadata scope.
+Detailed commands, digests, negative results and gate mapping:
+[Phase 5 acceptance review](../research/PHASE_5_ACCEPTANCE_REVIEW.md).
+
+Stable113-132, 133-140, 208-215 and Part J172-183 are mapped in that review.
+Existing automated suites plus tests/phase5-release.test.mjs cover affected
+contracts; exact final run recorded there. No existing stable ID is renumbered.
+
+Procedure amendments: 114/115 retain Explore/Shot Designer top-level UI with
+Projects tools and Immersive viewing context (legacy four-mode routes compatible).
+116 failed save must retain the source workspace and URL, including checklist
+pin/follow. 118 north arrow requires known non-oblique map bearing; otherwise
+label unknown. 119 includes stable project/scene/design/shot/camera IDs. 120
+selects packet and assessment sections plus media; inspect actual browser PDF.
+121 uses stable IDs to distinguish same-name exports. 129 adds hidden-tab preview
+suspension and boot disposal. 131 defaults OFF, exact scope /SLiVR/, provider
+pass-through, network-first kill switches, own caches only, and no forced reload.
+
+All new live 113-132, relevant 208-215/237-251 and Part J requirements are
+**BLOCKED in this execution environment**: browser inventory empty; Chrome not
+available. Physical tablet/assistive-technology, deployed forbidden-path 404s,
+real worker lifecycle and console/network remain **NOT TESTED**. No acceptance
+exception is approved. Local automated PASS is not full stable-test/live PASS.
+Part H133-140 records synchronized; technical/design/participant evidence remains
+separate and all failed intermediate runs retained. No telemetry or Phase 6.
+
+
+D096 final verification: **445 automated PASS / 0 FAIL**, deployment **226 files /
+0 errors**, catalog **0 errors / 1 retained alias warning**. Exact final digests
+and environment are in research/PHASE_5_ACCEPTANCE_REVIEW.md (relative from
+project root). Owner will perform the full manual test; no extension setup is
+needed. Phase 5 live acceptance remains OPEN; D095 remains accepted.
+
+## D097 visual redesign verification — 2026-10-08
+
+Stable **252**: verify shared text/action contrast and form/focus boundaries;
+inspect approved appearance across Explore/dossier, immersive chrome, checklist,
+project tools and Shot Designer. Exercise critical existing controls at desktop,
+phone, narrow-desktop/tablet and short-height sizes; retain loading/error/evidence
+states, keyboard focus and explicit mobile sheets. Never count prototype mocks
+as functioning controls. Shared-token tests PASS; critical browser observations
+are partial coverage, not whole-test or whole-phase acceptance.
+
+Stable234 now expects local shared fonts/tokens/checklist override while retaining
+the original stylesheet hash, all fields/sections and absence of another database.
+Stable250 includes the existing property-handler shadowing correction: real
+keyboard edits commit without throwing, saved layer identity persists after
+reload. Negative locator-fill and pre-fix console results remain in the review.
+
+Final automation: **447 PASS / 0 FAIL / 0 skipped**; deployment **236 candidates /
+0 errors**; catalog **0 errors / 1 retained alias warning**; whitespace check clean.
+Part J172-183, affected232-251 and new252 are mapped individually in
+[the visual review](../research/VISUAL_REDESIGN_REVIEW.md), with exact build/test
+digests, screenshots, negative results and untested scope. Part H133-140 records
+updated. No stable ID was renumbered (Part J ends at183; no new184 meaning implied).
+
+Observed Chrome checks include search recovery, project/scene required validation,
+assessment saved-value reload, phone section drawer, future-location dossier,
+camera insertion/edit/layers/reload, Escape, editor Back/context and responsive
+widths. These do not establish complete exports/print/provider/failure/worker
+lifecycle, physical devices or assistive-technology acceptance. No new handler
+error after correction; retained old and browser-extension errors preclude a
+whole-session clean-console claim. D096 remaining live gates keep their original
+retest conditions; no acceptance exception, deployment, commit or push.
+
+
+## D098 checklist restoration verification ? 2026-10-08
+
+Supersedes D097 checklist appearance and build target; other visual changes stay.
+Original CheckList/v2 stylesheet and Inter CSS verified byte-identical. Stable234
+now forbids shared redesign styles/default dark forcing and checks header menu.
+Focused suite20 PASS; full suite447 PASS / 0 FAIL / 0 skipped, including Part J
+automated contracts and shell-cache parity. Deployment235 candidates / 0 errors;
+scoped whitespace check clean. No new browser/device check. D096 live gates remain
+OPEN and D095 accepted; no commit/push/deploy.
+
+Runtime SHA256: 643b65d1ae00c12104b4b048e248ea3b7daccb47535787bd75c4fa597a6fb10f
+Tests SHA256: a697dc76ae1511113019cdc87d6d4efe9ed1c2e22e8165921568ded916a74234
+Manifest: outputs/redesign/original-checklist-build-manifest.json
+Test log: outputs/redesign/original-checklist-full-tests.txt
+
+
+## D099 - Pin presentation regression (2026-10-21)
+
+Amend M2/M3/M14 and stable174/180/252: check mint captured pins, lavender future
+pins and blue circular cluster counts on wide/close aerial and tilted views.
+Check shaded dark fill and lit edge, distinct hover/selected/focus states, upright
+numbers, unchanged anchors and 44px targets. ArrowDown opens cluster members;
+Enter selects the correct dossier. Capture color must not imply verification.
+Check actual Google 3D only on an authorized origin; localhost fallback is not
+Google 3D success. Keep original checklist design under D098.
+
+Executed: marker suite11 PASS; final full suite447 PASS/0 FAIL, including Part J
+automated contracts; deployment235/0; catalog0 errors/1 existing alias warning.
+Logs: outputs/redesign/color-pins-markers.txt and color-pins-full.txt.
+Chrome Windows on localhost:8001: observed mint/lavender/blue, gradients and
+selected fill; wide/close aerial and tilted fallback screenshots; cluster
+ArrowDown focused LOC-001, Enter selected its dossier. Google reported unavailable
+and retained its explicit aerial-fallback state, as expected in this environment.
+Desktop override requested1440x900; actual CSS viewport1600px wide due browser
+scaling. Phone override390x844 yielded433x937, document width433 and ~44px pin
+target. Do not report these as exact requested-size or physical-device passes.
+Hover/forced-colors rendering and full live Part J remain NOT TESTED; styling
+and existing focus rules reviewed. No new phase closure or provider success.
+
+Screenshots: outputs/redesign/color-pins-wide.png, color-pins-close.png,
+color-pins-tilted.png. Final forced-color specificity correction followed browser
+checks and does not affect normal-color screenshots.
+Runtime SHA256: 0e9f9ed261415b4ddddf2528c5bfd4e2b11e502607473cabe8ebc19a8c25509f
+Full runtime/test inventory: outputs/redesign/color-pins-build-manifest.json.
+This supersedes D098's runtime identity, not its checklist requirement.
