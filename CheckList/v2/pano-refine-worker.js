@@ -109,6 +109,13 @@ async function refine(msg) {
   const opts = msg.options || {};
   const maxSide = opts.maxSide || 640;
   const nominalHFov = opts.nominalHFovDeg || 68;
+  /* Opt-in, off by default. The phone only needs poses, a focal and
+     gains; the per-pair correspondences are the bulkiest thing this
+     worker computes and it would be waste to clone them across the
+     thread boundary on every capture. lab/replay.html asks for them so
+     it can draw the match figure (green inlier lines between two shots)
+     without reimplementing the matcher. */
+  const returnMatches = !!opts.returnMatches;
 
   if (images.length < 4) {
     post('skipped', { reason: 'too-few-shots' });
@@ -287,11 +294,37 @@ async function refine(msg) {
 
   progress('Finishing', 99);
   const rings = P.ringDiagnostics(result.rotations, result.edges);
+
+  /* Correspondences for the match inspector. Coordinates are in the
+     DOWNSCALED frame the features were extracted from (W x H here), not
+     the original photo, so a consumer drawing on the full-size image has
+     to scale by its own width / W. Indices i and j are photograph indices
+     in the caller's order: with sequence frames they were remapped before
+     the solve, without them photographs come first anyway. `proposed` is
+     what went into RANSAC and the bundle, `edges` what survived, so the
+     difference between the two is the rejected set. */
+  let matchGraph = null;
+  if (returnMatches) {
+    const strip = m => ({ ax: m.ax, ay: m.ay, bx: m.bx, by: m.by });
+    matchGraph = {
+      width: W, height: H,
+      proposed: solveEdges.map(e => ({ i: e.i, j: e.j, matches: e.matches.map(strip) })),
+      edges: result.edges.map(e => ({
+        i: e.i, j: e.j,
+        inlierCount: e.inlierCount, inlierRatio: e.inlierRatio,
+        meanResidualRad: e.meanResidualRad,
+        matches: e.matches.map(strip)
+      })),
+      rejected: result.rejected.map(r => ({ i: r.i, j: r.j, reason: r.reason }))
+    };
+  }
+
   post('result', {
     poses: result.poses,
     hFovDeg: result.hFovDeg,
     focal: result.focal,
     gains,
+    matchGraph,
     diagnostics: {
       shots: keyIdx.length,
       sequenceFrames: sequenceFrames,
