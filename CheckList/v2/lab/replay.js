@@ -122,6 +122,9 @@
 
       archive = { meta, shots, sequence };
       lastBlob = null;
+      matchGraph = null;
+      clearPairBitmaps();
+      el('matchCard').hidden = true;
       el('dlBtn').disabled = true;
       const seqBox = el('useSequence');
       if (seqBox) {
@@ -198,7 +201,10 @@
         if (!msg) return;
         if (msg.type === 'progress') { onProgress(msg.stage, msg.pct); return; }
         if (msg.type === 'result' && Array.isArray(msg.poses)) {
-          finish({ poses: msg.poses, hFovDeg: msg.hFovDeg, gains: msg.gains, diagnostics: msg.diagnostics });
+          finish({
+            poses: msg.poses, hFovDeg: msg.hFovDeg, gains: msg.gains,
+            diagnostics: msg.diagnostics, matchGraph: msg.matchGraph || null
+          });
           return;
         }
         log('  refinement did not apply: ' + (msg.reason || msg.message || msg.type));
@@ -226,8 +232,13 @@
             yaw: f.yaw, pitch: f.pitch, roll: f.roll, poseOnly: true
           });
         }
+        /* returnMatches is the one thing this page asks for that the
+           phone does not: the per-pair correspondences, so the match
+           inspector below can draw them. It changes nothing about the
+           solve. */
         worker.postMessage(
-          { type: 'refine', images, options: { maxSide: REFINE_MAX_SIDE, nominalHFovDeg: ASSUMED_LONG_FOV_DEG } },
+          { type: 'refine', images,
+            options: { maxSide: REFINE_MAX_SIDE, nominalHFovDeg: ASSUMED_LONG_FOV_DEG, returnMatches: true } },
           images.slice(0, photoCount).map(i => i.bitmap)
         );
       })().catch(err => { log('  decode failed: ' + err.message); finish(null); });
@@ -277,6 +288,7 @@
         stage(s); progress(pct / 100 * 0.55);
       });
       if (refinement) {
+        showMatchGraph(refinement);
         const d = refinement.diagnostics || {};
         log(`  refined: hFOV ${fmt(refinement.hFovDeg)}°, mean correction ${fmt(d.meanCorrectionDeg)}°, ` +
           `${d.edges} edges (${d.rejectedEdges} rejected), ${d.keypointsPerShot} kpts/shot`);
@@ -327,6 +339,7 @@
         stage(s); progress(pct / 100 * 0.4);
       });
       if (refinement) {
+        showMatchGraph(refinement);
         const d = refinement.diagnostics || {};
         log(`  refined: hFOV ${fmt(refinement.hFovDeg)}°, mean correction ${fmt(d.meanCorrectionDeg)}°, ` +
           `${d.edges} edges (${d.rejectedEdges} rejected), ${d.keypointsPerShot} kpts/shot`);
@@ -417,6 +430,136 @@
     }
     el('blendCard').hidden = false;
   }
+
+  // ---------------------------------------------------------------- matches
+
+  /* The green-lines figure. The worker reports correspondences in the
+     downscaled frame it extracted features from (matchGraph.width x
+     height), so every coordinate is scaled by drawnWidth / matchGraph.width
+     before it lands on the full-resolution photo. Decoded photos are
+     cached per shot because flipping through the dropdown would otherwise
+     re-decode a multi-megapixel JPEG on every change. */
+  let matchGraph = null;
+  const pairBitmaps = new Map();
+
+  async function shotBitmap(i) {
+    if (pairBitmaps.has(i)) return pairBitmaps.get(i);
+    const bmp = await createImageBitmap(archive.shots[i].blob);
+    pairBitmaps.set(i, bmp);
+    return bmp;
+  }
+  function clearPairBitmaps() {
+    for (const b of pairBitmaps.values()) { try { b.close(); } catch (e) { /* ignore */ } }
+    pairBitmaps.clear();
+  }
+
+  function showMatchGraph(refinement) {
+    matchGraph = refinement && refinement.matchGraph;
+    if (!matchGraph || !matchGraph.edges || !matchGraph.edges.length) {
+      el('matchCard').hidden = true;
+      return;
+    }
+    const sel = el('pairSel');
+    const kept = matchGraph.edges.map((e, k) =>
+      `<option value="${k}">${e.i + 1} &harr; ${e.j + 1} &mdash; ${e.inlierCount} inliers ` +
+      `(${Math.round(e.inlierRatio * 100)}%)</option>`);
+    const dropped = (matchGraph.rejected || []).map((r, k) =>
+      `<option value="r${k}">${r.i + 1} &harr; ${r.j + 1} &mdash; rejected: ${r.reason}</option>`);
+    sel.innerHTML = kept.concat(dropped).join('');
+    el('matchCard').hidden = false;
+    drawPair();
+  }
+
+  function selectedEdge() {
+    const v = String(el('pairSel').value || '0');
+    if (v.charAt(0) === 'r') return { edge: matchGraph.rejected[Number(v.slice(1))], rejected: true };
+    return { edge: matchGraph.edges[Number(v) || 0], rejected: false };
+  }
+
+  async function drawPair() {
+    if (!matchGraph || !archive) return;
+    const { edge, rejected: rejectedPick } = selectedEdge();
+    if (!edge) return;
+    const proposed = (matchGraph.proposed.find(e => e.i === edge.i && e.j === edge.j) || {}).matches || [];
+    const inliers = rejectedPick ? [] : edge.matches;
+
+    const A = await shotBitmap(edge.i), B = await shotBitmap(edge.j);
+    const perPhoto = Number(el('pairWidth').value) || 900;
+    const scale = perPhoto / Math.max(A.width, B.width);
+    const dwA = Math.round(A.width * scale), dhA = Math.round(A.height * scale);
+    const dwB = Math.round(B.width * scale), dhB = Math.round(B.height * scale);
+    const gap = 16;
+    const cv = el('pairCanvas');
+    cv.width = dwA + gap + dwB;
+    cv.height = Math.max(dhA, dhB);
+    const ctx = cv.getContext('2d');
+    ctx.fillStyle = '#101216';
+    ctx.fillRect(0, 0, cv.width, cv.height);
+    ctx.drawImage(A, 0, 0, dwA, dhA);
+    ctx.drawImage(B, dwA + gap, 0, dwB, dhB);
+
+    // match-space -> canvas-space, per photo (both share matchGraph.width/height)
+    const sxA = dwA / matchGraph.width, syA = dhA / matchGraph.height;
+    const sxB = dwB / matchGraph.width, syB = dhB / matchGraph.height;
+    const ox = dwA + gap;
+    const dots = el('showPoints').checked;
+    const lw = Math.max(1, Math.round(perPhoto / 450));  // 2 px at 900, 3 px at 1400: visible once printed
+
+    function strokeSet(list, colour) {
+      ctx.strokeStyle = colour; ctx.lineWidth = lw;
+      ctx.beginPath();
+      for (const m of list) {
+        ctx.moveTo(m.ax * sxA, m.ay * syA);
+        ctx.lineTo(ox + m.bx * sxB, m.by * syB);
+      }
+      ctx.stroke();
+      if (!dots) return;
+      ctx.fillStyle = colour;
+      const r = lw + 1;
+      for (const m of list) {
+        ctx.beginPath(); ctx.arc(m.ax * sxA, m.ay * syA, r, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(ox + m.bx * sxB, m.by * syB, r, 0, Math.PI * 2); ctx.fill();
+      }
+    }
+
+    let rejectedCount = 0;
+    if (el('showOutliers').checked || rejectedPick) {
+      const keep = new Set(inliers.map(m => m.ax + ',' + m.ay));
+      const outliers = proposed.filter(m => !keep.has(m.ax + ',' + m.ay));
+      rejectedCount = outliers.length;
+      strokeSet(outliers, 'rgba(226,98,107,0.45)');
+    }
+    strokeSet(inliers, 'rgba(78,201,160,0.7)');
+
+    const sA = archive.shots[edge.i], sB = archive.shots[edge.j];
+    const pose = s => `${fmt(s.yaw / DEG, 0)}°/${fmt(s.pitch / DEG, 0)}°`;
+    el('pairNote').innerHTML =
+      `shot <b>${edge.i + 1}</b> (${pose(sA)}) &harr; shot <b>${edge.j + 1}</b> (${pose(sB)}) &middot; ` +
+      `${proposed.length} matches proposed` +
+      (rejectedPick
+        ? `, <span class="bad">pair rejected: ${edge.reason}</span>`
+        : `, <span class="good">${edge.inlierCount} inliers</span>` +
+          (el('showOutliers').checked ? `, <span class="bad">${rejectedCount} rejected</span>` : '') +
+          ` &middot; mean residual ${fmt(edge.meanResidualRad * 180 / Math.PI, 4)}&deg;`);
+  }
+
+  el('pairSel').addEventListener('change', drawPair);
+  el('showOutliers').addEventListener('change', drawPair);
+  el('showPoints').addEventListener('change', drawPair);
+  el('pairWidth').addEventListener('change', drawPair);
+  el('pairDlBtn').addEventListener('click', () => {
+    if (!matchGraph || !archive) return;
+    const { edge } = selectedEdge();
+    el('pairCanvas').toBlob(blob => {
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `matches_${archive.meta.sessionId}_${edge ? (edge.i + 1) + '-' + (edge.j + 1) : 'pair'}.png`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 30000);
+    }, 'image/png');
+  });
 
   function outputSize() {
     const [w, h] = el('outSize').value.split('x').map(Number);

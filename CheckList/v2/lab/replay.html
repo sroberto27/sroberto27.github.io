@@ -139,6 +139,34 @@
     </div>
   </div>
 
+  <div class="card" id="matchCard" hidden>
+    <h2>Match inspector</h2>
+    <div class="row" style="align-items:center;gap:12px;margin-bottom:10px">
+      <select id="pairSel" style="min-width:300px"><option>&mdash;</option></select>
+      <label><input type="checkbox" id="showOutliers"> show rejected matches</label>
+      <label><input type="checkbox" id="showPoints" checked> keypoint dots</label>
+      <label>Width
+        <select id="pairWidth">
+          <option value="600">600 px per photo</option>
+          <option value="900" selected>900 px per photo</option>
+          <option value="1400">1400 px per photo</option>
+        </select>
+      </label>
+      <button id="pairDlBtn" class="ghost">Download figure (PNG)</button>
+    </div>
+    <canvas id="pairCanvas" width="1800" height="600"></canvas>
+    <p class="note" id="pairNote"></p>
+    <p class="note">
+      Every pair the refine worker matched, drawn on the full-size photos.
+      <span style="color:var(--ok)">Green</span> lines are the inlier correspondences that
+      survived the prior gate and RANSAC and went into the bundle adjustment;
+      <span style="color:var(--bad)">red</span> ones (when enabled) were proposed by XFeat but
+      rejected. Pairs the solver threw out entirely are listed at the end of the dropdown.
+      This is the same figure as the lab page&rsquo;s Match inspector, but from a dropped archive
+      rather than the app&rsquo;s IndexedDB.
+    </p>
+  </div>
+
   <div class="card" id="blendCard" hidden>
     <h2>Blend modes, side by side</h2>
     <div class="strip" id="blendStrip"></div>

@@ -43,6 +43,16 @@ would have produced given the same memory budget. It reports sphere coverage,
 recovered FOV, mean pose correction, match-graph size and timing, and the
 panorama is downloadable.
 
+After any run with Enhance on, a **Match inspector** card appears: pick a pair
+of shots and the two full-size photos are drawn side by side with a green line
+per inlier correspondence (the matches that survived the prior gate and RANSAC
+and went into the bundle), optionally the rejected proposals in red, and pairs
+the solver dropped outright at the end of the list. **Download figure (PNG)**
+saves the canvas — this is how to get the paper's match figure from a dropped
+archive instead of from the lab page's IndexedDB session. It works by passing
+`returnMatches: true` in the refine worker's options, an opt-in the phone never
+sets, so the worker's normal result payload is unchanged.
+
 ## Layout
 
 The pipeline modules are the SHIPPING copies under `../pano/` — the lab loads
