@@ -84,6 +84,37 @@
   function readShowNavInstructions()  { return readPref(NAV_PREF_KEY); }
   function writeShowNavInstructions(show) { writePref(NAV_PREF_KEY, show); }
 
+  /* -- Per-tab "already seen" flags --------------------------
+     sessionStorage is scoped to the browser tab and survives reloads
+     in that tab, so each modal shows at most once per tab even when
+     its preference is on:
+       scsu:welcomeSeen         — set when the user picks "How to Use"
+                                  or "Enter Experience"
+       scsu:navInstructionsSeen — set when the 3D nav modal is shown
+     A memory copy covers browsers that block sessionStorage; there the
+     welcome modal falls back to showing on every load. */
+  const WELCOME_SEEN_KEY = "scsu:welcomeSeen";
+  const NAV_SEEN_KEY     = "scsu:navInstructionsSeen";
+  const seenFallback = {};
+
+  function readSeen(key) {
+    try {
+      return sessionStorage.getItem(key) === "1";
+    } catch (_) {
+      return !!seenFallback[key];
+    }
+  }
+
+  function writeSeen(key, seen) {
+    seenFallback[key] = seen;
+    try {
+      if (seen) sessionStorage.setItem(key, "1");
+      else      sessionStorage.removeItem(key);
+    } catch (_) {
+
+    }
+  }
+
   /* Push the stored preferences into all four controls so each toggle
      and its mirror stay in sync. */
   function syncPrefControls() {
@@ -115,7 +146,7 @@
           title: "Locations Sidebar",
           body: "Browse all campus locations here. Search for buildings or " +
                 "courses and tap to find out more about them, or simply take " +
-                "a guided tour at bottom left. ",
+                "a guided tour at bottom left.",
           getRect: () => {
             const node = document.getElementById("locations");
             return node ? node.getBoundingClientRect() : null;
@@ -126,7 +157,7 @@
           title: "Locations Menu",
           body: "Tap the Locations button to open the full list of all campus " +
                 "locations here. Search for buildings or courses and tap to find " +
-                "out more about them, or simply take a guided tour at bottom left. ",
+                "out more about them, or simply take a guided tour at bottom left.",
           getRect: () => {
             const node = document.getElementById("locationsToggle");
             return node ? node.getBoundingClientRect() : null;
@@ -138,8 +169,8 @@
         id: "top-bar",
         desktop: {
           title: "Experience Toggle",
-          body:"Choose Explore to discover SCSU or to find something specific; " +
-               "choose Learn to access all immersive coursework available to you.",
+          body: "Choose Explore to discover SCSU or to find something specific. " +
+                "Choose Learn to access all immersive coursework available to you.",
 
           getRect: () => {
             const node = document.querySelector(".metabar");
@@ -149,8 +180,8 @@
         },
         mobile: {
           title: "Experience Toggle",
-          body:"Choose Explore to discover SCSU or to find something specific; " +
-               "choose Learn to access all immersive coursework available to you.",
+          body: "Choose Explore to discover SCSU or to find something specific. " +
+                "Choose Learn to access all immersive coursework available to you.",
           getRect: () => {
             const node = document.querySelector(".metabar");
             return node ? node.getBoundingClientRect() : null;
@@ -164,7 +195,7 @@
           title: "Location Details",
           body: "Choose any location to see its details here. Tap Explore " +
                 "to drop into an immersive street view (where available). " +
-                "Explorable locations are shortcuts. ",
+                "Explorable locations are shortcuts.",
 
           getRect: () => {
             const node = document.getElementById("details");
@@ -176,7 +207,7 @@
           title: "Location Details",
           body: "Choose any location to see its details here. Tap Explore " +
                 "to drop into an immersive street view (where available). " +
-                "Explorable locations are shortcuts. ",
+                "Explorable locations are shortcuts.",
           getRect: () => {
             const node = document.getElementById("details");
             return node ? node.getBoundingClientRect() : null;
@@ -562,13 +593,13 @@
   /* -- Start screen ----------------------------------------- */
 
   /* Show the welcome modal. Natural boots respect the stored
-     preference; burger-menu re-opens pass { force: true }. Marks the
-     body modal-open so global shortcuts can opt out, focuses the
-     primary button, and traps Tab inside the modal. */
+     preference and the per-tab seen flag; { force: true } bypasses
+     both. Marks the body modal-open so global shortcuts can opt out,
+     focuses the primary button, and traps Tab inside the modal. */
   function showStartScreen(opts) {
 
     const force = !!(opts && opts.force);
-    if (!force && !readShowOnStartup()) return;
+    if (!force && (!readShowOnStartup() || readSeen(WELCOME_SEEN_KEY))) return;
 
     syncPrefControls();
 
@@ -602,6 +633,7 @@
     if (!force && !readShowNavInstructions()) return false;
 
     syncPrefControls();
+    writeSeen(NAV_SEEN_KEY, true);
     navModal.setAttribute("aria-hidden", "false");
     document.body.classList.add("modal-open");
 
@@ -624,11 +656,12 @@
 
   /* -- openStreetView gating wrapper ------------------------
      The nav-instructions modal must appear on the first street-view
-     open of a session. Several call sites open street view, so the
-     cleanest seam is the function itself: window.openStreetView is
-     wrapped once and every caller goes through the gate. Skipped when
-     the preference is off or street view is already active (mid-
-     session sweep changes shouldn't re-prompt). */
+     open of a session (browser tab). Several call sites open street
+     view, so the cleanest seam is the function itself:
+     window.openStreetView is wrapped once and every caller goes
+     through the gate. Skipped when the preference is off, the modal
+     was already shown in this tab, or street view is already active
+     (mid-session sweep changes shouldn't re-prompt). */
   let pendingStreetViewArgs = null;
   let originalOpenStreetView = null;
 
@@ -646,7 +679,7 @@
         return originalOpenStreetView.apply(this, args);
       }
 
-      if (!readShowNavInstructions()) {
+      if (!readShowNavInstructions() || readSeen(NAV_SEEN_KEY)) {
         return originalOpenStreetView.apply(this, args);
       }
 
@@ -673,14 +706,17 @@
   window.showStartScreen = showStartScreen;
 
   /* -- Event wiring ----------------------------------------- */
+  // Either choice counts as having seen the welcome modal in this tab.
   if (startEnterBtn) {
     startEnterBtn.addEventListener("click", () => {
+      writeSeen(WELCOME_SEEN_KEY, true);
       hideStartScreen();
     });
   }
 
   if (startHowBtn) {
     startHowBtn.addEventListener("click", () => {
+      writeSeen(WELCOME_SEEN_KEY, true);
       hideStartScreen();
 
       // Pause so the start-screen fade-out completes before the
@@ -733,9 +769,12 @@
       syncPrefControls();
     });
   }
+  // Turning the switch on re-arms the modal for the next 3D open in
+  // this tab, matching the switch's "next time you enter" hint.
   if (navInstructionsSwitch) {
     navInstructionsSwitch.addEventListener("change", () => {
       writeShowNavInstructions(navInstructionsSwitch.checked);
+      if (navInstructionsSwitch.checked) writeSeen(NAV_SEEN_KEY, false);
       syncPrefControls();
     });
   }

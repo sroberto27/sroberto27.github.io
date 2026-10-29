@@ -26,10 +26,12 @@ function setStreetViewCaption(title, sub) {
   if (el.streetviewSub)   el.streetviewSub.textContent   = sub || "";
 }
 
-/* Map a PoseChanged sweep id back to its location and update the tour
-   bar, so the wrapper UI follows the user as they move inside Treedis.
-   Sub-locations (rooms, floors) resolve to their parent via parentName,
-   since sub-locations are not tour stops themselves. */
+/* Map a PoseChanged sweep id back to its location and update the
+   caption, selection, details and tour bar, so the wrapper UI follows
+   the user as they move inside Treedis. Sub-locations (rooms, floors)
+   resolve to their parent via parentName for the selection and show
+   as "Parent — Room" in the caption. Unmapped sweeps (paths between
+   locations) leave everything as is. */
 function syncWrapperToSweep(sweepId) {
   if (!sweepId || !config.treedisMap) return;
 
@@ -45,15 +47,28 @@ function syncWrapperToSweep(sweepId) {
   // Unknown sweep — nothing to sync.
   if (!matchedEntry) return;
 
-  const targetName = (matchedEntry.parentName || matchedKey).toLowerCase();
+  // While a queued Navigate is landing, Treedis can report its default
+  // sweep first; don't let that pull the wrapper elsewhere.
+  if (pendingSweep && pendingSweep.sweepId !== sweepId) return;
 
-  const newIndex = tourStops.findIndex(
-    (s) => cleanName(s.feature.properties.name).toLowerCase() === targetName
-  );
-  if (newIndex < 0 || newIndex === tourIndex) return;
+  const parentKey = matchedEntry.parentName || matchedKey;
+  const hit = findFeatureByName(parentKey);
+  const parentDisplay = hit ? cleanName(hit.props.name) : parentKey;
 
-  tourIndex = newIndex;
-  updateTourbar();
+  // treedisMap keys are lower-cased; recover the display spelling of
+  // a room from the parent's explorable list.
+  if (matchedEntry.parentName) {
+    const sub = getExplorable(parentDisplay)
+      .find((n) => n.toLowerCase() === matchedKey) || matchedKey;
+    setStreetViewCaption(parentDisplay, sub);
+  } else {
+    setStreetViewCaption(parentDisplay, getCategory(parentDisplay));
+  }
+
+  if (hit && hit.layer !== selectedLayer) {
+    selectFeature(hit.layer, hit.kind, { syncStreetView: false });
+  }
+  saveSessionState();
 }
 
 /* Open the street view overlay at the given sweep. `title` / `sub`
@@ -129,6 +144,8 @@ function openStreetView(sweepId, title, sub, options) {
 
     if (drawerOpen) closeMobileLocations({ silent: true });
   }
+
+  saveSessionState();
 }
 
 /* Build the navigateToSweep options object, omitting nulls so the
@@ -141,8 +158,13 @@ function _buildNavOptions(navOpts) {
 }
 
 /* Close the overlay. Drops any queued sweep so it can't fire after the
-   user has moved on, and hides the loading veil. */
-function closeStreetView() {
+   user has moved on, and hides the loading veil. The selection may
+   have changed while in 3D (list, tour bar, walking in Treedis), so
+   the map is brought to the selected location and, on mobile, the
+   tucked-away details sheet comes back at half height. Callers that
+   select and focus a new location themselves pass { refocus: false }. */
+function closeStreetView(opts) {
+  const wasActive = streetViewActive;
   streetViewActive = false;
   if (el.streetview) {
     el.streetview.setAttribute("aria-hidden", "true");
@@ -152,6 +174,16 @@ function closeStreetView() {
 
   pendingSweep = null;
   _hideStreetViewLoading();
+
+  const refocus = !(opts && opts.refocus === false);
+  if (wasActive && refocus && selectedLayer) {
+    if (isMobile() && el.shell.classList.contains("has-details")) {
+      setDetailsMode("half");
+    }
+    focusMapOnLayer(selectedLayer);
+  }
+
+  saveSessionState();
 }
 
 /* Loading veil over the iframe while Treedis boots. On slow connections

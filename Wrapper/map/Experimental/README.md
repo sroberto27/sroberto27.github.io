@@ -101,7 +101,7 @@ leaflet.js → data/*.js shims → config.js → js/00 … js/13
    - geometry from `data/*.geojson`
    - content via `js/00-data-adapter.js` from `data/*.json`
    - any fetch that fails falls back to the shim data, so `file://` still works.
-4. Layers, pins, sidebar lists, and the search index are built; images are preloaded (with a hard cap so the splash can't hang); then the app is revealed and the welcome modal shows.
+4. Layers, pins, sidebar lists, and the search index are built; images are preloaded (with a hard cap so the splash can't hang); then the app is revealed and the welcome modal shows (once per browser tab — see User preferences). If the tab was killed and reloaded (e.g. iOS Safari running out of memory on rotation), the last selection, map view, sheet height and open 3D view are restored instead.
 5. Selecting a location renders the details panel from the lookup maps. Pressing **Explore** resolves the sweep ID for the active profile and posts a `Navigate` message into the Treedis iframe. While street view is open, the sidebar, search, and tour arrows drive the 3D camera instead of the map.
 
 ### Treedis dual profile
@@ -153,6 +153,12 @@ Two settings persist in `localStorage` and are exposed both in their modals ("Do
 
 - `scsu:showStartScreen` — welcome modal on boot.
 - `scsu:showNavInstructions` — 3D navigation instructions on the first street-view open of a session.
+
+Per-tab state lives in `sessionStorage`, which survives reloads in the same tab and is cleared when the tab closes:
+
+- `scsu:welcomeSeen` — set when the user picks "How to Use" or "Enter Experience"; the welcome modal then stays hidden for the rest of the tab, reloads included. A new tab shows it again (if `scsu:showStartScreen` allows).
+- `scsu:navInstructionsSeen` — set when the 3D instructions are shown, so they appear at most once per tab. Turning the burger switch back on clears it.
+- `scsu:sessionState` — snapshot of the UI (selection, map view, sheet height, 3D sweep, Explore/Learn) used to recover from a tab that was killed and reloaded. It is marked clean on `pagehide`, so a normal reload or navigation starts fresh; snapshots older than 30 minutes are ignored.
 
 The alignment tool (legacy image mode) stores its tuning under `scsu-map.align.v1`.
 

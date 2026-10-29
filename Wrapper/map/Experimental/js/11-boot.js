@@ -208,6 +208,50 @@ function addBaseTileLayer() {
     attribution: t.attribution || "Created by QGIS"
   }).addTo(map);
 }
+/* Re-apply the snapshot saved by saveSessionState() (02-state.js)
+   after the tab was killed and reloaded (see the notes there). Returns
+   true when something was restored, so boot() can skip the welcome
+   screen. Deliberate reloads and navigations are marked clean on
+   pagehide and are not restored. */
+function restoreSessionState() {
+  const s = readSessionState();
+  if (!s || s.clean) return false;
+  if (!s.t || Date.now() - s.t > SESSION_STATE_MAX_AGE_MS) return false;
+
+  let restored = false;
+
+  if (s.view && Number.isFinite(s.view.lat) && Number.isFinite(s.view.zoom)) {
+    map.setView([s.view.lat, s.view.lng], s.view.zoom, { animate: false });
+  }
+
+  const hit = s.sel && findFeatureByName(s.sel.name, s.sel.kind);
+  if (hit) {
+    selectFeature(hit.layer, hit.kind, { focus: !s.view });
+    if (s.details === "full") setDetailsMode("full");
+    restored = true;
+  }
+
+  if (s.sv && s.sv.sweepId) {
+    // Rotation lives on the treedisMap entry that owns the sweep.
+    const entry = Object.values(config.treedisMap || {})
+                        .find((e) => e && e.sweepId === s.sv.sweepId);
+    openStreetView(s.sv.sweepId, s.sv.title, s.sv.sub, {
+      rotation:       (entry && entry.rotation)       || null,
+      transitionTime: (entry && entry.transitionTime) || null
+    });
+    restored = true;
+  }
+
+  if (s.mode === "learn") {
+    const learnBtn = document.querySelector('.mode-btn[data-mode="learn"]');
+    if (learnBtn) learnBtn.click();
+    restored = true;
+  }
+
+  if (restored) console.info("[metaversity] restored state after tab reload", s);
+  return restored;
+}
+
 /* -----------------------------------------------------------
    Boot sequence
    ----------------------------------------------------------- */
@@ -344,7 +388,8 @@ if (config.mapMode === "tiles") {
     console.warn("[preload] home-sweep warm-up errored:", err);
   });
 
-  // Reveal the app and show the welcome screen (unless suppressed).
+  // Reveal the app and show the welcome screen (unless suppressed, or
+  // the tab is coming back from a crash with state to restore).
   requestAnimationFrame(() => {
     el.app.setAttribute("aria-hidden", "false");
     el.app.classList.add("is-ready");
@@ -352,7 +397,13 @@ if (config.mapMode === "tiles") {
     setTimeout(() => { el.splash.style.display = "none"; }, 500);
     scheduleMapRefresh({ delay: 80 });
 
-    if (typeof showStartScreen === "function") {
+    let restored = false;
+    try { restored = restoreSessionState(); }
+    catch (err) { console.warn("[metaversity] state restore failed:", err); }
+    sessionStateReady = true;
+    saveSessionState();
+
+    if (!restored && typeof showStartScreen === "function") {
 
       // Small delay so the splash fade-out doesn't clash with the
       // start-screen fade-in.

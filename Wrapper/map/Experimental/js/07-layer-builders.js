@@ -1,19 +1,16 @@
 /* === Layer builders, bounds, tour pins === */
 
-/* Attach tooltip, hover, and click behavior to a feature layer. */
+/* Attach tooltip, hover, and click behavior to a feature layer.
+   Order matters: these handlers are registered before bindTooltip()
+   adds Leaflet's own mouseover → open-tooltip handler, so isHovered is
+   already true when tooltipopen fires. Registered the other way round,
+   the safety net below closes every hover label as soon as it opens
+   (Safari shows no labels; Chromium only masked it with a second
+   mouseover after bringToFront re-inserts the path). */
 function bindEvents(feature, layer, kind) {
   const props = feature.properties || {};
   const label = cleanName(props.name);
   if (!label) return;
-
-  if (config.ui.showBuildingTooltips || kind === "tour") {
-    layer.bindTooltip(label, {
-      direction: "top",
-      className: "campus-label",
-      sticky: false,
-      opacity: 1
-    });
-  }
 
   let isHovered = false;
 
@@ -42,6 +39,15 @@ function bindEvents(feature, layer, kind) {
       selectFeature(layer, kind, { focus: true });
     }
   });
+
+  if (config.ui.showBuildingTooltips || kind === "tour") {
+    layer.bindTooltip(label, {
+      direction: "top",
+      className: "campus-label",
+      sticky: false,
+      opacity: 1
+    });
+  }
 }
 
 function buildLayer(data, kind, paneName) {

@@ -135,9 +135,9 @@
 /* ===========================================================
    BURGER SLIDE-IN PANEL (right side)
    Pure-CSS open/close via the hidden #burgerToggle checkbox at
-   the top of .app. This is a *non-modal
-   panel — the rest of the page stays visible and interactive
-   behind it; we don't dim a backdrop.
+   the top of .app. A dimmed backdrop (a <label> for the same
+   checkbox) closes the panel on any click outside it; Escape is
+   handled in 10-event-wiring.js.
    =========================================================== */
 .burger-panel {
   position: fixed;
@@ -160,7 +160,6 @@
 
 .burger-toggle:checked ~ .burger-panel { transform: translateX(0); }
 
-/* Backdrop is mobile-only: full-width panel needs a tap-off target. */
 .burger-backdrop {
   position: fixed;
   inset: 0;
@@ -169,16 +168,11 @@
   opacity: 0;
   pointer-events: none;
   transition: opacity .22s ease;
-  /* Hidden on desktop — the panel is non-modal there. */
-  display: none;
 }
 
-@media (max-width: 880px) {
-  .burger-backdrop { display: block; }
-  .burger-toggle:checked ~ .burger-backdrop {
-    opacity: 1;
-    pointer-events: auto;
-  }
+.burger-toggle:checked ~ .burger-backdrop {
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .burger-panel-head {

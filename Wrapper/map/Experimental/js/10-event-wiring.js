@@ -238,11 +238,13 @@ el.modeBtns.forEach((btn) => {
 
     const mode = btn.dataset.mode;
     setAppMode(mode);
+    saveSessionState();
   });
 });
 
 window.addEventListener("resize", () => {
   scheduleMapRefresh({ delay: 80 });
+  saveSessionState();
 });
 
 /* Help button — simple info overlay. */
@@ -283,6 +285,15 @@ document.addEventListener("fullscreenchange", () => {
    the topmost open panel (search, street view, drawer, selection).
    ----------------------------------------------------------- */
 document.addEventListener("keydown", (e) => {
+  // An open burger menu is the topmost panel: Escape closes it first,
+  // even when focus is on one of its switches.
+  const burger = $("burgerToggle");
+  if (e.key === "Escape" && burger && burger.checked) {
+    burger.checked = false;
+    e.preventDefault();
+    return;
+  }
+
   // Inside form fields, only handle Escape for the search input.
   if (e.target && ["INPUT", "TEXTAREA"].includes(e.target.tagName)) {
 

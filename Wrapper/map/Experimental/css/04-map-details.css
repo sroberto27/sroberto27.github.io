@@ -44,20 +44,27 @@
 .locations-toggle .lt-fallback           { font-size: 18px; font-weight: 600; line-height: 1; }
 .locations-toggle:active { transform: translateY(1px); box-shadow: 0 1px 4px rgba(0,0,0,.25); }
 
+/* Fit campus button, styled and stacked like a third zoom button: the
+   zoom control sits at top 10px (Leaflet margin) and is 67px tall, so
+   this starts 8px below it. Kept off the bottom edge, where the mobile
+   sheet and the attribution covered it. */
 .map-action {
   position: absolute;
-  bottom: 16px;
-  right: 16px;
+  top: 85px;
+  right: 10px;
   z-index: 500;
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
   border: 1px solid var(--line);
   background: var(--paper);
-  border-radius: 999px;
+  color: var(--ink);
+  border-radius: 4px;
   box-shadow: 0 2px 8px rgba(0,0,0,.25);
   display: grid;
   place-items: center;
 }
+.map-action:hover   { background: var(--fog); }
 .map-action svg     { width: 18px; height: 18px; }
 .map-action:active  { transform: translateY(1px); box-shadow: 0 1px 4px rgba(0,0,0,.25); }
 
