@@ -233,6 +233,7 @@ function renderAllLocationsList() {
 function onLocationsSortChange() {
   renderAllLocationsList();
   if (el.allLocationsList) el.allLocationsList.scrollTop = 0;
+  if (el.locations)        el.locations.scrollTop = 0;
 }
 if (el.locSortAlpha) {
   el.locSortAlpha.addEventListener("change", onLocationsSortChange);
@@ -242,11 +243,14 @@ if (el.locSortDept) {
 }
 
 /* Switching between the Featured and All tabs shows the newly picked
-   list from the top rather than wherever it was last scrolled. */
+   list from the top rather than wherever it was last scrolled. On
+   short landscape screens the whole panel is the scroller, so it is
+   reset too. */
 document.querySelectorAll('input[name="locTab"]').forEach((tab) => {
   tab.addEventListener("change", () => {
     if (el.locationsList)    el.locationsList.scrollTop = 0;
     if (el.allLocationsList) el.allLocationsList.scrollTop = 0;
+    if (el.locations)        el.locations.scrollTop = 0;
   });
 });
 
