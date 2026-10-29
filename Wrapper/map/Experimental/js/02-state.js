@@ -83,6 +83,7 @@ const el = {
   streetview:        $("streetview"),
   tourFrame:         $("tour-frame"),
   streetviewClose:   $("streetviewClose"),
+  streetviewCaption: $("streetviewCaption"),
   streetviewTitle:   $("streetviewTitle"),
   streetviewSub:     $("streetviewSub"),
   streetviewTouchGuard: $("streetviewTouchGuard"),
