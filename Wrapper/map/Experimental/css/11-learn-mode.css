@@ -631,8 +631,11 @@ body.mode-learn .details               { display: none; }
     pointer-events: auto;
   }
 
+  /* Hide the list only once the detail has finished sliding over it
+     (delay matches the .26s slide); Back shows it again at once. */
   .learn-shell.has-detail .courses {
     visibility: hidden;
+    transition: visibility 0s .26s;
   }
 
   .course-back {

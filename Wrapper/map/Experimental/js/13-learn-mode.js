@@ -69,6 +69,33 @@
 
   let activeCourseId = null;
 
+  /* One <img> per course, created on first entry to Learn so the
+     artwork is already downloaded and decoded when a course opens.
+     Re-attaching the same element avoids a blank hero while a fresh
+     <img> loads. A failed image is flagged and the placeholder stays. */
+  const heroImages = {};
+
+  function heroImageFor(course) {
+    if (!heroImages[course.id]) {
+      const img = new Image();
+      img.alt = course.title || "";
+      img.onerror = () => {
+        img.failed = true;
+        if (img.parentNode) {
+          img.parentNode.classList.remove("has-image");
+          img.remove();
+        }
+      };
+      img.src = course.image;
+      heroImages[course.id] = img;
+    }
+    return heroImages[course.id];
+  }
+
+  function preloadHeroImages() {
+    courses.forEach((c) => { if (c.image) heroImageFor(c); });
+  }
+
   /* ---- Render: course list ---- */
   function renderCourseList() {
     if (!L.list) return;
@@ -152,16 +179,11 @@
       if (oldImg) oldImg.remove();
 
       if (course.image) {
-        const img = document.createElement("img");
-        img.src = course.image;
-        img.alt = course.title || "";
-
-        img.onerror = () => {
-          L.hero.classList.remove("has-image");
-          img.remove();
-        };
-        L.hero.appendChild(img);
-        L.hero.classList.add("has-image");
+        const img = heroImageFor(course);
+        if (!img.failed) {
+          L.hero.appendChild(img);
+          L.hero.classList.add("has-image");
+        }
       }
     }
 
@@ -250,10 +272,12 @@
 
     // Move focus to the detail title for screen-reader users on small
     // screens; on desktop the list keeps focus so arrow-keying through
-    // courses stays smooth.
+    // courses stays smooth. preventScroll: the title is still off-screen
+    // mid-slide, and scrolling it into view shifts the whole shell
+    // sideways against the slide animation (visible flicker).
     if (course && isMobile() && L.title) {
       L.title.setAttribute("tabindex", "-1");
-      L.title.focus({ preventScroll: false });
+      L.title.focus({ preventScroll: true });
     }
   }
 
@@ -313,6 +337,7 @@
     L.shell.setAttribute("aria-hidden", learn ? "false" : "true");
 
     if (learn) {
+      preloadHeroImages();
 
       if (!activeCourseId && !isMobile() && courses.length) {
         selectCourse(courses[0].id);
