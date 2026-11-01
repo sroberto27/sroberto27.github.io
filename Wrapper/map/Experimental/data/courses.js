@@ -93,13 +93,11 @@ window.SCSU_DATA.courses = [
       "Field case studies, cost-benefit analysis, and communicating " +
         "site-specific nutrient plans"
     ],
-    // EON Reality launch targets. Replace the placeholder paths
-    // with the real EON course slugs once they're issued. The
-    // /login redirect param sends the user back to the course
-    // after auth — EON's standard pattern.
+    // Both courses open the EON login page for now; swap in the
+    // course's own EON link here once one is issued.
     eon: {
-      desktopUrl: "https://customvirtualcampus.eon-xr.com/i/936/courses/341-11599",
-      vrUrl:      "https://customvirtualcampus.eon-xr.com/i/936/courses/341-11599"
+      desktopUrl: "https://infinite.eonaiventures.com/login",
+      vrUrl:      "https://infinite.eonaiventures.com/login"
     },
     immersive: {
       note:
@@ -147,12 +145,11 @@ window.SCSU_DATA.courses = [
       "Precision agriculture, nutrient recycling, and climate-resilient " +
         "management strategies"
     ],
-    // Desktop-only EON build for now. Omitting `vrUrl` here means
-    // a Quest user clicking Begin Course will fall back to the
-    // desktop URL (still opens in the Quest browser, no VR scene).
+    // Both courses open the EON login page for now; swap in the
+    // course's own EON link here once one is issued.
     eon: {
-      desktopUrl: "https://customvirtualcampus.eon-xr.com/i/936/courses/325-11396",
-      vrUrl:      "https://customvirtualcampus.eon-xr.com/i/936/courses/325-11396"
+      desktopUrl: "https://infinite.eonaiventures.com/login",
+      vrUrl:      "https://infinite.eonaiventures.com/login"
     },
     immersive: {
       note:
