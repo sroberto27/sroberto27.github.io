@@ -37,7 +37,12 @@
    ─── Entry shape ──────────────────────────────────────────
    Each entry can be either:
      • a string  → treated as { sweepId: "...", parentName: null }
-     • an object → { sweepId, parentName?, transitionTime?, rotation? }
+     • an object → { sweepId, parentName?, transitionTime?, rotation?,
+                     tourUrl? }
+
+   `tourUrl` is set only on locations that live in their own
+   Treedis tour (Olar Farm). Opening one loads that tour in the
+   3D view; locations without it use the campus tour.
 
    Case-insensitive keys match `name` from the GeoJSON data
    (same convention as descriptionMap / imageMap etc).
@@ -101,6 +106,12 @@ const TREEDIS_MAP_DESKTOP = {
   "kirkland w. green student center": {
     sweepId: "1znsf8cet7xb1a0qbi0hza61c",
     rotation: { x: -3.9861222226634734, y: -74.36293086564665 }
+  },
+
+  "olar farm": {
+    sweepId: "8q6g7duaayh0m8tz9q62as42b",
+    tourUrl: "https://spaces.dtsxr.com/tour/olar-farm-740e0831",
+    rotation: { x: -5.843337021473431, y: -57.20067205830169 }
   },
 
   "oliver c. dawson stadium": {
@@ -251,6 +262,12 @@ const TREEDIS_MAP_VR = {
   "kirkland w. green student center": {
     sweepId: "f35kwue683p1rm2x1n3a1fa2a",
     rotation: { x: 4.393484751677412, y: -66.90998509162446 }
+  },
+
+  "olar farm": {
+    sweepId: "8q6g7duaayh0m8tz9q62as42b",
+    tourUrl: "https://spaces.dtsxr.com/tour/dbd92c7d",
+    rotation: { x: 0.5426059928328238, y: -21.938415781591615 }
   },
 
   "oliver c. dawson stadium": {

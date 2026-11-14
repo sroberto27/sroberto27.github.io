@@ -73,6 +73,30 @@
       }
     },
     {
+      "id": "olar-farm",
+      "key": "olar farm",
+      "name": "Olar Farm",
+      "parentName": null,
+      "desktop": {
+        "sweepId": "8q6g7duaayh0m8tz9q62as42b",
+        "tourUrl": "https://spaces.dtsxr.com/tour/olar-farm-740e0831",
+        "transitionTime": null,
+        "rotation": {
+          "x": -5.843337021473431,
+          "y": -57.20067205830169
+        }
+      },
+      "vr": {
+        "sweepId": "8q6g7duaayh0m8tz9q62as42b",
+        "tourUrl": "https://spaces.dtsxr.com/tour/dbd92c7d",
+        "transitionTime": null,
+        "rotation": {
+          "x": 0.5426059928328238,
+          "y": -21.938415781591615
+        }
+      }
+    },
+    {
       "id": "oliver-c-dawson-stadium",
       "key": "oliver c. dawson stadium",
       "name": "Oliver C. Dawson Stadium",

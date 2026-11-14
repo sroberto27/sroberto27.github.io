@@ -17,8 +17,20 @@ function preloadTreedisIframe() {
   }
 
   if (el.tourFrame.src && el.tourFrame.src !== "about:blank") return;
-  el.tourFrame.src = url;
   TourBridge.initialize(el.tourFrame);
+  TourBridge.load(url);
+}
+
+/* Make sure the iframe holds the tour that owns `sweepId`. Switching
+   between the campus tour and a location's own tour (Olar Farm)
+   reloads the iframe, so the Navigate that follows is queued until the
+   new tour sends TourReady. */
+function _loadTourForSweep(sweepId) {
+  const url = getTourUrlForSweep(sweepId);
+  if (!url || url === TourBridge.tourUrl) return;
+  console.info("[streetview] switching tour:", url);
+  TourBridge.load(url);
+  lastStreetViewSweepId = null;
 }
 
 function setStreetViewCaption(title, sub) {
@@ -129,6 +141,7 @@ function openStreetView(sweepId, title, sub, options) {
   setStreetViewCaption(title, sub);
 
   if (sweepId) {
+    _loadTourForSweep(sweepId);
     if (TourBridge.isReady) {
 
       TourBridge.navigateToSweep(sweepId, _buildNavOptions(navOpts));
@@ -357,6 +370,7 @@ function navigateStreetViewToLayer(layer) {
   }
 
   setStreetViewCaption(name, getCategory(name));
+  _loadTourForSweep(entry.sweepId);
 
   if (!TourBridge.isReady) {
 

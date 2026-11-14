@@ -15,12 +15,25 @@ const TourBridge = {
   _pingInterval: null,
   _ready: false,
   _currentSweepId: null,
+  _tourUrl: null,
 
   initialize(iframeEl) {
     this._iframe = iframeEl;
     window.addEventListener("message", this._onMessage.bind(this));
+  },
+
+  /* Load a tour into the iframe. Also used to switch between the
+     campus tour and a location's own tour (Olar Farm); the bridge is
+     not ready again until the new tour sends TourReady. */
+  load(url) {
+    if (!this._iframe || !url) return;
+    this._tourUrl = url;
+    this._ready = false;
+    this._currentSweepId = null;
+    this._iframe.src = url;
 
     // Ping until TourReady arrives, then stop.
+    if (this._pingInterval) clearInterval(this._pingInterval);
     this._pingInterval = setInterval(() => {
       if (this._ready) {
         clearInterval(this._pingInterval);
@@ -32,6 +45,7 @@ const TourBridge = {
   },
 
   get isReady() { return this._ready; },
+  get tourUrl() { return this._tourUrl; },
 
   _onMessage(event) {
 

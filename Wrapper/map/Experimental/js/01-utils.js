@@ -285,9 +285,10 @@ function getAddress(name) {
 
 /* Look up a Treedis entry by location name (case-insensitive). Accepts
    shorthand string entries or full objects and always returns a
-   normalized { sweepId, parentName, transitionTime, rotation } object,
-   or null when unmapped. rotation is forwarded to navigateToSweep so
-   the camera lands facing a configured direction. */
+   normalized { sweepId, parentName, transitionTime, rotation, tourUrl }
+   object, or null when unmapped. rotation is forwarded to
+   navigateToSweep so the camera lands facing a configured direction.
+   tourUrl is set only for locations in their own Treedis tour. */
 function getTreedisEntry(name) {
   if (!name) return null;
   const map = config.treedisMap || {};
@@ -295,15 +296,27 @@ function getTreedisEntry(name) {
   if (raw == null) return null;
   if (typeof raw === "string") {
     return {
-      sweepId: raw, parentName: null, transitionTime: null, rotation: null
+      sweepId: raw, parentName: null, transitionTime: null, rotation: null,
+      tourUrl: null
     };
   }
   return {
     sweepId:        raw.sweepId || null,
     parentName:     raw.parentName || null,
     transitionTime: raw.transitionTime || null,
-    rotation:       raw.rotation || null
+    rotation:       raw.rotation || null,
+    tourUrl:        raw.tourUrl || null
   };
+}
+
+/* The Treedis tour that holds a sweep: the entry's own tourUrl (Olar
+   Farm has its own tour), otherwise the active profile's campus tour. */
+function getTourUrlForSweep(sweepId) {
+  const campus = (config.treedis && config.treedis.tourUrl) || null;
+  if (!sweepId) return campus;
+  const entry = Object.values(config.treedisMap || {})
+                      .find((e) => e && e.sweepId === sweepId && e.tourUrl);
+  return (entry && entry.tourUrl) || campus;
 }
 
 /* True when the location has a usable Treedis sweep. Controls whether

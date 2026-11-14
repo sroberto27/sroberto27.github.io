@@ -184,7 +184,9 @@ if (el.vrBtn) {
   el.vrBtn.addEventListener("click", (e) => {
     e.preventDefault();
     const name = el.vrBtn.dataset.locationName || "this location";
-    const tourUrl = (config.treedis && config.treedis.tourUrl) || "";
+    const entry = getTreedisEntry(el.vrBtn.dataset.locationName);
+    const tourUrl = (entry && entry.tourUrl) ||
+                    (config.treedis && config.treedis.tourUrl) || "";
     alert(
       `${name} is VR-Enabled\n\n` +
       `In your headset, navigate to:\n  ${tourUrl}\n\n` +
